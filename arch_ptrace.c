@@ -166,7 +166,7 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, int status)
 
     LOGMSG(l_DEBUG,
            "Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %p, instr: '%s'",
-           si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
+           pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
 
     int idx = HF_SLOT(hfuzz, pid);
     if (si.si_addr < hfuzz->ignoreAddr) {
