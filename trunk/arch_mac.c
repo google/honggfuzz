@@ -121,34 +121,6 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
 
 bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 {
-#ifdef __linux__
-#include <sys/prctl.h>
-    /*
-     * Kill a process (with ABRT) which corrupts its own heap
-     */
-    if (setenv("MALLOC_CHECK_", "3", 1) == -1) {
-        LOGMSG_P(l_ERROR, "setenv(MALLOC_CHECK_=3) failed");
-        return false;
-    }
-
-    /*
-     * Kill the children when fuzzer dies (e.g. due to Ctrl+C)
-     */
-    if (prctl(PR_SET_PDEATHSIG, (long)SIGKILL, 0L, 0L, 0L) == -1) {
-        LOGMSG_P(l_ERROR, "prctl(PR_SET_PDEATHSIG, SIGKILL) failed");
-        return false;
-    }
-
-    /*
-     * Disable ASLR
-     */
-#include <sys/personality.h>
-    if (personality(ADDR_NO_RANDOMIZE) == -1) {
-        LOGMSG_P(l_ERROR, "personality(ADDR_NO_RANDOMIZE) failed");
-        return false;
-    }
-#endif                          /* __linux__ */
-
 #define ARGS_MAX 512
     char *args[ARGS_MAX + 2];
 
