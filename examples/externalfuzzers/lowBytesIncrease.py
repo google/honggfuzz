@@ -6,7 +6,7 @@ from random import randint
 CAP = 0x20
 RANDADDMAX = 0x20
 
-with open(sys.argv[1], 'rw+b') as f:
+with open(sys.argv[1], "r+b") as f:
   map = mmap.mmap(f.fileno(), 0)
   for index, char in enumerate(map):
     if ord(char) < CAP:
