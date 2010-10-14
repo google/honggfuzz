@@ -34,6 +34,11 @@
 #include "fuzz.h"
 #include "util.h"
 
+#define AB ANSI_BOLD
+#define AC ANSI_CLEAR
+#define ANSI_BOLD "\033[1m"
+#define ANSI_CLEAR "\033[0m"
+
 static bool checkFor_FILE_PLACEHOLDER(char **args)
 {
     for (int x = 0; args[x]; x++) {
@@ -47,23 +52,22 @@ static void usage(void
     )
 {
     printf("%s",
-           " <-f val>: input file (or input dir)\n"
-           " [-h]: this help\n"
-           " [-q]: null-ify children's stdin, stdout, stderr, make them quiet\n"
-           " [-s]: standard input fuzz, instead of providing a file argument\n"
-           " [-u]: save only unique test-cases\n"
-           " [-d val]: debug level (0 - FATAL ... 4 - DEBUG), default: 3 (INFO)\n"
-           " [-e val]: file extension (e.g swf), default: hfuz\n"
-           " [-r val]: flip rate, default: 0.001\n"
-           " [-m val]: flip mode (-mB - byte, -mb - bit), default: -mB\n"
-           " [-c val]: command to modify input file externally (instead of -r/-m)\n"
-           " [-t val]: timeout (in secs), default: 3 (0 - no timeout)\n"
-           " [-a val]: address limit (from si.si_addr) below which crashes are not reported,\n"
-           "           default: 0 (suggested: 65535)\n"
-           " [-n val]: number of concurrent fuzzing processes, default: 10\n"
-           " [-l val]: per process memory limit in MiB, default: 0 (no limit)\n"
-           "usage:\033[1m " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " FILE_PLACEHOLDER
-           "\033[0m\n");
+           " <" AB "-f val" AC ">: input file (or input dir)\n"
+           " [" AB "-h" AC "]: this help\n"
+           " [" AB "-q" AC "]: null-ify children's stdin, stdout, stderr, make them quiet\n"
+           " [" AB "-s" AC "]: standard input fuzz, instead of providing a file argument\n"
+           " [" AB "-u" AC "]: save unique test-cases only\n"
+           " [" AB "-d val" AC "]: debug level (0 - FATAL ... 4 - DEBUG), default: '" AB "3" AC
+           "' (INFO)\n" " [" AB "-e val" AC "]: file extension (e.g swf), default: '" AB "fuzz" AC
+           "'\n" " [" AB "-r val" AC "]: flip rate, default: '" AB "0.001" AC "'\n" " [" AB "-m val"
+           AC "]: flip mode (-mB - byte, -mb - bit), default: '" AB "-mB" AC "\n" " [" AB "-c val"
+           AC "]: command modifying input files externally (instead of -r/-m)\n" " [" AB "-t val" AC
+           "]: timeout (in secs), default: '" AB "3" AC " (0 - no timeout)\n" " [" AB "-a val" AC
+           "]: address limit (from si.si_addr) below which crashes are not reported,\n"
+           "           default: '" AB "0" AC "' (suggested: 65535)\n" " [" AB "-n val" AC
+           "]: number of concurrent fuzzing processes, default: '" AB "10" AC "'\n" " [-" AB "l val"
+           AC "]: per process memory limit in MiB, default: '" AB "0" AC "' (no limit)\n" "usage:"
+           AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " FILE_PLACEHOLDER AC "\n");
     exit(EXIT_SUCCESS);
 }
 
@@ -77,7 +81,7 @@ int main(int argc, char **argv)
     hfuzz.nullifyStdio = false;
     hfuzz.fuzzStdin = false;
     hfuzz.saveUnique = false;
-    hfuzz.fileExtn = "hfuz";
+    hfuzz.fileExtn = "fuzz";
     hfuzz.flipRate = 0.001f;
     hfuzz.flipMode = 'B';
     hfuzz.externalCommand = NULL;
