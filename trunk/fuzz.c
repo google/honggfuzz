@@ -81,7 +81,6 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName)
     int srcfd;
 
     uint8_t *buf = files_mapFileToRead(hfuzz->files[rnd_index], &fileSz, &srcfd);
-
     if (buf == NULL) {
         LOGMSG_P(l_ERROR, "Couldn't open and map '%s' in R/O mode", hfuzz->files[rnd_index]);
         return false;
@@ -90,9 +89,9 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName)
     LOGMSG(l_DEBUG, "Mmaped '%s' in R/O mode, size: %d", hfuzz->files[rnd_index], fileSz);
 
     int dstfd = open(fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
-
     if (dstfd == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't create temporary file '%s' in the current directory", fileName);
+        LOGMSG_P(l_ERROR, "Couldn't create a temporary file '%s' in the current directory",
+                 fileName);
         munmap(buf, fileSz);
         close(srcfd);
         return false;
@@ -116,14 +115,36 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName)
 static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName)
 {
     int rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
+    off_t fileSz;
+    int srcfd;
 
-    if (link(hfuzz->files[rnd_index], fileName) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't save '%s' as '%s'", hfuzz->files[rnd_index], fileName);
+    uint8_t *buf = files_mapFileToRead(hfuzz->files[rnd_index], &fileSz, &srcfd);
+    if (buf == NULL) {
+        LOGMSG_P(l_ERROR, "Couldn't open and map '%s' in R/O mode", hfuzz->files[rnd_index]);
+        return false;
+    }
+
+    LOGMSG(l_DEBUG, "Mmaped '%s' in R/O mode, size: %d", hfuzz->files[rnd_index], fileSz);
+
+    int dstfd = open(fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
+    if (dstfd == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't create a temporary file '%s' in the current directory",
+                 fileName);
+        munmap(buf, fileSz);
+        close(srcfd);
+        return false;
+    }
+
+    bool ret = files_writeToFd(dstfd, buf, fileSz);
+    munmap(buf, fileSz);
+    close(srcfd);
+    close(dstfd);
+
+    if (!ret) {
         return false;
     }
 
     pid_t pid = fork();
-
     if (pid == -1) {
         LOGMSG_P(l_ERROR, "Couldn't fork");
         return false;
@@ -133,10 +154,8 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName)
         /*
          * child does the external file modifications
          */
-        int ret = execl(hfuzz->externalCommand, hfuzz->externalCommand, fileName, NULL);
-
-        LOGMSG_P(l_ERROR, "Couldn't execl('%s', '%s') == %d; errno = %d", hfuzz->externalCommand,
-                 fileName, ret, errno);
+        execl(hfuzz->externalCommand, hfuzz->externalCommand, fileName, NULL);
+        LOGMSG_P(l_ERROR, "Couldn't execute '%s %s'", hfuzz->externalCommand, fileName);
         return false;
     } else {
         /*
@@ -153,9 +172,11 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName)
             LOGMSG(l_DEBUG, "External command exited with status %d", WEXITSTATUS(childStatus));
             return true;
         } else if (WIFSIGNALED(childStatus)) {
-            LOGMSG_P(l_ERROR, "External command crashed with signal %d", WTERMSIG(childStatus));
+            LOGMSG(l_ERROR, "External command terminated  with signal %d", WTERMSIG(childStatus));
             return false;
         }
+        LOGMSG(l_FATAL, "External command terminated abnormally, status: %d", childStatus);
+        return false;
     }
 
     abort();                    /* NOTREACHED */
