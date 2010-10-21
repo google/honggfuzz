@@ -4,6 +4,7 @@
    -----------------------------------------
 
    Author: Robert Swiecki <swiecki@google.com>
+           Felix Gröbert <groebert@google.com>
 
    Copyright 2010 by Google Inc. All Rights Reserved.
 
@@ -155,7 +156,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName)
          * child does the external file modifications
          */
         execl(hfuzz->externalCommand, hfuzz->externalCommand, fileName, NULL);
-        LOGMSG_P(l_ERROR, "Couldn't execute '%s %s'", hfuzz->externalCommand, fileName);
+        LOGMSG_P(l_FATAL, "Couldn't execute '%s %s'", hfuzz->externalCommand, fileName);
         return false;
     } else {
         /*

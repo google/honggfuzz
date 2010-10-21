@@ -4,6 +4,7 @@
    -----------------------------------------
 
    Author: Robert Swiecki <swiecki@google.com>
+           Felix Gröbert <groebert@google.com>
 
    Copyright 2010 by Google Inc. All Rights Reserved.
 
@@ -34,11 +35,15 @@
 #include <signal.h>
 #include <time.h>
 #include <ctype.h>
+#include <dirent.h>
+#include <sys/mman.h>
+#include <fcntl.h>
 
 #include "common.h"
 #include "log.h"
 #include "arch.h"
 #include "util.h"
+#include "files.h"
 
 struct {
     bool important;
@@ -65,6 +70,95 @@ void arch_initSigs(void
 }
 
 /*
+ * Returns true if for the given processPid the crash report can be found
+ * and the instruction pointer read from the report.
+ * Writes the instruction pointer to pc and the crash report's filename to
+ * outbuf.
+ */
+bool arch_macFindCrashReportForPid(pid_t processPid, char *outbuf, size_t len, void **pc)
+{
+    pid_t crashPid;
+
+    struct dirent *dp;
+    DIR *dirp;
+
+    off_t fileSz;
+    int srcfd;
+
+    char *ptr;
+    uint8_t *buf;
+
+    char now[PATH_MAX];
+    char crashFile[PATH_MAX];
+    char crashDir[PATH_MAX];
+    snprintf(crashDir, sizeof(crashDir), "/Users/%s/Library/Logs/DiagnosticReports", getlogin());
+    if ((dirp = opendir(crashDir)) == NULL) {
+        LOGMSG(l_DEBUG, "error opening dir '%s'", crashDir);
+        return false;
+    }
+
+    /*
+     * filter by date
+     * sample filename: badcode1_2010-10-14-163909-9_username-hostname.crash
+     */
+    util_getLocalTime("%Y-%m-%d-", now, sizeof(now));
+
+    while ((dp = readdir(dirp)) != NULL) {
+        if (strnstr(dp->d_name, now, dp->d_namlen) != NULL) {
+            snprintf(crashFile, sizeof(crashFile), "%s/%s", crashDir, dp->d_name);
+            LOGMSG(l_DEBUG, "found crash %s", crashFile);
+
+            fileSz = 0;
+            srcfd = 0;
+            buf = files_mapFileToRead(crashFile, &fileSz, &srcfd);
+            if (buf == NULL) {
+                LOGMSG(l_DEBUG, "Couldn't open and map '%s' in R/O mode", crashFile);
+                return false;
+            }
+
+            /*
+             * Look for PID in string 'Process:         findcr [52893]'
+             */
+            if ((ptr = strnstr((char *)buf, "[", fileSz)) == NULL) {
+                LOGMSG(l_DEBUG, "no pid indicator '[' found");
+                continue;
+            }
+            ptr++;              /* skip [ */
+            crashPid = (pid_t) atoi(ptr);
+
+            if (crashPid == processPid) {
+                LOGMSG(l_DEBUG, "found target pid '%d'", crashPid);
+                snprintf(outbuf, len, "%s", crashFile);
+
+                /*
+                 * get [re]ip from crash report
+                 * sample string: ' rip: 0x0000000100000b62  '
+                 */
+
+                if ((ptr = strnstr(ptr, "ip: 0x", fileSz)) != NULL) {
+                    ptr += sizeof("ip: 0x");
+                    *pc = (void *)strtol(ptr, (char **)NULL, 16);
+                } else {
+                    LOGMSG(l_DEBUG, "no IP found for pid '%d'", processPid);
+                    return false;
+                }
+
+                munmap(buf, fileSz);
+                close(srcfd);
+                closedir(dirp);
+                return true;
+            }
+
+            munmap(buf, fileSz);
+            close(srcfd);
+        }
+    }
+    closedir(dirp);
+    LOGMSG(l_DEBUG, "no crashreport found for pid '%d'", processPid);
+    return false;
+}
+
+/*
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
@@ -81,7 +175,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
      * Boring, the process just exited
      */
     if (WIFEXITED(status)) {
-        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d", pid, WEXITSTATUS(status));
+        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d", pid,
+               WEXITSTATUS(status));
         return true;
     }
 
@@ -105,17 +200,103 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
     char localtmstr[PATH_MAX];
     util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr));
 
-    char newname[PATH_MAX];
-    snprintf(newname, sizeof(newname), "%s.%d.%s.%s", arch_sigs[termsig].descr, pid,
-             localtmstr, hfuzz->fileExtn);
-
     int idx = HF_SLOT(hfuzz, pid);
-    LOGMSG(l_INFO, "Ok, that's interesting, saving the '%s' as '%s'",
-           hfuzz->fuzzers[idx].fileName, newname);
 
-    if (link(hfuzz->fuzzers[idx].fileName, newname) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't save '%s' as '%s'", hfuzz->fuzzers[idx].fileName, newname);
+    /*
+     * Locate the Mac OS X CrashReporter report, if possible
+     */
+    char report[PATH_MAX];
+    void *pc = NULL;
+
+    usleep(200000);             /* wait 2ms for report to be written to disk */
+
+    if (arch_macFindCrashReportForPid(pid, report, sizeof(report), &pc) == true) {
+        /*
+         * report file found, PC from report file
+         */
+        if (pc < hfuzz->ignoreAddr) {
+            LOGMSG(l_INFO,
+                   "'%s' is interesting, but the PC is %p (below %p), skipping",
+                   hfuzz->fuzzers[idx].fileName, pc, hfuzz->ignoreAddr);
+            return true;
+        }
+
+        char newname[PATH_MAX];
+        if (hfuzz->saveUnique) {
+            snprintf(newname, sizeof(newname), "%s.PC.%p.%s", arch_sigs[termsig].descr, pc,
+                     hfuzz->fileExtn);
+        } else {
+            snprintf(newname, sizeof(newname), "%s.PC.%p.%d.%s.%s", arch_sigs[termsig].descr, pc,
+                     pid, localtmstr, hfuzz->fileExtn);
+        }
+
+        if (link(hfuzz->fuzzers[idx].fileName, newname) == 0) {
+            LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'",
+                   hfuzz->fuzzers[idx].fileName, newname);
+        } else {
+            if (errno == EEXIST) {
+                LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", newname);
+            } else {
+                LOGMSG_P(l_ERROR, "Couldn't link '%s' to '%s'", hfuzz->fuzzers[idx].fileName,
+                         newname);
+            }
+        }
+        /*
+         * save copy of CrashReporter file
+         */
+        char newreport[PATH_MAX];
+        snprintf(newreport, sizeof(newreport), "%s.crash", newname);
+
+        off_t fileSz;
+        int srcfd;
+
+        uint8_t *buf = files_mapFileToRead(report, &fileSz, &srcfd);
+        if (buf == NULL) {
+            LOGMSG_P(l_ERROR, "Couldn't open and map '%s' in R/O mode", report);
+            return false;
+        }
+
+        int dstfd = open(newreport, O_CREAT | O_EXCL | O_RDWR, 0644);
+        if (dstfd == -1) {
+            if (errno == EEXIST) {
+                LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", newreport);
+                munmap(buf, fileSz);
+                close(srcfd);
+
+                return true;
+            } else {
+
+                LOGMSG_P(l_ERROR, "Couldn't create a report file '%s' in the current directory",
+                         newreport);
+                munmap(buf, fileSz);
+                close(srcfd);
+                return false;
+            }
+        }
+        if (files_writeToFd(dstfd, buf, fileSz) == false) {
+            LOGMSG_P(l_ERROR, "error copying crash report");
+        } else {
+            LOGMSG_P(l_DEBUG, "successfully copied crash report");
+        }
+        munmap(buf, fileSz);
+        close(srcfd);
+        close(dstfd);
+    } else {
+        /*
+         * report file not found and no PC available
+         */
+        char newname[PATH_MAX];
+        snprintf(newname, sizeof(newname), "%s.%d.%s.%s", arch_sigs[termsig].descr, pid,
+                 localtmstr, hfuzz->fileExtn);
+
+        LOGMSG(l_INFO, "Ok, that's interesting, saving the '%s' as '%s'",
+               hfuzz->fuzzers[idx].fileName, newname);
+
+        if (link(hfuzz->fuzzers[idx].fileName, newname) == -1) {
+            LOGMSG_P(l_ERROR, "Couldn't save '%s' as '%s'", hfuzz->fuzzers[idx].fileName, newname);
+        }
     }
+
     return true;
 }
 
