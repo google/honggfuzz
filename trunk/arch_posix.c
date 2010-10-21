@@ -81,7 +81,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
      * Boring, the process just exited
      */
     if (WIFEXITED(status)) {
-        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d", pid, WEXITSTATUS(status));
+        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d", pid,
+               WEXITSTATUS(status));
         return true;
     }
 
