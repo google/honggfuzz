@@ -4,6 +4,7 @@
    -----------------------------------------
 
    Author: Robert Swiecki <swiecki@google.com>
+           Felix Gröbert <groebert@google.com>
 
    Copyright 2010 by Google Inc. All Rights Reserved.
 
