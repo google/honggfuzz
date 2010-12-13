@@ -34,8 +34,7 @@
 #include "common.h"
 #include "log.h"
 
-void util_rndInit(void
-    )
+void util_rndInit(void)
 {
     struct timeval tv;
 
@@ -67,8 +66,7 @@ void util_getLocalTime(const char *fmt, char *buf, size_t len)
     strftime(buf, len, fmt, &ltime);
 }
 
-void util_nullifyStdio(void
-    )
+void util_nullifyStdio(void)
 {
     int fd = open("/dev/null", O_RDWR);
 
@@ -105,8 +103,7 @@ bool util_redirectStdin(char *inputFile)
     return true;
 }
 
-void util_recoverStdio(void
-    )
+void util_recoverStdio(void)
 {
     int fd = open("/dev/tty", O_RDWR);
 
