@@ -26,19 +26,16 @@
 
 #include <stdint.h>
 
-extern void util_rndInit(void
-    );
+extern void util_rndInit(void);
 
 extern uint32_t util_rndGet(uint32_t min, uint32_t max);
 
 extern void util_getLocalTime(const char *fmt, char *buf, size_t len);
 
-extern void util_nullifyStdio(void
-    );
+extern void util_nullifyStdio(void);
 
 extern bool util_redirectStdin(char *inputFile);
 
-extern void util_recoverStdio(void
-    );
+extern void util_recoverStdio(void);
 
 #endif
