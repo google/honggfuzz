@@ -43,27 +43,25 @@ _`*`) It might work provided that a given operating system implements the wait3(
 ----
 = USAGE =
 
-_$ honggfuzz -h_
 <pre>
-honggfuzz, version 0.1 Robert Swiecki <swiecki@google.com>, Copyright 2010 by Google Inc. 
-All Rights Reserved.
+_$ honggfuzz -h_
+
+honggfuzz, version 0.1 Robert Swiecki <swiecki@google.com>, Copyright 2010 by Google Inc. All Rights Reserved.
  <-f val>: input file (or input dir)
- [-h]: this help
- [-q]: null-ify children`'`s stdin, stdout, stderr, make them quiet
- [-s]: standard input fuzz, instead of providing a file argument
- [-u]: save only unique test-cases
- [-d val]: debug level (0 - FATAL ... 4 - DEBUG), default: 3 (INFO)
- [-e val]: file extension (e.g swf), default: hfuz
- [-r val]: flip rate, default: 0.001
- [-m val]: flip mode (-mB - byte, -mb - bit), default: -mB
- [-t val]: timeout (in secs), default: 3 (0 - no timeout)
- [-a val]: address limit (from si.si_addr) below which crashes are not reported,
-           default: 0 (suggested: 65535)
- [-n val]: number of concurrent fuzzing processes, default: 10
- [-l val]: per process memory limit in MiB, default: 0 (no limit)
- [-x val]: extend output filesize by val bytes: default: 0
- [-p val]: fill-in the extended file region with the val pattern
-           specified in hex, default: 0x41 ('A')
+ `[-h]`: this help
+ `[-q]`: null-ify children's stdin, stdout, stderr, make them quiet
+ `[-s]`: standard input fuzz, instead of providing a file argument
+ `[-u]`: save unique test-cases only
+ `[-d val]`: debug level (0 - FATAL ... 4 - DEBUG), default: '3' (INFO)
+ `[-e val]`: file extension (e.g swf), default: 'fuzz'
+ `[-r val]`: flip rate, default: '0.001'
+ `[-m val]`: flip mode (-mB - byte, -mb - bit), default: '-mB
+ `[-c val]`: command modifying input files externally (instead of -r/-m)
+ `[-t val]`: timeout (in secs), default: '3 (0 - no timeout)
+ `[-a val]`: address limit (from si.si_addr) below which crashes are not reported,
+           default: '0' (suggested: 65535)
+ `[-n val]`: number of concurrent fuzzing processes, default: '10'
+ `[-l val]`: per process memory limit in MiB, default: '0' (no limit)
 usage: honggfuzz -f input_dir -- /usr/bin/tiffinfo -D `___FILE___`
 </pre>
 ----
