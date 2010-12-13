@@ -1,6 +1,6 @@
 /*
 
-   honggfuzz - architecture dependent code
+   honggfuzz - architecture dependent code (MAC OS X)
    -----------------------------------------
 
    Author: Robert Swiecki <swiecki@google.com>

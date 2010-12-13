@@ -1,6 +1,6 @@
 /*
 
-   honggfuzz - architecture dependent code
+   honggfuzz - architecture dependent code (POSIX / SIGNAL)
    -----------------------------------------
 
    Author: Robert Swiecki <swiecki@google.com>
