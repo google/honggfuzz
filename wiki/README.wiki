@@ -1,6 +1,4 @@
 #labels Featured
-#sidebar TOCArticles
-
 ----
 <wiki:toc max_depth="10" />
 ----
