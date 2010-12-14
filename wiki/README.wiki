@@ -102,4 +102,4 @@ This project is licensed under the [http://www.apache.org/licenses/LICENSE-2.0 A
 = CREDITS =
 
  * Thanks to *[taviso@google.com Tavis Ormandy]* for many valuable ideas used in the course of this project's design and implementation phases
- * Thanks to my 1337 friends for all sorts of support and distraction :) - *LiquidK, lcamtuf, novocainated, asiraP, ScaryBeasts, redpig*
+ * Thanks to my 1337 friends for all sorts of support and distraction :) - *LiquidK, lcamtuf, novocainated, asiraP, ScaryBeasts, redpig, jln*
