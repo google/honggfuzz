@@ -22,10 +22,9 @@ Honggfuzz is a general-purpose fuzzing tool. Given a starting corpus of test fil
 = REQUIREMENTS =
 
   * A POSIX compilant operating system (See the compatibility list for more)
-  * The *libdasm-dev* library.
-  * The *[http://udis86.sourceforge.net/ udis86]* library. Note: Only necessary with Linux and Mac OS debugging APIs (x86/x86-64 CPU architectures).
-  * A corpus of input files. Hongfuzz expects a set of files to use and modify as input to the application you're fuzzing. How you get or create these files is up to you, but you might be interested in the following sources: 
-     * Images: Tavis Ormandy's [http://code.google.com/p/imagetestsuite/ Image Testuite] has been effective at finding vulnerabilities in various graphics libraries.
+  * The *[http://udis86.sourceforge.net/ udis86]* library. Note: Only necessary with x86/x86-64 CPU architectures.
+  * A corpus of input files. Honggfuzz expects a set of files to use and modify as input to the application you're fuzzing. How you get or create these files is up to you, but you might be interested in the following sources: 
+     * Image formats: Tavis Ormandy's [http://code.google.com/p/imagetestsuite/ Image Testuite] has been effective at finding vulnerabilities in various graphics libraries.
      * PDF: Adobe provides some [http://acroeng.adobe.com/ test PDF files].
 
 == Compatibility list ==
@@ -33,13 +32,13 @@ Honggfuzz is a general-purpose fuzzing tool. Given a starting corpus of test fil
 It should work under the following operating systems:
 
 || *OS* || *Status* || *Notes* ||
-|| *GNU/Linux* || Works || ptrace() API (disassembly support for x86, x86-64 architectures)||
+|| *GNU/Linux* || Works || ptrace() API (x86, x86-64 disassembly support)||
 || *FreeBSD* || Works || POSIX signal interface ||
-|| *Mac OS X* || Works || POSIX signal interface ||
+|| *Mac OS X* || Works || POSIX signal interface/Mac OS X crash reports (x86-64/x86 disassembly support) ||
 || *MS Windows* || Doesn't work || The POSIX signal implementation provided by the Cygwin project is not sufficient || 
-|| *Other unices* || Depends`*` || POSIX signal interface ||
+|| *Other Unices* || Depends`*` || POSIX signal interface ||
 
-_`*`) It might work provided that a given operating system implements the wait3() function_
+_`*`) It might work provided that a given operating system implements *wait3()* call_
 ----
 = USAGE =
 
@@ -71,14 +70,14 @@ usage: honggfuzz -f input_dir -- /usr/bin/tiffinfo -D ___FILE___
 || *Mode* || *Output file* ||
 || Unique mode (*-u*) || *SIGSEGV.PC.0x7ffff78c8f70.CODE.1.ADDR.0x6c9000.INSTR.mov`_``[`rdi+0x10`]`,`_`r9.ttf* ||
 || Non-unique mode || *SIGSEGV.PC.0x8056ad7.CODE.1.ADDR.0x30333037.INSTR.movsx_eax,`_``[`eax`]`.TIME.2010-06-07.02.25.04.PID.10097.ttf* ||
-|| When using the POSIX signal interface || *SIGSEGV.22758.2010-07-01.17.24.41.tif* ||
+|| POSIX signal interface || *SIGSEGV.22758.2010-07-01.17.24.41.tif* ||
 
 == Description ==
 
-  * *SIGSEGV*,*SIGILL*,*SIGBUS*,*SIGABRT*,*SIGFPE* - Description of a signal which terminated a process (when using ptrace() API it's a signal which was delivered to the process, even if gracefully handled by it)
-  * *PC.0x8056ad7* - Program Counter (PC) value (ptrace() API only), for x86 it's value of the EIP register, RIP for x86-64
-  * *CODE.1* - Value of the _siginfo`_`t.si`_`code_ field (see _man 2 signaction_ for more), valid only for some signals (SIGSEGV)
-  * *ADDR.0x30333037* - Value of the _siginfo`_`t.si`_`addr_ (see _man 2 signaction_ for more) (meaningless for SIGABRT)
+  * *SIGSEGV*,*SIGILL*,*SIGBUS*,*SIGABRT*,*SIGFPE* - Description of the signal which terminated the process (when using ptrace() API, it's a signal which was delivered to the process, even if silently discarded)
+  * *PC.0x8056ad7* - Program Counter (PC) value (ptrace() API only), for x86 it's a value of the EIP register (RIP for x86-64)
+  * *CODE.1* - Value of the _siginfo`_`t.si`_`code_ field (see _man 2 signaction_ for more details), valid for some signals (e.g. SIGSEGV) only
+  * *ADDR.0x30333037* - Value of the _siginfo`_`t.si`_`addr_ (see _man 2 signaction_ for more details) (most likely meaningless for SIGABRT)
   * *INSTR.movsx_eax,`_``[`eax`]`* - Disassembled instruction which was found under the last known PC (Program Counter) (x86, x86-64 architectures only, meaningless for SIGABRT)
   * *TIME.2010-06-07.02.25.04* - Local time when the signal was delivered
   * *PID.10097* - Fuzzing process' id (PID)
