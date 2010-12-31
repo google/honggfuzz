@@ -83,7 +83,7 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName)
 
     uint8_t *buf = files_mapFileToRead(hfuzz->files[rnd_index], &fileSz, &srcfd);
     if (buf == NULL) {
-        LOGMSG_P(l_ERROR, "Couldn't open and map '%s' in R/O mode", hfuzz->files[rnd_index]);
+        LOGMSG(l_ERROR, "Couldn't open and map '%s' in R/O mode", hfuzz->files[rnd_index]);
         return false;
     }
 
@@ -121,7 +121,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName)
 
     uint8_t *buf = files_mapFileToRead(hfuzz->files[rnd_index], &fileSz, &srcfd);
     if (buf == NULL) {
-        LOGMSG_P(l_ERROR, "Couldn't open and map '%s' in R/O mode", hfuzz->files[rnd_index]);
+        LOGMSG(l_ERROR, "Couldn't open and map '%s' in R/O mode", hfuzz->files[rnd_index]);
         return false;
     }
 
