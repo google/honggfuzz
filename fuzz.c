@@ -47,6 +47,11 @@
 
 static void fuzz_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, off_t fileSz)
 {
+    // Just copy the file if "-r 0"
+    if (hfuzz->flipRate == 0.0) {
+        return;
+    }
+
     uint64_t changesCnt = fileSz * hfuzz->flipRate;
 
     if (hfuzz->flipMode == 'b') {
@@ -68,8 +73,11 @@ static void fuzz_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, off_t fileSz)
 
 static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
 {
-    snprintf(fileName, PATH_MAX, ".honggfuzz.%lu.%d.%lu.%s",
-             (unsigned long int)time(NULL), getpid(),
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+
+    snprintf(fileName, PATH_MAX, ".honggfuzz.%d.%lu.%lu.%lu.%s", (int)getpid(),
+             (unsigned long int)tv.tv_sec, (unsigned long int)tv.tv_usec,
              (unsigned long int)util_rndGet(0, 1 << 30), hfuzz->fileExtn);
 
     return;
