@@ -47,7 +47,9 @@
 
 static void fuzz_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, off_t fileSz)
 {
-    // Just copy the file if "-r 0"
+    /*
+     * Just copy the file if "-r 0"
+     */
     if (hfuzz->flipRate == 0.0) {
         return;
     }
