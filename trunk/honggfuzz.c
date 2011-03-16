@@ -55,18 +55,19 @@ static void usage(void
     printf("%s",
            " <" AB "-f val" AC ">: input file (or input dir)\n"
            " [" AB "-h" AC "]: this help\n"
-           " [" AB "-q" AC "]: null-ify children's stdin, stdout, stderr, make them quiet\n"
+           " [" AB "-q" AC "]: null-ify children's stdin, stdout, stderr; make them quiet\n"
            " [" AB "-s" AC "]: standard input fuzz, instead of providing a file argument\n"
-           " [" AB "-u" AC "]: save unique test-cases only\n"
+           " [" AB "-u" AC "]: save unique test-cases only, otherwise (if not used) append\n"
+           "       current timestamp to the output filenames\n"
            " [" AB "-d val" AC "]: debug level (0 - FATAL ... 4 - DEBUG), default: '" AB "3" AC
            "' (INFO)\n" " [" AB "-e val" AC "]: file extension (e.g swf), default: '" AB "fuzz" AC
            "'\n" " [" AB "-r val" AC "]: flip rate, default: '" AB "0.001" AC "'\n" " [" AB "-m val"
            AC "]: flip mode (-mB - byte, -mb - bit), default: '" AB "-mB" AC "'\n" " [" AB "-c val"
            AC "]: command modifying input files externally (instead of -r/-m)\n" " [" AB "-t val" AC
            "]: timeout (in secs), default: '" AB "3" AC "' (0 - no timeout)\n" " [" AB "-a val" AC
-           "]: address limit (from si.si_addr) below which crashes are not reported,\n"
-           "           default: '" AB "0" AC "' (suggested: 65535)\n" " [" AB "-n val" AC
-           "]: number of concurrent fuzzing processes, default: '" AB "10" AC "'\n" " [-" AB "l val"
+           "]: address limit (from si.si_addr) below which crashes\n"
+           "           are not reported, default: '" AB "0" AC "' (suggested: 65535)\n" " [" AB "-n val" AC
+           "]: number of concurrent fuzzing processes, default: '" AB "5" AC "'\n" " [-" AB "l val"
            AC "]: per process memory limit in MiB, default: '" AB "0" AC "' (no limit)\n\n" "usage:"
            AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " FILE_PLACEHOLDER AC "\n");
     exit(EXIT_SUCCESS);
@@ -88,7 +89,7 @@ int main(int argc, char **argv)
     hfuzz.externalCommand = NULL;
     hfuzz.tmOut = 3;
     hfuzz.ignoreAddr = (void *)0UL;
-    hfuzz.threadsMax = 10;
+    hfuzz.threadsMax = 5;
     hfuzz.asLimit = 0UL;
     hfuzz.cmdline = NULL;
 
