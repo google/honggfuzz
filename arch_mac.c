@@ -104,7 +104,11 @@ bool arch_macFindCrashReportForPid(pid_t processPid, char *outbuf, size_t len, v
     util_getLocalTime("%Y-%m-%d-", now, sizeof(now));
 
     while ((dp = readdir(dirp)) != NULL) {
-        if (strnstr(dp->d_name, now, dp->d_namlen) != NULL) {
+        /*
+         * just consider files with the current date (now) and ending in "crash"
+         */
+        if (strnstr(dp->d_name, now, dp->d_namlen) != NULL &&
+            strstr(dp->d_name + strlen(dp->d_name) - strlen("crash"), "crash") != NULL) {
             snprintf(crashFile, sizeof(crashFile), "%s/%s", crashDir, dp->d_name);
             LOGMSG(l_DEBUG, "found crash %s", crashFile);
 
