@@ -75,7 +75,7 @@ static void usage(void
 
 int main(int argc, char **argv)
 {
-    char c;
+    int c;
     int ll = l_INFO;
     honggfuzz_t hfuzz;
 
