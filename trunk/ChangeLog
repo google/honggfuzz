@@ -1,0 +1,7 @@
+2011-06-02 - Version 0.2 (revision 26)
+        - MacOS fixes (parsing DiagnosticReports) - solves http://code.google.com/p/honggfuzz/issues/detail?id=2
+        - getopt() returns 'int' and not 'char' (could hang the process in a forever-loop)
+        - formatting changes
+        - updated comments/usage
+
+2010-12-13 - Initial release 0.1 (revision 13)
