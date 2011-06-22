@@ -28,4 +28,6 @@ extern bool arch_launchChild(honggfuzz_t * fuzz, char *fileName);
 
 extern pid_t arch_reapChild(honggfuzz_t * fuzz);
 
+extern bool arch_prepareParent(honggfuzz_t * hfuzz);
+
 #endif

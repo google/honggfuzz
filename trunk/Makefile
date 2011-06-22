@@ -34,6 +34,7 @@ SRCS = honggfuzz.c log.c files.c fuzz.c util.c
 ARCH_SRCS := arch_posix.c
 ifeq ($(OS),Linux)
 	LDFLAGS += -ludis86
+	CFLAGS += -D_HAVE_ARCH_PTRACE
 	ARCH_SRCS = arch_ptrace.c
 endif
 ifeq ($(OS),Darwin)

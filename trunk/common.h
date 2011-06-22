@@ -51,6 +51,7 @@ typedef struct {
     long threadsCnt;
     void *ignoreAddr;
     unsigned long asLimit;
+    int pid;
 
     char **files;
     int fileCnt;
