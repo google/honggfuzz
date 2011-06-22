@@ -69,6 +69,11 @@ void arch_initSigs(void
 
 static bool arch_enablePtrace(honggfuzz_t * hfuzz)
 {
+    // We're fuzzing an external process, so just return true
+    if (hfuzz->pid) {
+        return true;
+    }
+
     if (ptrace(PT_TRACE_ME, 0, 0, 0) == -1) {
         LOGMSG_P(l_FATAL, "Couldn't attach ptrace to pid %d", getpid());
         return false;
@@ -209,6 +214,22 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, int status)
 static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
 {
     /*
+     * It's our child which fuzzess our process (that we had attached to) finished, detach the main process
+     */
+    if (hfuzz->pid && (pid != hfuzz->pid)) {
+        if (WIFEXITED(status) || WIFSIGNALED(status)) {
+            LOGMSG_P(l_DEBUG, "Process pid: %d finished");
+	    kill(hfuzz->pid, SIGSTOP);
+        	int s;
+               while(waitpid(hfuzz->pid, &s, 0) != hfuzz->pid);
+            ptrace(PT_DETACH, hfuzz->pid, NULL, NULL);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /*
      * If it's an uninteresting signal (even SIGTRAP), let it run and relay the
      * signal (if not SIGTRAP)
      */
@@ -240,14 +261,22 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
      * Process exited normally, respect!
      */
     if (WIFEXITED(status)) {
-        return true;
+        if (hfuzz->pid) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     /*
      * Killed by signal, but we should already have it
      */
     if (WIFSIGNALED(status)) {
-        return true;
+        if (hfuzz->pid) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     abort();                    /* NOTREACHED */
@@ -398,4 +427,28 @@ pid_t arch_reapChild(honggfuzz_t * hfuzz)
     } else {
         return (-1);
     }
+}
+
+bool arch_prepareParent(honggfuzz_t * hfuzz)
+{
+    if (!hfuzz->pid) {
+        return true;
+    }
+
+    if (ptrace(PT_ATTACH, hfuzz->pid, NULL, NULL) == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't ptrace() ATTACH to pid: %d", hfuzz->pid);
+        return false;
+    }
+
+    int status;
+    while(waitpid(hfuzz->pid, &status, 0) != hfuzz->pid);
+
+    if (ptrace(PT_CONTINUE, hfuzz->pid, NULL, NULL) == -1) {
+	LOGMSG_P(l_ERROR, "Couldn't ptrace() CONTINUE pid: %d", hfuzz->pid);
+        ptrace(PT_DETACH, hfuzz->pid, 0, SIGCONT);
+        return false;
+    }
+
+    LOGMSG(l_DEBUG, "Successfully ptrace() ATTACH'd to pid: %d", hfuzz->pid);
+    return true;
 }

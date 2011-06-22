@@ -66,9 +66,14 @@ static void usage(void
            AC "]: command modifying input files externally (instead of -r/-m)\n" " [" AB "-t val" AC
            "]: timeout (in secs), default: '" AB "3" AC "' (0 - no timeout)\n" " [" AB "-a val" AC
            "]: address limit (from si.si_addr) below which crashes\n"
-           "           are not reported, default: '" AB "0" AC "' (suggested: 65535)\n" " [" AB "-n val" AC
-           "]: number of concurrent fuzzing processes, default: '" AB "5" AC "'\n" " [-" AB "l val"
-           AC "]: per process memory limit in MiB, default: '" AB "0" AC "' (no limit)\n\n" "usage:"
+           "           are not reported, default: '" AB "0" AC "' (suggested: 65535)\n" " [" AB
+           "-n val" AC "]: number of concurrent fuzzing processes, default: '" AB "5" AC "'\n" " [-"
+           AB "l val" AC "]: per process memory limit in MiB, default: '" AB "0" AC "' (no limit)\n"
+#ifdef _HAVE_ARCH_PTRACE
+           " [" AB "-p val" AC
+           "]: attach to a pid, instead of monitoring created process (default: none)\n"
+#endif                          /* _HAVE_ARCH_PTRACE */
+           "usage:"
            AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " FILE_PLACEHOLDER AC "\n");
     exit(EXIT_SUCCESS);
 }
@@ -92,6 +97,7 @@ int main(int argc, char **argv)
     hfuzz.threadsMax = 5;
     hfuzz.asLimit = 0UL;
     hfuzz.cmdline = NULL;
+    hfuzz.pid = 0;
 
     hfuzz.files = NULL;
     hfuzz.threadsCnt = 0;
@@ -103,7 +109,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "hqsuf:d:e:r:m:c:t:a:n:l:");
+        c = getopt(argc, argv, "hqsuf:d:e:r:m:c:t:a:n:l:p:");
         if (c < 0)
             break;
 
@@ -150,6 +156,9 @@ int main(int argc, char **argv)
         case 'l':
             hfuzz.asLimit = strtoul(optarg, NULL, 10);
             break;
+        case 'p':
+            hfuzz.pid = atoi(optarg);
+            break;
         default:
             break;
         }
@@ -171,6 +180,11 @@ int main(int argc, char **argv)
         usage();
     }
 
+    if (hfuzz.pid) {
+        LOGMSG(l_INFO, "External PID specified, concurrency disabled");
+	hfuzz.threadsMax = 1;
+    }
+
     if (strchr(hfuzz.fileExtn, '/')) {
         LOGMSG(l_FATAL, "The file extension contains the '/' character: '%s'", hfuzz.fileExtn);
         usage();
@@ -179,11 +193,12 @@ int main(int argc, char **argv)
     LOGMSG(l_INFO,
            "debugLevel: %d, inputFile '%s', nullifyStdio: %d, fuzzStdin: %d, saveUnique: %d, flipRate: %lf, "
            "flipMode: '%c', externalCommand: '%s', tmOut: %ld, threadsMax: %ld, fileExtn '%s', ignoreAddr: %p, "
-           "memoryLimit: %lu (MiB), fuzzExe: '%s',",
+           "memoryLimit: %lu (MiB), fuzzExe: '%s', fuzzedPid: %d",
            ll, hfuzz.inputFile, hfuzz.nullifyStdio ? 1 : 0,
            hfuzz.fuzzStdin ? 1 : 0, hfuzz.saveUnique ? 1 : 0, hfuzz.flipRate, hfuzz.flipMode,
            hfuzz.externalCommand == NULL ? "NULL" : hfuzz.externalCommand, hfuzz.tmOut,
-           hfuzz.threadsMax, hfuzz.fileExtn, hfuzz.ignoreAddr, hfuzz.asLimit, hfuzz.cmdline[0]);
+           hfuzz.threadsMax, hfuzz.fileExtn, hfuzz.ignoreAddr, hfuzz.asLimit, hfuzz.cmdline[0],
+           hfuzz.pid);
 
     if (!(hfuzz.fuzzers = malloc(sizeof(hfuzz.fuzzers[0]) * hfuzz.threadsMax))) {
         LOGMSG_P(l_FATAL, "Couldn't allocate memory");
