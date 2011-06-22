@@ -65,13 +65,11 @@ void log_msg(log_level_t dl,
 
     char strerr[512];
     if (perr) {
-        strerror_r(errno, strerr, sizeof(strerr));
+        snprintf(strerr, sizeof(strerr), "%s", strerror(errno));
     }
 
     if (dl > log_minLevel)
         return;
-
-    printf("%s", logLevels[dl].prefix);
 
     struct tm tm;
     struct timeval tv;
