@@ -220,7 +220,7 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, int status)
 static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
 {
     /*
-     * It's our child which fuzzess our process (that we had attached to) finished, detach the main process
+     * It's our child which fuzzess our process (that we had attached to) finished
      */
     if (hfuzz->pid && (pid != hfuzz->pid)) {
         if (WIFEXITED(status) || WIFSIGNALED(status)) {
@@ -237,7 +237,6 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
      */
     if (WIFSTOPPED(status) && !arch_sigs[WSTOPSIG(status)].important) {
         int sig = WSTOPSIG(status) == SIGTRAP ? 0 : WSTOPSIG(status);
-
         ptrace(PT_CONTINUE, pid, 0, sig);
         return false;
     }
@@ -248,7 +247,7 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
      */
     if (WIFSTOPPED(status) && arch_sigs[WSTOPSIG(status)].important) {
         arch_savePtraceData(hfuzz, pid, status);
-        ptrace(PT_DETACH, pid, 0, WSTOPSIG(status));
+        ptrace(PT_CONTINUE, pid, 0, WSTOPSIG(status));
         return false;
     }
 
@@ -260,25 +259,14 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
     }
 
     /*
-     * Process exited normally, respect!
+     * Process exited
      */
-    if (WIFEXITED(status)) {
-        if (hfuzz->pid) {
-            return false;
-        } else {
-            return true;
+    if (WIFEXITED(status) || WIFSIGNALED(status)) {
+        if (hfuzz->pid && pid == hfuzz->pid) {
+          LOGMSG(l_WARN, "Monitored process PID: %d finished", pid);
+          exit(EXIT_SUCCESS);
         }
-    }
-
-    /*
-     * Killed by signal, but we should already have it
-     */
-    if (WIFSIGNALED(status)) {
-        if (hfuzz->pid) {
-            return false;
-        } else {
-            return true;
-        }
+        return true;
     }
 
     abort();                    /* NOTREACHED */
