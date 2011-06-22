@@ -18,16 +18,16 @@
 #   limitations under the License.
 
 
-CC ?= gcc
-CFLAGS ?= -O3 -g -ggdb -c -std=c99 -I. -I/usr/local/include -I/usr/include \
+CC = gcc
+CFLAGS = -O3 -g -ggdb -c -std=c99 -I. -I/usr/local/include -I/usr/include \
 	-D_GNU_SOURCE \
 	-pedantic \
 	-Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized -Wcast-align \
 	-Wreturn-type -Wpointer-arith
 
-LD := gcc
-LDFLAGS ?= -lm -L/usr/local/include -L/usr/include
-OS ?= $(shell uname -s)
+LD = gcc
+LDFLAGS = -lm -L/usr/local/include -L/usr/include
+OS = $(shell uname -s)
 
 SRCS = honggfuzz.c log.c files.c fuzz.c util.c
 

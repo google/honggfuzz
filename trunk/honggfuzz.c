@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 
     if (hfuzz.pid) {
         LOGMSG(l_INFO, "External PID specified, concurrency disabled");
-	hfuzz.threadsMax = 1;
+        hfuzz.threadsMax = 1;
     }
 
     if (strchr(hfuzz.fileExtn, '/')) {
