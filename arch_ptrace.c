@@ -174,6 +174,12 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, int status)
            pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
 
     int idx = HF_SLOT(hfuzz, pid);
+    // If we're checkign state of an external process, then the idx is 0 (cause
+    // there's not concurrency)
+    if (hfuzz->pid) {
+      idx = 0;
+    }
+
     if (si.si_addr < hfuzz->ignoreAddr) {
         LOGMSG(l_INFO,
                "'%s' is interesting (%s), but the si.si_addr is %p (below %p), skipping",
@@ -219,10 +225,6 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
     if (hfuzz->pid && (pid != hfuzz->pid)) {
         if (WIFEXITED(status) || WIFSIGNALED(status)) {
             LOGMSG_P(l_DEBUG, "Process pid: %d finished");
-	    kill(hfuzz->pid, SIGSTOP);
-        	int s;
-               while(waitpid(hfuzz->pid, &s, 0) != hfuzz->pid);
-            ptrace(PT_DETACH, hfuzz->pid, NULL, NULL);
             return true;
         } else {
             return false;
@@ -441,10 +443,10 @@ bool arch_prepareParent(honggfuzz_t * hfuzz)
     }
 
     int status;
-    while(waitpid(hfuzz->pid, &status, 0) != hfuzz->pid);
+    while (waitpid(hfuzz->pid, &status, 0) != hfuzz->pid) ;
 
     if (ptrace(PT_CONTINUE, hfuzz->pid, NULL, NULL) == -1) {
-	LOGMSG_P(l_ERROR, "Couldn't ptrace() CONTINUE pid: %d", hfuzz->pid);
+        LOGMSG_P(l_ERROR, "Couldn't ptrace() CONTINUE pid: %d", hfuzz->pid);
         ptrace(PT_DETACH, hfuzz->pid, 0, SIGCONT);
         return false;
     }

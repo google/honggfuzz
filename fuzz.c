@@ -218,10 +218,6 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
     int i = HF_SLOT(hfuzz, 0);
 
     fuzz_getFileName(hfuzz, hfuzz->fuzzers[i].fileName);
-    if (!arch_prepareParent(hfuzz)) {
-        LOGMSG(l_FATAL, "Couldn't prepare parent for fuzzing");
-        exit(EXIT_FAILURE);
-    }
 
     pid_t pid = fork();
 
@@ -268,11 +264,15 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
 
 void fuzz_main(honggfuzz_t * hfuzz)
 {
+    if (!arch_prepareParent(hfuzz)) {
+        LOGMSG(l_FATAL, "Couldn't prepare parent for fuzzing");
+        exit(EXIT_FAILURE);
+    }
+
     for (;;) {
         while (hfuzz->threadsCnt < hfuzz->threadsMax) {
             fuzz_runNext(hfuzz);
         }
-
         fuzz_reapChild(hfuzz);
     }
 }
