@@ -71,7 +71,8 @@ static void usage(void
            AB "l val" AC "]: per process memory limit in MiB, default: '" AB "0" AC "' (no limit)\n"
 #ifdef _HAVE_ARCH_PTRACE
            " [" AB "-p val" AC
-           "]: attach to a pid, instead of monitoring created process (default: none)\n"
+           "]: attach to a pid, instead of monitoring previously created\n"
+           "           process, default: '" AB "0" AC "' (none)\n"
 #endif                          /* _HAVE_ARCH_PTRACE */
            "usage:"
            AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " FILE_PLACEHOLDER AC "\n");
