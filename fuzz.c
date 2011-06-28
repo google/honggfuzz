@@ -196,15 +196,13 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName)
 static void fuzz_reapChild(honggfuzz_t * hfuzz)
 {
     pid_t pid = arch_reapChild(hfuzz);
-
     if (pid <= 0) {
         return;
     }
 
     int idx = HF_SLOT(hfuzz, pid);
-
+    // Might be a process we are attached to
     if (idx == -1) {
-        LOGMSG(l_WARN, "A process of pid %d finished, but it's not our child. It's magic!", pid);
         return;
     }
 

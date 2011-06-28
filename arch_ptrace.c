@@ -28,6 +28,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -177,7 +178,7 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, int status)
     // If we're checkign state of an external process, then the idx is 0 (cause
     // there's not concurrency)
     if (hfuzz->pid) {
-      idx = 0;
+        idx = 0;
     }
 
     if (si.si_addr < hfuzz->ignoreAddr) {
@@ -263,8 +264,8 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
      */
     if (WIFEXITED(status) || WIFSIGNALED(status)) {
         if (hfuzz->pid && pid == hfuzz->pid) {
-          LOGMSG(l_WARN, "Monitored process PID: %d finished", pid);
-          exit(EXIT_SUCCESS);
+            LOGMSG(l_WARN, "Monitored process PID: %d finished", pid);
+            exit(EXIT_SUCCESS);
         }
         return true;
     }
@@ -402,9 +403,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 pid_t arch_reapChild(honggfuzz_t * hfuzz)
 {
     int status;
-    struct rusage ru;
-
-    pid_t pid = wait3(&status, 0, &ru);
+    pid_t pid = waitpid(-1, &status, __WALL);
     if (pid <= 0) {
         return pid;
     }
@@ -419,26 +418,81 @@ pid_t arch_reapChild(honggfuzz_t * hfuzz)
     }
 }
 
+static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
+{
+    size_t count = 0;
+    char path[512];
+    snprintf(path, sizeof(path), "/proc/%d/task", pid);
+    DIR *dir = opendir(path);
+    if (!dir) {
+        LOGMSG_P(l_ERROR, "Couldn't open dir '%s'", path);
+        return false;
+    }
+
+    for (;;) {
+        struct dirent de, *res;
+        if (readdir_r(dir, &de, &res) > 0) {
+            LOGMSG_P(l_ERROR, "Couldn't read contents of '%s'", path);
+            closedir(dir);
+            return false;
+        }
+
+        if (res == NULL) {
+            break;
+        }
+
+        pid_t pid = (pid_t) strtol(res->d_name, (char **)NULL, 10);
+        if (pid == 0) {
+            LOGMSG(l_DEBUG, "The following dir entry couldn't be converted to pid_t '%s'",
+                   res->d_name);
+            continue;
+        }
+
+        tasks[count++] = pid;
+        LOGMSG(l_DEBUG, "Added pid '%d' from '%s/%s'", pid, path, res->d_name);
+
+        if (count >= thrSz) {
+            break;
+        }
+    }
+    closedir(dir);
+    LOGMSG_P(l_DEBUG, "Total number of threads in pid '%d': '%d'", pid, count);
+    tasks[count + 1] = 0;
+    if (count < 1) {
+        return false;
+    }
+    return true;
+}
+
 bool arch_prepareParent(honggfuzz_t * hfuzz)
 {
     if (!hfuzz->pid) {
         return true;
     }
-
-    if (ptrace(PT_ATTACH, hfuzz->pid, NULL, NULL) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't ptrace() ATTACH to pid: %d", hfuzz->pid);
+#define MAX_THREAD_IN_TASK 4096
+    int tasks[MAX_THREAD_IN_TASK + 1];
+    tasks[MAX_THREAD_IN_TASK] = 0;
+    if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, hfuzz->pid)) {
+        LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", hfuzz->pid);
         return false;
     }
 
-    int status;
-    while (waitpid(hfuzz->pid, &status, 0) != hfuzz->pid) ;
+    for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
+        if (ptrace(PT_ATTACH, tasks[i], NULL, NULL) == -1) {
+            LOGMSG_P(l_ERROR, "Couldn't ptrace() ATTACH to pid: %d", tasks[i]);
+            return false;
+        }
 
-    if (ptrace(PT_CONTINUE, hfuzz->pid, NULL, NULL) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't ptrace() CONTINUE pid: %d", hfuzz->pid);
-        ptrace(PT_DETACH, hfuzz->pid, 0, SIGCONT);
-        return false;
+        int status;
+        while (waitpid(tasks[i], &status, WUNTRACED | __WALL) != tasks[i]) ;
+
+        if (ptrace(PT_CONTINUE, tasks[i], NULL, NULL) == -1) {
+            LOGMSG_P(l_ERROR, "Couldn't ptrace() CONTINUE pid: %d", tasks[i]);
+            ptrace(PT_DETACH, tasks[i], 0, SIGCONT);
+            return false;
+        }
+
+        LOGMSG(l_INFO, "Successfully ptrace() ATTACH'd to pid: %d", tasks[i]);
     }
-
-    LOGMSG(l_DEBUG, "Successfully ptrace() ATTACH'd to pid: %d", hfuzz->pid);
     return true;
 }
