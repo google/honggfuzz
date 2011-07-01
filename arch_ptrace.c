@@ -226,7 +226,8 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
     /*
      * It's our child which fuzzess our process (that we had attached to) finished
      */
-    if (hfuzz->pid && (pid != hfuzz->pid)) {
+    int idx = HF_SLOT(hfuzz, pid);
+    if (hfuzz->pid && idx != -1) {
         if (WIFEXITED(status) || WIFSIGNALED(status)) {
             LOGMSG_P(l_DEBUG, "Process pid: %d finished");
             return true;
@@ -266,7 +267,7 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
      * Process exited
      */
     if (WIFEXITED(status) || WIFSIGNALED(status)) {
-        if (hfuzz->pid && pid == hfuzz->pid) {
+        if (hfuzz->pid && idx == -1) {
             LOGMSG(l_WARN, "Monitored process PID: %d finished", pid);
             exit(EXIT_SUCCESS);
         }
