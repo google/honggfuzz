@@ -267,7 +267,7 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
      * Process exited
      */
     if (WIFEXITED(status) || WIFSIGNALED(status)) {
-        if (hfuzz->pid && idx == -1) {
+        if (hfuzz->pid && pid == hfuzz->pid) {
             LOGMSG(l_WARN, "Monitored process PID: %d finished", pid);
             exit(EXIT_SUCCESS);
         }
