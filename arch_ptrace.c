@@ -37,7 +37,9 @@
 #include <ctype.h>
 #include <sys/ptrace.h>
 #include <sys/user.h>
+#if defined(__i386__) || defined(__x86_64__)
 #include <udis86.h>
+#endif
 
 #include "common.h"
 #include "log.h"
@@ -175,8 +177,9 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, int status)
            pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
 
     int idx = HF_SLOT(hfuzz, pid);
+
     // If we're checkign state of an external process, then the idx is 0 (cause
-    // there's not concurrency)
+    // there's no concurrency)
     if (hfuzz->pid) {
         idx = 0;
     }
