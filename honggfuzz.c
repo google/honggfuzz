@@ -71,8 +71,8 @@ static void usage(void
            AB "l val" AC "]: per process memory limit in MiB, default: '" AB "0" AC "' (no limit)\n"
 #ifdef _HAVE_ARCH_PTRACE
            " [" AB "-p val" AC
-           "]: attach to a pid, instead of monitoring previously created\n"
-           "           process, default: '" AB "0" AC "' (none)\n"
+           "]: attach to a pid (a group thread), instead of monitoring\n"
+           "           previously created process, default: '" AB "0" AC "' (none)\n"
 #endif                          /* _HAVE_ARCH_PTRACE */
            "usage:"
            AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " FILE_PLACEHOLDER AC "\n");
@@ -103,7 +103,7 @@ int main(int argc, char **argv)
     hfuzz.files = NULL;
     hfuzz.threadsCnt = 0;
 
-    printf("\033[1m" PROG_NAME ", version " PROG_VERSION " " PROG_AUTHORS "\033[0m\n");
+    printf(AB PROG_NAME " version " PROG_VERSION " " PROG_AUTHORS AC "\n");
     if (argc < 2) {
         usage();
         exit(EXIT_SUCCESS);
@@ -176,8 +176,8 @@ int main(int argc, char **argv)
 
     if (!hfuzz.fuzzStdin && !checkFor_FILE_PLACEHOLDER(hfuzz.cmdline)) {
         LOGMSG(l_FATAL,
-               "You must specify " FILE_PLACEHOLDER
-               " when the -s (stdin fuzzing) option is not set");
+               "You must specify '" FILE_PLACEHOLDER
+               "' when the -s (stdin fuzzing) option is not set");
         usage();
     }
 

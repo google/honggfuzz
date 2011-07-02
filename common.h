@@ -31,7 +31,7 @@
 #include <limits.h>
 
 #define PROG_NAME "honggfuzz"
-#define PROG_VERSION "0.1"
+#define PROG_VERSION "0.3"
 #define PROG_AUTHORS "Robert Swiecki <swiecki@google.com>, Copyright 2010 by Google Inc. All Rights Reserved."
 
 #define FILE_PLACEHOLDER "___FILE___"
