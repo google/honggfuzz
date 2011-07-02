@@ -1,3 +1,8 @@
+2011-07-02 - Version 0.3 (revision 37)
+        - Honggfuzz now allows attaching to an external process (-p) (Linux only)
+        - -f no longer required when -c (external command) is specified
+        - Smaller fixes (typos)
+
 2011-06-02 - Version 0.2 (revision 26)
         - MacOS fixes (parsing DiagnosticReports) - solves http://code.google.com/p/honggfuzz/issues/detail?id=2
         - getopt() returns 'int' and not 'char' (could hang the process in a forever-loop)
