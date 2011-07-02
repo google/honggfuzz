@@ -129,31 +129,36 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName)
     off_t fileSz;
     int srcfd;
 
-    uint8_t *buf = files_mapFileToRead(hfuzz->files[rnd_index], &fileSz, &srcfd);
-    if (buf == NULL) {
-        LOGMSG(l_ERROR, "Couldn't open and map '%s' in R/O mode", hfuzz->files[rnd_index]);
-        return false;
-    }
-
-    LOGMSG(l_DEBUG, "Mmaped '%s' in R/O mode, size: %d", hfuzz->files[rnd_index], fileSz);
-
     int dstfd = open(fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
     if (dstfd == -1) {
         LOGMSG_P(l_ERROR, "Couldn't create a temporary file '%s' in the current directory",
                  fileName);
+        return false;
+    }
+
+    LOGMSG(l_DEBUG, "Created '%f' as an input file", fileName);
+
+    if (hfuzz->inputFile) {
+        uint8_t *buf = files_mapFileToRead(hfuzz->files[rnd_index], &fileSz, &srcfd);
+        if (buf == NULL) {
+            LOGMSG(l_ERROR, "Couldn't open and map '%s' in R/O mode", hfuzz->files[rnd_index]);
+            close(dstfd);
+            return false;
+        }
+
+        LOGMSG(l_DEBUG, "Mmaped '%s' in R/O mode, size: %d", hfuzz->files[rnd_index], fileSz);
+
+        bool ret = files_writeToFd(dstfd, buf, fileSz);
         munmap(buf, fileSz);
         close(srcfd);
-        return false;
+
+        if (!ret) {
+            close(dstfd);
+            return false;
+        }
     }
 
-    bool ret = files_writeToFd(dstfd, buf, fileSz);
-    munmap(buf, fileSz);
-    close(srcfd);
     close(dstfd);
-
-    if (!ret) {
-        return false;
-    }
 
     pid_t pid = fork();
     if (pid == -1) {

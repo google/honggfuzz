@@ -496,7 +496,7 @@ bool arch_prepareParent(honggfuzz_t * hfuzz)
             return false;
         }
 
-        LOGMSG(l_INFO, "Successfully ptrace() ATTACH'd to pid: %d", tasks[i]);
+        LOGMSG(l_INFO, "Successfully attached to pid/tid: %d", tasks[i]);
     }
     return true;
 }

@@ -29,17 +29,25 @@
 #include <time.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "common.h"
 #include "log.h"
 
 int log_minLevel;
+bool log_isStdioTTY;
 
+#define STDOUT_FD 1
 __attribute__ ((constructor))
 void log_init(void
     )
 {
     log_minLevel = l_INFO;
+    if (isatty(STDOUT_FD)) {
+        log_isStdioTTY = true;
+    } else {
+        log_isStdioTTY = false;
+    }
 }
 
 void log_setMinLevel(log_level_t dl)
@@ -77,9 +85,11 @@ void log_msg(log_level_t dl,
     gettimeofday(&tv, NULL);
     localtime_r((const time_t *)&tv.tv_sec, &tm);
 
-    printf("%s", logLevels[dl].prefix);
+    if (log_isStdioTTY) {
+        printf("%s", logLevels[dl].prefix);
+    }
 
-    if (log_minLevel >= l_DEBUG) {
+    if (log_minLevel >= l_DEBUG || !log_isStdioTTY) {
         printf
             ("%s %d/%02d/%02d %02d:%02d:%02d (%s:%s %d) ",
              logLevels[dl].descr, tm.tm_year + 1900, tm.tm_mon + 1,
@@ -97,6 +107,10 @@ void log_msg(log_level_t dl,
         printf(": %s", strerr);
     }
 
-    printf("\033[0m\n");
+    if (log_isStdioTTY) {
+        printf("\033[0m");
+    }
+
+    printf("\n");
     fflush(stdout);
 }
