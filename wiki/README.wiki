@@ -65,6 +65,9 @@ honggfuzz version 0.3 Robert Swiecki <swiecki@google.com>, Copyright 2010 by Goo
            previously created process, default: '0' (none) (ptrace only)
 usage: honggfuzz -f input_dir -- /usr/bin/tiffinfo -D ___FILE___
 }}}
+
+Honggfuzz offers simple file mutation algorithm only (bits/bytes). This [ExternalFuzzerUsage document] explains how to use an external command to create fuzzing input.
+
 ----
 = OUTPUT FILES =
    
