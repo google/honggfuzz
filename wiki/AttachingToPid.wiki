@@ -1,15 +1,15 @@
-#summary Attaching to an external process (Apache)
+#summary Attaching to an external process (Apache Web Server)
 #labels Featured
 
 = Introduction =
 
 This page described how to use honggfuzz in batch mode. The simplest example would be Apache Web Server, which cannot be restarted every time we want to send new input, for performance reasons.
 
-Note: This currently works only with Linux OS.
+_Note: This currently works with Linux OS only_
 
 = What we need =
 
-We need to choose what we actually want to fuzz. In our case it'd be HTTP headers. We need to create a fuzzing tool which will create those headers and then we'll use netcat (/bin/nc) to send it to Apache Web Server. I created my own tool (headerfuzz), it will create output which looks like
+We need to choose what we actually want to fuzz. In this example it'd be HTTP header parser of Apache WS. We need to create a fuzzing tool which will create those headers and then we'll use netcat (_/bin/nc_) to send it to the Apach. I had created my own tool (_headfuzz_), it will create output which looks like:
 
 {{{
 GET (Orig-Uri) HTTP/1.0
@@ -20,11 +20,11 @@ Date: "application/x-gzip"
 ABC
 }}}
 
-In order to attach to a given PID we'll use the *-p* flag. Note that honggfuzz supports to threads as well; in other words it will attach to every thread in the same thread group (_ls /proc/pid/task_).
+In order to attach to a given PID we'll use the *-p* flag. Note that honggfuzz supports attaching to threads as well; in other words, it will attach to every thread in the same thread group (_ls /proc/pid/task_).
 
-= Start Apache =
+= Start Apache WS =
 
-We need to run in debug mode, to it doesn't spawn child processes (-X flag)
+We need to run in debug mode, so it doesn't spawn child processes (-X flag)
 
 {{{
 # APACHE_RUN_USER=www-data APACHE_RUN_GROUP=www-data apache2 -k start -X
