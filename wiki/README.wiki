@@ -84,7 +84,7 @@ Honggfuzz offers simple file mutation algorithm only (bits/bytes). This [Externa
   * *ADDR.0x30333037* - Value of the _siginfo`_`t.si`_`addr_ (see _man 2 signaction_ for more details) (most likely meaningless for SIGABRT)
   * *INSTR.movsx_eax,`_``[`eax`]`* - Disassembled instruction which was found under the last known PC (Program Counter) (x86, x86-64 architectures only, meaningless for SIGABRT)
   * *TIME.2010-06-07.02.25.04* - Local time when the signal was delivered
-  * *PID.10097* - Fuzzing process' id (PID) (See [AttachingToPid] for more]
+  * *PID.10097* - Fuzzing process' id (PID) (See [AttachingToPid] for more)
 
 ----
 = FAQ =
