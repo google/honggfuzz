@@ -1,4 +1,5 @@
 #summary This page explains how you can use an external fuzzer in honggfuzz.
+#labels Featured
 
 = Introduction =
 
