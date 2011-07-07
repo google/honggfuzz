@@ -14,13 +14,13 @@ We need to choose what we actually want to fuzz. In our case it'd be HTTP header
 {{{
 GET (Orig-Uri) HTTP/1.0
 private: expires=application/x-zip-compressed
-HTTP/144444444444444444444444444.2: Proxy-Authorization
--1: "application/x-gzip"
+Proxy-Authorization: HTTP/144444444444444444444444444.2
+Date: "application/x-gzip"
 
 ABC
 }}}
 
-To attach to a given PID we'll use '-p' flag. Note that honggfuzz supports to threads as well; in other words it will attach to every thread in the same thread group.
+In order to attach to a given PID we'll use the *-p* flag. Note that honggfuzz supports to threads as well; in other words it will attach to every thread in the same thread group (_ls /proc/pid/task_).
 
 = Start Apache =
 
@@ -35,7 +35,7 @@ We need to run in debug mode, to it doesn't spawn child processes (-X flag)
 We'll use _-s_ flag to send contents of the fuzz to the standard input of _/bin/nc_
 
 {{{
-# /tmp/honggfuzz -c ./headfuzz -s -p `pidof apache2` -- /bin/nc 127.0.0.1 80
+# ./honggfuzz -c ./headfuzz -s -p `pidof apache2` -- /bin/nc 127.0.0.1 80
 honggfuzz version 0.3 Robert Swiecki <swiecki@google.com>, Copyright 2010 by Google Inc. All Rights Reserved.
 [INFO] External PID specified, concurrency disabled
 [INFO] debugLevel: 3, inputFile '(null)', nullifyStdio: 0, fuzzStdin: 1, saveUnique: 0, flipRate: 0.001000, flipMode: 'B', externalCommand: './headfuzz', tmOut: 3, threadsMax: 1, fileExtn 'fuzz', ignoreAddr: (nil), memoryLimit: 0 (MiB), fuzzExe: '/bin/nc', fuzzedPid: 9378
