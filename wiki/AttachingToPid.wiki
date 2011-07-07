@@ -1,8 +1,10 @@
-#summary Attaching to an an external process (Apache)
+#summary Attaching to an external process (Apache)
 
 = Introduction =
 
-This page described how to use honggfuzz in batch mode. The simplest example would be Apache Web Server, which cannot be started every time for performance reasons.
+This page described how to use honggfuzz in batch mode. The simplest example would be Apache Web Server, which cannot be restarted every time we want to send new input, for performance reasons.
+
+Note: This currently works only with Linux OS.
 
 = What we need =
 
@@ -16,6 +18,8 @@ HTTP/144444444444444444444444444.2: Proxy-Authorization
 
 ABC
 }}}
+
+To attach to a given PID we'll use '-p' flag. Note that honggfuzz supports to threads as well; in other words it will attach to every thread in the same thread group.
 
 = Start Apache =
 
