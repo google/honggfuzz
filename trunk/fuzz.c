@@ -275,6 +275,21 @@ void fuzz_main(honggfuzz_t * hfuzz)
     for (;;) {
         while (hfuzz->threadsCnt < hfuzz->threadsMax) {
             fuzz_runNext(hfuzz);
+
+            if (hfuzz->mutationsMax != 0) {
+                /* We just want a limited number of mutations */
+                hfuzz->mutationsCnt++;
+
+                if (hfuzz->mutationsCnt >= hfuzz->mutationsMax) {
+                    LOGMSG(l_INFO, "Waiting for childs and exiting.");
+
+                    while (hfuzz->threadsCnt != 0) {
+                        fuzz_reapChild(hfuzz);
+                    }
+                    LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
+                    exit(EXIT_SUCCESS);
+                }
+            }
         }
         fuzz_reapChild(hfuzz);
     }

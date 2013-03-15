@@ -47,6 +47,8 @@ typedef struct {
     char flipMode;
     char *externalCommand;
     long tmOut;
+    long mutationsMax;
+    long mutationsCnt;
     long threadsMax;
     long threadsCnt;
     void *ignoreAddr;
