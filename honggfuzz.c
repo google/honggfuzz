@@ -66,8 +66,10 @@ static void usage(void
            AC "]: command modifying input files externally (instead of -r/-m)\n" " [" AB "-t val" AC
            "]: timeout (in secs), default: '" AB "3" AC "' (0 - no timeout)\n" " [" AB "-a val" AC
            "]: address limit (from si.si_addr) below which crashes\n"
-           "           are not reported, default: '" AB "0" AC "' (suggested: 65535)\n" " [" AB
-           "-n val" AC "]: number of concurrent fuzzing processes, default: '" AB "5" AC "'\n" " [-"
+           "           are not reported, default: '" AB "0" AC "' (suggested: 65535)\n"
+           " [" AB "-n val" AC "]: number of concurrent fuzzing processes, default: '" AB "5" AC "'\n"
+           " [" AB "-N val" AC "]: number of fuzzing mutations, default: '" AB "0" AC "' (infintive)\n"
+           " [-"
            AB "l val" AC "]: per process memory limit in MiB, default: '" AB "0" AC "' (no limit)\n"
 #ifdef _HAVE_ARCH_PTRACE
            " [" AB "-p val" AC
@@ -95,6 +97,8 @@ int main(int argc, char **argv)
     hfuzz.externalCommand = NULL;
     hfuzz.tmOut = 3;
     hfuzz.ignoreAddr = (void *)0UL;
+    hfuzz.mutationsMax = 0;
+    hfuzz.mutationsCnt = 0;
     hfuzz.threadsMax = 5;
     hfuzz.asLimit = 0UL;
     hfuzz.cmdline = NULL;
@@ -110,7 +114,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "hqsuf:d:e:r:m:c:t:a:n:l:p:");
+        c = getopt(argc, argv, "hqsuf:d:e:r:m:c:t:a:n:N:l:p:");
         if (c < 0)
             break;
 
@@ -154,6 +158,9 @@ int main(int argc, char **argv)
         case 'n':
             hfuzz.threadsMax = atol(optarg);
             break;
+        case 'N':
+            hfuzz.mutationsMax = atol(optarg);
+            break;
         case 'l':
             hfuzz.asLimit = strtoul(optarg, NULL, 10);
             break;
@@ -193,12 +200,12 @@ int main(int argc, char **argv)
 
     LOGMSG(l_INFO,
            "debugLevel: %d, inputFile '%s', nullifyStdio: %d, fuzzStdin: %d, saveUnique: %d, flipRate: %lf, "
-           "flipMode: '%c', externalCommand: '%s', tmOut: %ld, threadsMax: %ld, fileExtn '%s', ignoreAddr: %p, "
+           "flipMode: '%c', externalCommand: '%s', tmOut: %ld, mutationsMax: %ld, threadsMax: %ld, fileExtn '%s', ignoreAddr: %p, "
            "memoryLimit: %lu (MiB), fuzzExe: '%s', fuzzedPid: %d",
            ll, hfuzz.inputFile, hfuzz.nullifyStdio ? 1 : 0,
            hfuzz.fuzzStdin ? 1 : 0, hfuzz.saveUnique ? 1 : 0, hfuzz.flipRate, hfuzz.flipMode,
            hfuzz.externalCommand == NULL ? "NULL" : hfuzz.externalCommand, hfuzz.tmOut,
-           hfuzz.threadsMax, hfuzz.fileExtn, hfuzz.ignoreAddr, hfuzz.asLimit, hfuzz.cmdline[0],
+           hfuzz.mutationsMax, hfuzz.threadsMax, hfuzz.fileExtn, hfuzz.ignoreAddr, hfuzz.asLimit, hfuzz.cmdline[0],
            hfuzz.pid);
 
     if (!(hfuzz.fuzzers = malloc(sizeof(hfuzz.fuzzers[0]) * hfuzz.threadsMax))) {
