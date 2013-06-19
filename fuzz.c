@@ -85,9 +85,8 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
     return;
 }
 
-static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName)
+static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
 {
-    int rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
     off_t fileSz;
     int srcfd;
 
@@ -123,9 +122,8 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName)
     return true;
 }
 
-static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName)
+static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
 {
-    int rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
     off_t fileSz;
     int srcfd;
 
@@ -219,6 +217,9 @@ static void fuzz_reapChild(honggfuzz_t * hfuzz)
 static void fuzz_runNext(honggfuzz_t * hfuzz)
 {
     int i = HF_SLOT(hfuzz, 0);
+    int rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
+
+    strncpy(hfuzz->fuzzers[i].origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
 
     fuzz_getFileName(hfuzz, hfuzz->fuzzers[i].fileName);
 
@@ -239,11 +240,11 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
         hfuzz->fuzzers[i].pid = getpid();
 
         if (hfuzz->externalCommand != NULL) {
-            if (!fuzz_prepareFileExternally(hfuzz, hfuzz->fuzzers[i].fileName)) {
+            if (!fuzz_prepareFileExternally(hfuzz, hfuzz->fuzzers[i].fileName, rnd_index)) {
                 exit(EXIT_FAILURE);
             }
         } else {
-            if (!fuzz_prepareFile(hfuzz, hfuzz->fuzzers[i].fileName)) {
+            if (!fuzz_prepareFile(hfuzz, hfuzz->fuzzers[i].fileName, rnd_index)) {
                 exit(EXIT_FAILURE);
             }
         }
@@ -251,6 +252,7 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
         /*
          * Ok, kill the parent
          */
+
         if (!arch_launchChild(hfuzz, hfuzz->fuzzers[i].fileName)) {
             kill(getppid(), SIGTERM);
             exit(EXIT_FAILURE);

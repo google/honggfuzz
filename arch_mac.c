@@ -227,11 +227,11 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
 
         char newname[PATH_MAX];
         if (hfuzz->saveUnique) {
-            snprintf(newname, sizeof(newname), "%s.PC.%p.%s", arch_sigs[termsig].descr, pc,
-                     hfuzz->fileExtn);
+            snprintf(newname, sizeof(newname), "%s.PC.%p.%s.%s", arch_sigs[termsig].descr, pc,
+                     hfuzz->fuzzers[idx].origFileName, hfuzz->fileExtn);
         } else {
-            snprintf(newname, sizeof(newname), "%s.PC.%p.%d.%s.%s", arch_sigs[termsig].descr, pc,
-                     pid, localtmstr, hfuzz->fileExtn);
+            snprintf(newname, sizeof(newname), "%s.PC.%p.%d.%s.%s.%s", arch_sigs[termsig].descr, pc,
+                     pid, localtmstr, hfuzz->fuzzers[idx].origFileName, hfuzz->fileExtn);
         }
 
         if (link(hfuzz->fuzzers[idx].fileName, newname) == 0) {
@@ -290,8 +290,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
          * report file not found and no PC available
          */
         char newname[PATH_MAX];
-        snprintf(newname, sizeof(newname), "%s.%d.%s.%s", arch_sigs[termsig].descr, pid,
-                 localtmstr, hfuzz->fileExtn);
+        snprintf(newname, sizeof(newname), "%s.%d.%s.%s.%s", arch_sigs[termsig].descr, pid,
+                 localtmstr, hfuzz->fuzzers[idx].origFileName, hfuzz->fileExtn);
 
         LOGMSG(l_INFO, "Ok, that's interesting, saving the '%s' as '%s'",
                hfuzz->fuzzers[idx].fileName, newname);

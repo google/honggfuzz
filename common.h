@@ -59,6 +59,7 @@ typedef struct {
     int fileCnt;
     struct {
         pid_t pid;
+        char origFileName[PATH_MAX];
         char fileName[PATH_MAX];
     } *fuzzers;
 } honggfuzz_t;

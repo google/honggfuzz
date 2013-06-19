@@ -204,3 +204,8 @@ bool files_init(honggfuzz_t * hfuzz)
 
     return true;
 }
+
+char * files_basename(char *path) {
+    char *base = strrchr(path, '/');
+    return base ? base + 1 : path;
+}
