@@ -195,14 +195,14 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, int status)
     char newname[PATH_MAX];
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
-                 "%s.PC.%p.CODE.%d.ADDR.%p.INSTR.%s.%s",
-                 arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr, instr, hfuzz->fileExtn);
+                 "%s.PC.%p.CODE.%d.ADDR.%p.INSTR.%s.%s.%s",
+                 arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr, instr, hfuzz->fuzzers[idx].origFileName, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr));
-        snprintf(newname, sizeof(newname), "%s.PC.%p.CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
+        snprintf(newname, sizeof(newname), "%s.PC.%p.CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s.%s",
                  arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr, instr, localtmstr, pid,
-                 hfuzz->fileExtn);
+                 hfuzz->fuzzers[idx].origFileName, hfuzz->fileExtn);
     }
 
     if (link(hfuzz->fuzzers[idx].fileName, newname) == 0) {

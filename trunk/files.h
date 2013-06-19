@@ -34,4 +34,6 @@ extern bool files_writeToFd(int fd, uint8_t * buf, off_t fileSz);
 
 extern bool files_writePatternToFd(int fd, off_t size, unsigned char p);
 
+extern char * files_basename(char *fileName);
+
 #endif
