@@ -38,4 +38,6 @@ extern bool util_redirectStdin(char *inputFile);
 
 extern void util_recoverStdio(void);
 
+extern uint64_t util_hash(const char *buf, size_t len);
+
 #endif

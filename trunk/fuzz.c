@@ -254,6 +254,7 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
          */
 
         if (!arch_launchChild(hfuzz, hfuzz->fuzzers[i].fileName)) {
+            LOGMSG(l_DEBUG, "Error launching child process, killing parent");
             kill(getppid(), SIGTERM);
             exit(EXIT_FAILURE);
         }

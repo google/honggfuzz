@@ -91,8 +91,8 @@ void log_msg(log_level_t dl,
 
     if (log_minLevel >= l_DEBUG || !log_isStdioTTY) {
         printf
-            ("%s %d/%02d/%02d %02d:%02d:%02d (%s:%s %d) ",
-             logLevels[dl].descr, tm.tm_year + 1900, tm.tm_mon + 1,
+            ("%s [%d] %d/%02d/%02d %02d:%02d:%02d (%s:%s %d) ",
+             logLevels[dl].descr, getpid(), tm.tm_year + 1900, tm.tm_mon + 1,
              tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, file, func, line);
     } else {
         printf("%s ", logLevels[dl].descr);

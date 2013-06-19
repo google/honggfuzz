@@ -122,3 +122,17 @@ void util_recoverStdio(void)
 
     return;
 }
+
+/* This is not a cryptographically secure hash */
+extern uint64_t util_hash(const char *buf, size_t len)
+{
+    uint64_t ret = 0;
+
+    for (size_t i = 0; i < len; i++) {
+        ret += buf[i];
+        ret += (ret << 10);
+        ret ^= (ret >> 6);
+    }
+
+    return ret;
+}
