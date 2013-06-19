@@ -54,6 +54,11 @@ bool files_writeToFd(int fd, uint8_t * buf, off_t fileSz)
     return true;
 }
 
+bool files_exists(char *fileName)
+{
+    return (access(fileName, F_OK) != -1);
+}
+
 bool files_writePatternToFd(int fd, off_t size, unsigned char p)
 {
     void *buf = malloc(size);
@@ -205,7 +210,8 @@ bool files_init(honggfuzz_t * hfuzz)
     return true;
 }
 
-char * files_basename(char *path) {
+char *files_basename(char *path)
+{
     char *base = strrchr(path, '/');
     return base ? base + 1 : path;
 }

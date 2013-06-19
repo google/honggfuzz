@@ -61,6 +61,10 @@ typedef struct {
         pid_t pid;
         char origFileName[PATH_MAX];
         char fileName[PATH_MAX];
+        uint64_t pc;
+        uint64_t backtrace;
+        uint64_t access;
+        int exception;
     } *fuzzers;
 } honggfuzz_t;
 

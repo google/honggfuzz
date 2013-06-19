@@ -67,10 +67,10 @@ static void usage(void
            "]: timeout (in secs), default: '" AB "3" AC "' (0 - no timeout)\n" " [" AB "-a val" AC
            "]: address limit (from si.si_addr) below which crashes\n"
            "           are not reported, default: '" AB "0" AC "' (suggested: 65535)\n"
-           " [" AB "-n val" AC "]: number of concurrent fuzzing processes, default: '" AB "5" AC "'\n"
-           " [" AB "-N val" AC "]: number of fuzzing mutations, default: '" AB "0" AC "' (infintive)\n"
-           " [-"
-           AB "l val" AC "]: per process memory limit in MiB, default: '" AB "0" AC "' (no limit)\n"
+           " [" AB "-n val" AC "]: number of concurrent fuzzing processes, default: '" AB "5" AC
+           "'\n" " [" AB "-N val" AC "]: number of fuzzing mutations, default: '" AB "0" AC
+           "' (infintive)\n" " [-" AB "l val" AC "]: per process memory limit in MiB, default: '" AB
+           "0" AC "' (no limit)\n"
 #ifdef _HAVE_ARCH_PTRACE
            " [" AB "-p val" AC
            "]: attach to a pid (a group thread), instead of monitoring\n"
@@ -205,8 +205,8 @@ int main(int argc, char **argv)
            ll, hfuzz.inputFile, hfuzz.nullifyStdio ? 1 : 0,
            hfuzz.fuzzStdin ? 1 : 0, hfuzz.saveUnique ? 1 : 0, hfuzz.flipRate, hfuzz.flipMode,
            hfuzz.externalCommand == NULL ? "NULL" : hfuzz.externalCommand, hfuzz.tmOut,
-           hfuzz.mutationsMax, hfuzz.threadsMax, hfuzz.fileExtn, hfuzz.ignoreAddr, hfuzz.asLimit, hfuzz.cmdline[0],
-           hfuzz.pid);
+           hfuzz.mutationsMax, hfuzz.threadsMax, hfuzz.fileExtn, hfuzz.ignoreAddr, hfuzz.asLimit,
+           hfuzz.cmdline[0], hfuzz.pid);
 
     if (!(hfuzz.fuzzers = malloc(sizeof(hfuzz.fuzzers[0]) * hfuzz.threadsMax))) {
         LOGMSG_P(l_FATAL, "Couldn't allocate memory");

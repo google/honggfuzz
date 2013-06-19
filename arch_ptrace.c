@@ -196,7 +196,8 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, int status)
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
                  "%s.PC.%p.CODE.%d.ADDR.%p.INSTR.%s.%s.%s",
-                 arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr, instr, hfuzz->fuzzers[idx].origFileName, hfuzz->fileExtn);
+                 arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr, instr,
+                 hfuzz->fuzzers[idx].origFileName, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr));
