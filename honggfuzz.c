@@ -49,8 +49,7 @@ static bool checkFor_FILE_PLACEHOLDER(char **args)
     return false;
 }
 
-static void usage(void
-    )
+static void usage(bool exit_success)
 {
     printf("%s",
            " <" AB "-f val" AC ">: input file (or input dir)\n"
@@ -78,7 +77,12 @@ static void usage(void
 #endif                          /* _HAVE_ARCH_PTRACE */
            "usage:"
            AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " FILE_PLACEHOLDER AC "\n");
-    exit(EXIT_SUCCESS);
+
+    if (exit_success) {
+      exit(EXIT_SUCCESS);
+    } else {
+      exit(EXIT_FAILURE);
+    }
 }
 
 int main(int argc, char **argv)
@@ -109,8 +113,7 @@ int main(int argc, char **argv)
 
     printf(AB PROG_NAME " version " PROG_VERSION " " PROG_AUTHORS AC "\n");
     if (argc < 2) {
-        usage();
-        exit(EXIT_SUCCESS);
+        usage(true);
     }
 
     for (;;) {
@@ -123,7 +126,7 @@ int main(int argc, char **argv)
             hfuzz.inputFile = optarg;
             break;
         case 'h':
-            usage();
+            usage(true);
             break;
         case 'q':
             hfuzz.nullifyStdio = true;
@@ -178,14 +181,14 @@ int main(int argc, char **argv)
 
     if (!hfuzz.cmdline[0]) {
         LOGMSG(l_FATAL, "Please specify binary to fuzz");
-        usage();
+        usage(false);
     }
 
     if (!hfuzz.fuzzStdin && !checkFor_FILE_PLACEHOLDER(hfuzz.cmdline)) {
         LOGMSG(l_FATAL,
                "You must specify '" FILE_PLACEHOLDER
                "' when the -s (stdin fuzzing) option is not set");
-        usage();
+        usage(false);
     }
 
     if (hfuzz.pid) {
@@ -195,7 +198,7 @@ int main(int argc, char **argv)
 
     if (strchr(hfuzz.fileExtn, '/')) {
         LOGMSG(l_FATAL, "The file extension contains the '/' character: '%s'", hfuzz.fileExtn);
-        usage();
+        usage(false);
     }
 
     LOGMSG(l_INFO,
