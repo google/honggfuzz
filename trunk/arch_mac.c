@@ -75,7 +75,8 @@ static mach_port_t g_exception_port = MACH_PORT_NULL;
 /* Global to have hfuzz avaiable in exception handler */
 honggfuzz_t *g_hfuzz;
 
-#define SERVICE_NAME "com.google.code.honggfuzz"
+/* Global to have a unique service name for each honggfuzz process */
+char g_service_name[256];
 
 struct {
     bool important;
@@ -233,7 +234,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     /* Get exception port. */
     mach_port_t exception_port = MACH_PORT_NULL;
 
-    if (bootstrap_look_up(child_bootstrap, SERVICE_NAME, &exception_port) != KERN_SUCCESS) {
+    if (bootstrap_look_up(child_bootstrap, g_service_name, &exception_port) != KERN_SUCCESS) {
         return false;
     }
 
@@ -381,8 +382,9 @@ bool arch_prepareParent(honggfuzz_t * hfuzz)
         return false;
     }
 
-    /* Register exception port service. */
-    if (bootstrap_check_in(bootstrap, SERVICE_NAME, &g_exception_port) != KERN_SUCCESS) {
+    /* Generate and register exception port service. */
+    snprintf(g_service_name, sizeof(g_service_name), "com.google.code.honggfuzz.%d", util_rndGet(0,999999));
+    if (bootstrap_check_in(bootstrap, g_service_name, &g_exception_port) != KERN_SUCCESS) {
         return false;
     }
 
