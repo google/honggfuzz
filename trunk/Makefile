@@ -55,7 +55,6 @@ ifeq ($(OS),Darwin)
 		-framework Foundation -framework ApplicationServices -framework Symbolication \
 		-framework CoreServices -framework CrashReporterSupport -framework CoreFoundation \
 		-framework CommerceKit -lm -L/usr/include -L$(shell echo ~)/.homebrew/lib
-	LDFLAGS += -ludis86
 	ARCH_SRCS = arch_mac.c
 	MIG_OUTPUT = mach_exc.h mach_excUser.c mach_excServer.h mach_excServer.c
 	MIG_OBJECTS = mach_excUser.o mach_excServer.o
