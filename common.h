@@ -59,6 +59,7 @@ typedef struct {
     int fileCnt;
     struct {
         pid_t pid;
+        time_t timeStarted;
         char origFileName[PATH_MAX];
         char fileName[PATH_MAX];
         uint64_t pc;

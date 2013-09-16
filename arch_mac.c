@@ -325,7 +325,22 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 
 pid_t arch_reapChild(honggfuzz_t * hfuzz)
 {
-    int status;
+    /*
+     * First check manually if we have expired childs
+     */
+
+    for (int idx = 0; idx < hfuzz->threadsMax; idx++) {
+        double diff = difftime(time(NULL), hfuzz->fuzzers[idx].timeStarted);
+        if (hfuzz->fuzzers[idx].pid != 0 && diff > (double)hfuzz->tmOut) {
+            LOGMSG(l_WARN, "Process pid %d is overdue (%f seconds, max %f seconds %f), sending a SIGKILL", hfuzz->fuzzers[idx].pid, diff, (double)hfuzz->tmOut);
+            kill(hfuzz->fuzzers[idx].pid, SIGKILL);
+        }
+    }
+
+    /*
+     * Now check for signals using wait3
+     */
+    int status = 0;
     struct rusage ru;
 
     pid_t pid = wait3(&status, 0, &ru);
@@ -448,7 +463,7 @@ uint64_t hash_callstack(thread_port_t thread,
     char *description = (char *)[crashDescription UTF8String];
 
     /* The callstack begins with the following word */
-    char *callstack = strstr(description, "Crashed::");
+    char *callstack = strstr(description, "Crashed:");
 
     if (callstack == NULL) {
         LOGMSG(l_FATAL, "Could not find callstack in crash report %s", description);
