@@ -223,6 +223,11 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
 
     fuzz_getFileName(hfuzz, hfuzz->fuzzers[i].fileName);
 
+    /*
+     * Store when we started the target
+     */
+    hfuzz->fuzzers[i].timeStarted = time(NULL);
+
     pid_t pid = fork();
 
     if (pid == -1) {
