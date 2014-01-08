@@ -79,9 +79,9 @@ static void usage(bool exit_success)
            AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " FILE_PLACEHOLDER AC "\n");
 
     if (exit_success) {
-      exit(EXIT_SUCCESS);
+        exit(EXIT_SUCCESS);
     } else {
-      exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 }
 

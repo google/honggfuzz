@@ -59,7 +59,7 @@
 #import <Foundation/Foundation.h>
 
 /* Interface to third_party/CrashReport_Mountain_Lion.o */
-@interface CrashReport: NSObject - (id) initWithTask:(task_t)
+ @ interface CrashReport: NSObject - (id) initWithTask:(task_t)
 task exceptionType:(exception_type_t)
 anExceptionType exceptionCode:(mach_exception_data_t)
 anExceptionCode exceptionCodeCount:(mach_msg_type_number_t)
@@ -68,7 +68,6 @@ thread threadStateFlavor:(thread_state_flavor_t)
 aThreadStateFlavor threadState:(thread_state_data_t)
 aThreadState threadStateCount:(mach_msg_type_number_t) aThreadStateCount;
 @end
-
 /* Global to have exception port available in the collection thread */
 static mach_port_t g_exception_port = MACH_PORT_NULL;
 
@@ -83,7 +82,8 @@ struct {
     const char *descr;
 } arch_sigs[NSIG];
 
-__attribute__ ((constructor)) void arch_initSigs(void)
+__attribute__ ((constructor))
+void arch_initSigs(void)
 {
     for (int x = 0; x < NSIG; x++)
         arch_sigs[x].important = false;
@@ -332,7 +332,9 @@ pid_t arch_reapChild(honggfuzz_t * hfuzz)
     for (int idx = 0; idx < hfuzz->threadsMax; idx++) {
         double diff = difftime(time(NULL), hfuzz->fuzzers[idx].timeStarted);
         if (hfuzz->fuzzers[idx].pid != 0 && diff > (double)hfuzz->tmOut) {
-            LOGMSG(l_WARN, "Process pid %d is overdue (%f seconds, max %f seconds %f), sending a SIGKILL", hfuzz->fuzzers[idx].pid, diff, (double)hfuzz->tmOut);
+            LOGMSG(l_WARN,
+                   "Process pid %d is overdue (%f seconds, max %f seconds %f), sending a SIGKILL",
+                   hfuzz->fuzzers[idx].pid, diff, (double)hfuzz->tmOut);
             kill(hfuzz->fuzzers[idx].pid, SIGKILL);
         }
     }
@@ -398,7 +400,8 @@ bool arch_prepareParent(honggfuzz_t * hfuzz)
     }
 
     /* Generate and register exception port service. */
-    snprintf(g_service_name, sizeof(g_service_name), "com.google.code.honggfuzz.%d", util_rndGet(0,999999));
+    snprintf(g_service_name, sizeof(g_service_name), "com.google.code.honggfuzz.%d",
+             util_rndGet(0, 999999));
     if (bootstrap_check_in(bootstrap, g_service_name, &g_exception_port) != KERN_SUCCESS) {
         return false;
     }
@@ -434,7 +437,7 @@ void write_crash_report(thread_port_t thread,
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
     CrashReport *_crashReport = nil;
 
-    _crashReport =[[CrashReport alloc] initWithTask: task exceptionType: exception exceptionCode: code exceptionCodeCount: code_count thread: thread threadStateFlavor: *flavor threadState: (thread_state_t) in_state threadStateCount:in_state_count];
+ _crashReport =[[CrashReport alloc] initWithTask: task exceptionType: exception exceptionCode: code exceptionCodeCount: code_count thread: thread threadStateFlavor: *flavor threadState: (thread_state_t) in_state threadStateCount:in_state_count];
 
     NSString *crashDescription =[_crashReport description];
     char *description = (char *)[crashDescription UTF8String];
@@ -457,7 +460,7 @@ uint64_t hash_callstack(thread_port_t thread,
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
     CrashReport *_crashReport = nil;
 
-    _crashReport =[[CrashReport alloc] initWithTask: task exceptionType: exception exceptionCode: code exceptionCodeCount: code_count thread: thread threadStateFlavor: *flavor threadState: (thread_state_t) in_state threadStateCount:in_state_count];
+ _crashReport =[[CrashReport alloc] initWithTask: task exceptionType: exception exceptionCode: code exceptionCodeCount: code_count thread: thread threadStateFlavor: *flavor threadState: (thread_state_t) in_state threadStateCount:in_state_count];
 
     NSString *crashDescription =[_crashReport description];
     char *description = (char *)[crashDescription UTF8String];
@@ -596,7 +599,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     LOGMSG(l_DEBUG, "Crash of pid %d", pid);
 
     int idx = HF_SLOT(g_hfuzz, pid);
-    
+
     /*
      * Get program counter.
      * Cast to void* in order to silence the alignment warnings
