@@ -171,6 +171,10 @@ static bool files_readdir(honggfuzz_t * hfuzz)
 
 bool files_init(honggfuzz_t * hfuzz)
 {
+    hfuzz->files = malloc(sizeof(char *));
+    hfuzz->fileCnt = 0;
+    hfuzz->files[0] = "UNKNOWN";
+
     if (hfuzz->externalCommand && !hfuzz->inputFile) {
         LOGMSG(l_INFO,
                "No input file corpus specified, the external command '%s' is responsible for creating the fuzz files",
@@ -178,7 +182,6 @@ bool files_init(honggfuzz_t * hfuzz)
         return true;
     }
 
-    hfuzz->files = malloc(sizeof(char *));
     if (!hfuzz->files) {
         LOGMSG_P(l_ERROR, "Couldn't allocate memory");
         return false;
