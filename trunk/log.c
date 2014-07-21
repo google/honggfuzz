@@ -43,7 +43,7 @@ void log_init(void
     )
 {
     log_minLevel = l_INFO;
-    if (isatty(STDOUT_FD)) {
+    if (isatty(STDOUT_FD) == 1) {
         log_isStdioTTY = true;
     } else {
         log_isStdioTTY = false;
