@@ -171,8 +171,9 @@ static bool files_readdir(honggfuzz_t * hfuzz)
 
 bool files_init(honggfuzz_t * hfuzz)
 {
+    hfuzz->files = malloc(sizeof(char *));
+
     if (hfuzz->externalCommand && !hfuzz->inputFile) {
-        hfuzz->files = malloc(sizeof(char *));
         hfuzz->fileCnt = 1;
         hfuzz->files[0] = "UNKNOWN";
         LOGMSG(l_INFO,
