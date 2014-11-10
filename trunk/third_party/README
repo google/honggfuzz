@@ -1,3 +1,3 @@
-CrashReport_Mountain_Lion.o:
+CrashReport_*.o:
 	- from crashwrangler, free download
 	- "Aside from CrashReport_Leopard.o and CrashReport_Snowleopard.o, which contain proprietary code for creating crash logs, CrashWrangler is licensed as sample code and source code is included."

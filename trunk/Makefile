@@ -44,6 +44,7 @@ ifeq ($(OS),Linux)
 endif
 ifeq ($(OS),Darwin)
 	CC = cc
+	# Assume udis86 has been installed with homebrew
 	CFLAGS = -arch x86_64 -O3 -g -ggdb -c -std=c99 -I. -I~/.homebrew/include -I/usr/include \
 	    -x objective-c \
 		-D_GNU_SOURCE \
@@ -58,7 +59,7 @@ ifeq ($(OS),Darwin)
 	ARCH_SRCS = arch_mac.c
 	MIG_OUTPUT = mach_exc.h mach_excUser.c mach_excServer.h mach_excServer.c
 	MIG_OBJECTS = mach_excUser.o mach_excServer.o
-	CRASH_REPORT = third_party/CrashReport_Mountain_Lion.o
+	CRASH_REPORT = third_party/CrashReport_Yosemite.o
 endif
 SRCS += $(ARCH_SRCS)
 
