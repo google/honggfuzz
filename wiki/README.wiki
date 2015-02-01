@@ -23,7 +23,7 @@ Honggfuzz is a general-purpose fuzzing tool. Given a starting corpus of test fil
 = REQUIREMENTS =
 
   * A POSIX compilant operating system (See the compatibility list for more)
-  * The *[http://udis86.sourceforge.net/ udis86]* library. Note: Only necessary with x86/x86-64 CPU architectures.
+  * The *[capstone]* library (wth x86/amd64 Linux boxes)
   * A corpus of input files. Honggfuzz expects a set of files to use and modify as input to the application you're fuzzing. How you get or create these files is up to you, but you might be interested in the following sources: 
      * Image formats: Tavis Ormandy's [http://code.google.com/p/imagetestsuite/ Image Testuite] has been effective at finding vulnerabilities in various graphics libraries.
      * PDF: Adobe provides some [http://acroeng.adobe.com/ test PDF files].
