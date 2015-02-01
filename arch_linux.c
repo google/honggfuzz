@@ -90,7 +90,21 @@ static bool arch_enablePtrace(honggfuzz_t * hfuzz)
 
 static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, uint64_t pc)
 {
+    /* Let's try process_vm_readv first */
+    const struct iovec local_iov = {
+        .iov_base = buf,
+        .iov_len = len,
+    };
+    const struct iovec remote_iov = {
+        .iov_base = (void *)(uintptr_t) pc,
+        .iov_len = len,
+    };
+    if (process_vm_readv(pid, &local_iov, 1, &remote_iov, 1, 0) == len) {
+        return len;
+    }
+
     /*
+     * Ok, let's do it via ptrace() then.
      * len must be aligned to the sizeof(long)
      */
     int cnt = len / sizeof(long);
@@ -114,7 +128,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, uint64_t pc)
 #ifndef MAX_OP_STRING
 #define MAX_OP_STRING 32
 #endif                          /* MAX_OP_STRING */
-static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size)
+static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t * pc)
 {
     char buf[1024];
     struct iovec pt_iov = {
@@ -126,39 +140,74 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size)
         return false;
     }
 #if defined(__i386__) || defined(__x86_64__)
+    struct user_regs_struct_32 {
+        uint32_t ebx;
+        uint32_t ecx;
+        uint32_t edx;
+        uint32_t esi;
+        uint32_t edi;
+        uint32_t ebp;
+        uint32_t eax;
+        uint16_t ds, __ds;
+        uint16_t es, __es;
+        uint16_t fs, __fs;
+        uint16_t gs, __gs;
+        uint32_t orig_eax;
+        uint32_t eip;
+        uint16_t cs, __cs;
+        uint32_t eflags;
+        uint32_t esp;
+        uint16_t ss, __ss;
+    };
+
+    struct user_regs_struct_64 {
+        uint64_t r15;
+        uint64_t r14;
+        uint64_t r13;
+        uint64_t r12;
+        uint64_t bp;
+        uint64_t bx;
+        uint64_t r11;
+        uint64_t r10;
+        uint64_t r9;
+        uint64_t r8;
+        uint64_t ax;
+        uint64_t cx;
+        uint64_t dx;
+        uint64_t si;
+        uint64_t di;
+        uint64_t orig_ax;
+        uint64_t ip;
+        uint64_t cs;
+        uint64_t flags;
+        uint64_t sp;
+        uint64_t ss;
+        uint64_t fs_base;
+        uint64_t gs_base;
+        uint64_t ds;
+        uint64_t es;
+        uint64_t fs;
+        uint64_t gs;
+    };
+
     *arch = CS_ARCH_X86;
     /* 32-bit */
-    if (pt_iov.iov_len == 68) {
-        *code_size = CS_MODE_64;
+    if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
+        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
+        *pc = r32->eip;
+        *code_size = CS_MODE_32;
         return true;
     }
     /* 64-bit */
-    if (pt_iov.iov_len == 216) {
-        *code_size = CS_MODE_32;
+    if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
+        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
+        *pc = r64->ip;
+        *code_size = CS_MODE_64;
         return true;
     }
     LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
     return false;
 #endif                          /*  defined(__i386__) || defined(__x86_64__)  */
-    LOGMSG(l_DEBUG, "Unknown/unsupported CPU architecture");
-    return false;
-}
-
-static bool arch_getPC(pid_t pid, uint64_t * pc)
-{
-    struct user_regs_struct regs;
-    if (ptrace(PT_GETREGS, pid, NULL, &regs) == -1) {
-        LOGMSG(l_ERROR, "Couldn't get CPU registers");
-        return false;
-    }
-#if defined(__i386__)
-    *pc = regs.eip;
-    return true;
-#endif                          /*  __i386__  */
-#if defined(__x86_64__)
-    *pc = regs.rip;
-    return true;
-#endif                          /*  __i386__  */
     LOGMSG(l_DEBUG, "Unknown/unsupported CPU architecture");
     return false;
 }
@@ -174,20 +223,15 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
 
     snprintf(instr, MAX_OP_STRING, "%s", "[UNKNOWN]");
 
-    if (!arch_getPC(pid, pc)) {
-        LOGMSG(l_DEBUG, "Cannot get PC register");
+    cs_arch arch;
+    size_t code_size;
+    if (!arch_getArch(pid, &arch, &code_size, pc)) {
+        LOGMSG(l_DEBUG, "Current architecture not supported");
         return;
     }
 
     if ((memsz = arch_getProcMem(pid, buf, sizeof(buf), *pc)) == 0) {
         snprintf(instr, MAX_OP_STRING, "%s", "[NOT_MMAPED]");
-        return;
-    }
-
-    cs_arch arch;
-    size_t code_size;
-    if (!arch_getArch(pid, &arch, &code_size)) {
-        LOGMSG(l_DEBUG, "Current architecture not supported");
         return;
     }
 
