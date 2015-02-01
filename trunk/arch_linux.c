@@ -21,6 +21,7 @@
 
 */
 
+#include <elf.h>
 #include <sys/cdefs.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -36,9 +37,10 @@
 #include <time.h>
 #include <ctype.h>
 #include <sys/ptrace.h>
+#include <sys/uio.h>
 #include <sys/user.h>
 #if defined(__i386__) || defined(__x86_64__)
-#include <udis86.h>
+#include <capstone/capstone.h>
 #endif
 
 #include "common.h"
@@ -112,6 +114,30 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, void *pc)
 #ifndef MAX_OP_STRING
 #define MAX_OP_STRING 32
 #endif                          /* MAX_OP_STRING */
+static bool arch_is64Bit(pid_t pid)
+{
+    char buf[512];
+    struct iovec pt_iov = {
+        .iov_base = buf,
+        .iov_len = sizeof(buf),
+    };
+    if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1) {
+        LOGMSG_P(l_WARN, "Cannot tell whether pid '%d' is 32/64-bit");
+        return true;
+    }
+    // 32-bit
+    if (pt_iov.iov_len == 68) {
+        return false;
+    }
+    // 64-bit
+    if (pt_iov.iov_len == 216) {
+        return true;
+    }
+
+    LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
+    return true;
+}
+
 static void arch_getX86InstrStr(pid_t pid, char *instr, void *pc)
 {
     /*
@@ -126,18 +152,25 @@ static void arch_getX86InstrStr(pid_t pid, char *instr, void *pc)
         return;
     }
 
-    ud_t ud_obj;
-    ud_init(&ud_obj);
-    ud_set_mode(&ud_obj, 64);
-    ud_set_syntax(&ud_obj, UD_SYN_INTEL);
-    ud_set_pc(&ud_obj, (uint64_t) (long)pc);
-    ud_set_input_buffer(&ud_obj, buf, memsz);
-    if (!ud_disassemble(&ud_obj)) {
+    csh handle;
+    if (cs_open(CS_ARCH_X86, arch_is64Bit(pid) ? CS_MODE_64 : CS_MODE_32, &handle) != CS_ERR_OK) {
+        LOGMSG(l_WARN, "Capstone initilization failed")
+            return;
+    }
+
+    cs_insn *insn;
+    size_t count = cs_disasm_ex(handle, buf, memsz, (uint64_t) pc, 1, &insn);
+
+    if (count < 1) {
         LOGMSG(l_WARN, "Couldn't disassemble the x86/x86-64 instruction stream");
+        cs_close(&handle);
         return;
     }
 
-    snprintf(instr, MAX_OP_STRING, "%s", ud_insn_asm(&ud_obj));
+    snprintf(instr, MAX_OP_STRING, "%s %s", insn[0].mnemonic, insn[0].op_str);
+    cs_free(insn, count);
+    cs_close(&handle);
+
     for (int x = 0; instr[x] && x < MAX_OP_STRING; x++) {
         if (instr[x] == '/' || instr[x] == '\\' || isspace(instr[x]) || !isprint(instr[x])) {
             instr[x] = '_';

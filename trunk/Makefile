@@ -38,14 +38,13 @@ OS = $(shell uname -s)
 ARCH_SRCS := arch_posix.c
 
 ifeq ($(OS),Linux)
-	LDFLAGS += -ludis86
-	CFLAGS += -D_HAVE_ARCH_PTRACE
-	ARCH_SRCS = arch_ptrace.c
+	LDFLAGS += -lcapstone
+	CFLAGS += -D_HAVE_ARCH_LINUX
+	ARCH_SRCS = arch_linux.c
 endif
 ifeq ($(OS),Darwin)
 	CC = cc
-	# Assume udis86 has been installed with homebrew
-	CFLAGS = -arch x86_64 -O3 -g -ggdb -c -std=c99 -I. -I~/.homebrew/include -I/usr/include \
+	CFLAGS = -arch x86_64 -O3 -g -ggdb -c -std=c99 -I. -I/usr/include \
 	    -x objective-c \
 		-D_GNU_SOURCE \
 		-pedantic \
