@@ -23,10 +23,10 @@ CFLAGS = -O3 -g -ggdb -c -std=c99 -I. -I/usr/local/include -I/usr/include \
 	-D_GNU_SOURCE \
 	-pedantic \
 	-Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized -Wcast-align \
-	-Wreturn-type -Wpointer-arith -m32
+	-Wreturn-type -Wpointer-arith
 
 LD = gcc
-LDFLAGS = -lm -L/usr/local/include -L/usr/include -m32
+LDFLAGS = -lm -L/usr/local/include -L/usr/include
 
 SRCS = honggfuzz.c log.c files.c fuzz.c util.c
 
