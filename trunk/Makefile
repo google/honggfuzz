@@ -44,7 +44,7 @@ ifeq ($(OS),Linux)
 endif
 ifeq ($(OS),Darwin)
 	CC = cc
-	CFLAGS = -arch x86_64 -O3 -g -ggdb -c -std=c99 -I. -I/usr/include \
+	CFLAGS = -arch x86_64 -O3 -g -ggdb -c -std=c99 -I. -I~/.homebrew/include -I/usr/include \
 	    -x objective-c \
 		-D_GNU_SOURCE \
 		-pedantic \
