@@ -21,27 +21,28 @@
 
 */
 
-#include <elf.h>
-#include <sys/cdefs.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <dirent.h>
-#include <errno.h>
-#include <stdio.h>
-#include <string.h>
-#include <signal.h>
-#include <time.h>
+#include <capstone/capstone.h>
 #include <ctype.h>
+#include <dirent.h>
+#include <elf.h>
+#include <errno.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <inttypes.h>
+#include <sys/cdefs.h>
+#include <sys/personality.h>
 #include <sys/ptrace.h>
+#include <sys/prctl.h>
+#include <sys/resource.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/user.h>
-#if defined(__i386__) || defined(__x86_64__)
-#include <capstone/capstone.h>
-#endif
+#include <sys/wait.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "common.h"
 #include "log.h"
@@ -87,7 +88,7 @@ static bool arch_enablePtrace(honggfuzz_t * hfuzz)
     return true;
 }
 
-static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, void *pc)
+static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, uint64_t pc)
 {
     /*
      * len must be aligned to the sizeof(long)
@@ -96,7 +97,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, void *pc)
     size_t memsz = 0;
 
     for (int x = 0; x < cnt; x++) {
-        uint8_t *addr = (uint8_t *) pc + (int)(x * sizeof(long));
+        uint8_t *addr = (uint8_t *) (uintptr_t) pc + (int)(x * sizeof(long));
         long ret = ptrace(PT_READ_D, pid, addr, NULL);
 
         if (errno != 0) {
@@ -110,35 +111,59 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, void *pc)
     return memsz;
 }
 
-#if defined(__i386__) || defined(__x86_64__)
 #ifndef MAX_OP_STRING
 #define MAX_OP_STRING 32
 #endif                          /* MAX_OP_STRING */
-static bool arch_is64Bit(pid_t pid)
+static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size)
 {
-    char buf[512];
+    char buf[1024];
     struct iovec pt_iov = {
         .iov_base = buf,
         .iov_len = sizeof(buf),
     };
     if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
-        LOGMSG_P(l_WARN, "Cannot tell whether pid '%d' is 32/64-bit");
-        return true;
-    }
-    // 32-bit
-    if (pt_iov.iov_len == 68) {
+        LOGMSG_P(l_WARN, "ptrace(PTRACE_GETREGSET) failed");
         return false;
     }
-    // 64-bit
-    if (pt_iov.iov_len == 216) {
+#if defined(__i386__) || defined(__x86_64__)
+    *arch = CS_ARCH_X86;
+    /* 32-bit */
+    if (pt_iov.iov_len == 68) {
+        *code_size = CS_MODE_64;
         return true;
     }
-
+    /* 64-bit */
+    if (pt_iov.iov_len == 216) {
+        *code_size = CS_MODE_32;
+        return true;
+    }
     LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
-    return true;
+    return false;
+#endif                          /*  defined(__i386__) || defined(__x86_64__)  */
+    LOGMSG(l_DEBUG, "Unknown/unsupported CPU architecture");
+    return false;
 }
 
-static void arch_getX86InstrStr(pid_t pid, char *instr, void *pc)
+static bool arch_getPC(pid_t pid, uint64_t * pc)
+{
+    struct user_regs_struct regs;
+    if (ptrace(PT_GETREGS, pid, NULL, &regs) == -1) {
+        LOGMSG(l_ERROR, "Couldn't get CPU registers");
+        return false;
+    }
+#if defined(__i386__)
+    *pc = regs.eip;
+    return true;
+#endif                          /*  __i386__  */
+#if defined(__x86_64__)
+    *pc = regs.rip;
+    return true;
+#endif                          /*  __i386__  */
+    LOGMSG(l_DEBUG, "Unknown/unsupported CPU architecture");
+    return false;
+}
+
+static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
 {
     /*
      * MAX_INSN_LENGTH is actually 15, but we need a value aligned to 8
@@ -147,20 +172,34 @@ static void arch_getX86InstrStr(pid_t pid, char *instr, void *pc)
     uint8_t buf[16];
     size_t memsz;
 
-    if ((memsz = arch_getProcMem(pid, buf, sizeof(buf), pc)) == 0) {
+    snprintf(instr, MAX_OP_STRING, "%s", "[UNKNOWN]");
+
+    if (!arch_getPC(pid, pc)) {
+        LOGMSG(l_DEBUG, "Cannot get PC register");
+        return;
+    }
+
+    if ((memsz = arch_getProcMem(pid, buf, sizeof(buf), *pc)) == 0) {
         snprintf(instr, MAX_OP_STRING, "%s", "[NOT_MMAPED]");
         return;
     }
 
+    cs_arch arch;
+    size_t code_size;
+    if (!arch_getArch(pid, &arch, &code_size)) {
+        LOGMSG(l_DEBUG, "Current architecture not supported");
+        return;
+    }
+
     csh handle;
-    cs_err err = cs_open(CS_ARCH_X86, arch_is64Bit(pid) ? CS_MODE_64 : CS_MODE_32, &handle);
+    cs_err err = cs_open(arch, code_size, &handle);
     if (err != CS_ERR_OK) {
         LOGMSG(l_WARN, "Capstone initilization failed: '%s'", cs_strerror(err))
             return;
     }
 
     cs_insn *insn;
-    size_t count = cs_disasm_ex(handle, buf, memsz, (uintptr_t) pc, 1, &insn);
+    size_t count = cs_disasm_ex(handle, buf, memsz, *pc, 1, &insn);
 
     if (count < 1) {
         LOGMSG(l_WARN, "Couldn't disassemble the x86/x86-64 instruction stream: '%s'",
@@ -180,11 +219,9 @@ static void arch_getX86InstrStr(pid_t pid, char *instr, void *pc)
     }
 }
 
-#endif                          /* defined(__i386__) || defined(__x86_64__) */
-
 static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, int status)
 {
-    void *pc = NULL;
+    uint64_t pc = NULL;
 
     char instr[MAX_OP_STRING] = "[UNKNOWN]";
     siginfo_t si;
@@ -194,21 +231,10 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, int status)
         return;
     }
 
-    struct user_regs_struct regs;
-    if (ptrace(PT_GETREGS, pid, NULL, &regs) == -1) {
-        LOGMSG(l_ERROR, "Couldn't get CPU registers");
-    }
-#ifdef __i386__
-    pc = (void *)regs.eip;
-    arch_getX86InstrStr(pid, instr, pc);
-#endif                          /* __i386__ */
-#ifdef __x86_64__
-    pc = (void *)regs.rip;
-    arch_getX86InstrStr(pid, instr, pc);
-#endif                          /* __x86_64__ */
+    arch_getInstrStr(pid, &pc, instr);
 
     LOGMSG(l_DEBUG,
-           "Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %p, instr: '%s'",
+           "Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %" PRIx64 ", instr: '%s'",
            pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
 
     int idx = HF_SLOT(hfuzz, pid);
@@ -230,13 +256,13 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, int status)
     char newname[PATH_MAX];
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
-                 "%s.PC.%p.CODE.%d.ADDR.%p.INSTR.%s.%s.%s",
+                 "%s.PC.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%s",
                  arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr, instr,
                  hfuzz->fuzzers[idx].origFileName, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr));
-        snprintf(newname, sizeof(newname), "%s.PC.%p.CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s.%s",
+        snprintf(newname, sizeof(newname), "%s.PC.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s.%s",
                  arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr, instr, localtmstr, pid,
                  hfuzz->fuzzers[idx].origFileName, hfuzz->fileExtn);
     }
@@ -319,9 +345,6 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     if (!arch_enablePtrace(hfuzz)) {
         return false;
     }
-#ifdef __linux__
-#include <sys/prctl.h>
-#include <sys/personality.h>
     /*
      * Kill a process (with ABRT) which corrupts its own heap
      */
@@ -345,8 +368,6 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         LOGMSG_P(l_ERROR, "personality(ADDR_NO_RANDOMIZE) failed");
         return false;
     }
-#endif                          /* __linux__ */
-
 #define ARGS_MAX 512
     char *args[ARGS_MAX + 2];
 
