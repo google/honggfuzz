@@ -160,7 +160,7 @@ static void arch_getX86InstrStr(pid_t pid, char *instr, void *pc)
     }
 
     cs_insn *insn;
-    size_t count = cs_disasm_ex(handle, buf, memsz, (uint64_t) (long)pc, 1, &insn);
+    size_t count = cs_disasm_ex(handle, buf, memsz, (uintptr_t) pc, 1, &insn);
 
     if (count < 1) {
         LOGMSG(l_WARN, "Couldn't disassemble the x86/x86-64 instruction stream: '%s'",
