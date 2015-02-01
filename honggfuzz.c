@@ -111,7 +111,7 @@ int main(int argc, char **argv)
     hfuzz.files = NULL;
     hfuzz.threadsCnt = 0;
 
-    printf(AB PROG_NAME " version " PROG_VERSION " " PROG_AUTHORS AC "\n");
+    printf(AB PROG_NAME " version " PROG_VERSION " by " PROG_AUTHORS AC "\n");
     if (argc < 2) {
         usage(true);
     }
