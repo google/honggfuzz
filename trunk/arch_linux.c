@@ -121,7 +121,7 @@ static bool arch_is64Bit(pid_t pid)
         .iov_base = buf,
         .iov_len = sizeof(buf),
     };
-    if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1) {
+    if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
         LOGMSG_P(l_WARN, "Cannot tell whether pid '%d' is 32/64-bit");
         return true;
     }
@@ -153,8 +153,9 @@ static void arch_getX86InstrStr(pid_t pid, char *instr, void *pc)
     }
 
     csh handle;
-    if (cs_open(CS_ARCH_X86, arch_is64Bit(pid) ? CS_MODE_64 : CS_MODE_32, &handle) != CS_ERR_OK) {
-        LOGMSG(l_WARN, "Capstone initilization failed")
+    cs_err err = cs_open(CS_ARCH_X86, arch_is64Bit(pid) ? CS_MODE_64 : CS_MODE_32, &handle);
+    if (err != CS_ERR_OK) {
+        LOGMSG(l_WARN, "Capstone initilization failed: '%s'", cs_strerror(err))
             return;
     }
 
@@ -162,7 +163,8 @@ static void arch_getX86InstrStr(pid_t pid, char *instr, void *pc)
     size_t count = cs_disasm_ex(handle, buf, memsz, (uint64_t) pc, 1, &insn);
 
     if (count < 1) {
-        LOGMSG(l_WARN, "Couldn't disassemble the x86/x86-64 instruction stream");
+        LOGMSG(l_WARN, "Couldn't disassemble the x86/x86-64 instruction stream: '%s'",
+               cs_strerror(cs_errno(handle)));
         cs_close(&handle);
         return;
     }
