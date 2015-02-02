@@ -279,10 +279,10 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
         uint64_t dsisr;
         uint64_t result;
         /* elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in with some zeros */
-        uint32_t zero0;
-        uint32_t zero1;
-        uint32_t zero2;
-        uint32_t zero3;
+        uint64_t zero0;
+        uint64_t zero1;
+        uint64_t zero2;
+        uint64_t zero3;
     };
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
         struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
