@@ -32,7 +32,7 @@ SRCS = honggfuzz.c log.c files.c fuzz.c util.c
 OBJS = $(SRCS:.c=.o)
 BIN = honggfuzz
 
-OS = $(shell uname -s)
+OS ?= $(shell uname -s)
 
 ARCH_SRCS := arch_posix.c
 
