@@ -6,7 +6,7 @@
    Author: Robert Swiecki <swiecki@google.com>
            Felix Gröbert <groebert@google.com>
 
-   Copyright 2010 by Google Inc. All Rights Reserved.
+   Copyright 2010-2015 by Google Inc. All Rights Reserved.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,12 +22,12 @@
 
 */
 
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <time.h>
 #include <string.h>
-#include <getopt.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "common.h"
 #include "log.h"
@@ -51,32 +51,34 @@ static bool checkFor_FILE_PLACEHOLDER(char **args)
 
 static void usage(bool exit_success)
 {
+    /*  *INDENT-OFF* */
     printf("%s",
-           " <" AB "-f val" AC ">: input file (or input dir)\n"
+           " <" AB "-f val" AC ">: directory with input files (or a path to a single input file)\n"
            " [" AB "-h" AC "]: this help\n"
-           " [" AB "-q" AC "]: null-ify children's stdin, stdout, stderr; make them quiet\n"
-           " [" AB "-s" AC "]: standard input fuzz, instead of providing a file argument\n"
+           " [" AB "-q" AC "]: null-ify children's stdin, stdout, stderr; make them quiet (default: " AB "false" AC ")\n"
+           " [" AB "-s" AC "]: provide fuzzing input on STDIN, instead a file argument (default: " AB "false" AC ")\n"
            " [" AB "-u" AC "]: save unique test-cases only, otherwise (if not used) append\n"
-           "       current timestamp to the output filenames\n"
-           " [" AB "-d val" AC "]: debug level (0 - FATAL ... 4 - DEBUG), default: '" AB "3" AC
-           "' (INFO)\n" " [" AB "-e val" AC "]: file extension (e.g swf), default: '" AB "fuzz" AC
-           "'\n" " [" AB "-r val" AC "]: flip rate, default: '" AB "0.001" AC "'\n" " [" AB "-m val"
-           AC "]: flip mode (-mB - byte, -mb - bit), default: '" AB "-mB" AC "'\n" " [" AB "-c val"
-           AC "]: command modifying input files externally (instead of -r/-m)\n" " [" AB "-t val" AC
-           "]: timeout (in secs), default: '" AB "3" AC "' (0 - no timeout)\n" " [" AB "-a val" AC
-           "]: address limit (from si.si_addr) below which crashes\n"
-           "           are not reported, default: '" AB "0" AC "' (suggested: 65535)\n"
-           " [" AB "-n val" AC "]: number of concurrent fuzzing processes, default: '" AB "5" AC
-           "'\n" " [" AB "-N val" AC "]: number of fuzzing mutations, default: '" AB "0" AC
-           "' (infintive)\n" " [-" AB "l val" AC "]: per process memory limit in MiB, default: '" AB
-           "0" AC "' (no limit)\n"
-#ifdef _HAVE_ARCH_PTRACE
+           "       current timestamp to the output filenames (default: " AB "false" AC ")\n"
+           " [" AB "-d val" AC "]: debug level (0 - FATAL ... 4 - DEBUG), (default: '" AB "3" AC
+           "' [INFO])\n"
+           " [" AB "-e val" AC "]: file extension (e.g swf), (default: '" AB "fuzz" AC "')\n"
+           " [" AB "-r val" AC "]: flip rate, (default: '" AB "0.001" AC "')\n"
+           " [" AB "-m val" AC "]: flip mode (-mB - byte, -mb - bit), (default: '" AB "-mB" AC "')\n"
+           " [" AB "-c val" AC "]: an external command modifying the input corpus of files (instead of -r/-m)\n"
+           " [" AB "-t val" AC "]: timeout (in secs), (default: '" AB "3" AC "' [0 - no timeout])\n"
+           " [" AB "-a val" AC "]: address limit (from si.si_addr) below which crashes\n"
+           "           are not reported, (default: '" AB "0" AC "' [suggested: 65535])\n"
+           " [" AB "-n val" AC "]: number of concurrent fuzzing processes, (default: '" AB "5" AC "')\n"
+           " [" AB "-N val" AC "]: number of fuzzing mutations, (default: '" AB "0" AC "' [infinte])\n"
+           " [-" AB "l val" AC "]: per process memory limit in MiB, (default: '" AB "0" AC "' [no limit])\n"
+#ifdef _HAVE_ARCH_LINUX
            " [" AB "-p val" AC
            "]: attach to a pid (a group thread), instead of monitoring\n"
            "           previously created process, default: '" AB "0" AC "' (none)\n"
-#endif                          /* _HAVE_ARCH_PTRACE */
+#endif                          /* _HAVE_ARCH_LINUX */
            "usage:"
            AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " FILE_PLACEHOLDER AC "\n");
+    /*  *INDENT-ON* */
 
     if (exit_success) {
         exit(EXIT_SUCCESS);
@@ -156,7 +158,7 @@ int main(int argc, char **argv)
             hfuzz.tmOut = atol(optarg);
             break;
         case 'a':
-            hfuzz.ignoreAddr = (void *)atol(optarg);
+            hfuzz.ignoreAddr = (void *)strtoul(optarg, NULL, 0);
             break;
         case 'n':
             hfuzz.threadsMax = atol(optarg);
@@ -165,7 +167,7 @@ int main(int argc, char **argv)
             hfuzz.mutationsMax = atol(optarg);
             break;
         case 'l':
-            hfuzz.asLimit = strtoul(optarg, NULL, 10);
+            hfuzz.asLimit = strtoul(optarg, NULL, 0);
             break;
         case 'p':
             hfuzz.pid = atoi(optarg);

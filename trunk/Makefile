@@ -3,7 +3,7 @@
 #
 #   Author: Robert Swiecki <swiecki@google.com>
 #
-#   Copyright 2010 by Google Inc. All Rights Reserved.
+#   Copyright 2010-2015 by Google Inc. All Rights Reserved.
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ ARCH_SRCS := arch_posix.c
 
 ifeq ($(OS),Linux)
 	LDFLAGS += -lcapstone
-	CFLAGS += -D_HAVE_ARCH_LINUX
 	ARCH_SRCS = arch_linux.c
 endif
 ifeq ($(OS),Darwin)

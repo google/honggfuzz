@@ -5,7 +5,7 @@
 
    Author: Robert Swiecki <swiecki@google.com>
 
-   Copyright 2010 by Google Inc. All Rights Reserved.
+   Copyright 2010-2015 by Google Inc. All Rights Reserved.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,23 +21,24 @@
 
 */
 
-#include <sys/cdefs.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <unistd.h>
-#include <stdlib.h>
+#include "common.h"
+#include "arch.h"
+
+#include <ctype.h>
 #include <errno.h>
+#include <signal.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <signal.h>
+#include <sys/cdefs.h>
+#include <sys/resource.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <time.h>
-#include <ctype.h>
+#include <unistd.h>
 
-#include "common.h"
 #include "log.h"
-#include "arch.h"
 #include "util.h"
 
 struct {

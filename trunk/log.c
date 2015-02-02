@@ -5,7 +5,7 @@
 
    Author: Robert Swiecki <swiecki@google.com>
 
-   Copyright 2010 by Google Inc. All Rights Reserved.
+   Copyright 2010-2015 by Google Inc. All Rights Reserved.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,18 +21,18 @@
 
 */
 
-#include <stdio.h>
-#include <stdarg.h>
+#include "common.h"
+#include "log.h"
+
 #include <ctype.h>
+#include <errno.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
-#include <stdlib.h>
-#include <errno.h>
 #include <unistd.h>
-
-#include "common.h"
-#include "log.h"
 
 int log_minLevel;
 bool log_isStdioTTY;

@@ -5,7 +5,7 @@
 
    Author: Robert Swiecki <swiecki@google.com>
 
-   Copyright 2010 by Google Inc. All Rights Reserved.
+   Copyright 2010-2015 by Google Inc. All Rights Reserved.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,20 +21,21 @@
 
 */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <string.h>
-#include <stdio.h>
-#include <errno.h>
-#include <stdint.h>
-
 #include "common.h"
 #include "files.h"
+
+#include <dirent.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "log.h"
 
 bool files_writeToFd(int fd, uint8_t * buf, off_t fileSz)
