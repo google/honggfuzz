@@ -190,24 +190,117 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
         uint64_t gs;
     };
 
-    *arch = CS_ARCH_X86;
     /* 32-bit */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
         struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
-        *pc = r32->eip;
+        *arch = CS_ARCH_X86;
         *code_size = CS_MODE_32;
+        *pc = r32->eip;
         return true;
     }
     /* 64-bit */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
         struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
-        *pc = r64->ip;
+        *arch = CS_ARCH_X86;
         *code_size = CS_MODE_64;
+        *pc = r64->ip;
         return true;
     }
     LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
     return false;
 #endif                          /*  defined(__i386__) || defined(__x86_64__)  */
+#if defined(__arm__)
+    struct user_regs_struct_32 {
+        uint32_t uregs[18];
+    };
+    if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
+        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
+        *arch = CS_ARCH_ARM;
+        *code_size = CS_MODE_ARM;
+#ifndef ARM_pc
+#define ARM_pc 15
+#endif                          /* ARM_pc */
+        *pc = r32->uregs[ARM_pc];
+        return true;
+    }
+    LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
+    return false;
+#endif                          /*  defined(__arm__) */
+#if defined(__aarch64__)
+    struct user_regs_struct_64 {
+        uint64_t regs[31];
+        uint64_t sp;
+        uint64_t pc;
+        uint64_t pstate;
+    };
+    if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
+        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
+        *arch = CS_ARCH_ARM64;
+        *code_size = CS_MODE_ARM;
+        *pc = r64->pc;
+        return true;
+    }
+    LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
+    return false;
+#endif                          /* defined(__aarch64__) */
+#if defined(__powerpc64__) || defined(__powerpc__)
+    struct user_regs_struct_32 {
+        uint32_t gpr[32];
+        uint32_t nip;
+        uint32_t msr;
+        uint32_t orig_gpr3;
+        uint32_t ctr;
+        uint32_t link;
+        uint32_t xer;
+        uint32_t ccr;
+        uint32_t mq;
+        uint32_t trap;
+        uint32_t dar;
+        uint32_t dsisr;
+        uint32_t result;
+        /* elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in with some zeros */
+        uint32_t zero0;
+        uint32_t zero1;
+        uint32_t zero2;
+        uint32_t zero3;
+    };
+    struct user_regs_struct_64 {
+        uint64_t gpr[32];
+        uint64_t nip;
+        uint64_t msr;
+        uint64_t orig_gpr3;
+        uint64_t ctr;
+        uint64_t link;
+        uint64_t xer;
+        uint64_t ccr;
+        uint64_t softe;
+        uint64_t trap;
+        uint64_t dar;
+        uint64_t dsisr;
+        uint64_t result;
+        /* elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in with some zeros */
+        uint32_t zero0;
+        uint32_t zero1;
+        uint32_t zero2;
+        uint32_t zero3;
+    };
+    if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
+        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
+        *arch = CS_ARCH_PPC;
+        *code_size = CS_MODE_32 | CS_MODE_BIG_ENDIAN;
+        *pc = r32->nip;
+        return true;
+    }
+    if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
+        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
+        *arch = CS_ARCH_PPC;
+        *code_size = CS_MODE_64;
+        *pc = r64->nip;
+        return true;
+    }
+    LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
+    return false;
+#endif                          /* defined(__powerpc64__) || defined(__powerpc__) */
     LOGMSG(l_DEBUG, "Unknown/unsupported CPU architecture");
     return false;
 }
