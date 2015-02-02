@@ -21,8 +21,7 @@
 CC = gcc
 CFLAGS += -c -std=gnu11 -I. -I/usr/local/include -I/usr/include \
 	-D_GNU_SOURCE \
-	-Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
-	-Wreturn-type -Wpointer-arith -Wextra -Wno-override-init
+	-Wall -Wextra -Wno-override-init -Werror
 
 LD = gcc
 LDFLAGS += -lm -L/usr/local/include -L/usr/include
