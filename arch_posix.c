@@ -238,5 +238,8 @@ pid_t arch_reapChild(honggfuzz_t * hfuzz)
 
 bool arch_prepareParent(honggfuzz_t * hfuzz)
 {
+    if (hfuzz) {
+        return true;
+    }
     return true;
 }

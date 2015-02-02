@@ -34,7 +34,7 @@
 #include <time.h>
 #include <unistd.h>
 
-int log_minLevel;
+unsigned int log_minLevel;
 bool log_isStdioTTY;
 
 #define STDOUT_FD 1

@@ -19,11 +19,10 @@
 
 
 CC = gcc
-CFLAGS += -c -std=c99 -I. -I/usr/local/include -I/usr/include \
+CFLAGS += -c -std=gnu11 -I. -I/usr/local/include -I/usr/include \
 	-D_GNU_SOURCE \
-	-pedantic \
 	-Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
-	-Wreturn-type -Wpointer-arith
+	-Wreturn-type -Wpointer-arith -Wextra -Wno-override-init
 
 LD = gcc
 LDFLAGS += -lm -L/usr/local/include -L/usr/include
