@@ -22,7 +22,7 @@ CC = gcc
 CFLAGS = -O3 -g -ggdb -c -std=c99 -I. -I/usr/local/include -I/usr/include \
 	-D_GNU_SOURCE \
 	-pedantic \
-	-Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized -Wcast-align \
+	-Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
 	-Wreturn-type -Wpointer-arith
 
 LD = gcc
