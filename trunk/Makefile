@@ -42,14 +42,14 @@ ifeq ($(OS),Linux)
 endif
 ifeq ($(OS),Darwin)
 	CC ?= cc
-	CFLAGS += -arch x86_64 -O3 -g -ggdb -c -std=c99 -I. -I~/.homebrew/include -I/usr/include \
+	CFLAGS = -arch x86_64 -O3 -g -ggdb -c -std=c99 -I. -I~/.homebrew/include -I/usr/include \
 	    -x objective-c \
 		-D_GNU_SOURCE \
 		-pedantic \
 		-Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized -Wcast-align \
 		-Wreturn-type -Wpointer-arith
 	LD ?= cc
-	LDFLAGS += -F/System/Library/PrivateFrameworks -framework CoreSymbolication -framework IOKit \
+	LDFLAGS = -F/System/Library/PrivateFrameworks -framework CoreSymbolication -framework IOKit \
 		-framework Foundation -framework ApplicationServices -framework Symbolication \
 		-framework CoreServices -framework CrashReporterSupport -framework CoreFoundation \
 		-framework CommerceKit -lm -L/usr/include -L$(shell echo ~)/.homebrew/lib
