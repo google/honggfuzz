@@ -1,6 +1,6 @@
 /*
 
-   honggfuzz - architecture dependent code (PTRACE)
+   honggfuzz - architecture dependent code (LINUX/PTRACE)
    -----------------------------------------
 
    Author: Robert Swiecki <swiecki@google.com>
