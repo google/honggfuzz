@@ -92,6 +92,7 @@ int main(int argc, char **argv)
     int c;
     int ll = l_INFO;
     honggfuzz_t hfuzz = {
+        .cmdline = NULL,
         .inputFile = NULL,
         .nullifyStdio = false,
         .fuzzStdin = false,
@@ -101,15 +102,16 @@ int main(int argc, char **argv)
         .flipMode = 'B',
         .externalCommand = NULL,
         .tmOut = 3,
-        .ignoreAddr = (void *)0UL,
         .mutationsMax = 0,
         .mutationsCnt = 0,
         .threadsMax = 5,
+        .threadsCnt = 0,
+        .ignoreAddr = NULL,
         .asLimit = 0UL,
-        .cmdline = NULL,
         .pid = 0,
         .files = NULL,
-        .threadsCnt = 0,
+        .fileCnt = 0,
+        .fuzzers = NULL,
     };
 
     printf(AB PROG_NAME " version " PROG_VERSION " by " PROG_AUTHORS AC "\n");
