@@ -50,29 +50,25 @@
 #include "log.h"
 #include "util.h"
 
+/*  *INDENT-OFF* */
 struct {
     bool important;
     const char *descr;
-} arch_sigs[NSIG];
-
-__attribute__ ((constructor))
-void arch_initSigs(void
-    )
-{
-    for (int x = 0; x < NSIG; x++)
-        arch_sigs[x].important = false;
-
-    arch_sigs[SIGILL].important = true;
-    arch_sigs[SIGILL].descr = "SIGILL";
-    arch_sigs[SIGFPE].important = true;
-    arch_sigs[SIGFPE].descr = "SIGFPE";
-    arch_sigs[SIGSEGV].important = true;
-    arch_sigs[SIGSEGV].descr = "SIGSEGV";
-    arch_sigs[SIGBUS].important = true;
-    arch_sigs[SIGBUS].descr = "SIGBUS";
-    arch_sigs[SIGABRT].important = true;
-    arch_sigs[SIGABRT].descr = "SIGABRT";
-}
+} arch_sigs[NSIG + 1] = {
+    [0 ... NSIG].important = false,
+    [0 ... NSIG].descr = "UNKNOWN",
+    [SIGILL].important = true,
+    [SIGILL].descr = "SIGILL",
+    [SIGFPE].important = true,
+    [SIGFPE].descr = "SIGFPE",
+    [SIGSEGV].important = true,
+    [SIGSEGV].descr = "SIGSEGV",
+    [SIGBUS].important = true,
+    [SIGBUS].descr = "SIGBUS",
+    [SIGABRT].important = true,
+    [SIGABRT].descr = "SIGABRT"
+};
+/*  *INDENT-ON* */
 
 static bool arch_enablePtrace(honggfuzz_t * hfuzz)
 {
@@ -100,7 +96,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, uint64_t pc)
         .iov_base = (void *)(uintptr_t) pc,
         .iov_len = len,
     };
-    if (process_vm_readv(pid, &local_iov, 1, &remote_iov, 1, 0) == len) {
+    if (process_vm_readv(pid, &local_iov, 1, &remote_iov, 1, 0) == (ssize_t) len) {
         return len;
     }
 
@@ -309,7 +305,7 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
 static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
 {
     /*
-     * MAX_INSN_LENGTH is actually 15, but we need a value aligned to 8
+     * We need a value aligned to 8
      * which is sizeof(long) on 64bit CPU archs (on most of them, I hope;)
      */
     uint8_t buf[16];
@@ -320,7 +316,7 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
     cs_arch arch;
     size_t code_size;
     if (!arch_getArch(pid, &arch, &code_size, pc)) {
-        LOGMSG(l_DEBUG, "Current architecture not supported");
+        LOGMSG(l_WARN, "Current architecture not supported for disassembly");
         return;
     }
 
@@ -357,7 +353,7 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
     }
 }
 
-static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, int status)
+static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid)
 {
     uint64_t pc = NULL;
 
@@ -451,7 +447,7 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
      * the tracer (relay the signal as well)
      */
     if (WIFSTOPPED(status) && arch_sigs[WSTOPSIG(status)].important) {
-        arch_savePtraceData(hfuzz, pid, status);
+        arch_savePtraceData(hfuzz, pid);
         ptrace(PT_CONTINUE, pid, 0, WSTOPSIG(status));
         return false;
     }
@@ -566,10 +562,10 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
          * ..if a process sleeps and catches SIGPROF/SIGALRM
          * rlimits won't help either
          */
-        struct rlimit rl;
-
-        rl.rlim_cur = hfuzz->tmOut * 2;
-        rl.rlim_max = hfuzz->tmOut * 2;
+        struct rlimit rl = {
+            .rlim_cur = hfuzz->tmOut * 2,
+            .rlim_max = hfuzz->tmOut * 2,
+        };
         if (setrlimit(RLIMIT_CPU, &rl) == -1) {
             LOGMSG_P(l_ERROR, "Couldn't enforce the RLIMIT_CPU resource limit");
             return false;

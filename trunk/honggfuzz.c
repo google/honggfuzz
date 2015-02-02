@@ -76,7 +76,7 @@ static void usage(bool exit_success)
            "]: attach to a pid (a group thread), instead of monitoring\n"
            "           previously created process, default: '" AB "0" AC "' (none)\n"
 #endif                          /* _HAVE_ARCH_LINUX */
-           "usage:"
+           "Usage:"
            AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " FILE_PLACEHOLDER AC "\n");
     /*  *INDENT-ON* */
 
