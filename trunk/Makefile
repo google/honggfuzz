@@ -19,14 +19,14 @@
 
 
 CC = gcc
-CFLAGS = -O3 -g -ggdb -c -std=c99 -I. -I/usr/local/include -I/usr/include \
+CFLAGS += -c -std=c99 -I. -I/usr/local/include -I/usr/include \
 	-D_GNU_SOURCE \
 	-pedantic \
 	-Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
 	-Wreturn-type -Wpointer-arith
 
 LD = gcc
-LDFLAGS = -lm -L/usr/local/include -L/usr/include
+LDFLAGS += -lm -L/usr/local/include -L/usr/include
 
 SRCS = honggfuzz.c log.c files.c fuzz.c util.c
 
@@ -42,15 +42,15 @@ ifeq ($(OS),Linux)
 	ARCH_SRCS = arch_linux.c
 endif
 ifeq ($(OS),Darwin)
-	CC = cc
-	CFLAGS = -arch x86_64 -O3 -g -ggdb -c -std=c99 -I. -I~/.homebrew/include -I/usr/include \
+	CC ?= cc
+	CFLAGS += -arch x86_64 -O3 -g -ggdb -c -std=c99 -I. -I~/.homebrew/include -I/usr/include \
 	    -x objective-c \
 		-D_GNU_SOURCE \
 		-pedantic \
 		-Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized -Wcast-align \
 		-Wreturn-type -Wpointer-arith
-	LD = cc
-	LDFLAGS = -F/System/Library/PrivateFrameworks -framework CoreSymbolication -framework IOKit \
+	LD ?= cc
+	LDFLAGS += -F/System/Library/PrivateFrameworks -framework CoreSymbolication -framework IOKit \
 		-framework Foundation -framework ApplicationServices -framework Symbolication \
 		-framework CoreServices -framework CrashReporterSupport -framework CoreFoundation \
 		-framework CommerceKit -lm -L/usr/include -L$(shell echo ~)/.homebrew/lib
@@ -64,10 +64,10 @@ SRCS += $(ARCH_SRCS)
 all: $(BIN)
 
 .c.o: %.c
-	@(echo CC $<; $(CC) $(CFLAGS) $<)
+	$(CC) $(CFLAGS) $<
 
 $(BIN): $(MIG_OBJECTS) $(OBJS)
-	@(echo LD $@; $(LD) -o $(BIN) $(OBJS) $(MIG_OBJECTS) $(CRASH_REPORT) $(LDFLAGS))
+	$(LD) -o $(BIN) $(OBJS) $(MIG_OBJECTS) $(CRASH_REPORT) $(LDFLAGS)
 
 $(MIG_OUTPUT): /usr/include/mach/mach_exc.defs
 	mig -header mach_exc.h -user mach_excUser.c -sheader mach_excServer.h -server mach_excServer.c /usr/include/mach/mach_exc.defs
@@ -77,8 +77,19 @@ $(MIG_OBJECTS): $(MIG_OUTPUT)
 	$(CC) $(CFLAGS) mach_excServer.c
 
 clean:
-	@(echo CLEAN; $(RM) core $(OBJS) $(BIN) $(MIG_OUTPUT) $(MIG_OBJECTS))
+	$(RM) core $(OBJS) $(BIN) $(MIG_OUTPUT) $(MIG_OBJECTS)
 
 indent:
-	@(echo INDENT; indent -linux -l100 -lc100 -nut -i4 -sob -c33 -cp33 *.c *.h; rm -f *~)
+	indent -linux -l100 -lc100 -nut -i4 -sob -c33 -cp33 *.c *.h; rm -f *~
+
+depend:
+	makedepend -Y. -- $(SRCS)
+
 # DO NOT DELETE
+
+honggfuzz.o: common.h log.h files.h fuzz.h util.h
+log.o: common.h log.h
+files.o: common.h files.h log.h
+fuzz.o: common.h fuzz.h log.h arch.h util.h files.h
+util.o: common.h log.h
+arch_linux.o: common.h arch.h log.h util.h
