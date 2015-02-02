@@ -531,16 +531,14 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
      * Set timeout (prof), real timeout (2*prof), and rlimit_cpu (2*prof)
      */
     if (hfuzz->tmOut) {
-        struct itimerval it;
-
         /*
          * The hfuzz->tmOut is real CPU usage time...
          */
-        it.it_value.tv_sec = hfuzz->tmOut;
-        it.it_value.tv_usec = 0;
-        it.it_interval.tv_sec = 0;
-        it.it_interval.tv_usec = 0;
-        if (setitimer(ITIMER_PROF, &it, NULL) == -1) {
+        struct itimerval it_prof = {
+            .it_interval = {.tv_sec = hfuzz->tmOut,.tv_usec = 0},
+            .it_value = {.tv_sec = 0,.tv_usec = 0}
+        };
+        if (setitimer(ITIMER_PROF, &it_prof, NULL) == -1) {
             LOGMSG_P(l_ERROR, "Couldn't set the ITIMER_PROF timer");
             return false;
         }
@@ -549,11 +547,11 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
          * ...so, if a process sleeps, this one should
          * trigger a signal...
          */
-        it.it_value.tv_sec = hfuzz->tmOut * 2UL;
-        it.it_value.tv_usec = 0;
-        it.it_interval.tv_sec = 0;
-        it.it_interval.tv_usec = 0;
-        if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
+        struct itimerval it_real = {
+            .it_interval = {.tv_sec = hfuzz->tmOut * 2UL,.tv_usec = 0},
+            .it_value = {.tv_sec = 0,.tv_usec = 0}
+        };
+        if (setitimer(ITIMER_REAL, &it_real, NULL) == -1) {
             LOGMSG_P(l_ERROR, "Couldn't set the ITIMER_REAL timer");
             return false;
         }
@@ -576,10 +574,10 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
      * The address space limit. If big enough - roughly the size of RAM used
      */
     if (hfuzz->asLimit) {
-        struct rlimit rl;
-
-        rl.rlim_cur = hfuzz->asLimit * 1024UL * 1024UL;
-        rl.rlim_max = hfuzz->asLimit * 1024UL * 1024UL;
+        struct rlimit rl = {
+            .rlim_cur = hfuzz->asLimit * 1024UL * 1024UL,
+            .rlim_max = hfuzz->asLimit * 1024UL * 1024UL,
+        };
         if (setrlimit(RLIMIT_AS, &rl) == -1) {
             LOGMSG_P(l_DEBUG, "Couldn't encforce the RLIMIT_AS resource limit, ignoring");
         }

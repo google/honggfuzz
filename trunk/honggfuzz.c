@@ -91,27 +91,26 @@ int main(int argc, char **argv)
 {
     int c;
     int ll = l_INFO;
-    honggfuzz_t hfuzz;
-
-    hfuzz.inputFile = NULL;
-    hfuzz.nullifyStdio = false;
-    hfuzz.fuzzStdin = false;
-    hfuzz.saveUnique = false;
-    hfuzz.fileExtn = "fuzz";
-    hfuzz.flipRate = 0.001f;
-    hfuzz.flipMode = 'B';
-    hfuzz.externalCommand = NULL;
-    hfuzz.tmOut = 3;
-    hfuzz.ignoreAddr = (void *)0UL;
-    hfuzz.mutationsMax = 0;
-    hfuzz.mutationsCnt = 0;
-    hfuzz.threadsMax = 5;
-    hfuzz.asLimit = 0UL;
-    hfuzz.cmdline = NULL;
-    hfuzz.pid = 0;
-
-    hfuzz.files = NULL;
-    hfuzz.threadsCnt = 0;
+    honggfuzz_t hfuzz = {
+        .inputFile = NULL,
+        .nullifyStdio = false,
+        .fuzzStdin = false,
+        .saveUnique = false,
+        .fileExtn = "fuzz",
+        .flipRate = 0.001f,
+        .flipMode = 'B',
+        .externalCommand = NULL,
+        .tmOut = 3,
+        .ignoreAddr = (void *)0UL,
+        .mutationsMax = 0,
+        .mutationsCnt = 0,
+        .threadsMax = 5,
+        .asLimit = 0UL,
+        .cmdline = NULL,
+        .pid = 0,
+        .files = NULL,
+        .threadsCnt = 0,
+    };
 
     printf(AB PROG_NAME " version " PROG_VERSION " by " PROG_AUTHORS AC "\n");
     if (argc < 2) {
@@ -207,11 +206,11 @@ int main(int argc, char **argv)
            "debugLevel: %d, inputFile '%s', nullifyStdio: %d, fuzzStdin: %d, saveUnique: %d, flipRate: %lf, "
            "flipMode: '%c', externalCommand: '%s', tmOut: %ld, mutationsMax: %ld, threadsMax: %ld, fileExtn '%s', ignoreAddr: %p, "
            "memoryLimit: %lu (MiB), fuzzExe: '%s', fuzzedPid: %d",
-           ll, hfuzz.inputFile, hfuzz.nullifyStdio ? 1 : 0,
-           hfuzz.fuzzStdin ? 1 : 0, hfuzz.saveUnique ? 1 : 0, hfuzz.flipRate, hfuzz.flipMode,
-           hfuzz.externalCommand == NULL ? "NULL" : hfuzz.externalCommand, hfuzz.tmOut,
-           hfuzz.mutationsMax, hfuzz.threadsMax, hfuzz.fileExtn, hfuzz.ignoreAddr, hfuzz.asLimit,
-           hfuzz.cmdline[0], hfuzz.pid);
+           ll, hfuzz.inputFile, hfuzz.nullifyStdio ? 1 : 0, hfuzz.fuzzStdin ? 1 : 0,
+           hfuzz.saveUnique ? 1 : 0, hfuzz.flipRate,
+           hfuzz.flipMode, hfuzz.externalCommand == NULL ? "NULL" : hfuzz.externalCommand,
+           hfuzz.tmOut, hfuzz.mutationsMax, hfuzz.threadsMax, hfuzz.fileExtn, hfuzz.ignoreAddr,
+           hfuzz.asLimit, hfuzz.cmdline[0], hfuzz.pid);
 
     if (!(hfuzz.fuzzers = malloc(sizeof(hfuzz.fuzzers[0]) * hfuzz.threadsMax))) {
         LOGMSG_P(l_FATAL, "Couldn't allocate memory");
