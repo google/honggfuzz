@@ -5,7 +5,7 @@
 
    Author: Robert Swiecki <swiecki@google.com>
 
-   Copyright 2010 by Google Inc. All Rights Reserved.
+   Copyright 2010-2015 by Google Inc. All Rights Reserved.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -24,11 +24,11 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
-#include <sys/param.h>
-#include <sys/types.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <limits.h>
+#include <sys/param.h>
+#include <sys/types.h>
 
 #define PROG_NAME "honggfuzz"
 #define PROG_VERSION "0.4"

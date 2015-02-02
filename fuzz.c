@@ -6,7 +6,7 @@
    Author: Robert Swiecki <swiecki@google.com>
            Felix Gröbert <groebert@google.com>
 
-   Copyright 2010 by Google Inc. All Rights Reserved.
+   Copyright 2010-2015 by Google Inc. All Rights Reserved.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,24 +22,26 @@
 
 */
 
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+#include "common.h"
+#include "fuzz.h"
+
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/stat.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <fcntl.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <time.h>
-#include <signal.h>
-#include <errno.h>
+#include <unistd.h>
 
-#include "common.h"
 #include "log.h"
 #include "arch.h"
 #include "util.h"

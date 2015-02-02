@@ -5,7 +5,7 @@
 
    Author: Robert Swiecki <swiecki@google.com>
 
-   Copyright 2010 by Google Inc. All Rights Reserved.
+   Copyright 2010-2015 by Google Inc. All Rights Reserved.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,6 +20,9 @@
    limitations under the License.
 
 */
+
+#include "common.h"
+#include "arch.h"
 
 #include <capstone/capstone.h>
 #include <ctype.h>
@@ -44,9 +47,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "common.h"
 #include "log.h"
-#include "arch.h"
 #include "util.h"
 
 struct {
@@ -339,7 +340,7 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
     size_t count = cs_disasm_ex(handle, buf, memsz, *pc, 1, &insn);
 
     if (count < 1) {
-        LOGMSG(l_WARN, "Couldn't disassemble the x86/x86-64 instruction stream: '%s'",
+        LOGMSG(l_WARN, "Couldn't disassemble the assembler instructions' stream: '%s'",
                cs_strerror(cs_errno(handle)));
         cs_close(&handle);
         return;
@@ -360,7 +361,7 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, int status)
 {
     uint64_t pc = NULL;
 
-    char instr[MAX_OP_STRING] = "[UNKNOWN]";
+    char instr[MAX_OP_STRING] = "\x00";
     siginfo_t si;
 
     if (ptrace(PT_GETSIGINFO, pid, 0, &si) == -1) {
@@ -483,10 +484,18 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         return false;
     }
     /*
-     * Kill a process (with ABRT) which corrupts its own heap
+     * Kill a process which corrupts its own heap (with ABRT)
      */
     if (setenv("MALLOC_CHECK_", "3", 1) == -1) {
         LOGMSG_P(l_ERROR, "setenv(MALLOC_CHECK_=3) failed");
+        return false;
+    }
+
+    /*
+     * Tell asan to ignore SEGVs
+     */
+    if (setenv("ASAN_OPTIONS", "handle_segv=0", 1) == -1) {
+        LOGMSG_P(l_ERROR, "setenv(ASAN_OPTIONS) failed");
         return false;
     }
 
