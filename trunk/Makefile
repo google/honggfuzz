@@ -19,7 +19,7 @@
 
 
 CC = gcc
-CFLAGS += -c -std=gnu11 -I. -I/usr/local/include -I/usr/include \
+CFLAGS += -c -std=c11 -I. -I/usr/local/include -I/usr/include \
 	-D_GNU_SOURCE \
 	-Wall -Wextra -Wno-override-init -Werror
 
