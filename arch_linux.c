@@ -28,6 +28,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <elf.h>
+#include <endian.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -285,7 +286,7 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
         struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
         *arch = CS_ARCH_PPC;
-        *code_size = CS_MODE_32 | CS_MODE_BIG_ENDIAN;
+        *code_size = CS_MODE_32;
         *pc = r32->nip;
         return true;
     }
@@ -320,6 +321,11 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
         LOGMSG(l_WARN, "Current architecture not supported for disassembly");
         return;
     }
+#if __BYTE_ORDER == __BIG_ENDIAN
+    code_size |= CS_MODE_BIG_ENDIAN;
+#else                           /* __BYTE_ORDER == __BIG_ENDIAN */
+    code_size |= CS_MODE_LITTLE_ENDIAN;
+#endif                          /* __BYTE_ORDER == __BIG_ENDIAN */
 
     if ((memsz = arch_getProcMem(pid, buf, sizeof(buf), *pc)) == 0) {
         snprintf(instr, MAX_OP_STRING, "%s", "[NOT_MMAPED]");
