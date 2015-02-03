@@ -124,9 +124,6 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, uint64_t pc)
     return memsz;
 }
 
-#ifndef MAX_OP_STRING
-#define MAX_OP_STRING 32
-#endif                          /* MAX_OP_STRING */
 static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t * pc)
 {
     char buf[1024];
@@ -304,6 +301,9 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
     return false;
 }
 
+#ifndef MAX_OP_STRING
+#define MAX_OP_STRING 32
+#endif                          /* MAX_OP_STRING */
 static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
 {
     /*
