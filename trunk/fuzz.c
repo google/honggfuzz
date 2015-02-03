@@ -87,6 +87,21 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
     return;
 }
 
+static void fuzz_appendOrTrunc(int fd, off_t fileSz)
+{
+    const int chance_one_in_x = 10;
+    if (util_rndGet(1, chance_one_in_x) != 1) {
+        return;
+    }
+
+    off_t newSz = util_rndGet(1, 2 * fileSz);
+    if (ftruncate(fd, newSz) == -1) {
+        LOGMSG_P(l_WARN, "Couldn't truncate file from '%ld' to '%ld' bytes", (long)fileSz,
+                 (long)newSz);
+        return;
+    }
+}
+
 static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
 {
     off_t fileSz;
@@ -119,6 +134,9 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
     }
 
     munmap(buf, fileSz);
+
+    fuzz_appendOrTrunc(dstfd, fileSz);
+
     close(srcfd);
     close(dstfd);
     return true;

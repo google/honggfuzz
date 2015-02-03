@@ -120,7 +120,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "hqsuf:d:e:r:m:c:t:a:n:N:l:p:");
+        c = getopt(argc, argv, "?hqsuf:d:e:r:m:c:t:a:n:N:l:p:");
         if (c < 0)
             break;
 
@@ -129,6 +129,7 @@ int main(int argc, char **argv)
             hfuzz.inputFile = optarg;
             break;
         case 'h':
+        case '?':
             usage(true);
             break;
         case 'q':
