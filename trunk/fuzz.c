@@ -94,7 +94,15 @@ static void fuzz_appendOrTrunc(int fd, off_t fileSz)
         return;
     }
 
-    off_t newSz = util_rndGet(1, 2 * fileSz);
+    off_t maxSz = 2 * fileSz;
+    if (fileSz > (1024 * 1024 * 20)) {
+        maxSz = fileSz + (fileSz / 4);
+    }
+    if (fileSz > (1024 * 1024 * 100)) {
+        maxSz = fileSz;
+    }
+
+    off_t newSz = util_rndGet(1, maxSz);
     if (ftruncate(fd, newSz) == -1) {
         LOGMSG_P(l_WARN, "Couldn't truncate file from '%ld' to '%ld' bytes", (long)fileSz,
                  (long)newSz);
