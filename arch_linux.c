@@ -54,9 +54,10 @@
 struct {
     bool important;
     const char *descr;
-} arch_sigs[NSIG + 1] = {
-    [0 ... NSIG].important = false,
-    [0 ... NSIG].descr = "UNKNOWN",
+} arch_sigs[NSIG] = {
+    [0 ... (NSIG - 1)].important = false,
+    [0 ... (NSIG - 1)].descr = "UNKNOWN",
+
     [SIGILL].important = true,
     [SIGILL].descr = "SIGILL",
     [SIGFPE].important = true,
