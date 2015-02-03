@@ -36,6 +36,15 @@ OS ?= $(shell uname -s)
 ARCH_SRCS := arch_posix.c
 
 ifeq ($(OS),Linux)
+	ifeq ("$(wildcard /usr/include/capstone/capstone.h)","")
+		WARN_CAPSTONE= \
+			"" ======================================================================\n\
+			You probably need to install libcapstone in order to compile this code\n\
+			It is available as a package since Ubuntu Utopic and Debian Jessie\n\
+			======================================================================\n
+	else
+		WARN_CAPSTONE =
+	endif
 	LDFLAGS += -lcapstone
 	ARCH_SRCS = arch_linux.c
 endif
@@ -60,6 +69,7 @@ endif
 SRCS += $(ARCH_SRCS)
 
 all: $(BIN)
+	@echo -ne "$(WARN_CAPSTONE)"
 
 .c.o: %.c
 	$(CC) $(CFLAGS) $<
