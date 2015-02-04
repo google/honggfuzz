@@ -302,7 +302,7 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
 }
 
 #ifndef MAX_OP_STRING
-#define MAX_OP_STRING 32
+#define MAX_OP_STRING 48
 #endif                          /* MAX_OP_STRING */
 static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
 {
