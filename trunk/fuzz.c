@@ -272,9 +272,9 @@ static void *fuzz_threadCreate(void *arg)
     }
 
     if (hfuzz->pid) {
-      fuzzer.pid = hfuzz->pid;
+        fuzzer.pid = hfuzz->pid;
     } else {
-      fuzzer.pid = pid;
+        fuzzer.pid = pid;
     }
 
     if (!pid) {
@@ -348,8 +348,8 @@ void fuzz_main(honggfuzz_t * hfuzz)
         hfuzz->mutationsCnt++;
         fuzz_runNext(hfuzz);
         if (hfuzz->pid) {
-          fuzz_waitForAll(hfuzz);
-          exit(EXIT_SUCCESS);
+            fuzz_waitForAll(hfuzz);
+            exit(EXIT_SUCCESS);
         }
     }
 }
