@@ -334,21 +334,20 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                fuzzer.pid, diff, (double)hfuzz->tmOut);
         kill(fuzzer.pid, SIGKILL);
     }
-}
 
     /*
      * Now check for signals using wait4
      */
 
-for (;;) {
-    int status = 0;
-    while (wait4(fuzzer->pid, &status, __WALL, NULL) != fuzzer->pid) ;
-    LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", fuzzer->pid, status);
+    for (;;) {
+        int status = 0;
+        while (wait4(fuzzer->pid, &status, __WALL, NULL) != fuzzer->pid) ;
+        LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", fuzzer->pid, status);
 
-    if (arch_analyzeSignal(hfuzz, pid, fuzzer)) {
-        return;
+        if (arch_analyzeSignal(hfuzz, pid, fuzzer)) {
+            return;
+        }
     }
-}
 }
 
 void *wait_for_exception()
