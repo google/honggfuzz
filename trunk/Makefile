@@ -24,7 +24,7 @@ CFLAGS += -c -std=c11 -I. -I/usr/local/include -I/usr/include \
 	-Wall -Wextra -Wno-override-init -Werror
 
 LD = gcc
-LDFLAGS += -lm -L/usr/local/include -L/usr/include
+LDFLAGS += -lm -lpthread -L/usr/local/include -L/usr/include
 
 SRCS = honggfuzz.c log.c files.c fuzz.c util.c
 

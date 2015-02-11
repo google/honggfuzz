@@ -26,7 +26,7 @@
 
 extern bool arch_launchChild(honggfuzz_t * fuzz, char *fileName);
 
-extern pid_t arch_reapChild(honggfuzz_t * fuzz);
+extern void arch_reapChild(honggfuzz_t * fuzz, fuzzer_t * fuzzer);
 
 extern bool arch_prepareParent(honggfuzz_t * hfuzz);
 

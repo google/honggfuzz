@@ -69,7 +69,7 @@ void arch_initSigs(void
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
-static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
+static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzzer)
 {
     /*
      * Resumed by delivery of SIGCONT
@@ -82,7 +82,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
      * Boring, the process just exited
      */
     if (WIFEXITED(status)) {
-        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d", pid,
+        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d", fuzzer->pid,
                WEXITSTATUS(status));
         return true;
     }
@@ -93,12 +93,13 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
     if (!WIFSIGNALED(status)) {
         LOGMSG(l_ERROR,
                "Process (pid %d) exited with the following status %d, please report that as a bug",
-               pid, status);
+               fuzzer->pid, status);
         return true;
     }
 
     int termsig = WTERMSIG(status);
-    LOGMSG(l_DEBUG, "Process (pid %d) killed by signal %d '%s'", pid, termsig, strsignal(termsig));
+    LOGMSG(l_DEBUG, "Process (pid %d) killed by signal %d '%s'", fuzzer->pid, termsig,
+           strsignal(termsig));
     if (!arch_sigs[termsig].important) {
         LOGMSG(l_DEBUG, "It's not that important signal, skipping");
         return true;
@@ -108,15 +109,13 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
     util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr));
 
     char newname[PATH_MAX];
-    int idx = HF_SLOT(hfuzz, pid);
-    snprintf(newname, sizeof(newname), "%s.%d.%s.%s.%s", arch_sigs[termsig].descr, pid,
-             localtmstr, hfuzz->fuzzers[idx].origFileName, hfuzz->fileExtn);
+    snprintf(newname, sizeof(newname), "%s.%d.%s.%s.%s", arch_sigs[termsig].descr, fuzzer->pid,
+             localtmstr, fuzzer->origFileName, hfuzz->fileExtn);
 
-    LOGMSG(l_INFO, "Ok, that's interesting, saving the '%s' as '%s'",
-           hfuzz->fuzzers[idx].fileName, newname);
+    LOGMSG(l_INFO, "Ok, that's interesting, saving the '%s' as '%s'", fuzzer->fileName, newname);
 
-    if (link(hfuzz->fuzzers[idx].fileName, newname) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't save '%s' as '%s'", hfuzz->fuzzers[idx].fileName, newname);
+    if (link(fuzzer->fileName, newname) == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't save '%s' as '%s'", fuzzer->fileName, newname);
     }
     return true;
 }
@@ -216,23 +215,17 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     return false;
 }
 
-pid_t arch_reapChild(honggfuzz_t * hfuzz)
+void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     int status;
-    struct rusage ru;
 
-    pid_t pid = wait3(&status, 0, &ru);
-    if (pid <= 0) {
-        return pid;
-    }
-    LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", pid, status);
+    for (;;) {
+        while (wait4(fuzzer->pid, &status, __WALL, NULL) != fuzzer->pid) ;
+        LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", fuzzer->pid, status);
 
-    int ret = arch_analyzeSignal(hfuzz, pid, status);
-
-    if (ret) {
-        return pid;
-    } else {
-        return (-1);
+        if (arch_analyzeSignal(hfuzz, status, fuzzer)) {
+            return;
+        }
     }
 }
 

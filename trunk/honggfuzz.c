@@ -111,7 +111,6 @@ int main(int argc, char **argv)
         .pid = 0,
         .files = NULL,
         .fileCnt = 0,
-        .fuzzers = NULL,
     };
 
     printf(AB PROG_NAME " version " PROG_VERSION " by " PROG_AUTHORS AC "\n");
@@ -214,12 +213,6 @@ int main(int argc, char **argv)
            hfuzz.flipMode, hfuzz.externalCommand == NULL ? "NULL" : hfuzz.externalCommand,
            hfuzz.tmOut, hfuzz.mutationsMax, hfuzz.threadsMax, hfuzz.fileExtn, hfuzz.ignoreAddr,
            hfuzz.asLimit, hfuzz.cmdline[0], hfuzz.pid);
-
-    if (!(hfuzz.fuzzers = malloc(sizeof(hfuzz.fuzzers[0]) * hfuzz.threadsMax))) {
-        LOGMSG_P(l_FATAL, "Couldn't allocate memory");
-        exit(EXIT_FAILURE);
-    }
-    memset(hfuzz.fuzzers, '\0', sizeof(hfuzz.fuzzers[0]) * hfuzz.threadsMax);
 
     if (!files_init(&hfuzz)) {
         LOGMSG(l_FATAL, "Couldn't load input files");
