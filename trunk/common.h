@@ -25,7 +25,7 @@
 #define _COMMON_H_
 
 #include <limits.h>
-#include <pthread.h>
+#include <semaphore.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/param.h>
@@ -57,7 +57,7 @@ typedef struct {
     int pid;
     char **files;
     int fileCnt;
-    pthread_mutex_t mutex;
+    sem_t sem;
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
