@@ -229,7 +229,7 @@ static void *fuzz_threadCreate(void *arg)
 {
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
     fuzzer_t fuzzer = {
-        .pid = 0,
+        .pid = hfuzz->pid,
         .timeStarted = time(NULL),
         .pc = 0ULL,
         .backtrace = 0ULL,
@@ -241,7 +241,10 @@ static void *fuzz_threadCreate(void *arg)
     strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
     fuzz_getFileName(hfuzz, fuzzer.fileName);
 
-    fuzzer.pid = fork();
+    // Maybe we're fuzzing an external process
+    if (fuzzer.pid == 0) {
+      fuzzer.pid = fork();
+    }
 
     if (fuzzer.pid == -1) {
         LOGMSG_P(l_FATAL, "Couldn't fork");
