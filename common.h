@@ -57,25 +57,17 @@ typedef struct {
 
     char **files;
     int fileCnt;
-    struct {
-        pid_t pid;
-        time_t timeStarted;
-        char origFileName[PATH_MAX];
-        char fileName[PATH_MAX];
-        uint64_t pc;
-        uint64_t backtrace;
-        uint64_t access;
-        int exception;
-    } *fuzzers;
 } honggfuzz_t;
 
-static inline int HF_SLOT(honggfuzz_t * hfuzz, pid_t pid)
-{
-    for (int x = 0; x < hfuzz->threadsMax; x++) {
-        if (pid == hfuzz->fuzzers[x].pid)
-            return x;
-    }
-    return -1;
-}
+typedef struct fuzzer_t {
+    pid_t pid;
+    time_t timeStarted;
+    char origFileName[PATH_MAX];
+    char fileName[PATH_MAX];
+    uint64_t pc;
+    uint64_t backtrace;
+    uint64_t access;
+    int exception;
+} fuzzer_t;
 
 #endif

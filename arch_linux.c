@@ -360,7 +360,7 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
     }
 }
 
-static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid)
+static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
     uint64_t pc = NULL;
 
@@ -378,19 +378,10 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid)
            "Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %" PRIx64 ", instr: '%s'",
            pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
 
-    int idx = HF_SLOT(hfuzz, pid);
-
-    // If we're checkign state of an external process, then the idx is 0 (cause
-    // there's no concurrency)
-    if (hfuzz->pid) {
-        idx = 0;
-    }
-
     if (si.si_addr < hfuzz->ignoreAddr) {
         LOGMSG(l_INFO,
                "'%s' is interesting (%s), but the si.si_addr is %p (below %p), skipping",
-               hfuzz->fuzzers[idx].fileName, arch_sigs[si.si_signo].descr, si.si_addr,
-               hfuzz->ignoreAddr);
+               fuzzer->fileName, arch_sigs[si.si_signo].descr, si.si_addr, hfuzz->ignoreAddr);
         return;
     }
 
@@ -399,23 +390,22 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid)
         snprintf(newname, sizeof(newname),
                  "%s.PC.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%s",
                  arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr, instr,
-                 hfuzz->fuzzers[idx].origFileName, hfuzz->fileExtn);
+                 fuzzer->origFileName, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr));
         snprintf(newname, sizeof(newname), "%s.PC.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s.%s",
                  arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr, instr, localtmstr, pid,
-                 hfuzz->fuzzers[idx].origFileName, hfuzz->fileExtn);
+                 fuzzer->origFileName, hfuzz->fileExtn);
     }
 
-    if (link(hfuzz->fuzzers[idx].fileName, newname) == 0) {
-        LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'",
-               hfuzz->fuzzers[idx].fileName, newname);
+    if (link(fuzzer->fileName, newname) == 0) {
+        LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, newname);
     } else {
         if (errno == EEXIST) {
             LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", newname);
         } else {
-            LOGMSG_P(l_ERROR, "Couldn't link '%s' to '%s'", hfuzz->fuzzers[idx].fileName, newname);
+            LOGMSG_P(l_ERROR, "Couldn't link '%s' to '%s'", fuzzer->fileName, newname);
         }
     }
 }
@@ -424,28 +414,15 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid)
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
-static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
+static bool arch_analyzePtrace(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzzer)
 {
-    /*
-     * It's our child which fuzzess our process (that we had attached to) finished
-     */
-    int idx = HF_SLOT(hfuzz, pid);
-    if (hfuzz->pid && idx != -1) {
-        if (WIFEXITED(status) || WIFSIGNALED(status)) {
-            LOGMSG_P(l_DEBUG, "Process pid: %d finished");
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     /*
      * If it's an uninteresting signal (even SIGTRAP), let it run and relay the
      * signal (if not SIGTRAP)
      */
     if (WIFSTOPPED(status) && !arch_sigs[WSTOPSIG(status)].important) {
         int sig = WSTOPSIG(status) == SIGTRAP ? 0 : WSTOPSIG(status);
-        ptrace(PT_CONTINUE, pid, 0, sig);
+        ptrace(PT_CONTINUE, fuzzer->pid, 0, sig);
         return false;
     }
 
@@ -454,8 +431,8 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
      * the tracer (relay the signal as well)
      */
     if (WIFSTOPPED(status) && arch_sigs[WSTOPSIG(status)].important) {
-        arch_savePtraceData(hfuzz, pid);
-        ptrace(PT_CONTINUE, pid, 0, WSTOPSIG(status));
+        arch_savePtraceData(hfuzz, fuzzer->pid, fuzzer);
+        ptrace(PT_CONTINUE, fuzzer->pid, 0, WSTOPSIG(status));
         return false;
     }
 
@@ -470,10 +447,6 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, pid_t pid, int status)
      * Process exited
      */
     if (WIFEXITED(status) || WIFSIGNALED(status)) {
-        if (hfuzz->pid && pid == hfuzz->pid) {
-            LOGMSG(l_WARN, "Monitored process PID: %d finished", pid);
-            exit(EXIT_SUCCESS);
-        }
         return true;
     }
 
@@ -608,21 +581,18 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     return false;
 }
 
-pid_t arch_reapChild(honggfuzz_t * hfuzz)
+void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     int status;
-    pid_t pid = waitpid(-1, &status, __WALL);
-    if (pid <= 0) {
-        return pid;
-    }
-    LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", pid, status);
 
-    int ret = arch_analyzePtrace(hfuzz, pid, status);
+    for (;;) {
+        while (wait4(fuzzer->pid, &status, __WALL, NULL) != fuzzer->pid) ;
 
-    if (ret) {
-        return pid;
-    } else {
-        return (-1);
+        LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", fuzzer->pid, status);
+
+        if (arch_analyzePtrace(hfuzz, status, fuzzer)) {
+            return;
+        }
     }
 }
 

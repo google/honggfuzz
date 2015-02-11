@@ -27,6 +27,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -224,60 +225,42 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
     abort();                    /* NOTREACHED */
 }
 
-static void fuzz_reapChild(honggfuzz_t * hfuzz)
+static void *fuzz_threadCreate(void *arg)
 {
-    pid_t pid = arch_reapChild(hfuzz);
-    if (pid <= 0) {
-        return;
-    }
+    honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
+    fuzzer_t fuzzer = {
+        .pid = 0,
+        .timeStarted = time(NULL),
+        .pc = 0ULL,
+        .backtrace = 0ULL,
+        .access = 0ULL,
+        .exception = 0,
+    };
 
-    int idx = HF_SLOT(hfuzz, pid);
-    // Might be a process we are attached to
-    if (idx == -1) {
-        return;
-    }
-
-    unlink(hfuzz->fuzzers[idx].fileName);
-    hfuzz->fuzzers[idx].pid = 0;
-    hfuzz->threadsCnt--;
-}
-
-static void fuzz_runNext(honggfuzz_t * hfuzz)
-{
-    int i = HF_SLOT(hfuzz, 0);
     int rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
+    strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
+    fuzz_getFileName(hfuzz, fuzzer.fileName);
 
-    strncpy(hfuzz->fuzzers[i].origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
+    fuzzer.pid = fork();
 
-    fuzz_getFileName(hfuzz, hfuzz->fuzzers[i].fileName);
-
-    /*
-     * Store when we started the target
-     */
-    hfuzz->fuzzers[i].timeStarted = time(NULL);
-
-    pid_t pid = fork();
-
-    if (pid == -1) {
+    if (fuzzer.pid == -1) {
         LOGMSG_P(l_FATAL, "Couldn't fork");
         exit(EXIT_FAILURE);
     }
 
-    if (!pid) {
+    if (!fuzzer.pid) {
         /*
          *  We've forked, other pid's might have the same rnd seeds now,
          *  reinitialize it
          */
         util_rndInit();
 
-        hfuzz->fuzzers[i].pid = getpid();
-
         if (hfuzz->externalCommand != NULL) {
-            if (!fuzz_prepareFileExternally(hfuzz, hfuzz->fuzzers[i].fileName, rnd_index)) {
+            if (!fuzz_prepareFileExternally(hfuzz, fuzzer.fileName, rnd_index)) {
                 exit(EXIT_FAILURE);
             }
         } else {
-            if (!fuzz_prepareFile(hfuzz, hfuzz->fuzzers[i].fileName, rnd_index)) {
+            if (!fuzz_prepareFile(hfuzz, fuzzer.fileName, rnd_index)) {
                 exit(EXIT_FAILURE);
             }
         }
@@ -286,18 +269,39 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
          * Ok, kill the parent
          */
 
-        if (!arch_launchChild(hfuzz, hfuzz->fuzzers[i].fileName)) {
+        if (!arch_launchChild(hfuzz, fuzzer.fileName)) {
             LOGMSG(l_DEBUG, "Error launching child process, killing parent");
             kill(getppid(), SIGTERM);
             exit(EXIT_FAILURE);
         }
     }
 
-    hfuzz->threadsCnt++;
-    hfuzz->fuzzers[i].pid = pid;
-
-    LOGMSG(l_INFO, "Launched new process, pid: %d, (%d/%d)", pid,
+    LOGMSG(l_INFO, "Launched new process, pid: %d, (%d/%d)", fuzzer.pid,
            hfuzz->threadsCnt, hfuzz->threadsMax);
+
+    arch_reapChild(hfuzz, &fuzzer);
+    unlink(fuzzer.fileName);
+
+    hfuzz->threadsCnt--;
+
+    return NULL;
+}
+
+static void fuzz_runNext(honggfuzz_t * hfuzz)
+{
+    pthread_attr_t attr;
+    pthread_t t;
+
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+    hfuzz->threadsCnt++;
+
+    if (pthread_create(&t, &attr, fuzz_threadCreate, (void *)hfuzz) < 0) {
+        LOGMSG_P(l_FATAL, "Couldn't create a new thread");
+        exit(EXIT_FAILURE);
+    }
+
     return;
 }
 
@@ -310,23 +314,18 @@ void fuzz_main(honggfuzz_t * hfuzz)
 
     for (;;) {
         while (hfuzz->threadsCnt < hfuzz->threadsMax) {
-            fuzz_runNext(hfuzz);
-
-            if (hfuzz->mutationsMax != 0) {
-                /* We just want a limited number of mutations */
-                hfuzz->mutationsCnt++;
-
-                if (hfuzz->mutationsCnt >= hfuzz->mutationsMax) {
-                    LOGMSG(l_INFO, "Waiting for childs and exiting.");
-
-                    while (hfuzz->threadsCnt != 0) {
-                        fuzz_reapChild(hfuzz);
-                    }
-                    LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
-                    exit(EXIT_SUCCESS);
+            if (hfuzz->mutationsMax && (hfuzz->mutationsCnt >= hfuzz->mutationsMax)) {
+                while (hfuzz->threadsCnt) {
+                    usleep(1000);
                 }
+                LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
+                exit(EXIT_SUCCESS);
             }
+            /* We just want a limited number of mutations */
+            hfuzz->mutationsCnt++;
+
+            fuzz_runNext(hfuzz);
         }
-        fuzz_reapChild(hfuzz);
+        usleep(1000);
     }
 }
