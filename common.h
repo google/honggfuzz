@@ -51,7 +51,6 @@ typedef struct {
     long mutationsMax;
     long mutationsCnt;
     long threadsMax;
-    int threadsCnt;
     void *ignoreAddr;
     unsigned long asLimit;
     int pid;

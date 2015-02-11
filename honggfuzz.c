@@ -105,7 +105,6 @@ int main(int argc, char **argv)
         .mutationsMax = 0,
         .mutationsCnt = 0,
         .threadsMax = 5,
-        .threadsCnt = 0,
         .ignoreAddr = NULL,
         .asLimit = 0UL,
         .pid = 0,

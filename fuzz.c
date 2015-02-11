@@ -81,9 +81,10 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
     struct timeval tv;
     gettimeofday(&tv, NULL);
 
-    snprintf(fileName, PATH_MAX, ".honggfuzz.%d.%lu.%lu.%lu.%s", (int)getpid(),
+    snprintf(fileName, PATH_MAX, ".honggfuzz.%d.%lu.%lu.%lu.%lu.%s", (int)getpid(),
              (unsigned long int)tv.tv_sec, (unsigned long int)tv.tv_usec,
-             (unsigned long int)util_rndGet(0, 1 << 30), hfuzz->fileExtn);
+             (unsigned long int)util_rndGet(0, 1 << 30), (unsigned long int)util_rndGet(0, 1 << 30),
+             hfuzz->fileExtn);
 
     return;
 }
@@ -227,6 +228,12 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
 
 static void *fuzz_threadCreate(void *arg)
 {
+    /*
+     *  We're a new thread now, other pid's might have the same rnd seeds now,
+     *  reinitialize it
+     */
+    util_rndInit();
+
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
     fuzzer_t fuzzer = {
         .pid = hfuzz->pid,
@@ -252,11 +259,6 @@ static void *fuzz_threadCreate(void *arg)
     }
 
     if (!fuzzer.pid) {
-        /*
-         *  We've forked, other pid's might have the same rnd seeds now,
-         *  reinitialize it
-         */
-        util_rndInit();
 
         if (hfuzz->externalCommand != NULL) {
             if (!fuzz_prepareFileExternally(hfuzz, fuzzer.fileName, rnd_index)) {
@@ -278,13 +280,14 @@ static void *fuzz_threadCreate(void *arg)
         }
     }
 
-    LOGMSG(l_INFO, "Launched new process, pid: %d, (%d/%d)", fuzzer.pid,
-           hfuzz->threadsCnt, hfuzz->threadsMax);
+    int num;
+    sem_getvalue(&hfuzz->sem, &num);
+    num = hfuzz->threadsMax - num;
+    LOGMSG(l_INFO, "Launched new process, pid: %d, (%d/%d)", fuzzer.pid, num, hfuzz->threadsMax);
 
     arch_reapChild(hfuzz, &fuzzer);
     unlink(fuzzer.fileName);
 
-    hfuzz->threadsCnt--;
     sem_post(&hfuzz->sem);
 
     return NULL;
@@ -309,7 +312,9 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
 static void fuzz_waitForAll(honggfuzz_t * hfuzz)
 {
     for (;;) {
-        if (hfuzz->threadsCnt == 0) {
+        int i;
+        sem_getvalue(&hfuzz->sem, &i);
+        if (i == hfuzz->threadsMax) {
             return;
         }
         usleep(10000);
@@ -348,7 +353,6 @@ void fuzz_main(honggfuzz_t * hfuzz)
         }
 
         hfuzz->mutationsCnt++;
-        hfuzz->threadsCnt++;
         fuzz_runNext(hfuzz);
     }
 }
