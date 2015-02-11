@@ -284,7 +284,9 @@ static void *fuzz_threadCreate(void *arg)
     arch_reapChild(hfuzz, &fuzzer);
     unlink(fuzzer.fileName);
 
+    while (pthread_mutex_lock(&hfuzz->mutex)) ;
     hfuzz->threadsCnt--;
+    while (pthread_mutex_unlock(&hfuzz->mutex)) ;
 
     return NULL;
 }
@@ -297,7 +299,9 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
+    while (pthread_mutex_lock(&hfuzz->mutex)) ;
     hfuzz->threadsCnt++;
+    while (pthread_mutex_unlock(&hfuzz->mutex)) ;
 
     if (pthread_create(&t, &attr, fuzz_threadCreate, (void *)hfuzz) < 0) {
         LOGMSG_P(l_FATAL, "Couldn't create a new thread");
@@ -309,13 +313,25 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
 
 static void fuzz_waitForAll(honggfuzz_t * hfuzz)
 {
-    while (hfuzz->threadsCnt) {
+    for (;;) {
+        while (pthread_mutex_lock(&hfuzz->mutex)) ;
+        int num = hfuzz->threadsCnt;
+        while (pthread_mutex_unlock(&hfuzz->mutex)) ;
+
+        if (num == 0) {
+            return;
+        }
         usleep(10000);
     }
 }
 
 void fuzz_main(honggfuzz_t * hfuzz)
 {
+    if (pthread_mutex_init(&hfuzz->mutex, NULL) != 0) {
+        LOGMSG(l_FATAL, "Couldn't initialize mutex");
+        exit(EXIT_FAILURE);
+    }
+
     if (!arch_prepareParent(hfuzz)) {
         LOGMSG(l_FATAL, "Couldn't prepare parent for fuzzing");
         exit(EXIT_FAILURE);
@@ -328,7 +344,11 @@ void fuzz_main(honggfuzz_t * hfuzz)
     }
 
     for (;;) {
-        while (hfuzz->threadsCnt < hfuzz->threadsMax) {
+        while (pthread_mutex_lock(&hfuzz->mutex)) ;
+        int num = hfuzz->threadsCnt;
+        while (pthread_mutex_unlock(&hfuzz->mutex)) ;
+
+        while (num < hfuzz->threadsMax) {
             /* We just want a limited number of mutations */
             if (hfuzz->mutationsMax && (hfuzz->mutationsCnt >= hfuzz->mutationsMax)) {
                 fuzz_waitForAll(hfuzz);
