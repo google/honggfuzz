@@ -25,6 +25,7 @@
 #define _COMMON_H_
 
 #include <limits.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/param.h>
@@ -50,13 +51,13 @@ typedef struct {
     long mutationsMax;
     long mutationsCnt;
     long threadsMax;
-    long threadsCnt;
+    int threadsCnt;
     void *ignoreAddr;
     unsigned long asLimit;
     int pid;
-
     char **files;
     int fileCnt;
+    pthread_mutex_t mutex;
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
