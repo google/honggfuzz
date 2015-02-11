@@ -132,7 +132,7 @@ const char *exception_to_string(int exception)
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
-static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
+static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzzer)
 {
     /*
      * Resumed by delivery of SIGCONT
@@ -145,7 +145,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
      * Boring, the process just exited
      */
     if (WIFEXITED(status)) {
-        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d", pid,
+        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d", fuzzer->pid,
                WEXITSTATUS(status));
         return true;
     }
@@ -156,12 +156,13 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
     if (!WIFSIGNALED(status)) {
         LOGMSG(l_ERROR,
                "Process (pid %d) exited with the following status %d, please report that as a bug",
-               pid, status);
+               fuzzer->pid, status);
         return true;
     }
 
     int termsig = WTERMSIG(status);
-    LOGMSG(l_DEBUG, "Process (pid %d) killed by signal %d '%s'", pid, termsig, strsignal(termsig));
+    LOGMSG(l_DEBUG, "Process (pid %d) killed by signal %d '%s'", fuzzer->pid, termsig,
+           strsignal(termsig));
     if (!arch_sigs[termsig].important) {
         LOGMSG(l_DEBUG, "It's not that important signal, skipping");
         return true;
@@ -170,17 +171,14 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
     /*
      * Signal is interesting
      */
-
-    int idx = HF_SLOT(hfuzz, pid);
-
     char newname[PATH_MAX];
 
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
                  "%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s.%s",
-                 arch_sigs[termsig].descr, exception_to_string(hfuzz->fuzzers[idx].exception),
-                 hfuzz->fuzzers[idx].pc, hfuzz->fuzzers[idx].backtrace, hfuzz->fuzzers[idx].access,
-                 hfuzz->fuzzers[idx].origFileName, hfuzz->fileExtn);
+                 arch_sigs[termsig].descr, exception_to_string(fuzzers->exception),
+                 fuzzer->pc, fuzzer->backtrace, fuzzer->access,
+                 fuzzer->origFileName, hfuzz->fileExtn);
     } else {
 
         char localtmstr[PATH_MAX];
@@ -188,19 +186,18 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, pid_t pid, int status)
 
         snprintf(newname, sizeof(newname),
                  "%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s.%s",
-                 arch_sigs[termsig].descr, exception_to_string(hfuzz->fuzzers[idx].exception),
-                 hfuzz->fuzzers[idx].pc, hfuzz->fuzzers[idx].backtrace, hfuzz->fuzzers[idx].access,
-                 localtmstr, pid, hfuzz->fuzzers[idx].origFileName, hfuzz->fileExtn);
+                 arch_sigs[termsig].descr, exception_to_string(fuzzer->exception),
+                 fuzzer->pc, fuzzer->backtrace, fuzzers->access,
+                 localtmstr, fuzzer->pid, fuzzer->origFileName, hfuzz->fileExtn);
     }
 
-    if (link(hfuzz->fuzzers[idx].fileName, newname) == 0) {
-        LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'",
-               hfuzz->fuzzers[idx].fileName, newname);
+    if (link(fuzzer->fileName, newname) == 0) {
+        LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzers->fileName, newname);
     } else {
         if (errno == EEXIST) {
             LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", newname);
         } else {
-            LOGMSG_P(l_ERROR, "Couldn't link '%s' to '%s'", hfuzz->fuzzers[idx].fileName, newname);
+            LOGMSG_P(l_ERROR, "Couldn't link '%s' to '%s'", fuzzers->fileName, newname);
         }
     }
 
@@ -324,41 +321,34 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     return false;
 }
 
-pid_t arch_reapChild(honggfuzz_t * hfuzz)
+void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     /*
      * First check manually if we have expired childs
      */
 
-    for (int idx = 0; idx < hfuzz->threadsMax; idx++) {
-        double diff = difftime(time(NULL), hfuzz->fuzzers[idx].timeStarted);
-        if (hfuzz->fuzzers[idx].pid != 0 && diff > (double)hfuzz->tmOut) {
-            LOGMSG(l_WARN,
-                   "Process pid %d is overdue (%f seconds, max %f seconds %f), sending a SIGKILL",
-                   hfuzz->fuzzers[idx].pid, diff, (double)hfuzz->tmOut);
-            kill(hfuzz->fuzzers[idx].pid, SIGKILL);
-        }
+    double diff = difftime(time(NULL), fuzzer.timeStarted);
+    if (diff > (double)hfuzz->tmOut) {
+        LOGMSG(l_WARN,
+               "Process pid %d is overdue (%f seconds, max %f seconds %f), sending a SIGKILL",
+               fuzzer.pid, diff, (double)hfuzz->tmOut);
+        kill(fuzzer.pid, SIGKILL);
     }
+}
 
     /*
-     * Now check for signals using wait3
+     * Now check for signals using wait4
      */
+
+for (;;) {
     int status = 0;
-    struct rusage ru;
+    while (wait4(fuzzer->pid, &status, __WALL, NULL) != fuzzer->pid) ;
+    LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", fuzzer->pid, status);
 
-    pid_t pid = wait3(&status, 0, &ru);
-    if (pid <= 0) {
-        return pid;
+    if (arch_analyzeSignal(hfuzz, pid, fuzzer)) {
+        return;
     }
-    LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", pid, status);
-
-    int ret = arch_analyzeSignal(hfuzz, pid, status);
-
-    if (ret) {
-        return pid;
-    } else {
-        return (-1);
-    }
+}
 }
 
 void *wait_for_exception()
