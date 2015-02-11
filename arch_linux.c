@@ -586,7 +586,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int status;
 
     for (;;) {
-        while (wait4(fuzzer->pid, &status, __WALL, NULL) != fuzzer->pid) ;
+        while (wait3(&status, __WALL, NULL) != fuzzer->pid) ;
 
         LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", fuzzer->pid, status);
 
