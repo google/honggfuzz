@@ -241,9 +241,9 @@ static void *fuzz_threadCreate(void *arg)
     strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
     fuzz_getFileName(hfuzz, fuzzer.fileName);
 
-    // Maybe we're fuzzing an external process
+    /* Maybe we're fuzzing an external process */
     if (fuzzer.pid == 0) {
-      fuzzer.pid = fork();
+        fuzzer.pid = fork();
     }
 
     if (fuzzer.pid == -1) {
@@ -271,7 +271,6 @@ static void *fuzz_threadCreate(void *arg)
         /*
          * Ok, kill the parent
          */
-
         if (!arch_launchChild(hfuzz, fuzzer.fileName)) {
             LOGMSG(l_DEBUG, "Error launching child process, killing parent");
             kill(getppid(), SIGTERM);
@@ -308,6 +307,13 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
     return;
 }
 
+static void fuzz_waitForAll(honggfuzz_t * hfuzz)
+{
+    while (hfuzz->threadsCnt) {
+        usleep(10000);
+    }
+}
+
 void fuzz_main(honggfuzz_t * hfuzz)
 {
     if (!arch_prepareParent(hfuzz)) {
@@ -315,20 +321,24 @@ void fuzz_main(honggfuzz_t * hfuzz)
         exit(EXIT_FAILURE);
     }
 
+    if (hfuzz->pid) {
+        fuzz_runNext(hfuzz);
+        fuzz_waitForAll(hfuzz);
+        exit(EXIT_SUCCESS);
+    }
+
     for (;;) {
         while (hfuzz->threadsCnt < hfuzz->threadsMax) {
+            /* We just want a limited number of mutations */
             if (hfuzz->mutationsMax && (hfuzz->mutationsCnt >= hfuzz->mutationsMax)) {
-                while (hfuzz->threadsCnt) {
-                    usleep(1000);
-                }
+                fuzz_waitForAll(hfuzz);
                 LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
                 exit(EXIT_SUCCESS);
             }
-            /* We just want a limited number of mutations */
-            hfuzz->mutationsCnt++;
 
+            hfuzz->mutationsCnt++;
             fuzz_runNext(hfuzz);
         }
-        usleep(1000);
+        usleep(10000);
     }
 }
