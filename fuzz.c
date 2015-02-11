@@ -284,9 +284,8 @@ static void *fuzz_threadCreate(void *arg)
     arch_reapChild(hfuzz, &fuzzer);
     unlink(fuzzer.fileName);
 
-    while (pthread_mutex_lock(&hfuzz->mutex)) ;
     hfuzz->threadsCnt--;
-    while (pthread_mutex_unlock(&hfuzz->mutex)) ;
+    sem_post(&hfuzz->sem);
 
     return NULL;
 }
@@ -299,10 +298,6 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-    while (pthread_mutex_lock(&hfuzz->mutex)) ;
-    hfuzz->threadsCnt++;
-    while (pthread_mutex_unlock(&hfuzz->mutex)) ;
-
     if (pthread_create(&t, &attr, fuzz_threadCreate, (void *)hfuzz) < 0) {
         LOGMSG_P(l_FATAL, "Couldn't create a new thread");
         exit(EXIT_FAILURE);
@@ -314,11 +309,7 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
 static void fuzz_waitForAll(honggfuzz_t * hfuzz)
 {
     for (;;) {
-        while (pthread_mutex_lock(&hfuzz->mutex)) ;
-        int num = hfuzz->threadsCnt;
-        while (pthread_mutex_unlock(&hfuzz->mutex)) ;
-
-        if (num == 0) {
+        if (hfuzz->threadsCnt == 0) {
             return;
         }
         usleep(10000);
@@ -327,9 +318,10 @@ static void fuzz_waitForAll(honggfuzz_t * hfuzz)
 
 void fuzz_main(honggfuzz_t * hfuzz)
 {
-    if (pthread_mutex_init(&hfuzz->mutex, NULL) != 0) {
-        LOGMSG(l_FATAL, "Couldn't initialize mutex");
+    if (sem_init(&hfuzz->sem, 1, hfuzz->threadsMax)) {
+        LOGMSG_P(l_FATAL, "sem_init() failed");
         exit(EXIT_FAILURE);
+        exit(EXIT_SUCCESS);
     }
 
     if (!arch_prepareParent(hfuzz)) {
@@ -344,21 +336,19 @@ void fuzz_main(honggfuzz_t * hfuzz)
     }
 
     for (;;) {
-        while (pthread_mutex_lock(&hfuzz->mutex)) ;
-        int num = hfuzz->threadsCnt;
-        while (pthread_mutex_unlock(&hfuzz->mutex)) ;
-
-        while (num < hfuzz->threadsMax) {
-            /* We just want a limited number of mutations */
-            if (hfuzz->mutationsMax && (hfuzz->mutationsCnt >= hfuzz->mutationsMax)) {
-                fuzz_waitForAll(hfuzz);
-                LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
-                exit(EXIT_SUCCESS);
-            }
-
-            hfuzz->mutationsCnt++;
-            fuzz_runNext(hfuzz);
+        if (sem_wait(&hfuzz->sem) == -1) {
+            LOGMSG_P(l_FATAL, "sem_wait() failed");
+            exit(EXIT_FAILURE);
         }
-        usleep(10000);
+
+        if (hfuzz->mutationsMax && (hfuzz->mutationsCnt >= hfuzz->mutationsMax)) {
+            fuzz_waitForAll(hfuzz);
+            LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
+            exit(EXIT_SUCCESS);
+        }
+
+        hfuzz->mutationsCnt++;
+        hfuzz->threadsCnt++;
+        fuzz_runNext(hfuzz);
     }
 }
