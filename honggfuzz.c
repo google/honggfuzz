@@ -53,24 +53,24 @@ static void usage(bool exit_success)
 {
     /*  *INDENT-OFF* */
     printf("%s",
-           " <" AB "-f val" AC ">: directory with input files (or a path to a single input file)\n"
-           " [" AB "-h" AC "]: this help\n"
-           " [" AB "-q" AC "]: null-ify children's stdin, stdout, stderr; make them quiet (default: " AB "false" AC ")\n"
-           " [" AB "-s" AC "]: provide fuzzing input on STDIN, instead a file argument (default: " AB "false" AC ")\n"
-           " [" AB "-u" AC "]: save unique test-cases only, otherwise (if not used) append\n"
-           "       current timestamp to the output filenames (default: " AB "false" AC ")\n"
-           " [" AB "-d val" AC "]: debug level (0 - FATAL ... 4 - DEBUG), (default: '" AB "3" AC
+           " <" AB "-f val" AC "> : directory with input files (or a path to a single input file)\n"
+           " [" AB "-h" AC "]     : this help\n"
+           " [" AB "-q" AC "]     : null-ify children's stdin, stdout, stderr; make them quiet (default: " AB "false" AC ")\n"
+           " [" AB "-s" AC "]     : provide fuzzing input on STDIN, instead a file argument (default: " AB "false" AC ")\n"
+           " [" AB "-u" AC "]     : save unique test-cases only, otherwise (if not used) append\n"
+           "            current timestamp to the output filenames (default: " AB "false" AC ")\n"
+           " [" AB "-d val" AC "] : debug level (0 - FATAL ... 4 - DEBUG), (default: '" AB "3" AC
            "' [INFO])\n"
-           " [" AB "-e val" AC "]: file extension (e.g swf), (default: '" AB "fuzz" AC "')\n"
-           " [" AB "-r val" AC "]: flip rate, (default: '" AB "0.001" AC "')\n"
-           " [" AB "-m val" AC "]: flip mode (-mB - byte, -mb - bit), (default: '" AB "-mB" AC "')\n"
-           " [" AB "-c val" AC "]: an external command modifying the input corpus of files (instead of -r/-m)\n"
-           " [" AB "-t val" AC "]: timeout (in secs), (default: '" AB "3" AC "' [0 - no timeout])\n"
-           " [" AB "-a val" AC "]: address limit (from si.si_addr) below which crashes\n"
-           "           are not reported, (default: '" AB "0" AC "' [suggested: 65535])\n"
-           " [" AB "-n val" AC "]: number of concurrent fuzzing processes, (default: '" AB "5" AC "')\n"
-           " [" AB "-N val" AC "]: number of fuzzing mutations, (default: '" AB "0" AC "' [infinte])\n"
-           " [-" AB "l val" AC "]: per process memory limit in MiB, (default: '" AB "0" AC "' [no limit])\n"
+           " [" AB "-e val" AC "] : file extension (e.g swf), (default: '" AB "fuzz" AC "')\n"
+           " [" AB "-r val" AC "] : flip rate, (default: '" AB "0.001" AC "')\n"
+           " [" AB "-m val" AC "] : flip mode (-mB - byte, -mb - bit), (default: '" AB "-mB" AC "')\n"
+           " [" AB "-c val" AC "] : an external command modifying the input corpus of files (instead of -r/-m)\n"
+           " [" AB "-t val" AC "] : timeout (in secs), (default: '" AB "3" AC "' [0 - no timeout])\n"
+           " [" AB "-a val" AC "] : address limit (from si.si_addr) below which crashes\n"
+           "            are not reported, (default: '" AB "0" AC "' [suggested: 65535])\n"
+           " [" AB "-n val" AC "] : number of concurrent fuzzing processes, (default: '" AB "5" AC "')\n"
+           " [" AB "-N val" AC "] : number of fuzzing mutations, (default: '" AB "0" AC "' [infinte])\n"
+           " [-" AB "l val" AC "] : per process memory limit in MiB, (default: '" AB "0" AC "' [no limit])\n"
 #ifdef _HAVE_ARCH_LINUX
            " [" AB "-p val" AC
            "]: attach to a pid (a group thread), instead of monitoring\n"

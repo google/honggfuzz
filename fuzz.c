@@ -196,7 +196,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
 
     if (!pid) {
         /*
-         * child does the external file modifications
+         * child performs the external file modifications
          */
         execl(hfuzz->externalCommand, hfuzz->externalCommand, fileName, NULL);
         LOGMSG_P(l_FATAL, "Couldn't execute '%s %s'", hfuzz->externalCommand, fileName);
@@ -271,9 +271,7 @@ static void *fuzz_threadCreate(void *arg)
         exit(EXIT_FAILURE);
     }
 
-    if (hfuzz->pid) {
-        fuzzer.pid = hfuzz->pid;
-    } else {
+    if (fuzzer.pid == 0) {
         fuzzer.pid = pid;
     }
 
@@ -302,9 +300,9 @@ static void *fuzz_threadCreate(void *arg)
 static void fuzz_runNext(honggfuzz_t * hfuzz)
 {
     pthread_attr_t attr;
-    pthread_t t;
-
     pthread_attr_init(&attr);
+
+    pthread_t t;
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
     if (pthread_create(&t, &attr, fuzz_threadCreate, (void *)hfuzz) < 0) {
