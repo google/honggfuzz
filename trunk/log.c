@@ -34,16 +34,15 @@
 #include <time.h>
 #include <unistd.h>
 
-unsigned int log_minLevel;
-bool log_isStdioTTY;
+static unsigned int log_minLevel;
+static bool log_isStdioTTY;
 
-#define STDOUT_FD 1
 __attribute__ ((constructor))
 void log_init(void
     )
 {
     log_minLevel = l_INFO;
-    if (isatty(STDOUT_FD) == 1) {
+    if (isatty(STDOUT_FILENO) == 1) {
         log_isStdioTTY = true;
     } else {
         log_isStdioTTY = false;
@@ -71,13 +70,13 @@ void log_msg(log_level_t dl,
         "[DEBUG]", "\033[0;37m"}
     };
 
+    if (dl > log_minLevel)
+        return;
+
     char strerr[512];
     if (perr) {
         snprintf(strerr, sizeof(strerr), "%s", strerror(errno));
     }
-
-    if (dl > log_minLevel)
-        return;
 
     struct tm tm;
     struct timeval tv;
@@ -86,31 +85,31 @@ void log_msg(log_level_t dl,
     localtime_r((const time_t *)&tv.tv_sec, &tm);
 
     if (log_isStdioTTY) {
-        printf("%s", logLevels[dl].prefix);
+        dprintf(STDOUT_FILENO, "%s", logLevels[dl].prefix);
     }
 
     if (log_minLevel >= l_DEBUG || !log_isStdioTTY) {
-        printf
-            ("%s [%d] %d/%02d/%02d %02d:%02d:%02d (%s:%s %d) ",
+        dprintf
+            (STDOUT_FILENO, "%s [%d] %d/%02d/%02d %02d:%02d:%02d (%s:%s %d) ",
              logLevels[dl].descr, getpid(), tm.tm_year + 1900, tm.tm_mon + 1,
              tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, file, func, line);
     } else {
-        printf("%s ", logLevels[dl].descr);
+        dprintf(STDOUT_FILENO, "%s ", logLevels[dl].descr);
     }
 
     va_list args;
     va_start(args, fmt);
-    vprintf(fmt, args);
+    vdprintf(STDOUT_FILENO, fmt, args);
     va_end(args);
 
     if (perr) {
-        printf(": %s", strerr);
+        dprintf(STDOUT_FILENO, ": %s", strerr);
     }
 
     if (log_isStdioTTY) {
-        printf("\033[0m");
+        dprintf(STDOUT_FILENO, "\033[0m");
     }
 
-    printf("\n");
+    dprintf(STDOUT_FILENO, "\n");
     fflush(stdout);
 }
