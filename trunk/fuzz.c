@@ -226,6 +226,13 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
     abort();                    /* NOTREACHED */
 }
 
+static int fuzz_numOfProc(honggfuzz_t * hfuzz)
+{
+    int i;
+    sem_getvalue(&hfuzz->sem, &i);
+    return hfuzz->threadsMax - i;
+}
+
 static void *fuzz_threadCreate(void *arg)
 {
     /*
@@ -248,30 +255,31 @@ static void *fuzz_threadCreate(void *arg)
     strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
     fuzz_getFileName(hfuzz, fuzzer.fileName);
 
-    /* Maybe we're fuzzing an external process */
-    if (fuzzer.pid == 0) {
-        fuzzer.pid = fork();
+    if (hfuzz->externalCommand != NULL) {
+        if (!fuzz_prepareFileExternally(hfuzz, fuzzer.fileName, rnd_index)) {
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        if (!fuzz_prepareFile(hfuzz, fuzzer.fileName, rnd_index)) {
+            exit(EXIT_FAILURE);
+        }
     }
 
-    if (fuzzer.pid == -1) {
+    pid_t pid = fork();
+    if (pid == -1) {
         LOGMSG_P(l_FATAL, "Couldn't fork");
         exit(EXIT_FAILURE);
     }
 
-    if (!fuzzer.pid) {
+    if (hfuzz->pid) {
+      fuzzer.pid = hfuzz->pid;
+    } else {
+      fuzzer.pid = pid;
+    }
 
-        if (hfuzz->externalCommand != NULL) {
-            if (!fuzz_prepareFileExternally(hfuzz, fuzzer.fileName, rnd_index)) {
-                exit(EXIT_FAILURE);
-            }
-        } else {
-            if (!fuzz_prepareFile(hfuzz, fuzzer.fileName, rnd_index)) {
-                exit(EXIT_FAILURE);
-            }
-        }
-
+    if (!pid) {
         /*
-         * Ok, kill the parent
+         * Ok, kill the parent if this fails
          */
         if (!arch_launchChild(hfuzz, fuzzer.fileName)) {
             LOGMSG(l_DEBUG, "Error launching child process, killing parent");
@@ -280,10 +288,8 @@ static void *fuzz_threadCreate(void *arg)
         }
     }
 
-    int num;
-    sem_getvalue(&hfuzz->sem, &num);
-    num = hfuzz->threadsMax - num;
-    LOGMSG(l_INFO, "Launched new process, pid: %d, (%d/%d)", fuzzer.pid, num, hfuzz->threadsMax);
+    LOGMSG(l_INFO, "Launched new process, pid: %d, (%d/%d)", fuzzer.pid, fuzz_numOfProc(hfuzz),
+           hfuzz->threadsMax);
 
     arch_reapChild(hfuzz, &fuzzer);
     unlink(fuzzer.fileName);
@@ -312,18 +318,16 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
 static void fuzz_waitForAll(honggfuzz_t * hfuzz)
 {
     for (;;) {
-        int i;
-        sem_getvalue(&hfuzz->sem, &i);
-        if (i == hfuzz->threadsMax) {
+        if (fuzz_numOfProc(hfuzz) == 0) {
             return;
         }
-        usleep(10000);
+        usleep(50000);
     }
 }
 
 void fuzz_main(honggfuzz_t * hfuzz)
 {
-    if (sem_init(&hfuzz->sem, 1, hfuzz->threadsMax)) {
+    if (sem_init(&hfuzz->sem, 1, hfuzz->pid ? 1 : hfuzz->threadsMax)) {
         LOGMSG_P(l_FATAL, "sem_init() failed");
         exit(EXIT_FAILURE);
         exit(EXIT_SUCCESS);
@@ -332,12 +336,6 @@ void fuzz_main(honggfuzz_t * hfuzz)
     if (!arch_prepareParent(hfuzz)) {
         LOGMSG(l_FATAL, "Couldn't prepare parent for fuzzing");
         exit(EXIT_FAILURE);
-    }
-
-    if (hfuzz->pid) {
-        fuzz_runNext(hfuzz);
-        fuzz_waitForAll(hfuzz);
-        exit(EXIT_SUCCESS);
     }
 
     for (;;) {
@@ -354,5 +352,9 @@ void fuzz_main(honggfuzz_t * hfuzz)
 
         hfuzz->mutationsCnt++;
         fuzz_runNext(hfuzz);
+        if (hfuzz->pid) {
+          fuzz_waitForAll(hfuzz);
+          exit(EXIT_SUCCESS);
+        }
     }
 }
