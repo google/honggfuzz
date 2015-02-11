@@ -309,7 +309,6 @@ static void fuzz_runNext(honggfuzz_t * hfuzz)
 
     if (pthread_create(&t, &attr, fuzz_threadCreate, (void *)hfuzz) < 0) {
         LOGMSG_P(l_FATAL, "Couldn't create a new thread");
-        exit(EXIT_FAILURE);
     }
 
     return;
@@ -329,19 +328,15 @@ void fuzz_main(honggfuzz_t * hfuzz)
 {
     if (sem_init(&hfuzz->sem, 1, hfuzz->pid ? 1 : hfuzz->threadsMax)) {
         LOGMSG_P(l_FATAL, "sem_init() failed");
-        exit(EXIT_FAILURE);
-        exit(EXIT_SUCCESS);
     }
 
     if (!arch_prepareParent(hfuzz)) {
         LOGMSG(l_FATAL, "Couldn't prepare parent for fuzzing");
-        exit(EXIT_FAILURE);
     }
 
     for (;;) {
         if (sem_wait(&hfuzz->sem) == -1) {
             LOGMSG_P(l_FATAL, "sem_wait() failed");
-            exit(EXIT_FAILURE);
         }
 
         if (hfuzz->mutationsMax && (hfuzz->mutationsCnt >= hfuzz->mutationsMax)) {
