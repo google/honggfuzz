@@ -37,6 +37,18 @@
 static unsigned int log_minLevel;
 static bool log_isStdioTTY;
 
+static const struct {
+    const char *descr;
+    const char *prefix;
+} logLevels[] = {
+    {
+    "[FATAL]", "\033[1;31m"}, {
+    "[ERROR]", "\033[1;35m"}, {
+    "[WARNING]", "\033[1;34m"}, {
+    "[INFO]", "\033[1m"}, {
+    "[DEBUG]", "\033[0;37m"}
+};
+
 __attribute__ ((constructor))
 void log_init(void
     )
@@ -58,18 +70,6 @@ void log_msg(log_level_t dl,
              bool perr, const char *file, const char *func, int line, const char *fmt, ...
     )
 {
-    struct {
-        char *descr;
-        char *prefix;
-    } logLevels[] = {
-        {
-        "[FATAL]", "\033[1;31m"}, {
-        "[ERROR]", "\033[1;35m"}, {
-        "[WARNING]", "\033[1;34m"}, {
-        "[INFO]", "\033[1m"}, {
-        "[DEBUG]", "\033[0;37m"}
-    };
-
     if (dl > log_minLevel)
         return;
 
