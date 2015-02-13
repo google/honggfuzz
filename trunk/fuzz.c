@@ -324,16 +324,6 @@ static void *fuzz_threadPid(void *arg)
     return NULL;
 }
 
-static void fuzz_waitForAll(honggfuzz_t * hfuzz)
-{
-    for (;;) {
-        if (fuzz_numOfProc(hfuzz) == 0) {
-            return;
-        }
-        usleep(50000);
-    }
-}
-
 static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
 {
     pthread_attr_t attr;
@@ -373,7 +363,8 @@ void fuzz_main(honggfuzz_t * hfuzz)
         }
 
         if (hfuzz->mutationsMax && (hfuzz->mutationsCnt >= hfuzz->mutationsMax)) {
-            fuzz_waitForAll(hfuzz);
+            /* Sleep a bit to let any running fuzzers terminate */
+            usleep(1.2 * hfuzz->tmOut * 1000000);
             LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
             sem_destroy(hfuzz->sem);
             exit(EXIT_SUCCESS);

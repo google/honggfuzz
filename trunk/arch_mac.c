@@ -75,13 +75,10 @@ aThreadState threadStateCount:(mach_msg_type_number_t) aThreadStateCount;
 /* Global to have exception port available in the collection thread */
 static mach_port_t g_exception_port = MACH_PORT_NULL;
 
-/* Global to have hfuzz avaiable in exception handler */
-honggfuzz_t *g_hfuzz;
-
 /* From xnu/bsd/sys/proc_internal.h */
 #define PID_MAX 99999
 
-/* Global to have each fuzzer avaiable in exception handler */
+/* Global to store crash info in exception handler thread */
 fuzzer_t g_fuzzer_crash_information[PID_MAX + 1];
 
 /* Global to have a unique service name for each honggfuzz process */
@@ -187,8 +184,6 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     fuzzer->exception = g_fuzzer_crash_information[fuzzer->pid].exception;
     fuzzer->access = g_fuzzer_crash_information[fuzzer->pid].access;
     fuzzer->backtrace = g_fuzzer_crash_information[fuzzer->pid].backtrace;
-
-    // TODO origFileName?
 
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
@@ -426,9 +421,6 @@ bool arch_prepareParent(honggfuzz_t * hfuzz)
         return false;
     }
 
-    /* Finally make hfuzz avaiable in the collection thread */
-    g_hfuzz = hfuzz;
-
     return true;
 }
 
@@ -574,7 +566,7 @@ uint64_t hash_callstack(thread_port_t thread,
         pos++;
     }
 
-    LOGMSG(l_DEBUG, "callstack hash %u", hash);
+    LOGMSG(l_DEBUG, "Callstack hash %u", hash);
 
     [_crashReport release];
     [pool drain];
@@ -626,7 +618,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     pid_for_task(task, &pid);
     LOGMSG(l_DEBUG, "Crash of pid %d", pid);
 
-    fuzzer_t fuzzer = g_fuzzer_crash_information[pid];
+    fuzzer_t *fuzzer = &g_fuzzer_crash_information[pid];
 
     /*
      * Get program counter.
@@ -636,9 +628,9 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     x86_thread_state_t *platform_in_state = ((x86_thread_state_t *) (void *)in_state);
 
     if (x86_THREAD_STATE32 == platform_in_state->tsh.flavor) {
-        fuzzer.pc = platform_in_state->uts.ts32.__eip;
+        fuzzer->pc = platform_in_state->uts.ts32.__eip;
     } else {
-        fuzzer.pc = platform_in_state->uts.ts64.__rip;
+        fuzzer->pc = platform_in_state->uts.ts64.__rip;
     }
 
     /* Get the exception type */
@@ -649,9 +641,9 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
         exception_type = EXC_CRASH;
     }
 
-    fuzzer.exception = exception_type;
+    fuzzer->exception = exception_type;
 
-    /* Get the access address. TODO: check whether there is a better way to do this. */
+    /* Get the access address. */
 
     mach_exception_data_type_t exception_data[2];
     memcpy(exception_data, code, sizeof(exception_data));
@@ -659,14 +651,14 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     exception_data[1] = code[1];
 
     mach_exception_data_type_t access_address = exception_data[1];
-    fuzzer.access = (uint64_t) access_address;
+    fuzzer->access = (uint64_t) access_address;
 
     /* Get a hash of the callstack */
 
     uint64_t hash =
         hash_callstack(thread, task, exception, code, code_count, flavor, in_state, in_state_count);
 
-    fuzzer.backtrace = hash;
+    fuzzer->backtrace = hash;
 
     /* Cleanup */
 
