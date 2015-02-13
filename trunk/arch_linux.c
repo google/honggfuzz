@@ -658,15 +658,22 @@ bool arch_prepareParent(honggfuzz_t * hfuzz)
 
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
         if (ptrace(PT_ATTACH, tasks[i], NULL, NULL) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't ptrace() ATTACH to pid: %d", tasks[i]);
+            LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_ATTACH) to pid: %d", tasks[i]);
             return false;
         }
 
         int status;
         while (waitpid(tasks[i], &status, WUNTRACED | __WALL) != tasks[i]) ;
 
+        if (ptrace(PTRACE_SETOPTIONS, tasks[i], NULL,
+                   PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK) == -1) {
+            LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_SETOPTIONS) pid: %d", tasks[i]);
+            ptrace(PT_DETACH, tasks[i], 0, SIGCONT);
+            return false;
+        }
+
         if (ptrace(PT_CONTINUE, tasks[i], NULL, NULL) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't ptrace() CONTINUE pid: %d", tasks[i]);
+            LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_CONTINUE) pid: %d", tasks[i]);
             ptrace(PT_DETACH, tasks[i], 0, SIGCONT);
             return false;
         }
