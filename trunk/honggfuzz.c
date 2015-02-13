@@ -193,11 +193,6 @@ int main(int argc, char **argv)
         usage(false);
     }
 
-    if (hfuzz.pid) {
-        LOGMSG(l_INFO, "External PID specified, concurrency disabled");
-        hfuzz.threadsMax = 1;
-    }
-
     if (strchr(hfuzz.fileExtn, '/')) {
         LOGMSG(l_FATAL, "The file extension contains the '/' character: '%s'", hfuzz.fileExtn);
         usage(false);
