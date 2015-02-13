@@ -64,7 +64,8 @@ ifeq ($(OS),Darwin)
 	ARCH_SRCS = arch_mac.c
 	MIG_OUTPUT = mach_exc.h mach_excUser.c mach_excServer.h mach_excServer.c
 	MIG_OBJECTS = mach_excUser.o mach_excServer.o
-	CRASH_REPORT = third_party/CrashReport_Yosemite.o
+	#CRASH_REPORT = third_party/CrashReport_Yosemite.o
+	CRASH_REPORT = third_party/CrashReport_Mavericks.o
 endif
 SRCS += $(ARCH_SRCS)
 

@@ -59,8 +59,9 @@
 
 #import <Foundation/Foundation.h>
 
-/* Interface to third_party/CrashReport_Mountain_Lion.o */
- @ interface CrashReport: NSObject - (id) initWithTask:(task_t)
+/* Interface to third_party/CrashReport_*.o */
+/*  *INDENT-OFF* */
+@interface CrashReport: NSObject - (id) initWithTask:(task_t)
 task exceptionType:(exception_type_t)
 anExceptionType exceptionCode:(mach_exception_data_t)
 anExceptionCode exceptionCodeCount:(mach_msg_type_number_t)
@@ -69,11 +70,19 @@ thread threadStateFlavor:(thread_state_flavor_t)
 aThreadStateFlavor threadState:(thread_state_data_t)
 aThreadState threadStateCount:(mach_msg_type_number_t) aThreadStateCount;
 @end
+/*  *INDENT-ON* */
+
 /* Global to have exception port available in the collection thread */
 static mach_port_t g_exception_port = MACH_PORT_NULL;
 
 /* Global to have hfuzz avaiable in exception handler */
 honggfuzz_t *g_hfuzz;
+
+/* From xnu/bsd/sys/proc_internal.h */
+#define PID_MAX 99999 
+
+/* Global to have each fuzzer avaiable in exception handler */
+fuzzer_t g_fuzzer_crash_information[PID_MAX+1];
 
 /* Global to have a unique service name for each honggfuzz process */
 char g_service_name[256];
@@ -173,10 +182,18 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      */
     char newname[PATH_MAX];
 
+    /* Get data from exception handler */
+    fuzzer->pc = g_fuzzer_crash_information[fuzzer->pid].pc;
+    fuzzer->exception = g_fuzzer_crash_information[fuzzer->pid].exception;
+    fuzzer->access = g_fuzzer_crash_information[fuzzer->pid].access;
+    fuzzer->backtrace = g_fuzzer_crash_information[fuzzer->pid].backtrace;
+
+    // TODO origFileName?
+
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
                  "%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s.%s",
-                 arch_sigs[termsig].descr, exception_to_string(fuzzers->exception),
+                 arch_sigs[termsig].descr, exception_to_string(fuzzer->exception),
                  fuzzer->pc, fuzzer->backtrace, fuzzer->access,
                  fuzzer->origFileName, hfuzz->fileExtn);
     } else {
@@ -187,17 +204,17 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
         snprintf(newname, sizeof(newname),
                  "%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s.%s",
                  arch_sigs[termsig].descr, exception_to_string(fuzzer->exception),
-                 fuzzer->pc, fuzzer->backtrace, fuzzers->access,
+                 fuzzer->pc, fuzzer->backtrace, fuzzer->access,
                  localtmstr, fuzzer->pid, fuzzer->origFileName, hfuzz->fileExtn);
     }
 
     if (link(fuzzer->fileName, newname) == 0) {
-        LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzers->fileName, newname);
+        LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, newname);
     } else {
         if (errno == EEXIST) {
             LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", newname);
         } else {
-            LOGMSG_P(l_ERROR, "Couldn't link '%s' to '%s'", fuzzers->fileName, newname);
+            LOGMSG_P(l_ERROR, "Couldn't link '%s' to '%s'", fuzzer->fileName, newname);
         }
     }
 
@@ -327,12 +344,12 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      * First check manually if we have expired childs
      */
 
-    double diff = difftime(time(NULL), fuzzer.timeStarted);
+    double diff = difftime(time(NULL), fuzzer->timeStarted);
     if (diff > (double)hfuzz->tmOut) {
         LOGMSG(l_WARN,
                "Process pid %d is overdue (%f seconds, max %f seconds %f), sending a SIGKILL",
-               fuzzer.pid, diff, (double)hfuzz->tmOut);
-        kill(fuzzer.pid, SIGKILL);
+               fuzzer->pid, diff, (double)hfuzz->tmOut);
+        kill(fuzzer->pid, SIGKILL);
     }
 
     /*
@@ -341,10 +358,10 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     for (;;) {
         int status = 0;
-        while (wait4(fuzzer->pid, &status, __WALL, NULL) != fuzzer->pid) ;
+        while (wait4(fuzzer->pid, &status, WUNTRACED, NULL) != fuzzer->pid) ;
         LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", fuzzer->pid, status);
 
-        if (arch_analyzeSignal(hfuzz, pid, fuzzer)) {
+        if (arch_analyzeSignal(hfuzz, status, fuzzer)) {
             return;
         }
     }
@@ -421,13 +438,24 @@ void write_crash_report(thread_port_t thread,
                         exception_type_t exception,
                         mach_exception_data_t code,
                         mach_msg_type_number_t code_count,
-                        int *flavor, thread_state_t in_state, mach_msg_type_number_t in_state_count)
+                        int *flavor,
+                        thread_state_t in_state,
+                        mach_msg_type_number_t in_state_count)
 {
 
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
     CrashReport *_crashReport = nil;
 
- _crashReport =[[CrashReport alloc] initWithTask: task exceptionType: exception exceptionCode: code exceptionCodeCount: code_count thread: thread threadStateFlavor: *flavor threadState: (thread_state_t) in_state threadStateCount:in_state_count];
+/*  *INDENT-OFF* */
+    _crashReport = [[CrashReport alloc] initWithTask:task
+                                       exceptionType:exception
+                                       exceptionCode:code
+                                  exceptionCodeCount:code_count
+                                              thread:thread
+                                   threadStateFlavor:*flavor
+                                         threadState:(thread_state_t)in_state
+                                    threadStateCount:in_state_count];
+/*  *INDENT-OFF* */
 
     NSString *crashDescription =[_crashReport description];
     char *description = (char *)[crashDescription UTF8String];
@@ -444,13 +472,23 @@ uint64_t hash_callstack(thread_port_t thread,
                         exception_type_t exception,
                         mach_exception_data_t code,
                         mach_msg_type_number_t code_count,
-                        int *flavor, thread_state_t in_state, mach_msg_type_number_t in_state_count)
-{
+                        int *flavor,
+                        thread_state_t in_state,
+                        mach_msg_type_number_t in_state_count) {
 
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
     CrashReport *_crashReport = nil;
 
- _crashReport =[[CrashReport alloc] initWithTask: task exceptionType: exception exceptionCode: code exceptionCodeCount: code_count thread: thread threadStateFlavor: *flavor threadState: (thread_state_t) in_state threadStateCount:in_state_count];
+/*  *INDENT-OFF* */
+    _crashReport = [[CrashReport alloc] initWithTask:task
+                                       exceptionType:exception
+                                       exceptionCode:code
+                                  exceptionCodeCount:code_count
+                                              thread:thread
+                                   threadStateFlavor:*flavor
+                                         threadState:(thread_state_t)in_state
+                                    threadStateCount:in_state_count];
+/*  *INDENT-ON* */
 
     NSString *crashDescription =[_crashReport description];
     char *description = (char *)[crashDescription UTF8String];
@@ -546,24 +584,26 @@ uint64_t hash_callstack(thread_port_t thread,
     return hash;
 }
 
-kern_return_t catch_mach_exception_raise
-    (mach_port_t exception_port,
-     mach_port_t thread,
-     mach_port_t task,
-     exception_type_t exception, mach_exception_data_t code, mach_msg_type_number_t codeCnt) {
+
+kern_return_t catch_mach_exception_raise(mach_port_t exception_port,
+                                         mach_port_t thread,
+                                         mach_port_t task,
+                                         exception_type_t exception,
+                                         mach_exception_data_t code,
+                                         mach_msg_type_number_t codeCnt) {
     LOGMSG(l_FATAL, "This function should never get called");
     return KERN_SUCCESS;
 }
 
-kern_return_t catch_mach_exception_raise_state
-    (mach_port_t exception_port,
-     exception_type_t exception,
-     const mach_exception_data_t code,
-     mach_msg_type_number_t codeCnt,
-     int *flavor,
-     const thread_state_t old_state,
-     mach_msg_type_number_t old_stateCnt,
-     thread_state_t new_state, mach_msg_type_number_t * new_stateCnt) {
+kern_return_t catch_mach_exception_raise_state(mach_port_t exception_port,
+                                               exception_type_t exception,
+                                               const mach_exception_data_t code,
+                                               mach_msg_type_number_t codeCnt,
+                                               int *flavor,
+                                               const thread_state_t old_state,
+                                               mach_msg_type_number_t old_stateCnt,
+                                               thread_state_t new_state,
+                                               mach_msg_type_number_t * new_stateCnt) {
     LOGMSG(l_FATAL, "This function should never get called");
     return KERN_SUCCESS;
 }
@@ -577,8 +617,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
                                                         int *flavor, thread_state_t in_state,
                                                         mach_msg_type_number_t in_state_count,
                                                         thread_state_t out_state,
-                                                        mach_msg_type_number_t * out_state_count)
-{
+                                                        mach_msg_type_number_t * out_state_count) {
     if (exception != EXC_CRASH) {
         LOGMSG(l_FATAL, "Got non EXC_CRASH! This should not happen.");
     }
@@ -588,7 +627,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     pid_for_task(task, &pid);
     LOGMSG(l_DEBUG, "Crash of pid %d", pid);
 
-    int idx = HF_SLOT(g_hfuzz, pid);
+    fuzzer_t fuzzer = g_fuzzer_crash_information[pid];
 
     /*
      * Get program counter.
@@ -598,9 +637,9 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     x86_thread_state_t *platform_in_state = ((x86_thread_state_t *) (void *)in_state);
 
     if (x86_THREAD_STATE32 == platform_in_state->tsh.flavor) {
-        g_hfuzz->fuzzers[idx].pc = platform_in_state->uts.ts32.__eip;
+        fuzzer.pc = platform_in_state->uts.ts32.__eip;
     } else {
-        g_hfuzz->fuzzers[idx].pc = platform_in_state->uts.ts64.__rip;
+        fuzzer.pc = platform_in_state->uts.ts64.__rip;
     }
 
     /* Get the exception type */
@@ -611,7 +650,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
         exception_type = EXC_CRASH;
     }
 
-    g_hfuzz->fuzzers[idx].exception = exception_type;
+    fuzzer.exception = exception_type;
 
     /* Get the access address. TODO: check whether there is a better way to do this. */
 
@@ -621,14 +660,14 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     exception_data[1] = code[1];
 
     mach_exception_data_type_t access_address = exception_data[1];
-    g_hfuzz->fuzzers[idx].access = (uint64_t) access_address;
+    fuzzer.access = (uint64_t) access_address;
 
     /* Get a hash of the callstack */
 
     uint64_t hash =
         hash_callstack(thread, task, exception, code, code_count, flavor, in_state, in_state_count);
 
-    g_hfuzz->fuzzers[idx].backtrace = hash;
+    fuzzer.backtrace = hash;
 
     /* Cleanup */
 
@@ -640,5 +679,5 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
         LOGMSG(l_WARN, "Exception Handler: Could not deallocate thread");
     }
 
-    return KERN_SUCCESS;        //KERN_SUCCESS indicates that this should not be forwarded to other handlers
+    return KERN_SUCCESS;        //KERN_SUCCESS indicates that this should not be forwarded to other crash handlers
 }
