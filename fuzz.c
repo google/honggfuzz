@@ -233,7 +233,7 @@ static int fuzz_numOfProc(honggfuzz_t * hfuzz)
     return hfuzz->threadsMax - i;
 }
 
-static void *fuzz_threadCreate(void *arg)
+static void *fuzz_threadNew(void *arg)
 {
     /*
      *  We're a new thread now, other pid's might have the same rnd seeds now,
@@ -243,7 +243,7 @@ static void *fuzz_threadCreate(void *arg)
 
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
     fuzzer_t fuzzer = {
-        .pid = hfuzz->pid,
+        .pid = 0,
         .timeStarted = time(NULL),
         .pc = 0ULL,
         .backtrace = 0ULL,
@@ -265,17 +265,13 @@ static void *fuzz_threadCreate(void *arg)
         }
     }
 
-    pid_t pid = fork();
-    if (pid == -1) {
+    fuzzer.pid = fork();
+    if (fuzzer.pid == -1) {
         LOGMSG_P(l_FATAL, "Couldn't fork");
         exit(EXIT_FAILURE);
     }
 
-    if (fuzzer.pid == 0) {
-        fuzzer.pid = pid;
-    }
-
-    if (!pid) {
+    if (!fuzzer.pid) {
         /*
          * Ok, kill the parent if this fails
          */
@@ -297,19 +293,41 @@ static void *fuzz_threadCreate(void *arg)
     return NULL;
 }
 
-static void fuzz_runNext(honggfuzz_t * hfuzz)
+static void *fuzz_threadPid(void *arg)
 {
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-
-    pthread_t t;
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-
-    if (pthread_create(&t, &attr, fuzz_threadCreate, (void *)hfuzz) < 0) {
-        LOGMSG_P(l_FATAL, "Couldn't create a new thread");
+    honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
+    if (!arch_prepareParent(hfuzz)) {
+        LOGMSG(l_FATAL, "Couldn't prepare parent for fuzzing");
     }
 
-    return;
+    fuzzer_t fuzzer = {
+        .pid = hfuzz->pid,
+        .timeStarted = time(NULL),
+        .pc = 0ULL,
+        .backtrace = 0ULL,
+        .access = 0ULL,
+        .exception = 0,
+    };
+
+    char fileName[] = ".honggfuzz.empty.XXXXXX";
+    int fd;
+    if ((fd = mkstemp(fileName)) == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't create a temporary file");
+        return NULL;
+    }
+    close(fd);
+
+    strncpy(fuzzer.origFileName, "PID_FUZZING", PATH_MAX);
+    strncpy(fuzzer.fileName, fileName, PATH_MAX);
+
+    arch_reapChild(hfuzz, &fuzzer);
+    unlink(fuzzer.fileName);
+
+    // There's no more hfuzz->pid to analyze. Just exit
+    LOGMSG(l_INFO, "PID: %d exited. Exiting", fuzzer.pid);
+    exit(EXIT_SUCCESS);
+
+    return NULL;
 }
 
 static void fuzz_waitForAll(honggfuzz_t * hfuzz)
@@ -322,18 +340,44 @@ static void fuzz_waitForAll(honggfuzz_t * hfuzz)
     }
 }
 
+static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
+{
+    /*
+     *  We're a new thread now, other pid's might have the same rnd seeds now,
+     *  reinitialize it
+     */
+    util_rndInit();
+
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+
+    pthread_t t;
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+    if (pthread_create(&t, &attr, thread, (void *)hfuzz) < 0) {
+        LOGMSG_P(l_FATAL, "Couldn't create a new thread");
+    }
+
+    return;
+}
+
 void fuzz_main(honggfuzz_t * hfuzz)
 {
     char semName[PATH_MAX];
     snprintf(semName, sizeof(semName), "honggfuzz.%d.%d", getpid(), (int)time(NULL));
 
-    hfuzz->sem = sem_open(semName, O_CREAT | O_EXCL, 0644, hfuzz->pid ? 1 : hfuzz->threadsMax);
+    hfuzz->sem = sem_open(semName, O_CREAT | O_EXCL, 0644, hfuzz->threadsMax);
     if (hfuzz->sem == SEM_FAILED) {
         LOGMSG_P(l_FATAL, "sem_open() failed");
     }
 
-    if (!arch_prepareParent(hfuzz)) {
-        LOGMSG(l_FATAL, "Couldn't prepare parent for fuzzing");
+    // If we're doing a PID fuzzing, the parent will be another thread
+    if (hfuzz->pid) {
+        fuzz_runThread(hfuzz, fuzz_threadPid);
+    } else {
+        if (!arch_prepareParent(hfuzz)) {
+            LOGMSG(l_FATAL, "Couldn't prepare parent for fuzzing");
+        }
     }
 
     for (;;) {
@@ -349,11 +393,6 @@ void fuzz_main(honggfuzz_t * hfuzz)
         }
 
         hfuzz->mutationsCnt++;
-        fuzz_runNext(hfuzz);
-        if (hfuzz->pid) {
-            fuzz_waitForAll(hfuzz);
-            sem_destroy(hfuzz->sem);
-            exit(EXIT_SUCCESS);
-        }
+        fuzz_runThread(hfuzz, fuzz_threadNew);
     }
 }

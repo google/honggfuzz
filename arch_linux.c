@@ -414,7 +414,7 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
-static bool arch_analyzePtrace(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzzer)
+static bool arch_analyzePtrace(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer)
 {
     /*
      * If it's an uninteresting signal (even SIGTRAP), let it run and relay the
@@ -422,7 +422,7 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      */
     if (WIFSTOPPED(status) && !arch_sigs[WSTOPSIG(status)].important) {
         int sig = WSTOPSIG(status) == SIGTRAP ? 0 : WSTOPSIG(status);
-        ptrace(PT_CONTINUE, fuzzer->pid, 0, sig);
+        ptrace(PT_CONTINUE, pid, 0, sig);
         return false;
     }
 
@@ -431,8 +431,8 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      * the tracer (relay the signal as well)
      */
     if (WIFSTOPPED(status) && arch_sigs[WSTOPSIG(status)].important) {
-        arch_savePtraceData(hfuzz, fuzzer->pid, fuzzer);
-        ptrace(PT_CONTINUE, fuzzer->pid, 0, WSTOPSIG(status));
+        arch_savePtraceData(hfuzz, pid, fuzzer);
+        ptrace(PT_CONTINUE, pid, 0, WSTOPSIG(status));
         return false;
     }
 
@@ -586,11 +586,12 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int status;
 
     for (;;) {
-        while (wait3(&status, __WNOTHREAD | __WALL, NULL) != fuzzer->pid) ;
+        pid_t pid;
+        while ((pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL)) <= 0) ;
 
-        LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", fuzzer->pid, status);
+        LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", pid, status);
 
-        if (arch_analyzePtrace(hfuzz, status, fuzzer)) {
+        if (arch_analyzePtrace(hfuzz, status, pid, fuzzer)) {
             return;
         }
     }

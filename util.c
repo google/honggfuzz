@@ -37,9 +37,12 @@
 void util_rndInit(void)
 {
     struct timeval tv;
+    uint64_t seed;
 
     gettimeofday(&tv, NULL);
-    uint64_t seed = ((uint64_t) tv.tv_sec << 24) ^ ((uint64_t) tv.tv_usec);
+    seed = ((uint64_t) tv.tv_usec) << 24;
+    gettimeofday(&tv, NULL);
+    seed ^= ((uint64_t) tv.tv_usec);
 
     LOGMSG(l_DEBUG, "srand48() reinitialized with %ld", (long)seed);
     srand48((long)seed);
