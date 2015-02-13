@@ -195,6 +195,13 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
     }
 
     if (!pid) {
+#if defined(PR_SET_PDEATHSIG)
+        /* Kill it if the main process goes down */
+        if (prctl(PR_SET_PDEATHSIG, (long)SIGKILL, 0L, 0L, 0L) == -1) {
+            LOGMSG_P(l_ERROR, "prctl(PR_SET_PDEATHSIG, SIGKILL) failed");
+            return false;
+        }
+#endif                          /* defined(PR_SET_PDEATHSIG) */
         /*
          * child performs the external file modifications
          */
