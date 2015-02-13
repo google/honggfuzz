@@ -201,27 +201,28 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
         execl(hfuzz->externalCommand, hfuzz->externalCommand, fileName, NULL);
         LOGMSG_P(l_FATAL, "Couldn't execute '%s %s'", hfuzz->externalCommand, fileName);
         return false;
-    } else {
-        /*
-         * parent waits until child is done fuzzing the input file
-         */
+    }
+    /*
+     * parent waits until child is done fuzzing the input file
+     */
 
-        int childStatus;
-        pid_t terminatedPid;
-        do {
-            terminatedPid = wait(&childStatus);
-        } while (terminatedPid != pid);
+    int childStatus;
+    int flags = 0;
+#if defined(__WNOTHREAD) && defined(__WALL)
+    flags |= __WNOTHREAD | __WALL;
+#endif
+    while (wait4(pid, &childStatus, flags, NULL) != pid) ;
 
-        if (WIFEXITED(childStatus)) {
-            LOGMSG(l_DEBUG, "External command exited with status %d", WEXITSTATUS(childStatus));
-            return true;
-        } else if (WIFSIGNALED(childStatus)) {
-            LOGMSG(l_ERROR, "External command terminated  with signal %d", WTERMSIG(childStatus));
-            return false;
-        }
-        LOGMSG(l_FATAL, "External command terminated abnormally, status: %d", childStatus);
+    if (WIFEXITED(childStatus)) {
+        LOGMSG(l_DEBUG, "External command exited with status %d", WEXITSTATUS(childStatus));
+        return true;
+    }
+    if (WIFSIGNALED(childStatus)) {
+        LOGMSG(l_ERROR, "External command terminated  with signal %d", WTERMSIG(childStatus));
         return false;
     }
+    LOGMSG(l_FATAL, "External command terminated abnormally, status: %d", childStatus);
+    return false;
 
     abort();                    /* NOTREACHED */
 }
@@ -342,9 +343,10 @@ static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
 void fuzz_main(honggfuzz_t * hfuzz)
 {
     char semName[PATH_MAX];
-    snprintf(semName, sizeof(semName), "honggfuzz.%d.%d", getpid(), (int)time(NULL));
+    snprintf(semName, sizeof(semName), "honggfuzz.%d.%d.%u", getpid(), (int)time(NULL),
+             util_rndGet(1, 1U << 30));
 
-    hfuzz->sem = sem_open(semName, O_CREAT | O_EXCL, 0644, hfuzz->threadsMax);
+    hfuzz->sem = sem_open(semName, O_CREAT, 0644, hfuzz->threadsMax);
     if (hfuzz->sem == SEM_FAILED) {
         LOGMSG_P(l_FATAL, "sem_open() failed");
     }
