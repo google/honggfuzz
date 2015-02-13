@@ -36,7 +36,7 @@
 
 static int util_urandomFD = -1;
 
-void util_rndInit(void)
+uint32_t util_rndGet(uint32_t min, uint32_t max)
 {
     if (util_urandomFD == -1) {
         if ((util_urandomFD = open("/dev/urandom", O_RDONLY)) == -1) {
@@ -45,22 +45,13 @@ void util_rndInit(void)
     }
 
     uint64_t seed;
-    read(util_urandomFD, &seed, sizeof(seed));
+    if (read(util_urandomFD, &seed, sizeof(seed)) != sizeof(seed)) {
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        seed ^= ((uint64_t) tv.tv_usec);
+    }
 
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    seed ^= ((uint64_t) tv.tv_usec);
-
-    LOGMSG(l_DEBUG, "srand48() reinitialized with %ld", (long)seed);
     srand48((long)seed);
-}
-
-/*
- * Yeah.. the distribution is not perfect, but it's not supposed to be
- * cryptographically secure
- */
-uint32_t util_rndGet(uint32_t min, uint32_t max)
-{
     double rnd = drand48();
 
     return (uint32_t) lrint(floor((rnd * (max - min + 1)) + min));

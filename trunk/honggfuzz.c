@@ -178,7 +178,6 @@ int main(int argc, char **argv)
     }
     hfuzz.cmdline = &argv[optind];
 
-    util_rndInit();
     log_setMinLevel(ll);
 
     if (!hfuzz.cmdline[0]) {
