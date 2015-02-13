@@ -235,12 +235,6 @@ static int fuzz_numOfProc(honggfuzz_t * hfuzz)
 
 static void *fuzz_threadNew(void *arg)
 {
-    /*
-     *  We're a new thread now, other pid's might have the same rnd seeds now,
-     *  reinitialize it
-     */
-    util_rndInit();
-
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
     fuzzer_t fuzzer = {
         .pid = 0,
@@ -342,12 +336,6 @@ static void fuzz_waitForAll(honggfuzz_t * hfuzz)
 
 static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
 {
-    /*
-     *  We're a new thread now, other pid's might have the same rnd seeds now,
-     *  reinitialize it
-     */
-    util_rndInit();
-
     pthread_attr_t attr;
     pthread_attr_init(&attr);
 

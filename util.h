@@ -26,8 +26,6 @@
 
 #include <stdint.h>
 
-extern void util_rndInit(void);
-
 extern uint32_t util_rndGet(uint32_t min, uint32_t max);
 
 extern void util_getLocalTime(const char *fmt, char *buf, size_t len);
