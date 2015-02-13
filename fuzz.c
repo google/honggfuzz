@@ -327,7 +327,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
     char semName[PATH_MAX];
     snprintf(semName, sizeof(semName), "honggfuzz.%d.%d", getpid(), (int)time(NULL));
 
-    hfuzz->sem = sem_open(semName, O_CREAT, 0644, hfuzz->pid ? 1 : hfuzz->threadsMax);
+    hfuzz->sem = sem_open(semName, O_CREAT | O_EXCL, 0644, hfuzz->pid ? 1 : hfuzz->threadsMax);
     if (hfuzz->sem == SEM_FAILED) {
         LOGMSG_P(l_FATAL, "sem_open() failed");
     }
