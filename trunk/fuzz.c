@@ -208,17 +208,16 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
 
     int childStatus;
     int flags = 0;
-#if defined(__WNOTHREAD) && defined(__WALL)
-    flags |= __WNOTHREAD | __WALL;
+#if defined(__WNOTHREAD)
+    flags |= __WNOTHREAD;
 #endif
     while (wait4(pid, &childStatus, flags, NULL) != pid) ;
-
     if (WIFEXITED(childStatus)) {
         LOGMSG(l_DEBUG, "External command exited with status %d", WEXITSTATUS(childStatus));
         return true;
     }
     if (WIFSIGNALED(childStatus)) {
-        LOGMSG(l_ERROR, "External command terminated  with signal %d", WTERMSIG(childStatus));
+        LOGMSG(l_ERROR, "External command terminated with signal %d", WTERMSIG(childStatus));
         return false;
     }
     LOGMSG(l_FATAL, "External command terminated abnormally, status: %d", childStatus);
