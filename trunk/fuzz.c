@@ -53,11 +53,11 @@ static void fuzz_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, off_t fileSz)
     /*
      * Just copy the file if "-r 0"
      */
-    if (hfuzz->flipRate == 0.0) {
+    uint64_t changesCnt = fileSz * hfuzz->flipRate;
+
+    if (changesCnt == 0ULL) {
         return;
     }
-
-    uint64_t changesCnt = fileSz * hfuzz->flipRate;
 
     if (hfuzz->flipMode == 'b') {
         changesCnt *= 8UL;
