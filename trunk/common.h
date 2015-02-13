@@ -56,7 +56,7 @@ typedef struct {
     int pid;
     char **files;
     int fileCnt;
-    sem_t sem;
+    sem_t *sem;
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
