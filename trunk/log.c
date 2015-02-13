@@ -26,6 +26,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,6 +37,7 @@
 
 static unsigned int log_minLevel;
 static bool log_isStdioTTY;
+static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static const struct {
     const char *descr;
@@ -72,6 +74,8 @@ void log_msg(log_level_t dl,
 {
     if (dl > log_minLevel)
         return;
+
+    while (pthread_mutex_lock(&log_mutex)) ;
 
     char strerr[512];
     if (perr) {
@@ -111,5 +115,6 @@ void log_msg(log_level_t dl,
     }
 
     dprintf(STDOUT_FILENO, "\n");
-    fflush(stdout);
+
+    while (pthread_mutex_unlock(&log_mutex)) ;
 }
