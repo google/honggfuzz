@@ -356,7 +356,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
     if (hfuzz->sem == SEM_FAILED) {
         LOGMSG_P(l_FATAL, "sem_open() failed");
     }
-    // If we're doing a PID fuzzing, the parent will be another thread
+    // If we're doing a PID fuzzing, the parent of the PID will be a dedicated thread anyway
     if (hfuzz->pid) {
         fuzz_runThread(hfuzz, fuzz_threadPid);
     } else {

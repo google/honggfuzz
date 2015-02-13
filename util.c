@@ -61,6 +61,10 @@ uint32_t util_rndGet(uint32_t min, uint32_t max)
     uint32_t rnd2 = (uint32_t) lrand48();
     uint32_t rnd = (rnd1 << 16) ^ rnd2;
 
+    if (min > max) {
+        LOGMSG(l_FATAL, "min:%d > max:%d", min, max);
+    }
+
     return ((rnd % (max - min + 1)) + min);
 }
 
