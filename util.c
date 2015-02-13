@@ -34,13 +34,20 @@
 #include "common.h"
 #include "log.h"
 
+static int util_urandomFD = -1;
+
 void util_rndInit(void)
 {
-    struct timeval tv;
-    uint64_t seed;
+    if (util_urandomFD == -1) {
+        if ((util_urandomFD = open("/dev/urandom", O_RDONLY)) == -1) {
+            LOGMSG_P(l_FATAL, "Couldn't open /dev/urandom");
+        }
+    }
 
-    gettimeofday(&tv, NULL);
-    seed = ((uint64_t) tv.tv_usec) << 24;
+    uint64_t seed;
+    read(util_urandomFD, &seed, sizeof(seed));
+
+    struct timeval tv;
     gettimeofday(&tv, NULL);
     seed ^= ((uint64_t) tv.tv_usec);
 
