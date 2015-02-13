@@ -44,17 +44,24 @@ uint32_t util_rndGet(uint32_t min, uint32_t max)
         }
     }
 
-    uint64_t seed;
-    if (read(util_urandomFD, &seed, sizeof(seed)) != sizeof(seed)) {
+    unsigned short seed16v[3];
+
+    if (read(util_urandomFD, seed16v, sizeof(seed16v)) != sizeof(seed16v)) {
         struct timeval tv;
         gettimeofday(&tv, NULL);
-        seed ^= ((uint64_t) tv.tv_usec);
+        seed16v[0] = ((unsigned short)tv.tv_usec);
+        gettimeofday(&tv, NULL);
+        seed16v[1] = ((unsigned short)tv.tv_usec);
+        gettimeofday(&tv, NULL);
+        seed16v[2] = ((unsigned short)tv.tv_usec);
     }
 
-    srand48((long)seed);
-    double rnd = drand48();
+    seed48(seed16v);
+    uint32_t rnd1 = (uint32_t) lrand48();
+    uint32_t rnd2 = (uint32_t) lrand48();
+    uint32_t rnd = (rnd1 << 16) ^ rnd2;
 
-    return (uint32_t) lrint(floor((rnd * (max - min + 1)) + min));
+    return ((rnd % (max - min + 1)) + min);
 }
 
 void util_getLocalTime(const char *fmt, char *buf, size_t len)
