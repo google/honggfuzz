@@ -79,10 +79,10 @@ static mach_port_t g_exception_port = MACH_PORT_NULL;
 honggfuzz_t *g_hfuzz;
 
 /* From xnu/bsd/sys/proc_internal.h */
-#define PID_MAX 99999 
+#define PID_MAX 99999
 
 /* Global to have each fuzzer avaiable in exception handler */
-fuzzer_t g_fuzzer_crash_information[PID_MAX+1];
+fuzzer_t g_fuzzer_crash_information[PID_MAX + 1];
 
 /* Global to have a unique service name for each honggfuzz process */
 char g_service_name[256];
@@ -438,9 +438,7 @@ void write_crash_report(thread_port_t thread,
                         exception_type_t exception,
                         mach_exception_data_t code,
                         mach_msg_type_number_t code_count,
-                        int *flavor,
-                        thread_state_t in_state,
-                        mach_msg_type_number_t in_state_count)
+                        int *flavor, thread_state_t in_state, mach_msg_type_number_t in_state_count)
 {
 
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
@@ -584,13 +582,12 @@ uint64_t hash_callstack(thread_port_t thread,
     return hash;
 }
 
-
 kern_return_t catch_mach_exception_raise(mach_port_t exception_port,
                                          mach_port_t thread,
                                          mach_port_t task,
                                          exception_type_t exception,
-                                         mach_exception_data_t code,
-                                         mach_msg_type_number_t codeCnt) {
+                                         mach_exception_data_t code, mach_msg_type_number_t codeCnt)
+{
     LOGMSG(l_FATAL, "This function should never get called");
     return KERN_SUCCESS;
 }
@@ -603,7 +600,8 @@ kern_return_t catch_mach_exception_raise_state(mach_port_t exception_port,
                                                const thread_state_t old_state,
                                                mach_msg_type_number_t old_stateCnt,
                                                thread_state_t new_state,
-                                               mach_msg_type_number_t * new_stateCnt) {
+                                               mach_msg_type_number_t * new_stateCnt)
+{
     LOGMSG(l_FATAL, "This function should never get called");
     return KERN_SUCCESS;
 }
@@ -617,7 +615,8 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
                                                         int *flavor, thread_state_t in_state,
                                                         mach_msg_type_number_t in_state_count,
                                                         thread_state_t out_state,
-                                                        mach_msg_type_number_t * out_state_count) {
+                                                        mach_msg_type_number_t * out_state_count)
+{
     if (exception != EXC_CRASH) {
         LOGMSG(l_FATAL, "Got non EXC_CRASH! This should not happen.");
     }
