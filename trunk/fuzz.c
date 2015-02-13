@@ -188,9 +188,9 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
 
     close(dstfd);
 
-    pid_t pid = fork();
+    pid_t pid = vfork();
     if (pid == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't fork");
+        LOGMSG_P(l_ERROR, "Couldn't vfork");
         return false;
     }
 
@@ -202,15 +202,15 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
         LOGMSG_P(l_FATAL, "Couldn't execute '%s %s'", hfuzz->externalCommand, fileName);
         return false;
     }
+
     /*
      * parent waits until child is done fuzzing the input file
      */
-
     int childStatus;
     int flags = 0;
 #if defined(__WNOTHREAD)
     flags |= __WNOTHREAD;
-#endif
+#endif                          /* defined(__WNOTHREAD) */
     while (wait4(pid, &childStatus, flags, NULL) != pid) ;
     if (WIFEXITED(childStatus)) {
         LOGMSG(l_DEBUG, "External command exited with status %d", WEXITSTATUS(childStatus));
