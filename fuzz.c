@@ -229,7 +229,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
 static int fuzz_numOfProc(honggfuzz_t * hfuzz)
 {
     int i;
-    sem_getvalue(&hfuzz->sem, &i);
+    sem_getvalue(hfuzz->sem, &i);
     return hfuzz->threadsMax - i;
 }
 
@@ -292,7 +292,7 @@ static void *fuzz_threadCreate(void *arg)
     arch_reapChild(hfuzz, &fuzzer);
     unlink(fuzzer.fileName);
 
-    sem_post(&hfuzz->sem);
+    sem_post(hfuzz->sem);
 
     return NULL;
 }
@@ -324,8 +324,12 @@ static void fuzz_waitForAll(honggfuzz_t * hfuzz)
 
 void fuzz_main(honggfuzz_t * hfuzz)
 {
-    if (sem_init(&hfuzz->sem, 1, hfuzz->pid ? 1 : hfuzz->threadsMax)) {
-        LOGMSG_P(l_FATAL, "sem_init() failed");
+    char semName[PATH_MAX];
+    snprintf(semName, sizeof(semName), "honggfuzz.%d.%d", getpid(), (int)time(NULL));
+
+    hfuzz->sem = sem_open(semName, O_CREAT, 0644, hfuzz->pid ? 1 : hfuzz->threadsMax);
+    if (hfuzz->sem == SEM_FAILED) {
+        LOGMSG_P(l_FATAL, "sem_open() failed");
     }
 
     if (!arch_prepareParent(hfuzz)) {
@@ -333,13 +337,14 @@ void fuzz_main(honggfuzz_t * hfuzz)
     }
 
     for (;;) {
-        if (sem_wait(&hfuzz->sem) == -1) {
+        if (sem_wait(hfuzz->sem) == -1) {
             LOGMSG_P(l_FATAL, "sem_wait() failed");
         }
 
         if (hfuzz->mutationsMax && (hfuzz->mutationsCnt >= hfuzz->mutationsMax)) {
             fuzz_waitForAll(hfuzz);
             LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
+            sem_destroy(hfuzz->sem);
             exit(EXIT_SUCCESS);
         }
 
@@ -347,6 +352,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
         fuzz_runNext(hfuzz);
         if (hfuzz->pid) {
             fuzz_waitForAll(hfuzz);
+            sem_destroy(hfuzz->sem);
             exit(EXIT_SUCCESS);
         }
     }
