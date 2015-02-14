@@ -382,30 +382,28 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
 }
 
 static void
-arch_ptraceSaveReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs,
-                      size_t funcCnt, siginfo_t * si, const char *instr)
+arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs,
+                          size_t funcCnt, siginfo_t * si, const char *instr)
 {
-#define _HF_REPORT_FILE "HONGGFUZZ.REPORT.txt"
-    int fd = open(_HF_REPORT_FILE, O_WRONLY | O_APPEND | O_CREAT, 0644);
-    if (fd == -1) {
-        LOGMSG_P(l_ERROR, "open('%s') failed", _HF_REPORT_FILE);
-        return;
-    }
-
-    dprintf(fd, "=======================================================\n");
-    dprintf(fd, "ORIG_FNAME: %s\n", fuzzer->origFileName);
-    dprintf(fd, "FUZZ_FNAME: %s\n", fuzzer->fileName);
-    dprintf(fd, "PID: %d\n", pid);
-    dprintf(fd, "SIGNAL: %s (%d)\n", arch_sigs[si->si_signo].descr, si->si_signo);
-    dprintf(fd, "FAULT ADDRESS: %p\n", si->si_addr);
-    dprintf(fd, "INSTRUCTION: %s\n", instr);
-    dprintf(fd, "STACK:\n");
+    fuzzer->report[0] = '\0';
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report),
+                   "=======================================================\n");
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n",
+                   fuzzer->origFileName);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n", fuzzer->fileName);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "PID: %d\n", pid);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "SIGNAL: %s (%d)\n",
+                   arch_sigs[si->si_signo].descr, si->si_signo);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FAULT ADDRESS: %p\n", si->si_addr);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "INSTRUCTION: %s\n", instr);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK:\n");
     for (size_t i = 0; i < funcCnt; i++) {
-        dprintf(fd, " 0x%016llx <%s>\n", (unsigned long long)funcs[i].pc, funcs[i].func);
+        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " 0x%016llx <%s>\n",
+                       (unsigned long long)funcs[i].pc, funcs[i].func);
     }
-    dprintf(fd, "=======================================================\n");
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report),
+                   "=======================================================\n");
 
-    close(fd);
     return;
 }
 
@@ -468,7 +466,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     size_t funcCnt = arch_unwindStack(pid, funcs);
     arch_bfdResolveSyms(pid, funcs, funcCnt);
 
-    arch_ptraceSaveReport(pid, fuzzer, funcs, funcCnt, &si, instr);
+    arch_ptraceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr);
 }
 
 /*

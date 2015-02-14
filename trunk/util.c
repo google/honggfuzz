@@ -22,8 +22,11 @@
 
 #include <fcntl.h>
 #include <math.h>
+#include <stdarg.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -65,6 +68,21 @@ uint32_t util_rndGet(uint32_t min, uint32_t max)
     }
 
     return ((rnd % (max - min + 1)) + min);
+}
+
+void util_ssnprintf(char *str, size_t size, const char *format, ...)
+{
+    char buf1[size];
+    char buf2[size];
+
+    strncpy(buf1, str, size);
+
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buf2, size, format, args);
+    va_end(args);
+
+    snprintf(str, size, "%s%s", buf1, buf2);
 }
 
 void util_getLocalTime(const char *fmt, char *buf, size_t len)

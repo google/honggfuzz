@@ -49,7 +49,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
     }
 
     size_t ret = 0;
-    for (ret = 0; unw_step(&c) > 0; ret++) {
+    for (ret = 0; unw_step(&c) > 0 && ret < _HF_MAX_FUNCS; ret++) {
         unw_word_t ip;
         unw_get_reg(&c, UNW_REG_IP, &ip);
         funcs[ret].pc = (void *)ip;
