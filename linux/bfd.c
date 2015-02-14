@@ -103,9 +103,9 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
             continue;
         }
         long offset = (long)funcs[i].pc - section->vma;
-	if ((offset < 0 || (unsigned long)offset > section->size)) {
-		continue;
-	}
+        if ((offset < 0 || (unsigned long)offset > section->size)) {
+            continue;
+        }
         if (bfd_find_nearest_line(bfdh, section, syms, offset, &file, &func, &line)) {
             snprintf(funcs[i].func, sizeof(funcs->func), "%s", func);
         }
