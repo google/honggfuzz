@@ -1,25 +1,25 @@
 /*
-
-   honggfuzz - architecture dependent code (POSIX / SIGNAL)
-   -----------------------------------------
-
-   Author: Robert Swiecki <swiecki@google.com>
-
-   Copyright 2010-2015 by Google Inc. All Rights Reserved.
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-
-*/
+ * 
+ * honggfuzz - architecture dependent code (POSIX / SIGNAL)
+ * -----------------------------------------
+ * 
+ * Author: Robert Swiecki <swiecki@google.com>
+ * 
+ * Copyright 2010-2015 by Google Inc. All Rights Reserved.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may 
+ * not use this file except in compliance with the License. You may obtain 
+ * a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ * 
+ */
 
 #include "common.h"
 #include "arch.h"
@@ -82,8 +82,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      * Boring, the process just exited
      */
     if (WIFEXITED(status)) {
-        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d", fuzzer->pid,
-               WEXITSTATUS(status));
+        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d",
+               fuzzer->pid, WEXITSTATUS(status));
         return true;
     }
 
@@ -98,8 +98,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     }
 
     int termsig = WTERMSIG(status);
-    LOGMSG(l_DEBUG, "Process (pid %d) killed by signal %d '%s'", fuzzer->pid, termsig,
-           strsignal(termsig));
+    LOGMSG(l_DEBUG, "Process (pid %d) killed by signal %d '%s'",
+           fuzzer->pid, termsig, strsignal(termsig));
     if (!arch_sigs[termsig].important) {
         LOGMSG(l_DEBUG, "It's not that important signal, skipping");
         return true;
@@ -109,8 +109,9 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr));
 
     char newname[PATH_MAX];
-    snprintf(newname, sizeof(newname), "%s.%d.%s.%s.%s", arch_sigs[termsig].descr, fuzzer->pid,
-             localtmstr, fuzzer->origFileName, hfuzz->fileExtn);
+    snprintf(newname, sizeof(newname), "%s.%d.%s.%s.%s",
+             arch_sigs[termsig].descr, fuzzer->pid, localtmstr,
+             fuzzer->origFileName, hfuzz->fileExtn);
 
     LOGMSG(l_INFO, "Ok, that's interesting, saving the '%s' as '%s'", fuzzer->fileName, newname);
 
@@ -202,7 +203,9 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     }
 
     if (hfuzz->fuzzStdin) {
-        /* Uglyyyyyy ;) */
+        /*
+         * Uglyyyyyy ;) 
+         */
         if (!util_redirectStdin(fileName)) {
             return false;
         }

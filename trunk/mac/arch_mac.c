@@ -1,26 +1,26 @@
 /*
-
-   honggfuzz - architecture dependent code (MAC OS X)
-   -----------------------------------------
-
-   Author: Robert Swiecki <swiecki@google.com>
-           Felix Gröbert <groebert@google.com>
-
-   Copyright 2010-2015 by Google Inc. All Rights Reserved.
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-
-*/
+ * 
+ * honggfuzz - architecture dependent code (MAC OS X)
+ * -----------------------------------------
+ * 
+ * Author: Robert Swiecki <swiecki@google.com> Felix Gröbert
+ * <groebert@google.com>
+ * 
+ * Copyright 2010-2015 by Google Inc. All Rights Reserved.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may 
+ * not use this file except in compliance with the License. You may obtain 
+ * a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ * 
+ */
 
 #include "common.h"
 #include "arch.h"
@@ -59,7 +59,9 @@
 
 #import <Foundation/Foundation.h>
 
-/* Interface to third_party/CrashReport_*.o */
+/*
+ * Interface to third_party/CrashReport_*.o 
+ */
 /*  *INDENT-OFF* */
 @interface CrashReport: NSObject - (id) initWithTask:(task_t)
 task exceptionType:(exception_type_t)
@@ -72,16 +74,24 @@ aThreadState threadStateCount:(mach_msg_type_number_t) aThreadStateCount;
 @end
 /*  *INDENT-ON* */
 
-/* Global to have exception port available in the collection thread */
+/*
+ * Global to have exception port available in the collection thread 
+ */
 static mach_port_t g_exception_port = MACH_PORT_NULL;
 
-/* From xnu/bsd/sys/proc_internal.h */
+/*
+ * From xnu/bsd/sys/proc_internal.h 
+ */
 #define PID_MAX 99999
 
-/* Global to store crash info in exception handler thread */
+/*
+ * Global to store crash info in exception handler thread 
+ */
 fuzzer_t g_fuzzer_crash_information[PID_MAX + 1];
 
-/* Global to have a unique service name for each honggfuzz process */
+/*
+ * Global to have a unique service name for each honggfuzz process 
+ */
 char g_service_name[256];
 
 struct {
@@ -151,8 +161,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      * Boring, the process just exited
      */
     if (WIFEXITED(status)) {
-        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d", fuzzer->pid,
-               WEXITSTATUS(status));
+        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d",
+               fuzzer->pid, WEXITSTATUS(status));
         return true;
     }
 
@@ -167,8 +177,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     }
 
     int termsig = WTERMSIG(status);
-    LOGMSG(l_DEBUG, "Process (pid %d) killed by signal %d '%s'", fuzzer->pid, termsig,
-           strsignal(termsig));
+    LOGMSG(l_DEBUG, "Process (pid %d) killed by signal %d '%s'",
+           fuzzer->pid, termsig, strsignal(termsig));
     if (!arch_sigs[termsig].important) {
         LOGMSG(l_DEBUG, "It's not that important signal, skipping");
         return true;
@@ -179,7 +189,9 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      */
     char newname[PATH_MAX];
 
-    /* Get data from exception handler */
+    /*
+     * Get data from exception handler 
+     */
     fuzzer->pc = g_fuzzer_crash_information[fuzzer->pid].pc;
     fuzzer->exception = g_fuzzer_crash_information[fuzzer->pid].exception;
     fuzzer->access = g_fuzzer_crash_information[fuzzer->pid].access;
@@ -188,9 +200,9 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
                  "%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s.%s",
-                 arch_sigs[termsig].descr, exception_to_string(fuzzer->exception),
-                 fuzzer->pc, fuzzer->backtrace, fuzzer->access,
-                 fuzzer->origFileName, hfuzz->fileExtn);
+                 arch_sigs[termsig].descr,
+                 exception_to_string(fuzzer->exception), fuzzer->pc,
+                 fuzzer->backtrace, fuzzer->access, fuzzer->origFileName, hfuzz->fileExtn);
     } else {
 
         char localtmstr[PATH_MAX];
@@ -198,9 +210,10 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
 
         snprintf(newname, sizeof(newname),
                  "%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s.%s",
-                 arch_sigs[termsig].descr, exception_to_string(fuzzer->exception),
-                 fuzzer->pc, fuzzer->backtrace, fuzzer->access,
-                 localtmstr, fuzzer->pid, fuzzer->origFileName, hfuzz->fileExtn);
+                 arch_sigs[termsig].descr,
+                 exception_to_string(fuzzer->exception), fuzzer->pc,
+                 fuzzer->backtrace, fuzzer->access, localtmstr,
+                 fuzzer->pid, fuzzer->origFileName, hfuzz->fileExtn);
     }
 
     if (link(fuzzer->fileName, newname) == 0) {
@@ -235,25 +248,32 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 
     LOGMSG(l_DEBUG, "Launching '%s' on file '%s'", args[0], fileName);
 
-    /* Get child's bootstrap port. */
+    /*
+     * Get child's bootstrap port. 
+     */
     mach_port_t child_bootstrap = MACH_PORT_NULL;
     if (task_get_bootstrap_port(mach_task_self(), &child_bootstrap) != KERN_SUCCESS) {
         return false;
     }
 
-    /* Get exception port. */
+    /*
+     * Get exception port. 
+     */
     mach_port_t exception_port = MACH_PORT_NULL;
 
-    if (bootstrap_look_up(child_bootstrap, g_service_name, &exception_port) != KERN_SUCCESS) {
+    if (bootstrap_look_up(child_bootstrap, g_service_name, &exception_port)
+        != KERN_SUCCESS) {
         return false;
     }
 
-    /* Here we register the exception port in the child */
+    /*
+     * Here we register the exception port in the child 
+     */
     if (task_set_exception_ports(mach_task_self(),
                                  EXC_MASK_CRASH,
                                  exception_port,
-                                 EXCEPTION_STATE_IDENTITY | MACH_EXCEPTION_CODES,
-                                 MACHINE_THREAD_STATE) != KERN_SUCCESS) {
+                                 EXCEPTION_STATE_IDENTITY |
+                                 MACH_EXCEPTION_CODES, MACHINE_THREAD_STATE) != KERN_SUCCESS) {
         return false;
     }
 
@@ -320,7 +340,9 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     }
 
     if (hfuzz->fuzzStdin) {
-        /* Uglyyyyyy ;) */
+        /*
+         * Uglyyyyyy ;) 
+         */
         if (!util_redirectStdin(fileName)) {
             return false;
         }
@@ -375,40 +397,52 @@ void *wait_for_exception()
 bool arch_prepareParent(honggfuzz_t * hfuzz)
 {
     char plist[PATH_MAX];
-    snprintf(plist, sizeof(plist), "/Users/%s/Library/Preferences/com.apple.DebugSymbols.plist",
-             getlogin());
+    snprintf(plist, sizeof(plist),
+             "/Users/%s/Library/Preferences/com.apple.DebugSymbols.plist", getlogin());
 
     if (files_exists(plist)) {
         LOGMSG(l_WARN,
                "honggfuzz won't work if DBGShellCommands are set in ~/Library/Preferences/com.apple.DebugSymbols.plist");
     }
 
-    /* Allocate exception port. */
-    if (mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &g_exception_port) !=
-        KERN_SUCCESS) {
+    /*
+     * Allocate exception port. 
+     */
+    if (mach_port_allocate
+        (mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &g_exception_port) != KERN_SUCCESS) {
         return false;
     }
 
-    /* Insert exception receive port. */
-    if (mach_port_insert_right(mach_task_self(), g_exception_port, g_exception_port,
-                               MACH_MSG_TYPE_MAKE_SEND) != KERN_SUCCESS) {
+    /*
+     * Insert exception receive port. 
+     */
+    if (mach_port_insert_right
+        (mach_task_self(), g_exception_port, g_exception_port,
+         MACH_MSG_TYPE_MAKE_SEND) != KERN_SUCCESS) {
         return false;
     }
 
-    /* Get bootstrap port. */
+    /*
+     * Get bootstrap port. 
+     */
     mach_port_t bootstrap = MACH_PORT_NULL;
     if (task_get_bootstrap_port(mach_task_self(), &bootstrap) != KERN_SUCCESS) {
         return false;
     }
 
-    /* Generate and register exception port service. */
-    snprintf(g_service_name, sizeof(g_service_name), "com.google.code.honggfuzz.%d",
-             util_rndGet(0, 999999));
+    /*
+     * Generate and register exception port service. 
+     */
+    snprintf(g_service_name, sizeof(g_service_name),
+             "com.google.code.honggfuzz.%d", util_rndGet(0, 999999));
     if (bootstrap_check_in(bootstrap, g_service_name, &g_exception_port) != KERN_SUCCESS) {
         return false;
     }
 
-    /* Create a collection thread to catch the exceptions from the children */
+    /*
+     * Create a collection thread to catch the exceptions from the
+     * children 
+     */
     pthread_t exception_thread;
 
     if (pthread_create(&exception_thread, NULL, wait_for_exception, 0)) {
@@ -424,13 +458,16 @@ bool arch_prepareParent(honggfuzz_t * hfuzz)
     return true;
 }
 
-/* Write the crash report to DEBUG */
-void write_crash_report(thread_port_t thread,
-                        task_port_t task,
-                        exception_type_t exception,
-                        mach_exception_data_t code,
-                        mach_msg_type_number_t code_count,
-                        int *flavor, thread_state_t in_state, mach_msg_type_number_t in_state_count)
+/*
+ * Write the crash report to DEBUG 
+ */
+void
+write_crash_report(thread_port_t thread,
+                   task_port_t task,
+                   exception_type_t exception,
+                   mach_exception_data_t code,
+                   mach_msg_type_number_t code_count,
+                   int *flavor, thread_state_t in_state, mach_msg_type_number_t in_state_count)
 {
 
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
@@ -483,73 +520,84 @@ uint64_t hash_callstack(thread_port_t thread,
     NSString *crashDescription =[_crashReport description];
     char *description = (char *)[crashDescription UTF8String];
 
-    /* The callstack begins with the following word */
+    /*
+     * The callstack begins with the following word 
+     */
     char *callstack = strstr(description, "Crashed:");
 
     if (callstack == NULL) {
         LOGMSG(l_FATAL, "Could not find callstack in crash report %s", description);
     }
 
-    /* Scroll forward to the next newline */
+    /*
+     * Scroll forward to the next newline 
+     */
     char *callstack_start = strstr(callstack, "\n");
 
     if (callstack_start == NULL) {
         LOGMSG(l_FATAL, "Could not find callstack start in crash report %s", description);
     }
 
-    /* Skip the newline */
+    /*
+     * Skip the newline 
+     */
     callstack_start++;
 
-    /* Determine the end of the callstack */
+    /*
+     * Determine the end of the callstack 
+     */
     char *callstack_end = strstr(callstack, "\n\nThread");
 
     if (callstack_end == NULL) {
         LOGMSG(l_FATAL, "Could not find callstack end in crash report %s", description);
     }
 
-    /* Make sure it's NULL-terminated */
+    /*
+     * Make sure it's NULL-terminated 
+     */
     *callstack_end = '\0';
 
     /*
-
-       For each line, we only take the last three nibbles from the address.
-
-       Sample output:
-
-       0   libsystem_kernel.dylib            0x00007fff80514d46 __kill + 10
-       1   libsystem_c.dylib                 0x00007fff85731ec0 __abort + 193
-       2   libsystem_c.dylib                 0x00007fff85732d17 __stack_chk_fail + 195
-       3   stack_buffer_overflow64-stripped  0x000000010339def5 0x10339d000 + 3829
-       4   ???                               0x4141414141414141 0 + 4702111234474983745
-
-       0   libsystem_kernel.dylib            0x00007fff80514d46 __kill + 10
-       1   libsystem_c.dylib                 0x00007fff85731ec0 __abort + 193
-       2   libsystem_c.dylib                 0x00007fff85732d17 __stack_chk_fail + 195
-       3   stack_buffer_overflow64           0x0000000108f41ef5 main + 133
-       4   ???                               0x4141414141414141 0 + 4702111234474983745
-
-       0   libsystem_kernel.dylib            0x940023ba __kill + 10
-       1   libsystem_kernel.dylib            0x940014bc kill$UNIX2003 + 32
-       2   libsystem_c.dylib                 0x926f362e __abort + 246
-       3   libsystem_c.dylib                 0x926c2b60 __chk_fail + 49
-       4   libsystem_c.dylib                 0x926c2bf9 __memset_chk + 53
-       5   stack_buffer_overflow32-stripped  0x00093ee5 0x93000 + 3813
-       6   libdyld.dylib                     0x978c6725 start + 1
-
-       0   libsystem_kernel.dylib            0x940023ba __kill + 10
-       1   libsystem_kernel.dylib            0x940014bc kill$UNIX2003 + 32
-       2   libsystem_c.dylib                 0x926f362e __abort + 246
-       3   libsystem_c.dylib                 0x926c2b60 __chk_fail + 49
-       4   libsystem_c.dylib                 0x926c2bf9 __memset_chk + 53
-       5   stack_buffer_overflow32           0x0003cee5 main + 117
-       6   libdyld.dylib                     0x978c6725 start + 1
-
+     * 
+     * For each line, we only take the last three nibbles from the
+     * address.
+     * 
+     * Sample output:
+     * 
+     * 0 libsystem_kernel.dylib 0x00007fff80514d46 __kill + 10 1
+     * libsystem_c.dylib 0x00007fff85731ec0 __abort + 193 2
+     * libsystem_c.dylib 0x00007fff85732d17 __stack_chk_fail + 195 3
+     * stack_buffer_overflow64-stripped 0x000000010339def5 0x10339d000 +
+     * 3829 4 ??? 0x4141414141414141 0 + 4702111234474983745
+     * 
+     * 0 libsystem_kernel.dylib 0x00007fff80514d46 __kill + 10 1
+     * libsystem_c.dylib 0x00007fff85731ec0 __abort + 193 2
+     * libsystem_c.dylib 0x00007fff85732d17 __stack_chk_fail + 195 3
+     * stack_buffer_overflow64 0x0000000108f41ef5 main + 133 4 ???
+     * 0x4141414141414141 0 + 4702111234474983745
+     * 
+     * 0 libsystem_kernel.dylib 0x940023ba __kill + 10 1
+     * libsystem_kernel.dylib 0x940014bc kill$UNIX2003 + 32 2
+     * libsystem_c.dylib 0x926f362e __abort + 246 3 libsystem_c.dylib
+     * 0x926c2b60 __chk_fail + 49 4 libsystem_c.dylib 0x926c2bf9
+     * __memset_chk + 53 5 stack_buffer_overflow32-stripped 0x00093ee5
+     * 0x93000 + 3813 6 libdyld.dylib 0x978c6725 start + 1
+     * 
+     * 0 libsystem_kernel.dylib 0x940023ba __kill + 10 1
+     * libsystem_kernel.dylib 0x940014bc kill$UNIX2003 + 32 2
+     * libsystem_c.dylib 0x926f362e __abort + 246 3 libsystem_c.dylib
+     * 0x926c2b60 __chk_fail + 49 4 libsystem_c.dylib 0x926c2bf9
+     * __memset_chk + 53 5 stack_buffer_overflow32 0x0003cee5 main + 117 6 
+     * libdyld.dylib 0x978c6725 start + 1
+     * 
      */
 
     uint64_t hash = 0;
     char *pos = callstack_start;
 
-    /* Go through each line until we run out of lines */
+    /*
+     * Go through each line until we run out of lines 
+     */
     while (strstr(pos, "\t") != NULL) {
         /*
          * Format: dylib spaces tab address space symbol space plus space offset
@@ -560,9 +608,13 @@ uint64_t hash_callstack(thread_port_t thread,
         if ((pos = strstr(pos, " ")) == NULL)
             break;
         pos = pos - 3;
-        /* Hash the last three nibbles */
+        /*
+         * Hash the last three nibbles 
+         */
         hash ^= util_hash(pos, 3);
-        /* Scroll pos one forward to skip the current tab */
+        /*
+         * Scroll pos one forward to skip the current tab 
+         */
         pos++;
     }
 
@@ -574,38 +626,42 @@ uint64_t hash_callstack(thread_port_t thread,
     return hash;
 }
 
-kern_return_t catch_mach_exception_raise(mach_port_t exception_port,
-                                         mach_port_t thread,
-                                         mach_port_t task,
-                                         exception_type_t exception,
-                                         mach_exception_data_t code, mach_msg_type_number_t codeCnt)
+kern_return_t
+catch_mach_exception_raise(mach_port_t exception_port,
+                           mach_port_t thread,
+                           mach_port_t task,
+                           exception_type_t exception,
+                           mach_exception_data_t code, mach_msg_type_number_t codeCnt)
 {
     LOGMSG(l_FATAL, "This function should never get called");
     return KERN_SUCCESS;
 }
 
-kern_return_t catch_mach_exception_raise_state(mach_port_t exception_port,
-                                               exception_type_t exception,
-                                               const mach_exception_data_t code,
-                                               mach_msg_type_number_t codeCnt,
-                                               int *flavor,
-                                               const thread_state_t old_state,
-                                               mach_msg_type_number_t old_stateCnt,
-                                               thread_state_t new_state,
-                                               mach_msg_type_number_t * new_stateCnt)
+kern_return_t
+catch_mach_exception_raise_state(mach_port_t exception_port,
+                                 exception_type_t exception,
+                                 const mach_exception_data_t code,
+                                 mach_msg_type_number_t codeCnt,
+                                 int *flavor,
+                                 const thread_state_t old_state,
+                                 mach_msg_type_number_t old_stateCnt,
+                                 thread_state_t new_state, mach_msg_type_number_t * new_stateCnt)
 {
     LOGMSG(l_FATAL, "This function should never get called");
     return KERN_SUCCESS;
 }
 
-kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)) exception_port_t
-                                                        exception_port, thread_port_t thread,
+kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused))
+                                                        exception_port_t exception_port,
+                                                        thread_port_t thread,
                                                         task_port_t task,
                                                         exception_type_t exception,
                                                         mach_exception_data_t code,
-                                                        mach_msg_type_number_t code_count,
-                                                        int *flavor, thread_state_t in_state,
-                                                        mach_msg_type_number_t in_state_count,
+                                                        mach_msg_type_number_t
+                                                        code_count, int *flavor,
+                                                        thread_state_t in_state,
+                                                        mach_msg_type_number_t
+                                                        in_state_count,
                                                         thread_state_t out_state,
                                                         mach_msg_type_number_t * out_state_count)
 {
@@ -613,7 +669,9 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
         LOGMSG(l_FATAL, "Got non EXC_CRASH! This should not happen.");
     }
 
-    /* We will save our results to the honggfuzz_t global */
+    /*
+     * We will save our results to the honggfuzz_t global 
+     */
     pid_t pid;
     pid_for_task(task, &pid);
     LOGMSG(l_DEBUG, "Crash of pid %d", pid);
@@ -633,7 +691,9 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
         fuzzer->pc = platform_in_state->uts.ts64.__rip;
     }
 
-    /* Get the exception type */
+    /*
+     * Get the exception type 
+     */
 
     exception_type_t exception_type = ((code[0] >> 20) & 0x0F);
 
@@ -643,7 +703,9 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
 
     fuzzer->exception = exception_type;
 
-    /* Get the access address. */
+    /*
+     * Get the access address. 
+     */
 
     mach_exception_data_type_t exception_data[2];
     memcpy(exception_data, code, sizeof(exception_data));
@@ -653,14 +715,18 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     mach_exception_data_type_t access_address = exception_data[1];
     fuzzer->access = (uint64_t) access_address;
 
-    /* Get a hash of the callstack */
+    /*
+     * Get a hash of the callstack 
+     */
 
-    uint64_t hash =
-        hash_callstack(thread, task, exception, code, code_count, flavor, in_state, in_state_count);
+    uint64_t hash = hash_callstack(thread, task, exception, code, code_count, flavor,
+                                   in_state, in_state_count);
 
     fuzzer->backtrace = hash;
 
-    /* Cleanup */
+    /*
+     * Cleanup 
+     */
 
     if (mach_port_deallocate(mach_task_self(), task) != KERN_SUCCESS) {
         LOGMSG(l_WARN, "Exception Handler: Could not deallocate task");
@@ -670,5 +736,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
         LOGMSG(l_WARN, "Exception Handler: Could not deallocate thread");
     }
 
-    return KERN_SUCCESS;        //KERN_SUCCESS indicates that this should not be forwarded to other crash handlers
+    return KERN_SUCCESS;        // KERN_SUCCESS indicates that this should 
+    // not be forwarded to other crash
+    // handlers
 }
