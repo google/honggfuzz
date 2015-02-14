@@ -1,26 +1,25 @@
 /*
-
-   honggfuzz - the main file
-   -----------------------------------------
-
-   Author: Robert Swiecki <swiecki@google.com>
-           Felix Gröbert <groebert@google.com>
-
-   Copyright 2010-2015 by Google Inc. All Rights Reserved.
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-
-*/
+ * 
+ * honggfuzz - the main file -----------------------------------------
+ * 
+ * Author: Robert Swiecki <swiecki@google.com> Felix Gröbert
+ * <groebert@google.com>
+ * 
+ * Copyright 2010-2015 by Google Inc. All Rights Reserved.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may 
+ * not use this file except in compliance with the License. You may obtain 
+ * a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ * 
+ */
 
 #include <getopt.h>
 #include <stdio.h>
@@ -201,11 +200,12 @@ int main(int argc, char **argv)
            "debugLevel: %d, inputFile '%s', nullifyStdio: %d, fuzzStdin: %d, saveUnique: %d, flipRate: %lf, "
            "flipMode: '%c', externalCommand: '%s', tmOut: %ld, mutationsMax: %ld, threadsMax: %ld, fileExtn '%s', ignoreAddr: %p, "
            "memoryLimit: %lu (MiB), fuzzExe: '%s', fuzzedPid: %d",
-           ll, hfuzz.inputFile, hfuzz.nullifyStdio ? 1 : 0, hfuzz.fuzzStdin ? 1 : 0,
-           hfuzz.saveUnique ? 1 : 0, hfuzz.flipRate,
-           hfuzz.flipMode, hfuzz.externalCommand == NULL ? "NULL" : hfuzz.externalCommand,
-           hfuzz.tmOut, hfuzz.mutationsMax, hfuzz.threadsMax, hfuzz.fileExtn, hfuzz.ignoreAddr,
-           hfuzz.asLimit, hfuzz.cmdline[0], hfuzz.pid);
+           ll, hfuzz.inputFile, hfuzz.nullifyStdio ? 1 : 0,
+           hfuzz.fuzzStdin ? 1 : 0, hfuzz.saveUnique ? 1 : 0,
+           hfuzz.flipRate, hfuzz.flipMode,
+           hfuzz.externalCommand == NULL ? "NULL" : hfuzz.externalCommand,
+           hfuzz.tmOut, hfuzz.mutationsMax, hfuzz.threadsMax,
+           hfuzz.fileExtn, hfuzz.ignoreAddr, hfuzz.asLimit, hfuzz.cmdline[0], hfuzz.pid);
 
     if (!files_init(&hfuzz)) {
         LOGMSG(l_FATAL, "Couldn't load input files");

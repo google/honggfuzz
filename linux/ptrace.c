@@ -1,25 +1,25 @@
 /*
-
-   honggfuzz - architecture dependent code (LINUX/PTRACE)
-   -----------------------------------------
-
-   Author: Robert Swiecki <swiecki@google.com>
-
-   Copyright 2010-2015 by Google Inc. All Rights Reserved.
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-
-*/
+ * 
+ * honggfuzz - architecture dependent code (LINUX/PTRACE)
+ * -----------------------------------------
+ * 
+ * Author: Robert Swiecki <swiecki@google.com>
+ * 
+ * Copyright 2010-2015 by Google Inc. All Rights Reserved.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may 
+ * not use this file except in compliance with the License. You may obtain 
+ * a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ * 
+ */
 
 #include "common.h"
 #include "ptrace.h"
@@ -94,7 +94,9 @@ bool arch_ptraceEnable(honggfuzz_t * hfuzz)
 
 static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, uint64_t pc)
 {
-    /* Let's try process_vm_readv first */
+    /*
+     * Let's try process_vm_readv first 
+     */
     const struct iovec local_iov = {
         .iov_base = buf,
         .iov_len = len,
@@ -191,7 +193,9 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
         uint64_t gs;
     };
 
-    /* 32-bit */
+    /*
+     * 32-bit 
+     */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
         struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
         *arch = CS_ARCH_X86;
@@ -199,7 +203,9 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
         *pc = r32->eip;
         return true;
     }
-    /* 64-bit */
+    /*
+     * 64-bit 
+     */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
         struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
         *arch = CS_ARCH_X86;
@@ -209,7 +215,8 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
     }
     LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
     return false;
-#endif                          /*  defined(__i386__) || defined(__x86_64__)  */
+#endif                          /* defined(__i386__) ||
+                                 * defined(__x86_64__) */
 #if defined(__arm__)
     struct user_regs_struct_32 {
         uint32_t uregs[18];
@@ -226,7 +233,7 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
     }
     LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
     return false;
-#endif                          /*  defined(__arm__) */
+#endif                          /* defined(__arm__) */
 #if defined(__aarch64__)
     struct user_regs_struct_64 {
         uint64_t regs[31];
@@ -259,7 +266,10 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
         uint32_t dar;
         uint32_t dsisr;
         uint32_t result;
-        /* elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in with some zeros */
+        /*
+         * elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in 
+         * with some zeros 
+         */
         uint32_t zero0;
         uint32_t zero1;
         uint32_t zero2;
@@ -279,7 +289,10 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
         uint64_t dar;
         uint64_t dsisr;
         uint64_t result;
-        /* elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in with some zeros */
+        /*
+         * elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in 
+         * with some zeros 
+         */
         uint64_t zero0;
         uint64_t zero1;
         uint64_t zero2;
@@ -301,7 +314,8 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
     }
     LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
     return false;
-#endif                          /* defined(__powerpc64__) || defined(__powerpc__) */
+#endif                          /* defined(__powerpc64__) ||
+                                 * defined(__powerpc__) */
     LOGMSG(l_DEBUG, "Unknown/unsupported CPU architecture");
     return false;
 }
@@ -348,7 +362,8 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
     size_t count = cs_disasm_ex(handle, buf, memsz, *pc, 1, &insn);
 
     if (count < 1) {
-        LOGMSG(l_WARN, "Couldn't disassemble the assembler instructions' stream: '%s'",
+        LOGMSG(l_WARN,
+               "Couldn't disassemble the assembler instructions' stream: '%s'",
                cs_strerror(cs_errno(handle)));
         cs_close(&handle);
         return;
@@ -359,14 +374,16 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
     cs_close(&handle);
 
     for (int x = 0; instr[x] && x < MAX_OP_STRING; x++) {
-        if (instr[x] == '/' || instr[x] == '\\' || isspace(instr[x]) || !isprint(instr[x])) {
+        if (instr[x] == '/' || instr[x] == '\\' || isspace(instr[x])
+            || !isprint(instr[x])) {
             instr[x] = '_';
         }
     }
 }
 
-static void arch_ptraceSaveReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCnt,
-                                  siginfo_t * si, const char *instr)
+static void
+arch_ptraceSaveReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs,
+                      size_t funcCnt, siginfo_t * si, const char *instr)
 {
 #define _HF_REPORT_FILE "HONGGFUZZ.REPORT.txt"
     int fd = open(_HF_REPORT_FILE, O_WRONLY | O_APPEND | O_CREAT, 0644);
@@ -407,8 +424,9 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     arch_getInstrStr(pid, &pc, instr);
 
     LOGMSG(l_DEBUG,
-           "Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %" PRIx64 ", instr: '%s'",
-           pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
+           "Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %"
+           PRIx64 ", instr: '%s'", pid, si.si_signo, si.si_errno,
+           si.si_code, si.si_addr, pc, instr);
 
     if (si.si_addr < hfuzz->ignoreAddr) {
         LOGMSG(l_INFO,
@@ -421,14 +439,15 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
                  "%s.PC.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%s",
-                 arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr, instr,
-                 fuzzer->origFileName, hfuzz->fileExtn);
+                 arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr,
+                 instr, fuzzer->origFileName, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr));
-        snprintf(newname, sizeof(newname), "%s.PC.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s.%s",
-                 arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr, instr, localtmstr, pid,
-                 fuzzer->origFileName, hfuzz->fileExtn);
+        snprintf(newname, sizeof(newname),
+                 "%s.PC.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s.%s",
+                 arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr,
+                 instr, localtmstr, pid, fuzzer->origFileName, hfuzz->fileExtn);
     }
 
     if (link(fuzzer->fileName, newname) == 0) {
@@ -521,8 +540,8 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
 
         pid_t pid = (pid_t) strtol(res->d_name, (char **)NULL, 10);
         if (pid == 0) {
-            LOGMSG(l_DEBUG, "The following dir entry couldn't be converted to pid_t '%s'",
-                   res->d_name);
+            LOGMSG(l_DEBUG,
+                   "The following dir entry couldn't be converted to pid_t '%s'", res->d_name);
             continue;
         }
 

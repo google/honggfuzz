@@ -1,25 +1,24 @@
 /*
-
-   honggfuzz - log messages
-   -----------------------------------------
-
-   Author: Robert Swiecki <swiecki@google.com>
-
-   Copyright 2010-2015 by Google Inc. All Rights Reserved.
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-
-*/
+ * 
+ * honggfuzz - log messages -----------------------------------------
+ * 
+ * Author: Robert Swiecki <swiecki@google.com>
+ * 
+ * Copyright 2010-2015 by Google Inc. All Rights Reserved.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may 
+ * not use this file except in compliance with the License. You may obtain 
+ * a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ * 
+ */
 
 #include "common.h"
 #include "log.h"
@@ -68,8 +67,9 @@ void log_setMinLevel(log_level_t dl)
     log_minLevel = dl;
 }
 
-void log_msg(log_level_t dl,
-             bool perr, const char *file, const char *func, int line, const char *fmt, ...
+void
+log_msg(log_level_t dl,
+        bool perr, const char *file, const char *func, int line, const char *fmt, ...
     )
 {
     if (dl > log_minLevel)
@@ -94,9 +94,10 @@ void log_msg(log_level_t dl,
 
     if (log_minLevel >= l_DEBUG || !log_isStdioTTY) {
         dprintf
-            (STDOUT_FILENO, "%s [%d] %d/%02d/%02d %02d:%02d:%02d (%s:%s %d) ",
-             logLevels[dl].descr, getpid(), tm.tm_year + 1900, tm.tm_mon + 1,
-             tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, file, func, line);
+            (STDOUT_FILENO,
+             "%s [%d] %d/%02d/%02d %02d:%02d:%02d (%s:%s %d) ",
+             logLevels[dl].descr, getpid(), tm.tm_year + 1900,
+             tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, file, func, line);
     } else {
         dprintf(STDOUT_FILENO, "%s ", logLevels[dl].descr);
     }

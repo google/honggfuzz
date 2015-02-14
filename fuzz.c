@@ -1,26 +1,25 @@
 /*
-
-   honggfuzz - fuzzing routines
-   -----------------------------------------
-
-   Author: Robert Swiecki <swiecki@google.com>
-           Felix Gröbert <groebert@google.com>
-
-   Copyright 2010-2015 by Google Inc. All Rights Reserved.
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-
-*/
+ * 
+ * honggfuzz - fuzzing routines -----------------------------------------
+ * 
+ * Author: Robert Swiecki <swiecki@google.com> Felix Gröbert
+ * <groebert@google.com>
+ * 
+ * Copyright 2010-2015 by Google Inc. All Rights Reserved.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may 
+ * not use this file except in compliance with the License. You may obtain 
+ * a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ * 
+ */
 
 #include "common.h"
 #include "fuzz.h"
@@ -81,10 +80,11 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
     struct timeval tv;
     gettimeofday(&tv, NULL);
 
-    snprintf(fileName, PATH_MAX, ".honggfuzz.%d.%lu.%lu.%lu.%lu.%s", (int)getpid(),
-             (unsigned long int)tv.tv_sec, (unsigned long int)tv.tv_usec,
-             (unsigned long int)util_rndGet(0, 1 << 30), (unsigned long int)util_rndGet(0, 1 << 30),
-             hfuzz->fileExtn);
+    snprintf(fileName, PATH_MAX, ".honggfuzz.%d.%lu.%lu.%lu.%lu.%s",
+             (int)getpid(), (unsigned long int)tv.tv_sec,
+             (unsigned long int)tv.tv_usec,
+             (unsigned long int)util_rndGet(0, 1 << 30),
+             (unsigned long int)util_rndGet(0, 1 << 30), hfuzz->fileExtn);
 
     return;
 }
@@ -106,8 +106,8 @@ static void fuzz_appendOrTrunc(int fd, off_t fileSz)
 
     off_t newSz = util_rndGet(1, maxSz);
     if (ftruncate(fd, newSz) == -1) {
-        LOGMSG_P(l_WARN, "Couldn't truncate file from '%ld' to '%ld' bytes", (long)fileSz,
-                 (long)newSz);
+        LOGMSG_P(l_WARN,
+                 "Couldn't truncate file from '%ld' to '%ld' bytes", (long)fileSz, (long)newSz);
         return;
     }
 }
@@ -127,8 +127,8 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
 
     int dstfd = open(fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
     if (dstfd == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't create a temporary file '%s' in the current directory",
-                 fileName);
+        LOGMSG_P(l_ERROR,
+                 "Couldn't create a temporary file '%s' in the current directory", fileName);
         munmap(buf, fileSz);
         close(srcfd);
         return false;
@@ -159,8 +159,8 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
 
     int dstfd = open(fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
     if (dstfd == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't create a temporary file '%s' in the current directory",
-                 fileName);
+        LOGMSG_P(l_ERROR,
+                 "Couldn't create a temporary file '%s' in the current directory", fileName);
         return false;
     }
 
@@ -196,7 +196,9 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
 
     if (!pid) {
 #if defined(PR_SET_PDEATHSIG)
-        /* Kill it if the main process goes down */
+        /*
+         * Kill it if the main process goes down 
+         */
         if (prctl(PR_SET_PDEATHSIG, (long)SIGKILL, 0L, 0L, 0L) == -1) {
             LOGMSG_P(l_ERROR, "prctl(PR_SET_PDEATHSIG, SIGKILL) failed");
             return false;
@@ -283,8 +285,8 @@ static void *fuzz_threadNew(void *arg)
         }
     }
 
-    LOGMSG(l_INFO, "Launched new process, pid: %d, (%d/%d)", fuzzer.pid, fuzz_numOfProc(hfuzz),
-           hfuzz->threadsMax);
+    LOGMSG(l_INFO, "Launched new process, pid: %d, (%d/%d)", fuzzer.pid,
+           fuzz_numOfProc(hfuzz), hfuzz->threadsMax);
 
     arch_reapChild(hfuzz, &fuzzer);
     unlink(fuzzer.fileName);
@@ -349,14 +351,15 @@ static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
 void fuzz_main(honggfuzz_t * hfuzz)
 {
     char semName[PATH_MAX];
-    snprintf(semName, sizeof(semName), "honggfuzz.%d.%d.%u", getpid(), (int)time(NULL),
-             util_rndGet(1, 1U << 30));
+    snprintf(semName, sizeof(semName), "honggfuzz.%d.%d.%u", getpid(),
+             (int)time(NULL), util_rndGet(1, 1U << 30));
 
     hfuzz->sem = sem_open(semName, O_CREAT, 0644, hfuzz->threadsMax);
     if (hfuzz->sem == SEM_FAILED) {
         LOGMSG_P(l_FATAL, "sem_open() failed");
     }
-    // If we're doing a PID fuzzing, the parent of the PID will be a dedicated thread anyway
+    // If we're doing a PID fuzzing, the parent of the PID will be a
+    // dedicated thread anyway
     if (hfuzz->pid) {
         fuzz_runThread(hfuzz, fuzz_threadPid);
     } else {
@@ -371,7 +374,9 @@ void fuzz_main(honggfuzz_t * hfuzz)
         }
 
         if (hfuzz->mutationsMax && (hfuzz->mutationsCnt >= hfuzz->mutationsMax)) {
-            /* Sleep a bit to let any running fuzzers terminate */
+            /*
+             * Sleep a bit to let any running fuzzers terminate 
+             */
             usleep(1.2 * hfuzz->tmOut * 1000000);
             LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
             sem_destroy(hfuzz->sem);
