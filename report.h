@@ -1,6 +1,6 @@
 /*
  * 
- * honggfuzz - utilities
+ * honggfuzz - reporting
  * -----------------------------------------
  * 
  * Author: Robert Swiecki <swiecki@google.com>
@@ -21,23 +21,9 @@
  * 
  */
 
-#ifndef _UTIL_H_
-#define _UTIL_H_
+#ifndef _REPORT_H_
+#define _REPORT_H_
 
-#include <stdint.h>
-
-extern uint32_t util_rndGet(uint32_t min, uint32_t max);
-
-extern void util_ssnprintf(char *str, size_t size, const char *format, ...);
-
-extern void util_getLocalTime(const char *fmt, char *buf, size_t len);
-
-extern void util_nullifyStdio(void);
-
-extern bool util_redirectStdin(char *inputFile);
-
-extern void util_recoverStdio(void);
-
-extern uint64_t util_hash(const char *buf, size_t len);
+extern void report_Report(honggfuzz_t * hfuzz, char *s);
 
 #endif
