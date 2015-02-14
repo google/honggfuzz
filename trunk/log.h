@@ -1,6 +1,7 @@
 /*
  * 
- * honggfuzz - log messages -----------------------------------------
+ * honggfuzz - log messages
+ * -----------------------------------------
  * 
  * Author: Robert Swiecki <swiecki@google.com>
  * 
