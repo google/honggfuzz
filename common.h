@@ -35,7 +35,7 @@
 #define PROG_VERSION "0.4"
 #define PROG_AUTHORS "Robert Swiecki <swiecki@google.com> and others, Copyright 2010-2015 by Google Inc. All Rights Reserved."
 
-#define FILE_PLACEHOLDER "___FILE___"
+#define _HF_FILE_PLACEHOLDER "___FILE___"
 
 typedef struct {
     char **cmdline;
@@ -69,5 +69,11 @@ typedef struct fuzzer_t {
     uint64_t access;
     int exception;
 } fuzzer_t;
+
+#define _HF_MAX_FUNCS 200
+typedef struct {
+    void *pc;
+    char func[64];
+} funcs_t;
 
 #endif
