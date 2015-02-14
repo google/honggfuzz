@@ -55,6 +55,11 @@ bool files_writeToFd(int fd, uint8_t * buf, off_t fileSz)
     return true;
 }
 
+bool files_writeStrToFd(int fd, char *str)
+{
+    return files_writeToFd(fd, (uint8_t *) str, strlen(str));
+}
+
 bool files_exists(char *fileName)
 {
     return (access(fileName, F_OK) != -1);

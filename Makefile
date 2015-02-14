@@ -45,7 +45,7 @@ ifeq ($(OS),Linux)
 	else
 		WARN_CAPSTONE =
 	endif
-	LDFLAGS += -lcapstone
+	LDFLAGS += -lcapstone -lunwind-ptrace -lunwind-generic -lbfd
 	ARCH_SRCS = arch_linux.c
 endif
 ifeq ($(OS),Darwin)

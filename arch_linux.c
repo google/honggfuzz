@@ -24,22 +24,26 @@
 #include "common.h"
 #include "arch.h"
 
+#include <bfd.h>
 #include <capstone/capstone.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <elf.h>
 #include <endian.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <libunwind-ptrace.h>
 #include <sys/cdefs.h>
 #include <sys/personality.h>
 #include <sys/ptrace.h>
 #include <sys/prctl.h>
 #include <sys/resource.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/uio.h>
@@ -48,6 +52,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "files.h"
 #include "log.h"
 #include "util.h"
 
@@ -71,6 +76,109 @@ struct {
     [SIGABRT].descr = "SIGABRT"
 };
 /*  *INDENT-ON* */
+
+static bool arch_bfdInit(pid_t pid, bfd ** bfdh, asection ** section, asymbol *** syms)
+{
+    bfd_init();
+
+    char fname[PATH_MAX];
+    snprintf(fname, sizeof(fname), "/proc/%d/exe", pid);
+
+    *bfdh = bfd_openr(fname, 0);
+    if (*bfdh == NULL) {
+        LOGMSG(l_ERROR, "bfd_openr(%s) failed", fname);
+        return false;
+    }
+
+    if (!bfd_check_format(*bfdh, bfd_object)) {
+        LOGMSG(l_ERROR, "bfd_check_format() failed");
+        return false;
+    }
+
+    int storage_needed = bfd_get_symtab_upper_bound(*bfdh);
+    if (storage_needed <= 0) {
+        LOGMSG(l_ERROR, "bfd_get_symtab_upper_bound() returned '%d'", storage_needed);
+        return false;
+    }
+
+    *syms = (asymbol **) malloc(storage_needed);
+    if (*syms == NULL) {
+        LOGMSG_P(l_ERROR, "malloc(%d) failed", storage_needed);
+        return false;
+    }
+    bfd_canonicalize_symtab(*bfdh, *syms);
+
+    *section = bfd_get_section_by_name(*bfdh, ".text");
+    if (*section == NULL) {
+        LOGMSG(l_ERROR, "bfd_get_section_by_name(.text) failed");
+        return false;
+    }
+
+    return true;
+}
+
+static void arch_unwindPid(pid_t pid, char *newname)
+{
+    unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, __BYTE_ORDER);
+    if (!as) {
+        LOGMSG(l_ERROR, "unw_create_addr_space() failed");
+        return;
+    }
+
+    void *ui = _UPT_create(pid);
+    if (ui == NULL) {
+        LOGMSG(l_ERROR, "_UPT_create(%d) failed", pid);
+        return;
+    }
+
+    unw_cursor_t c;
+    int ret = unw_init_remote(&c, as, ui);
+    if (ret != 0) {
+        LOGMSG(l_ERROR, "unw_init_remote() failed");
+        return;
+    }
+
+    bfd *bfdh;
+    asection *section;
+    asymbol **syms;
+    bool bfdInitialized = arch_bfdInit(pid, &bfdh, &section, &syms);
+
+    int fd = open("HONGGFUZZ.REPORT.txt", O_CREAT | O_APPEND | O_WRONLY, 0644);
+    if (fd == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't open 'HONGGFUZZ.REPORT.txt'");
+        return;
+    }
+
+    dprintf(fd, "===========================================\n");
+    dprintf(fd, "Input file: %s\n", newname);
+
+    while (unw_step(&c) > 0) {
+        unw_word_t ip;
+        unw_get_reg(&c, UNW_REG_IP, &ip);
+
+        dprintf(fd, "[0x%016lx]", (unsigned long)ip);
+        if (bfdInitialized) {
+            const char *func;
+            const char *file;
+            unsigned int line;
+            long offset = ((long)ip) - section->vma;
+            bfd_find_nearest_line(bfdh, section, syms, offset, &file, &func, &line);
+            dprintf(fd, " <%s> (line:%d)", func, line);
+        }
+        dprintf(fd, "\n");
+    }
+    dprintf(fd, "===========================================\n");
+    close(fd);
+
+    unw_destroy_addr_space(as);
+    _UPT_destroy(ui);
+
+    if (syms) {
+        free(syms);
+    }
+
+    return;
+}
 
 static bool arch_enablePtrace(honggfuzz_t * hfuzz)
 {
@@ -408,6 +516,8 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
             LOGMSG_P(l_ERROR, "Couldn't link '%s' to '%s'", fuzzer->fileName, newname);
         }
     }
+
+    arch_unwindPid(pid, newname);
 }
 
 /*
