@@ -1,6 +1,7 @@
 /*
  * 
- * honggfuzz - utilities -----------------------------------------
+ * honggfuzz - utilities
+ * -----------------------------------------
  * 
  * Author: Robert Swiecki <swiecki@google.com>
  * 

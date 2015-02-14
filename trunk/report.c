@@ -1,6 +1,6 @@
 /*
  * 
- * honggfuzz - utilities
+ * honggfuzz - reporting
  * -----------------------------------------
  * 
  * Author: Robert Swiecki <swiecki@google.com>
@@ -21,23 +21,34 @@
  * 
  */
 
-#ifndef _UTIL_H_
-#define _UTIL_H_
+#include "common.h"
+#include "report.h"
 
-#include <stdint.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
-extern uint32_t util_rndGet(uint32_t min, uint32_t max);
+#include "files.h"
+#include "log.h"
 
-extern void util_ssnprintf(char *str, size_t size, const char *format, ...);
+static int reportFD = -1;
 
-extern void util_getLocalTime(const char *fmt, char *buf, size_t len);
+void report_Report(honggfuzz_t * hfuzz, char *s)
+{
+    if (s[0] == '\0') {
+        return;
+    }
 
-extern void util_nullifyStdio(void);
+    if (reportFD == -1) {
+        reportFD = open(hfuzz->reportFile, O_WRONLY | O_CREAT | O_APPEND, 0644);
+    }
+    if (reportFD == -1) {
+        LOGMSG_P(l_FATAL, "Couldn't open('%s') for writing", hfuzz->reportFile);
+    }
 
-extern bool util_redirectStdin(char *inputFile);
+    if (files_writeStrToFd(reportFD, s) == false) {
+        LOGMSG(l_ERROR, "Couldn't append a log to the report file");
+    }
 
-extern void util_recoverStdio(void);
-
-extern uint64_t util_hash(const char *buf, size_t len);
-
-#endif
+    return;
+}
