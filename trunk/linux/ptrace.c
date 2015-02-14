@@ -379,7 +379,7 @@ static void arch_ptraceSaveReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs,
     dprintf(fd, "ORIG_FNAME: %s\n", fuzzer->origFileName);
     dprintf(fd, "FUZZ_FNAME: %s\n", fuzzer->fileName);
     dprintf(fd, "PID: %d\n", pid);
-    dprintf(fd, "SIGNAL: %s\n", arch_sigs[si->si_signo].descr);
+    dprintf(fd, "SIGNAL: %s (%d)\n", arch_sigs[si->si_signo].descr, si->si_signo);
     dprintf(fd, "FAULT ADDRESS: %p\n", si->si_addr);
     dprintf(fd, "INSTRUCTION: %s\n", instr);
     dprintf(fd, "STACK:\n");
