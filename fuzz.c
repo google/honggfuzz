@@ -42,10 +42,11 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "log.h"
 #include "arch.h"
-#include "util.h"
 #include "files.h"
+#include "log.h"
+#include "report.h"
+#include "util.h"
 
 static void fuzz_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, off_t fileSz)
 {
@@ -290,6 +291,7 @@ static void *fuzz_threadNew(void *arg)
 
     arch_reapChild(hfuzz, &fuzzer);
     unlink(fuzzer.fileName);
+    report_Report(hfuzz, fuzzer.report);
 
     sem_post(hfuzz->sem);
 
@@ -310,6 +312,7 @@ static void *fuzz_threadPid(void *arg)
         .backtrace = 0ULL,
         .access = 0ULL,
         .exception = 0,
+        .report = {'\0'}
     };
 
     char fileName[] = ".honggfuzz.empty.XXXXXX";
@@ -325,6 +328,7 @@ static void *fuzz_threadPid(void *arg)
 
     arch_reapChild(hfuzz, &fuzzer);
     unlink(fuzzer.fileName);
+    report_Report(hfuzz, fuzzer.report);
 
     // There's no more hfuzz->pid to analyze. Just exit
     LOGMSG(l_INFO, "PID: %d exited. Exiting", fuzzer.pid);

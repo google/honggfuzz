@@ -118,4 +118,8 @@ log_msg(log_level_t dl,
     dprintf(STDOUT_FILENO, "\n");
 
     while (pthread_mutex_unlock(&log_mutex)) ;
+
+    if (dl == l_FATAL) {
+        exit(EXIT_FAILURE);
+    }
 }

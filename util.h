@@ -27,6 +27,8 @@
 
 extern uint32_t util_rndGet(uint32_t min, uint32_t max);
 
+extern void util_ssnprintf(char *str, size_t size, const char *format, ...);
+
 extern void util_getLocalTime(const char *fmt, char *buf, size_t len);
 
 extern void util_nullifyStdio(void);

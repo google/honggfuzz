@@ -36,6 +36,7 @@
 #define PROG_AUTHORS "Robert Swiecki <swiecki@google.com> and others, Copyright 2010-2015 by Google Inc. All Rights Reserved."
 
 #define _HF_FILE_PLACEHOLDER "___FILE___"
+#define _HF_REPORT_FILE "HONGGFUZZ.REPORT.TXT"
 
 typedef struct {
     char **cmdline;
@@ -52,6 +53,7 @@ typedef struct {
     long mutationsCnt;
     long threadsMax;
     void *ignoreAddr;
+    char *reportFile;
     unsigned long asLimit;
     int pid;
     char **files;
@@ -68,6 +70,7 @@ typedef struct fuzzer_t {
     uint64_t backtrace;
     uint64_t access;
     int exception;
+    char report[8192];
 } fuzzer_t;
 
 #define _HF_MAX_FUNCS 200

@@ -69,12 +69,10 @@ static void usage(bool exit_success)
            "            are not reported, (default: '" AB "0" AC "' [suggested: 65535])\n"
            " [" AB "-n val" AC "] : number of concurrent fuzzing processes, (default: '" AB "5" AC "')\n"
            " [" AB "-N val" AC "] : number of fuzzing mutations, (default: '" AB "0" AC "' [infinte])\n"
-           " [-" AB "l val" AC "] : per process memory limit in MiB, (default: '" AB "0" AC "' [no limit])\n"
-#ifdef _HAVE_ARCH_LINUX
-           " [" AB "-p val" AC
-           "]: attach to a pid (a group thread), instead of monitoring\n"
-           "           previously created process, default: '" AB "0" AC "' (none)\n"
-#endif                          /* _HAVE_ARCH_LINUX */
+           " [" AB "-l val" AC "] : per process memory limit in MiB, (default: '" AB "0" AC "' [no limit])\n"
+           " [" AB "-R val" AC "] : write report to this file, (default: '" AB _HF_REPORT_FILE AC "')\n"
+           " [" AB "-p val" AC "] : (Linux-only) attach to a pid (and its group thread), instead of monitoring\n"
+           "            a previously created process, default: '" AB "0" AC "' (none)\n"
            "Usage:"
            AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n");
     /*  *INDENT-ON* */
@@ -105,6 +103,7 @@ int main(int argc, char **argv)
         .mutationsCnt = 0,
         .threadsMax = 5,
         .ignoreAddr = NULL,
+        .reportFile = _HF_REPORT_FILE,
         .asLimit = 0UL,
         .pid = 0,
         .files = NULL,
@@ -117,7 +116,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "?hqsuf:d:e:r:m:c:t:a:n:N:l:p:");
+        c = getopt(argc, argv, "?hqsuf:d:e:r:m:c:t:a:R:n:N:l:p:");
         if (c < 0)
             break;
 
@@ -158,6 +157,9 @@ int main(int argc, char **argv)
             break;
         case 'a':
             hfuzz.ignoreAddr = (void *)strtoul(optarg, NULL, 0);
+            break;
+        case 'R':
+            hfuzz.reportFile = optarg;
             break;
         case 'n':
             hfuzz.threadsMax = atol(optarg);

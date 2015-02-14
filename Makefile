@@ -26,7 +26,7 @@ CFLAGS += -c -std=c11 -I. -I/usr/local/include -I/usr/include \
 LD = gcc
 LDFLAGS += -lm -lpthread -L/usr/local/include -L/usr/include
 
-SRCS = honggfuzz.c log.c files.c fuzz.c util.c
+SRCS = honggfuzz.c log.c files.c fuzz.c util.c report.c
 
 OBJS = $(SRCS:.c=.o)
 BIN = honggfuzz
@@ -36,14 +36,13 @@ OS ?= $(shell uname -s)
 ARCH_SRCS := $(wildcard posix/*.c)
 
 ifeq ($(OS),Linux)
+	WARN_LIBRARY =
 	ifeq ("$(wildcard /usr/include/capstone/capstone.h)","")
-		WARN_CAPSTONE= \
+		WARN_LIBRARY += \
 			"" ======================================================================\n\
 			You probably need to install libcapstone in order to compile this code\n\
 			It is available as a package since Ubuntu Utopic and Debian Jessie\n\
 			======================================================================\n
-	else
-		WARN_CAPSTONE =
 	endif
 	LDFLAGS += -lcapstone -lunwind-ptrace -lunwind-generic -lbfd
 	ARCH_SRCS := $(wildcard linux/*.c)
@@ -70,7 +69,7 @@ endif
 SRCS += $(ARCH_SRCS)
 
 all: $(BIN)
-	@/bin/echo -ne "$(WARN_CAPSTONE)"
+	@/bin/echo -ne "$(WARN_LIBRARY)"
 
 .c.o: %.c
 	$(CC) $(CFLAGS) -o $@ $<
