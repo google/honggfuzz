@@ -365,6 +365,33 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
     }
 }
 
+static void arch_ptraceSaveReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCnt,
+                                  siginfo_t * si, const char *instr)
+{
+#define _HF_REPORT_FILE "HONGGFUZZ.REPORT.txt"
+    int fd = open(_HF_REPORT_FILE, O_WRONLY | O_APPEND | O_CREAT, 0644);
+    if (fd == -1) {
+        LOGMSG_P(l_ERROR, "open('%s') failed", _HF_REPORT_FILE);
+        return;
+    }
+
+    dprintf(fd, "=======================================================\n");
+    dprintf(fd, "ORIG_FNAME: %s\n", fuzzer->origFileName);
+    dprintf(fd, "FUZZ_FNAME: %s\n", fuzzer->fileName);
+    dprintf(fd, "PID: %d\n", pid);
+    dprintf(fd, "SIGNAL: %s\n", arch_sigs[si->si_signo].descr);
+    dprintf(fd, "FAULT ADDRESS: %p\n", si->si_addr);
+    dprintf(fd, "INSTRUCTION: %s\n", instr);
+    dprintf(fd, "STACK:\n");
+    for (size_t i = 0; i < funcCnt; i++) {
+        dprintf(fd, " 0x%016llx <%s>\n", (unsigned long long)funcs[i].pc, funcs[i].func);
+    }
+    dprintf(fd, "=======================================================\n");
+
+    close(fd);
+    return;
+}
+
 static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
     uint64_t pc = NULL;
@@ -417,15 +444,12 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     funcs_t funcs[_HF_MAX_FUNCS] = {
         [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
         [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
-        ,
     };
 
-    size_t num = arch_unwindStack(pid, funcs);
-    arch_bfdResolveSyms(pid, funcs, num);
+    size_t funcCnt = arch_unwindStack(pid, funcs);
+    arch_bfdResolveSyms(pid, funcs, funcCnt);
 
-    for (size_t i = 0; i < num; i++) {
-        LOGMSG(l_ERROR, "PC: %p FUNC: %s", funcs[i].pc, funcs[i].func);
-    }
+    arch_ptraceSaveReport(pid, fuzzer, funcs, funcCnt, &si, instr);
 }
 
 /*

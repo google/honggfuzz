@@ -36,39 +36,42 @@
 #include "log.h"
 #include "util.h"
 
-static bool arch_bfdInit(pid_t pid, bfd ** bfdh, asection ** section, asymbol *** syms)
+typedef struct {
+    bfd *bfdh;
+    asection *section;
+    asymbol **syms;
+} bfd_t;
+
+static bool arch_bfdInit(pid_t pid, bfd_t * bfdParams)
 {
     bfd_init();
 
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "/proc/%d/exe", pid);
 
-    *bfdh = bfd_openr(fname, 0);
-    if (*bfdh == NULL) {
+    if ((bfdParams->bfdh = bfd_openr(fname, 0)) == NULL) {
         LOGMSG(l_ERROR, "bfd_openr(%s) failed", fname);
         return false;
     }
 
-    if (!bfd_check_format(*bfdh, bfd_object)) {
+    if (!bfd_check_format(bfdParams->bfdh, bfd_object)) {
         LOGMSG(l_ERROR, "bfd_check_format() failed");
         return false;
     }
 
-    int storage_needed = bfd_get_symtab_upper_bound(*bfdh);
+    int storage_needed = bfd_get_symtab_upper_bound(bfdParams->bfdh);
     if (storage_needed <= 0) {
         LOGMSG(l_ERROR, "bfd_get_symtab_upper_bound() returned '%d'", storage_needed);
         return false;
     }
 
-    *syms = (asymbol **) malloc(storage_needed);
-    if (*syms == NULL) {
+    if ((bfdParams->syms = (asymbol **) malloc(storage_needed)) == NULL) {
         LOGMSG_P(l_ERROR, "malloc(%d) failed", storage_needed);
         return false;
     }
-    bfd_canonicalize_symtab(*bfdh, *syms);
+    bfd_canonicalize_symtab(bfdParams->bfdh, bfdParams->syms);
 
-    *section = bfd_get_section_by_name(*bfdh, ".text");
-    if (*section == NULL) {
+    if ((bfdParams->section = bfd_get_section_by_name(bfdParams->bfdh, ".text")) == NULL) {
         LOGMSG(l_ERROR, "bfd_get_section_by_name('.text') failed");
         return false;
     }
@@ -76,22 +79,25 @@ static bool arch_bfdInit(pid_t pid, bfd ** bfdh, asection ** section, asymbol **
     return true;
 }
 
-static void arch_bfdDestroy(asymbol ** syms)
+static void arch_bfdDestroy(bfd_t * bfdParams)
 {
-    if (syms) {
-        free(syms);
+    if (bfdParams->syms) {
+        free(bfdParams->syms);
     }
     return;
 }
 
 void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
 {
-    bfd *bfdh = NULL;
-    asection *section = NULL;
-    asymbol **syms = NULL;
+    bfd_t bfdParams = {
+        .bfdh = NULL,
+        .section = NULL,
+        .syms = NULL,
+    };
 
-    if (arch_bfdInit(pid, &bfdh, &section, &syms)) {
-        arch_bfdDestroy(syms);
+    if (arch_bfdInit(pid, &bfdParams) == false) {
+        arch_bfdDestroy(&bfdParams);
+        return;
     }
 
     const char *func;
@@ -102,14 +108,16 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
         if (funcs[i].pc == NULL) {
             continue;
         }
-        long offset = (long)funcs[i].pc - section->vma;
-        if ((offset < 0 || (unsigned long)offset > section->size)) {
+        long offset = (long)funcs[i].pc - bfdParams.section->vma;
+        if ((offset < 0 || (unsigned long)offset > bfdParams.section->size)) {
             continue;
         }
-        if (bfd_find_nearest_line(bfdh, section, syms, offset, &file, &func, &line)) {
+        if (bfd_find_nearest_line
+            (bfdParams.bfdh, bfdParams.section, bfdParams.syms, offset, &file, &func, &line)) {
             snprintf(funcs[i].func, sizeof(funcs->func), "%s", func);
         }
     }
 
-    arch_bfdDestroy(syms);
+    arch_bfdDestroy(&bfdParams);
+    return;
 }
