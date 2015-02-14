@@ -22,9 +22,8 @@
 */
 
 #include "common.h"
-#include "arch.h"
+#include "ptrace.h"
 
-#include <bfd.h>
 #include <capstone/capstone.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -37,7 +36,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-#include <libunwind-ptrace.h>
 #include <sys/cdefs.h>
 #include <sys/personality.h>
 #include <sys/ptrace.h>
@@ -53,6 +51,8 @@
 #include <unistd.h>
 
 #include "files.h"
+#include "linux/bfd.h"
+#include "linux/unwind.h"
 #include "log.h"
 #include "util.h"
 
@@ -77,110 +77,7 @@ struct {
 };
 /*  *INDENT-ON* */
 
-static bool arch_bfdInit(pid_t pid, bfd ** bfdh, asection ** section, asymbol *** syms)
-{
-    bfd_init();
-
-    char fname[PATH_MAX];
-    snprintf(fname, sizeof(fname), "/proc/%d/exe", pid);
-
-    *bfdh = bfd_openr(fname, 0);
-    if (*bfdh == NULL) {
-        LOGMSG(l_ERROR, "bfd_openr(%s) failed", fname);
-        return false;
-    }
-
-    if (!bfd_check_format(*bfdh, bfd_object)) {
-        LOGMSG(l_ERROR, "bfd_check_format() failed");
-        return false;
-    }
-
-    int storage_needed = bfd_get_symtab_upper_bound(*bfdh);
-    if (storage_needed <= 0) {
-        LOGMSG(l_ERROR, "bfd_get_symtab_upper_bound() returned '%d'", storage_needed);
-        return false;
-    }
-
-    *syms = (asymbol **) malloc(storage_needed);
-    if (*syms == NULL) {
-        LOGMSG_P(l_ERROR, "malloc(%d) failed", storage_needed);
-        return false;
-    }
-    bfd_canonicalize_symtab(*bfdh, *syms);
-
-    *section = bfd_get_section_by_name(*bfdh, ".text");
-    if (*section == NULL) {
-        LOGMSG(l_ERROR, "bfd_get_section_by_name(.text) failed");
-        return false;
-    }
-
-    return true;
-}
-
-static void arch_unwindPid(pid_t pid, char *newname)
-{
-    unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, __BYTE_ORDER);
-    if (!as) {
-        LOGMSG(l_ERROR, "unw_create_addr_space() failed");
-        return;
-    }
-
-    void *ui = _UPT_create(pid);
-    if (ui == NULL) {
-        LOGMSG(l_ERROR, "_UPT_create(%d) failed", pid);
-        return;
-    }
-
-    unw_cursor_t c;
-    int ret = unw_init_remote(&c, as, ui);
-    if (ret != 0) {
-        LOGMSG(l_ERROR, "unw_init_remote() failed");
-        return;
-    }
-
-    bfd *bfdh;
-    asection *section;
-    asymbol **syms;
-    bool bfdInitialized = arch_bfdInit(pid, &bfdh, &section, &syms);
-
-    int fd = open("HONGGFUZZ.REPORT.txt", O_CREAT | O_APPEND | O_WRONLY, 0644);
-    if (fd == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't open 'HONGGFUZZ.REPORT.txt'");
-        return;
-    }
-
-    dprintf(fd, "===========================================\n");
-    dprintf(fd, "Input file: %s\n", newname);
-
-    while (unw_step(&c) > 0) {
-        unw_word_t ip;
-        unw_get_reg(&c, UNW_REG_IP, &ip);
-
-        dprintf(fd, "[0x%016lx]", (unsigned long)ip);
-        if (bfdInitialized) {
-            const char *func;
-            const char *file;
-            unsigned int line;
-            long offset = ((long)ip) - section->vma;
-            bfd_find_nearest_line(bfdh, section, syms, offset, &file, &func, &line);
-            dprintf(fd, " <%s> (line:%d)", func, line);
-        }
-        dprintf(fd, "\n");
-    }
-    dprintf(fd, "===========================================\n");
-    close(fd);
-
-    unw_destroy_addr_space(as);
-    _UPT_destroy(ui);
-
-    if (syms) {
-        free(syms);
-    }
-
-    return;
-}
-
-static bool arch_enablePtrace(honggfuzz_t * hfuzz)
+bool arch_ptraceEnable(honggfuzz_t * hfuzz)
 {
     // We're fuzzing an external process, so just return true
     if (hfuzz->pid) {
@@ -468,7 +365,7 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
     }
 }
 
-static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
+static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
     uint64_t pc = NULL;
 
@@ -517,14 +414,25 @@ static void arch_savePtraceData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
         }
     }
 
-    arch_unwindPid(pid, newname);
+    funcs_t funcs[_HF_MAX_FUNCS] = {
+        [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
+        [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
+        ,
+    };
+
+    size_t num = arch_unwindStack(pid, funcs);
+    arch_bfdResolveSyms(pid, funcs, num);
+
+    for (size_t i = 0; i < num; i++) {
+        LOGMSG(l_ERROR, "PC: %p FUNC: %s", funcs[i].pc, funcs[i].func);
+    }
 }
 
 /*
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
-static bool arch_analyzePtrace(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer)
+bool arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer)
 {
     /*
      * If it's an uninteresting signal (even SIGTRAP), let it run and relay the
@@ -541,7 +449,7 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, int status, pid_t pid, fuzze
      * the tracer (relay the signal as well)
      */
     if (WIFSTOPPED(status) && arch_sigs[WSTOPSIG(status)].important) {
-        arch_savePtraceData(hfuzz, pid, fuzzer);
+        arch_ptraceSaveData(hfuzz, pid, fuzzer);
         ptrace(PT_CONTINUE, pid, 0, WSTOPSIG(status));
         return false;
     }
@@ -562,149 +470,6 @@ static bool arch_analyzePtrace(honggfuzz_t * hfuzz, int status, pid_t pid, fuzze
 
     abort();                    /* NOTREACHED */
     return true;
-}
-
-bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
-{
-    if (!arch_enablePtrace(hfuzz)) {
-        return false;
-    }
-    /*
-     * Kill a process which corrupts its own heap (with ABRT)
-     */
-    if (setenv("MALLOC_CHECK_", "3", 1) == -1) {
-        LOGMSG_P(l_ERROR, "setenv(MALLOC_CHECK_=3) failed");
-        return false;
-    }
-
-    /*
-     * Tell asan to ignore SEGVs
-     */
-    if (setenv("ASAN_OPTIONS", "handle_segv=0", 1) == -1) {
-        LOGMSG_P(l_ERROR, "setenv(ASAN_OPTIONS) failed");
-        return false;
-    }
-
-    /*
-     * Kill the children when fuzzer dies (e.g. due to Ctrl+C)
-     */
-    if (prctl(PR_SET_PDEATHSIG, (long)SIGKILL, 0L, 0L, 0L) == -1) {
-        LOGMSG_P(l_ERROR, "prctl(PR_SET_PDEATHSIG, SIGKILL) failed");
-        return false;
-    }
-
-    /*
-     * Disable ASLR
-     */
-    if (personality(ADDR_NO_RANDOMIZE) == -1) {
-        LOGMSG_P(l_ERROR, "personality(ADDR_NO_RANDOMIZE) failed");
-        return false;
-    }
-#define ARGS_MAX 512
-    char *args[ARGS_MAX + 2];
-
-    int x;
-
-    for (x = 0; x < ARGS_MAX && hfuzz->cmdline[x]; x++) {
-        if (!hfuzz->fuzzStdin && strcmp(hfuzz->cmdline[x], FILE_PLACEHOLDER) == 0) {
-            args[x] = fileName;
-        } else {
-            args[x] = hfuzz->cmdline[x];
-        }
-    }
-
-    args[x++] = NULL;
-
-    LOGMSG(l_DEBUG, "Launching '%s' on file '%s'", args[0], fileName);
-
-    /*
-     * Set timeout (prof), real timeout (2*prof), and rlimit_cpu (2*prof)
-     */
-    if (hfuzz->tmOut) {
-        /*
-         * The hfuzz->tmOut is real CPU usage time...
-         */
-        struct itimerval it_prof = {
-            .it_interval = {.tv_sec = hfuzz->tmOut,.tv_usec = 0},
-            .it_value = {.tv_sec = 0,.tv_usec = 0}
-        };
-        if (setitimer(ITIMER_PROF, &it_prof, NULL) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't set the ITIMER_PROF timer");
-            return false;
-        }
-
-        /*
-         * ...so, if a process sleeps, this one should
-         * trigger a signal...
-         */
-        struct itimerval it_real = {
-            .it_interval = {.tv_sec = hfuzz->tmOut * 2UL,.tv_usec = 0},
-            .it_value = {.tv_sec = 0,.tv_usec = 0}
-        };
-        if (setitimer(ITIMER_REAL, &it_real, NULL) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't set the ITIMER_REAL timer");
-            return false;
-        }
-
-        /*
-         * ..if a process sleeps and catches SIGPROF/SIGALRM
-         * rlimits won't help either
-         */
-        struct rlimit rl = {
-            .rlim_cur = hfuzz->tmOut * 2,
-            .rlim_max = hfuzz->tmOut * 2,
-        };
-        if (setrlimit(RLIMIT_CPU, &rl) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't enforce the RLIMIT_CPU resource limit");
-            return false;
-        }
-    }
-
-    /*
-     * The address space limit. If big enough - roughly the size of RAM used
-     */
-    if (hfuzz->asLimit) {
-        struct rlimit rl = {
-            .rlim_cur = hfuzz->asLimit * 1024UL * 1024UL,
-            .rlim_max = hfuzz->asLimit * 1024UL * 1024UL,
-        };
-        if (setrlimit(RLIMIT_AS, &rl) == -1) {
-            LOGMSG_P(l_DEBUG, "Couldn't encforce the RLIMIT_AS resource limit, ignoring");
-        }
-    }
-
-    if (hfuzz->nullifyStdio) {
-        util_nullifyStdio();
-    }
-
-    if (hfuzz->fuzzStdin) {
-        /* Uglyyyyyy ;) */
-        if (!util_redirectStdin(fileName)) {
-            return false;
-        }
-    }
-
-    execvp(args[0], args);
-
-    util_recoverStdio();
-    LOGMSG(l_FATAL, "Failed to create new '%s' process", args[0]);
-    return false;
-}
-
-void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
-{
-    int status;
-
-    for (;;) {
-        pid_t pid;
-        while ((pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL)) <= 0) ;
-
-        LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", pid, status);
-
-        if (arch_analyzePtrace(hfuzz, status, pid, fuzzer)) {
-            return;
-        }
-    }
 }
 
 static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
@@ -753,7 +518,7 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
     return true;
 }
 
-bool arch_prepareParent(honggfuzz_t * hfuzz)
+bool arch_ptracePrepare(honggfuzz_t * hfuzz)
 {
     if (!hfuzz->pid) {
         return true;

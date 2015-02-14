@@ -33,7 +33,7 @@ BIN = honggfuzz
 
 OS ?= $(shell uname -s)
 
-ARCH_SRCS := arch_posix.c
+ARCH_SRCS := $(wildcard posix/*.c)
 
 ifeq ($(OS),Linux)
 	ifeq ("$(wildcard /usr/include/capstone/capstone.h)","")
@@ -46,7 +46,7 @@ ifeq ($(OS),Linux)
 		WARN_CAPSTONE =
 	endif
 	LDFLAGS += -lcapstone -lunwind-ptrace -lunwind-generic -lbfd
-	ARCH_SRCS = arch_linux.c
+	ARCH_SRCS := $(wildcard linux/*.c)
 endif
 ifeq ($(OS),Darwin)
 	CC ?= cc
@@ -61,7 +61,7 @@ ifeq ($(OS),Darwin)
 		-framework Foundation -framework ApplicationServices -framework Symbolication \
 		-framework CoreServices -framework CrashReporterSupport -framework CoreFoundation \
 		-framework CommerceKit -lm -L/usr/include -L$(shell echo ~)/.homebrew/lib
-	ARCH_SRCS = arch_mac.c
+	ARCH_SRCS = $(wildcard mac/*.c)
 	MIG_OUTPUT = mach_exc.h mach_excUser.c mach_excServer.h mach_excServer.c
 	MIG_OBJECTS = mach_excUser.o mach_excServer.o
 	#CRASH_REPORT = third_party/CrashReport_Yosemite.o
@@ -70,10 +70,10 @@ endif
 SRCS += $(ARCH_SRCS)
 
 all: $(BIN)
-	@echo -ne "$(WARN_CAPSTONE)"
+	@/bin/echo -ne "$(WARN_CAPSTONE)"
 
 .c.o: %.c
-	$(CC) $(CFLAGS) $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 $(BIN): $(MIG_OBJECTS) $(OBJS)
 	$(LD) -o $(BIN) $(OBJS) $(MIG_OBJECTS) $(CRASH_REPORT) $(LDFLAGS)
@@ -89,7 +89,7 @@ clean:
 	$(RM) core $(OBJS) $(BIN) $(MIG_OUTPUT) $(MIG_OBJECTS)
 
 indent:
-	indent -linux -l100 -lc100 -nut -i4 -sob -c33 -cp33 *.c *.h; rm -f *~
+	indent -linux -l100 -lc100 -nut -i4 -sob -c33 -cp33 *.c *.h */*.c */*.h; rm -f *~
 
 depend:
 	makedepend -Y. -- $(SRCS)

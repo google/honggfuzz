@@ -224,7 +224,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     int x;
 
     for (x = 0; x < ARGS_MAX && hfuzz->cmdline[x]; x++) {
-        if (!hfuzz->fuzzStdin && strcmp(hfuzz->cmdline[x], FILE_PLACEHOLDER) == 0) {
+        if (!hfuzz->fuzzStdin && strcmp(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
             args[x] = fileName;
         } else {
             args[x] = hfuzz->cmdline[x];

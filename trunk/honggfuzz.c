@@ -43,7 +43,7 @@
 static bool checkFor_FILE_PLACEHOLDER(char **args)
 {
     for (int x = 0; args[x]; x++) {
-        if (!strcmp(args[x], FILE_PLACEHOLDER))
+        if (!strcmp(args[x], _HF_FILE_PLACEHOLDER))
             return true;
     }
     return false;
@@ -77,7 +77,7 @@ static void usage(bool exit_success)
            "           previously created process, default: '" AB "0" AC "' (none)\n"
 #endif                          /* _HAVE_ARCH_LINUX */
            "Usage:"
-           AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " FILE_PLACEHOLDER AC "\n");
+           AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n");
     /*  *INDENT-ON* */
 
     if (exit_success) {
@@ -187,7 +187,7 @@ int main(int argc, char **argv)
 
     if (!hfuzz.fuzzStdin && !checkFor_FILE_PLACEHOLDER(hfuzz.cmdline)) {
         LOGMSG(l_FATAL,
-               "You must specify '" FILE_PLACEHOLDER
+               "You must specify '" _HF_FILE_PLACEHOLDER
                "' when the -s (stdin fuzzing) option is not set");
         usage(false);
     }
