@@ -1,6 +1,7 @@
 /*
  * 
- * honggfuzz - fuzzing routines -----------------------------------------
+ * honggfuzz - fuzzing routines
+ * -----------------------------------------
  * 
  * Author: Robert Swiecki <swiecki@google.com>
  * 

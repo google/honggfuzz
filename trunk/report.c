@@ -24,12 +24,13 @@
 #include "common.h"
 #include "report.h"
 
+#include <fcntl.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 
-#include "files.h"
 #include "log.h"
+#include "util.h"
 
 static int reportFD = -1;
 
@@ -46,9 +47,16 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
         LOGMSG_P(l_FATAL, "Couldn't open('%s') for writing", hfuzz->reportFile);
     }
 
-    if (files_writeStrToFd(reportFD, s) == false) {
-        LOGMSG(l_ERROR, "Couldn't append a log to the report file");
-    }
+    char localtmstr[PATH_MAX];
+    util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr));
+
+    dprintf(reportFD,
+            "=====================================================================\n"
+            "TIME: %s\n"
+            "=====================================================================\n"
+            "%s"
+            "=====================================================================\n",
+            localtmstr, s);
 
     return;
 }

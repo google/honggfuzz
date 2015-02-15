@@ -39,30 +39,27 @@
 
 static int util_urandomFD = -1;
 
-uint32_t util_rndGet(uint32_t min, uint32_t max)
+uint64_t util_rndGet(uint64_t min, uint64_t max)
 {
     if (util_urandomFD == -1) {
-        if ((util_urandomFD = open("/dev/urandom", O_RDONLY)) == -1) {
-            LOGMSG_P(l_FATAL, "Couldn't open /dev/urandom");
-        }
+        util_urandomFD = open("/dev/urandom", O_RDONLY);
+    }
+    if (util_urandomFD == -1) {
+        LOGMSG_P(l_FATAL, "Couldn't open /dev/urandom for writing");
     }
 
-    unsigned short seed16v[3];
-
-    if (read(util_urandomFD, seed16v, sizeof(seed16v)) != sizeof(seed16v)) {
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        seed16v[0] = ((unsigned short)tv.tv_usec);
-        gettimeofday(&tv, NULL);
-        seed16v[1] = ((unsigned short)tv.tv_usec);
-        gettimeofday(&tv, NULL);
-        seed16v[2] = ((unsigned short)tv.tv_usec);
+    uint64_t rnd;
+    if (read(util_urandomFD, &rnd, sizeof(rnd)) != sizeof(rnd)) {
+        LOGMSG_P(l_WARN, "Failed reading from /dev/urandom");
     }
 
-    seed48(seed16v);
-    uint32_t rnd1 = (uint32_t) lrand48();
-    uint32_t rnd2 = (uint32_t) lrand48();
-    uint32_t rnd = (rnd1 << 16) ^ rnd2;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    rnd ^= ((uint64_t) tv.tv_usec) << 0;
+    gettimeofday(&tv, NULL);
+    rnd ^= ((uint64_t) tv.tv_usec) << 24;
+    gettimeofday(&tv, NULL);
+    rnd ^= ((uint64_t) tv.tv_usec) << 48;
 
     if (min > max) {
         LOGMSG(l_FATAL, "min:%d > max:%d", min, max);

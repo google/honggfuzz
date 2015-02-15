@@ -26,7 +26,7 @@
 
 #include <stdint.h>
 
-extern uint32_t util_rndGet(uint32_t min, uint32_t max);
+extern uint64_t util_rndGet(uint64_t min, uint64_t max);
 
 extern void util_ssnprintf(char *str, size_t size, const char *format, ...);
 

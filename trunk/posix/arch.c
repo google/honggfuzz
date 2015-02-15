@@ -106,7 +106,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     }
 
     char localtmstr[PATH_MAX];
-    util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr));
+    util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr));
 
     char newname[PATH_MAX];
     snprintf(newname, sizeof(newname), "%s.%d.%s.%s.%s",

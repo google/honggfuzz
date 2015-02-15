@@ -1,6 +1,7 @@
 /*
  * 
- * honggfuzz - the main file -----------------------------------------
+ * honggfuzz - the main file
+ * -----------------------------------------
  * 
  * Author: Robert Swiecki <swiecki@google.com> Felix Gröbert
  * <groebert@google.com>
