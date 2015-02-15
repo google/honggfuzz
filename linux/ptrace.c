@@ -386,8 +386,6 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs,
                           size_t funcCnt, siginfo_t * si, const char *instr)
 {
     fuzzer->report[0] = '\0';
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report),
-                   "=======================================================\n");
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n",
                    fuzzer->origFileName);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n", fuzzer->fileName);
@@ -398,11 +396,9 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs,
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "INSTRUCTION: %s\n", instr);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK:\n");
     for (size_t i = 0; i < funcCnt; i++) {
-        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " 0x%016llx <%s>\n",
-                       (unsigned long long)funcs[i].pc, funcs[i].func);
+        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <0x%016" PRIx64 "> [%s():%d]\n",
+                       (uint64_t) (long)funcs[i].pc, funcs[i].func, funcs[i].line);
     }
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report),
-                   "=======================================================\n");
 
     return;
 }
@@ -441,7 +437,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
                  instr, fuzzer->origFileName, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
-        util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr));
+        util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr));
         snprintf(newname, sizeof(newname),
                  "%s.PC.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s.%s",
                  arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr,
@@ -460,7 +456,9 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 
     funcs_t funcs[_HF_MAX_FUNCS] = {
         [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
+        [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
         [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
+        ,
     };
 
     size_t funcCnt = arch_unwindStack(pid, funcs);

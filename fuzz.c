@@ -1,6 +1,7 @@
 /*
  * 
- * honggfuzz - fuzzing routines -----------------------------------------
+ * honggfuzz - fuzzing routines
+ * -----------------------------------------
  * 
  * Author: Robert Swiecki <swiecki@google.com> Felix Gröbert
  * <groebert@google.com>
@@ -26,6 +27,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stddef.h>
@@ -355,8 +357,8 @@ static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
 void fuzz_main(honggfuzz_t * hfuzz)
 {
     char semName[PATH_MAX];
-    snprintf(semName, sizeof(semName), "honggfuzz.%d.%d.%u", getpid(),
-             (int)time(NULL), util_rndGet(1, 1U << 30));
+    snprintf(semName, sizeof(semName), "honggfuzz.%d.%d.%" PRIx64, getpid(),
+             (int)time(NULL), util_rndGet(1, 1ULL << 62));
 
     hfuzz->sem = sem_open(semName, O_CREAT, 0644, hfuzz->threadsMax);
     if (hfuzz->sem == SEM_FAILED) {

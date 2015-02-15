@@ -77,6 +77,7 @@ typedef struct fuzzer_t {
 typedef struct {
     void *pc;
     char func[64];
+    int line;
 } funcs_t;
 
 #endif
