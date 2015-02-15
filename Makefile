@@ -36,13 +36,14 @@ OS ?= $(shell uname -s)
 ARCH_SRCS := $(wildcard posix/*.c)
 
 ifeq ($(OS),Linux)
-	WARN_LIBRARY =
 	ifeq ("$(wildcard /usr/include/capstone/capstone.h)","")
-		WARN_LIBRARY += \
-			"" ======================================================================\n\
-			You probably need to install libcapstone in order to compile this code\n\
-			It is available as a package since Ubuntu Utopic and Debian Jessie\n\
-			======================================================================\n
+		WARN_LIBRARY += "libcasptone-dev (Ubunty Utopic/Debian Jessie "
+	endif
+	ifeq ("$(wildcard /usr/include/bfd.h)","")
+		WARN_LIBRARY += "binutils-dev "
+	endif
+	ifeq ("$(wildcard /usr/include/libunwind-ptrace.h)","")
+		WARN_LIBRARY += "libunwind-dev "
 	endif
 	LDFLAGS += -lcapstone -lunwind-ptrace -lunwind-generic -lbfd
 	ARCH_SRCS := $(wildcard linux/*.c)
@@ -68,8 +69,15 @@ ifeq ($(OS),Darwin)
 endif
 SRCS += $(ARCH_SRCS)
 
-all: $(BIN)
-	@/bin/echo -ne "$(WARN_LIBRARY)"
+warn_libs:
+ifdef WARN_LIBRARY
+	@/bin/echo -e "Development libraries you are most likely missing on your OS:" $(WARN_LIBRARY)
+else
+	@/bin/true
+endif
+
+
+all: warn_libs $(BIN)
 
 .c.o: %.c
 	$(CC) $(CFLAGS) -o $@ $<
