@@ -147,20 +147,18 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
     bfd *bfdh = bfd_openr(fname, NULL);
     if (bfdh == NULL) {
         LOGMSG(l_WARN, "bfd_openr('/proc/%d/exe') failed", pid);
-        return;
+        goto out;
     }
 
     if (!bfd_check_format(bfdh, bfd_object)) {
         LOGMSG(l_WARN, "bfd_check_format() failed");
-        bfd_close(bfdh);
-        return;
+        goto out;
     }
 
     disassembler_ftype disassemble = disassembler(bfdh);
     if (disassemble == NULL) {
         LOGMSG(l_WARN, "disassembler() failed");
-        bfd_close(bfdh);
-        return;
+        goto out;
     }
 
     struct disassemble_info info;
@@ -176,6 +174,8 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
     if (disassemble(0, &info) <= 0) {
         snprintf(instr, _HF_INSTR_SZ, "[UNKNOWN]");
     }
-    bfd_close(bfdh);
+
+ out:
+    bfdh ? bfd_close(bfdh) : 0;
     return;
 }
