@@ -25,6 +25,9 @@
 #define _FILES_H_
 
 #include <stdint.h>
+#include <unistd.h>
+
+#define _HF_ALIGN_UP(x)  (((unsigned long)x + (unsigned long)sysconf(_SC_PAGESIZE) - 1) & ~((unsigned long)sysconf(_SC_PAGESIZE) - 1))
 
 extern bool files_init(honggfuzz_t * hfuzz);
 

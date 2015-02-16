@@ -40,7 +40,7 @@ ifeq ($(OS),Linux)
 		WARN_LIBRARY += "binutils-dev "
 	endif
 	ifeq ("$(wildcard /usr/include/libunwind-ptrace.h)","")
-		WARN_LIBRARY += "libunwind-dev "
+		WARN_LIBRARY += "libunwind-dev/libunwind8-dev "
 	endif
 	LDFLAGS += -lunwind-ptrace -lunwind-generic -lbfd -lopcodes
 	ARCH_SRCS := $(wildcard linux/*.c)
@@ -73,7 +73,10 @@ all: warn_libs $(BIN)
 
 warn_libs:
 ifdef WARN_LIBRARY
-	@/bin/echo -e "Development libraries you are most likely missing on your OS:" $(WARN_LIBRARY)
+	@/bin/echo -e "*********************************************************"
+	@/bin/echo -e "Development libraries which are most likely missing on your OS:"
+	@/bin/echo    "$(WARN_LIBRARY)"
+	@/bin/echo -e "*********************************************************"
 else
 	@/bin/true
 endif
