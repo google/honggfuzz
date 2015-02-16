@@ -35,19 +35,19 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
 
     unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, __BYTE_ORDER);
     if (!as) {
-        LOGMSG(l_ERROR, "unw_create_addr_space() failed");
+        LOGMSG(l_ERROR, "unw_create_addr_space(pid='%d') failed", pid);
         goto out;
     }
 
     ui = _UPT_create(pid);
     if (ui == NULL) {
-        LOGMSG(l_ERROR, "_UPT_create(%d) failed", pid);
+        LOGMSG(l_ERROR, "_UPT_create(pid='%d') failed", pid);
         goto out;
     }
 
     unw_cursor_t c;
     if (unw_init_remote(&c, as, ui) != 0) {
-        LOGMSG(l_ERROR, "unw_init_remote() failed");
+        LOGMSG(l_ERROR, "unw_init_remote(pid='%d') failed", pid);
         goto out;
     }
 
