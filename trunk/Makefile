@@ -69,18 +69,17 @@ ifeq ($(OS),Darwin)
 endif
 SRCS += $(ARCH_SRCS)
 
+all: warn_libs $(BIN)
+
+.c.o: %.c
+	$(CC) $(CFLAGS) -o $@ $<
+
 warn_libs:
 ifdef WARN_LIBRARY
 	@/bin/echo -e "Development libraries you are most likely missing on your OS:" $(WARN_LIBRARY)
 else
 	@/bin/true
 endif
-
-
-all: warn_libs $(BIN)
-
-.c.o: %.c
-	$(CC) $(CFLAGS) -o $@ $<
 
 $(BIN): $(MIG_OBJECTS) $(OBJS)
 	$(LD) -o $(BIN) $(OBJS) $(MIG_OBJECTS) $(CRASH_REPORT) $(LDFLAGS)
