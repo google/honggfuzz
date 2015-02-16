@@ -45,10 +45,13 @@ typedef struct {
     asymbol **syms;
 } bfd_t;
 
-static bool arch_bfdInit(pid_t pid, bfd_t * bfdParams)
+void arch_bfdPrepare(void)
 {
     bfd_init();
+}
 
+static bool arch_bfdInit(pid_t pid, bfd_t * bfdParams)
+{
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "/proc/%d/exe", pid);
     if ((bfdParams->bfdh = bfd_openr(fname, 0)) == NULL) {
@@ -140,8 +143,6 @@ static int arch_bfdFPrintF(void *buf, const char *fmt, ...)
 
 void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
 {
-    bfd_init();
-
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "/proc/%d/exe", pid);
     bfd *bfdh = bfd_openr(fname, NULL);
