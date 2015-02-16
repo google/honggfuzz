@@ -1,25 +1,25 @@
 /*
- * 
+ *
  * honggfuzz - fuzzing routines
  * -----------------------------------------
- * 
+ *
  * Author: Robert Swiecki <swiecki@google.com> Felix Gröbert
  * <groebert@google.com>
- * 
+ *
  * Copyright 2010-2015 by Google Inc. All Rights Reserved.
- * 
- * Licensed under the Apache License, Version 2.0 (the "License"); you may 
- * not use this file except in compliance with the License. You may obtain 
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
  * a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
  * implied. See the License for the specific language governing
  * permissions and limitations under the License.
- * 
+ *
  */
 
 #include "common.h"
@@ -200,7 +200,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
     if (!pid) {
 #if defined(PR_SET_PDEATHSIG)
         /*
-         * Kill it if the main process goes down 
+         * Kill it if the main process goes down
          */
         if (prctl(PR_SET_PDEATHSIG, (long)SIGKILL, 0L, 0L, 0L) == -1) {
             LOGMSG_P(l_ERROR, "prctl(PR_SET_PDEATHSIG, SIGKILL) failed");
@@ -381,7 +381,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
 
         if (hfuzz->mutationsMax && (hfuzz->mutationsCnt >= hfuzz->mutationsMax)) {
             /*
-             * Sleep a bit to let any running fuzzers terminate 
+             * Sleep a bit to let any running fuzzers terminate
              */
             usleep(1.2 * hfuzz->tmOut * 1000000);
             LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);

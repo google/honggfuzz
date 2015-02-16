@@ -1,24 +1,24 @@
 /*
- * 
+ *
  * honggfuzz - architecture dependent code (LINUX/PTRACE)
  * -----------------------------------------
- * 
+ *
  * Author: Robert Swiecki <swiecki@google.com>
- * 
+ *
  * Copyright 2010-2015 by Google Inc. All Rights Reserved.
- * 
- * Licensed under the Apache License, Version 2.0 (the "License"); you may 
- * not use this file except in compliance with the License. You may obtain 
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
  * a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
  * implied. See the License for the specific language governing
  * permissions and limitations under the License.
- * 
+ *
  */
 
 #include "common.h"
@@ -95,7 +95,7 @@ bool arch_ptraceEnable(honggfuzz_t * hfuzz)
 static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, uint64_t pc)
 {
     /*
-     * Let's try process_vm_readv first 
+     * Let's try process_vm_readv first
      */
     const struct iovec local_iov = {
         .iov_base = buf,
@@ -194,7 +194,7 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
     };
 
     /*
-     * 32-bit 
+     * 32-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
         struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
@@ -204,7 +204,7 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
         return true;
     }
     /*
-     * 64-bit 
+     * 64-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
         struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
@@ -267,8 +267,8 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
         uint32_t dsisr;
         uint32_t result;
         /*
-         * elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in 
-         * with some zeros 
+         * elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in
+         * with some zeros
          */
         uint32_t zero0;
         uint32_t zero1;
@@ -290,8 +290,8 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
         uint64_t dsisr;
         uint64_t result;
         /*
-         * elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in 
-         * with some zeros 
+         * elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in
+         * with some zeros
          */
         uint64_t zero0;
         uint64_t zero1;

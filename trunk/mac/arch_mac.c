@@ -1,25 +1,25 @@
 /*
- * 
+ *
  * honggfuzz - architecture dependent code (MAC OS X)
  * -----------------------------------------
- * 
+ *
  * Author: Robert Swiecki <swiecki@google.com> Felix Gröbert
  * <groebert@google.com>
- * 
+ *
  * Copyright 2010-2015 by Google Inc. All Rights Reserved.
- * 
- * Licensed under the Apache License, Version 2.0 (the "License"); you may 
- * not use this file except in compliance with the License. You may obtain 
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
  * a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
  * implied. See the License for the specific language governing
  * permissions and limitations under the License.
- * 
+ *
  */
 
 #include "common.h"
@@ -60,7 +60,7 @@
 #import <Foundation/Foundation.h>
 
 /*
- * Interface to third_party/CrashReport_*.o 
+ * Interface to third_party/CrashReport_*.o
  */
 /*  *INDENT-OFF* */
 @interface CrashReport: NSObject - (id) initWithTask:(task_t)
@@ -75,22 +75,22 @@ aThreadState threadStateCount:(mach_msg_type_number_t) aThreadStateCount;
 /*  *INDENT-ON* */
 
 /*
- * Global to have exception port available in the collection thread 
+ * Global to have exception port available in the collection thread
  */
 static mach_port_t g_exception_port = MACH_PORT_NULL;
 
 /*
- * From xnu/bsd/sys/proc_internal.h 
+ * From xnu/bsd/sys/proc_internal.h
  */
 #define PID_MAX 99999
 
 /*
- * Global to store crash info in exception handler thread 
+ * Global to store crash info in exception handler thread
  */
 fuzzer_t g_fuzzer_crash_information[PID_MAX + 1];
 
 /*
- * Global to have a unique service name for each honggfuzz process 
+ * Global to have a unique service name for each honggfuzz process
  */
 char g_service_name[256];
 
@@ -190,7 +190,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     char newname[PATH_MAX];
 
     /*
-     * Get data from exception handler 
+     * Get data from exception handler
      */
     fuzzer->pc = g_fuzzer_crash_information[fuzzer->pid].pc;
     fuzzer->exception = g_fuzzer_crash_information[fuzzer->pid].exception;
@@ -249,7 +249,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     LOGMSG(l_DEBUG, "Launching '%s' on file '%s'", args[0], fileName);
 
     /*
-     * Get child's bootstrap port. 
+     * Get child's bootstrap port.
      */
     mach_port_t child_bootstrap = MACH_PORT_NULL;
     if (task_get_bootstrap_port(mach_task_self(), &child_bootstrap) != KERN_SUCCESS) {
@@ -257,7 +257,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     }
 
     /*
-     * Get exception port. 
+     * Get exception port.
      */
     mach_port_t exception_port = MACH_PORT_NULL;
 
@@ -267,7 +267,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     }
 
     /*
-     * Here we register the exception port in the child 
+     * Here we register the exception port in the child
      */
     if (task_set_exception_ports(mach_task_self(),
                                  EXC_MASK_CRASH,
@@ -341,7 +341,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 
     if (hfuzz->fuzzStdin) {
         /*
-         * Uglyyyyyy ;) 
+         * Uglyyyyyy ;)
          */
         if (!util_redirectStdin(fileName)) {
             return false;
@@ -406,7 +406,7 @@ bool arch_prepareParent(honggfuzz_t * hfuzz)
     }
 
     /*
-     * Allocate exception port. 
+     * Allocate exception port.
      */
     if (mach_port_allocate
         (mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &g_exception_port) != KERN_SUCCESS) {
@@ -414,7 +414,7 @@ bool arch_prepareParent(honggfuzz_t * hfuzz)
     }
 
     /*
-     * Insert exception receive port. 
+     * Insert exception receive port.
      */
     if (mach_port_insert_right
         (mach_task_self(), g_exception_port, g_exception_port,
@@ -423,7 +423,7 @@ bool arch_prepareParent(honggfuzz_t * hfuzz)
     }
 
     /*
-     * Get bootstrap port. 
+     * Get bootstrap port.
      */
     mach_port_t bootstrap = MACH_PORT_NULL;
     if (task_get_bootstrap_port(mach_task_self(), &bootstrap) != KERN_SUCCESS) {
@@ -431,7 +431,7 @@ bool arch_prepareParent(honggfuzz_t * hfuzz)
     }
 
     /*
-     * Generate and register exception port service. 
+     * Generate and register exception port service.
      */
     snprintf(g_service_name, sizeof(g_service_name),
              "com.google.code.honggfuzz.%d", util_rndGet(0, 999999));
@@ -441,7 +441,7 @@ bool arch_prepareParent(honggfuzz_t * hfuzz)
 
     /*
      * Create a collection thread to catch the exceptions from the
-     * children 
+     * children
      */
     pthread_t exception_thread;
 
@@ -459,7 +459,7 @@ bool arch_prepareParent(honggfuzz_t * hfuzz)
 }
 
 /*
- * Write the crash report to DEBUG 
+ * Write the crash report to DEBUG
  */
 void
 write_crash_report(thread_port_t thread,
@@ -521,7 +521,7 @@ uint64_t hash_callstack(thread_port_t thread,
     char *description = (char *)[crashDescription UTF8String];
 
     /*
-     * The callstack begins with the following word 
+     * The callstack begins with the following word
      */
     char *callstack = strstr(description, "Crashed:");
 
@@ -530,7 +530,7 @@ uint64_t hash_callstack(thread_port_t thread,
     }
 
     /*
-     * Scroll forward to the next newline 
+     * Scroll forward to the next newline
      */
     char *callstack_start = strstr(callstack, "\n");
 
@@ -539,12 +539,12 @@ uint64_t hash_callstack(thread_port_t thread,
     }
 
     /*
-     * Skip the newline 
+     * Skip the newline
      */
     callstack_start++;
 
     /*
-     * Determine the end of the callstack 
+     * Determine the end of the callstack
      */
     char *callstack_end = strstr(callstack, "\n\nThread");
 
@@ -553,50 +553,50 @@ uint64_t hash_callstack(thread_port_t thread,
     }
 
     /*
-     * Make sure it's NULL-terminated 
+     * Make sure it's NULL-terminated
      */
     *callstack_end = '\0';
 
     /*
-     * 
+     *
      * For each line, we only take the last three nibbles from the
      * address.
-     * 
+     *
      * Sample output:
-     * 
+     *
      * 0 libsystem_kernel.dylib 0x00007fff80514d46 __kill + 10 1
      * libsystem_c.dylib 0x00007fff85731ec0 __abort + 193 2
      * libsystem_c.dylib 0x00007fff85732d17 __stack_chk_fail + 195 3
      * stack_buffer_overflow64-stripped 0x000000010339def5 0x10339d000 +
      * 3829 4 ??? 0x4141414141414141 0 + 4702111234474983745
-     * 
+     *
      * 0 libsystem_kernel.dylib 0x00007fff80514d46 __kill + 10 1
      * libsystem_c.dylib 0x00007fff85731ec0 __abort + 193 2
      * libsystem_c.dylib 0x00007fff85732d17 __stack_chk_fail + 195 3
      * stack_buffer_overflow64 0x0000000108f41ef5 main + 133 4 ???
      * 0x4141414141414141 0 + 4702111234474983745
-     * 
+     *
      * 0 libsystem_kernel.dylib 0x940023ba __kill + 10 1
      * libsystem_kernel.dylib 0x940014bc kill$UNIX2003 + 32 2
      * libsystem_c.dylib 0x926f362e __abort + 246 3 libsystem_c.dylib
      * 0x926c2b60 __chk_fail + 49 4 libsystem_c.dylib 0x926c2bf9
      * __memset_chk + 53 5 stack_buffer_overflow32-stripped 0x00093ee5
      * 0x93000 + 3813 6 libdyld.dylib 0x978c6725 start + 1
-     * 
+     *
      * 0 libsystem_kernel.dylib 0x940023ba __kill + 10 1
      * libsystem_kernel.dylib 0x940014bc kill$UNIX2003 + 32 2
      * libsystem_c.dylib 0x926f362e __abort + 246 3 libsystem_c.dylib
      * 0x926c2b60 __chk_fail + 49 4 libsystem_c.dylib 0x926c2bf9
-     * __memset_chk + 53 5 stack_buffer_overflow32 0x0003cee5 main + 117 6 
+     * __memset_chk + 53 5 stack_buffer_overflow32 0x0003cee5 main + 117 6
      * libdyld.dylib 0x978c6725 start + 1
-     * 
+     *
      */
 
     uint64_t hash = 0;
     char *pos = callstack_start;
 
     /*
-     * Go through each line until we run out of lines 
+     * Go through each line until we run out of lines
      */
     while (strstr(pos, "\t") != NULL) {
         /*
@@ -609,11 +609,11 @@ uint64_t hash_callstack(thread_port_t thread,
             break;
         pos = pos - 3;
         /*
-         * Hash the last three nibbles 
+         * Hash the last three nibbles
          */
         hash ^= util_hash(pos, 3);
         /*
-         * Scroll pos one forward to skip the current tab 
+         * Scroll pos one forward to skip the current tab
          */
         pos++;
     }
@@ -670,7 +670,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     }
 
     /*
-     * We will save our results to the honggfuzz_t global 
+     * We will save our results to the honggfuzz_t global
      */
     pid_t pid;
     pid_for_task(task, &pid);
@@ -692,7 +692,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     }
 
     /*
-     * Get the exception type 
+     * Get the exception type
      */
 
     exception_type_t exception_type = ((code[0] >> 20) & 0x0F);
@@ -704,7 +704,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     fuzzer->exception = exception_type;
 
     /*
-     * Get the access address. 
+     * Get the access address.
      */
 
     mach_exception_data_type_t exception_data[2];
@@ -716,7 +716,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     fuzzer->access = (uint64_t) access_address;
 
     /*
-     * Get a hash of the callstack 
+     * Get a hash of the callstack
      */
 
     uint64_t hash = hash_callstack(thread, task, exception, code, code_count, flavor,
@@ -725,7 +725,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     fuzzer->backtrace = hash;
 
     /*
-     * Cleanup 
+     * Cleanup
      */
 
     if (mach_port_deallocate(mach_task_self(), task) != KERN_SUCCESS) {
@@ -736,7 +736,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
         LOGMSG(l_WARN, "Exception Handler: Could not deallocate thread");
     }
 
-    return KERN_SUCCESS;        // KERN_SUCCESS indicates that this should 
+    return KERN_SUCCESS;        // KERN_SUCCESS indicates that this should
     // not be forwarded to other crash
     // handlers
 }
