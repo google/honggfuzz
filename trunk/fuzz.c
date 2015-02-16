@@ -282,8 +282,7 @@ static void *fuzz_threadNew(void *arg)
          * Ok, kill the parent if this fails
          */
         if (!arch_launchChild(hfuzz, fuzzer.fileName)) {
-            LOGMSG(l_DEBUG, "Error launching child process, killing parent");
-            kill(getppid(), SIGTERM);
+            LOGMSG(l_ERROR, "Error launching child process, killing parent");
             exit(EXIT_FAILURE);
         }
     }
@@ -342,8 +341,8 @@ static void *fuzz_threadPid(void *arg)
 static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
 {
     pthread_attr_t attr;
-    pthread_attr_init(&attr);
 
+    pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     pthread_attr_setstacksize(&attr, _HF_PTHREAD_STACKSIZE);
 
