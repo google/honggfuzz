@@ -26,7 +26,6 @@
 
 #define _HF_INSTR_SZ 64
 
-extern void arch_bfdPrepare(void);
 extern void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num);
 extern void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr);
 

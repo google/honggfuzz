@@ -48,11 +48,6 @@ typedef struct {
 
 static pthread_mutex_t arch_bfd_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void arch_bfdPrepare(void)
-{
-    bfd_init();
-}
-
 static bool arch_bfdInit(pid_t pid, bfd_t * bfdParams)
 {
     char fname[PATH_MAX];
@@ -103,6 +98,8 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
     /* Guess what? libbfd is not multi-threading safe */
     while (pthread_mutex_lock(&arch_bfd_mutex)) ;
 
+    bfd_init();
+
     bfd_t bfdParams = {
         .bfdh = NULL,
         .section = NULL,
@@ -152,6 +149,8 @@ static int arch_bfdFPrintF(void *buf, const char *fmt, ...)
 void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
 {
     while (pthread_mutex_lock(&arch_bfd_mutex)) ;
+
+    bfd_init();
 
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "/proc/%d/exe", pid);
