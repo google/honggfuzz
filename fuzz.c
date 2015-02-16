@@ -344,9 +344,10 @@ static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
     pthread_attr_t attr;
     pthread_attr_init(&attr);
 
-    pthread_t t;
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    pthread_attr_setstacksize(&attr, _HF_PTHREAD_STACKSIZE);
 
+    pthread_t t;
     if (pthread_create(&t, &attr, thread, (void *)hfuzz) < 0) {
         LOGMSG_P(l_FATAL, "Couldn't create a new thread");
     }

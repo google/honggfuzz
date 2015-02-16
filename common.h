@@ -38,6 +38,8 @@
 #define _HF_FILE_PLACEHOLDER "___FILE___"
 #define _HF_REPORT_FILE "HONGGFUZZ.REPORT.TXT"
 
+#define _HF_PTHREAD_STACKSIZE (1024 * 1024 * 1) /* 1MB */
+
 typedef struct {
     char **cmdline;
     char *inputFile;
