@@ -320,9 +320,6 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
     return false;
 }
 
-#ifndef MAX_OP_STRING
-#define MAX_OP_STRING 48
-#endif                          /* MAX_OP_STRING */
 static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
 {
     /*
@@ -332,7 +329,7 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
     uint8_t buf[16];
     size_t memsz;
 
-    snprintf(instr, MAX_OP_STRING, "%s", "[UNKNOWN]");
+    snprintf(instr, _HF_INSTR_SZ, "%s", "[UNKNOWN]");
 
     cs_arch arch;
     size_t code_size;
@@ -347,9 +344,11 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
 #endif                          /* __BYTE_ORDER == __BIG_ENDIAN */
 
     if ((memsz = arch_getProcMem(pid, buf, sizeof(buf), *pc)) == 0) {
-        snprintf(instr, MAX_OP_STRING, "%s", "[NOT_MMAPED]");
+        snprintf(instr, _HF_INSTR_SZ, "%s", "[NOT_MMAPED]");
         return;
     }
+
+    return arch_bfdDisasm(pid, buf, memsz, instr);
 
     csh handle;
     cs_err err = cs_open(arch, code_size, &handle);
@@ -369,11 +368,11 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
         return;
     }
 
-    snprintf(instr, MAX_OP_STRING, "%s %s", insn[0].mnemonic, insn[0].op_str);
+    snprintf(instr, _HF_INSTR_SZ, "%s %s", insn[0].mnemonic, insn[0].op_str);
     cs_free(insn, count);
     cs_close(&handle);
 
-    for (int x = 0; instr[x] && x < MAX_OP_STRING; x++) {
+    for (int x = 0; instr[x] && x < _HF_INSTR_SZ; x++) {
         if (instr[x] == '/' || instr[x] == '\\' || isspace(instr[x])
             || !isprint(instr[x])) {
             instr[x] = '_';
@@ -407,7 +406,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 {
     uint64_t pc = NULL;
 
-    char instr[MAX_OP_STRING] = "\x00";
+    char instr[_HF_INSTR_SZ] = "\x00";
     siginfo_t si;
 
     if (ptrace(PT_GETSIGINFO, pid, 0, &si) == -1) {

@@ -25,10 +25,13 @@
 #include "linux/bfd.h"
 
 #include <bfd.h>
+#include <dis-asm.h>
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <inttypes.h>
 #include <unistd.h>
 
@@ -48,7 +51,6 @@ static bool arch_bfdInit(pid_t pid, bfd_t * bfdParams)
 
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "/proc/%d/exe", pid);
-
     if ((bfdParams->bfdh = bfd_openr(fname, 0)) == NULL) {
         LOGMSG(l_ERROR, "bfd_openr(%s) failed", fname);
         return false;
@@ -120,5 +122,54 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
     }
 
     arch_bfdDestroy(&bfdParams);
+    return;
+}
+
+static int arch_bfdFPrintF(void *buf, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    int ret = util_vssnprintf(buf, _HF_INSTR_SZ, fmt, args);
+    va_end(args);
+
+    return ret;
+}
+
+void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
+{
+    bfd_init();
+
+    char fname[PATH_MAX];
+    snprintf(fname, sizeof(fname), "/proc/%d/exe", pid);
+    bfd *bfdh = bfd_openr(fname, NULL);
+    if (bfdh == NULL) {
+        LOGMSG(l_WARN, "bfd_openr('/proc/%d/exe') failed", pid);
+        return;
+    }
+
+    if (!bfd_check_format(bfdh, bfd_object)) {
+        LOGMSG(l_WARN, "bfd_check_format() failed");
+        return;
+    }
+
+    disassembler_ftype disassemble = disassembler(bfdh);
+    if (disassemble == NULL) {
+        LOGMSG(l_WARN, "disassembler() failed");
+        return;
+    }
+
+    struct disassemble_info info;
+    init_disassemble_info(&info, instr, arch_bfdFPrintF);
+    info.arch = bfd_get_arch(bfdh);
+    info.mach = bfd_get_mach(bfdh);
+    info.buffer = mem;
+    info.buffer_length = size;
+    info.section = NULL;
+    disassemble_init_for_target(&info);
+
+    strcpy(instr, "");
+    if (disassemble(0, &info) <= 0) {
+        snprintf(instr, _HF_INSTR_SZ, "[UNKNOWN]");
+    }
     return;
 }

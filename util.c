@@ -68,7 +68,19 @@ uint64_t util_rndGet(uint64_t min, uint64_t max)
     return ((rnd % (max - min + 1)) + min);
 }
 
-void util_ssnprintf(char *str, size_t size, const char *format, ...)
+int util_vssnprintf(char *str, size_t size, const char *format, va_list ap)
+{
+    char buf1[size];
+    char buf2[size];
+
+    strncpy(buf1, str, size);
+
+    vsnprintf(buf2, size, format, ap);
+
+    return snprintf(str, size, "%s%s", buf1, buf2);
+}
+
+int util_ssnprintf(char *str, size_t size, const char *format, ...)
 {
     char buf1[size];
     char buf2[size];
@@ -80,7 +92,7 @@ void util_ssnprintf(char *str, size_t size, const char *format, ...)
     vsnprintf(buf2, size, format, args);
     va_end(args);
 
-    snprintf(str, size, "%s%s", buf1, buf2);
+    return snprintf(str, size, "%s%s", buf1, buf2);
 }
 
 void util_getLocalTime(const char *fmt, char *buf, size_t len)

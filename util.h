@@ -28,7 +28,9 @@
 
 extern uint64_t util_rndGet(uint64_t min, uint64_t max);
 
-extern void util_ssnprintf(char *str, size_t size, const char *format, ...);
+extern int util_ssnprintf(char *str, size_t size, const char *format, ...);
+
+extern int util_vssnprintf(char *str, size_t size, const char *format, va_list ap);
 
 extern void util_getLocalTime(const char *fmt, char *buf, size_t len);
 

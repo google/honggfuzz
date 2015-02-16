@@ -45,7 +45,7 @@ ifeq ($(OS),Linux)
 	ifeq ("$(wildcard /usr/include/libunwind-ptrace.h)","")
 		WARN_LIBRARY += "libunwind-dev "
 	endif
-	LDFLAGS += -lcapstone -lunwind-ptrace -lunwind-generic -lbfd
+	LDFLAGS += -lcapstone -lunwind-ptrace -lunwind-generic -lbfd -lopcodes
 	ARCH_SRCS := $(wildcard linux/*.c)
 endif
 ifeq ($(OS),Darwin)
