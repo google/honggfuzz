@@ -26,6 +26,7 @@
 
 #include <bfd.h>
 #include <dis-asm.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -44,6 +45,8 @@ typedef struct {
     asection *section;
     asymbol **syms;
 } bfd_t;
+
+static pthread_mutex_t arch_bfd_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void arch_bfdPrepare(void)
 {
@@ -97,6 +100,9 @@ static void arch_bfdDestroy(bfd_t * bfdParams)
 
 void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
 {
+    /* Guess what? libbfd is not multi-threading safe */
+    while (pthread_mutex_lock(&arch_bfd_mutex)) ;
+
     bfd_t bfdParams = {
         .bfdh = NULL,
         .section = NULL,
@@ -104,8 +110,7 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
     };
 
     if (arch_bfdInit(pid, &bfdParams) == false) {
-        arch_bfdDestroy(&bfdParams);
-        return;
+        goto out;
     }
 
     const char *func;
@@ -127,7 +132,10 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
         }
     }
 
+ out:
     arch_bfdDestroy(&bfdParams);
+
+    while (pthread_mutex_unlock(&arch_bfd_mutex)) ;
     return;
 }
 
@@ -143,6 +151,8 @@ static int arch_bfdFPrintF(void *buf, const char *fmt, ...)
 
 void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
 {
+    while (pthread_mutex_lock(&arch_bfd_mutex)) ;
+
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "/proc/%d/exe", pid);
     bfd *bfdh = bfd_openr(fname, NULL);
@@ -169,6 +179,7 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
     info.buffer = mem;
     info.buffer_length = size;
     info.section = NULL;
+    info.endian = bfd_little_endian(bfdh) ? BFD_ENDIAN_LITTLE : BFD_ENDIAN_BIG;
     disassemble_init_for_target(&info);
 
     strcpy(instr, "");
@@ -178,5 +189,7 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
 
  out:
     bfdh ? bfd_close_all_done(bfdh) : 0;
+
+    while (pthread_mutex_unlock(&arch_bfd_mutex)) ;
     return;
 }
