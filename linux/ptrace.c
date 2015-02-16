@@ -24,7 +24,6 @@
 #include "common.h"
 #include "ptrace.h"
 
-#include <capstone/capstone.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <elf.h>
@@ -131,7 +130,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, uint64_t pc)
     return memsz;
 }
 
-static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t * pc)
+static bool arch_getPC(pid_t pid, uint64_t * pc)
 {
     char buf[1024];
     struct iovec pt_iov = {
@@ -198,8 +197,6 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
         struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
-        *arch = CS_ARCH_X86;
-        *code_size = CS_MODE_32;
         *pc = r32->eip;
         return true;
     }
@@ -208,8 +205,6 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
         struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
-        *arch = CS_ARCH_X86;
-        *code_size = CS_MODE_64;
         *pc = r64->ip;
         return true;
     }
@@ -223,8 +218,6 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
     };
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
         struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
-        *arch = CS_ARCH_ARM;
-        *code_size = CS_MODE_ARM;
 #ifndef ARM_pc
 #define ARM_pc 15
 #endif                          /* ARM_pc */
@@ -243,8 +236,6 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
     };
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
         struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
-        *arch = CS_ARCH_ARM64;
-        *code_size = CS_MODE_ARM;
         *pc = r64->pc;
         return true;
     }
@@ -300,15 +291,11 @@ static bool arch_getArch(pid_t pid, cs_arch * arch, size_t * code_size, uint64_t
     };
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
         struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
-        *arch = CS_ARCH_PPC;
-        *code_size = CS_MODE_32;
         *pc = r32->nip;
         return true;
     }
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
         struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
-        *arch = CS_ARCH_PPC;
-        *code_size = CS_MODE_64;
         *pc = r64->nip;
         return true;
     }
@@ -331,46 +318,17 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
 
     snprintf(instr, _HF_INSTR_SZ, "%s", "[UNKNOWN]");
 
-    cs_arch arch;
-    size_t code_size;
-    if (!arch_getArch(pid, &arch, &code_size, pc)) {
+    if (!arch_getPC(pid, pc)) {
         LOGMSG(l_WARN, "Current architecture not supported for disassembly");
         return;
     }
-#if __BYTE_ORDER == __BIG_ENDIAN
-    code_size |= CS_MODE_BIG_ENDIAN;
-#else                           /* __BYTE_ORDER == __BIG_ENDIAN */
-    code_size |= CS_MODE_LITTLE_ENDIAN;
-#endif                          /* __BYTE_ORDER == __BIG_ENDIAN */
 
     if ((memsz = arch_getProcMem(pid, buf, sizeof(buf), *pc)) == 0) {
         snprintf(instr, _HF_INSTR_SZ, "%s", "[NOT_MMAPED]");
         return;
     }
 
-    return arch_bfdDisasm(pid, buf, memsz, instr);
-
-    csh handle;
-    cs_err err = cs_open(arch, code_size, &handle);
-    if (err != CS_ERR_OK) {
-        LOGMSG(l_WARN, "Capstone initilization failed: '%s'", cs_strerror(err))
-            return;
-    }
-
-    cs_insn *insn;
-    size_t count = cs_disasm_ex(handle, buf, memsz, *pc, 1, &insn);
-
-    if (count < 1) {
-        LOGMSG(l_WARN,
-               "Couldn't disassemble the assembler instructions' stream: '%s'",
-               cs_strerror(cs_errno(handle)));
-        cs_close(&handle);
-        return;
-    }
-
-    snprintf(instr, _HF_INSTR_SZ, "%s %s", insn[0].mnemonic, insn[0].op_str);
-    cs_free(insn, count);
-    cs_close(&handle);
+    arch_bfdDisasm(pid, buf, memsz, instr);
 
     for (int x = 0; instr[x] && x < _HF_INSTR_SZ; x++) {
         if (instr[x] == '/' || instr[x] == '\\' || isspace(instr[x])
@@ -378,6 +336,8 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
             instr[x] = '_';
         }
     }
+
+    return;
 }
 
 static void
