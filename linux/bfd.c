@@ -90,7 +90,7 @@ static void arch_bfdDestroy(bfd_t * bfdParams)
         free(bfdParams->syms);
     }
     if (bfdParams->bfdh) {
-        bfd_close(bfdParams->bfdh);
+        bfd_close_all_done(bfdParams->bfdh);
     }
     return;
 }
@@ -177,6 +177,6 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
     }
 
  out:
-    bfdh ? bfd_close(bfdh) : 0;
+    bfdh ? bfd_close_all_done(bfdh) : 0;
     return;
 }
