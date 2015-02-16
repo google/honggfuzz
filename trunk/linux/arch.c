@@ -44,7 +44,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "linux/bfd.h"
 #include "linux/ptrace.h"
 #include "log.h"
 #include "util.h"
@@ -196,6 +195,5 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 bool arch_prepareParent(honggfuzz_t * hfuzz)
 {
-    arch_bfdPrepare();
     return arch_ptracePrepare(hfuzz);
 }
