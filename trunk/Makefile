@@ -36,16 +36,13 @@ OS ?= $(shell uname -s)
 ARCH_SRCS := $(wildcard posix/*.c)
 
 ifeq ($(OS),Linux)
-	ifeq ("$(wildcard /usr/include/capstone/capstone.h)","")
-		WARN_LIBRARY += "libcasptone-dev (Ubunty Utopic/Debian Jessie "
-	endif
 	ifeq ("$(wildcard /usr/include/bfd.h)","")
 		WARN_LIBRARY += "binutils-dev "
 	endif
 	ifeq ("$(wildcard /usr/include/libunwind-ptrace.h)","")
 		WARN_LIBRARY += "libunwind-dev "
 	endif
-	LDFLAGS += -lcapstone -lunwind-ptrace -lunwind-generic -lbfd -lopcodes
+	LDFLAGS += -lunwind-ptrace -lunwind-generic -lbfd -lopcodes
 	ARCH_SRCS := $(wildcard linux/*.c)
 endif
 ifeq ($(OS),Darwin)
