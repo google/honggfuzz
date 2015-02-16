@@ -132,7 +132,7 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
     if (dstfd == -1) {
         LOGMSG_P(l_ERROR,
                  "Couldn't create a temporary file '%s' in the current directory", fileName);
-        munmap(buf, fileSz);
+        files_munmapFile(buf, fileSz);
         close(srcfd);
         return false;
     }
@@ -140,13 +140,13 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
     fuzz_mangleContent(hfuzz, buf, fileSz);
 
     if (!files_writeToFd(dstfd, buf, fileSz)) {
-        munmap(buf, fileSz);
+        files_munmapFile(buf, fileSz);
         close(srcfd);
         close(dstfd);
         return false;
     }
 
-    munmap(buf, fileSz);
+    files_munmapFile(buf, fileSz);
 
     fuzz_appendOrTrunc(dstfd, fileSz);
 
