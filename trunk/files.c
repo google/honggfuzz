@@ -82,9 +82,7 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
 
 void files_munmapFile(void *ptr, off_t fileSz)
 {
-    long pageSize = sysconf(_SC_PAGESIZE);
-    size_t szToMap = ((fileSz + pageSize - 1) & ~(pageSize - 1));
-    munmap(ptr, szToMap);
+    munmap(ptr, _HF_ALIGN_UP(fileSz));
 }
 
 uint8_t *files_mapFileToRead(char *fileName, off_t * fileSz, int *fd)
@@ -102,9 +100,9 @@ uint8_t *files_mapFileToRead(char *fileName, off_t * fileSz, int *fd)
     }
 
     uint8_t *buf;
-    long pageSize = sysconf(_SC_PAGESIZE);
-    size_t szToMap = ((st.st_size + pageSize - 1) & ~(pageSize - 1));
-    if ((buf = mmap(NULL, szToMap, PROT_READ | PROT_WRITE, MAP_PRIVATE, *fd, 0)) == MAP_FAILED) {
+    if ((buf =
+         mmap(NULL, _HF_ALIGN_UP(st.st_size), PROT_READ | PROT_WRITE, MAP_PRIVATE, *fd,
+              0)) == MAP_FAILED) {
         LOGMSG_P(l_WARN, "Couldn't mmap() the '%s' file", fileName);
         close(*fd);
         return NULL;
