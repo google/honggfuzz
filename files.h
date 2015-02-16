@@ -30,6 +30,8 @@ extern bool files_init(honggfuzz_t * hfuzz);
 
 extern uint8_t *files_mapFileToRead(char *fileName, off_t * fileSz, int *fd);
 
+extern void files_munmapFile(void *ptr, off_t fileSz);
+
 extern bool files_writeToFd(int fd, uint8_t * buf, off_t fileSz);
 
 extern bool files_writeStrToFd(int fd, char *str);
