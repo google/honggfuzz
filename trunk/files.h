@@ -27,7 +27,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#define _HF_ALIGN_UP(x)  (((off_t)x + (off_t)sysconf(_SC_PAGESIZE) - 1) & ~((off_t)sysconf(_SC_PAGESIZE) - 1))
+#define _HF_PAGE_ALIGN_UP(x)  (((off_t)x + (off_t)sysconf(_SC_PAGESIZE) - 1) & ~((off_t)sysconf(_SC_PAGESIZE) - 1))
 
 extern bool files_init(honggfuzz_t * hfuzz);
 
