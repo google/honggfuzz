@@ -35,11 +35,16 @@
 #define PROG_VERSION "0.4"
 #define PROG_AUTHORS "Robert Swiecki <swiecki@google.com> and others, Copyright 2010-2015 by Google Inc. All Rights Reserved."
 
+/* Name of the template which will be replaced with the proper name of the file */
 #define _HF_FILE_PLACEHOLDER "___FILE___"
+
+/* Default name of the report created with some architectures */
 #define _HF_REPORT_FILE "HONGGFUZZ.REPORT.TXT"
 
+/* Default stack-size of created threads. Must be bigger then _HF_DYNAMIC_FILE_MAX_SZ */
 #define _HF_PTHREAD_STACKSIZE (1024 * 1024 * 2) /* 2MB */
 
+/* Maximal size of a dynamically created file (-D) */
 #define _HF_DYNAMIC_FILE_MAX_SZ (1024 * 512)
 
 typedef struct {
