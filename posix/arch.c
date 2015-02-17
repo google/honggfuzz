@@ -41,29 +41,26 @@
 #include "log.h"
 #include "util.h"
 
+/*  *INDENT-OFF* */
 struct {
     bool important;
     const char *descr;
-} arch_sigs[NSIG];
+} arch_sigs[NSIG] = {
+    [0 ... (NSIG - 1)].important = false,
+    [0 ... (NSIG - 1)].descr = "UNKNOWN",
 
-__attribute__ ((constructor))
-void arch_initSigs(void
-    )
-{
-    for (int x = 0; x < NSIG; x++)
-        arch_sigs[x].important = false;
-
-    arch_sigs[SIGILL].important = true;
-    arch_sigs[SIGILL].descr = "SIGILL";
-    arch_sigs[SIGFPE].important = true;
-    arch_sigs[SIGFPE].descr = "SIGFPE";
-    arch_sigs[SIGSEGV].important = true;
-    arch_sigs[SIGSEGV].descr = "SIGSEGV";
-    arch_sigs[SIGBUS].important = true;
-    arch_sigs[SIGBUS].descr = "SIGBUS";
-    arch_sigs[SIGABRT].important = true;
-    arch_sigs[SIGABRT].descr = "SIGABRT";
-}
+    [SIGILL].important = true,
+    [SIGILL].descr = "SIGILL",
+    [SIGFPE].important = true,
+    [SIGFPE].descr = "SIGFPE",
+    [SIGSEGV].important = true,
+    [SIGSEGV].descr = "SIGSEGV",
+    [SIGBUS].important = true,
+    [SIGBUS].descr = "SIGBUS",
+    [SIGABRT].important = true,
+    [SIGABRT].descr = "SIGABRT"
+};
+/*  *INDENT-ON* */
 
 /*
  * Returns true if a process exited (so, presumably, we can delete an input
