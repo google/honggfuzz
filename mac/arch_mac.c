@@ -394,7 +394,7 @@ void *wait_for_exception()
 /*
  * Called once before fuzzing starts. Prepare mach ports for attaching crash reporter.
  */
-bool arch_prepareParent(honggfuzz_t * hfuzz)
+bool arch_archInit(honggfuzz_t * hfuzz)
 {
     char plist[PATH_MAX];
     snprintf(plist, sizeof(plist),
