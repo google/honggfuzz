@@ -109,6 +109,9 @@ uint8_t *files_mapFileToRead(char *fileName, off_t * fileSz, int *fd)
         return NULL;
     }
 
+    LOGMSG(l_DEBUG, "mmap()'d '%llu' bytes for the file '%s' (original size: '%llu') at 0x%p",
+           (unsigned long long)_HF_ALIGN_UP(st.st_size), fileName, (unsigned long long)st.st_size,
+           buf);
     *fileSz = st.st_size;
     return buf;
 }
@@ -122,7 +125,6 @@ static bool files_readdir(honggfuzz_t * hfuzz)
     }
 
     int count = 0;
-
     for (;;) {
         struct dirent de, *res;
         if (readdir_r(dir, &de, &res) > 0) {
@@ -145,7 +147,6 @@ static bool files_readdir(honggfuzz_t * hfuzz)
 
         char path[PATH_MAX];
         snprintf(path, sizeof(path), "%s/%s", hfuzz->inputFile, res->d_name);
-
         struct stat st;
         if (stat(path, &st) == -1) {
             LOGMSG(l_WARN, "Couldn't stat() the '%s' file", path);
@@ -175,7 +176,6 @@ static bool files_readdir(honggfuzz_t * hfuzz)
             return false;
         }
         hfuzz->fileCnt = ++count;
-
         LOGMSG(l_DEBUG, "Added '%s' to the list of input files", path);
     }
 
@@ -186,7 +186,6 @@ static bool files_readdir(honggfuzz_t * hfuzz)
 bool files_init(honggfuzz_t * hfuzz)
 {
     hfuzz->files = malloc(sizeof(char *));
-
     if (hfuzz->externalCommand && !hfuzz->inputFile) {
         hfuzz->fileCnt = 1;
         hfuzz->files[0] = "UNKNOWN";
@@ -223,7 +222,6 @@ bool files_init(honggfuzz_t * hfuzz)
 
     hfuzz->files[0] = hfuzz->inputFile;
     hfuzz->fileCnt = 1;
-
     return true;
 }
 

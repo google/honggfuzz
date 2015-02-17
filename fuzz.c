@@ -342,6 +342,7 @@ static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     pthread_attr_setstacksize(&attr, _HF_PTHREAD_STACKSIZE);
+    pthread_attr_setguardsize(&attr, (size_t) sysconf(_SC_PAGESIZE));
 
     pthread_t t;
     if (pthread_create(&t, &attr, thread, (void *)hfuzz) < 0) {
