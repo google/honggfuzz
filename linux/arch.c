@@ -44,6 +44,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "linux/perf.h"
 #include "linux/ptrace.h"
 #include "log.h"
 #include "util.h"
@@ -180,10 +181,18 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     int status;
+    bool perfEnabled = false;
 
     for (;;) {
         pid_t pid;
         while ((pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL)) <= 0) ;
+
+        if (perfEnabled == false) {
+            if (arch_perfEnable(pid, hfuzz, fuzzer) == false) {
+                LOGMSG(l_FATAL, "Couldn't enable perf subsystem for PID: '%d'", pid);
+            }
+            perfEnabled = true;
+        }
 
         LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", pid, status);
 
