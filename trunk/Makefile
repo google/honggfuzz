@@ -34,6 +34,7 @@ BIN = honggfuzz
 OS ?= $(shell uname -s)
 
 ARCH_SRCS := $(wildcard posix/*.c)
+ARCH = POSIX
 
 ifeq ($(OS),Linux)
 	ifeq ("$(wildcard /usr/include/bfd.h)","")
@@ -44,6 +45,7 @@ ifeq ($(OS),Linux)
 	endif
 	LDFLAGS += -lunwind-ptrace -lunwind-generic -lbfd -lopcodes
 	ARCH_SRCS := $(wildcard linux/*.c)
+	ARCH = LINUX
 endif
 ifeq ($(OS),Darwin)
 	CC ?= cc
@@ -63,8 +65,11 @@ ifeq ($(OS),Darwin)
 	MIG_OBJECTS = mach_excUser.o mach_excServer.o
 	#CRASH_REPORT = third_party/CrashReport_Yosemite.o
 	CRASH_REPORT = third_party/CrashReport_Mavericks.o
+	ARCH = DARWIN
 endif
+
 SRCS += $(ARCH_SRCS)
+CFLAGS += -D_HF_ARCH=${ARCH}
 
 all: warn_libs $(BIN)
 
