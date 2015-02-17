@@ -27,13 +27,13 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#define _HF_ALIGN_UP(x)  (((unsigned long)x + (unsigned long)sysconf(_SC_PAGESIZE) - 1) & ~((unsigned long)sysconf(_SC_PAGESIZE) - 1))
+#define _HF_ALIGN_UP(x)  (((off_t)x + (off_t)sysconf(_SC_PAGESIZE) - 1) & ~((off_t)sysconf(_SC_PAGESIZE) - 1))
 
 extern bool files_init(honggfuzz_t * hfuzz);
 
 extern uint8_t *files_mapFileToRead(char *fileName, off_t * fileSz, int *fd);
 
-extern void files_munmapFile(void *ptr, off_t fileSz);
+extern void files_unmapFileCloseFd(void *ptr, off_t fileSz, int fd);
 
 extern bool files_writeToFd(int fd, uint8_t * buf, off_t fileSz);
 
