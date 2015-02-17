@@ -80,9 +80,10 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
     return ret;
 }
 
-void files_munmapFile(void *ptr, off_t fileSz)
+void files_unmapFileCloseFd(void *ptr, off_t fileSz, int fd)
 {
     munmap(ptr, _HF_ALIGN_UP(fileSz));
+    close(fd);
 }
 
 uint8_t *files_mapFileToRead(char *fileName, off_t * fileSz, int *fd)
