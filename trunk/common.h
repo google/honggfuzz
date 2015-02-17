@@ -40,6 +40,8 @@
 
 #define _HF_PTHREAD_STACKSIZE (1024 * 1024 * 2) /* 2MB */
 
+#define _HF_DYNAMIC_FILE_MAX_SZ (1024 * 512)
+
 typedef struct {
     char **cmdline;
     char *inputFile;
@@ -50,6 +52,7 @@ typedef struct {
     double flipRate;
     char flipMode;
     char *externalCommand;
+    bool createDynamically;
     long tmOut;
     long mutationsMax;
     long mutationsCnt;
@@ -61,6 +64,8 @@ typedef struct {
     char **files;
     int fileCnt;
     sem_t *sem;
+    uint8_t dynamicFileBest[_HF_DYNAMIC_FILE_MAX_SZ];
+    size_t dynamicFileBestSz;
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
@@ -73,6 +78,8 @@ typedef struct fuzzer_t {
     uint64_t access;
     int exception;
     char report[8192];
+    uint8_t dynamicFile[_HF_DYNAMIC_FILE_MAX_SZ];
+    uint8_t dynamicFileSz;
 } fuzzer_t;
 
 #define _HF_MAX_FUNCS 200

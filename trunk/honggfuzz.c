@@ -100,6 +100,7 @@ int main(int argc, char **argv)
         .flipRate = 0.001f,
         .flipMode = 'B',
         .externalCommand = NULL,
+        .createDynamically = false,
         .tmOut = 3,
         .mutationsMax = 0,
         .mutationsCnt = 0,
@@ -110,6 +111,7 @@ int main(int argc, char **argv)
         .pid = 0,
         .files = NULL,
         .fileCnt = 0,
+        .dynamicFileBestSz = 1,
     };
 
     printf(AB PROG_NAME " version " PROG_VERSION " by " PROG_AUTHORS AC "\n");
@@ -118,7 +120,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "?hqsuf:d:e:r:m:c:t:a:R:n:N:l:p:");
+        c = getopt(argc, argv, "?hqsuf:d:e:r:m:c:D:t:a:R:n:N:l:p:");
         if (c < 0)
             break;
 
@@ -153,6 +155,9 @@ int main(int argc, char **argv)
             break;
         case 'c':
             hfuzz.externalCommand = optarg;
+            break;
+        case 'D':
+            hfuzz.createDynamically = true;
             break;
         case 't':
             hfuzz.tmOut = atol(optarg);

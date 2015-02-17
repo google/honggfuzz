@@ -193,7 +193,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 }
 
-bool arch_prepareParent(honggfuzz_t * hfuzz)
+bool arch_archInit(honggfuzz_t * hfuzz)
 {
     return arch_ptracePrepare(hfuzz);
 }

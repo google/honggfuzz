@@ -93,11 +93,11 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
     return;
 }
 
-static void fuzz_appendOrTrunc(int fd, off_t fileSz)
+static size_t fuzz_appendOrTrunc(int fd, off_t fileSz)
 {
     const int chance_one_in_x = 10;
     if (util_rndGet(1, chance_one_in_x) != 1) {
-        return;
+        return fileSz;
     }
 
     off_t maxSz = 2 * fileSz;
@@ -112,8 +112,38 @@ static void fuzz_appendOrTrunc(int fd, off_t fileSz)
     if (ftruncate(fd, newSz) == -1) {
         LOGMSG_P(l_WARN,
                  "Couldn't truncate file from '%ld' to '%ld' bytes", (long)fileSz, (long)newSz);
-        return;
+        return fileSz;
     }
+    return newSz;
+}
+
+static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
+    fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
+
+    const int chance_one_in_x = 10;
+    if (util_rndGet(1, chance_one_in_x) != 1) {
+        fuzzer->dynamicFileSz = util_rndGet(fuzzer->dynamicFileSz, sizeof(fuzzer->dynamicFile));
+    }
+
+    fuzz_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
+
+    int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
+    if (dstfd == -1) {
+        LOGMSG_P(l_ERROR,
+                 "Couldn't create a temporary file '%s' in the current directory",
+                 fuzzer->fileName);
+        return false;
+    }
+
+    if (!files_writeToFd(dstfd, fuzzer->dynamicFile, fuzzer->dynamicFileSz)) {
+        close(dstfd);
+        return false;
+    }
+
+    close(dstfd);
+    return true;
 }
 
 static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
@@ -252,13 +282,18 @@ static void *fuzz_threadNew(void *arg)
         .backtrace = 0ULL,
         .access = 0ULL,
         .exception = 0,
+        .dynamicFileSz = 0,
     };
 
     int rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
     strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
     fuzz_getFileName(hfuzz, fuzzer.fileName);
 
-    if (hfuzz->externalCommand != NULL) {
+    if (hfuzz->createDynamically) {
+        if (!fuzz_prepareFileDynamically(hfuzz, &fuzzer)) {
+            exit(EXIT_FAILURE);
+        }
+    } else if (hfuzz->externalCommand != NULL) {
         if (!fuzz_prepareFileExternally(hfuzz, fuzzer.fileName, rnd_index)) {
             exit(EXIT_FAILURE);
         }
@@ -299,7 +334,7 @@ static void *fuzz_threadNew(void *arg)
 static void *fuzz_threadPid(void *arg)
 {
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
-    if (!arch_prepareParent(hfuzz)) {
+    if (!arch_archInit(hfuzz)) {
         LOGMSG(l_FATAL, "Couldn't prepare parent for fuzzing");
     }
 
@@ -311,6 +346,8 @@ static void *fuzz_threadPid(void *arg)
         .access = 0ULL,
         .exception = 0,
         .report = {'\0'}
+        ,
+        .dynamicFileSz = 0,
     };
 
     char fileName[] = ".honggfuzz.empty.XXXXXX";
@@ -367,7 +404,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
     if (hfuzz->pid) {
         fuzz_runThread(hfuzz, fuzz_threadPid);
     } else {
-        if (!arch_prepareParent(hfuzz)) {
+        if (!arch_archInit(hfuzz)) {
             LOGMSG(l_FATAL, "Couldn't prepare parent for fuzzing");
         }
     }
