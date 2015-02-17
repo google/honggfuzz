@@ -103,13 +103,18 @@ indent:
 	indent -linux -l100 -lc100 -nut -i4 -sob -c33 -cp33 *.c *.h */*.c */*.h; rm -f *~ */*~
 
 depend:
-	makedepend -Y. -- $(SRCS)
+	makedepend -Y. -Y* -- $(SRCS)
 
 # DO NOT DELETE
 
 honggfuzz.o: common.h log.h files.h fuzz.h util.h
 log.o: common.h log.h
 files.o: common.h files.h log.h
-fuzz.o: common.h fuzz.h log.h arch.h util.h files.h
+fuzz.o: common.h fuzz.h arch.h files.h log.h report.h util.h
 util.o: common.h log.h
-arch_linux.o: common.h arch.h log.h util.h
+report.o: common.h report.h log.h util.h
+linux/ptrace.o: common.h linux/ptrace.h files.h linux/bfd.h linux/unwind.h
+linux/ptrace.o: log.h util.h
+linux/arch.o: common.h arch.h linux/ptrace.h log.h util.h
+linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
+linux/unwind.o: common.h linux/unwind.h log.h
