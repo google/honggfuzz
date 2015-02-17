@@ -82,7 +82,7 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
 
 void files_unmapFileCloseFd(void *ptr, off_t fileSz, int fd)
 {
-    munmap(ptr, _HF_ALIGN_UP(fileSz));
+    munmap(ptr, _HF_PAGE_ALIGN_UP(fileSz));
     close(fd);
 }
 
@@ -102,7 +102,7 @@ uint8_t *files_mapFileToRead(char *fileName, off_t * fileSz, int *fd)
 
     uint8_t *buf;
     if ((buf =
-         mmap(NULL, _HF_ALIGN_UP(st.st_size), PROT_READ | PROT_WRITE, MAP_PRIVATE, *fd,
+         mmap(NULL, _HF_PAGE_ALIGN_UP(st.st_size), PROT_READ | PROT_WRITE, MAP_PRIVATE, *fd,
               0)) == MAP_FAILED) {
         LOGMSG_P(l_WARN, "Couldn't mmap() the '%s' file", fileName);
         close(*fd);
@@ -110,8 +110,8 @@ uint8_t *files_mapFileToRead(char *fileName, off_t * fileSz, int *fd)
     }
 
     LOGMSG(l_DEBUG, "mmap()'d '%llu' bytes for the file '%s' (original size: '%llu') at 0x%p",
-           (unsigned long long)_HF_ALIGN_UP(st.st_size), fileName, (unsigned long long)st.st_size,
-           buf);
+           (unsigned long long)_HF_PAGE_ALIGN_UP(st.st_size), fileName,
+           (unsigned long long)st.st_size, buf);
     *fileSz = st.st_size;
     return buf;
 }
