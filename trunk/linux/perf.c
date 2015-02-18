@@ -24,6 +24,7 @@
 #include "common.h"
 
 #include <fcntl.h>
+#include <inttypes.h>
 #include <linux/hw_breakpoint.h>
 #include <linux/perf_event.h>
 #include <signal.h>
@@ -36,21 +37,63 @@
 #include "linux/perf.h"
 #include "log.h"
 
-void *our_mmap;
+/*
+ * 4MB + 1page
+ */
+#define _HF_PERF_MMAP_SZ ((size_t)getpagesize() + (1024 * 1024 * 4))
+
+static __thread void *perfMmap = NULL;
+static __thread bool perfOverflow = false;
+
+static uint64_t arch_perfParseMmap(void)
+{
+//    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmap;
+    struct perf_event_header *peh = (struct perf_event_header *)(perfMmap + getpagesize());
+
+    for (;;) {
+        if (peh->type != PERF_RECORD_SAMPLE) {
+            LOGMSG(l_ERROR, "perf_event_header->type != PERF_RECORD_SAMPLE (%" PRId32 ")",
+                   peh->type);
+            break;
+        }
+        if (peh->misc != PERF_RECORD_MISC_USER) {
+            LOGMSG(l_ERROR, "perf_event_header->misc != PERF_RECORD_MISC_USER (%" PRId16 ")",
+                   peh->misc);
+            break;
+        }
+
+        uint64_t bnr = *(uint64_t *) (perfMmap + getpagesize() + sizeof(struct perf_event_header));
+        struct perf_branch_entry *lbr =
+            (struct perf_branch_entry *)(perfMmap + getpagesize() +
+                                         sizeof(struct perf_event_header) + bnr);
+
+        LOGMSG(l_INFO, "PEHSIZE: %llu BNR: %llu", peh->size, bnr);
+
+        for (uint64_t i = 0; i < bnr; i++) {
+            LOGMSG(l_ERROR, "FROM: %llx TO: %llx", lbr[i].from, lbr[i].to);
+        }
+
+        int *i = (int *)0x44444444;
+        *i = 66;
+
+        peh = (struct perf_event_header *)((uint8_t *) peh + peh->size);
+    }
+
+    return 0ULL;
+}
 
 static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
 {
-    write(1, "TEST\n", 5);
-    if (signum == 199) {
+    if (signum != SIGIO) {
         return;
     }
-    if (si == (void *)0x123445) {
+    if (si != NULL) {
         return;
     }
-    if (unused == (void *)0x123445) {
+    if (unused) {
         return;
     }
-
+    return;
 }
 
 static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
@@ -124,8 +167,13 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
             return false;
         }
 
-        our_mmap = mmap(NULL, (8 + 1) * 4096, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
-
+        perfMmap = mmap(NULL, _HF_PERF_MMAP_SZ, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
+        if (perfMmap == MAP_FAILED) {
+            LOGMSG_P(l_ERROR, "mmap() failed");
+            close(*perfFd);
+            return false;
+        }
+#if 0
         if (fcntl(*perfFd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC) == -1) {
             LOGMSG_P(l_ERROR, "fnctl(F_SETFL)");
             close(*perfFd);
@@ -147,6 +195,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
             close(*perfFd);
             return false;
         }
+#endif
     }
 
     if (ioctl(*perfFd, PERF_EVENT_IOC_RESET, 0) == -1) {
@@ -168,26 +217,36 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
     if (hfuzz->createDynamically == false) {
         return;
     }
-
     if (ioctl(perfFd, PERF_EVENT_IOC_DISABLE, 0) == -1) {
         LOGMSG_P(l_ERROR, "ioctl(perfFd='%d', PERF_EVENT_IOC_DISABLE) failed", perfFd);
-        return;
+        goto out;
     }
 
-    long long int count = 0LL;
-    if (read(perfFd, &count, sizeof(count)) == sizeof(count)) {
-        fuzzer->branchCnt = count;
+    uint64_t count = 0LL;
+    if (hfuzz->createDynamically == 'e') {
+        if (perfOverflow) {
+            LOGMSG(l_WARN, "LBR has been overflown");
+            goto out;
+        } else {
+            count = arch_perfParseMmap();
+        }
     } else {
-        LOGMSG_P(l_ERROR, "read(perfFd='%d') failed", perfFd);
+        if (read(perfFd, &count, sizeof(count)) == sizeof(count)) {
+        } else {
+            LOGMSG_P(l_ERROR, "read(perfFd='%d') failed", perfFd);
+            goto out;
+        }
     }
+    fuzzer->branchCnt = count;
 
     LOGMSG(l_INFO,
            "Executed %lld branch instructions (best: %lld), fileSz: '%zu', bestFileSz: '%zu'",
            count, hfuzz->branchBestCnt, fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz);
 
-    close(perfFd);
-    if (fuzzer) {
-        return;
+ out:
+    if (perfMmap != NULL) {
+        munmap(perfMmap, _HF_PERF_MMAP_SZ);
     }
+    close(perfFd);
     return;
 }
