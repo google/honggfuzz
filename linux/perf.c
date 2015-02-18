@@ -39,11 +39,12 @@
 #include "log.h"
 
 /*
- * 9 pages (8 + 1)
+ * 1 + 16 pages
  */
-#define _HF_PERF_MMAP_SZ (getpagesize() * 9)
+#define _HF_PERF_MMAP_DATA_SZ (getpagesize() << 4)
+#define _HF_PERF_MMAP_TOT_SZ (getpagesize() + _HF_PERF_MMAP_DATA_SZ)
 
-static __thread void *perfMmap = NULL;
+static __thread uint8_t *perfMmap = NULL;
 static __thread bool perfOverflow = false;
 
 #define _HF_PERF_BRANCHES_SZ (1024)
@@ -64,7 +65,7 @@ static size_t arch_perfCountBranches(void)
         if (perfBranches[i].from == 0ULL && perfBranches[i].to == 0ULL) {
             return i;
         }
-        LOGMSG(l_INFO, "Branch entry: FROM: %" PRIx64 " TO: %" PRIx64, perfBranches[i].from,
+        LOGMSG(l_DEBUG, "Branch entry: FROM: %" PRIx64 " TO: %" PRIx64, perfBranches[i].from,
                perfBranches[i].to);
     }
     return i;
@@ -94,15 +95,38 @@ static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
     int fd = si->si_fd;
     ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
 
-    struct perf_event_header *peh = (struct perf_event_header *)(perfMmap + getpagesize());
+    uint8_t localData[_HF_PERF_MMAP_DATA_SZ];
 
-    for (;;) {
-        if (((uint64_t) peh + peh->size) > ((uint64_t) perfMmap + _HF_PERF_MMAP_SZ)) {
-            break;
-        }
+    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmap;
+    uint64_t dataHeadOff = pem->data_head;
+    uint64_t dataTailOff = pem->data_tail;
+    uint8_t *dataTailPtr = perfMmap + getpagesize() + dataTailOff;
+    size_t localDataLen = 0;
+
+    if (dataHeadOff > dataTailOff) {
+        localDataLen = dataHeadOff - dataTailOff;
+        memcpy(localData, dataTailPtr, localDataLen);
+    }
+
+    if (dataHeadOff < dataTailOff) {
+        localDataLen = _HF_PERF_MMAP_DATA_SZ - dataTailOff + dataHeadOff;
+        memcpy(&localData[0], dataTailPtr, _HF_PERF_MMAP_DATA_SZ - dataTailOff);
+        memcpy(&localData[_HF_PERF_MMAP_DATA_SZ - dataTailOff], perfMmap + getpagesize(),
+               dataHeadOff);
+    }
+
+    struct perf_event_header *peh = (struct perf_event_header *)localData;
+
+/*
+    int *i = (int *)0x444444;
+    *i = 5;
+*/
+
+    while ((uintptr_t) peh < (uintptr_t) (localData + localDataLen)) {
         if (peh->size == 0) {
             break;
         }
+
         if (peh->type != PERF_RECORD_SAMPLE) {
             peh = (struct perf_event_header *)((uint8_t *) peh + peh->size);
             continue;
@@ -111,11 +135,11 @@ static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
             peh = (struct perf_event_header *)((uint8_t *) peh + peh->size);
             continue;
         }
+//        LOGMSG(l_WARN, "GOT IT");
 
-        uint64_t bnr = *(uint64_t *) (perfMmap + getpagesize() + sizeof(struct perf_event_header));
+        uint64_t bnr = *(uint64_t *) ((uint8_t *) peh + sizeof(peh));
         struct perf_branch_entry *lbr =
-            (struct perf_branch_entry *)(perfMmap + getpagesize() +
-                                         sizeof(struct perf_event_header) + bnr);
+            (struct perf_branch_entry *)((uint8_t *) peh + sizeof(peh) + sizeof(uint64_t));
 
         for (uint64_t i = 0; i < bnr; i++) {
             arch_perfAddFromToBranch(lbr[i].from, lbr[i].to);
@@ -124,6 +148,7 @@ static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
         peh = (struct perf_event_header *)((uint8_t *) peh + peh->size);
     }
 
+    pem->data_tail = pem->data_head;
     ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
 
     errno = tmpErrno;
@@ -174,8 +199,8 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.sample_period = 100000;
-        pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
+        pe.sample_period = 1000;
+        pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY_CALL;
         pe.wakeup_events = 1;
         break;
     default:
@@ -210,7 +235,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
             return false;
         }
 
-        perfMmap = mmap(NULL, _HF_PERF_MMAP_SZ, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
+        perfMmap = mmap(NULL, _HF_PERF_MMAP_TOT_SZ, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
         if (perfMmap == MAP_FAILED) {
             LOGMSG_P(l_ERROR, "mmap() failed");
             close(*perfFd);
@@ -286,7 +311,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
 
  out:
     if (perfMmap != NULL) {
-        munmap(perfMmap, _HF_PERF_MMAP_SZ);
+        munmap(perfMmap, _HF_PERF_MMAP_TOT_SZ);
     }
     close(perfFd);
     return;
