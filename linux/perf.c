@@ -29,15 +29,18 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
 #include "linux/perf.h"
 #include "log.h"
 
+void *our_mmap;
+
 static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
 {
-    write(1, "DUPA\n", 5);
+    write(1, "TEST\n", 5);
     if (signum == 199) {
         return;
     }
@@ -64,20 +67,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
 
     LOGMSG(l_DEBUG, "Enabling PERF for PID=%d", pid);
 
-    sigset_t smask;
-    sigemptyset(&smask);
-    struct sigaction sa = {
-        .sa_handler = NULL,
-        .sa_sigaction = arch_perfHandler,
-        .sa_mask = smask,
-        .sa_flags = SA_SIGINFO,
-        .sa_restorer = NULL
-    };
-    if (sigaction(SIGIO, &sa, NULL) < 0) {
-        LOGMSG_P(l_ERROR, "sigaction() failed");
-        return false;
-    }
-
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(struct perf_event_attr));
     pe.size = sizeof(struct perf_event_attr);
@@ -101,10 +90,10 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     case 'e':
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
         pe.type = PERF_TYPE_HARDWARE;
-        pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
-        pe.sample_type = PERF_SAMPLE_BRANCH_STACK | PERF_SAMPLE_ADDR;
+        pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+        pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
         pe.sample_period = 100000;
-        pe.branch_sample_type = PERF_SAMPLE_BRANCH_USER | PERF_SAMPLE_BRANCH_ANY;
+        pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
         pe.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
         break;
     default:
@@ -119,22 +108,45 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         return false;
     }
 
-    if (fcntl(*perfFd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC) == -1) {
-        LOGMSG_P(l_ERROR, "fnctl(F_SETFL)");
-        close(*perfFd);
-        return false;
-    }
+    if (hfuzz->createDynamically == 'e') {
+        sigset_t smask;
+        sigemptyset(&smask);
+        struct sigaction sa = {
+            .sa_handler = NULL,
+            .sa_sigaction = arch_perfHandler,
+            .sa_mask = smask,
+            .sa_flags = SA_SIGINFO,
+            .sa_restorer = NULL
+        };
 
-    if (fcntl(*perfFd, F_SETSIG, SIGIO) == -1) {
-        LOGMSG_P(l_ERROR, "fnctl(F_SETSIG)");
-        close(*perfFd);
-        return false;
-    }
+        if (sigaction(SIGIO, &sa, NULL) == -1) {
+            LOGMSG_P(l_ERROR, "sigaction() failed");
+            return false;
+        }
 
-    if (fcntl(*perfFd, F_SETOWN, syscall(__NR_gettid)) == -1) {
-        LOGMSG_P(l_ERROR, "fnctl(F_SETOWN)");
-        close(*perfFd);
-        return false;
+        our_mmap = mmap(NULL, (8 + 1) * 4096, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
+
+        if (fcntl(*perfFd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC) == -1) {
+            LOGMSG_P(l_ERROR, "fnctl(F_SETFL)");
+            close(*perfFd);
+            return false;
+        }
+
+        struct f_owner_ex foe = {
+            .type = F_OWNER_TID,
+            .pid = syscall(__NR_gettid)
+        };
+        if (fcntl(*perfFd, F_SETSIG, SIGIO) == -1) {
+            LOGMSG_P(l_ERROR, "fnctl(F_SETSIG)");
+            close(*perfFd);
+            return false;
+        }
+
+        if (fcntl(*perfFd, F_SETOWN_EX, &foe) == -1) {
+            LOGMSG_P(l_ERROR, "fnctl(F_SETOWN_EX)");
+            close(*perfFd);
+            return false;
+        }
     }
 
     if (ioctl(*perfFd, PERF_EVENT_IOC_RESET, 0) == -1) {
