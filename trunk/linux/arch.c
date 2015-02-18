@@ -51,9 +51,6 @@
 
 bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 {
-    if (!arch_ptraceEnable(hfuzz)) {
-        return false;
-    }
     /*
      * Kill a process which corrupts its own heap (with ABRT)
      */
@@ -169,6 +166,10 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         if (!util_redirectStdin(fileName)) {
             return false;
         }
+    }
+
+    if (!arch_ptraceEnable(hfuzz)) {
+        return false;
     }
 
     execvp(args[0], args);
