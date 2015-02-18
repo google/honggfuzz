@@ -63,8 +63,17 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         return false;
     }
 
-    ioctl(*perfFd, PERF_EVENT_IOC_RESET, 0);
-    ioctl(*perfFd, PERF_EVENT_IOC_ENABLE, 0);
+    if (ioctl(*perfFd, PERF_EVENT_IOC_RESET, 0) == -1) {
+        LOGMSG_P(l_ERROR, "ioctl(perfFd='%d', PERF_EVENT_IOC_RESET) failed", perfFd);
+        close(*perfFd);
+        return false;
+    }
+
+    if (ioctl(*perfFd, PERF_EVENT_IOC_ENABLE, 0) == -1) {
+        LOGMSG_P(l_ERROR, "ioctl(perfFd='%d', PERF_EVENT_IOC_ENABLE) failed", perfFd);
+        close(*perfFd);
+        return false;
+    }
     return true;
 }
 
@@ -74,11 +83,17 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
         return;
     }
 
-    ioctl(perfFd, PERF_EVENT_IOC_DISABLE, 0);
+    if (ioctl(perfFd, PERF_EVENT_IOC_DISABLE, 0) == -1) {
+        LOGMSG_P(l_ERROR, "ioctl(perfFd='%d', PERF_EVENT_IOC_DISABLE) failed", perfFd);
+        return;
+    }
 
-    long long count = 0LL;
-    read(perfFd, &count, sizeof(long long int));
-    fuzzer->branchCnt = count;
+    long long int count = 0LL;
+    if (read(perfFd, &count, sizeof(count)) == sizeof(count)) {
+        fuzzer->branchCnt = count;
+    } else {
+        LOGMSG_P(l_ERROR, "read(perfFd='%d') failed", perfFd);
+    }
 
     LOGMSG(l_INFO, "Executed %lld branch instructions", count);
 
