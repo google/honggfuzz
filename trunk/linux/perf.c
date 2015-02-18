@@ -51,7 +51,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     memset(&pe, 0, sizeof(struct perf_event_attr));
     pe.type = PERF_TYPE_HARDWARE;
     pe.size = sizeof(struct perf_event_attr);
-    pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+    pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
     pe.disabled = 1;
     pe.exclude_kernel = 1;
     pe.exclude_hv = 1;
@@ -75,9 +75,11 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
 
     ioctl(perfFd, PERF_EVENT_IOC_DISABLE, 0);
 
-    long long count;
+    long long count = 0LL;
     read(perfFd, &count, sizeof(long long int));
-    LOGMSG(l_INFO, "Used %lld instructions", count);
+    fuzzer->branchCnt = count;
+
+    LOGMSG(l_INFO, "Executed %lld branch instructions", count);
 
     close(perfFd);
     if (fuzzer) {

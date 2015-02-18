@@ -112,6 +112,7 @@ int main(int argc, char **argv)
         .files = NULL,
         .fileCnt = 0,
         .dynamicFileBestSz = 1,
+        .branchBestCnt = 0,
     };
 
     printf(AB PROG_NAME " version " PROG_VERSION " by " PROG_AUTHORS AC "\n");

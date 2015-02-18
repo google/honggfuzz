@@ -71,6 +71,9 @@ typedef struct {
     sem_t *sem;
     uint8_t dynamicFileBest[_HF_DYNAMIC_FILE_MAX_SZ];
     size_t dynamicFileBestSz;
+
+    /* For linux/ code */
+    size_t branchBestCnt;
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
@@ -83,8 +86,11 @@ typedef struct fuzzer_t {
     uint64_t access;
     int exception;
     char report[8192];
+
+    /* For linux/ code */
     uint8_t dynamicFile[_HF_DYNAMIC_FILE_MAX_SZ];
     uint8_t dynamicFileSz;
+    size_t branchCnt;
 } fuzzer_t;
 
 #define _HF_MAX_FUNCS 200
