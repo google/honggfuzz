@@ -85,7 +85,7 @@ static void usage(bool exit_success)
            "            Available counters: \n"
            "               " AB "'i' " AC "- PERF_COUNT_HW_INSTRUCTIONS\n"
            "               " AB "'b' " AC "- PERF_COUNT_HW_BRANCH_INSTRUCTIONS\n"
-           "               " AB "'e' " AC "- PERF_SAMPLE_BRANCH_IND_CALL (count unique branch edges)\n"
+           "               " AB "'e' " AC "- PERF_SAMPLE_BRANCH_STACK (count unique branch edges)\n"
 #endif /* _HF_ARCH == "LINUX" */
            "Usage:"
            AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n");

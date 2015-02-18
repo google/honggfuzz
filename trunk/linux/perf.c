@@ -205,9 +205,9 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.sample_period = 200;  /* investigate */
+        pe.sample_period = 200; /* investigate */
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
-        pe.wakeup_events = 1000;      /* investigate */
+        pe.wakeup_events = 1000;        /* investigate */
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->createDynamically, pid);
