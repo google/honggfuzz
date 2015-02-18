@@ -73,8 +73,12 @@ log_msg(log_level_t dl,
         bool perr, const char *file, const char *func, int line, const char *fmt, ...
     )
 {
-    if (dl > log_minLevel)
+    if (dl > log_minLevel) {
+      if (dl == l_FATAL) {
+         exit(EXIT_FAILURE);
+        }
         return;
+    }
 
     while (pthread_mutex_lock(&log_mutex)) ;
 

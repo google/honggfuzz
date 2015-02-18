@@ -56,8 +56,10 @@ static void usage(bool exit_success)
     printf("%s",
            " <" AB "-f val" AC "> : directory with input files (or a path to a single input file)\n"
            " [" AB "-h" AC "]     : this help\n"
-           " [" AB "-q" AC "]     : null-ify children's stdin, stdout, stderr; make them quiet (default: " AB "false" AC ")\n"
-           " [" AB "-s" AC "]     : provide fuzzing input on STDIN, instead a file argument (default: " AB "false" AC ")\n"
+           " [" AB "-q" AC "]     : null-ify children's stdin, stdout, stderr; make them quiet\n"
+           "            (default: " AB "false" AC ")\n"
+           " [" AB "-s" AC "]     : provide fuzzing input on STDIN, instead a file argument\n"
+           "            (default: " AB "false" AC ")\n"
            " [" AB "-u" AC "]     : save unique test-cases only, otherwise (if not used) append\n"
            "            current timestamp to the output filenames (default: " AB "false" AC ")\n"
            " [" AB "-d val" AC "] : debug level (0 - FATAL ... 4 - DEBUG), (default: '" AB "3" AC
@@ -65,7 +67,8 @@ static void usage(bool exit_success)
            " [" AB "-e val" AC "] : file extension (e.g swf), (default: '" AB "fuzz" AC "')\n"
            " [" AB "-r val" AC "] : flip rate, (default: '" AB "0.001" AC "')\n"
            " [" AB "-m val" AC "] : flip mode (-mB - byte, -mb - bit), (default: '" AB "-mB" AC "')\n"
-           " [" AB "-c val" AC "] : an external command modifying the input corpus of files (instead of -r/-m)\n"
+           " [" AB "-c val" AC "] : external command modifying the input corpus of files,\n"
+           "            instead of -r/-m (default: " AB "none" AC "\n"
            " [" AB "-t val" AC "] : timeout (in secs), (default: '" AB "3" AC "' [0 - no timeout])\n"
            " [" AB "-a val" AC "] : address limit (from si.si_addr) below which crashes\n"
            "            are not reported, (default: '" AB "0" AC "' [suggested: 65535])\n"
@@ -73,8 +76,17 @@ static void usage(bool exit_success)
            " [" AB "-N val" AC "] : number of fuzzing mutations, (default: '" AB "0" AC "' [infinte])\n"
            " [" AB "-l val" AC "] : per process memory limit in MiB, (default: '" AB "0" AC "' [no limit])\n"
            " [" AB "-R val" AC "] : write report to this file, (default: '" AB _HF_REPORT_FILE AC "')\n"
-           " [" AB "-p val" AC "] : (Linux-only) attach to a pid (and its group thread), instead of monitoring\n"
-           "            a previously created process, default: '" AB "0" AC "' (none)\n"
+#if _HF_ARCH == LINUX
+           " [" AB "-p val" AC "] : [Linux] attach to a pid (and its group thread), instead of \n"
+           "            monitoring previously created process, default: '" AB "0" AC "' (none)\n"
+           " [" AB "-D val" AC "] : [Linux] create a file dynamically with Linux perf counters,\n"
+           "            can be used with or without the '-f' flag (initial file contents)\n"
+           "            (default: " AB " none " AC ")\n"
+           "            Available counters: \n"
+           "               " AB "'i' " AC "- PERF_COUNT_HW_INSTRUCTIONS\n"
+           "               " AB "'b' " AC "- PERF_COUNT_HW_BRANCH_INSTRUCTIONS\n"
+           "               " AB "'e' " AC "- PERF_SAMPLE_BRANCH_IND_CALL (count unique branch edges)\n"
+#endif /* _HF_ARCH == "LINUX" */
            "Usage:"
            AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n");
     /*  *INDENT-ON* */
@@ -100,7 +112,6 @@ int main(int argc, char **argv)
         .flipRate = 0.001f,
         .flipMode = 'B',
         .externalCommand = NULL,
-        .createDynamically = false,
         .tmOut = 3,
         .mutationsMax = 0,
         .mutationsCnt = 0,
@@ -108,9 +119,10 @@ int main(int argc, char **argv)
         .ignoreAddr = NULL,
         .reportFile = _HF_REPORT_FILE,
         .asLimit = 0UL,
-        .pid = 0,
         .files = NULL,
         .fileCnt = 0,
+        .pid = 0,
+        .createDynamically = '\0',
         .dynamicFileBestSz = 1,
         .branchBestCnt = 0,
     };
@@ -121,7 +133,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "?hqsuf:d:e:r:m:c:Dt:a:R:n:N:l:p:");
+        c = getopt(argc, argv, "?hqsuf:d:e:r:m:c:D:t:a:R:n:N:l:p:");
         if (c < 0)
             break;
 
@@ -158,8 +170,20 @@ int main(int argc, char **argv)
             hfuzz.externalCommand = optarg;
             break;
         case 'D':
-            hfuzz.createDynamically = true;
-            break;
+            switch (optarg[0]) {
+            case 'i':
+                hfuzz.createDynamically = 'i';
+                break;
+            case 'b':
+                hfuzz.createDynamically = 'b';
+                break;
+            case 'e':
+                hfuzz.createDynamically = 'e';
+                break;
+            default:
+                usage(EXIT_FAILURE);
+                break;
+            }
         case 't':
             hfuzz.tmOut = atol(optarg);
             break;
