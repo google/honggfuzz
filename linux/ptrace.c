@@ -41,6 +41,7 @@
 #include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/uio.h>
@@ -87,6 +88,8 @@ bool arch_ptraceEnable(honggfuzz_t * hfuzz)
         LOGMSG_P(l_FATAL, "Couldn't attach ptrace to pid %d", getpid());
         return false;
     }
+
+    syscall(__NR_gettid, SIGSTOP);
 
     return true;
 }
@@ -426,11 +429,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     arch_ptraceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr);
 }
 
-/*
- * Returns true if a process exited (so, presumably, we can delete an input
- * file)
- */
-bool arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer)
+void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer)
 {
     /*
      * If it's an uninteresting signal (even SIGTRAP), let it run and relay the
@@ -439,7 +438,7 @@ bool arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
     if (WIFSTOPPED(status) && !arch_sigs[WSTOPSIG(status)].important) {
         int sig = WSTOPSIG(status) == SIGTRAP ? 0 : WSTOPSIG(status);
         ptrace(PT_CONTINUE, pid, 0, sig);
-        return false;
+        return;
     }
 
     /*
@@ -449,25 +448,25 @@ bool arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
     if (WIFSTOPPED(status) && arch_sigs[WSTOPSIG(status)].important) {
         arch_ptraceSaveData(hfuzz, pid, fuzzer);
         ptrace(PT_CONTINUE, pid, 0, WSTOPSIG(status));
-        return false;
+        return;
     }
 
     /*
      * Resumed by delivery of SIGCONT
      */
     if (WIFCONTINUED(status)) {
-        return false;
+        return;
     }
 
     /*
      * Process exited
      */
     if (WIFEXITED(status) || WIFSIGNALED(status)) {
-        return true;
+        return;
     }
 
     abort();                    /* NOTREACHED */
-    return true;
+    return;
 }
 
 static bool arch_listThreads(int tasks[], size_t thrSz, int pid)

@@ -23,6 +23,7 @@
 
 #include "common.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <linux/hw_breakpoint.h>
@@ -38,28 +39,77 @@
 #include "log.h"
 
 /*
- * 4MB + 1page
+ * 9 pages (8 + 1)
  */
-#define _HF_PERF_MMAP_SZ ((size_t)getpagesize() + (1024 * 1024 * 4))
+#define _HF_PERF_MMAP_SZ (getpagesize() * 9)
 
 static __thread void *perfMmap = NULL;
 static __thread bool perfOverflow = false;
 
-static uint64_t arch_perfParseMmap(void)
+#define _HF_PERF_BRANCHES_SZ (1024)
+/*  *INDENT-OFF* */
+static __thread struct {
+    uint64_t from;
+    uint64_t to;
+} perfBranches[_HF_PERF_BRANCHES_SZ] = {
+  [0 ... (_HF_PERF_BRANCHES_SZ - 1)].from = 0ULL,
+  [0 ... (_HF_PERF_BRANCHES_SZ - 1)].to = 0ULL
+};
+/*  *INDENT-ON* */
+
+static size_t arch_perfCountBranches(void)
 {
-//    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmap;
+    size_t i = 0;
+    for (i = 0; i < _HF_PERF_BRANCHES_SZ; i++) {
+        if (perfBranches[i].from == 0ULL && perfBranches[i].to == 0ULL) {
+            return i;
+        }
+        LOGMSG(l_INFO, "Branch entry: FROM: %" PRIx64 " TO: %" PRIx64, perfBranches[i].from,
+               perfBranches[i].to);
+    }
+    return i;
+}
+
+static void arch_perfAddFromToBranch(uint64_t from, uint64_t to)
+{
+    for (size_t i = 0; i < _HF_PERF_BRANCHES_SZ; i++) {
+        if (perfBranches[i].from == from && perfBranches[i].to == to) {
+            break;
+        }
+        if (perfBranches[i].from == 0ULL && perfBranches[i].to == 0ULL) {
+            perfBranches[i].from = from;
+            perfBranches[i].to = to;
+            break;
+        }
+    }
+}
+
+static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
+{
+    int tmpErrno = errno;
+    if (signum != SIGIO) {
+        return;
+    }
+
+    int fd = si->si_fd;
+    ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
+
     struct perf_event_header *peh = (struct perf_event_header *)(perfMmap + getpagesize());
 
     for (;;) {
-        if (peh->type != PERF_RECORD_SAMPLE) {
-            LOGMSG(l_ERROR, "perf_event_header->type != PERF_RECORD_SAMPLE (%" PRId32 ")",
-                   peh->type);
+        if (((uint64_t) peh + peh->size) > ((uint64_t) perfMmap + _HF_PERF_MMAP_SZ)) {
             break;
         }
-        if (peh->misc != PERF_RECORD_MISC_USER) {
-            LOGMSG(l_ERROR, "perf_event_header->misc != PERF_RECORD_MISC_USER (%" PRId16 ")",
-                   peh->misc);
+        if (peh->size == 0) {
             break;
+        }
+        if (peh->type != PERF_RECORD_SAMPLE) {
+            peh = (struct perf_event_header *)((uint8_t *) peh + peh->size);
+            continue;
+        }
+        if (peh->misc != PERF_RECORD_MISC_USER) {
+            peh = (struct perf_event_header *)((uint8_t *) peh + peh->size);
+            continue;
         }
 
         uint64_t bnr = *(uint64_t *) (perfMmap + getpagesize() + sizeof(struct perf_event_header));
@@ -67,29 +117,16 @@ static uint64_t arch_perfParseMmap(void)
             (struct perf_branch_entry *)(perfMmap + getpagesize() +
                                          sizeof(struct perf_event_header) + bnr);
 
-        LOGMSG(l_INFO, "PEHSIZE: %llu BNR: %llu", peh->size, bnr);
-
         for (uint64_t i = 0; i < bnr; i++) {
-            LOGMSG(l_ERROR, "FROM: %llx TO: %llx", lbr[i].from, lbr[i].to);
+            arch_perfAddFromToBranch(lbr[i].from, lbr[i].to);
         }
-
-        int *i = (int *)0x44444444;
-        *i = 66;
 
         peh = (struct perf_event_header *)((uint8_t *) peh + peh->size);
     }
 
-    return 0ULL;
-}
+    ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
 
-static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
-{
-    if (signum != SIGIO) {
-        return;
-    }
-    if (si != NULL) {
-        return;
-    }
+    errno = tmpErrno;
     if (unused) {
         return;
     }
@@ -137,7 +174,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
         pe.sample_period = 100000;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
-        pe.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
+        pe.wakeup_events = 1;
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->createDynamically, pid);
@@ -173,7 +210,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
             close(*perfFd);
             return false;
         }
-#if 0
         if (fcntl(*perfFd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC) == -1) {
             LOGMSG_P(l_ERROR, "fnctl(F_SETFL)");
             close(*perfFd);
@@ -195,7 +231,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
             close(*perfFd);
             return false;
         }
-#endif
     }
 
     if (ioctl(*perfFd, PERF_EVENT_IOC_RESET, 0) == -1) {
@@ -228,7 +263,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
             LOGMSG(l_WARN, "LBR has been overflown");
             goto out;
         } else {
-            count = arch_perfParseMmap();
+            count = arch_perfCountBranches();
         }
     } else {
         if (read(perfFd, &count, sizeof(count)) == sizeof(count)) {

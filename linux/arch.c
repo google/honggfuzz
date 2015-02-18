@@ -183,14 +183,26 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     int status;
     bool perfEnabled = false;
+    int perfFd;
 
     for (;;) {
-        pid_t pid;
-        while ((pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL)) <= 0) ;
-
+        pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
         LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
 
-        int perfFd;
+        if (pid == -1 && errno == EINTR) {
+            continue;
+        }
+        if (pid == -1 && errno == ECHILD) {
+            if (perfEnabled) {
+                arch_perfAnalyze(hfuzz, fuzzer, perfFd);
+            }
+            return;
+        }
+        if (pid == -1) {
+            LOGMSG_P(l_WARN, "wait3() failed");
+            continue;
+        }
+
         if (perfEnabled == false) {
             if (arch_perfEnable(pid, hfuzz, &perfFd) == false) {
                 LOGMSG(l_FATAL, "Couldn't enable perf subsystem for PID: '%d'", pid);
@@ -198,12 +210,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             perfEnabled = true;
         }
 
-        LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", pid, status);
-
-        if (arch_ptraceAnalyze(hfuzz, status, pid, fuzzer)) {
-            arch_perfAnalyze(hfuzz, fuzzer, perfFd);
-            return;
-        }
+        arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
     }
 }
 
