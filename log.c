@@ -35,8 +35,8 @@
 #include <time.h>
 #include <unistd.h>
 
-static unsigned int log_minLevel;
-static bool log_isStdioTTY;
+static unsigned int log_minLevel = l_INFO;
+static bool log_isStdioTTY = true;
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static const struct {
@@ -55,7 +55,6 @@ __attribute__ ((constructor))
 void log_init(void
     )
 {
-    log_minLevel = l_INFO;
     if (isatty(STDOUT_FILENO) == 1) {
         log_isStdioTTY = true;
     } else {
@@ -74,8 +73,8 @@ log_msg(log_level_t dl,
     )
 {
     if (dl > log_minLevel) {
-      if (dl == l_FATAL) {
-         exit(EXIT_FAILURE);
+        if (dl == l_FATAL) {
+            exit(EXIT_FAILURE);
         }
         return;
     }
