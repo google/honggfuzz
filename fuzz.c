@@ -123,13 +123,13 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
 
     uint64_t choice = util_rndGet(1, 16);
-    if (choice <= 4) {
+    if (choice <= 8) {
         fuzzer->dynamicFileSz = fuzzer->dynamicFileSz + choice;
     }
-    if (choice == 5) {
+    if (choice == 9) {
         fuzzer->dynamicFileSz = util_rndGet(1, fuzzer->dynamicFileSz);
     }
-    if (choice == 6) {
+    if (choice == 10) {
         fuzzer->dynamicFileSz = util_rndGet(fuzzer->dynamicFileSz, sizeof(fuzzer->dynamicFile));
     }
     if (fuzzer->dynamicFileSz > sizeof(fuzzer->dynamicFile)) {
