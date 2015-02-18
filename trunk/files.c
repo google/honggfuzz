@@ -187,6 +187,8 @@ bool files_init(honggfuzz_t * hfuzz)
 {
     hfuzz->files = malloc(sizeof(char *));
     if (hfuzz->createDynamically) {
+        hfuzz->fileCnt = 1;
+        hfuzz->files[0] = "UNKNOWN";
         LOGMSG(l_INFO, "Files will be created dynamically");
         return true;
     }

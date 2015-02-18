@@ -187,8 +187,9 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         pid_t pid;
         while ((pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL)) <= 0) ;
 
+        int perfFd;
         if (perfEnabled == false) {
-            if (arch_perfEnable(pid, hfuzz, fuzzer) == false) {
+            if (arch_perfEnable(pid, hfuzz, &perfFd) == false) {
                 LOGMSG(l_FATAL, "Couldn't enable perf subsystem for PID: '%d'", pid);
             }
             perfEnabled = true;
@@ -197,6 +198,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", pid, status);
 
         if (arch_ptraceAnalyze(hfuzz, status, pid, fuzzer)) {
+            arch_perfAnalyze(hfuzz, fuzzer, perfFd);
             return;
         }
     }
