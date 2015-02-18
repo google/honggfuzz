@@ -51,10 +51,11 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     memset(&pe, 0, sizeof(struct perf_event_attr));
     pe.type = PERF_TYPE_HARDWARE;
     pe.size = sizeof(struct perf_event_attr);
-    pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+    pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
     pe.disabled = 1;
     pe.exclude_kernel = 1;
     pe.exclude_hv = 1;
+    pe.exclude_callchain_kernel = 1;
 
     *perfFd = perf_event_open(&pe, pid, -1, -1, PERF_FLAG_FD_CLOEXEC);
     if (*perfFd == -1) {

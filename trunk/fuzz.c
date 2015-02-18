@@ -117,8 +117,24 @@ static size_t fuzz_appendOrTrunc(int fd, off_t fileSz)
     return newSz;
 }
 
-static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
 {
+    if (hfuzz->inputFile && hfuzz->branchBestCnt == 0) {
+        int srcfd;
+        off_t fileSz;
+        uint8_t *buf = files_mapFileToRead(hfuzz->files[rnd_index], &fileSz, &srcfd);
+        if (buf == NULL) {
+            LOGMSG(l_ERROR, "Couldn't open and map '%s' in R/O mode", hfuzz->files[rnd_index]);
+            return false;
+        }
+        size_t toCopy =
+            (size_t) fileSz <
+            sizeof(hfuzz->dynamicFileBest) ? (size_t) fileSz : sizeof(hfuzz->dynamicFileBest);
+        memcpy(hfuzz->dynamicFileBest, buf, toCopy);
+        hfuzz->dynamicFileBestSz = toCopy;
+        files_unmapFileCloseFd(buf, fileSz, srcfd);
+    }
+
     memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
     fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
 
@@ -304,7 +320,7 @@ static void *fuzz_threadNew(void *arg)
     fuzz_getFileName(hfuzz, fuzzer.fileName);
 
     if (hfuzz->createDynamically) {
-        if (!fuzz_prepareFileDynamically(hfuzz, &fuzzer)) {
+        if (!fuzz_prepareFileDynamically(hfuzz, &fuzzer, rnd_index)) {
             exit(EXIT_FAILURE);
         }
     } else if (hfuzz->externalCommand != NULL) {
