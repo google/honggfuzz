@@ -161,11 +161,13 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         LOGMSG(l_DEBUG, "Using: PERF_COUNT_HW_INSTRUCTIONS for PID: %d", pid);
         pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+        pe.inherit = 1;
         break;
     case 'b':
         LOGMSG(l_DEBUG, "Using: PERF_COUNT_HW_BRANCH_INSTRUCTIONS for PID: %d", pid);
         pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+        pe.inherit = 1;
         break;
     case 'e':
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
@@ -184,7 +186,11 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
 
     *perfFd = perf_event_open(&pe, pid, -1, -1, 0);
     if (*perfFd == -1) {
-        LOGMSG_P(l_ERROR, "Error opening leader %llx", pe.config);
+        LOGMSG_P(l_WARN, "perf_event_open() failed");
+        if (hfuzz->createDynamically == 'e') {
+            LOGMSG(l_WARN,
+                   "-De mode requires LBR feature present in Intel Haswell and newer CPUs (i.e. not in AMD)");
+        }
         return false;
     }
 
