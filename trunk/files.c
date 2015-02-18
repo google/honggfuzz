@@ -188,13 +188,13 @@ bool files_init(honggfuzz_t * hfuzz)
     hfuzz->files = malloc(sizeof(char *));
     if (hfuzz->createDynamically) {
         hfuzz->fileCnt = 1;
-        hfuzz->files[0] = "UNKNOWN";
+        hfuzz->files[0] = "GENERATED";
         LOGMSG(l_INFO, "Files will be created dynamically");
         return true;
     }
     if (hfuzz->externalCommand && !hfuzz->inputFile) {
         hfuzz->fileCnt = 1;
-        hfuzz->files[0] = "UNKNOWN";
+        hfuzz->files[0] = "CREATED";
         LOGMSG(l_INFO,
                "No input file corpus specified, the external command '%s' is responsible for creating the fuzz files",
                hfuzz->externalCommand);
