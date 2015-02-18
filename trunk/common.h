@@ -45,7 +45,7 @@
 #define _HF_PTHREAD_STACKSIZE (1024 * 1024 * 2) /* 2MB */
 
 /* Maximal size of a dynamically created file (-D) */
-#define _HF_DYNAMIC_FILE_MAX_SZ (256)
+#define _HF_DYNAMIC_FILE_MAX_SZ (256 * 1024)
 
 typedef struct {
     char **cmdline;
