@@ -122,9 +122,9 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
     fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
 
-    const int chance_one_in_x = 10;
+    const int chance_one_in_x = 3;
     if (util_rndGet(1, chance_one_in_x) == 1) {
-        fuzzer->dynamicFileSz = util_rndGet(fuzzer->dynamicFileSz, sizeof(fuzzer->dynamicFile));
+        fuzzer->dynamicFileSz = util_rndGet(1, fuzzer->dynamicFileSz + 8);
     }
 
     fuzz_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
@@ -283,6 +283,8 @@ static void *fuzz_threadNew(void *arg)
         .access = 0ULL,
         .exception = 0,
         .dynamicFileSz = 0,
+        .branchCnt = 0,
+        .report = {'\0'}
     };
 
     int rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
@@ -324,6 +326,19 @@ static void *fuzz_threadNew(void *arg)
 
     arch_reapChild(hfuzz, &fuzzer);
     unlink(fuzzer.fileName);
+
+    if (hfuzz->createDynamically) {
+        if (fuzzer.branchCnt >= hfuzz->branchBestCnt) {
+            LOGMSG(l_INFO,
+                   "New file: OLD_SZ: '%llu', NEW_SZ: '%llu', OLD_BRANCHES: '%llu', NEW_BRACNHES: '%llu'",
+                   hfuzz->dynamicFileBestSz, fuzzer.dynamicFileSz, hfuzz->branchBestCnt,
+                   fuzzer.branchCnt);
+            memcpy(hfuzz->dynamicFileBest, fuzzer.dynamicFile, fuzzer.dynamicFileSz);
+            hfuzz->dynamicFileBestSz = fuzzer.dynamicFileSz;
+            hfuzz->branchBestCnt = fuzzer.branchCnt;
+        }
+    }
+
     report_Report(hfuzz, fuzzer.report);
 
     sem_post(hfuzz->sem);
@@ -345,9 +360,9 @@ static void *fuzz_threadPid(void *arg)
         .backtrace = 0ULL,
         .access = 0ULL,
         .exception = 0,
-        .report = {'\0'}
-        ,
         .dynamicFileSz = 0,
+        .branchCnt = 0,
+        .report = {'\0'}
     };
 
     char fileName[] = ".honggfuzz.empty.XXXXXX";
