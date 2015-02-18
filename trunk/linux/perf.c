@@ -23,8 +23,10 @@
 
 #include "common.h"
 
+#include <fcntl.h>
 #include <linux/hw_breakpoint.h>
 #include <linux/perf_event.h>
+#include <signal.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/syscall.h>
@@ -32,6 +34,21 @@
 
 #include "linux/perf.h"
 #include "log.h"
+
+static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
+{
+    write(1, "DUPA\n", 5);
+    if (signum == 199) {
+        return;
+    }
+    if (si == (void *)0x123445) {
+        return;
+    }
+    if (unused == (void *)0x123445) {
+        return;
+    }
+
+}
 
 static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
                             int cpu, int group_fd, unsigned long flags)
@@ -47,28 +64,48 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
 
     LOGMSG(l_DEBUG, "Enabling PERF for PID=%d", pid);
 
+    sigset_t smask;
+    sigemptyset(&smask);
+    struct sigaction sa = {
+        .sa_handler = NULL,
+        .sa_sigaction = arch_perfHandler,
+        .sa_mask = smask,
+        .sa_flags = SA_SIGINFO,
+        .sa_restorer = NULL
+    };
+    if (sigaction(SIGIO, &sa, NULL) < 0) {
+        LOGMSG_P(l_ERROR, "sigaction() failed");
+        return false;
+    }
+
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(struct perf_event_attr));
-    pe.type = PERF_TYPE_HARDWARE;
     pe.size = sizeof(struct perf_event_attr);
     pe.disabled = 1;
     pe.exclude_kernel = 1;
     pe.exclude_hv = 1;
     pe.exclude_callchain_kernel = 1;
+    pe.pinned = 1;
 
     switch (hfuzz->createDynamically) {
     case 'i':
         LOGMSG(l_DEBUG, "Using: PERF_COUNT_HW_INSTRUCTIONS for PID: %d", pid);
+        pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         break;
     case 'b':
         LOGMSG(l_DEBUG, "Using: PERF_COUNT_HW_BRANCH_INSTRUCTIONS for PID: %d", pid);
+        pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         break;
     case 'e':
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
-        pe.config = PERF_SAMPLE_BRANCH_STACK;
+        pe.type = PERF_TYPE_HARDWARE;
+        pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+        pe.sample_type = PERF_SAMPLE_BRANCH_STACK | PERF_SAMPLE_ADDR;
+        pe.sample_period = 100000;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_USER | PERF_SAMPLE_BRANCH_ANY;
+        pe.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->createDynamically, pid);
@@ -79,6 +116,24 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     *perfFd = perf_event_open(&pe, pid, -1, -1, 0);
     if (*perfFd == -1) {
         LOGMSG_P(l_ERROR, "Error opening leader %llx", pe.config);
+        return false;
+    }
+
+    if (fcntl(*perfFd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC) == -1) {
+        LOGMSG_P(l_ERROR, "fnctl(F_SETFL)");
+        close(*perfFd);
+        return false;
+    }
+
+    if (fcntl(*perfFd, F_SETSIG, SIGIO) == -1) {
+        LOGMSG_P(l_ERROR, "fnctl(F_SETSIG)");
+        close(*perfFd);
+        return false;
+    }
+
+    if (fcntl(*perfFd, F_SETOWN, syscall(__NR_gettid)) == -1) {
+        LOGMSG_P(l_ERROR, "fnctl(F_SETOWN)");
+        close(*perfFd);
         return false;
     }
 
@@ -114,7 +169,9 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
         LOGMSG_P(l_ERROR, "read(perfFd='%d') failed", perfFd);
     }
 
-    LOGMSG(l_INFO, "Executed %lld branch instructions", count);
+    LOGMSG(l_INFO,
+           "Executed %lld branch instructions (best: %lld), fileSz: '%zu', bestFileSz: '%zu'",
+           count, hfuzz->branchBestCnt, fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz);
 
     close(perfFd);
     if (fuzzer) {
