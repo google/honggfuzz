@@ -41,13 +41,12 @@
 /*
  * 1 + 16 pages
  */
-#define _HF_PERF_MMAP_DATA_SZ (getpagesize() << 4)
+#define _HF_PERF_MMAP_DATA_SZ (getpagesize() << 5)
 #define _HF_PERF_MMAP_TOT_SZ (getpagesize() + _HF_PERF_MMAP_DATA_SZ)
 
 static __thread uint8_t *perfMmap = NULL;
-static __thread bool perfOverflow = false;
 
-#define _HF_PERF_BRANCHES_SZ (1024)
+#define _HF_PERF_BRANCHES_SZ (4096)
 /*  *INDENT-OFF* */
 static __thread struct {
     uint64_t from;
@@ -85,21 +84,19 @@ static void arch_perfAddFromToBranch(uint64_t from, uint64_t to)
     }
 }
 
-static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
+static void arch_perfMmapParse(int fd)
 {
-    int tmpErrno = errno;
-    if (signum != SIGIO) {
-        return;
-    }
-
-    int fd = si->si_fd;
     ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
 
     uint8_t localData[_HF_PERF_MMAP_DATA_SZ];
 
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmap;
-    uint64_t dataHeadOff = pem->data_head;
-    uint64_t dataTailOff = pem->data_tail;
+    uint64_t dataHeadOff = pem->data_head % _HF_PERF_MMAP_DATA_SZ;
+/* Memory Barrier - see perf_event_open */
+#define rmb() __asm __volatile ("":::"memory")
+    rmb();
+    uint64_t dataTailOff = pem->data_tail % _HF_PERF_MMAP_DATA_SZ;
+    rmb();
     uint8_t *dataTailPtr = perfMmap + getpagesize() + dataTailOff;
     size_t localDataLen = 0;
 
@@ -121,7 +118,6 @@ static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
     int *i = (int *)0x444444;
     *i = 5;
 */
-
     while ((uintptr_t) peh < (uintptr_t) (localData + localDataLen)) {
         if (peh->size == 0) {
             break;
@@ -150,6 +146,16 @@ static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
 
     pem->data_tail = pem->data_head;
     ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
+}
+
+static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
+{
+    int tmpErrno = errno;
+    if (signum != SIGIO) {
+        return;
+    }
+
+    arch_perfMmapParse(si->si_fd);
 
     errno = tmpErrno;
     if (unused) {
@@ -199,9 +205,9 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.sample_period = 1000;
-        pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY_CALL;
-        pe.wakeup_events = 1;
+        pe.sample_period = 200;  /* investigate */
+        pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
+        pe.wakeup_events = 1000;      /* investigate */
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->createDynamically, pid);
@@ -290,12 +296,8 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
 
     uint64_t count = 0LL;
     if (hfuzz->createDynamically == 'e') {
-        if (perfOverflow) {
-            LOGMSG(l_WARN, "LBR has been overflown");
-            goto out;
-        } else {
-            count = arch_perfCountBranches();
-        }
+        arch_perfMmapParse(perfFd);
+        count = arch_perfCountBranches();
     } else {
         if (read(perfFd, &count, sizeof(count)) == sizeof(count)) {
         } else {

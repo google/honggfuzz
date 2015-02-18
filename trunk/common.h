@@ -42,7 +42,7 @@
 #define _HF_REPORT_FILE "HONGGFUZZ.REPORT.TXT"
 
 /* Default stack-size of created threads. Must be bigger then _HF_DYNAMIC_FILE_MAX_SZ */
-#define _HF_PTHREAD_STACKSIZE (1024 * 1024 * 2) /* 2MB */
+#define _HF_PTHREAD_STACKSIZE (1024 * 1024 * 4) /* 2MB */
 
 /* Maximal size of a dynamically created file (-D) */
 #define _HF_DYNAMIC_FILE_MAX_SZ (256 * 1024)
