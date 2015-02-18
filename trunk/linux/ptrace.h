@@ -26,6 +26,6 @@
 
 extern bool arch_ptraceEnable(honggfuzz_t * fuzz);
 extern bool arch_ptracePrepare(honggfuzz_t * fuzz);
-extern bool arch_ptraceAnalyze(honggfuzz_t * fuzz, int status, pid_t pid, fuzzer_t * fuzzer);
+extern void arch_ptraceAnalyze(honggfuzz_t * fuzz, int status, pid_t pid, fuzzer_t * fuzzer);
 
 #endif
