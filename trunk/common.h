@@ -73,7 +73,7 @@ typedef struct {
     size_t dynamicFileBestSz;
 
     /* For linux/ code */
-    size_t branchBestCnt;
+    int64_t branchBestCnt;
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
@@ -90,7 +90,7 @@ typedef struct fuzzer_t {
     /* For linux/ code */
     uint8_t dynamicFile[_HF_DYNAMIC_FILE_MAX_SZ];
     size_t dynamicFileSz;
-    size_t branchCnt;
+    int64_t branchCnt;
 } fuzzer_t;
 
 #define _HF_MAX_FUNCS 200

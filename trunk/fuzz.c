@@ -138,7 +138,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
     fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
 
-    uint64_t choice = util_rndGet(1, 16);
+    uint64_t choice = util_rndGet(1, 64);
     if (choice <= 8) {
         fuzzer->dynamicFileSz = fuzzer->dynamicFileSz + choice;
     }
@@ -152,8 +152,8 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         fuzzer->dynamicFileSz = sizeof(fuzzer->dynamicFile);
     }
 
-    LOGMSG(l_DEBUG, "CHOICE: %d OLD_SZ: '%zu' NEW_SZ: '%zu' SIZEOF: '%zu'", choice,
-           hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz);
+    LOGMSG(l_DEBUG, "DynamicFile: old size:'%zu' new_size:'%zu'", hfuzz->dynamicFileBestSz,
+           fuzzer->dynamicFileSz);
 
     fuzz_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
