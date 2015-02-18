@@ -89,7 +89,7 @@ typedef struct fuzzer_t {
 
     /* For linux/ code */
     uint8_t dynamicFile[_HF_DYNAMIC_FILE_MAX_SZ];
-    uint8_t dynamicFileSz;
+    size_t dynamicFileSz;
     size_t branchCnt;
 } fuzzer_t;
 

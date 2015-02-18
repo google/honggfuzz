@@ -122,10 +122,22 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
     fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
 
-    const int chance_one_in_x = 3;
-    if (util_rndGet(1, chance_one_in_x) == 1) {
-        fuzzer->dynamicFileSz = util_rndGet(1, fuzzer->dynamicFileSz + 8);
+    uint64_t choice = util_rndGet(1, 16);
+    if (choice <= 4) {
+        fuzzer->dynamicFileSz = fuzzer->dynamicFileSz + choice;
     }
+    if (choice == 5) {
+        fuzzer->dynamicFileSz = util_rndGet(1, fuzzer->dynamicFileSz);
+    }
+    if (choice == 6) {
+        fuzzer->dynamicFileSz = util_rndGet(fuzzer->dynamicFileSz, sizeof(fuzzer->dynamicFile));
+    }
+    if (fuzzer->dynamicFileSz > sizeof(fuzzer->dynamicFile)) {
+        fuzzer->dynamicFileSz = sizeof(fuzzer->dynamicFile);
+    }
+
+    LOGMSG(l_DEBUG, "CHOICE: %d OLD_SZ: '%zu' NEW_SZ: '%zu' SIZEOF: '%zu'", choice,
+           hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz);
 
     fuzz_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
