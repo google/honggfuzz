@@ -138,14 +138,14 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
     fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
 
-    uint64_t choice = util_rndGet(1, 64);
-    if (choice <= 8) {
+    uint64_t choice = util_rndGet(1, 20);
+    if (choice <= 16) {
         fuzzer->dynamicFileSz = fuzzer->dynamicFileSz + choice;
     }
-    if (choice == 9) {
+    if (choice == 17) {
         fuzzer->dynamicFileSz = util_rndGet(1, fuzzer->dynamicFileSz);
     }
-    if (choice == 10) {
+    if (choice == 18) {
         fuzzer->dynamicFileSz = util_rndGet(fuzzer->dynamicFileSz, sizeof(fuzzer->dynamicFile));
     }
     if (fuzzer->dynamicFileSz > sizeof(fuzzer->dynamicFile)) {
