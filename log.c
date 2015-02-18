@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -96,11 +97,18 @@ log_msg(log_level_t dl,
         dprintf(STDOUT_FILENO, "%s", logLevels[dl].prefix);
     }
 
+    pid_t pid = getpid();
+#if _HF_ARCH == LINUX
+#include <unistd.h>
+#include <sys/syscall.h>
+    pid = (pid_t) syscall(__NR_gettid);
+#endif                          /* _HF_ARCH == LINUX */
+
     if (log_minLevel >= l_DEBUG || !log_isStdioTTY) {
         dprintf
             (STDOUT_FILENO,
              "%s [%d] %d/%02d/%02d %02d:%02d:%02d (%s:%s %d) ",
-             logLevels[dl].descr, getpid(), tm.tm_year + 1900,
+             logLevels[dl].descr, pid, tm.tm_year + 1900,
              tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, file, func, line);
     } else {
         dprintf(STDOUT_FILENO, "%s ", logLevels[dl].descr);
