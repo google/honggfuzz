@@ -57,7 +57,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     pe.exclude_hv = 1;
     pe.exclude_callchain_kernel = 1;
 
-    *perfFd = perf_event_open(&pe, pid, -1, -1, PERF_FLAG_FD_CLOEXEC);
+    *perfFd = perf_event_open(&pe, pid, -1, -1, 0);
     if (*perfFd == -1) {
         LOGMSG_P(l_ERROR, "Error opening leader %llx", pe.config);
         return false;
