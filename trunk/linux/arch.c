@@ -188,6 +188,8 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         pid_t pid;
         while ((pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL)) <= 0) ;
 
+        LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
+
         int perfFd;
         if (perfEnabled == false) {
             if (arch_perfEnable(pid, hfuzz, &perfFd) == false) {

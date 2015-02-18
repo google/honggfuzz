@@ -324,7 +324,14 @@ static void *fuzz_threadNew(void *arg)
         }
     }
 
+#if _HF_ARCH == LINUX
+#include <unistd.h>
+#include <sys/syscall.h>
+    fuzzer.pid = syscall(__NR_fork);
+#else
     fuzzer.pid = fork();
+#endif                          /* _HF_ARCH == LINUX */
+
     if (fuzzer.pid == -1) {
         LOGMSG_P(l_FATAL, "Couldn't fork");
         exit(EXIT_FAILURE);
