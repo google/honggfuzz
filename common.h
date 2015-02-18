@@ -57,7 +57,6 @@ typedef struct {
     double flipRate;
     char flipMode;
     char *externalCommand;
-    bool createDynamically;
     long tmOut;
     long mutationsMax;
     long mutationsCnt;
@@ -65,10 +64,11 @@ typedef struct {
     void *ignoreAddr;
     char *reportFile;
     unsigned long asLimit;
-    int pid;
     char **files;
     int fileCnt;
     sem_t *sem;
+    int pid;
+    char createDynamically;
     uint8_t dynamicFileBest[_HF_DYNAMIC_FILE_MAX_SZ];
     size_t dynamicFileBestSz;
 
