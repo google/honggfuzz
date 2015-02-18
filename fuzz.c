@@ -123,7 +123,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
 
     const int chance_one_in_x = 10;
-    if (util_rndGet(1, chance_one_in_x) != 1) {
+    if (util_rndGet(1, chance_one_in_x) == 1) {
         fuzzer->dynamicFileSz = util_rndGet(fuzzer->dynamicFileSz, sizeof(fuzzer->dynamicFile));
     }
 
