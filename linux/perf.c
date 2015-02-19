@@ -204,7 +204,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.sample_period = 100; /* investigate */
+        pe.sample_period = 30;  /* investigate */
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
 #if 0                           /* TODO: Need to investigate its impact */
         pe.wakeup_events = 100000;
