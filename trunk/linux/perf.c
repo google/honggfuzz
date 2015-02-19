@@ -93,7 +93,14 @@ static void arch_perfMmapParse(int fd)
 
     uint64_t dataHeadOff = pem->data_head % _HF_PERF_MMAP_DATA_SZ;
 /* Memory Barrier - see perf_event_open */
-#define rmb() __asm __volatile ("":::"memory")
+#if defined(__x86_64__)
+#define rmb()	__asm__ __volatile__ ("lfence":::"memory")
+#elif defined(__i386__)
+#define rmb()	__asm__ __volatile__ ("lock; addl $0,0(%%esp)": : :"memory")
+#else
+#define rmb()	__asm__ __volatile__ ("" ::: "memory")
+#endif
+
     rmb();
     uint64_t dataTailOff = pem->data_tail % _HF_PERF_MMAP_DATA_SZ;
     rmb();
