@@ -103,12 +103,6 @@ static inline void arch_perfMmapParse(int fd)
 
     rmb();
     uint64_t dataTailOff = pem->data_tail % _HF_PERF_MMAP_DATA_SZ;
-    rmb();
-
-    /* Ok, let it go */
-    pem->data_tail = pem->data_head;
-    ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
-
     uint8_t *dataTailPtr = perfMmap + getpagesize() + dataTailOff;
     size_t localDataLen = 0;
 
@@ -123,6 +117,10 @@ static inline void arch_perfMmapParse(int fd)
         memcpy(&localData[_HF_PERF_MMAP_DATA_SZ - dataTailOff], perfMmap + getpagesize(),
                dataHeadOff);
     }
+
+    /* Ok, let it go */
+    pem->data_tail = pem->data_head;
+    ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
 
     struct perf_event_header *peh = (struct perf_event_header *)localData;
 
