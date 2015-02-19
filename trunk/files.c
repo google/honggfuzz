@@ -186,9 +186,9 @@ static bool files_readdir(honggfuzz_t * hfuzz)
 bool files_init(honggfuzz_t * hfuzz)
 {
     hfuzz->files = malloc(sizeof(char *));
-    if (hfuzz->createDynamically && !hfuzz->inputFile) {
+    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE && !hfuzz->inputFile) {
         hfuzz->fileCnt = 1;
-        hfuzz->files[0] = "GENERATED";
+        hfuzz->files[0] = "DYNAMIC_FILE";
         return true;
     }
     if (hfuzz->externalCommand && !hfuzz->inputFile) {

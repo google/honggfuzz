@@ -158,13 +158,11 @@ static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
     arch_perfMmapParse(si->si_fd);
     errno = tmpErrno;
 
-    if (signum != SIGIO) {
-        return;
-    }
-    if (unused) {
-        return;
-    }
     return;
+/* Unused params */
+    if (signum || unused) {
+        return;
+    }
 }
 
 static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
@@ -175,7 +173,7 @@ static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 
 bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
 {
-    if (hfuzz->createDynamically == false) {
+    if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return true;
     }
 
@@ -190,30 +188,32 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     pe.exclude_callchain_kernel = 1;
     pe.pinned = 1;
 
-    switch (hfuzz->createDynamically) {
-    case 'i':
+    switch (hfuzz->dynFileMethod) {
+    case _HF_DYNFILE_INSTR_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_COUNT_HW_INSTRUCTIONS for PID: %d", pid);
         pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.inherit = 1;
         break;
-    case 'b':
+    case _HF_DYNFILE_BRANCH_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_COUNT_HW_BRANCH_INSTRUCTIONS for PID: %d", pid);
         pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.inherit = 1;
         break;
-    case 'e':
+    case _HF_DYNFILE_EDGE_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
         pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.sample_period = 1;   /* investigate */
+        pe.sample_period = 100; /* investigate */
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
-//        pe.wakeup_events = 100000;        /* investigate */
+#if 0                           /* TODO: Need to investigate its impact */
+        pe.wakeup_events = 100000;
+#endif
         break;
     default:
-        LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->createDynamically, pid);
+        LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->dynFileMethod, pid);
         return false;
         break;
     }
@@ -221,14 +221,14 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     *perfFd = perf_event_open(&pe, pid, -1, -1, 0);
     if (*perfFd == -1) {
         LOGMSG_P(l_WARN, "perf_event_open() failed");
-        if (hfuzz->createDynamically == 'e') {
+        if (hfuzz->dynFileMethod == _HF_DYNFILE_EDGE_COUNT) {
             LOGMSG(l_WARN,
                    "-De mode requires LBR feature present in Intel Haswell and newer CPUs (i.e. not in AMD)");
         }
         return false;
     }
 
-    if (hfuzz->createDynamically == 'e') {
+    if (hfuzz->dynFileMethod == _HF_DYNFILE_EDGE_COUNT) {
         sigset_t smask;
         sigemptyset(&smask);
         struct sigaction sa = {
@@ -289,7 +289,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
 
 void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
 {
-    if (hfuzz->createDynamically == false) {
+    if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return;
     }
     if (ioctl(perfFd, PERF_EVENT_IOC_DISABLE, 0) == -1) {
@@ -297,16 +297,16 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
         goto out;
     }
 
-    uint64_t count = 0LL;
-    if (hfuzz->createDynamically == 'e') {
+    if (hfuzz->dynFileMethod == _HF_DYNFILE_EDGE_COUNT) {
         arch_perfMmapParse(perfFd);
-        count = arch_perfCountBranches();
-    } else {
-        if (read(perfFd, &count, sizeof(count)) == sizeof(count)) {
-        } else {
-            LOGMSG_P(l_ERROR, "read(perfFd='%d') failed", perfFd);
-            goto out;
-        }
+        fuzzer->branchCnt = arch_perfCountBranches();
+        goto out;
+    }
+
+    uint64_t count = 0LL;
+    if (read(perfFd, &count, sizeof(count)) != sizeof(count)) {
+        LOGMSG_P(l_ERROR, "read(perfFd='%d') failed", perfFd);
+        goto out;
     }
     fuzzer->branchCnt = count;
 
