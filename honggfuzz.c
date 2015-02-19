@@ -125,6 +125,7 @@ int main(int argc, char **argv)
         .createDynamically = '\0',
         .dynamicFileBestSz = 1,
         .branchBestCnt = 0,
+        .branchBestCntIni = 0,
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
     };
 
@@ -134,7 +135,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "?hqsuf:d:e:r:m:c:D:t:a:R:n:N:l:p:");
+        c = getopt(argc, argv, "?hqsuf:d:e:r:m:c:D:t:a:R:n:N:l:p:b:");
         if (c < 0)
             break;
 
@@ -205,6 +206,9 @@ int main(int argc, char **argv)
             break;
         case 'p':
             hfuzz.pid = atoi(optarg);
+            break;
+        case 'b':
+            hfuzz.branchBestCntIni = atoi(optarg);
             break;
         default:
             break;

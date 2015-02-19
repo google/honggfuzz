@@ -136,6 +136,10 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         memcpy(hfuzz->dynamicFileBest, buf, toCopy);
         hfuzz->dynamicFileBestSz = toCopy;
         files_unmapFileCloseFd(buf, fileSz, srcfd);
+
+        if (hfuzz->branchBestCntIni) {
+            hfuzz->branchBestCnt = hfuzz->branchBestCntIni;
+        }
     }
 
     memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
@@ -368,6 +372,11 @@ static void *fuzz_threadNew(void *arg)
             memcpy(hfuzz->dynamicFileBest, fuzzer.dynamicFile, fuzzer.dynamicFileSz);
             hfuzz->dynamicFileBestSz = fuzzer.dynamicFileSz;
             hfuzz->branchBestCnt = fuzzer.branchCnt;
+
+            int fd = open("CURRENT_BEST", O_CREAT | O_WRONLY, 0644);
+            files_writeToFd(fd, fuzzer.dynamicFile, fuzzer.dynamicFileSz);
+            close(fd);
+
         }
         while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
     }
