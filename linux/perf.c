@@ -97,6 +97,11 @@ static void arch_perfMmapParse(int fd)
     rmb();
     uint64_t dataTailOff = pem->data_tail % _HF_PERF_MMAP_DATA_SZ;
     rmb();
+
+    /* Ok, let it go */
+    pem->data_tail = pem->data_head;
+    ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
+
     uint8_t *dataTailPtr = perfMmap + getpagesize() + dataTailOff;
     size_t localDataLen = 0;
 
@@ -114,10 +119,6 @@ static void arch_perfMmapParse(int fd)
 
     struct perf_event_header *peh = (struct perf_event_header *)localData;
 
-/*
-    int *i = (int *)0x444444;
-    *i = 5;
-*/
     while ((uintptr_t) peh < (uintptr_t) (localData + localDataLen)) {
         if (peh->size == 0) {
             break;
@@ -131,7 +132,6 @@ static void arch_perfMmapParse(int fd)
             peh = (struct perf_event_header *)((uint8_t *) peh + peh->size);
             continue;
         }
-//        LOGMSG(l_WARN, "GOT IT");
 
         uint64_t bnr = *(uint64_t *) ((uint8_t *) peh + sizeof(peh));
         struct perf_branch_entry *lbr =
@@ -143,9 +143,6 @@ static void arch_perfMmapParse(int fd)
 
         peh = (struct perf_event_header *)((uint8_t *) peh + peh->size);
     }
-
-    pem->data_tail = pem->data_head;
-    ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
 }
 
 static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
