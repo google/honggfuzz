@@ -122,7 +122,7 @@ int main(int argc, char **argv)
         .files = NULL,
         .fileCnt = 0,
         .pid = 0,
-        .createDynamically = '\0',
+        .dynFileMethod = _HF_DYNFILE_NONE,
         .dynamicFileBestSz = 1,
         .branchBestCnt = 0,
         .branchBestCntIni = 0,
@@ -174,13 +174,13 @@ int main(int argc, char **argv)
         case 'D':
             switch (optarg[0]) {
             case 'i':
-                hfuzz.createDynamically = 'i';
+                hfuzz.dynFileMethod = _HF_DYNFILE_INSTR_COUNT;
                 break;
             case 'b':
-                hfuzz.createDynamically = 'b';
+                hfuzz.dynFileMethod = _HF_DYNFILE_BRANCH_COUNT;
                 break;
             case 'e':
-                hfuzz.createDynamically = 'e';
+                hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_COUNT;
                 break;
             default:
                 usage(EXIT_FAILURE);

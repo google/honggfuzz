@@ -319,7 +319,7 @@ static void *fuzz_threadNew(void *arg)
     strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
     fuzz_getFileName(hfuzz, fuzzer.fileName);
 
-    if (hfuzz->createDynamically) {
+    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         if (!fuzz_prepareFileDynamically(hfuzz, &fuzzer, rnd_index)) {
             exit(EXIT_FAILURE);
         }
@@ -362,7 +362,7 @@ static void *fuzz_threadNew(void *arg)
     arch_reapChild(hfuzz, &fuzzer);
     unlink(fuzzer.fileName);
 
-    if (hfuzz->createDynamically) {
+    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
         if (fuzzer.branchCnt >= hfuzz->branchBestCnt) {
             LOGMSG(l_INFO,

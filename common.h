@@ -48,6 +48,13 @@
 /* Maximal size of a dynamically created file (-D) */
 #define _HF_DYNAMIC_FILE_MAX_SZ (256 * 1024)
 
+typedef enum {
+    _HF_DYNFILE_NONE = 0,
+    _HF_DYNFILE_INSTR_COUNT,
+    _HF_DYNFILE_BRANCH_COUNT,
+    _HF_DYNFILE_EDGE_COUNT,
+} dynFileMethod_t;
+
 typedef struct {
     char **cmdline;
     char *inputFile;
@@ -70,13 +77,14 @@ typedef struct {
     sem_t *sem;
     int pid;
 
-    char createDynamically;
+    /* For the linux/ code */
     uint8_t dynamicFileBest[_HF_DYNAMIC_FILE_MAX_SZ];
     size_t dynamicFileBestSz;
-    /* For linux/ code */
+    dynFileMethod_t dynFileMethod;
     int64_t branchBestCnt;
     int64_t branchBestCntIni;
     pthread_mutex_t dynamicFile_mutex;
+
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
