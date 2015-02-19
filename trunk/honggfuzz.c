@@ -125,6 +125,7 @@ int main(int argc, char **argv)
         .createDynamically = '\0',
         .dynamicFileBestSz = 1,
         .branchBestCnt = 0,
+        .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
     };
 
     printf(AB PROG_NAME " version " PROG_VERSION " by " PROG_AUTHORS AC "\n");

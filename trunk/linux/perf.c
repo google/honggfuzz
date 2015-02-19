@@ -72,6 +72,7 @@ static size_t arch_perfCountBranches(void)
 
 static void arch_perfAddFromToBranch(uint64_t from, uint64_t to)
 {
+    from = 0ULL;
     for (size_t i = 0; i < _HF_PERF_BRANCHES_SZ; i++) {
         if (perfBranches[i].from == from && perfBranches[i].to == to) {
             break;
