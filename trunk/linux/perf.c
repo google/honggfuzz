@@ -41,7 +41,7 @@
 /*
  * 1 + 16 pages
  */
-#define _HF_PERF_MMAP_DATA_SZ (getpagesize() << 3)
+#define _HF_PERF_MMAP_DATA_SZ (getpagesize() << 6)
 #define _HF_PERF_MMAP_TOT_SZ (getpagesize() + _HF_PERF_MMAP_DATA_SZ)
 
 static __thread uint8_t *perfMmap = NULL;
@@ -70,7 +70,7 @@ static size_t arch_perfCountBranches(void)
     return i;
 }
 
-static void arch_perfAddFromToBranch(uint64_t from, uint64_t to)
+static inline void arch_perfAddFromToBranch(uint64_t from, uint64_t to)
 {
     for (size_t i = 0; i < _HF_PERF_BRANCHES_SZ; i++) {
         if (perfBranches[i].from == from && perfBranches[i].to == to) {
@@ -84,7 +84,7 @@ static void arch_perfAddFromToBranch(uint64_t from, uint64_t to)
     }
 }
 
-static void arch_perfMmapParse(int fd)
+static inline void arch_perfMmapParse(int fd)
 {
     uint8_t localData[_HF_PERF_MMAP_DATA_SZ];
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmap;
@@ -155,13 +155,12 @@ static void arch_perfMmapParse(int fd)
 static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
 {
     int tmpErrno = errno;
+    arch_perfMmapParse(si->si_fd);
+    errno = tmpErrno;
+
     if (signum != SIGIO) {
         return;
     }
-
-    arch_perfMmapParse(si->si_fd);
-
-    errno = tmpErrno;
     if (unused) {
         return;
     }
@@ -209,9 +208,9 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.sample_period = 100; /* investigate */
+        pe.sample_period = 1;   /* investigate */
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
-        pe.wakeup_events = 1000000;     /* investigate */
+//        pe.wakeup_events = 100000;        /* investigate */
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->createDynamically, pid);
