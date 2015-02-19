@@ -86,6 +86,7 @@ static void usage(bool exit_success)
            "               " AB "'i' " AC "- PERF_COUNT_HW_INSTRUCTIONS\n"
            "               " AB "'b' " AC "- PERF_COUNT_HW_BRANCH_INSTRUCTIONS\n"
            "               " AB "'e' " AC "- PERF_SAMPLE_BRANCH_STACK (count unique branch edges)\n"
+           " [" AB "-F val" AC "] : [Linux] Maximal size of a dynamic file (-D)\n"
 #endif /* _HF_ARCH == "LINUX" */
            "Usage:"
            AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n");
@@ -123,7 +124,9 @@ int main(int argc, char **argv)
         .fileCnt = 0,
         .pid = 0,
         .dynFileMethod = _HF_DYNFILE_NONE,
+        .dynamicFileBest = NULL,
         .dynamicFileBestSz = 1,
+        .dynamicFileMaxSz = 1024,
         .branchBestCnt = 0,
         .branchBestCntIni = 0,
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
@@ -135,7 +138,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "?hqsuf:d:e:r:m:c:D:t:a:R:n:N:l:p:b:");
+        c = getopt(argc, argv, "?hqsuf:d:e:r:m:c:D:t:a:R:n:N:l:p:F:b:");
         if (c < 0)
             break;
 
@@ -207,6 +210,9 @@ int main(int argc, char **argv)
         case 'p':
             hfuzz.pid = atoi(optarg);
             break;
+        case 'F':
+            hfuzz.dynamicFileMaxSz = atoi(optarg);
+            break;
         case 'b':
             hfuzz.branchBestCntIni = atoi(optarg);
             break;
@@ -215,6 +221,7 @@ int main(int argc, char **argv)
         }
     }
     hfuzz.cmdline = &argv[optind];
+    hfuzz.dynamicFileBest = alloca(hfuzz.dynamicFileMaxSz);
 
     log_setMinLevel(ll);
 
