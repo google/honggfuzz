@@ -147,24 +147,27 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
     while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
 
-    uint64_t choice = util_rndGet(1, 20);
-    if (choice <= 16) {
-        fuzzer->dynamicFileSz = fuzzer->dynamicFileSz + choice;
-    }
-    if (choice == 17) {
-        fuzzer->dynamicFileSz = util_rndGet(1, fuzzer->dynamicFileSz);
-    }
-    if (choice == 18) {
-        fuzzer->dynamicFileSz = util_rndGet(fuzzer->dynamicFileSz, sizeof(fuzzer->dynamicFile));
-    }
-    if (fuzzer->dynamicFileSz > sizeof(fuzzer->dynamicFile)) {
-        fuzzer->dynamicFileSz = sizeof(fuzzer->dynamicFile);
-    }
+    /* The first pass should be on an empty/initial file */
+    if (hfuzz->branchBestCnt > 0) {
+        uint64_t choice = util_rndGet(1, 20);
+        if (choice <= 16) {
+            fuzzer->dynamicFileSz = fuzzer->dynamicFileSz + choice;
+        }
+        if (choice == 17) {
+            fuzzer->dynamicFileSz = util_rndGet(1, fuzzer->dynamicFileSz);
+        }
+        if (choice == 18) {
+            fuzzer->dynamicFileSz = util_rndGet(fuzzer->dynamicFileSz, sizeof(fuzzer->dynamicFile));
+        }
+        if (fuzzer->dynamicFileSz > sizeof(fuzzer->dynamicFile)) {
+            fuzzer->dynamicFileSz = sizeof(fuzzer->dynamicFile);
+        }
 
-    LOGMSG(l_DEBUG, "DynamicFile: old size:'%zu' new_size:'%zu'", hfuzz->dynamicFileBestSz,
-           fuzzer->dynamicFileSz);
+        LOGMSG(l_DEBUG, "DynamicFile: old size:'%zu' new_size:'%zu'", hfuzz->dynamicFileBestSz,
+               fuzzer->dynamicFileSz);
 
-    fuzz_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
+        fuzz_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
+    }
 
     int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
     if (dstfd == -1) {
