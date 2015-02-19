@@ -41,7 +41,7 @@
 /*
  * 1 + 16 pages
  */
-#define _HF_PERF_MMAP_DATA_SZ (getpagesize() << 6)
+#define _HF_PERF_MMAP_DATA_SZ (getpagesize() << 7)
 #define _HF_PERF_MMAP_TOT_SZ (getpagesize() + _HF_PERF_MMAP_DATA_SZ)
 
 static __thread uint8_t *perfMmap = NULL;
@@ -199,16 +199,44 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.inherit = 1;
         break;
-    case _HF_DYNFILE_EDGE_COUNT:
+
+#define _HF_SAMPLE_PERIOD 25    /* investigate */
+#define _HF_WAKEUP_EVENTS 0     /* investigate */
+    case _HF_DYNFILE_EDGE_ANY_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
         pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.sample_period = 30;  /* investigate */
+        pe.sample_period = _HF_SAMPLE_PERIOD;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
-#if 0                           /* TODO: Need to investigate its impact */
-        pe.wakeup_events = 100000;
-#endif
+        pe.wakeup_events = _HF_WAKEUP_EVENTS;
+        break;
+    case _HF_DYNFILE_EDGE_CALL_COUNT:
+        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
+        pe.type = PERF_TYPE_HARDWARE;
+        pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+        pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
+        pe.sample_period = _HF_SAMPLE_PERIOD;
+        pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
+        pe.wakeup_events = _HF_WAKEUP_EVENTS;
+        break;
+    case _HF_DYNFILE_EDGE_RETURN_COUNT:
+        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
+        pe.type = PERF_TYPE_HARDWARE;
+        pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+        pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
+        pe.sample_period = _HF_SAMPLE_PERIOD;
+        pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
+        pe.wakeup_events = _HF_WAKEUP_EVENTS;
+        break;
+    case _HF_DYNFILE_EDGE_IND_COUNT:
+        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
+        pe.type = PERF_TYPE_HARDWARE;
+        pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+        pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
+        pe.sample_period = _HF_SAMPLE_PERIOD;
+        pe.branch_sample_type = PERF_SAMPLE_BRANCH_IND_CALL;
+        pe.wakeup_events = _HF_WAKEUP_EVENTS;
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->dynFileMethod, pid);
@@ -219,14 +247,14 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     *perfFd = perf_event_open(&pe, pid, -1, -1, 0);
     if (*perfFd == -1) {
         LOGMSG_P(l_WARN, "perf_event_open() failed");
-        if (hfuzz->dynFileMethod == _HF_DYNFILE_EDGE_COUNT) {
+        if (hfuzz->dynFileMethod >= _HF_DYNFILE_EDGE_ANY_COUNT) {
             LOGMSG(l_WARN,
                    "-De mode requires LBR feature present in Intel Haswell and newer CPUs (i.e. not in AMD)");
         }
         return false;
     }
 
-    if (hfuzz->dynFileMethod == _HF_DYNFILE_EDGE_COUNT) {
+    if (hfuzz->dynFileMethod >= _HF_DYNFILE_EDGE_ANY_COUNT) {
         sigset_t smask;
         sigemptyset(&smask);
         struct sigaction sa = {
@@ -296,7 +324,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
     }
 
     uint64_t count = 0LL;
-    if (hfuzz->dynFileMethod == _HF_DYNFILE_EDGE_COUNT) {
+    if (hfuzz->dynFileMethod >= _HF_DYNFILE_EDGE_ANY_COUNT) {
         arch_perfMmapParse(perfFd);
         count = fuzzer->branchCnt = arch_perfCountBranches();
         goto out;
@@ -310,7 +338,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
 
  out:
     LOGMSG(l_INFO,
-           "%lld branch events seen (highest: %lld), fileSz: '%zu'/bestFileSz: '%zu'",
+           "%" PRIu64 " perf events seen (highest: %lld), fileSz/BestSz: %zu/%zu",
            count, hfuzz->branchBestCnt, fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz);
 
     if (perfMmap != NULL) {

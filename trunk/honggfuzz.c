@@ -85,7 +85,10 @@ static void usage(bool exit_success)
            "            Available counters: \n"
            "               " AB "'i' " AC "- PERF_COUNT_HW_INSTRUCTIONS\n"
            "               " AB "'b' " AC "- PERF_COUNT_HW_BRANCH_INSTRUCTIONS\n"
-           "               " AB "'e' " AC "- PERF_SAMPLE_BRANCH_STACK (count unique branch edges)\n"
+           "               " AB "'a' " AC "- PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY\n"
+           "               " AB "'c' " AC "- PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY_CALL\n"
+           "               " AB "'r' " AC "- PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY_RETURN\n"
+           "               " AB "'r' " AC "- PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_IND_CALL\n"
            " [" AB "-F val" AC "] : [Linux] Maximal size of a dynamic file (-D)\n"
 #endif /* _HF_ARCH == "LINUX" */
            "Usage:"
@@ -182,8 +185,17 @@ int main(int argc, char **argv)
             case 'b':
                 hfuzz.dynFileMethod = _HF_DYNFILE_BRANCH_COUNT;
                 break;
-            case 'e':
-                hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_COUNT;
+            case 'a':
+                hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_ANY_COUNT;
+                break;
+            case 'c':
+                hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_CALL_COUNT;
+                break;
+            case 'r':
+                hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_RETURN_COUNT;
+                break;
+            case 'n':
+                hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_IND_COUNT;
                 break;
             default:
                 usage(EXIT_FAILURE);
