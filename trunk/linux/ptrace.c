@@ -41,7 +41,6 @@
 #include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
-#include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/uio.h>
@@ -88,8 +87,6 @@ bool arch_ptraceEnable(honggfuzz_t * hfuzz)
         LOGMSG_P(l_FATAL, "Couldn't attach ptrace to pid %d", getpid());
         return false;
     }
-
-    syscall(__NR_gettid, SIGSTOP);
 
     return true;
 }
