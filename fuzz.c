@@ -131,8 +131,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
             return false;
         }
         size_t toCopy =
-            (size_t) fileSz <
-            sizeof(hfuzz->dynamicFileBest) ? (size_t) fileSz : sizeof(hfuzz->dynamicFileBest);
+            (size_t) fileSz < hfuzz->dynamicFileMaxSz ? (size_t) fileSz : hfuzz->dynamicFileMaxSz;
         memcpy(hfuzz->dynamicFileBest, buf, toCopy);
         hfuzz->dynamicFileBestSz = toCopy;
         files_unmapFileCloseFd(buf, fileSz, srcfd);
@@ -157,10 +156,10 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
             fuzzer->dynamicFileSz = util_rndGet(1, fuzzer->dynamicFileSz);
         }
         if (choice == 18) {
-            fuzzer->dynamicFileSz = util_rndGet(fuzzer->dynamicFileSz, sizeof(fuzzer->dynamicFile));
+            fuzzer->dynamicFileSz = util_rndGet(fuzzer->dynamicFileSz, hfuzz->dynamicFileMaxSz);
         }
-        if (fuzzer->dynamicFileSz > sizeof(fuzzer->dynamicFile)) {
-            fuzzer->dynamicFileSz = sizeof(fuzzer->dynamicFile);
+        if (fuzzer->dynamicFileSz > hfuzz->dynamicFileMaxSz) {
+            fuzzer->dynamicFileSz = hfuzz->dynamicFileMaxSz;
         }
 
         LOGMSG(l_DEBUG, "DynamicFile: old size:'%zu' new_size:'%zu'", hfuzz->dynamicFileBestSz,
@@ -314,6 +313,7 @@ static void *fuzz_threadNew(void *arg)
         .access = 0ULL,
         .exception = 0,
         .dynamicFileSz = 0,
+        .dynamicFile = alloca(hfuzz->dynamicFileMaxSz),
         .branchCnt = 0,
         .report = {'\0'}
     };
@@ -406,6 +406,7 @@ static void *fuzz_threadPid(void *arg)
         .access = 0ULL,
         .exception = 0,
         .dynamicFileSz = 0,
+        .dynamicFile = alloca(hfuzz->dynamicFileMaxSz),
         .branchCnt = 0,
         .report = {'\0'}
     };

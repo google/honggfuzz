@@ -45,9 +45,6 @@
 /* Default stack-size of created threads. Must be bigger then _HF_DYNAMIC_FILE_MAX_SZ */
 #define _HF_PTHREAD_STACKSIZE (1024 * 1024 * 4) /* 2MB */
 
-/* Maximal size of a dynamically created file (-D) */
-#define _HF_DYNAMIC_FILE_MAX_SZ (256 * 1024)
-
 typedef enum {
     _HF_DYNFILE_NONE = 0,
     _HF_DYNFILE_INSTR_COUNT,
@@ -78,13 +75,13 @@ typedef struct {
     int pid;
 
     /* For the linux/ code */
-    uint8_t dynamicFileBest[_HF_DYNAMIC_FILE_MAX_SZ];
+    uint8_t *dynamicFileBest;
     size_t dynamicFileBestSz;
+    size_t dynamicFileMaxSz;
     dynFileMethod_t dynFileMethod;
     int64_t branchBestCnt;
     int64_t branchBestCntIni;
     pthread_mutex_t dynamicFile_mutex;
-
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
@@ -99,7 +96,7 @@ typedef struct fuzzer_t {
     char report[8192];
 
     /* For linux/ code */
-    uint8_t dynamicFile[_HF_DYNAMIC_FILE_MAX_SZ];
+    uint8_t *dynamicFile;
     size_t dynamicFileSz;
     int64_t branchCnt;
 } fuzzer_t;

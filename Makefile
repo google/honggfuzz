@@ -114,8 +114,9 @@ files.o: common.h files.h log.h
 fuzz.o: common.h fuzz.h arch.h files.h log.h report.h util.h
 util.o: common.h log.h
 report.o: common.h report.h log.h util.h
+linux/arch.o: common.h arch.h linux/perf.h linux/ptrace.h log.h util.h
+linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
+linux/perf.o: common.h linux/perf.h log.h
 linux/ptrace.o: common.h linux/ptrace.h files.h linux/bfd.h linux/unwind.h
 linux/ptrace.o: log.h util.h
-linux/arch.o: common.h arch.h linux/ptrace.h log.h util.h
-linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
 linux/unwind.o: common.h linux/unwind.h log.h
