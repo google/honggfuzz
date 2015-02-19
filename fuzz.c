@@ -119,12 +119,15 @@ static size_t fuzz_appendOrTrunc(int fd, off_t fileSz)
 
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
 {
+    while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
+
     if (hfuzz->inputFile && hfuzz->branchBestCnt == 0) {
         int srcfd;
         off_t fileSz;
         uint8_t *buf = files_mapFileToRead(hfuzz->files[rnd_index], &fileSz, &srcfd);
         if (buf == NULL) {
             LOGMSG(l_ERROR, "Couldn't open and map '%s' in R/O mode", hfuzz->files[rnd_index]);
+            while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
             return false;
         }
         size_t toCopy =
@@ -137,6 +140,8 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
     memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
     fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
+
+    while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
 
     uint64_t choice = util_rndGet(1, 20);
     if (choice <= 16) {
@@ -354,6 +359,7 @@ static void *fuzz_threadNew(void *arg)
     unlink(fuzzer.fileName);
 
     if (hfuzz->createDynamically) {
+        while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
         if (fuzzer.branchCnt >= hfuzz->branchBestCnt) {
             LOGMSG(l_INFO,
                    "New file: OLD_SZ: '%llu', NEW_SZ: '%llu', OLD_BRANCHES: '%llu', NEW_BRACNHES: '%llu'",
@@ -363,6 +369,7 @@ static void *fuzz_threadNew(void *arg)
             hfuzz->dynamicFileBestSz = fuzzer.dynamicFileSz;
             hfuzz->branchBestCnt = fuzzer.branchCnt;
         }
+        while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
     }
 
     report_Report(hfuzz, fuzzer.report);

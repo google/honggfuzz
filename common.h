@@ -25,6 +25,7 @@
 #define _COMMON_H_
 
 #include <limits.h>
+#include <pthread.h>
 #include <semaphore.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -68,12 +69,13 @@ typedef struct {
     int fileCnt;
     sem_t *sem;
     int pid;
+
     char createDynamically;
     uint8_t dynamicFileBest[_HF_DYNAMIC_FILE_MAX_SZ];
     size_t dynamicFileBestSz;
-
     /* For linux/ code */
     int64_t branchBestCnt;
+    pthread_mutex_t dynamicFile_mutex;
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
