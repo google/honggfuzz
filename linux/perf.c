@@ -46,7 +46,7 @@
 
 static __thread uint8_t *perfMmap = NULL;
 
-#define _HF_PERF_BRANCHES_SZ (4096)
+#define _HF_PERF_BRANCHES_SZ (8192)
 /*  *INDENT-OFF* */
 static __thread struct {
     uint64_t from;
@@ -200,7 +200,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.inherit = 1;
         break;
 
-#define _HF_SAMPLE_PERIOD 25    /* investigate */
+#define _HF_SAMPLE_PERIOD 125    /* investigate */
 #define _HF_WAKEUP_EVENTS 0     /* investigate */
     case _HF_DYNFILE_EDGE_ANY_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
