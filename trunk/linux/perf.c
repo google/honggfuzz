@@ -305,7 +305,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
     fuzzer->branchCnt = count;
 
     LOGMSG(l_INFO,
-           "Executed %lld branch instructions (best: %lld), fileSz: '%zu', bestFileSz: '%zu'",
+           "%lld branch events seen (highest: %lld), fileSz: '%zu'/bestFileSz: '%zu'",
            count, hfuzz->branchBestCnt, fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz);
 
  out:
