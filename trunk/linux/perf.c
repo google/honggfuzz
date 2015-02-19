@@ -41,7 +41,7 @@
 /*
  * 1 + 16 pages
  */
-#define _HF_PERF_MMAP_DATA_SZ (getpagesize() << 5)
+#define _HF_PERF_MMAP_DATA_SZ (getpagesize() << 3)
 #define _HF_PERF_MMAP_TOT_SZ (getpagesize() + _HF_PERF_MMAP_DATA_SZ)
 
 static __thread uint8_t *perfMmap = NULL;
@@ -86,11 +86,11 @@ static void arch_perfAddFromToBranch(uint64_t from, uint64_t to)
 
 static void arch_perfMmapParse(int fd)
 {
+    uint8_t localData[_HF_PERF_MMAP_DATA_SZ];
+    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmap;
+
     ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
 
-    uint8_t localData[_HF_PERF_MMAP_DATA_SZ];
-
-    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmap;
     uint64_t dataHeadOff = pem->data_head % _HF_PERF_MMAP_DATA_SZ;
 /* Memory Barrier - see perf_event_open */
 #define rmb() __asm __volatile ("":::"memory")
@@ -202,9 +202,9 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.sample_period = 150; /* investigate */
+        pe.sample_period = 100; /* investigate */
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
-        pe.wakeup_events = 10000;       /* investigate */
+        pe.wakeup_events = 1000000;     /* investigate */
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->createDynamically, pid);
