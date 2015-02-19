@@ -88,7 +88,7 @@ static void usage(bool exit_success)
            "               " AB "'a' " AC "- PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY\n"
            "               " AB "'c' " AC "- PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY_CALL\n"
            "               " AB "'r' " AC "- PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY_RETURN\n"
-           "               " AB "'r' " AC "- PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_IND_CALL\n"
+           "               " AB "'n' " AC "- PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_IND_CALL\n"
            " [" AB "-F val" AC "] : [Linux] Maximal size of a dynamic file (-D)\n"
 #endif /* _HF_ARCH == "LINUX" */
            "Usage:"
