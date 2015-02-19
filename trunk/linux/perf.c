@@ -41,7 +41,7 @@
 /*
  * 1 + 16 pages
  */
-#define _HF_PERF_MMAP_DATA_SZ (getpagesize() << 7)
+#define _HF_PERF_MMAP_DATA_SZ (getpagesize() << 4)
 #define _HF_PERF_MMAP_TOT_SZ (getpagesize() + _HF_PERF_MMAP_DATA_SZ)
 
 static __thread uint8_t *perfMmap = NULL;
@@ -200,8 +200,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.inherit = 1;
         break;
 
-#define _HF_SAMPLE_PERIOD 125   /* investigate */
-#define _HF_WAKEUP_EVENTS 0     /* investigate */
+#define _HF_SAMPLE_PERIOD 120   /* investigate */
     case _HF_DYNFILE_EDGE_ANY_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
         pe.type = PERF_TYPE_HARDWARE;
@@ -209,7 +208,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
         pe.sample_period = _HF_SAMPLE_PERIOD;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
-        pe.wakeup_events = _HF_WAKEUP_EVENTS;
         break;
     case _HF_DYNFILE_EDGE_CALL_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
@@ -218,7 +216,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
         pe.sample_period = _HF_SAMPLE_PERIOD;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
-        pe.wakeup_events = _HF_WAKEUP_EVENTS;
         break;
     case _HF_DYNFILE_EDGE_RETURN_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
@@ -227,7 +224,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
         pe.sample_period = _HF_SAMPLE_PERIOD;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
-        pe.wakeup_events = _HF_WAKEUP_EVENTS;
         break;
     case _HF_DYNFILE_EDGE_IND_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
@@ -236,7 +232,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
         pe.sample_period = _HF_SAMPLE_PERIOD;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_IND_CALL;
-        pe.wakeup_events = _HF_WAKEUP_EVENTS;
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->dynFileMethod, pid);
