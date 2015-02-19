@@ -297,24 +297,24 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
         goto out;
     }
 
+    uint64_t count = 0LL;
     if (hfuzz->dynFileMethod == _HF_DYNFILE_EDGE_COUNT) {
         arch_perfMmapParse(perfFd);
-        fuzzer->branchCnt = arch_perfCountBranches();
+        count = fuzzer->branchCnt = arch_perfCountBranches();
         goto out;
     }
 
-    uint64_t count = 0LL;
     if (read(perfFd, &count, sizeof(count)) != sizeof(count)) {
         LOGMSG_P(l_ERROR, "read(perfFd='%d') failed", perfFd);
         goto out;
     }
     fuzzer->branchCnt = count;
 
+ out:
     LOGMSG(l_INFO,
            "%lld branch events seen (highest: %lld), fileSz: '%zu'/bestFileSz: '%zu'",
            count, hfuzz->branchBestCnt, fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz);
 
- out:
     if (perfMmap != NULL) {
         munmap(perfMmap, _HF_PERF_MMAP_TOT_SZ);
     }
