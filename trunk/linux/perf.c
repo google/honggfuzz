@@ -310,6 +310,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
 
 void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
 {
+    uint64_t count = 0LL;
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return;
     }
@@ -318,7 +319,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
         goto out;
     }
 
-    uint64_t count = 0LL;
     if (hfuzz->dynFileMethod >= _HF_DYNFILE_EDGE_ANY_COUNT) {
         arch_perfMmapParse(perfFd);
         count = fuzzer->branchCnt = arch_perfCountBranches();
