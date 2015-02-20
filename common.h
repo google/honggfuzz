@@ -53,6 +53,7 @@ typedef enum {
     _HF_DYNFILE_EDGE_CALL_COUNT,
     _HF_DYNFILE_EDGE_RETURN_COUNT,
     _HF_DYNFILE_EDGE_IND_COUNT,
+    _HF_DYNFILE_EDGE_COND_COUNT,
 } dynFileMethod_t;
 
 typedef struct {

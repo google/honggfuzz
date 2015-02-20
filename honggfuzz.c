@@ -89,6 +89,7 @@ static void usage(bool exit_success)
            "               " AB "'c' " AC "- PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY_CALL\n"
            "               " AB "'r' " AC "- PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY_RETURN\n"
            "               " AB "'n' " AC "- PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_IND_CALL\n"
+           "               " AB "'o' " AC "- PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_COND\n"
            " [" AB "-F val" AC "] : [Linux] Maximal size of a dynamic file (-D)\n"
 #endif /* _HF_ARCH == "LINUX" */
            "Usage:"
@@ -196,6 +197,9 @@ int main(int argc, char **argv)
                 break;
             case 'n':
                 hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_IND_COUNT;
+                break;
+            case 'o':
+                hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_COND_COUNT;
                 break;
             default:
                 usage(EXIT_FAILURE);
