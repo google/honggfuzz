@@ -91,7 +91,6 @@ static inline void arch_perfMmapParse(int fd)
 
     ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
 
-    uint64_t dataHeadOff = pem->data_head % _HF_PERF_MMAP_DATA_SZ;
 /* Memory Barrier - see perf_event_open */
 #if defined(__x86_64__)
 #define rmb()	__asm__ __volatile__ ("lfence" ::: "memory")
@@ -101,7 +100,9 @@ static inline void arch_perfMmapParse(int fd)
 #define rmb()	__asm__ __volatile__ ("" ::: "memory")
 #endif
 
+    uint64_t dataHeadOff = pem->data_head % _HF_PERF_MMAP_DATA_SZ;
     rmb();
+
     uint64_t dataTailOff = pem->data_tail % _HF_PERF_MMAP_DATA_SZ;
     uint8_t *dataTailPtr = perfMmap + getpagesize() + dataTailOff;
     size_t localDataLen = 0;
@@ -200,7 +201,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.inherit = 1;
         break;
 
-#define _HF_SAMPLE_PERIOD 125   /* investigate */
+#define _HF_SAMPLE_PERIOD 100   /* investigate */
     case _HF_DYNFILE_EDGE_ANY_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
         pe.type = PERF_TYPE_HARDWARE;
@@ -232,6 +233,17 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
         pe.sample_period = _HF_SAMPLE_PERIOD;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_IND_CALL;
+        break;
+#ifndef PERF_SAMPLE_BRANCH_COND
+#define PERF_SAMPLE_BRANCH_COND (1U << 10)
+#endif                          /* PERF_SAMPLE_BRANCH_COND */
+    case _HF_DYNFILE_EDGE_COND_COUNT:
+        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_COND for PID: %d", pid);
+        pe.type = PERF_TYPE_HARDWARE;
+        pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+        pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
+        pe.sample_period = _HF_SAMPLE_PERIOD;
+        pe.branch_sample_type = PERF_SAMPLE_BRANCH_COND;
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->dynFileMethod, pid);
