@@ -364,7 +364,7 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs,
 
 static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
-    uint64_t pc = NULL;
+    uint64_t pc = 0ULL;
 
     char instr[_HF_INSTR_SZ] = "\x00";
     siginfo_t si;

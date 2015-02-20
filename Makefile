@@ -18,12 +18,12 @@
 #   limitations under the License.
 
 
-CC = gcc
+CC ?= gcc
 CFLAGS += -c -std=c11 -I. -I/usr/local/include -I/usr/include \
 	-D_GNU_SOURCE \
-	-Wall -Wextra -Wno-override-init -Werror
+	-Wall -Wextra -Wno-initializer-overrides -Wno-override-init -Wno-unknown-warning-option -Werror
 
-LD = gcc
+LD = $(CC)
 LDFLAGS += -lm -lpthread -L/usr/local/include -L/usr/include
 
 SRCS = honggfuzz.c log.c files.c fuzz.c util.c report.c
