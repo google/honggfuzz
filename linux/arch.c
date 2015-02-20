@@ -37,7 +37,6 @@
 #include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
-#include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/user.h>
@@ -173,7 +172,6 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         return false;
     }
 
-    syscall(__NR_sched_yield);
     execvp(args[0], args);
 
     util_recoverStdio();
