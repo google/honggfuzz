@@ -41,7 +41,7 @@
 /*
  * 1 + 16 pages
  */
-#define _HF_PERF_MMAP_DATA_SZ (getpagesize() << 4)
+#define _HF_PERF_MMAP_DATA_SZ (getpagesize() << 6)
 #define _HF_PERF_MMAP_TOT_SZ (getpagesize() + _HF_PERF_MMAP_DATA_SZ)
 
 static __thread uint8_t *perfMmap = NULL;
@@ -200,7 +200,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.inherit = 1;
         break;
 
-#define _HF_SAMPLE_PERIOD 120   /* investigate */
+#define _HF_SAMPLE_PERIOD 125   /* investigate */
     case _HF_DYNFILE_EDGE_ANY_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
         pe.type = PERF_TYPE_HARDWARE;

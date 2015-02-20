@@ -369,9 +369,9 @@ static void *fuzz_threadNew(void *arg)
         while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
         if (fuzzer.branchCnt >= hfuzz->branchBestCnt) {
             LOGMSG(l_INFO,
-                   "New file: OLD_SZ: '%llu', NEW_SZ: '%llu', OLD_BRANCHES: '%llu', NEW_BRACNHES: '%llu'",
-                   hfuzz->dynamicFileBestSz, fuzzer.dynamicFileSz, hfuzz->branchBestCnt,
-                   fuzzer.branchCnt);
+                   "NewSz/OldSz: %zu/%zu', Branch events Current/Highest: %llu/%llu'",
+                   fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz, fuzzer.branchCnt,
+                   hfuzz->branchBestCnt);
             memcpy(hfuzz->dynamicFileBest, fuzzer.dynamicFile, fuzzer.dynamicFileSz);
             hfuzz->dynamicFileBestSz = fuzzer.dynamicFileSz;
             hfuzz->branchBestCnt = fuzzer.branchCnt;
