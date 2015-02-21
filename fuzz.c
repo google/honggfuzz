@@ -376,9 +376,16 @@ static void *fuzz_threadNew(void *arg)
             hfuzz->dynamicFileBestSz = fuzzer.dynamicFileSz;
             hfuzz->branchBestCnt = fuzzer.branchCnt;
 
-            int fd = open("CURRENT_BEST", O_CREAT | O_WRONLY | O_TRUNC, 0644);
-            files_writeToFd(fd, fuzzer.dynamicFile, fuzzer.dynamicFileSz);
-            close(fd);
+#define _HF_CURRENT_BEST "CURRENT_BEST"
+#define _HF_CURRENT_BEST_TMP ".tmp.CURRENT_BEST"
+            int fd = open(_HF_CURRENT_BEST_TMP, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+            if (fd != -1) {
+                if (files_writeToFd(fd, fuzzer.dynamicFile, fuzzer.dynamicFileSz)) {
+                    rename(_HF_CURRENT_BEST_TMP, _HF_CURRENT_BEST);
+                }
+                unlink(_HF_CURRENT_BEST_TMP);
+                close(fd);
+            }
 
         }
         while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
