@@ -89,8 +89,6 @@ static inline void arch_perfMmapParse(int fd)
     uint8_t localData[_HF_PERF_MMAP_DATA_SZ];
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmap;
 
-    ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
-
 /* Memory Barrier - see perf_event_open */
 #if defined(__x86_64__)
 #define rmb()	__asm__ __volatile__ ("lfence" ::: "memory")
@@ -121,7 +119,7 @@ static inline void arch_perfMmapParse(int fd)
 
     /* Ok, let it go */
     pem->data_tail = pem->data_head;
-    ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
+    ioctl(fd, PERF_EVENT_IOC_REFRESH, 10000);
 
     struct perf_event_header *peh = (struct perf_event_header *)localData;
 
@@ -153,6 +151,10 @@ static inline void arch_perfMmapParse(int fd)
 
 static void arch_perfHandler(int signum, siginfo_t * si, void *unused)
 {
+    if (si->si_code != POLL_HUP) {
+        return;
+    }
+
     int tmpErrno = errno;
     arch_perfMmapParse(si->si_fd);
     errno = tmpErrno;
@@ -186,11 +188,11 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     pe.exclude_hv = 1;
     pe.exclude_callchain_kernel = 1;
     pe.pinned = 1;
+    pe.type = PERF_TYPE_HARDWARE;
 
     switch (hfuzz->dynFileMethod) {
     case _HF_DYNFILE_INSTR_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_COUNT_HW_INSTRUCTIONS for PID: %d", pid);
-        pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.inherit = 1;
         break;
@@ -200,50 +202,44 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.inherit = 1;
         break;
-
 #define _HF_SAMPLE_PERIOD 100   /* investigate */
     case _HF_DYNFILE_EDGE_ANY_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
-        pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.sample_period = _HF_SAMPLE_PERIOD;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
+        pe.sample_period = _HF_SAMPLE_PERIOD;
         break;
     case _HF_DYNFILE_EDGE_CALL_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
-        pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.sample_period = _HF_SAMPLE_PERIOD;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
+        pe.sample_period = _HF_SAMPLE_PERIOD;
         break;
     case _HF_DYNFILE_EDGE_RETURN_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
-        pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.sample_period = _HF_SAMPLE_PERIOD;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
+        pe.sample_period = _HF_SAMPLE_PERIOD;
         break;
     case _HF_DYNFILE_EDGE_IND_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
-        pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.sample_period = _HF_SAMPLE_PERIOD;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_IND_CALL;
+        pe.sample_period = _HF_SAMPLE_PERIOD;
         break;
 #ifndef PERF_SAMPLE_BRANCH_COND
 #define PERF_SAMPLE_BRANCH_COND (1U << 10)
 #endif                          /* PERF_SAMPLE_BRANCH_COND */
     case _HF_DYNFILE_EDGE_COND_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_COND for PID: %d", pid);
-        pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.sample_period = _HF_SAMPLE_PERIOD;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_COND;
+        pe.sample_period = _HF_SAMPLE_PERIOD;
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->dynFileMethod, pid);
@@ -261,62 +257,69 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         return false;
     }
 
-    if (hfuzz->dynFileMethod >= _HF_DYNFILE_EDGE_ANY_COUNT) {
-        sigset_t smask;
-        sigemptyset(&smask);
-        struct sigaction sa = {
-            .sa_handler = NULL,
-            .sa_sigaction = arch_perfHandler,
-            .sa_mask = smask,
-            .sa_flags = SA_SIGINFO,
-            .sa_restorer = NULL
-        };
-
-        if (sigaction(SIGIO, &sa, NULL) == -1) {
-            LOGMSG_P(l_ERROR, "sigaction() failed");
-            return false;
-        }
-
-        perfMmap = mmap(NULL, _HF_PERF_MMAP_TOT_SZ, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
-        if (perfMmap == MAP_FAILED) {
-            LOGMSG_P(l_ERROR, "mmap() failed");
-            close(*perfFd);
-            return false;
-        }
-        if (fcntl(*perfFd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC) == -1) {
-            LOGMSG_P(l_ERROR, "fnctl(F_SETFL)");
+    if (hfuzz->dynFileMethod < _HF_DYNFILE_EDGE_ANY_COUNT) {
+        if (ioctl(*perfFd, PERF_EVENT_IOC_RESET, 0) == -1) {
+            LOGMSG_P(l_ERROR, "ioctl(perfFd='%d', PERF_EVENT_IOC_RESET) failed", perfFd);
             close(*perfFd);
             return false;
         }
 
-        struct f_owner_ex foe = {
-            .type = F_OWNER_TID,
-            .pid = syscall(__NR_gettid)
-        };
-        if (fcntl(*perfFd, F_SETSIG, SIGIO) == -1) {
-            LOGMSG_P(l_ERROR, "fnctl(F_SETSIG)");
+        if (ioctl(*perfFd, PERF_EVENT_IOC_ENABLE, 0) == -1) {
+            LOGMSG_P(l_ERROR, "ioctl(perfFd='%d', PERF_EVENT_IOC_ENABLE) failed", perfFd);
             close(*perfFd);
             return false;
         }
-
-        if (fcntl(*perfFd, F_SETOWN_EX, &foe) == -1) {
-            LOGMSG_P(l_ERROR, "fnctl(F_SETOWN_EX)");
-            close(*perfFd);
-            return false;
-        }
+        return true;
     }
 
-    if (ioctl(*perfFd, PERF_EVENT_IOC_RESET, 0) == -1) {
-        LOGMSG_P(l_ERROR, "ioctl(perfFd='%d', PERF_EVENT_IOC_RESET) failed", perfFd);
+    sigset_t smask;
+    sigemptyset(&smask);
+    struct sigaction sa = {
+        .sa_handler = NULL,
+        .sa_sigaction = arch_perfHandler,
+        .sa_mask = smask,
+        .sa_flags = SA_SIGINFO,
+        .sa_restorer = NULL
+    };
+
+    if (sigaction(SIGIO, &sa, NULL) == -1) {
+        LOGMSG_P(l_ERROR, "sigaction() failed");
+        return false;
+    }
+
+    perfMmap = mmap(NULL, _HF_PERF_MMAP_TOT_SZ, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
+    if (perfMmap == MAP_FAILED) {
+        LOGMSG_P(l_ERROR, "mmap() failed");
+        close(*perfFd);
+        return false;
+    }
+    if (fcntl(*perfFd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC) == -1) {
+        LOGMSG_P(l_ERROR, "fnctl(F_SETFL)");
         close(*perfFd);
         return false;
     }
 
-    if (ioctl(*perfFd, PERF_EVENT_IOC_ENABLE, 0) == -1) {
+    struct f_owner_ex foe = {
+        .type = F_OWNER_TID,
+        .pid = syscall(__NR_gettid)
+    };
+    if (fcntl(*perfFd, F_SETSIG, SIGIO) == -1) {
+        LOGMSG_P(l_ERROR, "fnctl(F_SETSIG)");
+        close(*perfFd);
+        return false;
+    }
+
+    if (fcntl(*perfFd, F_SETOWN_EX, &foe) == -1) {
+        LOGMSG_P(l_ERROR, "fnctl(F_SETOWN_EX)");
+        close(*perfFd);
+        return false;
+    }
+    if (ioctl(*perfFd, PERF_EVENT_IOC_REFRESH, 10000) == -1) {
         LOGMSG_P(l_ERROR, "ioctl(perfFd='%d', PERF_EVENT_IOC_ENABLE) failed", perfFd);
         close(*perfFd);
         return false;
     }
+
     return true;
 }
 
