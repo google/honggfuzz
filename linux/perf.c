@@ -345,8 +345,8 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
 
  out:
     LOGMSG(l_INFO,
-           "%" PRIu64 " perf events seen (highest: %" PRId64 "), fileSz/BestSz: %zu/%zu",
-           count, hfuzz->branchBestCnt, fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz);
+           "File size (New/Best): %zu/%zu, Perf events seen: Best: %" PRIu64 " / New: %" PRIu64,
+           fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz, hfuzz->branchBestCnt, count);
 
     if (perfMmap != NULL) {
         munmap(perfMmap, _HF_PERF_MMAP_TOT_SZ);
