@@ -86,10 +86,9 @@ static inline void arch_perfAddFromToBranch(uint64_t from, uint64_t to)
 
 static inline void arch_perfMmapParse(int fd)
 {
-    uint8_t localData[_HF_PERF_MMAP_DATA_SZ];
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmap;
 
-/* Memory Barrier - see perf_event_open */
+/* Memory Barriers */
 #if defined(__x86_64__)
 #define rmb()	__asm__ __volatile__ ("lfence" ::: "memory")
 #elif defined(__i386__)
@@ -99,12 +98,14 @@ static inline void arch_perfMmapParse(int fd)
 #endif
 
     uint64_t dataHeadOff = pem->data_head % _HF_PERF_MMAP_DATA_SZ;
+    /* Required as per 'man perf_event_open' */
     rmb();
 
     uint64_t dataTailOff = pem->data_tail % _HF_PERF_MMAP_DATA_SZ;
     uint8_t *dataTailPtr = perfMmap + getpagesize() + dataTailOff;
-    size_t localDataLen = 0;
 
+    uint8_t localData[_HF_PERF_MMAP_DATA_SZ];
+    size_t localDataLen = 0;
     if (dataHeadOff > dataTailOff) {
         localDataLen = dataHeadOff - dataTailOff;
         memcpy(localData, dataTailPtr, localDataLen);
@@ -121,19 +122,18 @@ static inline void arch_perfMmapParse(int fd)
     pem->data_tail = pem->data_head;
     ioctl(fd, PERF_EVENT_IOC_REFRESH, 10000);
 
-    struct perf_event_header *peh = (struct perf_event_header *)localData;
+    for (struct perf_event_header * peh = (struct perf_event_header *)localData;
+         (uintptr_t) peh < (uintptr_t) (localData + localDataLen);
+         peh = (struct perf_event_header *)((uint8_t *) peh + peh->size)) {
 
-    while ((uintptr_t) peh < (uintptr_t) (localData + localDataLen)) {
+        /* Cannot recover from this condition */
         if (peh->size == 0) {
             break;
         }
-
         if (peh->type != PERF_RECORD_SAMPLE) {
-            peh = (struct perf_event_header *)((uint8_t *) peh + peh->size);
             continue;
         }
         if (peh->misc != PERF_RECORD_MISC_USER) {
-            peh = (struct perf_event_header *)((uint8_t *) peh + peh->size);
             continue;
         }
 
@@ -144,8 +144,6 @@ static inline void arch_perfMmapParse(int fd)
         for (uint64_t i = 0; i < bnr; i++) {
             arch_perfAddFromToBranch(lbr[i].from, lbr[i].to);
         }
-
-        peh = (struct perf_event_header *)((uint8_t *) peh + peh->size);
     }
 }
 
@@ -231,7 +229,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_IND_CALL;
         pe.sample_period = _HF_SAMPLE_PERIOD;
         break;
-#ifndef PERF_SAMPLE_BRANCH_COND
+#ifndef PERF_SAMPLE_BRANCH_COND /* Since around kernel version 3.15 */
 #define PERF_SAMPLE_BRANCH_COND (1U << 10)
 #endif                          /* PERF_SAMPLE_BRANCH_COND */
     case _HF_DYNFILE_EDGE_COND_COUNT:
@@ -252,7 +250,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         LOGMSG_P(l_WARN, "perf_event_open() failed");
         if (hfuzz->dynFileMethod >= _HF_DYNFILE_EDGE_ANY_COUNT) {
             LOGMSG(l_WARN,
-                   "-De mode requires LBR feature present in Intel Haswell and newer CPUs (i.e. not in AMD)");
+                   "-Da/-Dr/-Dc/-Dn/-Do modes require LBR feature present since Intel Haswell (i.e. not in AMD CPUs)");
         }
         return false;
     }
@@ -298,17 +296,16 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         close(*perfFd);
         return false;
     }
-
-    struct f_owner_ex foe = {
-        .type = F_OWNER_TID,
-        .pid = syscall(__NR_gettid)
-    };
     if (fcntl(*perfFd, F_SETSIG, SIGIO) == -1) {
         LOGMSG_P(l_ERROR, "fnctl(F_SETSIG)");
         close(*perfFd);
         return false;
     }
 
+    struct f_owner_ex foe = {
+        .type = F_OWNER_TID,
+        .pid = syscall(__NR_gettid)
+    };
     if (fcntl(*perfFd, F_SETOWN_EX, &foe) == -1) {
         LOGMSG_P(l_ERROR, "fnctl(F_SETOWN_EX)");
         close(*perfFd);
@@ -348,7 +345,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
 
  out:
     LOGMSG(l_INFO,
-           "%" PRIu64 " perf events seen (highest: %lld), fileSz/BestSz: %zu/%zu",
+           "%" PRIu64 " perf events seen (highest: %" PRId64 "), fileSz/BestSz: %zu/%zu",
            count, hfuzz->branchBestCnt, fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz);
 
     if (perfMmap != NULL) {
