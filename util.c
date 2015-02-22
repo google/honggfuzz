@@ -35,31 +35,23 @@
 #include <unistd.h>
 
 #include "common.h"
+#include "files.h"
 #include "log.h"
 
-static int util_urandomFD = -1;
+static int util_urandomFd = -1;
 
 uint64_t util_rndGet(uint64_t min, uint64_t max)
 {
-    if (util_urandomFD == -1) {
-        util_urandomFD = open("/dev/urandom", O_RDONLY);
-    }
-    if (util_urandomFD == -1) {
-        LOGMSG_P(l_FATAL, "Couldn't open /dev/urandom for writing");
+    if (util_urandomFd == -1) {
+        if ((util_urandomFd = open("/dev/urandom", O_RDONLY)) == -1) {
+            LOGMSG_P(l_FATAL, "Couldn't open /dev/urandom for writing");
+        }
     }
 
     uint64_t rnd;
-    if (read(util_urandomFD, &rnd, sizeof(rnd)) != sizeof(rnd)) {
-        LOGMSG_P(l_WARN, "Failed reading from /dev/urandom");
+    if (files_readFromFd(util_urandomFd, (uint8_t *) & rnd, sizeof(rnd)) == false) {
+        LOGMSG_P(l_FATAL, "Failed reading from /dev/urandom");
     }
-
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    rnd ^= ((uint64_t) tv.tv_usec) << 0;
-    gettimeofday(&tv, NULL);
-    rnd ^= ((uint64_t) tv.tv_usec) << 24;
-    gettimeofday(&tv, NULL);
-    rnd ^= ((uint64_t) tv.tv_usec) << 48;
 
     if (min > max) {
         LOGMSG(l_FATAL, "min:%d > max:%d", min, max);
