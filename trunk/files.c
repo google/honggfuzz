@@ -27,6 +27,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -178,6 +179,13 @@ static bool files_readdir(honggfuzz_t * hfuzz)
             continue;
         }
 
+        if (st.st_size > (off_t) hfuzz->maxFileSz) {
+            LOGMSG(l_WARN,
+                   "File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %"
+                   PRId64, path, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
+            continue;
+        }
+
         if (!(hfuzz->files = realloc(hfuzz->files, sizeof(char *) * (count + 1)))) {
             LOGMSG_P(l_ERROR, "Couldn't allocate memory");
             closedir(dir);
@@ -228,6 +236,13 @@ bool files_init(honggfuzz_t * hfuzz)
     struct stat st;
     if (stat(hfuzz->inputFile, &st) == -1) {
         LOGMSG_P(l_ERROR, "Couldn't stat the input file/dir '%s'", hfuzz->inputFile);
+        return false;
+    }
+
+    if (st.st_size > (off_t) hfuzz->maxFileSz) {
+        LOGMSG(l_ERROR,
+               "File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %" PRId64,
+               hfuzz->inputFile, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
         return false;
     }
 
