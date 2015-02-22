@@ -115,7 +115,7 @@ static void mangle_Magic(uint8_t * buf, size_t bufSz, size_t off)
 
 static void mangle_Shift(uint8_t * buf, size_t bufSz, size_t off)
 {
-    uint64_t mangleTo = util_rndGet(0, bufSz);
+    uint64_t mangleTo = util_rndGet(0, bufSz - 1);
 
     uint64_t mangleSzFrom = util_rndGet(1, bufSz - off);
     uint64_t mangleSzTo = util_rndGet(1, bufSz - mangleTo);
