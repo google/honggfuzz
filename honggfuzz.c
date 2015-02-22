@@ -115,7 +115,7 @@ int main(int argc, char **argv)
         .fileExtn = "fuzz",
         .flipRate = 0.001f,
         .externalCommand = NULL,
-        .maxFileSz = (1024 * 1024 * 32),
+        .maxFileSz = (1024 * 1024 * 8),
         .tmOut = 3,
         .mutationsMax = 0,
         .mutationsCnt = 0,
