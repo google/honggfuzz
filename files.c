@@ -95,13 +95,13 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
     return ret;
 }
 
-void files_unmapFileCloseFd(void *ptr, off_t fileSz, int fd)
+void files_unmapFileCloseFd(void *ptr, size_t fileSz, int fd)
 {
     munmap(ptr, _HF_PAGE_ALIGN_UP(fileSz));
     close(fd);
 }
 
-uint8_t *files_mapFileToRead(char *fileName, off_t * fileSz, int *fd)
+uint8_t *files_mapFileToRead(char *fileName, size_t * fileSz, int *fd)
 {
     if ((*fd = open(fileName, O_RDONLY)) == -1) {
         LOGMSG_P(l_WARN, "Couldn't open() '%s' file in R/O mode", fileName);

@@ -66,14 +66,14 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
     return;
 }
 
-static size_t fuzz_appendOrTrunc(int fd, off_t fileSz)
+static size_t fuzz_appendOrTrunc(int fd, size_t fileSz)
 {
     const int chance_one_in_x = 10;
     if (util_rndGet(1, chance_one_in_x) != 1) {
         return fileSz;
     }
 
-    off_t maxSz = 2 * fileSz;
+    size_t maxSz = 2 * fileSz;
     if (fileSz > (1024 * 1024 * 20)) {
         maxSz = fileSz + (fileSz / 4);
     }
@@ -81,7 +81,7 @@ static size_t fuzz_appendOrTrunc(int fd, off_t fileSz)
         maxSz = fileSz;
     }
 
-    off_t newSz = util_rndGet(1, maxSz);
+    size_t newSz = util_rndGet(1, maxSz);
     if (ftruncate(fd, newSz) == -1) {
         LOGMSG_P(l_WARN,
                  "Couldn't truncate file from '%ld' to '%ld' bytes", (long)fileSz, (long)newSz);
@@ -96,16 +96,21 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
     if (hfuzz->inputFile && hfuzz->branchBestCnt == 0) {
         int srcfd;
-        off_t fileSz;
+        size_t fileSz;
         uint8_t *buf = files_mapFileToRead(hfuzz->files[rnd_index], &fileSz, &srcfd);
         if (buf == NULL) {
             LOGMSG(l_ERROR, "Couldn't open and map '%s' in R/O mode", hfuzz->files[rnd_index]);
             while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
             return false;
         }
-        size_t toCopy = (size_t) fileSz < hfuzz->maxFileSz ? (size_t) fileSz : hfuzz->maxFileSz;
-        memcpy(hfuzz->dynamicFileBest, buf, toCopy);
-        hfuzz->dynamicFileBestSz = toCopy;
+        if (fileSz > hfuzz->maxFileSz) {
+            LOGMSG(l_FATAL,
+                   "File size (%zu) is bigger than the maximal allocated buffer/file size (-F) (%zu)",
+                   fileSz, hfuzz->maxFileSz);
+        }
+
+        memcpy(hfuzz->dynamicFileBest, buf, fileSz);
+        hfuzz->dynamicFileBestSz = fileSz;
         files_unmapFileCloseFd(buf, fileSz, srcfd);
 
         if (hfuzz->branchBestCntIni) {
@@ -159,7 +164,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
 static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
 {
-    off_t fileSz;
+    size_t fileSz;
     int srcfd;
 
     uint8_t *buf = files_mapFileToRead(hfuzz->files[rnd_index], &fileSz, &srcfd);
@@ -196,7 +201,7 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
 
 static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
 {
-    off_t fileSz;
+    size_t fileSz;
     int srcfd;
 
     int dstfd = open(fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
