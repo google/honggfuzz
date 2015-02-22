@@ -162,7 +162,7 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
         mangle_Bytes,
         mangle_Magic,
         mangle_Magic,
-	mangle_Shift,
+        mangle_Shift,
     };
 /*  *INDENT-ON* */
 
