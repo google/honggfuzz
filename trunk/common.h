@@ -45,6 +45,9 @@
 /* Default stack-size of created threads. Must be bigger then _HF_DYNAMIC_FILE_MAX_SZ */
 #define _HF_PTHREAD_STACKSIZE (1024 * 1024 * 4) /* 2MB */
 
+/* Align to the upper-page boundary */
+#define _HF_PAGE_ALIGN_UP(x)  (((size_t)x + (size_t)sysconf(_SC_PAGESIZE) - 1) & ~((size_t)sysconf(_SC_PAGESIZE) - 1))
+
 typedef enum {
     _HF_DYNFILE_NONE = 0,
     _HF_DYNFILE_INSTR_COUNT,

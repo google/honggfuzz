@@ -66,30 +66,6 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
     return;
 }
 
-static size_t fuzz_appendOrTrunc(int fd, size_t fileSz)
-{
-    const int chance_one_in_x = 10;
-    if (util_rndGet(1, chance_one_in_x) != 1) {
-        return fileSz;
-    }
-
-    size_t maxSz = 2 * fileSz;
-    if (fileSz > (1024 * 1024 * 20)) {
-        maxSz = fileSz + (fileSz / 4);
-    }
-    if (fileSz > (1024 * 1024 * 100)) {
-        maxSz = fileSz;
-    }
-
-    size_t newSz = util_rndGet(1, maxSz);
-    if (ftruncate(fd, newSz) == -1) {
-        LOGMSG_P(l_WARN,
-                 "Couldn't truncate file from '%ld' to '%ld' bytes", (long)fileSz, (long)newSz);
-        return fileSz;
-    }
-    return newSz;
-}
-
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
 {
     while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
@@ -125,23 +101,9 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
     /* The first pass should be on an empty/initial file */
     if (hfuzz->branchBestCnt > 0) {
-        uint64_t choice = util_rndGet(1, 20);
-        if (choice <= 16) {
-            fuzzer->dynamicFileSz = fuzzer->dynamicFileSz + choice;
-        }
-        if (choice == 17) {
-            fuzzer->dynamicFileSz = util_rndGet(1, fuzzer->dynamicFileSz);
-        }
-        if (choice == 18) {
-            fuzzer->dynamicFileSz = util_rndGet(fuzzer->dynamicFileSz, hfuzz->maxFileSz);
-        }
-        if (fuzzer->dynamicFileSz > hfuzz->maxFileSz) {
-            fuzzer->dynamicFileSz = hfuzz->maxFileSz;
-        }
-
-        LOGMSG(l_DEBUG, "DynamicFile: old size:'%zu' new_size:'%zu'", hfuzz->dynamicFileBestSz,
-               fuzzer->dynamicFileSz);
-
+	if (mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz, false /* isMmap */) == false) {
+		return false;
+	}
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
 
@@ -183,6 +145,13 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
         return false;
     }
 
+    if (mangle_Resize(hfuzz, &buf, &fileSz, true /* isMmap */ ) == false) {
+        files_unmapFileCloseFd(buf, fileSz, srcfd);
+        close(dstfd);
+        LOGMSG(l_ERROR, "File resizing failed");
+        return false;
+    }
+
     mangle_mangleContent(hfuzz, buf, fileSz);
 
     if (!files_writeToFd(dstfd, buf, fileSz)) {
@@ -193,7 +162,6 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
 
     files_unmapFileCloseFd(buf, fileSz, srcfd);
 
-    fuzz_appendOrTrunc(dstfd, fileSz);
     close(dstfd);
 
     return true;

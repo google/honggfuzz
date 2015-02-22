@@ -27,6 +27,6 @@
 #include <stdint.h>
 
 extern void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * bug, size_t bufSz);
-extern size_t mangle_resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t bufSz);
+extern bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz, bool isMmap);
 
 #endif
