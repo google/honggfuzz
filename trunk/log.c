@@ -104,7 +104,7 @@ log_msg(log_level_t dl,
     pid = (pid_t) syscall(__NR_gettid);
 #endif                          /* _HF_ARCH == LINUX */
 
-    if (log_minLevel >= l_DEBUG || !log_isStdioTTY) {
+    if (log_minLevel >= l_DEBUG || log_minLevel == l_FATAL || !log_isStdioTTY) {
         dprintf
             (STDOUT_FILENO,
              "%s [%d] %d/%02d/%02d %02d:%02d:%02d (%s:%s %d) ",
