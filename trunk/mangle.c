@@ -47,7 +47,8 @@ static void mangle_Bytes(uint8_t * buf, size_t bufSz, size_t off)
 {
     uint32_t val = (uint32_t) util_rndGet(0, UINT32_MAX);
 
-    size_t toCopy = util_rndGet(1, 4);
+    /* Overwrite with random 2,3,4-byte values */
+    size_t toCopy = util_rndGet(2, 4);
     size_t maxToCopy = bufSz - off;
     if (toCopy > maxToCopy) {
         toCopy = maxToCopy;
