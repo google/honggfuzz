@@ -43,6 +43,19 @@ static void mangle_Byte(uint8_t * buf, size_t bufSz, size_t off)
     }
 }
 
+static void mangle_Bytes(uint8_t * buf, size_t bufSz, size_t off)
+{
+    uint32_t val = (uint32_t) util_rndGet(0, UINT32_MAX);
+
+    size_t toCopy = util_rndGet(1, 4);
+    size_t maxToCopy = bufSz - off;
+    if (toCopy > maxToCopy) {
+        toCopy = maxToCopy;
+    }
+
+    memcpy(&buf[off], (uint8_t *) & val, toCopy);
+}
+
 static void mangle_Bit(uint8_t * buf, size_t bufSz, size_t off)
 {
     buf[off] ^= ((uint8_t) 1 << util_rndGet(0, 7));
@@ -129,6 +142,7 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
 /*  *INDENT-OFF* */
     void (*const mangleFuncs[]) (uint8_t * buf, size_t bufSz, size_t off) = {
         mangle_Byte,
+        mangle_Bytes,
         mangle_Bit,
         mangle_Magic,
 	mangle_Shift,
