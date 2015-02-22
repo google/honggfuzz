@@ -127,7 +127,7 @@ int main(int argc, char **argv)
         .fileCnt = 0,
         .pid = 0,
         .dynFileMethod = _HF_DYNFILE_NONE,
-        .dynamicFileBest = alloca(1),
+        .dynamicFileBest = NULL,
         .dynamicFileBestSz = 1,
         .branchBestCnt = 0,
         .branchBestCntIni = 0,
@@ -232,8 +232,11 @@ int main(int argc, char **argv)
         }
     }
     hfuzz.cmdline = &argv[optind];
-
     log_setMinLevel(ll);
+
+    if ((hfuzz.dynamicFileBest = malloc(hfuzz.maxFileSz)) == NULL) {
+        LOGMSG(l_FATAL, "malloc(%zu) failed", hfuzz.maxFileSz);
+    }
 
     if (!hfuzz.cmdline[0]) {
         LOGMSG(l_FATAL, "Please specify a binary to fuzz");
@@ -272,6 +275,8 @@ int main(int argc, char **argv)
      * So far so good
      */
     fuzz_main(&hfuzz);
+
+    free(hfuzz.dynamicFileBest);
 
     abort();                    /* NOTREACHED */
     return EXIT_SUCCESS;
