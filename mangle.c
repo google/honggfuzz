@@ -28,6 +28,7 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 #include "log.h"
@@ -188,17 +189,26 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
     }
 }
 
-size_t mangle_resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t bufSz)
+bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz, bool isMmap)
 {
-    if (!hfuzz) {
-        return 0LL;
-    }
-    if (!buf) {
-        return 0UL;
-    }
-    if (bufSz == 0) {
-        return 0UL;
+    const uint64_t chance_one_in_x = 10;
+    if (util_rndGet(1, chance_one_in_x) != 1) {
+        return true;
     }
 
-    return bufSz;
+    size_t newSz = util_rndGet(1, hfuzz->maxFileSz);
+    if (isMmap == false) {
+        *bufSz = newSz;
+        return true;
+    }
+
+    void *newBuf = mremap(buf, _HF_PAGE_ALIGN_UP(bufSz), _HF_PAGE_ALIGN_UP(newSz), MREMAP_MAYMOVE);
+    if (newBuf == MAP_FAILED) {
+        LOGMSG_P(l_ERROR, "mremap() failed");
+        return false;
+    }
+
+    *buf = newBuf;
+    *bufSz = newSz;
+    return true;
 }
