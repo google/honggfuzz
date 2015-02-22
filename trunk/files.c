@@ -38,26 +38,41 @@
 
 #include "log.h"
 
-bool files_writeToFd(int fd, uint8_t * buf, off_t fileSz)
+bool files_writeToFd(int fd, uint8_t * buf, size_t fileSz)
 {
-    off_t written = 0;
-    while (written < fileSz) {
-        ssize_t sz = write(fd, &buf[written], fileSz - written);
+    size_t writtenSz = 0;
+    while (writtenSz < fileSz) {
+        ssize_t sz = write(fd, &buf[writtenSz], fileSz - writtenSz);
         if (sz < 0 && errno == EINTR)
             continue;
 
         if (sz < 0)
             return false;
 
-        written += sz;
+        writtenSz += sz;
     }
-
     return true;
 }
 
 bool files_writeStrToFd(int fd, char *str)
 {
     return files_writeToFd(fd, (uint8_t *) str, strlen(str));
+}
+
+bool files_readFromFd(int fd, uint8_t * buf, size_t fileSz)
+{
+    size_t readSz = 0;
+    while (readSz < fileSz) {
+        ssize_t sz = read(fd, &buf[readSz], fileSz - readSz);
+        if (sz < 0 && errno == EINTR)
+            continue;
+
+        if (sz < 0)
+            return false;
+
+        readSz += sz;
+    }
+    return true;
 }
 
 bool files_exists(char *fileName)
