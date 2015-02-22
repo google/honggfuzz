@@ -66,7 +66,6 @@ static void usage(bool exit_success)
            "' [INFO])\n"
            " [" AB "-e val" AC "] : file extension (e.g swf), (default: '" AB "fuzz" AC "')\n"
            " [" AB "-r val" AC "] : flip rate, (default: '" AB "0.001" AC "')\n"
-           " [" AB "-m val" AC "] : flip mode (-mB - byte, -mb - bit), (default: '" AB "-mB" AC "')\n"
            " [" AB "-c val" AC "] : external command modifying the input corpus of files,\n"
            "            instead of -r/-m (default: " AB "none" AC "\n"
            " [" AB "-t val" AC "] : timeout (in secs), (default: '" AB "3" AC "' [0 - no timeout])\n"
@@ -115,8 +114,8 @@ int main(int argc, char **argv)
         .saveUnique = false,
         .fileExtn = "fuzz",
         .flipRate = 0.001f,
-        .flipMode = 'B',
         .externalCommand = NULL,
+        .maxFileSz = (1024 * 1024 * 32),
         .tmOut = 3,
         .mutationsMax = 0,
         .mutationsCnt = 0,
@@ -128,9 +127,8 @@ int main(int argc, char **argv)
         .fileCnt = 0,
         .pid = 0,
         .dynFileMethod = _HF_DYNFILE_NONE,
-        .dynamicFileBest = NULL,
+        .dynamicFileBest = alloca(1),
         .dynamicFileBestSz = 1,
-        .dynamicFileMaxSz = 1024,
         .branchBestCnt = 0,
         .branchBestCntIni = 0,
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
@@ -142,7 +140,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "?hqsuf:d:e:r:m:c:D:t:a:R:n:N:l:p:F:b:");
+        c = getopt(argc, argv, "?hqsuf:d:e:r:c:F:D:t:a:R:n:N:l:p:b:");
         if (c < 0)
             break;
 
@@ -172,11 +170,11 @@ int main(int argc, char **argv)
         case 'r':
             hfuzz.flipRate = atof(optarg);
             break;
-        case 'm':
-            hfuzz.flipMode = optarg[0];
-            break;
         case 'c':
             hfuzz.externalCommand = optarg;
+            break;
+        case 'F':
+            hfuzz.maxFileSz = strtoul(optarg, NULL, 0);
             break;
         case 'D':
             switch (optarg[0]) {
@@ -226,9 +224,6 @@ int main(int argc, char **argv)
         case 'p':
             hfuzz.pid = atoi(optarg);
             break;
-        case 'F':
-            hfuzz.dynamicFileMaxSz = atoi(optarg);
-            break;
         case 'b':
             hfuzz.branchBestCntIni = atoi(optarg);
             break;
@@ -237,7 +232,6 @@ int main(int argc, char **argv)
         }
     }
     hfuzz.cmdline = &argv[optind];
-    hfuzz.dynamicFileBest = alloca(hfuzz.dynamicFileMaxSz);
 
     log_setMinLevel(ll);
 
@@ -260,11 +254,11 @@ int main(int argc, char **argv)
 
     LOGMSG(l_INFO,
            "debugLevel: %d, inputFile '%s', nullifyStdio: %d, fuzzStdin: %d, saveUnique: %d, flipRate: %lf, "
-           "flipMode: '%c', externalCommand: '%s', tmOut: %ld, mutationsMax: %ld, threadsMax: %ld, fileExtn '%s', ignoreAddr: %p, "
+           "externalCommand: '%s', tmOut: %ld, mutationsMax: %ld, threadsMax: %ld, fileExtn '%s', ignoreAddr: %p, "
            "memoryLimit: %lu (MiB), fuzzExe: '%s', fuzzedPid: %d",
            ll, hfuzz.inputFile, hfuzz.nullifyStdio ? 1 : 0,
            hfuzz.fuzzStdin ? 1 : 0, hfuzz.saveUnique ? 1 : 0,
-           hfuzz.flipRate, hfuzz.flipMode,
+           hfuzz.flipRate,
            hfuzz.externalCommand == NULL ? "NULL" : hfuzz.externalCommand,
            hfuzz.tmOut, hfuzz.mutationsMax, hfuzz.threadsMax,
            hfuzz.fileExtn, hfuzz.ignoreAddr, hfuzz.asLimit, hfuzz.cmdline[0], hfuzz.pid);

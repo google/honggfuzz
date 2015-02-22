@@ -64,12 +64,12 @@ typedef struct {
     bool saveUnique;
     char *fileExtn;
     double flipRate;
-    char flipMode;
     char *externalCommand;
     long tmOut;
     long mutationsMax;
     long mutationsCnt;
     long threadsMax;
+    size_t maxFileSz;
     void *ignoreAddr;
     char *reportFile;
     unsigned long asLimit;
@@ -81,7 +81,6 @@ typedef struct {
     /* For the linux/ code */
     uint8_t *dynamicFileBest;
     size_t dynamicFileBestSz;
-    size_t dynamicFileMaxSz;
     dynFileMethod_t dynFileMethod;
     int64_t branchBestCnt;
     int64_t branchBestCntIni;
@@ -101,8 +100,8 @@ typedef struct fuzzer_t {
 
     /* For linux/ code */
     uint8_t *dynamicFile;
-    size_t dynamicFileSz;
     int64_t branchCnt;
+    size_t dynamicFileSz;
 } fuzzer_t;
 
 #define _HF_MAX_FUNCS 200
@@ -111,5 +110,7 @@ typedef struct {
     char func[64];
     int line;
 } funcs_t;
+
+#define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
 
 #endif
