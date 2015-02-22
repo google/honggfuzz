@@ -168,7 +168,7 @@ int main(int argc, char **argv)
             hfuzz.fileExtn = optarg;
             break;
         case 'r':
-            hfuzz.flipRate = atof(optarg);
+            hfuzz.flipRate = strtod(optarg, NULL);
             break;
         case 'c':
             hfuzz.externalCommand = optarg;
