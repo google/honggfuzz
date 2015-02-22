@@ -242,7 +242,7 @@ int main(int argc, char **argv)
     log_setMinLevel(ll);
 
     if (!hfuzz.cmdline[0]) {
-        LOGMSG(l_FATAL, "Please specify binary to fuzz");
+        LOGMSG(l_FATAL, "Please specify a binary to fuzz");
         usage(false);
     }
 

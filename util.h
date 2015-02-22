@@ -24,6 +24,7 @@
 #ifndef _UTIL_H_
 #define _UTIL_H_
 
+#include <stdarg.h>
 #include <stdint.h>
 
 extern uint64_t util_rndGet(uint64_t min, uint64_t max);
