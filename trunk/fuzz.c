@@ -48,36 +48,9 @@
 #include "arch.h"
 #include "files.h"
 #include "log.h"
+#include "mangle.h"
 #include "report.h"
 #include "util.h"
-
-static void fuzz_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, off_t fileSz)
-{
-    /*
-     * Just copy the file if "-r 0"
-     */
-    uint64_t changesCnt = fileSz * hfuzz->flipRate;
-
-    if (changesCnt == 0ULL) {
-        return;
-    }
-
-    if (hfuzz->flipMode == 'b') {
-        changesCnt *= 8UL;
-    }
-
-    changesCnt = util_rndGet(1, changesCnt);
-
-    for (uint64_t x = 0; x < changesCnt; x++) {
-        off_t pos = util_rndGet(0, fileSz - 1);
-
-        if (hfuzz->flipMode == 'b') {
-            buf[pos] ^= (1 << util_rndGet(0, 7));
-        } else {
-            buf[pos] = (uint8_t) util_rndGet(0, 255);
-        }
-    }
-}
 
 static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
 {
@@ -165,7 +138,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         LOGMSG(l_DEBUG, "DynamicFile: old size:'%zu' new_size:'%zu'", hfuzz->dynamicFileBestSz,
                fuzzer->dynamicFileSz);
 
-        fuzz_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
+        mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
 
     int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
@@ -206,7 +179,7 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
         return false;
     }
 
-    fuzz_mangleContent(hfuzz, buf, fileSz);
+    mangle_mangleContent(hfuzz, buf, fileSz);
 
     if (!files_writeToFd(dstfd, buf, fileSz)) {
         files_unmapFileCloseFd(buf, fileSz, srcfd);
