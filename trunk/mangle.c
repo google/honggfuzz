@@ -211,6 +211,31 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
     }
 }
 
+bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz)
+{
+    const uint64_t chance_one_in_x = 10;
+    if (util_rndGet(1, chance_one_in_x) != 1) {
+        return true;
+    }
+
+    uint64_t newSz = util_rndGet(1, hfuzz->maxFileSz);
+    if (buf == NULL) {
+        *bufSz = (size_t) newSz;
+        return true;
+    }
+
+    void *newBuf = mremap(buf, _HF_PAGE_ALIGN_UP(bufSz), _HF_PAGE_ALIGN_UP(newSz), MREMAP_MAYMOVE);
+    if (newBuf == MAP_FAILED) {
+        LOGMSG_P(l_ERROR, "mremap() failed");
+        return false;
+    }
+
+    *buf = newBuf;
+    *bufSz = (size_t) newSz;
+    return true;
+}
+
+#if 0
 /* Gauss-like distribution */
 bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz)
 {
@@ -261,3 +286,4 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz)
     *bufSz = (size_t) newSz;
     return true;
 }
+#endif                          /* 0 */
