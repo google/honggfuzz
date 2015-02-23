@@ -43,7 +43,6 @@ ifeq ($(OS),Linux)
 	ifeq ("$(wildcard /usr/include/libunwind-ptrace.h)","")
 		WARN_LIBRARY += "libunwind-dev/libunwind8-dev "
 	endif
-	CFLAGS += -O3
 	LDFLAGS += -lunwind-ptrace -lunwind-generic -lbfd -lopcodes
 	ARCH_SRCS := $(wildcard linux/*.c)
 	ARCH = LINUX
