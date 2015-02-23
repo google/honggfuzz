@@ -60,6 +60,21 @@ uint64_t util_rndGet(uint64_t min, uint64_t max)
     return ((rnd % (max - min + 1)) + min);
 }
 
+void util_rndBuf(uint8_t * buf, size_t sz)
+{
+    if (util_urandomFd == -1) {
+        if ((util_urandomFd = open("/dev/urandom", O_RDONLY)) == -1) {
+            LOGMSG_P(l_FATAL, "Couldn't open /dev/urandom for writing");
+        }
+    }
+
+    if (files_readFromFd(util_urandomFd, buf, sz) == false) {
+        LOGMSG_P(l_FATAL, "Failed reading from /dev/urandom");
+    }
+
+    return;
+}
+
 int util_vssnprintf(char *str, size_t size, const char *format, va_list ap)
 {
     char buf1[size];
