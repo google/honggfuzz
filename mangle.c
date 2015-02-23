@@ -43,7 +43,7 @@ static void mangle_Overwrite(uint8_t * dst, const uint8_t * src, size_t dstSz, s
         sz = maxToCopy;
     }
 
-    memcpy(&dst[off], &src, sz);
+    memcpy(&dst[off], src, sz);
 }
 
 static void mangle_Byte(uint8_t * buf, size_t bufSz, size_t off)
@@ -207,7 +207,7 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
         mangle_Magic,
         mangle_MemMove,
         mangle_MemSet,
-	mangle_Random,
+        mangle_Random,
     };
 /*  *INDENT-ON* */
 
