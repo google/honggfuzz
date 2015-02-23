@@ -219,24 +219,20 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz)
         return true;
     }
 
-    int64_t choice = (int64_t) util_rndGet(0, *bufSz) - (int64_t) (*bufSz / 2);
-    if (choice > 0) {
-        choice += 1LL;
-    }
-    if (choice < 0) {
-        choice -= 1LL;
-    }
+    		int64_t choice = (int64_t) util_rndGet(1, UINT32_MAX);
+        	double delta = 1.0L / (double)choice;
 
-    double delta = 0;
-    if (choice != 0) {
-        delta = 1.0L / (double)(choice);
-    }
+	if (util_rndGet(0, 1) == 0) {
+		delta = pow(delta, 0.25L);
+	} else {
+		delta = -pow(delta, 0.25L);
+	}
 
     int64_t newSz = (int64_t) * bufSz;
-    if (choice > 0) {
+    if (delta > 0.0L) {
         newSz = (int64_t) * bufSz + (int64_t) ((double)(hfuzz->maxFileSz - *bufSz) * delta);
     }
-    if (choice < 0) {
+    if (delta < 0.0L) {
         newSz = (int64_t) * bufSz + (int64_t) ((double)*bufSz * delta);
     }
 
@@ -247,7 +243,7 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz)
         newSz = 1LL;
     }
 
-    LOGMSG(l_DEBUG, "CHOICE: %ld U: %lf, CUR: %zu, MAX: %zu, CHOSEN: %zu", choice, delta, *bufSz,
+    LOGMSG(l_ERROR, "DELTA: %lf, CUR: %zu, MAX: %zu, CHOSEN: %zu", delta, *bufSz,
            hfuzz->maxFileSz, newSz);
 
     if (buf == NULL) {
