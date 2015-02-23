@@ -101,9 +101,9 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
     /* The first pass should be on an empty/initial file */
     if (hfuzz->branchBestCnt > 0) {
-	if (mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz, false /* isMmap */) == false) {
-		return false;
-	}
+        if (mangle_Resize(hfuzz, NULL, &fuzzer->dynamicFileSz) == false) {
+            return false;
+        }
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
 
@@ -145,7 +145,7 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
         return false;
     }
 
-    if (mangle_Resize(hfuzz, &buf, &fileSz, true /* isMmap */ ) == false) {
+    if (mangle_Resize(hfuzz, &buf, &fileSz) == false) {
         files_unmapFileCloseFd(buf, fileSz, srcfd);
         close(dstfd);
         LOGMSG(l_ERROR, "File resizing failed");

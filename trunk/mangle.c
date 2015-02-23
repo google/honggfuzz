@@ -26,6 +26,7 @@
 #include "mangle.h"
 
 #include <inttypes.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -189,16 +190,47 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
     }
 }
 
-bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz, bool isMmap)
+/* Gauss-like distribution */
+bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz)
 {
     const uint64_t chance_one_in_x = 10;
     if (util_rndGet(1, chance_one_in_x) != 1) {
         return true;
     }
 
-    size_t newSz = util_rndGet(1, hfuzz->maxFileSz);
-    if (isMmap == false) {
-        *bufSz = newSz;
+    int64_t choice = (int64_t) util_rndGet(0, *bufSz) - (int64_t) (*bufSz / 2);
+    if (choice > 0) {
+        choice += 1LL;
+    }
+    if (choice < 0) {
+        choice -= 1LL;
+    }
+
+    double delta = 0;
+    if (choice != 0) {
+        delta = 1.0L / (double)(choice);
+    }
+
+    int64_t newSz = (int64_t) * bufSz;
+    if (choice > 0) {
+        newSz = (int64_t) * bufSz + (int64_t) ((double)(hfuzz->maxFileSz - *bufSz) * delta);
+    }
+    if (choice < 0) {
+        newSz = (int64_t) * bufSz + (int64_t) ((double)*bufSz * delta);
+    }
+
+    if (newSz > (int64_t) hfuzz->maxFileSz) {
+        newSz = (int64_t) hfuzz->maxFileSz;
+    }
+    if (newSz < 1LL) {
+        newSz = 1LL;
+    }
+
+    LOGMSG(l_ERROR, "CHOICE: %ld U: %lf, CUR: %zu, MAX: %zu, CHOSEN: %zu", choice, delta, *bufSz,
+           hfuzz->maxFileSz, newSz);
+
+    if (buf == NULL) {
+        *bufSz = (size_t) newSz;
         return true;
     }
 
@@ -209,6 +241,6 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz, bool isM
     }
 
     *buf = newBuf;
-    *bufSz = newSz;
+    *bufSz = (size_t) newSz;
     return true;
 }
