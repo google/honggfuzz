@@ -156,7 +156,15 @@ static void mangle_Magic(uint8_t * buf, size_t bufSz, size_t off)
                      mangleMagicVals[choice].size);
 }
 
-static void mangle_Shift(uint8_t * buf, size_t bufSz, size_t off)
+static void mangle_MemSet(uint8_t * buf, size_t bufSz, size_t off)
+{
+    uint64_t sz = util_rndGet(1, bufSz - off);
+    int val = (int)util_rndGet(0, UINT8_MAX);
+
+    memset(&buf[off], val, sz);
+}
+
+static void mangle_MemMove(uint8_t * buf, size_t bufSz, size_t off)
 {
     uint64_t mangleTo = util_rndGet(0, bufSz - 1);
     uint64_t mangleSzTo = bufSz - mangleTo;
@@ -165,6 +173,12 @@ static void mangle_Shift(uint8_t * buf, size_t bufSz, size_t off)
     uint64_t mangleSz = mangleSzFrom < mangleSzTo ? mangleSzFrom : mangleSzTo;
 
     memmove(&buf[mangleTo], &buf[off], mangleSz);
+}
+
+static void mangle_Random(uint8_t * buf, size_t bufSz, size_t off)
+{
+    uint64_t sz = util_rndGet(1, bufSz - off);
+    util_rndBuf(&buf[off], sz);
 }
 
 void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
@@ -191,7 +205,9 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
         mangle_Bytes,
         mangle_Magic,
         mangle_Magic,
-        mangle_Shift,
+        mangle_MemMove,
+        mangle_MemSet,
+	mangle_Random,
     };
 /*  *INDENT-ON* */
 
