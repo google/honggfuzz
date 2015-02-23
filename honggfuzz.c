@@ -76,8 +76,8 @@ static void usage(bool exit_success)
            " [" AB "-l val" AC "] : per process memory limit in MiB, (default: '" AB "0" AC "' [no limit])\n"
            " [" AB "-R val" AC "] : write report to this file, (default: '" AB _HF_REPORT_FILE AC "')\n"
 #if _HF_ARCH == LINUX
-           " [" AB "-p val" AC "] : [Linux] attach to a pid (and its group thread), instead of \n"
-           "            monitoring previously created process, default: '" AB "0" AC "' (none)\n"
+           " [" AB "-p val" AC "] : [Linux] attach to a pid (and its thread group), instead of \n"
+           "            monitoring a previously created process, default: '" AB "0" AC "' (none)\n"
            " [" AB "-D val" AC "] : [Linux] create a file dynamically with Linux perf counters,\n"
            "            can be used with or without the '-f' flag (initial file contents)\n"
            "            (default: " AB " none " AC ")\n"
