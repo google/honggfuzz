@@ -38,6 +38,7 @@
 static void mangle_Overwrite(uint8_t * dst, const uint8_t * src, size_t dstSz, size_t off,
                              size_t sz)
 {
+    return;
     size_t maxToCopy = dstSz - off;
     if (sz > maxToCopy) {
         sz = maxToCopy;
@@ -62,7 +63,7 @@ static void mangle_Bytes(uint8_t * buf, size_t bufSz, size_t off)
 
     /* Overwrite with random 2,3,4-byte values */
     size_t toCopy = util_rndGet(2, 4);
-    mangle_Overwrite(&buf[off], (uint8_t *) & val, bufSz, off, toCopy);
+    mangle_Overwrite(buf, (uint8_t *) & val, bufSz, off, toCopy);
 }
 
 static void mangle_Bit(uint8_t * buf, size_t bufSz, size_t off)
@@ -152,8 +153,7 @@ static void mangle_Magic(uint8_t * buf, size_t bufSz, size_t off)
 /*  *INDENT-ON* */
 
     uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleMagicVals) - 1);
-    mangle_Overwrite(&buf[off], mangleMagicVals[choice].val, bufSz, off,
-                     mangleMagicVals[choice].size);
+    mangle_Overwrite(buf, mangleMagicVals[choice].val, bufSz, off, mangleMagicVals[choice].size);
 }
 
 static void mangle_MemSet(uint8_t * buf, size_t bufSz, size_t off)
