@@ -258,10 +258,13 @@ static void *fuzz_threadNew(void *arg)
         .access = 0ULL,
         .exception = 0,
         .dynamicFileSz = 0,
-        .dynamicFile = alloca(hfuzz->maxFileSz),
+        .dynamicFile = malloc(hfuzz->maxFileSz),
         .branchCnt = 0,
         .report = {'\0'}
     };
+    if (fuzzer.dynamicFile == NULL) {
+        LOGMSG(l_FATAL, "malloc(%zu) failed", hfuzz->maxFileSz);
+    }
 
     int rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
     strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
@@ -337,6 +340,7 @@ static void *fuzz_threadNew(void *arg)
     }
 
     report_Report(hfuzz, fuzzer.report);
+    free(fuzzer.dynamicFile);
 
     sem_post(hfuzz->sem);
 
@@ -358,14 +362,18 @@ static void *fuzz_threadPid(void *arg)
         .access = 0ULL,
         .exception = 0,
         .dynamicFileSz = 0,
-        .dynamicFile = alloca(hfuzz->maxFileSz),
+        .dynamicFile = malloc(hfuzz->maxFileSz),
         .branchCnt = 0,
         .report = {'\0'}
     };
+    if (fuzzer.dynamicFile == NULL) {
+        LOGMSG(l_FATAL, "malloc(%zu) failed", hfuzz->maxFileSz);
+    }
 
     char fileName[] = ".honggfuzz.empty.XXXXXX";
     int fd;
     if ((fd = mkstemp(fileName)) == -1) {
+        free(fuzzer.dynamicFile);
         LOGMSG_P(l_ERROR, "Couldn't create a temporary file");
         return NULL;
     }
@@ -377,6 +385,7 @@ static void *fuzz_threadPid(void *arg)
     arch_reapChild(hfuzz, &fuzzer);
     unlink(fuzzer.fileName);
     report_Report(hfuzz, fuzzer.report);
+    free(fuzzer.dynamicFile);
 
     // There's no more hfuzz->pid to analyze. Just exit
     LOGMSG(l_INFO, "PID: %d exited. Exiting", fuzzer.pid);
@@ -391,7 +400,7 @@ static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
 
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-    pthread_attr_setstacksize(&attr, _HF_PTHREAD_STACKSIZE + hfuzz->maxFileSz);
+    pthread_attr_setstacksize(&attr, _HF_PTHREAD_STACKSIZE);
     pthread_attr_setguardsize(&attr, (size_t) sysconf(_SC_PAGESIZE));
 
     pthread_t t;
