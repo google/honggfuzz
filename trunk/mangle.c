@@ -227,31 +227,11 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
     }
 }
 
-bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz)
+static double mangle_ExpDist(double x)
 {
-    const uint64_t chance_one_in_x = 10;
-    if (util_rndGet(1, chance_one_in_x) != 1) {
-        return true;
-    }
-
-    uint64_t newSz = util_rndGet(1, hfuzz->maxFileSz);
-    if (buf == NULL) {
-        *bufSz = (size_t) newSz;
-        return true;
-    }
-
-    void *newBuf = mremap(buf, _HF_PAGE_ALIGN_UP(bufSz), _HF_PAGE_ALIGN_UP(newSz), MREMAP_MAYMOVE);
-    if (newBuf == MAP_FAILED) {
-        LOGMSG_P(l_ERROR, "mremap() failed");
-        return false;
-    }
-
-    *buf = newBuf;
-    *bufSz = (size_t) newSz;
-    return true;
+    return pow(x, 10.0L);
 }
 
-#if 0
 /* Gauss-like distribution */
 bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz)
 {
@@ -260,32 +240,28 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz)
         return true;
     }
 
-    int64_t choice = (int64_t) util_rndGet(1, UINT32_MAX);
-    double delta = 1.0L / (double)choice;
+    double rnd = (double)util_rndGet(1, UINT32_MAX) / (double)(UINT32_MAX);
+    double v = mangle_ExpDist(rnd);
 
-    if (util_rndGet(0, 1) == 0) {
-        delta = pow(delta, 0.25L);
-    } else {
-        delta = -pow(delta, 0.25L);
-    }
+    size_t newSz = *bufSz;
+    bool neg = (util_rndGet(0, 1) == 0);
 
-    int64_t newSz = (int64_t) * bufSz;
-    if (delta > 0.0L) {
-        newSz = (int64_t) * bufSz + (int64_t) ((double)(hfuzz->maxFileSz - *bufSz) * delta);
+    if (neg == false) {
+        newSz += (size_t) (v * (double)(hfuzz->maxFileSz - *bufSz));
     }
-    if (delta < 0.0L) {
-        newSz = (int64_t) * bufSz + (int64_t) ((double)*bufSz * delta);
+    if (neg == true) {
+        newSz -= (size_t) (v * (double)*bufSz);
     }
 
-    if (newSz > (int64_t) hfuzz->maxFileSz) {
-        newSz = (int64_t) hfuzz->maxFileSz;
+    if (newSz < 1) {
+        newSz = 1;
     }
-    if (newSz < 1LL) {
-        newSz = 1LL;
+    if (newSz > hfuzz->maxFileSz) {
+        newSz = hfuzz->maxFileSz;
     }
 
-    LOGMSG(l_DEBUG, "DELTA: %lf, CUR: %zu, MAX: %zu, CHOSEN: %zu", delta, *bufSz,
-           hfuzz->maxFileSz, newSz);
+    LOGMSG(l_DEBUG, "v: %lf, CURSZ: %zu, MAXSZ: %zu, NEWSZ: %zu", v, *bufSz, hfuzz->maxFileSz,
+           newSz);
 
     if (buf == NULL) {
         *bufSz = (size_t) newSz;
@@ -302,4 +278,3 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz)
     *bufSz = (size_t) newSz;
     return true;
 }
-#endif                          /* 0 */
