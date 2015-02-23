@@ -226,7 +226,7 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz)
         newSz = 1LL;
     }
 
-    LOGMSG(l_ERROR, "CHOICE: %ld U: %lf, CUR: %zu, MAX: %zu, CHOSEN: %zu", choice, delta, *bufSz,
+    LOGMSG(l_DEBUG, "CHOICE: %ld U: %lf, CUR: %zu, MAX: %zu, CHOSEN: %zu", choice, delta, *bufSz,
            hfuzz->maxFileSz, newSz);
 
     if (buf == NULL) {
