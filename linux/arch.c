@@ -185,35 +185,47 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     int status;
-    bool perfEnabled = false;
     int perfFd;
 
     for (;;) {
         pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
-        LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
-
-        if (pid == -1 && errno == EINTR) {
-            continue;
-        }
-        if (pid == -1 && errno == ECHILD) {
-            if (perfEnabled) {
-                arch_perfAnalyze(hfuzz, fuzzer, perfFd);
-            }
-            return;
-        }
         if (pid == -1) {
-            LOGMSG_P(l_WARN, "wait3() failed");
             continue;
         }
-
-        if (perfEnabled == false) {
-            if (arch_perfEnable(pid, hfuzz, &perfFd) == false) {
-                LOGMSG(l_FATAL, "Couldn't enable perf subsystem for PID: '%d'", pid);
-            }
-            perfEnabled = true;
-        }
-
+        arch_perfEnable(pid, hfuzz, &perfFd);
         arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
+        break;
+    }
+
+    for (;;) {
+        arch_perfPoll(perfFd);
+
+        for (;;) {
+            pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WNOHANG | WUNTRACED, NULL);
+            LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
+
+            if (pid == 0) {
+                break;
+            }
+            if (pid == -1 && errno == EINTR) {
+                break;
+            }
+            if (pid == -1 && errno == ECHILD) {
+                arch_perfAnalyze(hfuzz, fuzzer, perfFd);
+                LOGMSG(l_ERROR, "No more processes to track");
+                return;
+            }
+            if (pid == -1) {
+                LOGMSG_P(l_WARN, "wait3() failed");
+                return;
+            }
+
+            LOGMSG(l_ERROR, "STOPPED: %d", WIFSTOPPED(status));
+            LOGMSG(l_ERROR, "SIGNALED: %d", WIFSIGNALED(status));
+            LOGMSG(l_ERROR, "EXITED: %d", WIFEXITED(status));
+
+            arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
+        }
     }
 }
 

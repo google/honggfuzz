@@ -26,5 +26,6 @@
 
 extern bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd);
 extern void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd);
+extern void arch_perfPoll(int perfFd);
 
 #endif

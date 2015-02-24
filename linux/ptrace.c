@@ -87,7 +87,6 @@ bool arch_ptraceEnable(honggfuzz_t * hfuzz)
         LOGMSG_P(l_FATAL, "Couldn't attach ptrace to pid %d", getpid());
         return false;
     }
-
     return true;
 }
 
