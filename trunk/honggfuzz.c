@@ -199,6 +199,9 @@ int main(int argc, char **argv)
             case 'o':
                 hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_COND_COUNT;
                 break;
+            case 'p':
+                hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_IP_COUNT;
+                break;
             default:
                 usage(EXIT_FAILURE);
                 break;
