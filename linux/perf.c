@@ -133,7 +133,7 @@ static inline void arch_perfMmapParse(int fd)
         if (peh->type != PERF_RECORD_SAMPLE) {
             continue;
         }
-        if (peh->misc != PERF_RECORD_MISC_USER) {
+        if (peh->misc != PERF_RECORD_MISC_USER && peh->misc != PERF_RECORD_MISC_KERNEL) {
             continue;
         }
 
@@ -196,45 +196,48 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         break;
     case _HF_DYNFILE_BRANCH_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_COUNT_HW_BRANCH_INSTRUCTIONS for PID: %d", pid);
-        pe.type = PERF_TYPE_HARDWARE;
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.inherit = 1;
         break;
-#define _HF_SAMPLE_PERIOD 100   /* investigate */
+#define _HF_SAMPLE_PERIOD 1     /* investigate */
     case _HF_DYNFILE_EDGE_ANY_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
-        pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+        pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
         pe.sample_period = _HF_SAMPLE_PERIOD;
         break;
     case _HF_DYNFILE_EDGE_CALL_COUNT:
-        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
-        pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY_CALL for PID: %d",
+               pid);
+        pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
+        pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY_CALL;
         pe.sample_period = _HF_SAMPLE_PERIOD;
         break;
     case _HF_DYNFILE_EDGE_RETURN_COUNT:
-        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
-        pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY_RETURN for PID: %d",
+               pid);
+        pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
+        pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY_RETURN;
         pe.sample_period = _HF_SAMPLE_PERIOD;
         break;
     case _HF_DYNFILE_EDGE_IND_COUNT:
-        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
-        pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+        LOGMSG(l_DEBUG,
+               "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY_IND_CALL for PID: %d", pid);
+        pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_IND_CALL;
         pe.sample_period = _HF_SAMPLE_PERIOD;
+
         break;
 #ifndef PERF_SAMPLE_BRANCH_COND /* Since around kernel version 3.15 */
 #define PERF_SAMPLE_BRANCH_COND (1U << 10)
 #endif                          /* PERF_SAMPLE_BRANCH_COND */
     case _HF_DYNFILE_EDGE_COND_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_COND for PID: %d", pid);
-        pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+        pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
         pe.branch_sample_type = PERF_SAMPLE_BRANCH_COND;
         pe.sample_period = _HF_SAMPLE_PERIOD;
