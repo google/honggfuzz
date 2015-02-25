@@ -197,13 +197,11 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     for (;;) {
         for (;;) {
             pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
+
             LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
 
-            if (pid == 0) {
-                break;
-            }
             if (pid == -1 && errno == EINTR) {
-                break;
+                continue;
             }
             if (pid == -1 && errno == ECHILD) {
                 arch_perfAnalyze(hfuzz, fuzzer, perfFd);
@@ -211,7 +209,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 return;
             }
             if (pid == -1) {
-                LOGMSG_P(l_WARN, "wait3() failed");
+                LOGMSG_P(l_FATAL, "wait3() failed");
                 return;
             }
 
