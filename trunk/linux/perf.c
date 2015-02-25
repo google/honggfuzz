@@ -187,7 +187,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     pe.exclude_kernel = 1;
     pe.exclude_hv = 1;
     pe.exclude_callchain_kernel = 1;
-//    pe.type = PERF_TYPE_HARDWARE;
+    pe.type = PERF_TYPE_HARDWARE;
 
     switch (hfuzz->dynFileMethod) {
     case _HF_DYNFILE_INSTR_COUNT:
