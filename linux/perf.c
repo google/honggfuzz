@@ -292,7 +292,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
     fuzzer->branchCnt = count;
  out:
     LOGMSG(l_INFO,
-           "File size (New/Best): %zu/%zu, Perf events seen: Best: %" PRIu64 " / New: %" PRIu64,
+           "File size (New/Best): %zu/%zu, Perf feedback: Best: %" PRIu64 " / New: %" PRIu64,
            fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz, hfuzz->branchBestCnt, count);
     if (perfMmap != NULL) {
         munmap(perfMmap, _HF_PERF_MMAP_TOT_SZ);
