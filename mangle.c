@@ -230,9 +230,7 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
 static double mangle_ExpDist(void)
 {
     double rnd = (double)util_rndGet(1, UINT32_MAX) / (double)(UINT32_MAX);
-    double c = pow(rnd, 6.0L);
-	LOGMSG(l_DEBUG, "C: %lf", c);
-	return c;
+    return pow(rnd, 6.0L);
 }
 
 /* Gauss-like distribution */
@@ -243,37 +241,37 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz)
         return true;
     }
     ssize_t newSz = *bufSz;
-	int delta = 0;
-	unsigned int val = (unsigned int)util_rndGet(1, 32);
-    switch(val) {
-	case 1 ... 8:
-		delta = -val;
-		break;
-	case 9 ... 16:
-		delta = val - 8;
-		break;
-	case 17 ... 24:
-		delta += (int)(mangle_ExpDist() * (double)((hfuzz->maxFileSz - *bufSz)));
-		break;
-	case 25 ... 32:
-		delta -= (int)(mangle_ExpDist() * (double)(*bufSz));
-		break;
-	default:
-		LOGMSG(l_FATAL, "Random value out of scope %u", val);
-		break;
-	}
+    int delta = 0;
+    unsigned int val = (unsigned int)util_rndGet(1, 32);
+    switch (val) {
+    case 1 ... 8:
+        delta = -val;
+        break;
+    case 9 ... 16:
+        delta = val - 8;
+        break;
+    case 17 ... 24:
+        delta += (int)(mangle_ExpDist() * (double)((hfuzz->maxFileSz - *bufSz)));
+        break;
+    case 25 ... 32:
+        delta -= (int)(mangle_ExpDist() * (double)(*bufSz));
+        break;
+    default:
+        LOGMSG(l_FATAL, "Random value out of scope %u", val);
+        break;
+    }
 
-	newSz += delta;
+    newSz += delta;
 
     if (newSz < 1) {
         newSz = 1;
     }
-    if (newSz > (ssize_t)hfuzz->maxFileSz) {
-        newSz = (ssize_t)hfuzz->maxFileSz;
+    if (newSz > (ssize_t) hfuzz->maxFileSz) {
+        newSz = (ssize_t) hfuzz->maxFileSz;
     }
 
-    LOGMSG(l_DEBUG, "Current size: %zu, Maximal size: %zu, New Size: %zu, Delta: %d", *bufSz, hfuzz->maxFileSz,
-           newSz, delta);
+    LOGMSG(l_DEBUG, "Current size: %zu, Maximal size: %zu, New Size: %zu, Delta: %d", *bufSz,
+           hfuzz->maxFileSz, newSz, delta);
 
     if (buf == NULL) {
         *bufSz = (size_t) newSz;
