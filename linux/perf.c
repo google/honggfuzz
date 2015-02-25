@@ -29,6 +29,7 @@
 #include <linux/hw_breakpoint.h>
 #include <linux/perf_event.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -102,7 +103,11 @@ static inline void arch_perfMmapParse(int fd)
 
     uint8_t *dataTailPtr = perfMmap + getpagesize() + dataTailOff;
 
-    uint8_t localData[_HF_PERF_MMAP_DATA_SZ];
+    uint8_t *localData = malloc(_HF_PERF_MMAP_DATA_SZ);
+    if (localData == NULL) {
+        LOGMSG_P(l_FATAL, "malloc(%zu) failed", _HF_PERF_MMAP_DATA_SZ);
+    }
+
     size_t localDataLen = 0;
     if (dataHeadOff > dataTailOff) {
         localDataLen = dataHeadOff - dataTailOff;
@@ -114,10 +119,6 @@ static inline void arch_perfMmapParse(int fd)
         memcpy(&localData[0], dataTailPtr, _HF_PERF_MMAP_DATA_SZ - dataTailOff);
         memcpy(&localData[_HF_PERF_MMAP_DATA_SZ - dataTailOff], perfMmap + getpagesize(),
                dataHeadOff);
-    }
-
-    if (localDataLen == 0) {
-        return;
     }
 
     /* Ok, let it go */
@@ -147,6 +148,7 @@ static inline void arch_perfMmapParse(int fd)
         uint64_t ip = *(uint64_t *) ((uint8_t *) peh + sizeof(peh));
         arch_perfAddPC(ip);
     }
+    free(localData);
 }
 
 static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
@@ -175,8 +177,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return true;
     }
-
-    memset(perfPC, '\x00', sizeof(perfPC));
+    bzero(perfPC, sizeof(perfPC));
 
     LOGMSG(l_DEBUG, "Enabling PERF for PID=%d", pid);
 
