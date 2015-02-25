@@ -50,43 +50,51 @@
 static __thread uint8_t *perfMmap = NULL;
 static __thread int perfSig = 0;
 
-#define _HF_PERF_BRANCHES_SZ (1024 * 256)
+#define _HF_PERF_BRANCHES_SZ (1024 * 128)
 /*  *INDENT-OFF* */
-static __thread uint64_t perfPC[_HF_PERF_BRANCHES_SZ];
+static __thread struct {
+  uint64_t from;
+  uint64_t to;
+} perfBranch[_HF_PERF_BRANCHES_SZ];
 /*  *INDENT-ON* */
 
 static size_t arch_perfCountBranches(void)
 {
     size_t i = 0;
     for (i = 0; i < _HF_PERF_BRANCHES_SZ; i++) {
-        if (perfPC[i] == 0ULL) {
+        if (perfBranch[i].from == 0ULL && perfBranch[i].to == 0ULL) {
             return i;
         }
-        LOGMSG(l_DEBUG, "Branch entry: PC: %" PRIx64, perfPC[i]);
+        LOGMSG(l_DEBUG, "Branch entry: FROM: %" PRIx64 ", TO: %" PRIx64, perfBranch[i].from,
+               perfBranch[i].to);
     }
     return i;
 }
 
-static inline void arch_perfAddPC(uint64_t pc)
+static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
 {
+    /*
+     * Kernel sometimes reports branches from the kernel (iret), we are not interested in that as it
+     * makes the whole concept of unique branch counting less predictable
+     */
+    if (from > 0xFFFFFFFF00000000 || to > 0xFFFFFFFF00000000) {
+        return;
+    }
     for (size_t i = 0; i < _HF_PERF_BRANCHES_SZ; i++) {
-        if (perfPC[i] == pc) {
+        if (perfBranch[i].from == from && perfBranch[i].to == to) {
             break;
         }
-        if (perfPC[i] == 0ULL) {
-            perfPC[i] = pc;
+        if (perfBranch[i].from == 0ULL && perfBranch[i].to == 0ULL) {
+            perfBranch[i].from = from;
+            perfBranch[i].to = to;
             break;
         }
     }
 }
 
-static inline void arch_perfMmapParse(int fd)
+static inline void arch_perfMmapParse(void)
 {
-    if (fd == 999) {
-        return;
-    }
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmap;
-
 /* Memory Barriers */
 #if defined(__x86_64__)
 #define rmb()	__asm__ __volatile__ ("lfence" ::: "memory")
@@ -95,14 +103,11 @@ static inline void arch_perfMmapParse(int fd)
 #else
 #define rmb()	__asm__ __volatile__ ("" ::: "memory")
 #endif
-
     uint64_t dataHeadOff = pem->data_head % _HF_PERF_MMAP_DATA_SZ;
-    uint64_t dataTailOff = pem->data_tail % _HF_PERF_MMAP_DATA_SZ;
     /* Required as per 'man perf_event_open' */
     rmb();
-
+    uint64_t dataTailOff = pem->data_tail % _HF_PERF_MMAP_DATA_SZ;
     uint8_t *dataTailPtr = perfMmap + getpagesize() + dataTailOff;
-
     uint8_t *localData = malloc(_HF_PERF_MMAP_DATA_SZ);
     if (localData == NULL) {
         LOGMSG_P(l_FATAL, "malloc(%zu) failed", _HF_PERF_MMAP_DATA_SZ);
@@ -123,7 +128,6 @@ static inline void arch_perfMmapParse(int fd)
 
     /* Ok, let it go */
     pem->data_tail = pem->data_head;
-
     for (struct perf_event_header * peh = (struct perf_event_header *)localData;
          (uintptr_t) peh < (uintptr_t) (localData + localDataLen);
          peh = (struct perf_event_header *)((uint8_t *) peh + peh->size)) {
@@ -145,8 +149,9 @@ static inline void arch_perfMmapParse(int fd)
             continue;
         }
 
-        uint64_t ip = *(uint64_t *) ((uint8_t *) peh + sizeof(peh));
-        arch_perfAddPC(ip);
+        uint64_t from = *(uint64_t *) ((uint8_t *) peh + sizeof(peh));
+        uint64_t to = *(uint64_t *) ((uint8_t *) peh + sizeof(peh) + sizeof(from));
+        arch_perfAddBranch(from, to);
     }
     free(localData);
 }
@@ -177,10 +182,8 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return true;
     }
-    bzero(perfPC, sizeof(perfPC));
-
+    bzero(perfBranch, sizeof(perfBranch));
     LOGMSG(l_DEBUG, "Enabling PERF for PID=%d", pid);
-
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(struct perf_event_attr));
     pe.size = sizeof(struct perf_event_attr);
@@ -189,7 +192,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     pe.exclude_hv = 1;
     pe.exclude_callchain_kernel = 1;
     pe.type = PERF_TYPE_HARDWARE;
-
     switch (hfuzz->dynFileMethod) {
     case _HF_DYNFILE_INSTR_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_COUNT_HW_INSTRUCTIONS for PID: %d", pid);
@@ -202,9 +204,10 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.inherit = 1;
         break;
     case _HF_DYNFILE_UNIQUE_PC_COUNT:
-        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP for PID: %d", pid);
+        LOGMSG(l_DEBUG,
+               "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d", pid);
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
-        pe.sample_type = PERF_SAMPLE_IP;
+        pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.watermark = 1;
         pe.wakeup_watermark = (4096 * 16);
@@ -239,11 +242,8 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     sigset_t smask;
     sigemptyset(&smask);
     struct sigaction sa = {
-        .sa_handler = NULL,
-        .sa_sigaction = arch_perfSigHandler,
-        .sa_mask = smask,
-        .sa_flags = SA_SIGINFO | SA_RESTART,
-        .sa_restorer = NULL
+        .sa_handler = NULL,.sa_sigaction = arch_perfSigHandler,.sa_mask = smask,.sa_flags =
+            SA_SIGINFO | SA_RESTART,.sa_restorer = NULL
     };
     if (sigaction(SIGCHLD, &sa, NULL) == -1) {
         LOGMSG_P(l_ERROR, "sigaction() failed");
@@ -260,13 +260,15 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
 void arch_perfPoll(int perfFd)
 {
     for (;;) {
-        struct pollfd pollfds = {.fd = perfFd,.events = POLLIN,.revents = 0 };
+        struct pollfd pollfds = {
+            .fd = perfFd,.events = POLLIN,.revents = 0
+        };
         int ret = poll(&pollfds, 1, 100);
         if (ret <= 0) {
             return;
         }
 
-        arch_perfMmapParse(perfFd);
+        arch_perfMmapParse();
     }
 }
 
@@ -278,7 +280,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
     }
 
     if (hfuzz->dynFileMethod == _HF_DYNFILE_UNIQUE_PC_COUNT) {
-        arch_perfMmapParse(perfFd);
+        arch_perfMmapParse();
         count = fuzzer->branchCnt = arch_perfCountBranches();
         goto out;
     }
@@ -288,12 +290,10 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
         goto out;
     }
     fuzzer->branchCnt = count;
-
  out:
     LOGMSG(l_INFO,
            "File size (New/Best): %zu/%zu, Perf events seen: Best: %" PRIu64 " / New: %" PRIu64,
            fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz, hfuzz->branchBestCnt, count);
-
     if (perfMmap != NULL) {
         munmap(perfMmap, _HF_PERF_MMAP_TOT_SZ);
     }
