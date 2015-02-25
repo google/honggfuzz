@@ -183,7 +183,6 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
 
     mangle_mangleContent(hfuzz, buf, fileSz);
     files_unmapFileCloseFdMSync(buf, fileSz, dstfd);
-    exit(0);
 
     return true;
 }
@@ -451,6 +450,8 @@ void fuzz_main(honggfuzz_t * hfuzz)
             LOGMSG(l_FATAL, "Couldn't prepare parent for fuzzing");
         }
     }
+
+    LOGMSG(l_ERROR, "SEM: %p", hfuzz->sem);
 
     for (;;) {
         if (sem_wait(hfuzz->sem) == -1) {
