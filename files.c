@@ -160,8 +160,8 @@ uint8_t *files_mapFileToWriteIni(char *fileName, size_t fileSz, int *fd, uint8_t
     }
 
     LOGMSG(l_DEBUG, "mmap()'d '%llu' bytes for the file '%s' (original size: '%llu') at 0x%p",
-           (unsigned long long)_HF_PAGE_ALIGN_UP(fileSz), fileName,
-           (unsigned long long)fileSz, buf);
+           (unsigned long long)_HF_PAGE_ALIGN_UP(fileSz), fileName, (unsigned long long)fileSz,
+           buf);
 
     memcpy(buf, iniBuf, fileSz);
     return buf;

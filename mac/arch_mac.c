@@ -161,8 +161,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      * Boring, the process just exited
      */
     if (WIFEXITED(status)) {
-        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d",
-               fuzzer->pid, WEXITSTATUS(status));
+        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d", fuzzer->pid,
+               WEXITSTATUS(status));
         return true;
     }
 
@@ -177,8 +177,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     }
 
     int termsig = WTERMSIG(status);
-    LOGMSG(l_DEBUG, "Process (pid %d) killed by signal %d '%s'",
-           fuzzer->pid, termsig, strsignal(termsig));
+    LOGMSG(l_DEBUG, "Process (pid %d) killed by signal %d '%s'", fuzzer->pid, termsig,
+           strsignal(termsig));
     if (!arch_sigs[termsig].important) {
         LOGMSG(l_DEBUG, "It's not that important signal, skipping");
         return true;
@@ -212,8 +212,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
                  "%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s.%s",
                  arch_sigs[termsig].descr,
                  exception_to_string(fuzzer->exception), fuzzer->pc,
-                 fuzzer->backtrace, fuzzer->access, localtmstr,
-                 fuzzer->pid, fuzzer->origFileName, hfuzz->fileExtn);
+                 fuzzer->backtrace, fuzzer->access, localtmstr, fuzzer->pid, fuzzer->origFileName,
+                 hfuzz->fileExtn);
     }
 
     if (link(fuzzer->fileName, newname) == 0) {
@@ -397,8 +397,8 @@ void *wait_for_exception()
 bool arch_archInit(honggfuzz_t * hfuzz)
 {
     char plist[PATH_MAX];
-    snprintf(plist, sizeof(plist),
-             "/Users/%s/Library/Preferences/com.apple.DebugSymbols.plist", getlogin());
+    snprintf(plist, sizeof(plist), "/Users/%s/Library/Preferences/com.apple.DebugSymbols.plist",
+             getlogin());
 
     if (files_exists(plist)) {
         LOGMSG(l_WARN,
@@ -408,8 +408,8 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     /*
      * Allocate exception port.
      */
-    if (mach_port_allocate
-        (mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &g_exception_port) != KERN_SUCCESS) {
+    if (mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &g_exception_port) !=
+        KERN_SUCCESS) {
         return false;
     }
 
@@ -433,8 +433,8 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     /*
      * Generate and register exception port service.
      */
-    snprintf(g_service_name, sizeof(g_service_name),
-             "com.google.code.honggfuzz.%d", util_rndGet(0, 999999));
+    snprintf(g_service_name, sizeof(g_service_name), "com.google.code.honggfuzz.%d",
+             util_rndGet(0, 999999));
     if (bootstrap_check_in(bootstrap, g_service_name, &g_exception_port) != KERN_SUCCESS) {
         return false;
     }
@@ -630,8 +630,8 @@ kern_return_t
 catch_mach_exception_raise(mach_port_t exception_port,
                            mach_port_t thread,
                            mach_port_t task,
-                           exception_type_t exception,
-                           mach_exception_data_t code, mach_msg_type_number_t codeCnt)
+                           exception_type_t exception, mach_exception_data_t code,
+                           mach_msg_type_number_t codeCnt)
 {
     LOGMSG(l_FATAL, "This function should never get called");
     return KERN_SUCCESS;

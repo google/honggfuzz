@@ -60,8 +60,8 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
     snprintf(fileName, PATH_MAX, ".honggfuzz.%d.%lu.%lu.%lu.%lu.%s",
              (int)getpid(), (unsigned long int)tv.tv_sec,
              (unsigned long int)tv.tv_usec,
-             (unsigned long int)util_rndGet(0, 1 << 30),
-             (unsigned long int)util_rndGet(0, 1 << 30), hfuzz->fileExtn);
+             (unsigned long int)util_rndGet(0, 1 << 30), (unsigned long int)util_rndGet(0, 1 << 30),
+             hfuzz->fileExtn);
 
     return;
 }
@@ -111,9 +111,8 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
 
     int dstfd;
-    uint8_t *buf =
-        files_mapFileToWriteIni(fuzzer->fileName, fuzzer->dynamicFileSz, &dstfd,
-                                fuzzer->dynamicFile);
+    uint8_t *buf = files_mapFileToWriteIni(fuzzer->fileName, fuzzer->dynamicFileSz, &dstfd,
+                                           fuzzer->dynamicFile);
     if (buf == NULL) {
         LOGMSG(l_ERROR, "Couldn't map file '%s' in R/W mode, size=%zu", fuzzer->fileName,
                fuzzer->dynamicFile);
@@ -137,40 +136,41 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
 {
     int srcfd = open(hfuzz->files[rnd_index], O_RDONLY);
     if (srcfd == -1) {
-      LOGMSG_P(l_ERROR, "Couldn't open '%s' for R/O", hfuzz->files[rnd_index]);
-      return false;
+        LOGMSG_P(l_ERROR, "Couldn't open '%s' for R/O", hfuzz->files[rnd_index]);
+        return false;
     }
 
     struct stat sbuf;
     if (fstat(srcfd, &sbuf) == -1) {
-      LOGMSG_P(l_ERROR, "Couldn't fstat(fd='%s' fname='%s')", srcfd, hfuzz->files[rnd_index]);
-      close(srcfd);
-      return false;
+        LOGMSG_P(l_ERROR, "Couldn't fstat(fd='%s' fname='%s')", srcfd, hfuzz->files[rnd_index]);
+        close(srcfd);
+        return false;
     }
-    size_t fileSz = (size_t)sbuf.st_size;
+    size_t fileSz = (size_t) sbuf.st_size;
 
     uint8_t *tmpbuf = malloc(fileSz);
     if (tmpbuf == NULL) {
-      LOGMSG_P(l_ERROR, "Couldn't malloc(size='%zu')", fileSz);
-      close(srcfd);
-      return false;
+        LOGMSG_P(l_ERROR, "Couldn't malloc(size='%zu')", fileSz);
+        close(srcfd);
+        return false;
     }
 
     if (files_readFromFd(srcfd, tmpbuf, fileSz) == false) {
-      LOGMSG(l_ERROR, "Couldn't read '%zu' bytes from '%s' (fd='%d')", fileSz, hfuzz->files[rnd_index], srcfd);
-      close(srcfd);
-      free(tmpbuf);
-      return false;
+        LOGMSG(l_ERROR, "Couldn't read '%zu' bytes from '%s' (fd='%d')", fileSz,
+               hfuzz->files[rnd_index], srcfd);
+        close(srcfd);
+        free(tmpbuf);
+        return false;
     }
     close(srcfd);
 
-  int dstfd;
-  uint8_t *buf = files_mapFileToWriteIni(fileName, fileSz, &dstfd, tmpbuf);
-  if (buf == NULL) {
-    LOGMSG(l_ERROR, "Couldn't map '%s' for R/W, size='%zu'", fileName, fileSz);
-    free(tmpbuf);
-    return false;
-  }
+    int dstfd;
+    uint8_t *buf = files_mapFileToWriteIni(fileName, fileSz, &dstfd, tmpbuf);
+    if (buf == NULL) {
+        LOGMSG(l_ERROR, "Couldn't map '%s' for R/W, size='%zu'", fileName, fileSz);
+        free(tmpbuf);
+        return false;
+    }
 
     free(tmpbuf);
 
@@ -195,8 +195,8 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
 
     int dstfd = open(fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
     if (dstfd == -1) {
-        LOGMSG_P(l_ERROR,
-                 "Couldn't create a temporary file '%s' in the current directory", fileName);
+        LOGMSG_P(l_ERROR, "Couldn't create a temporary file '%s' in the current directory",
+                 fileName);
         return false;
     }
 
@@ -328,8 +328,8 @@ static void *fuzz_threadNew(void *arg)
         }
     }
 
-    LOGMSG(l_INFO, "Launched new process, pid: %d, (%d/%d)", fuzzer.pid,
-           fuzz_numOfProc(hfuzz), hfuzz->threadsMax);
+    LOGMSG(l_INFO, "Launched new process, pid: %d, (%d/%d)", fuzzer.pid, fuzz_numOfProc(hfuzz),
+           hfuzz->threadsMax);
 
     arch_reapChild(hfuzz, &fuzzer);
     unlink(fuzzer.fileName);

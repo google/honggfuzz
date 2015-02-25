@@ -79,8 +79,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      * Boring, the process just exited
      */
     if (WIFEXITED(status)) {
-        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d",
-               fuzzer->pid, WEXITSTATUS(status));
+        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d", fuzzer->pid,
+               WEXITSTATUS(status));
         return true;
     }
 
@@ -95,8 +95,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     }
 
     int termsig = WTERMSIG(status);
-    LOGMSG(l_DEBUG, "Process (pid %d) killed by signal %d '%s'",
-           fuzzer->pid, termsig, strsignal(termsig));
+    LOGMSG(l_DEBUG, "Process (pid %d) killed by signal %d '%s'", fuzzer->pid, termsig,
+           strsignal(termsig));
     if (!arch_sigs[termsig].important) {
         LOGMSG(l_DEBUG, "It's not that important signal, skipping");
         return true;
@@ -107,8 +107,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
 
     char newname[PATH_MAX];
     snprintf(newname, sizeof(newname), "%s.%d.%s.%s.%s",
-             arch_sigs[termsig].descr, fuzzer->pid, localtmstr,
-             fuzzer->origFileName, hfuzz->fileExtn);
+             arch_sigs[termsig].descr, fuzzer->pid, localtmstr, fuzzer->origFileName,
+             hfuzz->fileExtn);
 
     LOGMSG(l_INFO, "Ok, that's interesting, saving the '%s' as '%s'", fuzzer->fileName, newname);
 
