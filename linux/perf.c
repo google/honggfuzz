@@ -224,9 +224,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         return false;
     }
 
-    uint64_t dupa;
-    read(*perfFd, &dupa, sizeof(dupa));
-
     if (hfuzz->dynFileMethod != _HF_DYNFILE_UNIQUE_PC_COUNT) {
         return true;
     }
