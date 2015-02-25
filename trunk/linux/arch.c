@@ -203,7 +203,9 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
 
         if (pid == 0) {
+#if 0 /* Don't use poll() for now, it adds to timeouts */
             arch_perfPoll(perfFd);
+#endif
             continue;
         }
         if (pid == -1 && errno == EINTR) {
