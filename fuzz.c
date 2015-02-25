@@ -97,7 +97,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
     /* The first pass should be on an empty/initial file */
     if (hfuzz->branchBestCnt > 0) {
-        if (mangle_Resize(hfuzz, NULL, &fuzzer->dynamicFileSz) == false) {
+        if (mangle_Resize(hfuzz, NULL, &fuzzer->dynamicFileSz, -1) == false) {
             return false;
         }
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
@@ -145,7 +145,7 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
         return false;
     }
 
-    if (mangle_Resize(hfuzz, &buf, &fileSz) == false) {
+    if (mangle_Resize(hfuzz, &buf, &fileSz, srcfd) == false) {
         files_unmapFileCloseFd(buf, fileSz, srcfd);
         close(dstfd);
         LOGMSG(l_ERROR, "File resizing failed");
@@ -284,13 +284,13 @@ static void *fuzz_threadNew(void *arg)
         }
     }
 
-#if _HF_ARCH == LINUX
+#if defined(_HF_ARCH_LINUX)
 #include <unistd.h>
 #include <sys/syscall.h>
     fuzzer.pid = syscall(__NR_fork);
-#else
+#else /* defined(_HF_ARCH_LINUX) */
     fuzzer.pid = fork();
-#endif                          /* _HF_ARCH == LINUX */
+#endif                          /* defined(_HF_ARCH_LINUX) */
 
     if (fuzzer.pid == -1) {
         LOGMSG_P(l_FATAL, "Couldn't fork");
@@ -414,7 +414,7 @@ static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
 void fuzz_main(honggfuzz_t * hfuzz)
 {
     char semName[PATH_MAX];
-    snprintf(semName, sizeof(semName), "honggfuzz.%d.%d.%" PRIx64, getpid(),
+    snprintf(semName, sizeof(semName), "/honggfuzz.%d.%d.%" PRIx64, getpid(),
              (int)time(NULL), util_rndGet(1, 1ULL << 62));
 
     hfuzz->sem = sem_open(semName, O_CREAT, 0644, hfuzz->threadsMax);

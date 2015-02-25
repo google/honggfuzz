@@ -234,7 +234,7 @@ static double mangle_ExpDist(void)
 }
 
 /* Gauss-like distribution */
-bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz)
+bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz, int fd)
 {
     const uint64_t chance_one_in_x = 10;
     if (util_rndGet(1, chance_one_in_x) != 1) {
@@ -278,7 +278,10 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz)
         return true;
     }
 
-    void *newBuf = mremap(buf, _HF_PAGE_ALIGN_UP(bufSz), _HF_PAGE_ALIGN_UP(newSz), MREMAP_MAYMOVE);
+	munmap(buf, _HF_PAGE_ALIGN_UP(bufSz));
+	ftruncate(fd, newSz);
+	void *newBuf = mmap(NULL, _HF_PAGE_ALIGN_UP(newSz), PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+
     if (newBuf == MAP_FAILED) {
         LOGMSG_P(l_ERROR, "mremap() failed");
         return false;
