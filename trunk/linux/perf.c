@@ -43,13 +43,13 @@
 /*
  * 1 + 16 pages
  */
-#define _HF_PERF_MMAP_DATA_SZ (32 * 4096)
-#define _HF_PERF_MMAP_TOT_SZ (4096 + _HF_PERF_MMAP_DATA_SZ)
+#define _HF_PERF_MMAP_DATA_SZ (1024 * 1024)
+#define _HF_PERF_MMAP_TOT_SZ (getpagesize() + _HF_PERF_MMAP_DATA_SZ)
 
 static __thread uint8_t *perfMmap = NULL;
 static __thread int perfSig = 0;
 
-#define _HF_PERF_BRANCHES_SZ (1024 * 128)
+#define _HF_PERF_BRANCHES_SZ (1024 * 256)
 /*  *INDENT-OFF* */
 static __thread uint64_t perfPC[_HF_PERF_BRANCHES_SZ];
 /*  *INDENT-ON* */
