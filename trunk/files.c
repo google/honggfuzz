@@ -138,9 +138,9 @@ uint8_t *files_mapFileToRead(char *fileName, size_t * fileSz, int *fd)
     return buf;
 }
 
-uint8_t *files_mapFileToWriteIni(char *fileName, size_t fileSz, int *fd, uint8_t *iniBuf)
+uint8_t *files_mapFileToWriteIni(char *fileName, size_t fileSz, int *fd, uint8_t * iniBuf)
 {
-    if ((*fd = open(fileName, O_CREAT|O_EXCL|O_RDWR, 0644)) == -1) {
+    if ((*fd = open(fileName, O_CREAT | O_EXCL | O_RDWR, 0644)) == -1) {
         LOGMSG_P(l_WARN, "Couldn't open() '%s' file in R/W mode", fileName);
         return NULL;
     }

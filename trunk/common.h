@@ -82,7 +82,6 @@ typedef struct {
     size_t dynamicFileBestSz;
     dynFileMethod_t dynFileMethod;
     int64_t branchBestCnt;
-    int64_t branchBestCntIni;
     pthread_mutex_t dynamicFile_mutex;
 } honggfuzz_t;
 

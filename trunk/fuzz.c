@@ -83,9 +83,9 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
             while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
             close(srcfd);
             return false;
-       }
+        }
 
-        if ((size_t)sbuf.st_size > hfuzz->maxFileSz) {
+        if ((size_t) sbuf.st_size > hfuzz->maxFileSz) {
             while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
             close(srcfd);
             LOGMSG(l_ERROR,
@@ -97,7 +97,8 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         if (files_readFromFd(srcfd, hfuzz->dynamicFileBest, sbuf.st_size) == false) {
             while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
             close(srcfd);
-            LOGMSG(l_ERROR, "Could read '%zu' bytes from '%s' (fd='%d')", sbuf.st_size, hfuzz->files[rnd_index], srcfd);
+            LOGMSG(l_ERROR, "Could read '%zu' bytes from '%s' (fd='%d')", sbuf.st_size,
+                   hfuzz->files[rnd_index], srcfd);
             return false;
         }
         hfuzz->dynamicFileBestSz = sbuf.st_size;
@@ -110,10 +111,13 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
 
     int dstfd;
-    uint8_t *buf = files_mapFileToWriteIni(fuzzer->fileName, fuzzer->dynamicFileSz, &dstfd, fuzzer->dynamicFile);
+    uint8_t *buf =
+        files_mapFileToWriteIni(fuzzer->fileName, fuzzer->dynamicFileSz, &dstfd,
+                                fuzzer->dynamicFile);
     if (buf == NULL) {
-      LOGMSG(l_ERROR, "Couldn't map file '%s' in R/W mode, size=%zu", fuzzer->fileName, fuzzer->dynamicFile);
-      return false;
+        LOGMSG(l_ERROR, "Couldn't map file '%s' in R/W mode, size=%zu", fuzzer->fileName,
+               fuzzer->dynamicFile);
+        return false;
     }
 
     /* The first pass should be on an empty/initial file */
@@ -122,10 +126,6 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
             return false;
         }
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
-    }
-
-    if (hfuzz->branchBestCnt == 0 && hfuzz->branchBestCntIni) {
-        hfuzz->branchBestCnt = hfuzz->branchBestCntIni;
     }
 
     files_unmapFileCloseFdMSync(buf, fuzzer->dynamicFileSz, dstfd);
