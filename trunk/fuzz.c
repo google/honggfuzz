@@ -88,10 +88,6 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         memcpy(hfuzz->dynamicFileBest, buf, fileSz);
         hfuzz->dynamicFileBestSz = fileSz;
         files_unmapFileCloseFd(buf, fileSz, srcfd);
-
-        if (hfuzz->branchBestCntIni) {
-            hfuzz->branchBestCnt = hfuzz->branchBestCntIni;
-        }
     }
 
     memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
@@ -105,6 +101,10 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
             return false;
         }
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
+    }
+
+    if (hfuzz->branchBestCnt == 0 && hfuzz->branchBestCntIni) {
+        hfuzz->branchBestCnt = hfuzz->branchBestCntIni;
     }
 
     int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR, 0644);

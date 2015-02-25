@@ -261,7 +261,7 @@ void arch_perfPoll(int perfFd)
 {
     for (;;) {
         struct pollfd pollfds = {.fd = perfFd,.events = POLLIN,.revents = 0 };
-        int ret = poll(&pollfds, 1, 10);
+        int ret = poll(&pollfds, 1, 100);
         if (ret <= 0) {
             return;
         }
