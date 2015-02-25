@@ -83,7 +83,6 @@ ifdef WARN_LIBRARY
 	@/bin/echo    "$(WARN_LIBRARY)"
 	@/bin/echo -e "*********************************************************"
 else
-	@/usr/bin/true
 endif
 
 $(BIN): $(MIG_OBJECTS) $(OBJS)

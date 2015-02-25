@@ -278,9 +278,8 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz, int fd)
         return true;
     }
 
-	munmap(buf, _HF_PAGE_ALIGN_UP(bufSz));
-	ftruncate(fd, newSz);
-	void *newBuf = mmap(NULL, _HF_PAGE_ALIGN_UP(newSz), PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+    munmap(buf, _HF_PAGE_ALIGN_UP(bufSz));
+    void *newBuf = mmap(NULL, _HF_PAGE_ALIGN_UP(newSz), PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 
     if (newBuf == MAP_FAILED) {
         LOGMSG_P(l_ERROR, "mremap() failed");

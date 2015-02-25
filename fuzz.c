@@ -288,7 +288,7 @@ static void *fuzz_threadNew(void *arg)
 #include <unistd.h>
 #include <sys/syscall.h>
     fuzzer.pid = syscall(__NR_fork);
-#else /* defined(_HF_ARCH_LINUX) */
+#else                           /* defined(_HF_ARCH_LINUX) */
     fuzzer.pid = fork();
 #endif                          /* defined(_HF_ARCH_LINUX) */
 
