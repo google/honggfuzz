@@ -230,7 +230,7 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
 static double mangle_ExpDist(void)
 {
     double rnd = (double)util_rndGet(1, UINT32_MAX) / (double)(UINT32_MAX);
-    return pow(rnd, 6.0L);
+    return pow(rnd, 2.0L);
 }
 
 /* Gauss-like distribution */
@@ -278,9 +278,9 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz, int fd)
         return true;
     }
 
-    munmap(buf, _HF_PAGE_ALIGN_UP(bufSz));
+    munmap(buf, _HF_PAGE_ALIGN_UP(*bufSz));
     if (ftruncate(fd, newSz) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't ftruncate(fd='%d', size='%zu'", fd, newSz);
+        LOGMSG_P(l_ERROR, "Couldn't ftruncate(fd='%d', size='%zu')", fd, newSz);
         return false;
     }
     void *newBuf = mmap(NULL, _HF_PAGE_ALIGN_UP(newSz), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
