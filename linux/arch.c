@@ -198,27 +198,28 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
 
     for (;;) {
-        for (;;) {
-            pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
+        pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED | WNOHANG, NULL);
 
-            LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
+        LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
 
-            if (pid == -1 && errno == EINTR) {
-                continue;
-            }
-            if (pid == -1 && errno == ECHILD) {
-                arch_perfAnalyze(hfuzz, fuzzer, perfFd);
-                LOGMSG(l_DEBUG, "No more processes to track");
-                return;
-            }
-            if (pid == -1) {
-                LOGMSG_P(l_FATAL, "wait3() failed");
-                return;
-            }
-
-            arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
+        if (pid == 0) {
+            arch_perfPoll(perfFd);
+            continue;
         }
-/*        arch_perfPoll(perfFd);   */
+        if (pid == -1 && errno == EINTR) {
+            continue;
+        }
+        if (pid == -1 && errno == ECHILD) {
+            arch_perfAnalyze(hfuzz, fuzzer, perfFd);
+            LOGMSG(l_DEBUG, "No more processes to track");
+            return;
+        }
+        if (pid == -1) {
+            LOGMSG_P(l_FATAL, "wait3() failed");
+            return;
+        }
+
+        arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
     }
 }
 
