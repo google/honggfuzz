@@ -30,8 +30,8 @@ typedef enum {
 
 extern void log_setMinLevel(log_level_t dl);
 
-extern void log_msg(log_level_t dl, bool perr, const char *file,
-                    const char *func, int line, const char *fmt, ...);
+extern void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int line,
+                    const char *fmt, ...);
 
 #define LOGMSG(ll, ...) log_msg(ll, false, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);
 #define LOGMSG_P(ll, ...) log_msg(ll, true, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);

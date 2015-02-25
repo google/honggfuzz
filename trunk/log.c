@@ -68,9 +68,8 @@ void log_setMinLevel(log_level_t dl)
     log_minLevel = dl;
 }
 
-void
-log_msg(log_level_t dl,
-        bool perr, const char *file, const char *func, int line, const char *fmt, ...
+void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int line,
+             const char *fmt, ...
     )
 {
     if (dl > log_minLevel) {

@@ -377,8 +377,8 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 
     LOGMSG(l_DEBUG,
            "Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %"
-           PRIx64 ", instr: '%s'", pid, si.si_signo, si.si_errno,
-           si.si_code, si.si_addr, pc, instr);
+           PRIx64 ", instr: '%s'", pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc,
+           instr);
 
     if (si.si_addr < hfuzz->ignoreAddr) {
         LOGMSG(l_INFO,
@@ -490,8 +490,8 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
 
         pid_t pid = (pid_t) strtol(res->d_name, (char **)NULL, 10);
         if (pid == 0) {
-            LOGMSG(l_DEBUG,
-                   "The following dir entry couldn't be converted to pid_t '%s'", res->d_name);
+            LOGMSG(l_DEBUG, "The following dir entry couldn't be converted to pid_t '%s'",
+                   res->d_name);
             continue;
         }
 
