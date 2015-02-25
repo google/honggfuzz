@@ -184,23 +184,8 @@ int main(int argc, char **argv)
             case 'b':
                 hfuzz.dynFileMethod = _HF_DYNFILE_BRANCH_COUNT;
                 break;
-            case 'a':
-                hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_ANY_COUNT;
-                break;
-            case 'c':
-                hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_CALL_COUNT;
-                break;
-            case 'r':
-                hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_RETURN_COUNT;
-                break;
-            case 'n':
-                hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_IND_COUNT;
-                break;
-            case 'o':
-                hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_COND_COUNT;
-                break;
             case 'p':
-                hfuzz.dynFileMethod = _HF_DYNFILE_EDGE_IP_COUNT;
+                hfuzz.dynFileMethod = _HF_DYNFILE_UNIQUE_PC_COUNT;
                 break;
             default:
                 usage(EXIT_FAILURE);
