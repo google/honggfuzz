@@ -207,7 +207,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.sample_type = PERF_SAMPLE_IP;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.watermark = 1;
-        pe.wakeup_watermark = (4096 * 4);
+        pe.wakeup_watermark = (4096 * 16);
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->dynFileMethod, pid);
