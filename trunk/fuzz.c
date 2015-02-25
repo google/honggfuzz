@@ -135,43 +135,55 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
 static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
 {
-    size_t fileSz;
-    int srcfd;
-
-    uint8_t *buf = files_mapFileToRead(hfuzz->files[rnd_index], &fileSz, &srcfd);
-    if (buf == NULL) {
-        LOGMSG(l_ERROR, "Couldn't open and map '%s' in R/O mode", hfuzz->files[rnd_index]);
-        return false;
+    int srcfd = open(hfuzz->files[rnd_index], O_RDONLY);
+    if (srcfd == -1) {
+      LOGMSG_P(l_ERROR, "Couldn't open '%s' for R/O", hfuzz->files[rnd_index]);
+      return false;
     }
 
-    LOGMSG(l_DEBUG, "Mmaped '%s' in R/O mode, size: %d", hfuzz->files[rnd_index], fileSz);
+    struct stat sbuf;
+    if (fstat(srcfd, &sbuf) == -1) {
+      LOGMSG_P(l_ERROR, "Couldn't fstat(fd='%s' fname='%s')", srcfd, hfuzz->files[rnd_index]);
+      close(srcfd);
+      return false;
+    }
+    size_t fileSz = (size_t)sbuf.st_size;
 
-    int dstfd = open(fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
-    if (dstfd == -1) {
-        LOGMSG_P(l_ERROR,
-                 "Couldn't create a temporary file '%s' in the current directory", fileName);
-        files_unmapFileCloseFd(buf, fileSz, srcfd);
-        return false;
+    uint8_t *tmpbuf = malloc(fileSz);
+    if (tmpbuf == NULL) {
+      LOGMSG_P(l_ERROR, "Couldn't malloc(size='%zu')", fileSz);
+      close(srcfd);
+      return false;
     }
 
-    if (mangle_Resize(hfuzz, &buf, &fileSz, srcfd) == false) {
-        files_unmapFileCloseFd(buf, fileSz, srcfd);
+    if (files_readFromFd(srcfd, tmpbuf, fileSz) == false) {
+      LOGMSG(l_ERROR, "Couldn't read '%zu' bytes from '%s' (fd='%d')", fileSz, hfuzz->files[rnd_index], srcfd);
+      close(srcfd);
+      free(tmpbuf);
+      return false;
+    }
+    close(srcfd);
+
+  int dstfd;
+  uint8_t *buf = files_mapFileToWriteIni(fileName, fileSz, &dstfd, tmpbuf);
+  if (buf == NULL) {
+    LOGMSG(l_ERROR, "Couldn't map '%s' for R/W, size='%zu'", fileName, fileSz);
+    free(tmpbuf);
+    return false;
+  }
+
+    free(tmpbuf);
+
+    if (mangle_Resize(hfuzz, &buf, &fileSz, dstfd) == false) {
+        files_unmapFileCloseFd(buf, fileSz, dstfd);
         close(dstfd);
         LOGMSG(l_ERROR, "File resizing failed");
         return false;
     }
 
     mangle_mangleContent(hfuzz, buf, fileSz);
-
-    if (!files_writeToFd(dstfd, buf, fileSz)) {
-        files_unmapFileCloseFd(buf, fileSz, srcfd);
-        close(dstfd);
-        return false;
-    }
-
-    files_unmapFileCloseFd(buf, fileSz, srcfd);
-
-    close(dstfd);
+    files_unmapFileCloseFdMSync(buf, fileSz, dstfd);
+    exit(0);
 
     return true;
 }
