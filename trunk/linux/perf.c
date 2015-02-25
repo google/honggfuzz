@@ -259,15 +259,10 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
 
 void arch_perfPoll(int perfFd)
 {
-
     for (;;) {
         struct pollfd pollfds = {.fd = perfFd,.events = POLLIN,.revents = 0 };
-
-        LOGMSG(l_ERROR, "ENTRY");
-        int ret = poll(&pollfds, 1, -1);
-        LOGMSG(l_ERROR, "RET: %d", ret);
-
-        if (ret < 0) {
+        int ret = poll(&pollfds, 1, 10);
+        if (ret <= 0) {
             return;
         }
 
