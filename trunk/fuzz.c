@@ -71,29 +71,50 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
 
     if (hfuzz->inputFile && hfuzz->branchBestCnt == 0) {
-        int srcfd;
-        size_t fileSz;
-        uint8_t *buf = files_mapFileToRead(hfuzz->files[rnd_index], &fileSz, &srcfd);
-        if (buf == NULL) {
-            LOGMSG(l_ERROR, "Couldn't open and map '%s' in R/O mode", hfuzz->files[rnd_index]);
+        int srcfd = open(hfuzz->files[rnd_index], O_RDONLY);
+        if (srcfd == -1) {
+            LOGMSG_P(l_ERROR, "Couldn't open '%s' to read", hfuzz->files[rnd_index]);
             while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
             return false;
         }
-        if (fileSz > hfuzz->maxFileSz) {
-            LOGMSG(l_FATAL,
+        struct stat sbuf;
+        if (fstat(srcfd, &sbuf) == -1) {
+            LOGMSG_P(l_ERROR, "Couldn't stat '%s' (fd='%d')", hfuzz->files[rnd_index], srcfd);
+            while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
+            close(srcfd);
+            return false;
+       }
+
+        if ((size_t)sbuf.st_size > hfuzz->maxFileSz) {
+            while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
+            close(srcfd);
+            LOGMSG(l_ERROR,
                    "File size (%zu) is bigger than the maximal allocated buffer/file size (-F) (%zu)",
-                   fileSz, hfuzz->maxFileSz);
+                   sbuf.st_size, hfuzz->maxFileSz);
+            return false;
         }
 
-        memcpy(hfuzz->dynamicFileBest, buf, fileSz);
-        hfuzz->dynamicFileBestSz = fileSz;
-        files_unmapFileCloseFd(buf, fileSz, srcfd);
+        if (files_readFromFd(srcfd, hfuzz->dynamicFileBest, sbuf.st_size) == false) {
+            while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
+            close(srcfd);
+            LOGMSG(l_ERROR, "Could read '%zu' bytes from '%s' (fd='%d')", sbuf.st_size, hfuzz->files[rnd_index], srcfd);
+            return false;
+        }
+        hfuzz->dynamicFileBestSz = sbuf.st_size;
+        close(srcfd);
     }
 
     memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
     fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
 
     while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
+
+    int dstfd;
+    uint8_t *buf = files_mapFileToWriteIni(fuzzer->fileName, fuzzer->dynamicFileSz, &dstfd, fuzzer->dynamicFile);
+    if (buf == NULL) {
+      LOGMSG(l_ERROR, "Couldn't map file '%s' in R/W mode, size=%zu", fuzzer->fileName, fuzzer->dynamicFile);
+      return false;
+    }
 
     /* The first pass should be on an empty/initial file */
     if (hfuzz->branchBestCnt > 0) {
@@ -107,20 +128,8 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         hfuzz->branchBestCnt = hfuzz->branchBestCntIni;
     }
 
-    int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
-    if (dstfd == -1) {
-        LOGMSG_P(l_ERROR,
-                 "Couldn't create a temporary file '%s' in the current directory",
-                 fuzzer->fileName);
-        return false;
-    }
+    files_unmapFileCloseFdMSync(buf, fuzzer->dynamicFileSz, dstfd);
 
-    if (!files_writeToFd(dstfd, fuzzer->dynamicFile, fuzzer->dynamicFileSz)) {
-        close(dstfd);
-        return false;
-    }
-
-    close(dstfd);
     return true;
 }
 
