@@ -198,16 +198,10 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
 
     for (;;) {
-        pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED | WNOHANG, NULL);
+        pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
 
         LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
 
-        if (pid == 0) {
-#if 0 /* Don't use poll() for now, it adds to timeouts */
-            arch_perfPoll(perfFd);
-#endif
-            continue;
-        }
         if (pid == -1 && errno == EINTR) {
             continue;
         }
