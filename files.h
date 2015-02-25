@@ -31,7 +31,11 @@ extern bool files_init(honggfuzz_t * hfuzz);
 
 extern uint8_t *files_mapFileToRead(char *fileName, size_t * fileSz, int *fd);
 
+extern uint8_t *files_mapFileToWriteIni(char *fileName, size_t fileSz, int *fd, uint8_t * iniBuf);
+
 extern void files_unmapFileCloseFd(void *ptr, size_t fileSz, int fd);
+
+extern void files_unmapFileCloseFdMSync(void *ptr, size_t fileSz, int fd);
 
 extern bool files_writeToFd(int fd, uint8_t * buf, size_t fileSz);
 

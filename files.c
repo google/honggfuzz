@@ -102,6 +102,12 @@ void files_unmapFileCloseFd(void *ptr, size_t fileSz, int fd)
     close(fd);
 }
 
+void files_unmapFileCloseFdMSync(void *ptr, size_t fileSz, int fd)
+{
+    msync(ptr, fileSz, MS_SYNC);
+    files_unmapFileCloseFd(ptr, fileSz, fd);
+}
+
 uint8_t *files_mapFileToRead(char *fileName, size_t * fileSz, int *fd)
 {
     if ((*fd = open(fileName, O_RDONLY)) == -1) {
@@ -129,6 +135,35 @@ uint8_t *files_mapFileToRead(char *fileName, size_t * fileSz, int *fd)
            (unsigned long long)_HF_PAGE_ALIGN_UP(st.st_size), fileName,
            (unsigned long long)st.st_size, buf);
     *fileSz = st.st_size;
+    return buf;
+}
+
+uint8_t *files_mapFileToWriteIni(char *fileName, size_t fileSz, int *fd, uint8_t *iniBuf)
+{
+    if ((*fd = open(fileName, O_CREAT|O_EXCL|O_RDWR, 0644)) == -1) {
+        LOGMSG_P(l_WARN, "Couldn't open() '%s' file in R/W mode", fileName);
+        return NULL;
+    }
+    if (ftruncate(*fd, fileSz) == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't ftruncate(fd='%d', size='%zu')", *fd, fileSz);
+        close(*fd);
+        return NULL;
+    }
+
+    uint8_t *buf;
+    if ((buf =
+         mmap(NULL, _HF_PAGE_ALIGN_UP(fileSz), PROT_READ | PROT_WRITE, MAP_SHARED, *fd,
+              0)) == MAP_FAILED) {
+        LOGMSG_P(l_WARN, "Couldn't mmap() the '%s' file", fileName);
+        close(*fd);
+        return NULL;
+    }
+
+    LOGMSG(l_DEBUG, "mmap()'d '%llu' bytes for the file '%s' (original size: '%llu') at 0x%p",
+           (unsigned long long)_HF_PAGE_ALIGN_UP(fileSz), fileName,
+           (unsigned long long)fileSz, buf);
+
+    memcpy(buf, iniBuf, fileSz);
     return buf;
 }
 
