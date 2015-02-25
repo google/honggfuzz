@@ -97,12 +97,13 @@ log_msg(log_level_t dl,
         dprintf(STDOUT_FILENO, "%s", logLevels[dl].prefix);
     }
 
-    pid_t pid = getpid();
-#if _HF_ARCH == LINUX
+#if defined(_HF_ARCH_LINUX)
 #include <unistd.h>
 #include <sys/syscall.h>
     pid = (pid_t) syscall(__NR_gettid);
-#endif                          /* _HF_ARCH == LINUX */
+#else                          /* _HF_ARCH == LINUX */
+    pid_t pid = getpid();
+#endif                         /* _HF_ARCH == LINUX */
 
     if (log_minLevel >= l_DEBUG || log_minLevel == l_FATAL || !log_isStdioTTY) {
         dprintf

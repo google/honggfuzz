@@ -69,7 +69,7 @@ ifeq ($(OS),Darwin)
 endif
 
 SRCS += $(ARCH_SRCS)
-CFLAGS += -D_HF_ARCH=${ARCH}
+CFLAGS += -D_HF_ARCH_${ARCH}
 
 all: warn_libs $(BIN)
 
@@ -83,7 +83,7 @@ ifdef WARN_LIBRARY
 	@/bin/echo    "$(WARN_LIBRARY)"
 	@/bin/echo -e "*********************************************************"
 else
-	@/bin/true
+	@/usr/bin/true
 endif
 
 $(BIN): $(MIG_OBJECTS) $(OBJS)
