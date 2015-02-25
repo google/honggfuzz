@@ -216,10 +216,10 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
 
     *perfFd = perf_event_open(&pe, pid, -1, -1, 0);
     if (*perfFd == -1) {
-        LOGMSG_P(l_WARN, "perf_event_open() failed");
+        LOGMSG_P(l_ERROR, "perf_event_open() failed");
         if (hfuzz->dynFileMethod == _HF_DYNFILE_UNIQUE_PC_COUNT) {
-            LOGMSG(l_WARN,
-                   "-D* modes require LBR/BTS feature present since Intel Haswell (i.e. not in AMD CPUs)");
+            LOGMSG(l_ERROR,
+                   "-Dp mode (sample IP/PC) requires LBR/BTS present in Intel Haswell and newer (i.e. not in AMD CPUs)");
         }
         return false;
     }

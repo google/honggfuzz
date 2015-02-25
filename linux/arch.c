@@ -191,7 +191,10 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (pid == -1) {
         LOGMSG(l_FATAL, "wait3() pid=-1");
     }
-    arch_perfEnable(pid, hfuzz, &perfFd);
+
+    if (arch_perfEnable(pid, hfuzz, &perfFd) == false) {
+        return;
+    }
     arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
 
     for (;;) {
