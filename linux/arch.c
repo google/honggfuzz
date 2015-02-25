@@ -187,21 +187,16 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int status;
     int perfFd;
 
-    for (;;) {
-        pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
-        if (pid == -1) {
-            continue;
-        }
-        arch_perfEnable(pid, hfuzz, &perfFd);
-        arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
-        break;
+    pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
+    if (pid == -1) {
+        LOGMSG(l_FATAL, "wait3() pid=-1");
     }
+    arch_perfEnable(pid, hfuzz, &perfFd);
+    arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
 
     for (;;) {
-        arch_perfPoll(perfFd);
-
         for (;;) {
-            pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WNOHANG | WUNTRACED, NULL);
+            pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
             LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
 
             if (pid == 0) {
@@ -212,7 +207,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             }
             if (pid == -1 && errno == ECHILD) {
                 arch_perfAnalyze(hfuzz, fuzzer, perfFd);
-                LOGMSG(l_ERROR, "No more processes to track");
+                LOGMSG(l_DEBUG, "No more processes to track");
                 return;
             }
             if (pid == -1) {
@@ -220,12 +215,9 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 return;
             }
 
-            LOGMSG(l_ERROR, "STOPPED: %d", WIFSTOPPED(status));
-            LOGMSG(l_ERROR, "SIGNALED: %d", WIFSIGNALED(status));
-            LOGMSG(l_ERROR, "EXITED: %d", WIFEXITED(status));
-
             arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
         }
+/*        arch_perfPoll(perfFd);   */
     }
 }
 

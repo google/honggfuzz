@@ -33,6 +33,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/poll.h>
+#include <sys/ptrace.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
@@ -42,46 +43,37 @@
 /*
  * 1 + 16 pages
  */
-#define _HF_PERF_MMAP_DATA_SZ (128 * 4096)
+#define _HF_PERF_MMAP_DATA_SZ (32 * 4096)
 #define _HF_PERF_MMAP_TOT_SZ (4096 + _HF_PERF_MMAP_DATA_SZ)
 
 static __thread uint8_t *perfMmap = NULL;
-static __thread bool perfSampleIp = false;
-static __thread int cnt = 0;
+static __thread int perfSig = 0;
 
-#define _HF_PERF_BRANCHES_SZ (8192)
+#define _HF_PERF_BRANCHES_SZ (1024 * 128)
 /*  *INDENT-OFF* */
-static __thread struct {
-    uint64_t from;
-    uint64_t to;
-} perfBranches[_HF_PERF_BRANCHES_SZ] = {
-  [0 ... (_HF_PERF_BRANCHES_SZ - 1)].from = 0ULL,
-  [0 ... (_HF_PERF_BRANCHES_SZ - 1)].to = 0ULL
-};
+static __thread uint64_t perfPC[_HF_PERF_BRANCHES_SZ];
 /*  *INDENT-ON* */
 
 static size_t arch_perfCountBranches(void)
 {
     size_t i = 0;
     for (i = 0; i < _HF_PERF_BRANCHES_SZ; i++) {
-        if (perfBranches[i].from == 0ULL && perfBranches[i].to == 0ULL) {
+        if (perfPC[i] == 0ULL) {
             return i;
         }
-        LOGMSG(l_DEBUG, "Branch entry: FROM: %" PRIx64 " TO: %" PRIx64, perfBranches[i].from,
-               perfBranches[i].to);
+        LOGMSG(l_DEBUG, "Branch entry: PC: %" PRIx64, perfPC[i]);
     }
     return i;
 }
 
-static inline void arch_perfAddFromToBranch(uint64_t from, uint64_t to)
+static inline void arch_perfAddPC(uint64_t pc)
 {
     for (size_t i = 0; i < _HF_PERF_BRANCHES_SZ; i++) {
-        if (perfBranches[i].from == from && perfBranches[i].to == to) {
+        if (perfPC[i] == pc) {
             break;
         }
-        if (perfBranches[i].from == 0ULL && perfBranches[i].to == 0ULL) {
-            perfBranches[i].from = from;
-            perfBranches[i].to = to;
+        if (perfPC[i] == 0ULL) {
+            perfPC[i] = pc;
             break;
         }
     }
@@ -89,7 +81,9 @@ static inline void arch_perfAddFromToBranch(uint64_t from, uint64_t to)
 
 static inline void arch_perfMmapParse(int fd)
 {
-    ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
+    if (fd == 999) {
+        return;
+    }
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmap;
 
 /* Memory Barriers */
@@ -150,20 +144,8 @@ static inline void arch_perfMmapParse(int fd)
             continue;
         }
 
-        if (perfSampleIp == true) {
-            cnt++;
-            uint64_t ip = *(uint64_t *) ((uint8_t *) peh + sizeof(peh));
-            arch_perfAddFromToBranch(ip, 0ULL);
-            continue;
-        }
-
-        uint64_t bnr = *(uint64_t *) ((uint8_t *) peh + sizeof(peh));
-        struct perf_branch_entry *lbr =
-            (struct perf_branch_entry *)((uint8_t *) peh + sizeof(peh) + sizeof(uint64_t));
-
-        for (uint64_t i = 0; i < bnr; i++) {
-            arch_perfAddFromToBranch(lbr[i].from, lbr[i].to);
-        }
+        uint64_t ip = *(uint64_t *) ((uint8_t *) peh + sizeof(peh));
+        arch_perfAddPC(ip);
     }
 }
 
@@ -175,6 +157,7 @@ static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 
 static void arch_perfSigHandler(int signum, siginfo_t * si, void *unused)
 {
+    perfSig = signum;
     return;
     if (signum == SIGCHLD) {
         return;
@@ -193,6 +176,8 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         return true;
     }
 
+    memset(perfPC, '\x00', sizeof(perfPC));
+
     LOGMSG(l_DEBUG, "Enabling PERF for PID=%d", pid);
 
     struct perf_event_attr pe;
@@ -202,7 +187,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     pe.exclude_kernel = 1;
     pe.exclude_hv = 1;
     pe.exclude_callchain_kernel = 1;
-    pe.type = PERF_TYPE_HARDWARE;
+//    pe.type = PERF_TYPE_HARDWARE;
 
     switch (hfuzz->dynFileMethod) {
     case _HF_DYNFILE_INSTR_COUNT:
@@ -215,60 +200,13 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.inherit = 1;
         break;
-#define _HF_SAMPLE_PERIOD 1     /* investigate */
-    case _HF_DYNFILE_EDGE_ANY_COUNT:
-        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY for PID: %d", pid);
-        pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY;
-        pe.sample_period = _HF_SAMPLE_PERIOD;
-        break;
-    case _HF_DYNFILE_EDGE_CALL_COUNT:
-        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY_CALL for PID: %d",
-               pid);
-        pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY_CALL;
-        pe.sample_period = _HF_SAMPLE_PERIOD;
-        break;
-    case _HF_DYNFILE_EDGE_RETURN_COUNT:
-        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY_RETURN for PID: %d",
-               pid);
-        pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.branch_sample_type = PERF_SAMPLE_BRANCH_ANY_RETURN;
-        pe.sample_period = _HF_SAMPLE_PERIOD;
-        break;
-    case _HF_DYNFILE_EDGE_IND_COUNT:
-        LOGMSG(l_DEBUG,
-               "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_ANY_IND_CALL for PID: %d", pid);
-        pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.branch_sample_type = PERF_SAMPLE_BRANCH_IND_CALL;
-        pe.sample_period = _HF_SAMPLE_PERIOD;
-        break;
-#ifndef PERF_SAMPLE_BRANCH_COND /* Since around kernel version 3.15 */
-#define PERF_SAMPLE_BRANCH_COND (1U << 10)
-#endif                          /* PERF_SAMPLE_BRANCH_COND */
-    case _HF_DYNFILE_EDGE_COND_COUNT:
-        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_BRANCH_COND for PID: %d", pid);
-        pe.sample_type = PERF_SAMPLE_BRANCH_STACK;
-        pe.branch_sample_type = PERF_SAMPLE_BRANCH_COND;
-        pe.sample_period = _HF_SAMPLE_PERIOD;
-        break;
-    case _HF_DYNFILE_EDGE_IP_COUNT:
+    case _HF_DYNFILE_UNIQUE_PC_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP for PID: %d", pid);
-        memset(&pe, 0, sizeof(struct perf_event_attr));
-        pe.size = sizeof(struct perf_event_attr);
-        pe.disabled = 0;
+        pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP;
-        pe.sample_period = 1;
-        pe.exclude_kernel = 1;
-        pe.exclude_hv = 1;
-
-#if 0
-        pe.sample_type = PERF_SAMPLE_IP;
-        pe.sample_period = _HF_SAMPLE_PERIOD;
-        pe.wakeup_watermark = getpagesize() * 32;
+        pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.watermark = 1;
-#endif
-        perfSampleIp = true;
+        pe.wakeup_watermark = (4096 * 4);
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->dynFileMethod, pid);
@@ -279,19 +217,17 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     *perfFd = perf_event_open(&pe, pid, -1, -1, 0);
     if (*perfFd == -1) {
         LOGMSG_P(l_WARN, "perf_event_open() failed");
-        if (hfuzz->dynFileMethod >= _HF_DYNFILE_EDGE_ANY_COUNT) {
+        if (hfuzz->dynFileMethod == _HF_DYNFILE_UNIQUE_PC_COUNT) {
             LOGMSG(l_WARN,
                    "-D* modes require LBR/BTS feature present since Intel Haswell (i.e. not in AMD CPUs)");
         }
         return false;
     }
 
-    if (hfuzz->dynFileMethod < _HF_DYNFILE_EDGE_ANY_COUNT) {
-        if (ioctl(*perfFd, PERF_EVENT_IOC_RESET, 0) == -1) {
-            LOGMSG_P(l_ERROR, "ioctl(perfFd='%d', PERF_EVENT_IOC_RESET) failed", perfFd);
-            close(*perfFd);
-            return false;
-        }
+    uint64_t dupa;
+    read(*perfFd, &dupa, sizeof(dupa));
+
+    if (hfuzz->dynFileMethod != _HF_DYNFILE_UNIQUE_PC_COUNT) {
         return true;
     }
 
@@ -308,7 +244,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         .sa_handler = NULL,
         .sa_sigaction = arch_perfSigHandler,
         .sa_mask = smask,
-        .sa_flags = SA_SIGINFO,
+        .sa_flags = SA_SIGINFO | SA_RESTART,
         .sa_restorer = NULL
     };
     if (sigaction(SIGCHLD, &sa, NULL) == -1) {
@@ -319,6 +255,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         LOGMSG_P(l_ERROR, "sigaction() failed");
         return false;
     }
+
     return true;
 }
 
@@ -331,16 +268,11 @@ void arch_perfPoll(int perfFd)
         LOGMSG(l_ERROR, "ENTRY");
         int ret = poll(&pollfds, 1, -1);
         LOGMSG(l_ERROR, "RET: %d", ret);
-        if (ret == 0) {
-            break;
-        }
-        if (ret < 0 && errno == EINTR) {
-            break;
-        }
+
         if (ret < 0) {
-            LOGMSG(l_ERROR, "poll() failed");
-            break;
+            return;
         }
+
         arch_perfMmapParse(perfFd);
     }
 }
@@ -351,12 +283,8 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return;
     }
-    if (ioctl(perfFd, PERF_EVENT_IOC_DISABLE, 0) == -1) {
-        LOGMSG_P(l_ERROR, "ioctl(perfFd='%d', PERF_EVENT_IOC_DISABLE) failed", perfFd);
-        goto out;
-    }
 
-    if (hfuzz->dynFileMethod >= _HF_DYNFILE_EDGE_ANY_COUNT) {
+    if (hfuzz->dynFileMethod == _HF_DYNFILE_UNIQUE_PC_COUNT) {
         arch_perfMmapParse(perfFd);
         count = fuzzer->branchCnt = arch_perfCountBranches();
         goto out;
@@ -369,7 +297,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
     fuzzer->branchCnt = count;
 
  out:
-    LOGMSG(l_ERROR, "CNT: %d", cnt);
     LOGMSG(l_INFO,
            "File size (New/Best): %zu/%zu, Perf events seen: Best: %" PRIu64 " / New: %" PRIu64,
            fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz, hfuzz->branchBestCnt, count);
