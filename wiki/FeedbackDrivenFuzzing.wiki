@@ -15,9 +15,8 @@ The main fuzzing strategy is quite simple. It tries to maximize the number of pe
 == Instruction counting (-Di) ==
 
 {{{
-honggfuzz -q -Di -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djpeg.static ___FILE___
-
-[INFO] debugLevel: 3, inputFile '/usr/share/doc/texlive-doc/latex/ctable/penguin.jpg', nullifyStdio: 1, fuzzStdin: 0, saveUnique: 0, flipRate: 0.001000, externalCommand: 'NULL', tmOut: 0, mutationsMax: 0, threadsMax: 5, fileExtn 'fuzz', ignoreAddr: (nil), memoryLimit: 0 (MiB), fuzzExe: './djpeg.static', fuzzedPid: 0
+$ honggfuzz -q -Di -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djpeg.static ___FILE___
+...
 [INFO] Launched new process, pid: 21168, (5/5)
 [INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1 / New: 1174343
 [INFO] New BEST feedback: New/Old: 2789/2789', Perf feedback counter Curr/High: 1174343/1
@@ -34,3 +33,25 @@ honggfuzz -q -Di -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djp
 
 
 It will start with some initial file (or with no file at all), and subsequent fuzzing iterations will try to maximize the number of instructions spent on parsing it.
+
+== Branch counting (-Db) ==
+
+As above, it will try to maximine the number of branches taken by CPU on behalf of the fuzzed process (here: djpeg.static) while performing the fuzzing process.
+
+{{{
+$ honggfuzz -q -Db -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djpeg.static ___FILE___
+...
+[INFO] Launched new process, pid: 21391, (5/5)
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1 / New: 115586
+[INFO] New BEST feedback: New/Old: 2789/2789', Perf feedback counter Curr/High: 115586/1
+[INFO] Launched new process, pid: 21393, (5/5)
+[INFO] Launched new process, pid: 21395, (5/5)
+[INFO] Launched new process, pid: 21394, (5/5)
+[INFO] Launched new process, pid: 21396, (5/5)
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 115586 / New: 4326
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 115586 / New: 4871
+[INFO] File size (New/Best): 2774/2789, Perf feedback: Best: 115586 / New: 104983
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 115586 / New: 119456
+
+== Unique branch counting ==
+This is the most powerfull mode of feedback-driven counting that honggfuzz supports. It will use Intel's BTS (Branch Trace Store) feature to record all branch events (edges) and removing duplicates. The resulting number of edges is a good representation
