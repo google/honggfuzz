@@ -178,6 +178,9 @@ static void mangle_MemMove(uint8_t * buf, size_t bufSz, size_t off)
 static void mangle_Random(uint8_t * buf, size_t bufSz, size_t off)
 {
     uint64_t sz = util_rndGet(1, bufSz - off);
+    if (sz > 4096ULL) {
+        sz = 4096ULL;
+    }
     util_rndBuf(&buf[off], sz);
 }
 
