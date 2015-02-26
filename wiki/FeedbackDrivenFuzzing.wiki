@@ -30,7 +30,8 @@ $ honggfuzz -q -Di -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./d
 [INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1174343 / New: 1156896
 [INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1174343 / New: 1134940
 [INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1174343 / New: 1134975
-[INFO] Launched new process, pid: 21178, (5/5)
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1174343 / New: 1174344
+[INFO] New BEST feedback: New/Old: 2789/2789', Perf feedback counter Curr/High: 1174344/1174343
 }}}
 
 
@@ -54,6 +55,8 @@ $ honggfuzz -q -Db -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./d
 [INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 115586 / New: 4871
 [INFO] File size (New/Best): 2774/2789, Perf feedback: Best: 115586 / New: 104983
 [INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 115586 / New: 119456
+[INFO] New BEST feedback: New/Old: 2789/2789', Perf feedback counter Curr/High: 119456/115586
+
 }}}
 
 == Unique branch counting (-Dp) ==
