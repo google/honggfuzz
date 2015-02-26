@@ -1,4 +1,5 @@
 #summary Feedback-driven fuzzing in honggfuzz
+#sidebar TableOfContents
 
 = Feedback-driven fuzzing =
 Honggfuzz is capable of performing feedback-driven fuzzing. It utilizes Linux perf subsystem and hardware CPU counters to achieve that
