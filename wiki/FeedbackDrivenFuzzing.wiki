@@ -14,6 +14,7 @@ The main fuzzing strategy is quite simple. It tries to maximize the number of pe
 
 == Instruction counting (-Di) ==
 
+{{{
 honggfuzz -q -Di -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djpeg.static ___FILE___
 
 [INFO] debugLevel: 3, inputFile '/usr/share/doc/texlive-doc/latex/ctable/penguin.jpg', nullifyStdio: 1, fuzzStdin: 0, saveUnique: 0, flipRate: 0.001000, externalCommand: 'NULL', tmOut: 0, mutationsMax: 0, threadsMax: 5, fileExtn 'fuzz', ignoreAddr: (nil), memoryLimit: 0 (MiB), fuzzExe: './djpeg.static', fuzzedPid: 0
@@ -29,7 +30,7 @@ honggfuzz -q -Di -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djp
 [INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1174343 / New: 1134940
 [INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1174343 / New: 1134975
 [INFO] Launched new process, pid: 21178, (5/5)
-
+}}}
 
 
 It will start with some initial file (or with no file at all), and subsequent fuzzing iterations will try to maximize the number of instructions spent on parsing it.
