@@ -233,7 +233,7 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
 static double mangle_ExpDist(void)
 {
     double rnd = (double)util_rndGet(1, UINT32_MAX) / (double)(UINT32_MAX);
-    return pow(rnd, 2.0L);
+    return pow(rnd, 4.0L);
 }
 
 /* Gauss-like distribution */
