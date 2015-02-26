@@ -111,7 +111,7 @@ int main(int argc, char **argv)
         .fileExtn = "fuzz",
         .flipRate = 0.001f,
         .externalCommand = NULL,
-        .maxFileSz = (1024 * 1024 * 8),
+        .maxFileSz = (1024 * 1024),
         .tmOut = 3,
         .mutationsMax = 0,
         .mutationsCnt = 0,
@@ -124,7 +124,7 @@ int main(int argc, char **argv)
         .pid = 0,
         .dynFileMethod = _HF_DYNFILE_NONE,
         .dynamicFileBest = NULL,
-        .dynamicFileBestSz = 1,
+        .dynamicFileBestSz = 256,
         .branchBestCnt = 0,
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
     };
