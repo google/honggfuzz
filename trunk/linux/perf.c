@@ -79,6 +79,9 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
     if (from > 0xFFFFFFFF00000000 || to > 0xFFFFFFFF00000000) {
         return;
     }
+//    if (from > 0x00000000FFFFFFFF || to > 0x00000000FFFFFFFF) {
+//        return;
+//    }
     for (size_t i = 0; i < _HF_PERF_BRANCHES_SZ; i++) {
         if (perfBranch[i].from == from && perfBranch[i].to == to) {
             break;
