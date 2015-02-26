@@ -52,6 +52,30 @@ $ honggfuzz -q -Db -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./d
 [INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 115586 / New: 4871
 [INFO] File size (New/Best): 2774/2789, Perf feedback: Best: 115586 / New: 104983
 [INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 115586 / New: 119456
+}}}
 
-== Unique branch counting ==
-This is the most powerfull mode of feedback-driven counting that honggfuzz supports. It will use Intel's BTS (Branch Trace Store) feature to record all branch events (edges) and removing duplicates. The resulting number of edges is a good representation
+== Unique branch counting (-Dp) ==
+This is the most powerfull mode of feedback-driven counting that honggfuzz supports. It will use Intel's BTS (Branch Trace Store) feature to record all branch events (edges) and removing duplicates. The resulting number of edges which is good approximation of how much code of a given tool have been actively executed (code coverage).
+
+{{{
+$ ~/src/honggfuzz/honggfuzz -q -Dp -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djpeg.static ___FILE___
+...
+[INFO] Launched new process, pid: 21715, (5/5)
+[INFO] Launched new process, pid: 21719, (5/5)
+[INFO] Launched new process, pid: 21717, (5/5)
+[INFO] Launched new process, pid: 21718, (5/5)
+[INFO] Launched new process, pid: 21716, (5/5)
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1 / New: 887
+[INFO] New BEST feedback: New/Old: 2789/2789', Perf feedback counter Curr/High: 887/1
+[INFO] Launched new process, pid: 21721, (5/5)
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 887 / New: 887
+[INFO] New BEST feedback: New/Old: 2789/2789', Perf feedback counter Curr/High: 887/887
+[INFO] Launched new process, pid: 21723, (5/5)
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 887 / New: 887
+[INFO] New BEST feedback: New/Old: 2789/2789', Perf feedback counter Curr/High: 887/887
+[INFO] Launched new process, pid: 21725, (5/5)
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 887 / New: 887
+[INFO] New BEST feedback: New/Old: 2789/2789', Perf feedback counter Curr/High: 887/887
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 887 / New: 1606
+[INFO] New BEST feedback: New/Old: 2789/2789', Perf feedback counter Curr/High: 1606/887
+}}}
