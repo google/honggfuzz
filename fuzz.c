@@ -70,7 +70,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 {
     while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
 
-    if (hfuzz->inputFile && hfuzz->branchBestCnt == 0) {
+    if (hfuzz->inputFile && hfuzz->branchBestCnt == 0 && hfuzz->dynamicFileBestSz == 0) {
         int srcfd = open(hfuzz->files[rnd_index], O_RDONLY);
         if (srcfd == -1) {
             LOGMSG_P(l_ERROR, "Couldn't open '%s' to read", hfuzz->files[rnd_index]);
