@@ -281,7 +281,7 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz, int fd)
         return true;
     }
 
-    munmap(buf, _HF_PAGE_ALIGN_UP(*bufSz));
+    munmap(*buf, _HF_PAGE_ALIGN_UP(*bufSz));
     if (ftruncate(fd, newSz) == -1) {
         LOGMSG_P(l_ERROR, "Couldn't ftruncate(fd='%d', size='%zu')", fd, newSz);
         return false;

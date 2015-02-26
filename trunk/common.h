@@ -46,7 +46,7 @@
 #define _HF_PTHREAD_STACKSIZE (1024 * 1024 * 4) /* 4MB */
 
 /* Align to the upper-page boundary */
-#define _HF_PAGE_ALIGN_UP(x)  (((size_t)x + (size_t)sysconf(_SC_PAGESIZE) - 1) & ~((size_t)sysconf(_SC_PAGESIZE) - 1))
+#define _HF_PAGE_ALIGN_UP(x)  (((size_t)x + (size_t)getpagesize() - (size_t)1) & ~((size_t)getpagesize() - (size_t)1))
 
 typedef enum {
     _HF_DYNFILE_NONE = 0,

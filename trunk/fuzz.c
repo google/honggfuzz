@@ -176,7 +176,6 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
 
     if (mangle_Resize(hfuzz, &buf, &fileSz, dstfd) == false) {
         files_unmapFileCloseFd(buf, fileSz, dstfd);
-        close(dstfd);
         LOGMSG(l_ERROR, "File resizing failed");
         return false;
     }
