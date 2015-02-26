@@ -351,8 +351,9 @@ static void *fuzz_threadNew(void *arg)
             if (fd != -1) {
                 if (files_writeToFd(fd, fuzzer.dynamicFile, fuzzer.dynamicFileSz)) {
                     rename(_HF_CURRENT_BEST_TMP, _HF_CURRENT_BEST);
+                } else {
+                    unlink(_HF_CURRENT_BEST_TMP);
                 }
-                unlink(_HF_CURRENT_BEST_TMP);
                 close(fd);
             }
 
