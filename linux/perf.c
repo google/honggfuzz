@@ -44,7 +44,7 @@
 /*
  * 1 + 16 pages
  */
-#define _HF_PERF_MMAP_DATA_SZ (4096 * 32)
+#define _HF_PERF_MMAP_DATA_SZ (4096 * 256)
 #define _HF_PERF_MMAP_TOT_SZ (getpagesize() + _HF_PERF_MMAP_DATA_SZ)
 
 static __thread uint8_t *perfMmap = NULL;
@@ -77,9 +77,6 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
      * makes the whole concept of unique branch counting less predictable
      */
     if (from > 0xFFFFFFFF00000000 || to > 0xFFFFFFFF00000000) {
-        return;
-    }
-    if (from > 0x00000000FFFFFFFF || to > 0x00000000FFFFFFFF) {
         return;
     }
     for (size_t i = 0; i < _HF_PERF_BRANCHES_SZ; i++) {
@@ -181,8 +178,11 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return true;
     }
-    bzero(perfBranch, sizeof(perfBranch));
+
     LOGMSG(l_DEBUG, "Enabling PERF for PID=%d", pid);
+
+    bzero(perfBranch, sizeof(perfBranch));
+
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(struct perf_event_attr));
     pe.size = sizeof(struct perf_event_attr);
@@ -191,6 +191,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     pe.exclude_hv = 1;
     pe.exclude_callchain_kernel = 1;
     pe.type = PERF_TYPE_HARDWARE;
+
     switch (hfuzz->dynFileMethod) {
     case _HF_DYNFILE_INSTR_COUNT:
         LOGMSG(l_DEBUG, "Using: PERF_COUNT_HW_INSTRUCTIONS for PID: %d", pid);
