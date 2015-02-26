@@ -11,7 +11,7 @@ Developers can provide their own initial file (-f flag) which will be gradually 
 = Requirements =
    * GNU/Linux OS
    * Relatively modern Linux kernel (v 3.2 should suffice)
-   * CPU which is supported by the [https://perf.wiki.kernel.org/index.php/Main_Page perf subsystem] for hardware-assisted instruction and branch counting-
+   * CPU which is supported by the [https://perf.wiki.kernel.org/index.php/Main_Page perf subsystem] for hardware-assisted instruction and branch counting
    * CPU supporting [https://software.intel.com/en-us/forums/topic/277868?language=es BTS (Branch Trace Store)]. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
 
 = Examples =
