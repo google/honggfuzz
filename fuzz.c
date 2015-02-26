@@ -451,8 +451,6 @@ void fuzz_main(honggfuzz_t * hfuzz)
         }
     }
 
-    LOGMSG(l_ERROR, "SEM: %p", hfuzz->sem);
-
     for (;;) {
         if (sem_wait(hfuzz->sem) == -1) {
             LOGMSG_P(l_FATAL, "sem_wait() failed");
