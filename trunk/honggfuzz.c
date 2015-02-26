@@ -58,7 +58,7 @@ static void usage(bool exit_success)
            " [" AB "-h" AC "]     : this help\n"
            " [" AB "-q" AC "]     : null-ify children's stdin, stdout, stderr; make them quiet\n"
            "            (default: " AB "false" AC ")\n"
-           " [" AB "-s" AC "]     : provide fuzzing input on STDIN, instead a file argument\n"
+           " [" AB "-s" AC "]     : provide fuzzing input on STDIN, instead of a file argument\n"
            "            (default: " AB "false" AC ")\n"
            " [" AB "-u" AC "]     : save unique test-cases only, otherwise (if not used) append\n"
            "            current timestamp to the output filenames (default: " AB "false" AC ")\n"
@@ -67,15 +67,16 @@ static void usage(bool exit_success)
            " [" AB "-e val" AC "] : file extension (e.g swf), (default: '" AB "fuzz" AC "')\n"
            " [" AB "-r val" AC "] : flip rate, (default: '" AB "0.001" AC "')\n"
            " [" AB "-c val" AC "] : external command modifying the input corpus of files,\n"
-           "            instead of -r/-m (default: " AB "none" AC "\n"
+           "            instead of -r/-m (default: " AB "none" AC ")\n"
            " [" AB "-t val" AC "] : timeout (in secs), (default: '" AB "3" AC "' [0 - no timeout])\n"
            " [" AB "-a val" AC "] : address limit (from si.si_addr) below which crashes\n"
            "            are not reported, (default: '" AB "0" AC "' [suggested: 65535])\n"
            " [" AB "-n val" AC "] : number of concurrent fuzzing processes, (default: '" AB "5" AC "')\n"
            " [" AB "-N val" AC "] : number of fuzzing mutations, (default: '" AB "0" AC "' [infinte])\n"
            " [" AB "-l val" AC "] : per process memory limit in MiB, (default: '" AB "0" AC "' [no limit])\n"
-           " [" AB "-R val" AC "] : write report to this file, (default: '" AB _HF_REPORT_FILE AC "')\n"
-#if _HF_ARCH == LINUX
+           " [" AB "-R val" AC "] : append crash report to this file\n"
+           "            (default: '" AB _HF_REPORT_FILE AC "')\n"
+#if defined(_HF_ARCH_LINUX)
            " [" AB "-p val" AC "] : [Linux] attach to a pid (and its thread group), instead of \n"
            "            monitoring a previously created process, default: '" AB "0" AC "' (none)\n"
            " [" AB "-D val" AC "] : [Linux] create a file dynamically with Linux perf counters,\n"
@@ -86,7 +87,7 @@ static void usage(bool exit_success)
            "               " AB "'b' " AC "- PERF_COUNT_HW_BRANCH_INSTRUCTIONS (total)\n"
            "               " AB "'p' " AC "- PERF_SAMPLE_IP (unique IPs) (newer Intel CPUs)\n"
            " [" AB "-F val" AC "] : [Linux] Maximal size of a dynamic file (-D)\n"
-#endif /* _HF_ARCH == "LINUX" */
+#endif /* defined(_HF_ARCH_LINUX) */
            "Usage:"
            AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n");
     /*  *INDENT-ON* */
