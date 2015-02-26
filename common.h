@@ -33,7 +33,7 @@
 #include <sys/types.h>
 
 #define PROG_NAME "honggfuzz"
-#define PROG_VERSION "0.4"
+#define PROG_VERSION "0.5"
 #define PROG_AUTHORS "Robert Swiecki <swiecki@google.com> et al.,\nCopyright 2010-2015 by Google Inc. All Rights Reserved."
 
 /* Name of the template which will be replaced with the proper name of the file */

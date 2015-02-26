@@ -1,3 +1,9 @@
+2015-02-26 - Version 0.5 (revision 284)
+        - Feedback-driven fuzzing on Linux (using Intel's BTS with Linux perf infrastructure for branch counting) (-Dp option)
+        - Compiles cleanly and works under FreeBSD 10.1
+        - Uses libbfd/libunwind (under Linux) to disassemble offending instructions
+        - Many smaller fixes
+
 2015-02-01 - Version 0.4 (revision 72)
         - Switch from udis86 to capstone (Capstone is available in many Linux distros as opposed to udis86)
         - OSX 10.10 support
