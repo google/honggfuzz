@@ -1,4 +1,5 @@
 #summary Feedback-driven fuzzing in honggfuzz
+#labels Featured
 #sidebar TableOfContents
 
 = Feedback-driven fuzzing =
