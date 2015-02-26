@@ -60,7 +60,7 @@ $ honggfuzz -q -Db -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./d
 }}}
 
 == Unique branch counting (-Dp) ==
-This is the most powerfull mode of feedback-driven counting that honggfuzz supports. It will use Intel's BTS (Branch Trace Store) feature to record all branch events (edges) and removing duplicates. The resulting number of edges which is good approximation of how much code of a given tool have been actively executed (code coverage).
+This is the most powerfull mode of feedback-driven counting that honggfuzz supports. It utilizes Intel's BTS (Branch Trace Store) feature to record all branch events (edges) inside the fuzzed process. Later, honggfuzz will de-duplicate those entries. The resulting number of branch pairs (edges) is good approximation of how much code of a given tool have been actively executed/used (code coverage).
 
 {{{
 $ ~/src/honggfuzz/honggfuzz -q -Dp -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djpeg.static ___FILE___
