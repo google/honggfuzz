@@ -11,8 +11,8 @@ Developers can provide their own initial file (-f flag) which will be gradually 
 = Requirements =
    * GNU/Linux OS
    * Relatively modern Linux kernel (v 3.2 should suffice)
-   * A CPU which is supported by the [https://perf.wiki.kernel.org/index.php/Main_Page perf subsystem] for instruction- and branch- counting-driven fuzzing
-   * A CPU supporting [https://software.intel.com/en-us/forums/topic/277868?language=es BTS (Branch Trace Store)]. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
+   * CPU which is supported by the [https://perf.wiki.kernel.org/index.php/Main_Page perf subsystem] for instruction- and branch- counting-driven fuzzing
+   * CPU supporting [https://software.intel.com/en-us/forums/topic/277868?language=es BTS (Branch Trace Store)]. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
 
 = Examples =
 The main fuzzing strategy is quite simple. It tries to maximize the number of perf events while mangling the file which servers as an unput for fuzzing.
