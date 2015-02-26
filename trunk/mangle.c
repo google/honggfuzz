@@ -278,13 +278,13 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz, int fd)
         return true;
     }
 
+    munmap(buf, _HF_PAGE_ALIGN_UP(*bufSz));
     if (ftruncate(fd, newSz) == -1) {
         LOGMSG_P(l_ERROR, "Couldn't ftruncate(fd='%d', size='%zu')", fd, newSz);
         return false;
     }
     void *newBuf = mmap(NULL, _HF_PAGE_ALIGN_UP(newSz), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    munmap(buf, _HF_PAGE_ALIGN_UP(*bufSz));
-    LOGMSG(l_ERROR, "UNMAP: %p %zu", buf,  _HF_PAGE_ALIGN_UP(*bufSz));
+    LOGMSG(l_ERROR, "UNMAP: %p %zu", buf, _HF_PAGE_ALIGN_UP(*bufSz));
 
     if (newBuf == MAP_FAILED) {
         LOGMSG_P(l_ERROR, "mremap() failed");
