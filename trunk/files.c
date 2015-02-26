@@ -154,7 +154,7 @@ uint8_t *files_mapFileToWriteIni(char *fileName, size_t fileSz, int *fd, uint8_t
     if ((buf =
          mmap(NULL, _HF_PAGE_ALIGN_UP(fileSz), PROT_READ | PROT_WRITE, MAP_SHARED, *fd,
               0)) == MAP_FAILED) {
-        LOGMSG_P(l_WARN, "Couldn't mmap() the '%s' file", fileName);
+        LOGMSG_P(l_WARN, "Couldn't mmap() the '%s' file, size '%zu'", fileName, fileSz);
         close(*fd);
         return NULL;
     }

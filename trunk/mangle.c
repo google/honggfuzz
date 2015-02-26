@@ -242,18 +242,18 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz, int fd)
     }
     ssize_t newSz = *bufSz;
     int delta = 0;
-    unsigned int val = (unsigned int)util_rndGet(1, 32);
+    unsigned int val = (unsigned int)util_rndGet(1, 64);
     switch (val) {
-    case 1 ... 8:
+    case 1 ... 16:
         delta = -val;
         break;
-    case 9 ... 16:
-        delta = val - 8;
+    case 17 ... 32:
+        delta = val - 16;
         break;
-    case 17 ... 24:
+    case 33 ... 48:
         delta += (int)(mangle_ExpDist() * (double)((hfuzz->maxFileSz - *bufSz)));
         break;
-    case 25 ... 32:
+    case 49 ... 64:
         delta -= (int)(mangle_ExpDist() * (double)(*bufSz));
         break;
     default:
