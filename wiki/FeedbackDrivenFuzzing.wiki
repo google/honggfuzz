@@ -1,4 +1,4 @@
-#summary Feedback-driven fuzzing in honggfuzz
+#summary Hardware-assisted feedback-driven fuzzing in honggfuzz
 #labels Featured
 #sidebar TableOfContents
 
