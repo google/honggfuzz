@@ -1,0 +1,10 @@
+#summary Feedback-driven fuzzing in honggfuzz
+
+= Feedback-driven fuzzing =
+Honggfuzz is capable of performing feedback-driven fuzzing. It utilizes Linux perf subsystem and hardware CPU counters to achieve that
+
+= Requirements =
+   * GNU/Linux OS
+   * Relatively modern Linux kernel (v 3.2 should suffice)
+   * A CPU which is supported by the [https://perf.wiki.kernel.org/index.php/Main_Page perf subsystem] for instruction and branch counting-driven fuzzing
+   * A CPU supporting [https://software.intel.com/en-us/forums/topic/277868?language=es BTS (Branch Trace Store)]. Currently it's available in some newer Intel CPUs (unfortunately no AMD support for now)
