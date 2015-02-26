@@ -8,3 +8,28 @@ Honggfuzz is capable of performing feedback-driven fuzzing. It utilizes Linux pe
    * Relatively modern Linux kernel (v 3.2 should suffice)
    * A CPU which is supported by the [https://perf.wiki.kernel.org/index.php/Main_Page perf subsystem] for instruction and branch counting-driven fuzzing
    * A CPU supporting [https://software.intel.com/en-us/forums/topic/277868?language=es BTS (Branch Trace Store)]. Currently it's available in some newer Intel CPUs (unfortunately no AMD support for now)
+
+= Examples =
+The main fuzzing strategy is quite simple. It tries to maximize the number of perf events while mangling the file which servers as an unput for fuzzing.
+
+== Instruction counting (-Di) ==
+
+honggfuzz -q -Di -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djpeg.static ___FILE___
+
+[INFO] debugLevel: 3, inputFile '/usr/share/doc/texlive-doc/latex/ctable/penguin.jpg', nullifyStdio: 1, fuzzStdin: 0, saveUnique: 0, flipRate: 0.001000, externalCommand: 'NULL', tmOut: 0, mutationsMax: 0, threadsMax: 5, fileExtn 'fuzz', ignoreAddr: (nil), memoryLimit: 0 (MiB), fuzzExe: './djpeg.static', fuzzedPid: 0
+[INFO] Launched new process, pid: 21168, (5/5)
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1 / New: 1174343
+[INFO] New BEST feedback: New/Old: 2789/2789', Perf feedback counter Curr/High: 1174343/1
+[INFO] Launched new process, pid: 21170, (5/5)
+[INFO] Launched new process, pid: 21173, (5/5)
+[INFO] Launched new process, pid: 21172, (5/5)
+[INFO] Launched new process, pid: 21171, (5/5)
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1174343 / New: 20105
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1174343 / New: 1156896
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1174343 / New: 1134940
+[INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1174343 / New: 1134975
+[INFO] Launched new process, pid: 21178, (5/5)
+
+
+
+It will start with some initial file (or with no file at all), and subsequent fuzzing iterations will try to maximize the number of instructions spent on parsing it.
