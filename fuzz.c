@@ -106,19 +106,10 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         close(srcfd);
     }
 
-    memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
     fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
+    memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
 
     while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
-
-    int dstfd;
-    uint8_t *buf = files_mapFileToWriteIni(fuzzer->fileName, fuzzer->dynamicFileSz, &dstfd,
-                                           fuzzer->dynamicFile);
-    if (buf == NULL) {
-        LOGMSG(l_ERROR, "Couldn't map file '%s' in R/W mode, size=%zu", fuzzer->fileName,
-               fuzzer->dynamicFile);
-        return false;
-    }
 
     /* The first pass should be on an empty/initial file */
     if (hfuzz->branchBestCnt > 0) {
@@ -128,6 +119,14 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
 
+    int dstfd;
+    uint8_t *buf = files_mapFileToWriteIni(fuzzer->fileName, fuzzer->dynamicFileSz, &dstfd,
+                                           fuzzer->dynamicFile);
+    if (buf == NULL) {
+        LOGMSG(l_ERROR, "Couldn't map file '%s' in R/W mode, size=%zu", fuzzer->fileName,
+               fuzzer->dynamicFile);
+        return false;
+    }
     files_unmapFileCloseFdMSync(buf, fuzzer->dynamicFileSz, dstfd);
 
     return true;
