@@ -455,10 +455,16 @@ void fuzz_main(honggfuzz_t * hfuzz)
         }
 
         if (hfuzz->mutationsMax && (hfuzz->mutationsCnt >= hfuzz->mutationsMax)) {
+#if defined(_HF_ARCH_DARWIN)
             /*
              * Sleep a bit to let any running fuzzers terminate
              */
             usleep(1.2 * hfuzz->tmOut * 1000000);
+#else                           /* defined(_HF_ARCH_DARWIN) */
+            while (fuzz_numOfProc(hfuzz) > 1) {
+                usleep(10000);
+            }
+#endif                          /* defined(_HF_ARCH_DARWIN) */
             LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
             sem_destroy(hfuzz->sem);
             exit(EXIT_SUCCESS);
