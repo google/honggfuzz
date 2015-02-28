@@ -47,9 +47,9 @@ static const struct {
     const char *prefix;
 } logLevels[] = {
     {
-    "[FATAL]", "\033[1;31m"}, {
-    "[ERROR]", "\033[1;35m"}, {
-    "[WARNING]", "\033[1;34m"}, {
+    "[FATAL]", "\033[1;41m"}, {
+    "[ERROR]", "\033[1;31m"}, {
+    "[WARNING]", "\033[1;35m"}, {
     "[INFO]", "\033[1m"}, {
     "[DEBUG]", "\033[0;37m"}
 };
