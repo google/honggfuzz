@@ -43,11 +43,9 @@
 
 #define _HF_RT_SIG (SIGRTMIN + 20)
 
-/* By default it's 1MB which allows to run 2 duzzing threads concurrently */
-#define _HF_PERF_MMAP_DATA_SZ (4096 * 256)
-#define _HF_PERF_MMAP_TOT_SZ (getpagesize() + _HF_PERF_MMAP_DATA_SZ)
-
 static __thread uint8_t *perfMmap = NULL;
+/* By default it's 1MB which allows to run 1 fuzzing thread */
+static __thread size_t perfMmapSz = 0UL;
 
 #define _HF_PERF_BRANCHES_SZ (1024 * 128)
 /*  *INDENT-OFF* */
@@ -105,12 +103,12 @@ static inline void arch_perfMmapParse(void)
 #else
 #define rmb()	__asm__ __volatile__ ("" ::: "memory")
 #endif
-    uint64_t dataHeadOff = pem->data_head % _HF_PERF_MMAP_DATA_SZ;
+    uint64_t dataHeadOff = pem->data_head % perfMmapSz;
     /* Required as per 'man perf_event_open' */
     rmb();
-    uint64_t dataTailOff = pem->data_tail % _HF_PERF_MMAP_DATA_SZ;
+    uint64_t dataTailOff = pem->data_tail % perfMmapSz;
     uint8_t *dataTailPtr = perfMmap + getpagesize() + dataTailOff;
-    uint8_t localData[_HF_PERF_MMAP_DATA_SZ];
+    uint8_t localData[perfMmapSz];
 
     size_t localDataLen = 0;
     if (dataHeadOff > dataTailOff) {
@@ -119,10 +117,9 @@ static inline void arch_perfMmapParse(void)
     }
 
     if (dataHeadOff < dataTailOff) {
-        localDataLen = _HF_PERF_MMAP_DATA_SZ - dataTailOff + dataHeadOff;
-        memcpy(&localData[0], dataTailPtr, _HF_PERF_MMAP_DATA_SZ - dataTailOff);
-        memcpy(&localData[_HF_PERF_MMAP_DATA_SZ - dataTailOff], perfMmap + getpagesize(),
-               dataHeadOff);
+        localDataLen = perfMmapSz - dataTailOff + dataHeadOff;
+        memcpy(&localData[0], dataTailPtr, perfMmapSz - dataTailOff);
+        memcpy(&localData[perfMmapSz - dataTailOff], perfMmap + getpagesize(), dataHeadOff);
     }
 
     /* Ok, let it go */
@@ -182,7 +179,24 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         return true;
     }
 
-    LOGMSG(l_DEBUG, "Enabling PERF for PID=%d", pid);
+    /*
+     * mmap buffer size must divisible by a power of 2.
+     * It's maximal total size fol all threads is 1MB
+     */
+    perfMmapSz = (1024 * 1024);
+    if (hfuzz->threadsMax > 1) {
+        for (size_t i = 0; i < 31; i++) {
+            if ((hfuzz->threadsMax - 1) >> i) {
+                perfMmapSz >>= 1;
+            }
+            if (perfMmapSz < (size_t) getpagesize()) {
+                LOGMSG(l_FATAL, "Too many fuzzing threads for hardware support (%d)",
+                       hfuzz->threadsMax);
+            }
+        }
+    }
+
+    LOGMSG(l_DEBUG, "Enabling PERF for PID=%d (mmapBufSz=%zu)", pid, perfMmapSz);
 
     bzero(perfBranch, sizeof(perfBranch));
 
@@ -213,7 +227,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.watermark = 1;
-        pe.wakeup_watermark = _HF_PERF_MMAP_DATA_SZ / 2;
+        pe.wakeup_watermark = perfMmapSz / 2;
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%d' for PID: %d", hfuzz->dynFileMethod, pid);
@@ -235,7 +249,8 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         return true;
     }
 
-    perfMmap = mmap(NULL, _HF_PERF_MMAP_TOT_SZ, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
+    perfMmap =
+        mmap(NULL, perfMmapSz + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
     if (perfMmap == MAP_FAILED) {
         LOGMSG_P(l_ERROR, "mmap() failed");
         close(*perfFd);
@@ -289,6 +304,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
 
     uint64_t count = 0LL;
     if (hfuzz->dynFileMethod == _HF_DYNFILE_UNIQUE_PC_COUNT) {
+        usleep(10000);
         arch_perfMmapParse();
         count = fuzzer->branchCnt = arch_perfCountBranches();
         goto out;
@@ -304,7 +320,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
            "File size (New/Best): %zu/%zu, Perf feedback: Best: %" PRIu64 " / New: %" PRIu64,
            fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz, hfuzz->branchBestCnt, count);
     if (perfMmap != NULL) {
-        munmap(perfMmap, _HF_PERF_MMAP_TOT_SZ);
+        munmap(perfMmap, perfMmapSz + getpagesize());
     }
     close(perfFd);
     return;
