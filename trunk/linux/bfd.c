@@ -183,7 +183,7 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
 
     strcpy(instr, "");
     if (disassemble(0, &info) <= 0) {
-        snprintf(instr, _HF_INSTR_SZ, "[UNKNOWN]");
+        snprintf(instr, _HF_INSTR_SZ, "[DIS-ASM_FAILURE]");
     }
 
  out:
