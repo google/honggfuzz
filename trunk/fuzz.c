@@ -103,6 +103,11 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         close(srcfd);
     }
 
+    if (hfuzz->dynamicFileBestSz > hfuzz->maxFileSz) {
+        LOGMSG(l_FATAL, "Current BEST file Sz > maxFileSz (%zu > %zu)", hfuzz->dynamicFileBestSz,
+               hfuzz->maxFileSz);
+    }
+
     fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
     memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
 

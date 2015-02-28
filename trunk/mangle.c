@@ -239,7 +239,7 @@ static double mangle_ExpDist(void)
 /* Gauss-like distribution */
 bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz, int fd)
 {
-    const uint64_t chance_one_in_x = 10;
+    const uint64_t chance_one_in_x = 5;
     if (util_rndGet(1, chance_one_in_x) != 1) {
         return true;
     }
