@@ -125,7 +125,7 @@ int main(int argc, char **argv)
         .pid = 0,
         .dynFileMethod = _HF_DYNFILE_NONE,
         .dynamicFileBest = NULL,
-        .dynamicFileBestSz = 256,
+        .dynamicFileBestSz = 1,
         .branchBestCnt = 0,
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
     };
