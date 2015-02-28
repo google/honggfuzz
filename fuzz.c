@@ -100,7 +100,6 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
             return false;
         }
         hfuzz->dynamicFileBestSz = sbuf.st_size;
-        hfuzz->branchBestCnt = 1;
         close(srcfd);
     }
 
