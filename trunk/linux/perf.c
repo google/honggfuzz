@@ -41,11 +41,13 @@
 #include "linux/perf.h"
 #include "log.h"
 
-#define _HF_RT_SIG (SIGRTMIN + 20)
+//#define _HF_RT_SIG (SIGRTMIN + 20)
+#define _HF_RT_SIG (SIGIO)
 
 static __thread uint8_t *perfMmap = NULL;
 /* By default it's 1MB which allows to run 1 fuzzing thread */
 static __thread size_t perfMmapSz = 0UL;
+static __thread bool perfRecordLost = false;
 
 #define _HF_PERF_BRANCHES_SZ (1024 * 128)
 /*  *INDENT-OFF* */
@@ -124,6 +126,7 @@ static inline void arch_perfMmapParse(void)
 
     /* Ok, let it go */
     pem->data_tail = pem->data_head;
+
     for (struct perf_event_header * peh = (struct perf_event_header *)localData;
          (uintptr_t) peh < (uintptr_t) (localData + localDataLen);
          peh = (struct perf_event_header *)((uint8_t *) peh + peh->size)) {
@@ -134,8 +137,7 @@ static inline void arch_perfMmapParse(void)
             break;
         }
         if (peh->type == PERF_RECORD_LOST) {
-            LOGMSG(l_ERROR,
-                   "PERF_RECORD_LOST event received, possibly too many concurrent fuzzing threads in progress");
+            perfRecordLost = true;
         }
         if (peh->type != PERF_RECORD_SAMPLE) {
             LOGMSG(l_DEBUG, "(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16 ")",
@@ -305,6 +307,11 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
     }
 
     ioctl(perfFd, PERF_EVENT_IOC_DISABLE, 0);
+
+    if (perfRecordLost == true) {
+        LOGMSG(l_WARN,
+               "PERF_RECORD_LOST event received, possibly too many concurrent fuzzing threads in progress");
+    }
 
     uint64_t count = 0LL;
     if (hfuzz->dynFileMethod == _HF_DYNFILE_UNIQUE_PC_COUNT) {
