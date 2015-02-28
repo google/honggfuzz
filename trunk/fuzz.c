@@ -57,10 +57,8 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
     struct timeval tv;
     gettimeofday(&tv, NULL);
 
-    snprintf(fileName, PATH_MAX, ".honggfuzz.%d.%lu.%lu.%lu.%lu.%s",
-             (int)getpid(), (unsigned long int)tv.tv_sec,
-             (unsigned long int)tv.tv_usec,
-             (unsigned long int)util_rndGet(0, 1 << 30), (unsigned long int)util_rndGet(0, 1 << 30),
+    snprintf(fileName, PATH_MAX, ".honggfuzz.%d.%lu.%llx.%s", (int)getpid(),
+             (unsigned long int)tv.tv_sec, (unsigned long long int)util_rndGet(0, 1ULL << 62),
              hfuzz->fileExtn);
 
     return;

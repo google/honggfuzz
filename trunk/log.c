@@ -36,6 +36,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "util.h"
+
 static unsigned int log_minLevel = l_INFO;
 static bool log_isStdioTTY = true;
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -69,17 +71,16 @@ void log_setMinLevel(log_level_t dl)
 }
 
 void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int line,
-             const char *fmt, ...
-    )
+             const char *fmt, ...)
 {
+    char msg[4096] = { "\0" };
+
     if (dl > log_minLevel) {
         if (dl == l_FATAL) {
             exit(EXIT_FAILURE);
         }
         return;
     }
-
-    while (pthread_mutex_lock(&log_mutex)) ;
 
     char strerr[512];
     if (perr) {
@@ -93,7 +94,7 @@ void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int 
     localtime_r((const time_t *)&tv.tv_sec, &tm);
 
     if (log_isStdioTTY) {
-        dprintf(STDOUT_FILENO, "%s", logLevels[dl].prefix);
+        util_ssnprintf(msg, sizeof(msg), "%s", logLevels[dl].prefix);
     }
 #if defined(_HF_ARCH_LINUX)
 #include <unistd.h>
@@ -104,13 +105,12 @@ void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int 
 #endif                          /* _HF_ARCH == LINUX */
 
     if (log_minLevel >= l_DEBUG || log_minLevel == l_FATAL || !log_isStdioTTY) {
-        dprintf
-            (STDOUT_FILENO,
-             "%s [%d] %d/%02d/%02d %02d:%02d:%02d (%s:%s %d) ",
-             logLevels[dl].descr, pid, tm.tm_year + 1900,
-             tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, file, func, line);
+        util_ssnprintf(msg, sizeof(msg), "%s [%d] %d/%02d/%02d %02d:%02d:%02d (%s:%s %d) ",
+                       logLevels[dl].descr, pid, tm.tm_year + 1900,
+                       tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, file, func,
+                       line);
     } else {
-        dprintf(STDOUT_FILENO, "%s ", logLevels[dl].descr);
+        util_ssnprintf(msg, sizeof(msg), "%s ", logLevels[dl].descr);
     }
 
     va_list args;
@@ -119,15 +119,18 @@ void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int 
     va_end(args);
 
     if (perr) {
-        dprintf(STDOUT_FILENO, ": %s", strerr);
+        util_ssnprintf(msg, sizeof(msg), ": %s", strerr);
     }
 
     if (log_isStdioTTY) {
-        dprintf(STDOUT_FILENO, "\033[0m");
+        util_ssnprintf(msg, sizeof(msg), "\033[0m");
     }
 
-    dprintf(STDOUT_FILENO, "\n");
+    util_ssnprintf(msg, sizeof(msg), "\n");
 
+    while (pthread_mutex_lock(&log_mutex)) ;
+    if (write(STDOUT_FILENO, msg, strlen(msg)) == -1) {
+    }
     while (pthread_mutex_unlock(&log_mutex)) ;
 
     if (dl == l_FATAL) {
