@@ -41,7 +41,7 @@
 #include "linux/perf.h"
 #include "log.h"
 
-#define _HF_PERF_MMAP_DATA_SZ (4096 * 128)
+#define _HF_PERF_MMAP_DATA_SZ (4096 * 256)
 #define _HF_PERF_MMAP_TOT_SZ (getpagesize() + _HF_PERF_MMAP_DATA_SZ)
 
 static __thread uint8_t *perfMmap = NULL;
@@ -210,7 +210,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.watermark = 1;
-        pe.wakeup_watermark = _HF_PERF_MMAP_DATA_SZ / 2;
+        pe.wakeup_watermark = _HF_PERF_MMAP_DATA_SZ / 4;
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%d' for PID: %d", hfuzz->dynFileMethod, pid);
