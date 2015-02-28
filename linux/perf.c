@@ -42,12 +42,12 @@
 #include "log.h"
 
 //#define _HF_RT_SIG (SIGRTMIN + 20)
-#define _HF_RT_SIG (SIGIO)
+#define _HF_RT_SIG (SIGRTMIN + 30)
 
 static __thread uint8_t *perfMmap = NULL;
 /* By default it's 1MB which allows to run 1 fuzzing thread */
 static __thread size_t perfMmapSz = 0UL;
-static __thread bool perfRecordLost = false;
+static __thread unsigned int perfRecordLost = 0;
 
 #define _HF_PERF_BRANCHES_SZ (1024 * 128)
 /*  *INDENT-OFF* */
@@ -137,7 +137,8 @@ static inline void arch_perfMmapParse(void)
             break;
         }
         if (peh->type == PERF_RECORD_LOST) {
-            perfRecordLost = true;
+            perfRecordLost++;
+            continue;
         }
         if (peh->type != PERF_RECORD_SAMPLE) {
             LOGMSG(l_DEBUG, "(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16 ")",
@@ -233,7 +234,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.watermark = 1;
-        pe.wakeup_watermark = perfMmapSz / 2;
+        pe.wakeup_watermark = perfMmapSz;
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%d' for PID: %d", hfuzz->dynFileMethod, pid);
@@ -308,9 +309,10 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
 
     ioctl(perfFd, PERF_EVENT_IOC_DISABLE, 0);
 
-    if (perfRecordLost == true) {
+    if (perfRecordLost > 0) {
         LOGMSG(l_WARN,
-               "PERF_RECORD_LOST event received, possibly too many concurrent fuzzing threads in progress");
+               "%u PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
+               perfRecordLost);
     }
 
     uint64_t count = 0LL;
