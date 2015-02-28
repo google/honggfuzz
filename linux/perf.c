@@ -41,6 +41,8 @@
 #include "linux/perf.h"
 #include "log.h"
 
+#define _HF_RT_SIG (SIGRTMIN + 20)
+
 #define _HF_PERF_MMAP_DATA_SZ (4096 * 256)
 #define _HF_PERF_MMAP_TOT_SZ (getpagesize() + _HF_PERF_MMAP_DATA_SZ)
 
@@ -159,10 +161,10 @@ static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu
 
 static void arch_perfSigHandler(int signum, siginfo_t * si, void *unused)
 {
-    if (si->si_code != POLL_IN) {
+    if (signum != _HF_RT_SIG) {
         return;
     }
-    if (signum != SIGPOLL) {
+    if (si->si_code != POLL_IN) {
         return;
     }
 
@@ -248,7 +250,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         .sa_flags = SA_SIGINFO,
         .sa_restorer = NULL
     };
-    if (sigaction(SIGIO, &sa, NULL) == -1) {
+    if (sigaction(_HF_RT_SIG, &sa, NULL) == -1) {
         LOGMSG_P(l_ERROR, "sigaction() failed");
         return false;
     }
@@ -258,7 +260,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         close(*perfFd);
         return false;
     }
-    if (fcntl(*perfFd, F_SETSIG, SIGIO) == -1) {
+    if (fcntl(*perfFd, F_SETSIG, _HF_RT_SIG) == -1) {
         LOGMSG_P(l_ERROR, "fnctl(F_SETSIG)");
         close(*perfFd);
         return false;
