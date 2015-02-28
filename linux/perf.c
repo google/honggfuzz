@@ -304,7 +304,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
 
     uint64_t count = 0LL;
     if (hfuzz->dynFileMethod == _HF_DYNFILE_UNIQUE_PC_COUNT) {
-        usleep(10000);
         arch_perfMmapParse();
         count = fuzzer->branchCnt = arch_perfCountBranches();
         goto out;
