@@ -104,7 +104,7 @@ void files_unmapFileCloseFd(void *ptr, size_t fileSz, int fd)
 
 void files_unmapFileCloseFdMSync(void *ptr, size_t fileSz, int fd)
 {
-    msync(ptr, fileSz, MS_SYNC);
+    msync(ptr, fileSz, MS_ASYNC);
     files_unmapFileCloseFd(ptr, fileSz, fd);
 }
 
