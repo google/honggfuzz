@@ -334,7 +334,7 @@ static void *fuzz_threadNew(void *arg)
         while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
         if (fuzzer.branchCnt >= hfuzz->branchBestCnt) {
             LOGMSG(l_INFO,
-                   "New BEST feedback: New/Old: %zu/%zu', Perf feedback counter Curr/High: %" PRId64
+                   "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr/High): %" PRId64
                    "/%" PRId64, fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz, fuzzer.branchCnt,
                    hfuzz->branchBestCnt);
             memcpy(hfuzz->dynamicFileBest, fuzzer.dynamicFile, fuzzer.dynamicFileSz);
