@@ -216,7 +216,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.wakeup_watermark = _HF_PERF_MMAP_DATA_SZ / 2;
         break;
     default:
-        LOGMSG(l_ERROR, "Unknown perf mode: '%c' for PID: %d", hfuzz->dynFileMethod, pid);
+        LOGMSG(l_ERROR, "Unknown perf mode: '%d' for PID: %d", hfuzz->dynFileMethod, pid);
         return false;
         break;
     }
@@ -225,7 +225,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     if (*perfFd == -1) {
         if (hfuzz->dynFileMethod == _HF_DYNFILE_UNIQUE_PC_COUNT) {
             LOGMSG(l_ERROR,
-                   "-Dp mode (sample IP/PC) requires LBR/BTS present in Intel Haswell and newer (i.e. not in AMD CPUs)");
+                   "-Dp mode (sample IP/PC) requires LBR/BTS, which present in Intel Haswell and newer CPUs (i.e. not in AMD CPUs)");
         }
         LOGMSG_P(l_FATAL, "perf_event_open() failed");
         return false;
