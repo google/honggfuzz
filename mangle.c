@@ -181,6 +181,68 @@ static void mangle_Random(uint8_t * buf, size_t bufSz, size_t off)
     util_rndBuf(&buf[off], sz);
 }
 
+static void mangle_AddSub(uint8_t * buf, size_t bufSz, size_t off)
+{
+    /* 1,2,4 */
+    uint64_t varLen = 1ULL << util_rndGet(0, 2);
+    if ((bufSz - off) < varLen) {
+        return;
+    }
+
+    int delta = (int)util_rndGet(0, 64);
+    delta -= 32;
+
+    switch (varLen) {
+    case 1:
+        {
+            buf[off] += delta;
+            return;
+            break;
+        }
+    case 2:
+        {
+            uint16_t val = *((uint16_t *) & buf[off]);
+            if (util_rndGet(0, 1) == 0) {
+                /* BE */
+                val = util_ToFromBE16(val);
+                val += delta;
+                val = util_ToFromBE16(val);
+            } else {
+                /* LE */
+                val = util_ToFromLE16(val);
+                val += delta;
+                val = util_ToFromLE16(val);
+            }
+            *((uint16_t *) & buf[off]) = val;
+            return;
+            break;
+        }
+    case 4:
+        {
+            uint32_t val = *((uint32_t *) & buf[off]);
+            if (util_rndGet(0, 1) == 0) {
+                /* BE */
+                val = util_ToFromBE32(val);
+                val += delta;
+                val = util_ToFromBE32(val);
+            } else {
+                /* LE */
+                val = util_ToFromLE32(val);
+                val += delta;
+                val = util_ToFromLE32(val);
+            }
+            *((uint32_t *) & buf[off]) = val;
+            return;
+            break;
+        }
+    default:
+        {
+            LOGMSG(l_FATAL, "Unknown variable length size: %" PRId64, varLen);
+            break;
+        }
+    }
+}
+
 void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
 {
 /*  *INDENT-OFF* */
@@ -208,6 +270,7 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
         mangle_MemMove,
         mangle_MemSet,
         mangle_Random,
+        mangle_AddSub,
     };
 /*  *INDENT-ON* */
 
