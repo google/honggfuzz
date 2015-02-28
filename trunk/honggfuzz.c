@@ -215,6 +215,12 @@ int main(int argc, char **argv)
     hfuzz.cmdline = &argv[optind];
     log_setMinLevel(ll);
 
+    if (hfuzz.dynamicFileBestSz > hfuzz.maxFileSz) {
+        LOGMSG(l_FATAL,
+               "Initial dynamic file size cannot be larger than maximum file size (%zu > %zu)",
+               hfuzz.dynamicFileBestSz, hfuzz.maxFileSz);
+    }
+
     if ((hfuzz.dynamicFileBest = malloc(hfuzz.maxFileSz)) == NULL) {
         LOGMSG(l_FATAL, "malloc(%zu) failed", hfuzz.maxFileSz);
     }
