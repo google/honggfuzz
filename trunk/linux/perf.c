@@ -133,6 +133,10 @@ static inline void arch_perfMmapParse(void)
             LOGMSG(l_FATAL, "(struct perf_event_header)->size == 0 (%" PRIu16 ")", peh->size);
             break;
         }
+        if (peh->type == PERF_RECORD_LOST) {
+            LOGMSG(l_ERROR,
+                   "PERF_RECORD_LOST event received, possibly too many concurrent fuzzing threads in progress");
+        }
         if (peh->type != PERF_RECORD_SAMPLE) {
             LOGMSG(l_DEBUG, "(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16 ")",
                    peh->type);
