@@ -462,7 +462,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
             usleep(1.2 * hfuzz->tmOut * 1000000);
 #else                           /* defined(_HF_ARCH_DARWIN) */
             while (fuzz_numOfProc(hfuzz) > 1) {
-                usleep(10000);
+		usleep(10000);
             }
 #endif                          /* defined(_HF_ARCH_DARWIN) */
             LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
