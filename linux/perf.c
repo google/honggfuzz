@@ -186,8 +186,8 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     }
 
     /*
-     * mmap buffer size must divisible by a power of 2.
-     * It's maximal total size fol all threads is 1MB
+     * mmap buffer's size must divisible by a power of 2.
+     * The maximal, cumulative size fol all threads is 1MB
      */
     perfMmapSz = (1024 * 1024);
     if (hfuzz->threadsMax > 1) {
