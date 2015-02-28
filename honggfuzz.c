@@ -116,7 +116,7 @@ int main(int argc, char **argv)
         .tmOut = 3,
         .mutationsMax = 0,
         .mutationsCnt = 0,
-        .threadsMax = 5,
+        .threadsMax = 2,
         .ignoreAddr = NULL,
         .reportFile = _HF_REPORT_FILE,
         .asLimit = 0UL,
