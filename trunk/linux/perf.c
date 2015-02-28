@@ -41,10 +41,7 @@
 #include "linux/perf.h"
 #include "log.h"
 
-/*
- * 1 + 16 pages
- */
-#define _HF_PERF_MMAP_DATA_SZ (4096 * 256)
+#define _HF_PERF_MMAP_DATA_SZ (4096 * 128)
 #define _HF_PERF_MMAP_TOT_SZ (getpagesize() + _HF_PERF_MMAP_DATA_SZ)
 
 static __thread uint8_t *perfMmap = NULL;

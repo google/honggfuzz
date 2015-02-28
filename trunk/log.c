@@ -115,7 +115,7 @@ void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int 
 
     va_list args;
     va_start(args, fmt);
-    vdprintf(STDOUT_FILENO, fmt, args);
+    util_vssnprintf(msg, sizeof(msg), fmt, args);
     va_end(args);
 
     if (perr) {
