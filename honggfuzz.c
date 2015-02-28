@@ -54,7 +54,8 @@ static void usage(bool exit_success)
 {
     /*  *INDENT-OFF* */
     printf("%s",
-           " <" AB "-f val" AC "> : directory with input files (or a path to a single input file)\n"
+           " [" AB "-f val" AC "] : input file corpus directory\n"
+           "            (or a path to a single input file)\n"
            " [" AB "-h" AC "]     : this help\n"
            " [" AB "-q" AC "]     : null-ify children's stdin, stdout, stderr; make them quiet\n"
            "            (default: " AB "false" AC ")\n"
@@ -71,25 +72,30 @@ static void usage(bool exit_success)
            " [" AB "-t val" AC "] : timeout (in secs), (default: '" AB "3" AC "' [0 - no timeout])\n"
            " [" AB "-a val" AC "] : address limit (from si.si_addr) below which crashes\n"
            "            are not reported, (default: '" AB "0" AC "' [suggested: 65535])\n"
-           " [" AB "-n val" AC "] : number of concurrent fuzzing threads, (default: '" AB "5" AC "')\n"
+           " [" AB "-n val" AC "] : number of concurrent fuzzing threads, (default: '" AB "2" AC "')\n"
            " [" AB "-N val" AC "] : number of fuzzing mutations, (default: '" AB "0" AC "' [infinte])\n"
            " [" AB "-l val" AC "] : per process memory limit in MiB, (default: '" AB "0" AC "' [no limit])\n"
            " [" AB "-R val" AC "] : write report to this file, (default: '" AB _HF_REPORT_FILE AC "')\n"
            " [" AB "-F val" AC "] : Maximal size of files created by the fuzzer (default '" AB "1048576" AC "')\n"
 #if _HF_ARCH == LINUX
            " [" AB "-p val" AC "] : [Linux] attach to a pid (and its thread group), instead of \n"
-           "            monitoring a previously created process, default: '" AB "0" AC "' (none)\n"
+           "            monitoring a previously created process, (default: '" AB "0" AC "' [none])\n"
            " [" AB "-D val" AC "] : [Linux] create a file dynamically with Linux perf counters,\n"
            "            can be used with or without the '-f' flag (initial file contents)\n"
-           "            (default: " AB " none " AC ")\n"
+           "            (default: " AB "none" AC ")\n"
            "            Available counters: \n"
            "               " AB "'i' " AC "- PERF_COUNT_HW_INSTRUCTIONS (total IPs)\n"
            "               " AB "'b' " AC "- PERF_COUNT_HW_BRANCH_INSTRUCTIONS (total jumps/calls)\n"
            "               " AB "'p' " AC "- PERF_SAMPLE_IP/PERF_SAMPLE_ADDR (unique branches)\n"
            "                     (newer Intel CPUs only)\n"
 #endif /* defined(_HF_ARCH_LINUX) */
-           "Usage:"
-           AB " " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n");
+           "Usage examples:\n"
+           " Run a binary over a mutated files from a given directory:\n"
+           AB "  " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+           " Provide input over STDIN:\n"
+           AB "  " PROG_NAME " -f input_dir -- /usr/bin/djpeg\n" AC
+           " Run a binary over a over a dynamically created file directory:\n"
+           AB "  " PROG_NAME " -Dp -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n");
     /*  *INDENT-ON* */
 
     if (exit_success) {
