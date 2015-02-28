@@ -185,3 +185,58 @@ extern uint64_t util_hash(const char *buf, size_t len)
 
     return ret;
 }
+
+static uint16_t util_Swap16(uint16_t val)
+{
+    return (((val & 0xFF00) >> 8) | ((val & 0x00FF) << 8));
+}
+
+static uint32_t util_Swap32(uint32_t val)
+{
+    return (((val & 0xFF000000) >> 24) |
+            ((val & 0x00FF0000) >> 8) | ((val & 0x0000FF00) << 8) | ((val & 0x000000FF) << 24));
+}
+
+extern uint16_t util_ToFromBE16(uint16_t val)
+{
+#if __BYTE_ORDER == __BIG_ENDIAN
+    return val;
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+    return util_Swap16(val);
+#else
+#error "Unknown ENDIANESS"
+#endif
+}
+
+extern uint16_t util_ToFromLE16(uint16_t val)
+{
+#if __BYTE_ORDER == __BIG_ENDIAN
+    return util_Swap16(val);
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+    return val;
+#else
+#error "Unknown ENDIANESS"
+#endif
+}
+
+extern uint32_t util_ToFromBE32(uint32_t val)
+{
+#if __BYTE_ORDER == __BIG_ENDIAN
+    return val;
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+    return util_Swap32(val);
+#else
+#error "Unknown ENDIANESS"
+#endif
+}
+
+extern uint32_t util_ToFromLE32(uint32_t val)
+{
+#if __BYTE_ORDER == __BIG_ENDIAN
+    return util_Swap32(val);
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+    return val;
+#else
+#error "Unknown ENDIANESS"
+#endif
+}
