@@ -68,6 +68,9 @@ size_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
     }
     close(fd);
 
+    LOGMSG(l_DEBUG, "Read '%zu' bytes (max: '%zu') from '%s'", (size_t) st.st_size, fileMaxSz,
+           fileName);
+
     return (size_t) st.st_size;
 }
 
@@ -76,15 +79,17 @@ bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flag
     int fd = open(fileName, flags, 0644);
     if (fd == -1) {
         LOGMSG_P(l_ERROR, "Couldn't open '%s' for R/O", fileName);
-        return 0UL;
+        return false;
     }
 
     if (files_writeToFd(fd, buf, fileSz) == false) {
-        LOGMSG(l_ERROR, "Could write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName, fd);
+        LOGMSG(l_ERROR, "Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName, fd);
         close(fd);
         return false;
     }
     close(fd);
+
+    LOGMSG(l_DEBUG, "Written '%zu' bytes to '%s'", fileSz, fileName);
 
     return true;
 }

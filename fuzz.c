@@ -97,7 +97,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
     if (files_writeBufToFile
         (fuzzer->fileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-         O_CREAT | O_EXCL | O_TRUNC) == false) {
+         O_WRONLY | O_CREAT | O_EXCL | O_TRUNC) == false) {
         LOGMSG(l_ERROR, "Couldn't write buffer to file '%s'", fuzzer->fileName);
         return false;
     }
@@ -118,7 +118,7 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_ind
     mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fileSz);
 
     if (files_writeBufToFile
-        (fuzzer->fileName, fuzzer->dynamicFile, fileSz, O_CREAT | O_TRUNC | O_EXCL) == false) {
+        (fuzzer->fileName, fuzzer->dynamicFile, fileSz, O_WRONLY | O_CREAT | O_EXCL) == false) {
         LOGMSG(l_ERROR, "Couldn't write buffer to file '%s'", fuzzer->fileName);
         return false;
     }
