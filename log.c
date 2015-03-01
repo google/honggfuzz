@@ -96,9 +96,9 @@ void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int 
 #include <unistd.h>
 #include <sys/syscall.h>
     pid_t pid = (pid_t) syscall(__NR_gettid);
-#else                           /* _HF_ARCH == LINUX */
+#else                           /* defined(_HF_ARCH_LINUX) */
     pid_t pid = getpid();
-#endif                          /* _HF_ARCH == LINUX */
+#endif                          /* defined(_HF_ARCH_LINUX) */
 
     if (log_minLevel >= l_DEBUG || log_minLevel == l_FATAL || !log_isStdioTTY) {
         util_ssnprintf(msg, sizeof(msg), "%s [%d] %d/%02d/%02d %02d:%02d:%02d (%s:%s %d) ",
