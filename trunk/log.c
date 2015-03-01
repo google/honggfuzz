@@ -39,7 +39,7 @@
 #include "util.h"
 
 static unsigned int log_minLevel = l_INFO;
-static bool log_isStdioTTY = true;
+static bool log_isStdioTTY;
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*  *INDENT-OFF* */
@@ -69,7 +69,7 @@ void log_setMinLevel(log_level_t dl)
 void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int line,
              const char *fmt, ...)
 {
-    char msg[4096] = { "\0" };
+    char msg[8192] = { "\0" };
 
     if (dl > log_minLevel) {
         if (dl == l_FATAL) {
@@ -89,7 +89,7 @@ void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int 
     gettimeofday(&tv, NULL);
     localtime_r((const time_t *)&tv.tv_sec, &tm);
 
-    if (log_isStdioTTY) {
+    if (log_isStdioTTY == true) {
         util_ssnprintf(msg, sizeof(msg), "%s", logLevels[dl].prefix);
     }
 #if defined(_HF_ARCH_LINUX)
@@ -118,7 +118,7 @@ void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int 
         util_ssnprintf(msg, sizeof(msg), ": %s", strerr);
     }
 
-    if (log_isStdioTTY) {
+    if (log_isStdioTTY == true) {
         util_ssnprintf(msg, sizeof(msg), "\033[0m");
     }
 
