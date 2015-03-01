@@ -83,6 +83,7 @@ typedef struct {
     dynFileMethod_t dynFileMethod;
     int64_t branchBestCnt;
     int dynamicRegressionCnt;
+    uint64_t dynamicCutOffAddr;
     pthread_mutex_t dynamicFile_mutex;
 } honggfuzz_t;
 
