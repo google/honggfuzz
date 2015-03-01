@@ -80,6 +80,7 @@ static void usage(bool exit_success)
 #if _HF_ARCH == LINUX
            " [" AB "-p val" AC "] : [Linux] attach to a pid (and its thread group), instead of \n"
            "            monitoring a previously created process, (default: '" AB "0" AC "' [none])\n"
+           " [" AB "-g val" AC "] : [Linux] allow that many regressions (perf events) wrt the best one\n"
            " [" AB "-D val" AC "] : [Linux] create a file dynamically with Linux perf counters,\n"
            "            can be used with or without the '-f' flag (initial file contents)\n"
            "            (default: " AB "none" AC ")\n"
