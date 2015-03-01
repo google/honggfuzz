@@ -200,7 +200,7 @@ static void mangle_AddSub(uint8_t * buf, size_t bufSz, size_t off)
     /* 1,2,4 */
     uint64_t varLen = 1ULL << util_rndGet(0, 2);
     if ((bufSz - off) < varLen) {
-        return;
+        varLen = 1;
     }
 
     int delta = (int)util_rndGet(0, 64);
@@ -227,7 +227,7 @@ static void mangle_AddSub(uint8_t * buf, size_t bufSz, size_t off)
                 val += delta;
                 val = util_ToFromLE16(val);
             }
-            *((uint16_t *) & buf[off]) = val;
+            mangle_Overwrite(buf, (uint8_t *) & val, bufSz, off, varLen);
             return;
             break;
         }
@@ -245,7 +245,7 @@ static void mangle_AddSub(uint8_t * buf, size_t bufSz, size_t off)
                 val += delta;
                 val = util_ToFromLE32(val);
             }
-            *((uint32_t *) & buf[off]) = val;
+            mangle_Overwrite(buf, (uint8_t *) & val, bufSz, off, varLen);
             return;
             break;
         }
