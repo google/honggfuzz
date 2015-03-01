@@ -77,7 +77,7 @@ static void usage(bool exit_success)
            " [" AB "-l val" AC "] : per process memory limit in MiB, (default: '" AB "0" AC "' [no limit])\n"
            " [" AB "-R val" AC "] : write report to this file, (default: '" AB _HF_REPORT_FILE AC "')\n"
            " [" AB "-F val" AC "] : Maximal size of files created by the fuzzer (default '" AB "1048576" AC "')\n"
-#if _HF_ARCH == LINUX
+#if defined(_HF_ARCH_LINUX)
            " [" AB "-p val" AC "] : [Linux] attach to a pid (and its thread group), instead of \n"
            "            monitoring a previously created process, (default: '" AB "0" AC "' [none])\n"
            " [" AB "-g val" AC "] : [Linux] allow that many regressions (perf events) wrt the best one\n"
@@ -95,12 +95,15 @@ static void usage(bool exit_success)
            AB "  " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
            " As above, provide input over STDIN:\n"
            AB "  " PROG_NAME " -f input_dir -- /usr/bin/djpeg\n" AC
+#if defined(_HF_ARCH_LINUX)
            " Run the binary over over a dynamic file, maximize total no. of instructions:\n"
            AB "  " PROG_NAME " -Di -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
            " Run the binary over over a dynamic file, maximize total no. of branches:\n"
            AB "  " PROG_NAME " -Db -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
            " Run the binary over over a dynamic file, maximize unique branches (edges):\n"
-           AB "  " PROG_NAME " -Dp -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n");
+           AB "  " PROG_NAME " -Dp -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+#endif /* defined(_HF_ARCH_LINUX) */
+	   );
     /*  *INDENT-ON* */
 
     if (exit_success) {
