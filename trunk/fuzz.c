@@ -126,35 +126,29 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_ind
     return true;
 }
 
-static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
+static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
 {
-    size_t fileSz;
-    int srcfd;
-
-    int dstfd = open(fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
+    int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
     if (dstfd == -1) {
         LOGMSG_P(l_ERROR, "Couldn't create a temporary file '%s' in the current directory",
-                 fileName);
+                 fuzzer->fileName);
         return false;
     }
 
-    LOGMSG(l_DEBUG, "Created '%f' as an input file", fileName);
+    LOGMSG(l_DEBUG, "Created '%f' as an input file", fuzzer->fileName);
 
     if (hfuzz->inputFile) {
-        uint8_t *buf = files_mapFileToRead(hfuzz->files[rnd_index], &fileSz, &srcfd);
-        if (buf == NULL) {
-            LOGMSG(l_ERROR, "Couldn't open and map '%s' in R/O mode", hfuzz->files[rnd_index]);
-            close(dstfd);
+        size_t fileSz =
+            files_readFileToBufMax(hfuzz->files[rnd_index], fuzzer->dynamicFile, hfuzz->maxFileSz);
+        if (fileSz == 0UL) {
+            LOGMSG(l_ERROR, "Couldn't read '%s'", hfuzz->files[rnd_index]);
+            unlink(fuzzer->fileName);
             return false;
         }
 
-        LOGMSG(l_DEBUG, "Mmaped '%s' in R/O mode, size: %d", hfuzz->files[rnd_index], fileSz);
-
-        bool ret = files_writeToFd(dstfd, buf, fileSz);
-        files_unmapFileCloseFd(buf, fileSz, srcfd);
-
-        if (!ret) {
+        if (files_writeToFd(dstfd, fuzzer->dynamicFile, fileSz) == false) {
             close(dstfd);
+            unlink(fuzzer->fileName);
             return false;
         }
     }
@@ -171,8 +165,8 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, char *fileName, int 
         /*
          * child performs the external file modifications
          */
-        execl(hfuzz->externalCommand, hfuzz->externalCommand, fileName, NULL);
-        LOGMSG_P(l_FATAL, "Couldn't execute '%s %s'", hfuzz->externalCommand, fileName);
+        execl(hfuzz->externalCommand, hfuzz->externalCommand, fuzzer->fileName, NULL);
+        LOGMSG_P(l_FATAL, "Couldn't execute '%s %s'", hfuzz->externalCommand, fuzzer->fileName);
         return false;
     }
 
@@ -234,7 +228,7 @@ static void *fuzz_threadNew(void *arg)
             exit(EXIT_FAILURE);
         }
     } else if (hfuzz->externalCommand != NULL) {
-        if (!fuzz_prepareFileExternally(hfuzz, fuzzer.fileName, rnd_index)) {
+        if (!fuzz_prepareFileExternally(hfuzz, &fuzzer, rnd_index)) {
             exit(EXIT_FAILURE);
         }
     } else {

@@ -151,42 +151,6 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
     return ret;
 }
 
-void files_unmapFileCloseFd(void *ptr, size_t fileSz, int fd)
-{
-    munmap(ptr, _HF_PAGE_ALIGN_UP(fileSz));
-    close(fd);
-}
-
-uint8_t *files_mapFileToRead(char *fileName, size_t * fileSz, int *fd)
-{
-    if ((*fd = open(fileName, O_RDONLY)) == -1) {
-        LOGMSG_P(l_WARN, "Couldn't open() '%s' file in R/O mode", fileName);
-        return NULL;
-    }
-
-    struct stat st;
-    if (fstat(*fd, &st) == -1) {
-        LOGMSG_P(l_WARN, "Couldn't stat() the '%s' file", fileName);
-        close(*fd);
-        return NULL;
-    }
-
-    uint8_t *buf;
-    if ((buf =
-         mmap(NULL, _HF_PAGE_ALIGN_UP(st.st_size), PROT_READ | PROT_WRITE, MAP_PRIVATE, *fd,
-              0)) == MAP_FAILED) {
-        LOGMSG_P(l_WARN, "Couldn't mmap() the '%s' file", fileName);
-        close(*fd);
-        return NULL;
-    }
-
-    LOGMSG(l_DEBUG, "mmap()'d '%llu' bytes for the file '%s' (original size: '%llu') at 0x%p",
-           (unsigned long long)_HF_PAGE_ALIGN_UP(st.st_size), fileName,
-           (unsigned long long)st.st_size, buf);
-    *fileSz = st.st_size;
-    return buf;
-}
-
 static bool files_readdir(honggfuzz_t * hfuzz)
 {
     DIR *dir = opendir(hfuzz->inputFile);

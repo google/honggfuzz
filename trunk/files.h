@@ -33,10 +33,6 @@ extern size_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileM
 
 extern bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flags);
 
-extern uint8_t *files_mapFileToRead(char *fileName, size_t * fileSz, int *fd);
-
-extern void files_unmapFileCloseFd(void *ptr, size_t fileSz, int fd);
-
 extern bool files_writeToFd(int fd, uint8_t * buf, size_t fileSz);
 
 extern bool files_writeStrToFd(int fd, char *str);
