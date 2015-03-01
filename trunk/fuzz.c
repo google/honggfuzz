@@ -268,14 +268,18 @@ static void *fuzz_threadNew(void *arg)
 
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
-        if (fuzzer.branchCnt >= hfuzz->branchBestCnt) {
+
+        int diff = hfuzz->branchBestCnt - fuzzer.branchCnt;
+        if (diff <= hfuzz->dynamicRegressionCnt) {
             LOGMSG(l_INFO,
                    "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr/High): %"
                    PRId64 "/%" PRId64, fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz,
                    fuzzer.branchCnt, hfuzz->branchBestCnt);
             memcpy(hfuzz->dynamicFileBest, fuzzer.dynamicFile, fuzzer.dynamicFileSz);
+
             hfuzz->dynamicFileBestSz = fuzzer.dynamicFileSz;
-            hfuzz->branchBestCnt = fuzzer.branchCnt;
+            hfuzz->branchBestCnt =
+                fuzzer.branchCnt > hfuzz->branchBestCnt ? fuzzer.branchCnt : hfuzz->branchBestCnt;
 
 #define _HF_CURRENT_BEST "CURRENT_BEST"
 #define _HF_CURRENT_BEST_TMP ".tmp.CURRENT_BEST"
