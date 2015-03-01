@@ -98,9 +98,17 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
     }
 }
 
-static inline void arch_perfMmapParse(void)
+static inline void arch_perfSkip(size_t skip)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
+    uint64_t dataTailOff = pem->data_tail;
+    dataTailOff += skip;
+    if (dataTailOff > perfMmapSz) {
+        dataTailOff %= perfMmapSz;
+    }
+    pem->data_tail = dataTailOff;
+}
+
 /* Memory Barriers */
 #if defined(__x86_64__)
 #define rmb()	__asm__ __volatile__ ("lfence" ::: "memory")
@@ -109,55 +117,71 @@ static inline void arch_perfMmapParse(void)
 #else
 #define rmb()	__asm__ __volatile__ ("" ::: "memory")
 #endif
+static inline uint64_t arch_perfGetMulti64(void)
+{
+    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
     uint64_t dataHeadOff = pem->data_head % perfMmapSz;
-    /* Required as per 'man perf_event_open' */
     rmb();
     uint64_t dataTailOff = pem->data_tail % perfMmapSz;
-    uint8_t *dataTailPtr = perfMmapBuf + getpagesize() + dataTailOff;
-    uint8_t localData[perfMmapSz];
+//    LOGMSG(l_ERROR, "HEAD: %llu TAIL: %llu", dataHeadOff, dataTailOff);
 
-    size_t localDataLen = 0;
+    int64_t dataLen = 0;
     if (dataHeadOff > dataTailOff) {
-        localDataLen = dataHeadOff - dataTailOff;
-        memcpy(localData, dataTailPtr, localDataLen);
+        dataLen = dataHeadOff - dataTailOff;
     }
-
     if (dataHeadOff < dataTailOff) {
-        localDataLen = perfMmapSz - dataTailOff + dataHeadOff;
-        memcpy(&localData[0], dataTailPtr, perfMmapSz - dataTailOff);
-        memcpy(&localData[perfMmapSz - dataTailOff], perfMmapBuf + getpagesize(), dataHeadOff);
+        dataLen = perfMmapSz - dataTailOff + dataHeadOff;
     }
 
-    /* Ok, let it go */
-    pem->data_tail = pem->data_head;
+    if (dataLen < (int64_t) sizeof(uint64_t)) {
+        return 0ULL;
+    }
 
-    for (struct perf_event_header * peh = (struct perf_event_header *)localData;
-         (uintptr_t) peh < (uintptr_t) (localData + localDataLen);
-         peh = (struct perf_event_header *)((uint8_t *) peh + peh->size)) {
+    uint64_t ret = *(uint64_t *) (perfMmapBuf + getpagesize() + dataTailOff);
 
-        /* Cannot recover from this condition */
-        if (peh->size == 0) {
-            LOGMSG(l_FATAL, "(struct perf_event_header)->size == 0 (%" PRIu16 ")", peh->size);
+    dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
+    pem->data_tail = dataTailOff;
+
+    return ret;
+}
+
+static inline void arch_perfMmapParse(void)
+{
+    for (;;) {
+        uint64_t tmp;
+        if ((tmp = arch_perfGetMulti64()) == 0ULL) {
             break;
         }
+
+        struct perf_event_header *peh = (struct perf_event_header *)&tmp;
         if (peh->type == PERF_RECORD_LOST) {
             perfRecordLost++;
+            arch_perfSkip(peh->size - sizeof(uint64_t));
             continue;
         }
         if (peh->type != PERF_RECORD_SAMPLE) {
             LOGMSG(l_DEBUG, "(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16 ")",
                    peh->type);
+            arch_perfSkip(peh->size - sizeof(uint64_t));
             continue;
         }
         if (peh->misc != PERF_RECORD_MISC_USER && peh->misc != PERF_RECORD_MISC_KERNEL) {
             LOGMSG(l_FATAL,
                    "(struct perf_event_header)->type != PERF_RECORD_MISC_USER (%" PRIu16 ")",
                    peh->misc);
+            arch_perfSkip(peh->size - sizeof(uint64_t));
             continue;
         }
 
-        uint64_t from = *(uint64_t *) ((uint8_t *) peh + sizeof(peh));
-        uint64_t to = *(uint64_t *) ((uint8_t *) peh + sizeof(peh) + sizeof(from));
+        uint64_t from = arch_perfGetMulti64();
+        if (from == 0ULL) {
+            LOGMSG(l_FATAL, "from == 0");
+        }
+        uint64_t to = arch_perfGetMulti64();
+        if (to == 0ULL) {
+            LOGMSG(l_FATAL, "to == 0");
+        }
+
         arch_perfAddBranch(from, to);
     }
 }
