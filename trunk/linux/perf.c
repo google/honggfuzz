@@ -41,8 +41,7 @@
 #include "linux/perf.h"
 #include "log.h"
 
-//#define _HF_RT_SIG (SIGRTMIN + 20)
-#define _HF_RT_SIG (SIGRTMIN + 30)
+#define _HF_RT_SIG (SIGRTMIN + 10)
 
 /* Buffer used with BTS (branch recording) */
 static __thread uint8_t *perfMmapBuf = NULL;
@@ -53,7 +52,7 @@ static __thread unsigned int perfRecordLost = 0;
 /* Don't record branches using address above this parameter */
 static __thread uint64_t perfCutOffAddr = ~(1ULL);
 
-#define _HF_PERF_BRANCHES_SZ (1024 * 128)
+#define _HF_PERF_BRANCHES_SZ (1024 * 16)
 /*  *INDENT-OFF* */
 static __thread struct {
   uint64_t from;
@@ -71,6 +70,7 @@ static size_t arch_perfCountBranches(void)
         LOGMSG(l_DEBUG, "Branch entry: FROM: %" PRIx64 ", TO: %" PRIx64, perfBranch[i].from,
                perfBranch[i].to);
     }
+    LOGMSG(l_FATAL, "Branch buffer too small (%zu elements)", ARRAYSIZE(perfBranch));
     return i;
 }
 
@@ -280,7 +280,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         .sa_handler = NULL,
         .sa_sigaction = arch_perfSigHandler,
         .sa_mask = smask,
-        .sa_flags = SA_SIGINFO,
+        .sa_flags = SA_SIGINFO | SA_RESTART,
         .sa_restorer = NULL
     };
     if (sigaction(_HF_RT_SIG, &sa, NULL) == -1) {
