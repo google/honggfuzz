@@ -89,12 +89,16 @@ static void usage(bool exit_success)
            "               " AB "'p' " AC "- PERF_SAMPLE_IP/PERF_SAMPLE_ADDR (unique branches)\n"
            "                     (newer Intel CPUs only)\n"
 #endif /* defined(_HF_ARCH_LINUX) */
-           "Usage examples:\n"
-           " Run a binary over a mutated files from a given directory:\n"
+           "\nExamples:\n"
+           " Run the binary over a mutated file chosen from the directory:\n"
            AB "  " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
-           " Provide input over STDIN:\n"
+           " As above, provide input over STDIN:\n"
            AB "  " PROG_NAME " -f input_dir -- /usr/bin/djpeg\n" AC
-           " Run a binary over a over a dynamically created file directory:\n"
+           " Run the binary over over a dynamic file, maximize total no. of instructions:\n"
+           AB "  " PROG_NAME " -Di -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+           " Run the binary over over a dynamic file, maximize total no. of branches:\n"
+           AB "  " PROG_NAME " -Db -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+           " Run the binary over over a dynamic file, maximize uniue branches (edges):\n"
            AB "  " PROG_NAME " -Dp -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n");
     /*  *INDENT-ON* */
 
