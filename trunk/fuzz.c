@@ -279,16 +279,13 @@ static void *fuzz_threadNew(void *arg)
 
 #define _HF_CURRENT_BEST "CURRENT_BEST"
 #define _HF_CURRENT_BEST_TMP ".tmp.CURRENT_BEST"
-            int fd = open(_HF_CURRENT_BEST_TMP, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-            if (fd != -1) {
-                if (files_writeToFd(fd, fuzzer.dynamicFile, fuzzer.dynamicFileSz)) {
-                    rename(_HF_CURRENT_BEST_TMP, _HF_CURRENT_BEST);
-                } else {
-                    unlink(_HF_CURRENT_BEST_TMP);
-                }
-                close(fd);
+            if (files_writeBufToFile
+                (_HF_CURRENT_BEST_TMP, fuzzer.dynamicFile, fuzzer.dynamicFileSz,
+                 O_WRONLY | O_CREAT | O_TRUNC)) {
+                rename(_HF_CURRENT_BEST_TMP, _HF_CURRENT_BEST);
+            } else {
+                unlink(_HF_CURRENT_BEST_TMP);
             }
-
         }
         while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
     }
