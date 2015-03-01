@@ -42,27 +42,23 @@ static unsigned int log_minLevel = l_INFO;
 static bool log_isStdioTTY = true;
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/*  *INDENT-OFF* */
 static const struct {
     const char *descr;
     const char *prefix;
 } logLevels[] = {
-    {
-    "[FATAL]", "\033[1;41m"}, {
-    "[ERROR]", "\033[1;31m"}, {
-    "[WARNING]", "\033[1;35m"}, {
-    "[INFO]", "\033[1m"}, {
-    "[DEBUG]", "\033[0;37m"}
+    { "[FATAL]",   "\033[1;41m" },
+    { "[ERROR]",   "\033[1;31m" },
+    { "[WARNING]", "\033[1;35m" },
+    { "[INFO]",    "\033[1m"    },
+    { "[DEBUG]",   "\033[0;37m" },
 };
+/*  *INDENT-ON* */
 
 __attribute__ ((constructor))
-void log_init(void
-    )
+void log_init(void)
 {
-    if (isatty(STDOUT_FILENO) == 1) {
-        log_isStdioTTY = true;
-    } else {
-        log_isStdioTTY = false;
-    }
+    log_isStdioTTY = (isatty(STDOUT_FILENO) == 1);
 }
 
 void log_setMinLevel(log_level_t dl)
