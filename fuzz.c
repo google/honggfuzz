@@ -95,15 +95,12 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
 
-    int dstfd;
-    uint8_t *buf = files_mapFileToWriteIni(fuzzer->fileName, fuzzer->dynamicFileSz, &dstfd,
-                                           fuzzer->dynamicFile);
-    if (buf == NULL) {
-        LOGMSG(l_ERROR, "Couldn't map file '%s' in R/W mode, size=%zu", fuzzer->fileName,
-               fuzzer->dynamicFile);
+    if (files_writeBufToFile
+        (fuzzer->fileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+         O_CREAT | O_EXCL | O_TRUNC) == false) {
+        LOGMSG(l_ERROR, "Couldn't write buffer to file '%s'", fuzzer->fileName);
         return false;
     }
-    files_unmapFileCloseFd(buf, fuzzer->dynamicFileSz, dstfd);
 
     return true;
 }
@@ -120,15 +117,11 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_ind
     mangle_Resize(hfuzz, &fileSz);
     mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fileSz);
 
-    int dstfd;
-    uint8_t *buf = files_mapFileToWriteIni(fuzzer->fileName, fileSz, &dstfd, fuzzer->dynamicFile);
-    if (buf == NULL) {
-        LOGMSG(l_ERROR, "Couldn't map '%s' for R/W, size='%zu'", fuzzer->fileName, fileSz);
-        files_unmapFileCloseFd(buf, fileSz, dstfd);
+    if (files_writeBufToFile
+        (fuzzer->fileName, fuzzer->dynamicFile, fileSz, O_CREAT | O_TRUNC | O_EXCL) == false) {
+        LOGMSG(l_ERROR, "Couldn't write buffer to file '%s'", fuzzer->fileName);
         return false;
     }
-
-    files_unmapFileCloseFd(buf, fileSz, dstfd);
 
     return true;
 }

@@ -66,8 +66,27 @@ size_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
         close(fd);
         return 0UL;
     }
+    close(fd);
 
     return (size_t) st.st_size;
+}
+
+bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flags)
+{
+    int fd = open(fileName, flags, 0644);
+    if (fd == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't open '%s' for R/O", fileName);
+        return 0UL;
+    }
+
+    if (files_writeToFd(fd, buf, fileSz) == false) {
+        LOGMSG(l_ERROR, "Could write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName, fd);
+        close(fd);
+        return false;
+    }
+    close(fd);
+
+    return true;
 }
 
 bool files_writeToFd(int fd, uint8_t * buf, size_t fileSz)
@@ -160,35 +179,6 @@ uint8_t *files_mapFileToRead(char *fileName, size_t * fileSz, int *fd)
            (unsigned long long)_HF_PAGE_ALIGN_UP(st.st_size), fileName,
            (unsigned long long)st.st_size, buf);
     *fileSz = st.st_size;
-    return buf;
-}
-
-uint8_t *files_mapFileToWriteIni(char *fileName, size_t fileSz, int *fd, uint8_t * iniBuf)
-{
-    if ((*fd = open(fileName, O_CREAT | O_EXCL | O_RDWR, 0644)) == -1) {
-        LOGMSG_P(l_WARN, "Couldn't open() '%s' file in R/W mode", fileName);
-        return NULL;
-    }
-    if (ftruncate(*fd, fileSz) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't ftruncate(fd='%d', size='%zu')", *fd, fileSz);
-        close(*fd);
-        return NULL;
-    }
-
-    uint8_t *buf;
-    if ((buf =
-         mmap(NULL, _HF_PAGE_ALIGN_UP(fileSz), PROT_READ | PROT_WRITE, MAP_SHARED, *fd,
-              0)) == MAP_FAILED) {
-        LOGMSG_P(l_WARN, "Couldn't mmap() the '%s' file, size '%zu'", fileName, fileSz);
-        close(*fd);
-        return NULL;
-    }
-
-    LOGMSG(l_DEBUG, "mmap()'d '%llu' bytes for the file '%s' (original size: '%llu') at 0x%p",
-           (unsigned long long)_HF_PAGE_ALIGN_UP(fileSz), fileName, (unsigned long long)fileSz,
-           buf);
-
-    memcpy(buf, iniBuf, fileSz);
     return buf;
 }
 
