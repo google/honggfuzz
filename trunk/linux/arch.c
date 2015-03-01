@@ -185,13 +185,15 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     int status;
-    int perfFd;
-
     pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
     if (pid == -1) {
         LOGMSG(l_FATAL, "wait3() pid=-1");
     }
+    if (!WIFSTOPPED(status)) {
+        LOGMSG(l_FATAL, "PID '%d' is not in a stopped state");
+    }
 
+    int perfFd;
     if (arch_perfEnable(pid, hfuzz, &perfFd) == false) {
         return;
     }
