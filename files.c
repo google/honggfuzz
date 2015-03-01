@@ -39,6 +39,37 @@
 
 #include "log.h"
 
+size_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
+{
+    int fd = open(fileName, O_RDONLY);
+    if (fd == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't open '%s' for R/O", fileName);
+        return 0UL;
+    }
+
+    struct stat st;
+    if (fstat(fd, &st) == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't fstat(fd='%d' fileName='%s')", fd, fileName);
+        close(fd);
+        return 0UL;
+    }
+
+    if ((size_t) st.st_size > fileMaxSz) {
+        LOGMSG(l_ERROR, "File '%s' size to big (%zu > %zu)", fileName, (size_t) st.st_size,
+               fileMaxSz);
+        close(fd);
+        return 0UL;
+    }
+
+    if (files_readFromFd(fd, buf, (size_t) st.st_size) == false) {
+        LOGMSG(l_ERROR, "Couldn't read '%s' to a buf", fileName);
+        close(fd);
+        return 0UL;
+    }
+
+    return (size_t) st.st_size;
+}
+
 bool files_writeToFd(int fd, uint8_t * buf, size_t fileSz)
 {
     size_t writtenSz = 0;
@@ -100,12 +131,6 @@ void files_unmapFileCloseFd(void *ptr, size_t fileSz, int fd)
 {
     munmap(ptr, _HF_PAGE_ALIGN_UP(fileSz));
     close(fd);
-}
-
-void files_unmapFileCloseFdMSync(void *ptr, size_t fileSz, int fd)
-{
-    msync(ptr, fileSz, MS_ASYNC);
-    files_unmapFileCloseFd(ptr, fileSz, fd);
 }
 
 uint8_t *files_mapFileToRead(char *fileName, size_t * fileSz, int *fd)
