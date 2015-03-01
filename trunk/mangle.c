@@ -257,6 +257,26 @@ static void mangle_AddSub(uint8_t * buf, size_t bufSz, size_t off)
     }
 }
 
+static void mangle_IncByte(uint8_t * buf, size_t bufSz, size_t off)
+{
+    buf[off] += (uint8_t) 1UL;
+    return;
+/* bufSz is unused */
+    if (bufSz == 0) {
+        return;
+    }
+}
+
+static void mangle_DecByte(uint8_t * buf, size_t bufSz, size_t off)
+{
+    buf[off] -= (uint8_t) 1UL;
+    return;
+/* bufSz is unused */
+    if (bufSz == 0) {
+        return;
+    }
+}
+
 void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
 {
 /*  *INDENT-OFF* */
@@ -285,6 +305,8 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
         mangle_MemSet,
         mangle_Random,
         mangle_AddSub,
+        mangle_IncByte,
+        mangle_DecByte,
     };
 /*  *INDENT-ON* */
 
