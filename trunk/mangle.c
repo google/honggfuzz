@@ -308,7 +308,7 @@ static double mangle_ExpDist(void)
 }
 
 /* Gauss-like distribution */
-bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz, int fd)
+bool mangle_Resize(honggfuzz_t * hfuzz, size_t * bufSz)
 {
     const uint64_t chance_one_in_x = 5;
     if (util_rndGet(1, chance_one_in_x) != 1) {
@@ -347,28 +347,6 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t ** buf, size_t * bufSz, int fd)
     LOGMSG(l_DEBUG, "Current size: %zu, Maximal size: %zu, New Size: %zu, Delta: %d", *bufSz,
            hfuzz->maxFileSz, newSz, delta);
 
-    if (buf == NULL) {
-        *bufSz = (size_t) newSz;
-        return true;
-    }
-
-    munmap(*buf, _HF_PAGE_ALIGN_UP(*bufSz));
-    if (ftruncate(fd, newSz) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't ftruncate(fd='%d', size='%zu')", fd, newSz);
-        return false;
-    }
-    void *newBuf = mmap(NULL, _HF_PAGE_ALIGN_UP(newSz), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
-    if (newBuf == MAP_FAILED) {
-        LOGMSG_P(l_ERROR, "mremap() failed");
-        return false;
-    }
-
-    if ((size_t) newSz > *bufSz) {
-        util_rndBuf(&(*buf)[*bufSz], (size_t) newSz - *bufSz);
-    }
-
-    *buf = newBuf;
     *bufSz = (size_t) newSz;
     return true;
 }

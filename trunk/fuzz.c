@@ -69,38 +69,14 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
 
     if (hfuzz->inputFile && hfuzz->branchBestCnt == 0) {
-        int srcfd = open(hfuzz->files[rnd_index], O_RDONLY);
-        if (srcfd == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't open '%s' to read", hfuzz->files[rnd_index]);
+        size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
+                                               hfuzz->maxFileSz);
+        if (fileSz == 0) {
             while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
+            LOGMSG(l_ERROR, "Couldn't read '%s'", hfuzz->files[rnd_index]);
             return false;
         }
-        struct stat sbuf;
-        if (fstat(srcfd, &sbuf) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't stat '%s' (fd='%d')", hfuzz->files[rnd_index], srcfd);
-            while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
-            close(srcfd);
-            return false;
-        }
-
-        if ((size_t) sbuf.st_size > hfuzz->maxFileSz) {
-            while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
-            close(srcfd);
-            LOGMSG(l_ERROR,
-                   "File size (%zu) is bigger than the maximal allocated buffer/file size (-F) (%zu)",
-                   sbuf.st_size, hfuzz->maxFileSz);
-            return false;
-        }
-
-        if (files_readFromFd(srcfd, hfuzz->dynamicFileBest, sbuf.st_size) == false) {
-            while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
-            close(srcfd);
-            LOGMSG(l_ERROR, "Could read '%zu' bytes from '%s' (fd='%d')", sbuf.st_size,
-                   hfuzz->files[rnd_index], srcfd);
-            return false;
-        }
-        hfuzz->dynamicFileBestSz = sbuf.st_size;
-        close(srcfd);
+        hfuzz->dynamicFileBestSz = fileSz;
     }
 
     if (hfuzz->dynamicFileBestSz > hfuzz->maxFileSz) {
@@ -115,9 +91,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
     /* The first pass should be on an empty/initial file */
     if (hfuzz->branchBestCnt > 0) {
-        if (mangle_Resize(hfuzz, NULL, &fuzzer->dynamicFileSz, -1) == false) {
-            return false;
-        }
+        mangle_Resize(hfuzz, &fuzzer->dynamicFileSz);
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
 
@@ -129,61 +103,32 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
                fuzzer->dynamicFile);
         return false;
     }
-    files_unmapFileCloseFdMSync(buf, fuzzer->dynamicFileSz, dstfd);
+    files_unmapFileCloseFd(buf, fuzzer->dynamicFileSz, dstfd);
 
     return true;
 }
 
-static bool fuzz_prepareFile(honggfuzz_t * hfuzz, char *fileName, int rnd_index)
+static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
 {
-    int srcfd = open(hfuzz->files[rnd_index], O_RDONLY);
-    if (srcfd == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't open '%s' for R/O", hfuzz->files[rnd_index]);
+    size_t fileSz =
+        files_readFileToBufMax(hfuzz->files[rnd_index], fuzzer->dynamicFile, hfuzz->maxFileSz);
+    if (fileSz == 0UL) {
+        LOGMSG(l_ERROR, "Couldn't read contents of '%s'", hfuzz->files[rnd_index]);
         return false;
     }
 
-    struct stat sbuf;
-    if (fstat(srcfd, &sbuf) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't fstat(fd='%s' fname='%s')", srcfd, hfuzz->files[rnd_index]);
-        close(srcfd);
-        return false;
-    }
-    size_t fileSz = (size_t) sbuf.st_size;
-
-    uint8_t *tmpbuf = malloc(fileSz);
-    if (tmpbuf == NULL) {
-        LOGMSG_P(l_ERROR, "Couldn't malloc(size='%zu')", fileSz);
-        close(srcfd);
-        return false;
-    }
-
-    if (files_readFromFd(srcfd, tmpbuf, fileSz) == false) {
-        LOGMSG(l_ERROR, "Couldn't read '%zu' bytes from '%s' (fd='%d')", fileSz,
-               hfuzz->files[rnd_index], srcfd);
-        close(srcfd);
-        free(tmpbuf);
-        return false;
-    }
-    close(srcfd);
+    mangle_Resize(hfuzz, &fileSz);
+    mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fileSz);
 
     int dstfd;
-    uint8_t *buf = files_mapFileToWriteIni(fileName, fileSz, &dstfd, tmpbuf);
+    uint8_t *buf = files_mapFileToWriteIni(fuzzer->fileName, fileSz, &dstfd, fuzzer->dynamicFile);
     if (buf == NULL) {
-        LOGMSG(l_ERROR, "Couldn't map '%s' for R/W, size='%zu'", fileName, fileSz);
-        free(tmpbuf);
-        return false;
-    }
-
-    free(tmpbuf);
-
-    if (mangle_Resize(hfuzz, &buf, &fileSz, dstfd) == false) {
+        LOGMSG(l_ERROR, "Couldn't map '%s' for R/W, size='%zu'", fuzzer->fileName, fileSz);
         files_unmapFileCloseFd(buf, fileSz, dstfd);
-        LOGMSG(l_ERROR, "File resizing failed");
         return false;
     }
 
-    mangle_mangleContent(hfuzz, buf, fileSz);
-    files_unmapFileCloseFdMSync(buf, fileSz, dstfd);
+    files_unmapFileCloseFd(buf, fileSz, dstfd);
 
     return true;
 }
@@ -300,7 +245,7 @@ static void *fuzz_threadNew(void *arg)
             exit(EXIT_FAILURE);
         }
     } else {
-        if (!fuzz_prepareFile(hfuzz, fuzzer.fileName, rnd_index)) {
+        if (!fuzz_prepareFile(hfuzz, &fuzzer, rnd_index)) {
             exit(EXIT_FAILURE);
         }
     }
