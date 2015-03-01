@@ -54,8 +54,8 @@ size_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
         return 0UL;
     }
 
-    if ((size_t) st.st_size > fileMaxSz) {
-        LOGMSG(l_ERROR, "File '%s' size to big (%zu > %zu)", fileName, (size_t) st.st_size,
+    if (st.st_size > (off_t) fileMaxSz) {
+        LOGMSG(l_ERROR, "File '%s' size to big (%zu > %" PRId64 ")", fileName, (int64_t) st.st_size,
                fileMaxSz);
         close(fd);
         return 0UL;
@@ -193,7 +193,7 @@ static bool files_readdir(honggfuzz_t * hfuzz)
             continue;
         }
 
-        if (st.st_size == 0) {
+        if (st.st_size == 0ULL) {
             LOGMSG(l_DEBUG, "'%s' is empty", path);
             continue;
         }
