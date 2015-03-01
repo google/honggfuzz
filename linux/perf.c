@@ -117,13 +117,16 @@ static inline void arch_perfSkip(size_t skip)
 #else
 #define rmb()	__asm__ __volatile__ ("" ::: "memory")
 #endif
-static inline uint64_t arch_perfGetMulti64(void)
+static inline uint64_t arch_perfGetMulti64(uint64_t * ret)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
     uint64_t dataHeadOff = pem->data_head % perfMmapSz;
     rmb();
     uint64_t dataTailOff = pem->data_tail % perfMmapSz;
-//    LOGMSG(l_ERROR, "HEAD: %llu TAIL: %llu", dataHeadOff, dataTailOff);
+
+#if 0
+    LOGMSG(l_ERROR, "HEAD: %llu TAIL: %llu", dataHeadOff, dataTailOff);
+#endif
 
     int64_t dataLen = 0;
     if (dataHeadOff > dataTailOff) {
@@ -134,22 +137,22 @@ static inline uint64_t arch_perfGetMulti64(void)
     }
 
     if (dataLen < (int64_t) sizeof(uint64_t)) {
-        return 0ULL;
+        return false;
     }
 
-    uint64_t ret = *(uint64_t *) (perfMmapBuf + getpagesize() + dataTailOff);
+    *ret = *(uint64_t *) (perfMmapBuf + getpagesize() + dataTailOff);
 
     dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
     pem->data_tail = dataTailOff;
 
-    return ret;
+    return true;
 }
 
 static inline void arch_perfMmapParse(void)
 {
     for (;;) {
         uint64_t tmp;
-        if ((tmp = arch_perfGetMulti64()) == 0ULL) {
+        if (arch_perfGetMulti64(&tmp) == false) {
             break;
         }
 
@@ -173,13 +176,12 @@ static inline void arch_perfMmapParse(void)
             continue;
         }
 
-        uint64_t from = arch_perfGetMulti64();
-        if (from == 0ULL) {
-            LOGMSG(l_FATAL, "from == 0");
+        uint64_t from, to;
+        if (arch_perfGetMulti64(&from) == false) {
+            LOGMSG(l_FATAL, "arch_perfGetMulti64(&from) failed");
         }
-        uint64_t to = arch_perfGetMulti64();
-        if (to == 0ULL) {
-            LOGMSG(l_FATAL, "to == 0");
+        if (arch_perfGetMulti64(&to) == false) {
+            LOGMSG(l_FATAL, "arch_perfGetMulti64(&to) failed");
         }
 
         arch_perfAddBranch(from, to);
