@@ -41,14 +41,14 @@
 #include "linux/perf.h"
 #include "log.h"
 
-#define _HF_RT_SIG (SIGRTMIN + 10)
+#define _HF_RT_SIG (SIGIO)
 
 /* Buffer used with BTS (branch recording) */
 static __thread uint8_t *perfMmapBuf = NULL;
 /* By default it's 1MB which allows to run 1 fuzzing thread */
 static __thread size_t perfMmapSz = 0UL;
 /* Have we seen PERF_RECRORD_LOST events */
-static __thread unsigned int perfRecordLost = 0;
+static __thread uint64_t perfRecordsLost = 0;
 /* Don't record branches using address above this parameter */
 static __thread uint64_t perfCutOffAddr = ~(1ULL);
 
@@ -98,17 +98,6 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
     }
 }
 
-static inline void arch_perfSkip(size_t skip)
-{
-    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
-    uint64_t dataTailOff = pem->data_tail;
-    dataTailOff += skip;
-    if (dataTailOff > perfMmapSz) {
-        dataTailOff %= perfMmapSz;
-    }
-    pem->data_tail = dataTailOff;
-}
-
 /* Memory Barriers */
 #if defined(__x86_64__)
 #define rmb()	__asm__ __volatile__ ("lfence" ::: "memory")
@@ -117,72 +106,55 @@ static inline void arch_perfSkip(size_t skip)
 #else
 #define rmb()	__asm__ __volatile__ ("" ::: "memory")
 #endif
-static inline uint64_t arch_perfGetMulti64(uint64_t * ret)
+static inline uint64_t arch_perfGetMmap64(bool fatal)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
-    uint64_t dataHeadOff = pem->data_head % perfMmapSz;
+
+    register uint64_t dataHeadOff = pem->data_head % perfMmapSz;
     rmb();
-    uint64_t dataTailOff = pem->data_tail % perfMmapSz;
+    register uint64_t dataTailOff = pem->data_tail % perfMmapSz;
 
-#if 0
-    LOGMSG(l_ERROR, "HEAD: %llu TAIL: %llu", dataHeadOff, dataTailOff);
-#endif
-
-    int64_t dataLen = 0;
-    if (dataHeadOff > dataTailOff) {
-        dataLen = dataHeadOff - dataTailOff;
-    }
-    if (dataHeadOff < dataTailOff) {
-        dataLen = perfMmapSz - dataTailOff + dataHeadOff;
+    if (dataHeadOff == dataTailOff) {
+        if (fatal) {
+            LOGMSG(l_FATAL, "No data in the mmap buffer");
+        }
+        return ~(0ULL);
     }
 
-    if (dataLen < (int64_t) sizeof(uint64_t)) {
-        return false;
-    }
+    register uint64_t ret = *(uint64_t *) (perfMmapBuf + getpagesize() + dataTailOff);
+    pem->data_tail = dataTailOff + sizeof(uint64_t);
 
-    *ret = *(uint64_t *) (perfMmapBuf + getpagesize() + dataTailOff);
-
-    dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
-    pem->data_tail = dataTailOff;
-
-    return true;
+    return ret;
 }
 
 static inline void arch_perfMmapParse(void)
 {
     for (;;) {
         uint64_t tmp;
-        if (arch_perfGetMulti64(&tmp) == false) {
+        if ((tmp = arch_perfGetMmap64(false /* fatal */ )) == ~(0ULL)) {
             break;
         }
 
         struct perf_event_header *peh = (struct perf_event_header *)&tmp;
         if (peh->type == PERF_RECORD_LOST) {
-            perfRecordLost++;
-            arch_perfSkip(peh->size - sizeof(uint64_t));
+            /* It's id an we can ignore it */
+            arch_perfGetMmap64(true /* fatal */ );
+            register uint64_t lost = arch_perfGetMmap64(true /* fatal */ );
+            perfRecordsLost += lost;
             continue;
         }
         if (peh->type != PERF_RECORD_SAMPLE) {
-            LOGMSG(l_DEBUG, "(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16 ")",
+            LOGMSG(l_FATAL, "(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16 ")",
                    peh->type);
-            arch_perfSkip(peh->size - sizeof(uint64_t));
-            continue;
         }
         if (peh->misc != PERF_RECORD_MISC_USER && peh->misc != PERF_RECORD_MISC_KERNEL) {
             LOGMSG(l_FATAL,
                    "(struct perf_event_header)->type != PERF_RECORD_MISC_USER (%" PRIu16 ")",
                    peh->misc);
-            arch_perfSkip(peh->size - sizeof(uint64_t));
-            continue;
         }
 
-        uint64_t from, to;
-        if (arch_perfGetMulti64(&from) == false) {
-            LOGMSG(l_FATAL, "arch_perfGetMulti64(&from) failed");
-        }
-        if (arch_perfGetMulti64(&to) == false) {
-            LOGMSG(l_FATAL, "arch_perfGetMulti64(&to) failed");
-        }
+        register uint64_t from = arch_perfGetMmap64(true /* fatal */ );
+        register uint64_t to = arch_perfGetMmap64(true /* fatal */ );
 
         arch_perfAddBranch(from, to);
     }
@@ -270,7 +242,8 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
-        pe.wakeup_events = 8000;        /* Experimentally obtained value */
+        pe.watermark = 1;
+        pe.wakeup_watermark = perfMmapSz / 2;
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%d' for PID: %d", hfuzz->dynFileMethod, pid);
@@ -345,10 +318,11 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int perfFd)
 
     ioctl(perfFd, PERF_EVENT_IOC_DISABLE, 0);
 
-    if (perfRecordLost > 0) {
+    if (perfRecordsLost > 0UL) {
         LOGMSG(l_WARN,
-               "%u PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
-               perfRecordLost);
+               "%" PRId64
+               " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
+               perfRecordsLost);
     }
 
     uint64_t count = 0LL;
