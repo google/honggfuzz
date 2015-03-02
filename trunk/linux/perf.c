@@ -52,26 +52,17 @@ static __thread uint64_t perfRecordsLost = 0;
 /* Don't record branches using address above this parameter */
 static __thread uint64_t perfCutOffAddr = ~(1ULL);
 
-#define _HF_PERF_BRANCHES_SZ (1024 * 16)
-/*  *INDENT-OFF* */
-static __thread struct {
-  uint64_t from;
-  uint64_t to;
-} perfBranch[_HF_PERF_BRANCHES_SZ];
-/*  *INDENT-ON* */
+#define _HF_PERF_BLOOM_SZ (1024 * 1024 * 4)
+static __thread uint8_t perfBloom[_HF_PERF_BLOOM_SZ];
 
 static size_t arch_perfCountBranches(void)
 {
-    size_t i = 0;
-    for (i = 0; i < _HF_PERF_BRANCHES_SZ; i++) {
-        if (perfBranch[i].from == 0ULL && perfBranch[i].to == 0ULL) {
-            return i;
-        }
-        LOGMSG(l_DEBUG, "Branch entry: FROM: %" PRIx64 ", TO: %" PRIx64, perfBranch[i].from,
-               perfBranch[i].to);
+    size_t cnt = 0;
+    for (size_t i = 0; i < _HF_PERF_BLOOM_SZ; i += sizeof(uint64_t)) {
+        uint64_t val = *(uint64_t *) & perfBloom[i];
+        cnt += __builtin_popcountll(val);
     }
-    LOGMSG(l_FATAL, "Branch buffer too small (%zu elements)", ARRAYSIZE(perfBranch));
-    return i;
+    return cnt;
 }
 
 static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
@@ -86,16 +77,11 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
     if (from >= perfCutOffAddr || to >= perfCutOffAddr) {
         return;
     }
-    for (size_t i = 0; i < _HF_PERF_BRANCHES_SZ; i++) {
-        if (perfBranch[i].from == from && perfBranch[i].to == to) {
-            break;
-        }
-        if (perfBranch[i].from == 0ULL && perfBranch[i].to == 0ULL) {
-            perfBranch[i].from = from;
-            perfBranch[i].to = to;
-            break;
-        }
-    }
+
+    size_t pos = (from ^ to) % (sizeof(perfBloom) * 8);
+    size_t byteOff = pos / 8;
+    size_t bitOff = pos % 8;
+    perfBloom[byteOff] |= (uint8_t) 1 << bitOff;
 }
 
 /* Memory Barriers */
@@ -214,7 +200,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
 
     LOGMSG(l_DEBUG, "Enabling PERF for PID=%d (mmapBufSz=%zu)", pid, perfMmapSz);
 
-    bzero(perfBranch, sizeof(perfBranch));
+    bzero(perfBloom, sizeof(perfBloom));
 
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(struct perf_event_attr));
