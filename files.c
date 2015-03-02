@@ -85,6 +85,7 @@ bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flag
     if (files_writeToFd(fd, buf, fileSz) == false) {
         LOGMSG(l_ERROR, "Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName, fd);
         close(fd);
+	unlink(fileName);
         return false;
     }
     close(fd);
