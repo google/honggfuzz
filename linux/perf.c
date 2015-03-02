@@ -61,7 +61,7 @@ static size_t arch_perfCountBranches(void)
     size_t cnt = 0;
     for (size_t i = 0; i < sizeof(perfBloom); i += sizeof(uint64_t)) {
         uint64_t *ptr = (uint64_t *) & perfBloom[i];
-        cnt += __builtin_popcount(*ptr);
+        cnt += __builtin_popcountll(*ptr);
     }
     return cnt;
 }
