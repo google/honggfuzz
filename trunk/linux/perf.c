@@ -186,9 +186,9 @@ static size_t arch_perfGetMmapBufSz(honggfuzz_t * hfuzz)
 {
     /*
      * mmap buffer's size must divisible by a power of 2.
-     * The maximal, cumulative size for all threads is 1MB
+     * The maximal, cumulative size for all threads is 2MiB.
      */
-    size_t ret = (1024 * 1024);
+    size_t ret = (1024 * 1024 * 2);
     if (hfuzz->threadsMax > 1) {
         for (size_t i = 0; i < 31; i++) {
             if ((hfuzz->threadsMax - 1) >> i) {
