@@ -53,7 +53,7 @@ static __thread uint64_t perfRecordsLost = 0;
 /* Don't record branches using address above this parameter */
 static __thread uint64_t perfCutOffAddr = ~(1ULL);
 
-#define _HF_PERF_BLOOM_SZ (1024 * 1024 * 4)
+#define _HF_PERF_BLOOM_SZ (1024 * 1024 * 2)
 static __thread uint8_t perfBloom[_HF_PERF_BLOOM_SZ];
 
 static size_t arch_perfCountBranches(void)
@@ -80,9 +80,11 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
         return;
     }
 
-    size_t pos = (from ^ (to << 5)) % (sizeof(perfBloom) * 8);
+    /* It's 24-bit max, so should fit in a 8MB bitmap */
+    size_t pos = ((from & 0xFFF) | ((to << 12) & 0xFFF000));
     size_t byteOff = pos / 8;
     size_t bitOff = pos % 8;
+
     perfBloom[byteOff] |= (uint8_t) 1 << bitOff;
 }
 
