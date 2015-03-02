@@ -40,6 +40,7 @@
 
 #include "linux/perf.h"
 #include "log.h"
+#include "util.h"
 
 #define _HF_RT_SIG (SIGIO)
 
@@ -78,7 +79,7 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
         return;
     }
 
-    size_t pos = (from ^ to) % (sizeof(perfBloom) * 8);
+    size_t pos = (from ^ (to << 7)) % (sizeof(perfBloom) * 8);
     size_t byteOff = pos / 8;
     size_t bitOff = pos % 8;
     perfBloom[byteOff] |= (uint8_t) 1 << bitOff;
