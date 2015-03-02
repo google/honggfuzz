@@ -59,10 +59,9 @@ static __thread uint8_t perfBloom[_HF_PERF_BLOOM_SZ];
 static size_t arch_perfCountBranches(void)
 {
     size_t cnt = 0;
-    for (size_t i = 0; i < _HF_PERF_BLOOM_SZ; i += sizeof(uint32_t)) {
-        uint8_t *ptr = &perfBloom[i];
-        uint32_t val = *(uint32_t *) (ptr);
-        cnt += __builtin_popcount(val);
+    for (size_t i = 0; i < sizeof(perfBloom); i += sizeof(uint64_t)) {
+        uint32_t *ptr = (uint32_t *) & perfBloom[i];
+        cnt += __builtin_popcount(*ptr);
     }
     return cnt;
 }
