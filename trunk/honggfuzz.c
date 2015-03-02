@@ -143,7 +143,7 @@ int main(int argc, char **argv)
         .dynamicFileBestSz = 1,
         .branchBestCnt = 0,
         .dynamicRegressionCnt = 0,
-        .dynamicCutOffAddr = ~(1ULL),
+        .dynamicCutOffAddr = ~(0ULL),
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
     };
 

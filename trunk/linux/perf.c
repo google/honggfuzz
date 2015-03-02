@@ -51,7 +51,7 @@ static __thread size_t perfMmapSz = 0UL;
 /* Have we seen PERF_RECRORD_LOST events */
 static __thread uint64_t perfRecordsLost = 0;
 /* Don't record branches using address above this parameter */
-static __thread uint64_t perfCutOffAddr = ~(1ULL);
+static __thread uint64_t perfCutOffAddr = ~(0ULL);
 
 #define _HF_PERF_BLOOM_SZ (1024 * 1024 * 2)
 static __thread uint8_t perfBloom[_HF_PERF_BLOOM_SZ];
