@@ -69,8 +69,9 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
 
     if (hfuzz->inputFile && hfuzz->branchBestCnt == 0) {
-        size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
-                                               hfuzz->maxFileSz);
+        size_t fileSz =
+            files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
+                                   hfuzz->maxFileSz);
         if (fileSz == 0) {
             while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
             LOGMSG(l_ERROR, "Couldn't read '%s'", hfuzz->files[rnd_index]);
@@ -269,7 +270,7 @@ static void *fuzz_threadNew(void *arg)
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
 
-        int diff = hfuzz->branchBestCnt - fuzzer.branchCnt;
+        int64_t diff = hfuzz->branchBestCnt - fuzzer.branchCnt;
         if (diff <= hfuzz->dynamicRegressionCnt) {
             LOGMSG(l_INFO,
                    "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr/High): %"
