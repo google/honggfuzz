@@ -49,10 +49,10 @@
 #define _HF_PAGE_ALIGN_UP(x)  (((size_t)x + (size_t)getpagesize() - (size_t)1) & ~((size_t)getpagesize() - (size_t)1))
 
 typedef enum {
-    _HF_DYNFILE_NONE = 0,
-    _HF_DYNFILE_INSTR_COUNT,
-    _HF_DYNFILE_BRANCH_COUNT,
-    _HF_DYNFILE_UNIQUE_PC_COUNT,
+    _HF_DYNFILE_NONE = 0x0,
+    _HF_DYNFILE_INSTR_COUNT = 0x1,
+    _HF_DYNFILE_BRANCH_COUNT = 0x2,
+    _HF_DYNFILE_UNIQUE_PC_COUNT = 0x4,
 } dynFileMethod_t;
 
 typedef struct {
@@ -81,7 +81,7 @@ typedef struct {
     uint8_t *dynamicFileBest;
     size_t dynamicFileBestSz;
     dynFileMethod_t dynFileMethod;
-    int64_t branchBestCnt;
+    int64_t branchBestCnt[3];
     int dynamicRegressionCnt;
     uint64_t dynamicCutOffAddr;
     pthread_mutex_t dynamicFile_mutex;
@@ -100,7 +100,7 @@ typedef struct fuzzer_t {
 
     /* For linux/ code */
     uint8_t *dynamicFile;
-    int64_t branchCnt;
+    int64_t branchCnt[3];
     size_t dynamicFileSz;
 } fuzzer_t;
 

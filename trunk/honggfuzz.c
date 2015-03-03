@@ -141,7 +141,9 @@ int main(int argc, char **argv)
         .dynFileMethod = _HF_DYNFILE_NONE,
         .dynamicFileBest = NULL,
         .dynamicFileBestSz = 1,
-        .branchBestCnt = 0,
+        .branchBestCnt[0] = 0,
+        .branchBestCnt[1] = 0,
+        .branchBestCnt[2] = 0,
         .dynamicRegressionCnt = 0,
         .dynamicCutOffAddr = ~(0ULL),
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
@@ -192,13 +194,13 @@ int main(int argc, char **argv)
         case 'D':
             switch (optarg[0]) {
             case 'i':
-                hfuzz.dynFileMethod = _HF_DYNFILE_INSTR_COUNT;
+                hfuzz.dynFileMethod |= _HF_DYNFILE_INSTR_COUNT;
                 break;
             case 'b':
-                hfuzz.dynFileMethod = _HF_DYNFILE_BRANCH_COUNT;
+                hfuzz.dynFileMethod |= _HF_DYNFILE_BRANCH_COUNT;
                 break;
             case 'p':
-                hfuzz.dynFileMethod = _HF_DYNFILE_UNIQUE_PC_COUNT;
+                hfuzz.dynFileMethod |= _HF_DYNFILE_UNIQUE_PC_COUNT;
                 break;
             default:
                 usage(EXIT_FAILURE);
