@@ -193,8 +193,8 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOGMSG(l_FATAL, "PID '%d' is not in a stopped state");
     }
 
-    int perfFd;
-    if (arch_perfEnable(pid, hfuzz, &perfFd) == false) {
+    int perfFd[3];
+    if (arch_perfEnable(pid, hfuzz, perfFd) == false) {
         return;
     }
     arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);

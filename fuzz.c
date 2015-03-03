@@ -69,9 +69,8 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
 
     if (hfuzz->inputFile && hfuzz->branchBestCnt == 0) {
-        size_t fileSz =
-            files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
-                                   hfuzz->maxFileSz);
+        size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
+                                               hfuzz->maxFileSz);
         if (fileSz == 0) {
             while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
             LOGMSG(l_ERROR, "Couldn't read '%s'", hfuzz->files[rnd_index]);
@@ -91,7 +90,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
 
     /* The first pass should be on an empty/initial file */
-    if (hfuzz->branchBestCnt > 0) {
+    if (hfuzz->branchBestCnt[0] > 0 || hfuzz->branchBestCnt[1] > 0 || hfuzz->branchBestCnt[2] > 0) {
         mangle_Resize(hfuzz, &fuzzer->dynamicFileSz);
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
@@ -213,7 +212,9 @@ static void *fuzz_threadNew(void *arg)
         .exception = 0,
         .dynamicFileSz = 0,
         .dynamicFile = malloc(hfuzz->maxFileSz),
-        .branchCnt = 0,
+        .branchCnt[0] = 0,
+        .branchCnt[1] = 0,
+        .branchCnt[2] = 0,
         .report = {'\0'}
     };
     if (fuzzer.dynamicFile == NULL) {
@@ -270,17 +271,32 @@ static void *fuzz_threadNew(void *arg)
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
 
-        int64_t diff = hfuzz->branchBestCnt - fuzzer.branchCnt;
-        if (diff <= hfuzz->dynamicRegressionCnt) {
+        int64_t diff0 = hfuzz->branchBestCnt[0] - fuzzer.branchCnt[0];
+        int64_t diff1 = hfuzz->branchBestCnt[1] - fuzzer.branchCnt[1];
+        int64_t diff2 = hfuzz->branchBestCnt[2] - fuzzer.branchCnt[2];
+
+        if (diff0 <= hfuzz->dynamicRegressionCnt && diff1 <= hfuzz->dynamicRegressionCnt
+            && diff2 <= hfuzz->dynamicRegressionCnt) {
+
             LOGMSG(l_INFO,
-                   "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr/High): %"
-                   PRId64 "/%" PRId64, fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz,
-                   fuzzer.branchCnt, hfuzz->branchBestCnt);
+                   "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr, High): %"
+                   PRId64 "/%" PRId64 "/%" PRId64 ", %" PRId64 "/%" PRId64 "/%" PRId64,
+                   fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz, fuzzer.branchCnt[0],
+                   fuzzer.branchCnt[1], fuzzer.branchCnt[2], hfuzz->branchBestCnt[0],
+                   hfuzz->branchBestCnt[1], hfuzz->branchBestCnt[2]);
+
             memcpy(hfuzz->dynamicFileBest, fuzzer.dynamicFile, fuzzer.dynamicFileSz);
 
             hfuzz->dynamicFileBestSz = fuzzer.dynamicFileSz;
-            hfuzz->branchBestCnt =
-                fuzzer.branchCnt > hfuzz->branchBestCnt ? fuzzer.branchCnt : hfuzz->branchBestCnt;
+            hfuzz->branchBestCnt[0] =
+                fuzzer.branchCnt[0] >
+                hfuzz->branchBestCnt[0] ? fuzzer.branchCnt[0] : hfuzz->branchBestCnt[0];
+            hfuzz->branchBestCnt[1] =
+                fuzzer.branchCnt[1] >
+                hfuzz->branchBestCnt[1] ? fuzzer.branchCnt[1] : hfuzz->branchBestCnt[1];
+            hfuzz->branchBestCnt[2] =
+                fuzzer.branchCnt[2] >
+                hfuzz->branchBestCnt[2] ? fuzzer.branchCnt[2] : hfuzz->branchBestCnt[2];
 
 #define _HF_CURRENT_BEST "CURRENT_BEST"
 #define _HF_CURRENT_BEST_TMP ".tmp.CURRENT_BEST"
@@ -319,7 +335,9 @@ static void *fuzz_threadPid(void *arg)
         .exception = 0,
         .dynamicFileSz = 0,
         .dynamicFile = malloc(hfuzz->maxFileSz),
-        .branchCnt = 0,
+        .branchCnt[0] = 0,
+        .branchCnt[1] = 0,
+        .branchCnt[2] = 0,
         .report = {'\0'}
     };
     if (fuzzer.dynamicFile == NULL) {
