@@ -324,7 +324,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_PC_COUNT) {
         if (arch_perfOpen(pid, _HF_DYNFILE_UNIQUE_PC_COUNT, &perfFd[2]) == false) {
-            LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_BRANCH_COUNT)", pid);
+            LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_UNIQUE_PC_COUNT)", pid);
             close(perfFd[0]);
             close(perfFd[1]);
             close(perfFd[2]);
