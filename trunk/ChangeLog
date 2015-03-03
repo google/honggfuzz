@@ -1,3 +1,8 @@
+2015-03-03 - Version 0.6rc (revision ...)
+        - Improvements to feedback-driven fuzzing. Using bloom-style filter to record branches (much faster).
+        - Using multiple hardware-assisted feedback signals at once.
+        - Multiple small things: usage notes, logging
+
 2015-02-26 - Version 0.5 (revision 284)
         - Feedback-driven fuzzing on Linux (using Intel's BTS with Linux perf infrastructure for branch counting) (-Dp option)
         - Compiles cleanly and works under FreeBSD 10.1
@@ -17,7 +22,7 @@
 2011-06-02 - Version 0.2 (revision 26)
         - MacOS fixes (parsing DiagnosticReports) - solves http://code.google.com/p/honggfuzz/issues/detail?id=2
         - getopt() returns 'int' and not 'char' (could hang the process in a forever-loop)
-        - formatting changes
-        - updated comments/usage
+        - Formatting changes
+        - Updated comments/usage
 
 2010-12-13 - Initial release 0.1 (revision 13)
