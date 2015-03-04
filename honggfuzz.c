@@ -53,6 +53,7 @@ static bool checkFor_FILE_PLACEHOLDER(char **args)
 static void usage(bool exit_success)
 {
     /*  *INDENT-OFF* */
+    printf(AB PROG_NAME " version " PROG_VERSION " by " PROG_AUTHORS AC "\n");
     printf("%s",
            " [" AB "-f val" AC "] : input file corpus directory\n"
            "            (or a path to a single input file)\n"
@@ -152,7 +153,6 @@ int main(int argc, char **argv)
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
     };
 
-    printf(AB PROG_NAME " version " PROG_VERSION " by " PROG_AUTHORS AC "\n");
     if (argc < 2) {
         usage(true);
     }
@@ -206,6 +206,7 @@ int main(int argc, char **argv)
                 hfuzz.dynFileMethod |= _HF_DYNFILE_UNIQUE_PC_COUNT;
                 break;
             default:
+                LOGMSG(l_ERROR, "Unknown -D mode");
                 usage(EXIT_FAILURE);
                 break;
             }
