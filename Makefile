@@ -39,25 +39,26 @@ ARCH_SRCS := $(wildcard posix/*.c)
 ARCH = POSIX
 
 ifeq ($(OS),Linux)
+	ARCH = LINUX
+	CFLAGS +=  -D_FILE_OFFSET_BITS=64
+	LDFLAGS += -lunwind-ptrace -lunwind-generic -lbfd -lopcodes
+	ARCH_SRCS := $(wildcard linux/*.c)
+
 	ifeq ("$(wildcard /usr/include/bfd.h)","")
 		WARN_LIBRARY += "binutils-dev "
 	endif
 	ifeq ("$(wildcard /usr/include/libunwind-ptrace.h)","")
 		WARN_LIBRARY += "libunwind-dev/libunwind8-dev "
 	endif
-	CFLAGS +=  -D_FILE_OFFSET_BITS=64
-	LDFLAGS += -lunwind-ptrace -lunwind-generic -lbfd -lopcodes
-	ARCH_SRCS := $(wildcard linux/*.c)
-	ARCH = LINUX
-ifeq ($(MARCH),x86_64)
-	# Support for popcnt (used in linux/perf.c)
-	CFLAGS += -msse4.2
-endif	# MARCH
-ifeq ($(MARCH),i386)
-	# Support for popcnt (used in linux/perf.c)
-	CFLAGS += -msse4.2
-endif	# MARCH
 
+	ifeq ($(MARCH),x86_64)
+		# Support for popcnt (used in linux/perf.c)
+		CFLAGS += -msse4.2
+	endif	# MARCH
+	ifeq ($(MARCH),i386)
+		# Support for popcnt (used in linux/perf.c)
+		CFLAGS += -msse4.2
+	endif	# MARCH
 endif	# OS
 
 ifeq ($(OS),Darwin)
