@@ -77,7 +77,8 @@ static void usage(bool exit_success)
            " [" AB "-l val" AC "] : per process memory limit in MiB, (default: '" AB "0" AC "' [no limit])\n"
            " [" AB "-R val" AC "] : write report to this file, (default: '" AB _HF_REPORT_FILE AC "')\n"
            " [" AB "-F val" AC "] : Maximal size of files created by the fuzzer (default '" AB "1048576" AC "')\n"
-           " [" AB "-E val" AC "] : Set environment variable (default '" AB "empty" AC "')\n"
+           " [" AB "-E val" AC "] : Pass this environment variable (default '" AB "empty" AC "')\n"
+           "            can be used multiple times\n"
 #if defined(_HF_ARCH_LINUX)
            " [" AB "-p val" AC "] : [Linux] attach to a pid (and its thread group), instead of \n"
            "            monitoring a previously created process, (default: '" AB "0" AC "' [none])\n"
@@ -139,7 +140,7 @@ int main(int argc, char **argv)
         .files = NULL,
         .fileCnt = 0,
         .pid = 0,
-        .envs = {[0 ... (ARRAYSIZE(hfuzz.envs - 1))] = NULL,},
+        .envs = {[0 ... (ARRAYSIZE(hfuzz.envs) - 1)] = NULL,},
         .dynFileMethod = _HF_DYNFILE_NONE,
         .dynamicFileBest = NULL,
         .dynamicFileBestSz = 1,
