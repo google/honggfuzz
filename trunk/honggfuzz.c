@@ -239,6 +239,7 @@ int main(int argc, char **argv)
             for (size_t i = 0; i < ARRAYSIZE(hfuzz.envs); i++) {
                 if (hfuzz.envs[i] == NULL) {
                     hfuzz.envs[i] = optarg;
+                    break;
                 }
             }
             break;
