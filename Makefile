@@ -50,9 +50,11 @@ ifeq ($(OS),Linux)
 	ARCH_SRCS := $(wildcard linux/*.c)
 	ARCH = LINUX
 ifeq ($(MARCH),x86_64)
+	# Support for popcnt (used in linux/perf.c)
 	CFLAGS += -msse4.2
 endif	# MARCH
 ifeq ($(MARCH),i386)
+	# Support for popcnt (used in linux/perf.c)
 	CFLAGS += -msse4.2
 endif	# MARCH
 
