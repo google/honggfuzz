@@ -21,7 +21,8 @@
 CC ?= gcc
 CFLAGS += -c -std=c11 -I. -I/usr/local/include -I/usr/include \
 	-D_GNU_SOURCE \
-	-Wall -Wextra -Wno-initializer-overrides -Wno-override-init -Wno-unknown-warning-option -Werror
+	-Wall -Wextra -Wno-initializer-overrides -Wno-override-init -Wno-unknown-warning-option -Werror \
+	-funroll-loops -O2
 
 LD = $(CC)
 LDFLAGS += -lm -lpthread -L/usr/local/include -L/usr/include
@@ -32,6 +33,7 @@ OBJS = $(SRCS:.c=.o)
 BIN = honggfuzz
 
 OS ?= $(shell uname -s)
+MARCH ?= $(shell uname -m)
 
 ARCH_SRCS := $(wildcard posix/*.c)
 ARCH = POSIX
@@ -47,7 +49,15 @@ ifeq ($(OS),Linux)
 	LDFLAGS += -lunwind-ptrace -lunwind-generic -lbfd -lopcodes
 	ARCH_SRCS := $(wildcard linux/*.c)
 	ARCH = LINUX
-endif
+ifeq ($(MARCH),x86_64)
+	CFLAGS += -msse4.2
+endif	# MARCH
+ifeq ($(MARCH),i386)
+	CFLAGS += -msse4.2
+endif	# MARCH
+
+endif	# OS
+
 ifeq ($(OS),Darwin)
 	CC ?= cc
 	CFLAGS = -arch x86_64 -O3 -g -ggdb -c -std=c99 -I. -I~/.homebrew/include -I/usr/include \
