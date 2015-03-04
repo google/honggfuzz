@@ -76,6 +76,7 @@ typedef struct {
     int fileCnt;
     sem_t *sem;
     int pid;
+    const char *envs[128];
 
     /* For the linux/ code */
     uint8_t *dynamicFileBest;

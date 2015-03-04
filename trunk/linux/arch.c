@@ -171,6 +171,16 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         }
     }
 
+    for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs) && hfuzz->envs[i]; i++) {
+        char *env = strdupa(hfuzz->envs[i]);
+        char *eq = strchr(env, '=');
+        if (eq == NULL) {
+            continue;
+        }
+        *eq = '\0';
+        setenv(env, eq + 1, 1);
+    }
+
     if (!arch_ptraceEnable(hfuzz)) {
         return false;
     }
