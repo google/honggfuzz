@@ -331,7 +331,7 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
 
     for (int x = 0; instr[x] && x < _HF_INSTR_SZ; x++) {
         if (instr[x] == '/' || instr[x] == '\\' || isspace(instr[x])
-                || !isprint(instr[x])) {
+            || !isprint(instr[x])) {
             instr[x] = '_';
         }
     }

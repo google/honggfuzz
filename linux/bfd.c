@@ -123,13 +123,13 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
             continue;
         }
         if (bfd_find_nearest_line
-                (bfdParams.bfdh, bfdParams.section, bfdParams.syms, offset, &file, &func, &line)) {
+            (bfdParams.bfdh, bfdParams.section, bfdParams.syms, offset, &file, &func, &line)) {
             snprintf(funcs[i].func, sizeof(funcs->func), "%s", func);
             funcs[i].line = line;
         }
     }
 
-out:
+ out:
     arch_bfdDestroy(&bfdParams);
 
     while (pthread_mutex_unlock(&arch_bfd_mutex)) ;
@@ -186,7 +186,7 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
         snprintf(instr, _HF_INSTR_SZ, "[DIS-ASM_FAILURE]");
     }
 
-out:
+ out:
     bfdh ? bfd_close_all_done(bfdh) : 0;
 
     while (pthread_mutex_unlock(&arch_bfd_mutex)) ;
