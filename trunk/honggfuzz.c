@@ -157,7 +157,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "+?hqsuf:d:e:r:c:F:D:t:a:R:n:N:l:p:g:o:E:");
+        c = getopt(argc, argv, "-?hqsuf:d:e:r:c:F:D:t:a:R:n:N:l:p:g:o:E:");
         if (c < 0)
             break;
 
