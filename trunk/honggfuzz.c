@@ -90,6 +90,7 @@ static void usage(bool exit_success)
            "            (default: " AB "none" AC ")\n"
            "            Available counters: \n"
            "               " AB "'i' " AC "- PERF_COUNT_HW_INSTRUCTIONS (total IPs)\n"
+           "               " AB "'c' " AC "- PERF_COUNT_HW_REF_CPU_CYCLES (total CPU cycles)\n"
            "               " AB "'b' " AC "- PERF_COUNT_HW_BRANCH_INSTRUCTIONS (total jumps/calls)\n"
            "               " AB "'p' " AC "- PERF_SAMPLE_IP/PERF_SAMPLE_ADDR (unique branches)\n"
            "                     (newer Intel CPUs only)\n"
@@ -145,9 +146,7 @@ int main(int argc, char **argv)
         .dynFileMethod = _HF_DYNFILE_NONE,
         .dynamicFileBest = NULL,
         .dynamicFileBestSz = 1,
-        .branchBestCnt[0] = 0,
-        .branchBestCnt[1] = 0,
-        .branchBestCnt[2] = 0,
+	.branchBestCnt = {[0 ... (ARRAYSIZE(hfuzz.branchBestCnt) - 1)] = 0,},
         .dynamicRegressionCnt = 0,
         .dynamicCutOffAddr = ~(0ULL),
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
@@ -201,6 +200,9 @@ int main(int argc, char **argv)
                 break;
             case 'b':
                 hfuzz.dynFileMethod |= _HF_DYNFILE_BRANCH_COUNT;
+                break;
+            case 'c':
+                hfuzz.dynFileMethod |= _HF_DYNFILE_CYCLE_COUNT;
                 break;
             case 'p':
                 hfuzz.dynFileMethod |= _HF_DYNFILE_UNIQUE_PC_COUNT;

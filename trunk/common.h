@@ -52,7 +52,8 @@ typedef enum {
     _HF_DYNFILE_NONE = 0x0,
     _HF_DYNFILE_INSTR_COUNT = 0x1,
     _HF_DYNFILE_BRANCH_COUNT = 0x2,
-    _HF_DYNFILE_UNIQUE_PC_COUNT = 0x4,
+    _HF_DYNFILE_CYCLE_COUNT = 0x4,
+    _HF_DYNFILE_UNIQUE_PC_COUNT = 0x8,
 } dynFileMethod_t;
 
 typedef struct {
@@ -82,7 +83,7 @@ typedef struct {
     uint8_t *dynamicFileBest;
     size_t dynamicFileBestSz;
     dynFileMethod_t dynFileMethod;
-    int64_t branchBestCnt[3];
+    int64_t branchBestCnt[4];
     int dynamicRegressionCnt;
     uint64_t dynamicCutOffAddr;
     pthread_mutex_t dynamicFile_mutex;
@@ -101,7 +102,7 @@ typedef struct fuzzer_t {
 
     /* For linux/ code */
     uint8_t *dynamicFile;
-    int64_t branchCnt[3];
+    int64_t branchCnt[4];
     size_t dynamicFileSz;
 } fuzzer_t;
 
