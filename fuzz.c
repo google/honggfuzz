@@ -69,7 +69,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
 
     if (hfuzz->inputFile && hfuzz->branchBestCnt[0] == 0 && hfuzz->branchBestCnt[1] == 0
-        && hfuzz->branchBestCnt[2] == 0 && hfuzz->branchBestCnt[3] == 0) {
+            && hfuzz->branchBestCnt[2] == 0 && hfuzz->branchBestCnt[3] == 0) {
         size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
                                                hfuzz->maxFileSz);
         if (fileSz == 0) {
@@ -92,14 +92,14 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
     /* The first pass should be on an empty/initial file */
     if (hfuzz->branchBestCnt[0] > 0 || hfuzz->branchBestCnt[1] > 0 || hfuzz->branchBestCnt[2] > 0
-        || hfuzz->branchBestCnt[3] > 0) {
+            || hfuzz->branchBestCnt[3] > 0) {
         mangle_Resize(hfuzz, &fuzzer->dynamicFileSz);
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
 
     if (files_writeBufToFile
-        (fuzzer->fileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-         O_WRONLY | O_CREAT | O_EXCL | O_TRUNC) == false) {
+            (fuzzer->fileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+             O_WRONLY | O_CREAT | O_EXCL | O_TRUNC) == false) {
         LOGMSG(l_ERROR, "Couldn't write buffer to file '%s'", fuzzer->fileName);
         return false;
     }
@@ -120,7 +120,7 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_ind
     mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fileSz);
 
     if (files_writeBufToFile
-        (fuzzer->fileName, fuzzer->dynamicFile, fileSz, O_WRONLY | O_CREAT | O_EXCL) == false) {
+            (fuzzer->fileName, fuzzer->dynamicFile, fileSz, O_WRONLY | O_CREAT | O_EXCL) == false) {
         LOGMSG(l_ERROR, "Couldn't write buffer to file '%s'", fuzzer->fileName);
         return false;
     }
@@ -214,7 +214,7 @@ static void *fuzz_threadNew(void *arg)
         .exception = 0,
         .dynamicFileSz = 0,
         .dynamicFile = malloc(hfuzz->maxFileSz),
-        .branchCnt = {[0 ... (ARRAYSIZE(fuzzer.branchCnt) - 1)] = 0,},
+        .branchCnt = {[0 ... (ARRAYSIZE(fuzzer.branchCnt) - 1)] = 0},
         .report = {'\0'}
     };
     if (fuzzer.dynamicFile == NULL) {
@@ -277,7 +277,7 @@ static void *fuzz_threadNew(void *arg)
         int64_t diff3 = hfuzz->branchBestCnt[3] - fuzzer.branchCnt[3];
 
         if (diff0 <= hfuzz->dynamicRegressionCnt && diff1 <= hfuzz->dynamicRegressionCnt
-            && diff2 <= hfuzz->dynamicRegressionCnt && diff3 <= hfuzz->dynamicRegressionCnt) {
+                && diff2 <= hfuzz->dynamicRegressionCnt && diff3 <= hfuzz->dynamicRegressionCnt) {
 
             LOGMSG(l_INFO,
                    "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr, High): %"
@@ -306,8 +306,8 @@ static void *fuzz_threadNew(void *arg)
 #define _HF_CURRENT_BEST "CURRENT_BEST"
 #define _HF_CURRENT_BEST_TMP ".tmp.CURRENT_BEST"
             if (files_writeBufToFile
-                (_HF_CURRENT_BEST_TMP, fuzzer.dynamicFile, fuzzer.dynamicFileSz,
-                 O_WRONLY | O_CREAT | O_TRUNC)) {
+                    (_HF_CURRENT_BEST_TMP, fuzzer.dynamicFile, fuzzer.dynamicFileSz,
+                     O_WRONLY | O_CREAT | O_TRUNC)) {
                 rename(_HF_CURRENT_BEST_TMP, _HF_CURRENT_BEST);
             } else {
                 unlink(_HF_CURRENT_BEST_TMP);
@@ -340,8 +340,7 @@ static void *fuzz_threadPid(void *arg)
         .exception = 0,
         .dynamicFileSz = 0,
         .dynamicFile = malloc(hfuzz->maxFileSz),
-        .branchCnt = {[0 ... (ARRAYSIZE(fuzzer.branchCnt) - 1)] = 0,}
-        ,
+        .branchCnt = {[0 ... (ARRAYSIZE(fuzzer.branchCnt) - 1)] = 0},
         .report = {'\0'}
     };
     if (fuzzer.dynamicFile == NULL) {
