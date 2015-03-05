@@ -68,13 +68,13 @@ static size_t arch_perfCountBranches(void)
 
 static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
 {
-    LOGMSG(l_DEBUG, "Adding branch %#018" PRIx64 " - %#018" PRIx64, from, to);
     /*
      * Kernel sometimes reports branches from the kernel (iret), we are not interested in that as it
      * makes the whole concept of unique branch counting less predictable
      */
     if (__builtin_expect(from > 0xFFFFFFFF00000000, false)
         || __builtin_expect(to > 0xFFFFFFFF00000000, false)) {
+        LOGMSG(l_DEBUG, "Adding branch %#018" PRIx64 " - %#018" PRIx64, from, to);
         return;
     }
     if (from >= perfCutOffAddr || to >= perfCutOffAddr) {
