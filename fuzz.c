@@ -309,8 +309,6 @@ static void *fuzz_threadNew(void *arg)
                 (_HF_CURRENT_BEST_TMP, fuzzer.dynamicFile, fuzzer.dynamicFileSz,
                  O_WRONLY | O_CREAT | O_TRUNC)) {
                 rename(_HF_CURRENT_BEST_TMP, _HF_CURRENT_BEST);
-            } else {
-                unlink(_HF_CURRENT_BEST_TMP);
             }
         }
         while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
