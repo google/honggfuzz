@@ -63,9 +63,9 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
      * Tell asan to ignore SEGVs
      */
     if (setenv
-        ("ASAN_OPTIONS",
-         "allow_user_segv_handler=1:handle_segv=0:abort_on_error=1:allocator_may_return_null=1",
-         1) == -1) {
+            ("ASAN_OPTIONS",
+             "allow_user_segv_handler=1:handle_segv=0:abort_on_error=1:allocator_may_return_null=1",
+             1) == -1) {
         LOGMSG_P(l_ERROR, "setenv(ASAN_OPTIONS) failed");
         return false;
     }

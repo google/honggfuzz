@@ -63,14 +63,14 @@
  * Interface to third_party/CrashReport_*.o
  */
 /*  *INDENT-OFF* */
-@interface CrashReport: NSObject - (id) initWithTask:(task_t)
-task exceptionType:(exception_type_t)
-anExceptionType exceptionCode:(mach_exception_data_t)
-anExceptionCode exceptionCodeCount:(mach_msg_type_number_t)
-anExceptionCodeCount thread:(thread_t)
-thread threadStateFlavor:(thread_state_flavor_t)
-aThreadStateFlavor threadState:(thread_state_data_t)
-aThreadState threadStateCount:(mach_msg_type_number_t) aThreadStateCount;
+@interface CrashReport : NSObject - (id) initWithTask:(task_t)
+    task exceptionType:(exception_type_t)
+    anExceptionType exceptionCode:(mach_exception_data_t)
+    anExceptionCode exceptionCodeCount:(mach_msg_type_number_t)
+    anExceptionCodeCount thread:(thread_t)
+    thread threadStateFlavor:(thread_state_flavor_t)
+    aThreadStateFlavor threadState:(thread_state_data_t)
+    aThreadState threadStateCount:(mach_msg_type_number_t) aThreadStateCount;
 @end
 /*  *INDENT-ON* */
 
@@ -262,7 +262,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     mach_port_t exception_port = MACH_PORT_NULL;
 
     if (bootstrap_look_up(child_bootstrap, g_service_name, &exception_port)
-        != KERN_SUCCESS) {
+            != KERN_SUCCESS) {
         return false;
     }
 
@@ -413,7 +413,7 @@ bool arch_archInit(honggfuzz_t * hfuzz)
      * Allocate exception port.
      */
     if (mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &g_exception_port) !=
-        KERN_SUCCESS) {
+            KERN_SUCCESS) {
         return false;
     }
 
@@ -421,8 +421,8 @@ bool arch_archInit(honggfuzz_t * hfuzz)
      * Insert exception receive port.
      */
     if (mach_port_insert_right
-        (mach_task_self(), g_exception_port, g_exception_port,
-         MACH_MSG_TYPE_MAKE_SEND) != KERN_SUCCESS) {
+            (mach_task_self(), g_exception_port, g_exception_port,
+             MACH_MSG_TYPE_MAKE_SEND) != KERN_SUCCESS) {
         return false;
     }
 
@@ -477,16 +477,16 @@ write_crash_report(thread_port_t thread,
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
     CrashReport *_crashReport = nil;
 
-/*  *INDENT-OFF* */
+    /*  *INDENT-OFF* */
     _crashReport = [[CrashReport alloc] initWithTask:task
-                                       exceptionType:exception
-                                       exceptionCode:code
-                                  exceptionCodeCount:code_count
-                                              thread:thread
-                                   threadStateFlavor:*flavor
-                                         threadState:(thread_state_t)in_state
-                                    threadStateCount:in_state_count];
-/*  *INDENT-OFF* */
+                    exceptionType:exception
+                    exceptionCode:code
+                    exceptionCodeCount:code_count
+                    thread:thread
+                    threadStateFlavor:*flavor
+                    threadState:(thread_state_t)in_state
+                    threadStateCount:in_state_count];
+    /*  *INDENT-OFF* */
 
     NSString *crashDescription =[_crashReport description];
     char *description = (char *)[crashDescription UTF8String];
@@ -510,16 +510,16 @@ uint64_t hash_callstack(thread_port_t thread,
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
     CrashReport *_crashReport = nil;
 
-/*  *INDENT-OFF* */
+    /*  *INDENT-OFF* */
     _crashReport = [[CrashReport alloc] initWithTask:task
-                                       exceptionType:exception
-                                       exceptionCode:code
-                                  exceptionCodeCount:code_count
-                                              thread:thread
-                                   threadStateFlavor:*flavor
-                                         threadState:(thread_state_t)in_state
-                                    threadStateCount:in_state_count];
-/*  *INDENT-ON* */
+                    exceptionType:exception
+                    exceptionCode:code
+                    exceptionCodeCount:code_count
+                    thread:thread
+                    threadStateFlavor:*flavor
+                    threadState:(thread_state_t)in_state
+                    threadStateCount:in_state_count];
+    /*  *INDENT-ON* */
 
     NSString *crashDescription =[_crashReport description];
     char *description = (char *)[crashDescription UTF8String];
@@ -656,18 +656,18 @@ catch_mach_exception_raise_state(mach_port_t exception_port,
 }
 
 kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused))
-                                                        exception_port_t exception_port,
-                                                        thread_port_t thread,
-                                                        task_port_t task,
-                                                        exception_type_t exception,
-                                                        mach_exception_data_t code,
-                                                        mach_msg_type_number_t
-                                                        code_count, int *flavor,
-                                                        thread_state_t in_state,
-                                                        mach_msg_type_number_t
-                                                        in_state_count,
-                                                        thread_state_t out_state,
-                                                        mach_msg_type_number_t * out_state_count)
+        exception_port_t exception_port,
+        thread_port_t thread,
+        task_port_t task,
+        exception_type_t exception,
+        mach_exception_data_t code,
+        mach_msg_type_number_t
+        code_count, int *flavor,
+        thread_state_t in_state,
+        mach_msg_type_number_t
+        in_state_count,
+        thread_state_t out_state,
+        mach_msg_type_number_t * out_state_count)
 {
     if (exception != EXC_CRASH) {
         LOGMSG(l_FATAL, "Got non EXC_CRASH! This should not happen.");

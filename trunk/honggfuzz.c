@@ -108,7 +108,7 @@ static void usage(bool exit_success)
            " Run the binary over over a dynamic file, maximize unique branches (edges):\n"
            AB "  " PROG_NAME " -Dp -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
 #endif /* defined(_HF_ARCH_LINUX) */
-	   );
+          );
     /*  *INDENT-ON* */
 
     if (exit_success) {
