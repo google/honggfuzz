@@ -146,7 +146,7 @@ int main(int argc, char **argv)
         .dynFileMethod = _HF_DYNFILE_NONE,
         .dynamicFileBest = NULL,
         .dynamicFileBestSz = 1,
-	.branchBestCnt = {[0 ... (ARRAYSIZE(hfuzz.branchBestCnt) - 1)] = 0,},
+        .branchBestCnt = {[0 ... (ARRAYSIZE(hfuzz.branchBestCnt) - 1)] = 0,},
         .dynamicRegressionCnt = 0,
         .dynamicCutOffAddr = ~(0ULL),
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
