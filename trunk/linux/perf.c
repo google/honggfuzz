@@ -72,7 +72,8 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
      * Kernel sometimes reports branches from the kernel (iret), we are not interested in that as it
      * makes the whole concept of unique branch counting less predictable
      */
-    if (from > 0xFFFFFFFF00000000 || to > 0xFFFFFFFF00000000) {
+    if (__builtin_expect(from > 0xFFFFFFFF00000000, false)
+        || __builtin_expect(to > 0xFFFFFFFF00000000, false)) {
         return;
     }
     if (from >= perfCutOffAddr || to >= perfCutOffAddr) {
@@ -103,7 +104,7 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
     register uint64_t dataTailOff = pem->data_tail % perfMmapSz;
     rmb();
 
-    if (dataHeadOff == dataTailOff) {
+    if (__builtin_expect(dataHeadOff == dataTailOff, false)) {
         if (fatal) {
             LOGMSG(l_FATAL, "No data in the mmap buffer");
         }
@@ -125,18 +126,19 @@ static inline void arch_perfMmapParse(void)
         }
 
         struct perf_event_header *peh = (struct perf_event_header *)&tmp;
-        if (peh->type == PERF_RECORD_LOST) {
+        if (__builtin_expect(peh->type == PERF_RECORD_LOST, false)) {
             /* It's id an we can ignore it */
             arch_perfGetMmap64(true /* fatal */ );
             register uint64_t lost = arch_perfGetMmap64(true /* fatal */ );
             perfRecordsLost += lost;
             continue;
         }
-        if (peh->type != PERF_RECORD_SAMPLE) {
+        if (__builtin_expect(peh->type != PERF_RECORD_SAMPLE, false)) {
             LOGMSG(l_FATAL, "(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16 ")",
                    peh->type);
         }
-        if (peh->misc != PERF_RECORD_MISC_USER && peh->misc != PERF_RECORD_MISC_KERNEL) {
+        if (__builtin_expect
+            (peh->misc != PERF_RECORD_MISC_USER && peh->misc != PERF_RECORD_MISC_KERNEL, false)) {
             LOGMSG(l_FATAL,
                    "(struct perf_event_header)->type != PERF_RECORD_MISC_USER (%" PRIu16 ")",
                    peh->misc);
@@ -157,14 +159,15 @@ static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu
 
 static void arch_perfSigHandler(int signum, siginfo_t * si, void *unused)
 {
-    if (signum != _HF_RT_SIG) {
+    if (__builtin_expect(signum != _HF_RT_SIG, false)) {
         return;
     }
-    if (si->si_code != POLL_IN) {
+    if (__builtin_expect(si->si_code != POLL_IN, false)) {
         return;
     }
 
     arch_perfMmapParse();
+    return;
 
     if (unused == NULL) {
         return;
