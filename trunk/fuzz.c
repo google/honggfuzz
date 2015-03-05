@@ -156,7 +156,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, i
 
     close(dstfd);
 
-    pid_t pid = vfork();
+    pid_t pid = fork();
     if (pid == -1) {
         LOGMSG_P(l_ERROR, "Couldn't vfork");
         return false;
