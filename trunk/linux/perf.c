@@ -73,7 +73,7 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
      * makes the whole concept of unique branch counting less predictable
      */
     if (__builtin_expect(from > 0xFFFFFFFF00000000, false)
-            || __builtin_expect(to > 0xFFFFFFFF00000000, false)) {
+        || __builtin_expect(to > 0xFFFFFFFF00000000, false)) {
         return;
     }
     if (from >= perfCutOffAddr || to >= perfCutOffAddr) {
@@ -138,7 +138,7 @@ static inline void arch_perfMmapParse(void)
                    peh->type);
         }
         if (__builtin_expect
-                (peh->misc != PERF_RECORD_MISC_USER && peh->misc != PERF_RECORD_MISC_KERNEL, false)) {
+            (peh->misc != PERF_RECORD_MISC_USER && peh->misc != PERF_RECORD_MISC_KERNEL, false)) {
             LOGMSG(l_FATAL,
                    "(struct perf_event_header)->type != PERF_RECORD_MISC_USER (%" PRIu16 ")",
                    peh->misc);

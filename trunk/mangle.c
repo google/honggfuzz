@@ -208,52 +208,52 @@ static void mangle_AddSub(uint8_t * buf, size_t bufSz, size_t off)
 
     switch (varLen) {
     case 1:
-    {
-        buf[off] += delta;
-        return;
-        break;
-    }
+        {
+            buf[off] += delta;
+            return;
+            break;
+        }
     case 2:
-    {
-        uint16_t val = *((uint16_t *) & buf[off]);
-        if (util_rndGet(0, 1) == 0) {
-            /* BE */
-            val = util_ToFromBE16(val);
-            val += delta;
-            val = util_ToFromBE16(val);
-        } else {
-            /* LE */
-            val = util_ToFromLE16(val);
-            val += delta;
-            val = util_ToFromLE16(val);
+        {
+            uint16_t val = *((uint16_t *) & buf[off]);
+            if (util_rndGet(0, 1) == 0) {
+                /* BE */
+                val = util_ToFromBE16(val);
+                val += delta;
+                val = util_ToFromBE16(val);
+            } else {
+                /* LE */
+                val = util_ToFromLE16(val);
+                val += delta;
+                val = util_ToFromLE16(val);
+            }
+            mangle_Overwrite(buf, (uint8_t *) & val, bufSz, off, varLen);
+            return;
+            break;
         }
-        mangle_Overwrite(buf, (uint8_t *) & val, bufSz, off, varLen);
-        return;
-        break;
-    }
     case 4:
-    {
-        uint32_t val = *((uint32_t *) & buf[off]);
-        if (util_rndGet(0, 1) == 0) {
-            /* BE */
-            val = util_ToFromBE32(val);
-            val += delta;
-            val = util_ToFromBE32(val);
-        } else {
-            /* LE */
-            val = util_ToFromLE32(val);
-            val += delta;
-            val = util_ToFromLE32(val);
+        {
+            uint32_t val = *((uint32_t *) & buf[off]);
+            if (util_rndGet(0, 1) == 0) {
+                /* BE */
+                val = util_ToFromBE32(val);
+                val += delta;
+                val = util_ToFromBE32(val);
+            } else {
+                /* LE */
+                val = util_ToFromLE32(val);
+                val += delta;
+                val = util_ToFromLE32(val);
+            }
+            mangle_Overwrite(buf, (uint8_t *) & val, bufSz, off, varLen);
+            return;
+            break;
         }
-        mangle_Overwrite(buf, (uint8_t *) & val, bufSz, off, varLen);
-        return;
-        break;
-    }
     default:
-    {
-        LOGMSG(l_FATAL, "Unknown variable length size: %" PRId64, varLen);
-        break;
-    }
+        {
+            LOGMSG(l_FATAL, "Unknown variable length size: %" PRId64, varLen);
+            break;
+        }
     }
 }
 
