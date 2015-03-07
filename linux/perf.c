@@ -413,7 +413,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int *perfFd)
     fuzzer->branchCnt[3] = edgeCount;
 
     LOGMSG(l_INFO,
-           "File size (New/Best): %zu/%zu, Perf feedback: Best: [%" PRIu64 ",%" PRIu64 ",%" PRIu64
+           "File size (New/Best): %zu/%zu, Perf feedback (instr/branch/cycle/edge): Best: [%" PRIu64 ",%" PRIu64 ",%" PRIu64
            ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "]",
            fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz, hfuzz->branchBestCnt[0],
            hfuzz->branchBestCnt[1], hfuzz->branchBestCnt[2], hfuzz->branchBestCnt[3],
