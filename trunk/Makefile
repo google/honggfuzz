@@ -45,10 +45,10 @@ ifeq ($(OS),Linux)
 	ARCH_SRCS := $(wildcard linux/*.c)
 
 	ifeq ("$(wildcard /usr/include/bfd.h)","")
-		WARN_LIBRARY += "binutils-dev "
+		WARN_LIBRARY += "binutils-dev(el) "
 	endif
 	ifeq ("$(wildcard /usr/include/libunwind-ptrace.h)","")
-		WARN_LIBRARY += "libunwind-dev/libunwind8-dev "
+		WARN_LIBRARY += "libunwind-dev(el)/libunwind8-dev "
 	endif
 
 	ifeq ($(MARCH),x86_64)
