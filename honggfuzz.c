@@ -106,6 +106,8 @@ static void usage(bool exit_success)
            AB "  " PROG_NAME " -Di -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
            " Run the binary over over a dynamic file, maximize total no. of branches:\n"
            AB "  " PROG_NAME " -Db -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+           " Run the binary over over a dynamic file, maximize unique code blocks (coverage):\n"
+           AB "  " PROG_NAME " -Dp -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
            " Run the binary over over a dynamic file, maximize unique branches (edges):\n"
            AB "  " PROG_NAME " -Dp -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
 #endif /* defined(_HF_ARCH_LINUX) */
