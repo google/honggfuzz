@@ -52,6 +52,8 @@ static __thread size_t perfMmapSz = 0UL;
 static __thread uint64_t perfRecordsLost = 0;
 /* Don't record branches using address above this parameter */
 static __thread uint64_t perfCutOffAddr = ~(0ULL);
+/* Perf method - to be used in signal handlers */
+static __thread dynFileMethod_t perfDynamicMethod = _HF_DYNFILE_NONE;
 
 #define _HF_PERF_BLOOM_SZ (1024 * 1024 * 2)
 static __thread uint8_t perfBloom[_HF_PERF_BLOOM_SZ];
@@ -200,6 +202,8 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
 {
     LOGMSG(l_DEBUG, "Enabling PERF for PID=%d (mmapBufSz=%zu), method=%x", pid, perfMmapSz, method);
 
+    perfDynamicMethod = method;
+
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(struct perf_event_attr));
     pe.size = sizeof(struct perf_event_attr);
@@ -221,12 +225,16 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.inherit = 1;
         break;
-    case _HF_DYNFILE_CYCLE_COUNT:
-        LOGMSG(l_DEBUG, "Using: PERF_COUNT_HW_REF_CPU_CYCLES for PID: %d", pid);
-        pe.config = PERF_COUNT_HW_REF_CPU_CYCLES;
-        pe.inherit = 1;
+    case _HF_DYNFILE_UNIQUE_BLOCK_COUNT:
+        bzero(perfBloom, sizeof(perfBloom));
+        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP for PID: %d", pid);
+        pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+        pe.sample_type = PERF_SAMPLE_IP;
+        pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
+        pe.watermark = 1;
+        pe.wakeup_watermark = perfMmapSz / 2;
         break;
-    case _HF_DYNFILE_UNIQUE_PC_COUNT:
+    case _HF_DYNFILE_UNIQUE_EDGE_COUNT:
         bzero(perfBloom, sizeof(perfBloom));
         LOGMSG(l_DEBUG,
                "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d", pid);
@@ -244,15 +252,15 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
 
     *perfFd = perf_event_open(&pe, pid, -1, -1, 0);
     if (*perfFd == -1) {
-        if (method == _HF_DYNFILE_UNIQUE_PC_COUNT) {
+        if (method == _HF_DYNFILE_UNIQUE_BLOCK_COUNT || method == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
             LOGMSG(l_ERROR,
-                   "-Dp mode (sample IP/PC) requires LBR/BTS, which present in Intel Haswell and newer CPUs (i.e. not in AMD CPUs)");
+                   "-Dp/-De mode (sample IP/jump) requires LBR/BTS, which present in Intel Haswell and newer CPUs (i.e. not in AMD CPUs)");
         }
         LOGMSG_P(l_FATAL, "perf_event_open() failed");
         return false;
     }
 
-    if (method != _HF_DYNFILE_UNIQUE_PC_COUNT) {
+    if (method != _HF_DYNFILE_UNIQUE_BLOCK_COUNT && method != _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
         return true;
     }
 
@@ -312,7 +320,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     perfFd[0] = -1;
     perfFd[1] = -1;
     perfFd[2] = -1;
-    perfFd[3] = -1;
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
         if (arch_perfOpen(pid, _HF_DYNFILE_INSTR_COUNT, &perfFd[0]) == false) {
@@ -320,7 +327,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
             close(perfFd[0]);
             close(perfFd[1]);
             close(perfFd[2]);
-            close(perfFd[3]);
             return false;
         }
     }
@@ -330,23 +336,28 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
             close(perfFd[0]);
             close(perfFd[1]);
             close(perfFd[2]);
-            close(perfFd[3]);
             return false;
         }
     }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_CYCLE_COUNT) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_CYCLE_COUNT, &perfFd[2]) == false) {
-            LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_CYCLE_COUNT)", pid);
+
+    if ((hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT)
+        && (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT)) {
+        LOGMSG(l_FATAL,
+               "_HF_DYNFILE_UNIQUE_BLOCK_COUNT and _HF_DYNFILE_UNIQUE_EDGE_COUNT cannot be specified together");
+    }
+
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
+        if (arch_perfOpen(pid, _HF_DYNFILE_UNIQUE_BLOCK_COUNT, &perfFd[2]) == false) {
+            LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_UNIQUE_BLOCK_COUNT)", pid);
             close(perfFd[0]);
             close(perfFd[1]);
             close(perfFd[2]);
-            close(perfFd[3]);
             return false;
         }
     }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_PC_COUNT) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_UNIQUE_PC_COUNT, &perfFd[2]) == false) {
-            LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_UNIQUE_PC_COUNT)", pid);
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
+        if (arch_perfOpen(pid, _HF_DYNFILE_UNIQUE_EDGE_COUNT, &perfFd[2]) == false) {
+            LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_UNIQUE_EDGE_COUNT)", pid);
             close(perfFd[0]);
             close(perfFd[1]);
             close(perfFd[2]);
@@ -381,17 +392,9 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int *perfFd)
         close(perfFd[1]);
     }
 
-    uint64_t cycleCount = 0;
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_CYCLE_COUNT) {
-        ioctl(perfFd[2], PERF_EVENT_IOC_DISABLE, 0);
-        if (read(perfFd[2], &cycleCount, sizeof(cycleCount)) != sizeof(cycleCount)) {
-            LOGMSG_P(l_ERROR, "read(perfFd='%d') failed", perfFd);
-        }
-        close(perfFd[2]);
-    }
-
     uint64_t edgeCount = 0;
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_PC_COUNT) {
+    if ((hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT)
+        || (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT)) {
         arch_perfMmapParse();
         edgeCount = arch_perfCountBranches();
         close(perfFd[2]);
@@ -403,20 +406,20 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int *perfFd)
                    perfRecordsLost);
         }
     }
+
     if (perfMmapBuf != NULL) {
         munmap(perfMmapBuf, perfMmapSz + getpagesize());
     }
 
     fuzzer->branchCnt[0] = instrCount;
     fuzzer->branchCnt[1] = branchCount;
-    fuzzer->branchCnt[2] = cycleCount;
-    fuzzer->branchCnt[3] = edgeCount;
+    fuzzer->branchCnt[2] = edgeCount;
 
     LOGMSG(l_INFO,
-           "File size (New/Best): %zu/%zu, Perf feedback (instr/branch/cycle/edge): Best: [%" PRIu64 ",%" PRIu64 ",%" PRIu64
-           ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "]",
-           fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz, hfuzz->branchBestCnt[0],
-           hfuzz->branchBestCnt[1], hfuzz->branchBestCnt[2], hfuzz->branchBestCnt[3],
-           fuzzer->branchCnt[0], fuzzer->branchCnt[1], fuzzer->branchCnt[2], fuzzer->branchCnt[3]);
+           "File size (New/Best): %zu/%zu, Perf feedback (instr/branch//block-edge): Best: [%"
+           PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64 ",%" PRIu64
+           ",%" PRIu64 "]", fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz,
+           hfuzz->branchBestCnt[0], hfuzz->branchBestCnt[1], hfuzz->branchBestCnt[2],
+           fuzzer->branchCnt[0], fuzzer->branchCnt[1], fuzzer->branchCnt[2]);
     return;
 }

@@ -52,8 +52,8 @@ typedef enum {
     _HF_DYNFILE_NONE = 0x0,
     _HF_DYNFILE_INSTR_COUNT = 0x1,
     _HF_DYNFILE_BRANCH_COUNT = 0x2,
-    _HF_DYNFILE_CYCLE_COUNT = 0x4,
-    _HF_DYNFILE_UNIQUE_PC_COUNT = 0x8,
+    _HF_DYNFILE_UNIQUE_BLOCK_COUNT = 0x8,
+    _HF_DYNFILE_UNIQUE_EDGE_COUNT = 0x10,
 } dynFileMethod_t;
 
 typedef struct {
