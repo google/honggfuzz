@@ -62,15 +62,14 @@ uint64_t util_rndGet(uint64_t min, uint64_t max)
 
 void util_rndBuf(uint8_t * buf, size_t sz)
 {
-    /* ISO C99 LCG PRNG */
-    uint64_t m = (1ULL << 31);
-    uint64_t a = 1103515245;
-    uint64_t c = 12345;
-    uint64_t x = util_rndGet(0, 1ULL << 31);
+    /* MMIX LCG PRNG */
+    uint64_t a = 6364136223846793005ULL;
+    uint64_t c = 1442695040888963407ULL;
+    uint64_t x = util_rndGet(0, 1ULL << 47);
 
     for (size_t i = 0; i < sz; i++) {
-        buf[i] = (uint8_t) ((x >> 16) & 0xFF);
-        x = ((a * x + c) % m);
+        x = (a * x + c);
+        buf[i] = (uint8_t) ((x >> 32) & 0xFF);
     }
 
     return;

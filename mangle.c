@@ -344,7 +344,7 @@ static double mangle_ExpDist(void)
 }
 
 /* Gauss-like distribution */
-bool mangle_Resize(honggfuzz_t * hfuzz, size_t * bufSz)
+bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t * buf, size_t * bufSz)
 {
     const uint64_t chance_one_in_x = 5;
     if (util_rndGet(1, chance_one_in_x) != 1) {
@@ -378,6 +378,10 @@ bool mangle_Resize(honggfuzz_t * hfuzz, size_t * bufSz)
     }
     if (newSz > (ssize_t) hfuzz->maxFileSz) {
         newSz = (ssize_t) hfuzz->maxFileSz;
+    }
+
+    if ((size_t) newSz > *bufSz) {
+        util_rndBuf(&buf[*bufSz], newSz - *bufSz);
     }
 
     LOGMSG(l_DEBUG, "Current size: %zu, Maximal size: %zu, New Size: %zu, Delta: %d", *bufSz,

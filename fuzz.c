@@ -92,7 +92,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
     /* The first pass should be on an empty/initial file */
     if (hfuzz->branchBestCnt[0] > 0 || hfuzz->branchBestCnt[1] > 0 || hfuzz->branchBestCnt[2] > 0) {
-        mangle_Resize(hfuzz, &fuzzer->dynamicFileSz);
+        mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz);
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
 
@@ -115,7 +115,7 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_ind
         return false;
     }
 
-    mangle_Resize(hfuzz, &fileSz);
+    mangle_Resize(hfuzz, fuzzer->dynamicFile, &fileSz);
     mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fileSz);
 
     if (files_writeBufToFile
