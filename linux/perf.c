@@ -99,13 +99,7 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
 }
 
 /* Memory Barriers */
-#if defined(__x86_64__)
-#define rmb()	__asm__ __volatile__ ("lfence" ::: "memory")
-#elif defined(__i386__)
-#define rmb()	__asm__ __volatile__ ("lock; addl $0,0(%%esp)" ::: "memory")
-#else
-#define rmb()	__asm__ __volatile__ ("" ::: "memory")
-#endif
+#define rmb()	__sync_synchronize()
 static inline uint64_t arch_perfGetMmap64(bool fatal)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
