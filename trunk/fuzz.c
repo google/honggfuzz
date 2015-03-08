@@ -279,10 +279,10 @@ static void *fuzz_threadNew(void *arg)
 
             LOGMSG(l_INFO,
                    "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr, High): %"
-                   PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 ", %" PRId64 "/%" PRId64 "/%" PRId64
-                   "/%" PRId64, fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz, fuzzer.branchCnt[0],
-                   fuzzer.branchCnt[1], fuzzer.branchCnt[2],
-                   hfuzz->branchBestCnt[0], hfuzz->branchBestCnt[1], hfuzz->branchBestCnt[2]);
+                   PRId64 "/%" PRId64 "/%" PRId64 ", %" PRId64 "/%" PRId64 "/%" PRId64,
+                   fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz, fuzzer.branchCnt[0],
+                   fuzzer.branchCnt[1], fuzzer.branchCnt[2], hfuzz->branchBestCnt[0],
+                   hfuzz->branchBestCnt[1], hfuzz->branchBestCnt[2]);
 
             memcpy(hfuzz->dynamicFileBest, fuzzer.dynamicFile, fuzzer.dynamicFileSz);
 
