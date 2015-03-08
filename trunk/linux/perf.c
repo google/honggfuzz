@@ -84,7 +84,14 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
     }
 
     /* It's 24-bit max, so should fit in a 2MB bitmap */
-    size_t pos = ((from & 0xFFF) | ((to << 12) & 0xFFF000));
+    size_t pos = 0ULL;
+    if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
+        pos = from & 0xFFFFFF;
+    }
+    if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
+        pos = ((from & 0xFFF) | ((to << 12) & 0xFFF000));
+    }
+
     size_t byteOff = pos / 8;
     size_t bitOff = pos % 8;
 
@@ -148,7 +155,10 @@ static inline void arch_perfMmapParse(void)
         }
 
         register uint64_t from = arch_perfGetMmap64(true /* fatal */ );
-        register uint64_t to = arch_perfGetMmap64(true /* fatal */ );
+        register uint64_t to = 0ULL;
+        if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
+            to = arch_perfGetMmap64(true /* fatal */ );
+        }
 
         arch_perfAddBranch(from, to);
     }
