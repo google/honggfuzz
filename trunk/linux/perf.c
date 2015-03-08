@@ -106,7 +106,8 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
 
     register uint64_t dataHeadOff = pem->data_head % perfMmapSz;
     register uint64_t dataTailOff = pem->data_tail % perfMmapSz;
-    rmb();
+    /* Memory barrier - needed as per perf_event_open(2) */
+    __sync_synchronize();
 
     if (__builtin_expect(dataHeadOff == dataTailOff, false)) {
         if (fatal) {
