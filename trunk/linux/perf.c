@@ -54,6 +54,8 @@ static __thread uint64_t perfRecordsLost = 0;
 static __thread uint64_t perfCutOffAddr = ~(0ULL);
 /* Perf method - to be used in signal handlers */
 static __thread dynFileMethod_t perfDynamicMethod = _HF_DYNFILE_NONE;
+/* Previous branch (PC position) */
+static __thread uint64_t perfPrevAddr = 0ULL;
 
 #define _HF_PERF_BLOOM_SZ (1024 * 1024 * 2)
 static __thread uint8_t perfBloom[_HF_PERF_BLOOM_SZ];
@@ -68,18 +70,17 @@ static size_t arch_perfCountBranches(void)
     return cnt;
 }
 
-static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
+static inline void arch_perfAddBranch(uint64_t from)
 {
     /*
      * Kernel sometimes reports branches from the kernel (iret), we are not interested in that as it
      * makes the whole concept of unique branch counting less predictable
      */
-    if (__builtin_expect(from > 0xFFFFFFFF00000000, false)
-        || __builtin_expect(to > 0xFFFFFFFF00000000, false)) {
-        LOGMSG(l_DEBUG, "Adding branch %#018" PRIx64 " - %#018" PRIx64, from, to);
+    if (__builtin_expect(from > 0xFFFFFFFF00000000, false)) {
+        LOGMSG(l_DEBUG, "Adding branch %#018" PRIx64, from);
         return;
     }
-    if (from >= perfCutOffAddr || to >= perfCutOffAddr) {
+    if (from >= perfCutOffAddr) {
         return;
     }
 
@@ -89,7 +90,8 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
         pos = from & 0xFFFFFF;
     }
     if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
-        pos = ((from & 0xFFF) | ((to << 12) & 0xFFF000));
+        pos = ((from & 0xFFF) | ((perfPrevAddr << 12) & 0xFFF000));
+        perfPrevAddr = from;
     }
 
     size_t byteOff = pos / 8;
@@ -150,12 +152,15 @@ static inline void arch_perfMmapParse(void)
         }
 
         register uint64_t from = arch_perfGetMmap64(true /* fatal */ );
-        register uint64_t to = 0ULL;
-        if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
-            to = arch_perfGetMmap64(true /* fatal */ );
-        }
 
-        arch_perfAddBranch(from, to);
+        /*
+         * Broken - disabled, see comment in perfOpen
+         if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
+         to = arch_perfGetMmap64(true, * fatal * );
+         }
+         */
+
+        arch_perfAddBranch(from);
     }
 }
 
@@ -241,10 +246,15 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         break;
     case _HF_DYNFILE_UNIQUE_EDGE_COUNT:
         bzero(perfBloom, sizeof(perfBloom));
-        LOGMSG(l_DEBUG,
-               "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d", pid);
+        /*
+         * PERF_SAMPLE_ADDR sometimes reports impossible results as jump
+         * targets
+         LOGMSG(l_DEBUG,
+         "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d", pid);
+         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+         */
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
-        pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
+        pe.sample_type = PERF_SAMPLE_IP;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.watermark = 1;
         pe.wakeup_watermark = perfMmapSz / 2;
