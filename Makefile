@@ -19,7 +19,7 @@
 
 
 CC ?= gcc
-CFLAGS += -c -std=c11 -I. -I/usr/local/include -I/usr/include \
+CFLAGS += -std=c11 -I. -I/usr/local/include -I/usr/include \
 	-D_GNU_SOURCE \
 	-Wall -Wextra -Wno-initializer-overrides -Wno-override-init -Wno-unknown-warning-option -Werror \
 	-funroll-loops -O2
@@ -63,7 +63,7 @@ endif	# OS
 
 ifeq ($(OS),Darwin)
 	CC ?= cc
-	CFLAGS = -arch x86_64 -O3 -g -ggdb -c -std=c99 -I. -I~/.homebrew/include -I/usr/include \
+	CFLAGS = -arch x86_64 -O3 -g -ggdb -std=c99 -I. -I~/.homebrew/include -I/usr/include \
 	    -x objective-c \
 		-D_GNU_SOURCE \
 		-pedantic \
@@ -84,11 +84,15 @@ endif
 
 SRCS += $(ARCH_SRCS)
 CFLAGS += -D_HF_ARCH_${ARCH}
+CFLAGS_INTERCEPTOR = $(shell echo ${CFLAGS} | sed 's/\-O./-O0/g')
 
 all: warn_libs $(BIN)
+ifeq ($(OS),Linux)
+	$(CC) $(CFLAGS_INTERCEPTOR) -fPIC -shared interceptor/stringmem.c -o interceptor/libstringmem.so
+endif
 
 .c.o: %.c
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) -o $@ $<
 
 warn_libs:
 ifdef WARN_LIBRARY
@@ -106,8 +110,8 @@ $(MIG_OUTPUT): /usr/include/mach/mach_exc.defs
 	mig -header mach_exc.h -user mach_excUser.c -sheader mach_excServer.h -server mach_excServer.c /usr/include/mach/mach_exc.defs
 
 $(MIG_OBJECTS): $(MIG_OUTPUT)
-	$(CC) $(CFLAGS) mach_excUser.c
-	$(CC) $(CFLAGS) mach_excServer.c
+	$(CC) -c $(CFLAGS) mach_excUser.c
+	$(CC) -c $(CFLAGS) mach_excServer.c
 
 clean:
 	$(RM) core $(OBJS) $(BIN) $(MIG_OUTPUT) $(MIG_OBJECTS)
