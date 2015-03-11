@@ -21,10 +21,20 @@
  *
  */
 
-#include <string.h>
-#include <ctype.h>
+/* 
+ * size_t 
+ */
+#include <stdlib.h>
 
-int strcmp(const char *s1, const char *s2)
+extern int tolower(int c);
+
+/*
+ * Disable all optimizations
+ */
+#pragma GCC optimize ("0")
+
+__attribute__ ((optimize("0")))
+inline int strcmp(const char *s1, const char *s2)
 {
     for (size_t i = 0; s1[i] || s2[i]; i++) {
         if (s1[i] != s2[i]) {
@@ -34,7 +44,8 @@ int strcmp(const char *s1, const char *s2)
     return 0;
 }
 
-int strcasecmp(const char *s1, const char *s2)
+__attribute__ ((optimize("0")))
+inline int strcasecmp(const char *s1, const char *s2)
 {
     for (size_t i = 0; s1[i] || s2[i]; i++) {
         if (tolower(s1[i]) != tolower(s2[i])) {
@@ -44,7 +55,8 @@ int strcasecmp(const char *s1, const char *s2)
     return 0;
 }
 
-int strncmp(const char *s1, const char *s2, size_t n)
+__attribute__ ((optimize("0")))
+inline int strncmp(const char *s1, const char *s2, size_t n)
 {
     for (size_t i = 0; (s1[i] || s2[i]) && i < n; i++) {
         if (s1[i] != s2[i]) {
@@ -54,7 +66,8 @@ int strncmp(const char *s1, const char *s2, size_t n)
     return 0;
 }
 
-int strncasecmp(const char *s1, const char *s2, size_t n)
+__attribute__ ((optimize("0")))
+inline int strncasecmp(const char *s1, const char *s2, size_t n)
 {
     for (size_t i = 0; (s1[i] || s2[i]) && i < n; i++) {
         if (tolower(s1[i]) != tolower(s2[i])) {
@@ -64,7 +77,8 @@ int strncasecmp(const char *s1, const char *s2, size_t n)
     return 0;
 }
 
-char *strstr(const char *haystack, const char *needle)
+__attribute__ ((optimize("0")))
+inline char *strstr(const char *haystack, const char *needle)
 {
     for (size_t i = 0; haystack[i]; i++) {
         if (strcmp(&haystack[i], needle) == 0) {
@@ -74,7 +88,8 @@ char *strstr(const char *haystack, const char *needle)
     return NULL;
 }
 
-char *strcasestr(const char *haystack, const char *needle)
+__attribute__ ((optimize("0")))
+inline char *strcasestr(const char *haystack, const char *needle)
 {
     for (size_t i = 0; haystack[i]; i++) {
         if (strcasecmp(&haystack[i], needle) == 0) {
@@ -84,7 +99,8 @@ char *strcasestr(const char *haystack, const char *needle)
     return NULL;
 }
 
-int memcmp(const void *m1, const void *m2, size_t n)
+__attribute__ ((optimize("0")))
+inline int memcmp(const void *m1, const void *m2, size_t n)
 {
     const char *s1 = (const char *)m1;
     const char *s2 = (const char *)m2;
@@ -97,7 +113,8 @@ int memcmp(const void *m1, const void *m2, size_t n)
     return 0;
 }
 
-int bcmp(const void *m1, const void *m2, size_t n)
+__attribute__ ((optimize("0")))
+inline int bcmp(const void *m1, const void *m2, size_t n)
 {
     const char *s1 = (const char *)m1;
     const char *s2 = (const char *)m2;
@@ -110,7 +127,8 @@ int bcmp(const void *m1, const void *m2, size_t n)
     return 0;
 }
 
-void *memmem(const void *haystack, size_t haystacklen, const void *needle, size_t needlelen)
+__attribute__ ((optimize("0")))
+inline void *memmem(const void *haystack, size_t haystacklen, const void *needle, size_t needlelen)
 {
     if (needlelen > haystacklen) {
         return NULL;
