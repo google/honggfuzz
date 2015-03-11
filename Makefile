@@ -84,11 +84,10 @@ endif
 
 SRCS += $(ARCH_SRCS)
 CFLAGS += -D_HF_ARCH_${ARCH}
-CFLAGS_INTERCEPTOR = $(shell echo ${CFLAGS} | sed 's/\-O./-O0/g')
 
 all: warn_libs $(BIN)
 ifeq ($(OS),Linux)
-	$(CC) $(CFLAGS_INTERCEPTOR) -fPIC -shared interceptor/stringmem.c -o interceptor/libstringmem.so
+	$(CC) $(CFLAGS) -fPIC -shared interceptor/stringmem.c -o interceptor/libstringmem.so
 endif
 
 .c.o: %.c
