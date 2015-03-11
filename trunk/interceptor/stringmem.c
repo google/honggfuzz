@@ -92,6 +92,9 @@ void *memmem(const void *haystack, size_t haystacklen, const void *needle, size_
     if (needlelen > haystacklen) {
         return NULL;
     }
+    if (needlelen == 0) {
+        return (void *)haystack;
+    }
 
     const char *h = haystack;
     for (size_t i = 0; i <= (haystacklen - needlelen); i++) {
