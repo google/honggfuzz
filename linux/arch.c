@@ -37,6 +37,7 @@
 #include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/user.h>
@@ -106,34 +107,8 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
      * Set timeout (prof), real timeout (2*prof), and rlimit_cpu (2*prof)
      */
     if (hfuzz->tmOut) {
-        /*
-         * The hfuzz->tmOut is real CPU usage time...
-         */
-        struct itimerval it_prof = {
-            .it_interval = {.tv_sec = hfuzz->tmOut,.tv_usec = 0},
-            .it_value = {.tv_sec = 0,.tv_usec = 0}
-        };
-        if (setitimer(ITIMER_PROF, &it_prof, NULL) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't set the ITIMER_PROF timer");
-            return false;
-        }
-
-        /*
-         * ...so, if a process sleeps, this one should
-         * trigger a signal...
-         */
-        struct itimerval it_real = {
-            .it_interval = {.tv_sec = hfuzz->tmOut * 2UL,.tv_usec = 0},
-            .it_value = {.tv_sec = 0,.tv_usec = 0}
-        };
-        if (setitimer(ITIMER_REAL, &it_real, NULL) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't set the ITIMER_REAL timer");
-            return false;
-        }
-
-        /*
-         * ..if a process sleeps and catches SIGPROF/SIGALRM
-         * rlimits won't help either
+        /* 
+         * Set the CPU rlimit to twice the value of the time-out
          */
         struct rlimit rl = {
             .rlim_cur = hfuzz->tmOut * 2,
@@ -186,39 +161,68 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     return false;
 }
 
-static void arch_timerSig(int sig)
+static void arch_sigFunc(int signo, siginfo_t * si, void *dummy)
 {
-    if (sig != SIGALRM) {
-        LOGMSG(l_FATAL, "sig (%d) != SIGLARM", sig);
+    if (signo != SIGALRM) {
+        LOGMSG(l_ERROR, "Signal != SIGALRM (%d)", signo);
     }
     return;
+    if (si == NULL) {
+        return;
+    }
+    if (dummy == NULL) {
+        return;
+    }
 }
 
 static void arch_setTimer(void)
 {
+    timer_t timerid;
+    struct sigevent sevp = {
+        .sigev_value.sival_ptr = &timerid,
+        .sigev_signo = SIGALRM,
+        .sigev_notify = SIGEV_THREAD_ID | SIGEV_SIGNAL,
+        ._sigev_un._tid = syscall(__NR_gettid),
+    };
+    if (timer_create(CLOCK_REALTIME, &sevp, &timerid) == -1) {
+        LOGMSG_P(l_ERROR, "timer_create(CLOCK_REALTIME) failed");
+        return;
+    }
+    /* 
+     * Kick in every 200ms, starting with the next second
+     */
+    const struct itimerspec ts = {
+        .it_value = {.tv_sec = 1,.tv_nsec = 0},
+        .it_interval = {.tv_sec = 0,.tv_nsec = 200000000,},
+    };
+    if (timer_settime(timerid, 0, &ts, NULL) == -1) {
+        LOGMSG_P(l_ERROR, "timer_settime() failed");
+    }
     sigset_t smask;
     sigemptyset(&smask);
     struct sigaction sa = {
-        .sa_handler = arch_timerSig,
-        .sa_sigaction = NULL,
+        .sa_handler = NULL,
+        .sa_sigaction = arch_sigFunc,
         .sa_mask = smask,
-        .sa_flags = 0,
+        .sa_flags = SA_SIGINFO,
         .sa_restorer = NULL,
     };
     if (sigaction(SIGALRM, &sa, NULL) == -1) {
-        LOGMSG_P(l_ERROR, "sigaction(SIGALRM)");
+        LOGMSG_P(l_ERROR, "sigaciton(SIGALRM) failed");
+        return;
     }
+
     return;
 }
 
 static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     time_t cur = time(NULL);
-    if (cur - fuzzer->timeStarted > hfuzz->tmOut) {
-        LOGMSG(l_WARN, "PID %d took too much time (%d s), limit %d s. Sending SIGKILL",
-               cur - fuzzer->timeStarted, hfuzz->tmOut);
+    if ((cur - fuzzer->timeStarted) > hfuzz->tmOut) {
+        LOGMSG(l_WARN, "PID %d took too much time (%ld s), limit %ld s. Sending SIGKILL",
+               fuzzer->pid, (long)(cur - fuzzer->timeStarted), hfuzz->tmOut);
+        kill(fuzzer->pid, SIGKILL);
     }
-    kill(fuzzer->pid, SIGKILL);
 }
 
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
