@@ -91,7 +91,7 @@ typedef struct {
 
 typedef struct fuzzer_t {
     pid_t pid;
-    time_t timeStarted;
+    int64_t timeStartedMillis;
     char origFileName[PATH_MAX];
     char fileName[PATH_MAX];
     uint64_t pc;

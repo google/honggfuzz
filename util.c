@@ -185,6 +185,16 @@ extern uint64_t util_hash(const char *buf, size_t len)
     return ret;
 }
 
+extern int64_t util_timeNowMillis(void)
+{
+    struct timeval tv;
+    if (gettimeofday(&tv, NULL) == -1) {
+        LOGMSG_P(l_FATAL, "gettimeofday()");
+    }
+
+    return (((int64_t) tv.tv_sec * 1000LL) + ((int64_t) tv.tv_usec / 1000LL));
+}
+
 extern uint16_t util_ToFromBE16(uint16_t val)
 {
 #if __BYTE_ORDER == __BIG_ENDIAN

@@ -217,10 +217,11 @@ static void arch_setTimer(void)
 
 static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    time_t cur = time(NULL);
-    if ((cur - fuzzer->timeStarted) > hfuzz->tmOut) {
-        LOGMSG(l_WARN, "PID %d took too much time (%ld s), limit %ld s. Sending SIGKILL",
-               fuzzer->pid, (long)(cur - fuzzer->timeStarted), hfuzz->tmOut);
+    int64_t curMillis = util_timeNowMillis();
+    int64_t diffMillis = curMillis - fuzzer->timeStartedMillis;
+    if (diffMillis > (hfuzz->tmOut * 1000)) {
+        LOGMSG(l_WARN, "PID %d took too much time (limit %ld s). Sending SIGKILL",
+               fuzzer->pid, hfuzz->tmOut);
         kill(fuzzer->pid, SIGKILL);
     }
 }

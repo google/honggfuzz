@@ -45,6 +45,8 @@ extern void util_recoverStdio(void);
 
 extern uint64_t util_hash(const char *buf, size_t len);
 
+extern int64_t util_timeNowMillis(void);
+
 extern uint16_t util_ToFromBE16(uint16_t val);
 extern uint16_t util_ToFromLE16(uint16_t val);
 extern uint32_t util_ToFromBE32(uint32_t val);

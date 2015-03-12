@@ -206,7 +206,7 @@ static void *fuzz_threadNew(void *arg)
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
     fuzzer_t fuzzer = {
         .pid = 0,
-        .timeStarted = time(NULL),
+        .timeStartedMillis = util_timeNowMillis(),
         .pc = 0ULL,
         .backtrace = 0ULL,
         .access = 0ULL,
@@ -330,7 +330,7 @@ static void *fuzz_threadPid(void *arg)
 
     fuzzer_t fuzzer = {
         .pid = hfuzz->pid,
-        .timeStarted = time(NULL),
+        .timeStartedMillis = util_timeNowMillis(),
         .pc = 0ULL,
         .backtrace = 0ULL,
         .access = 0ULL,
