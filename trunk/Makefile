@@ -41,7 +41,7 @@ ARCH = POSIX
 ifeq ($(OS),Linux)
 	ARCH = LINUX
 	CFLAGS +=  -D_FILE_OFFSET_BITS=64
-	LDFLAGS += -lunwind-ptrace -lunwind-generic -lbfd -lopcodes
+	LDFLAGS += -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt
 	ARCH_SRCS := $(wildcard linux/*.c)
 
 	ifeq ("$(wildcard /usr/include/bfd.h)","")

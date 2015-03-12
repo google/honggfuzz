@@ -215,6 +215,7 @@ int main(int argc, char **argv)
                 usage(EXIT_FAILURE);
                 break;
             }
+            break;
         case 't':
             hfuzz.tmOut = atol(optarg);
             break;
