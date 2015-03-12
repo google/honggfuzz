@@ -512,7 +512,6 @@ bool arch_ptraceAttach(pid_t pid)
             LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_ATTACH) to pid: %d", tasks[i]);
             return false;
         }
-
         int status;
         while (waitpid(tasks[i], &status, WUNTRACED | __WALL) != tasks[i]) ;
 
@@ -529,7 +528,7 @@ bool arch_ptraceAttach(pid_t pid)
             return false;
         }
 
-        LOGMSG(l_INFO, "Successfully attached to pid/tid: %d", tasks[i]);
+        LOGMSG(l_DEBUG, "Successfully attached to pid/tid: %d", tasks[i]);
     }
     return true;
 }
@@ -539,5 +538,9 @@ bool arch_ptracePrepare(honggfuzz_t * hfuzz)
     if (!hfuzz->pid) {
         return true;
     }
-    return arch_ptraceAttach(hfuzz->pid);
+    if (arch_ptraceAttach(hfuzz->pid) == false) {
+        return false;
+    }
+    LOGMSG(l_INFO, "Successfully attacked to PID: %d", hfuzz->pid);
+    return true;
 }
