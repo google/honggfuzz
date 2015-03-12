@@ -84,14 +84,16 @@ endif
 
 SRCS += $(ARCH_SRCS)
 CFLAGS += -D_HF_ARCH_${ARCH}
+INTERCEPTOR_SRCS = $(wildcard interceptor/*.c)
+INTERCEPTOR_LIBS = $(INTERCEPTOR_SRCS:.c=.so)
 
-all: warn_libs $(BIN)
-ifeq ($(OS),Linux)
-	$(CC) $(CFLAGS) -fPIC -shared interceptor/stringmem.c -o interceptor/libstringmem.so
-endif
+all: warn_libs $(BIN) $(INTERCEPTOR_LIBS)
 
-.c.o: %.c
+%.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
+
+%.so: %.c
+	$(CC) -fPIC -shared $(CFLAGS) -o $@ $<
 
 warn_libs:
 ifdef WARN_LIBRARY
