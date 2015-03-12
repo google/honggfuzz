@@ -175,18 +175,22 @@ static void arch_sigFunc(int signo, siginfo_t * si, void *dummy)
     }
 }
 
-static void arch_setTimer(void)
+static void arch_removeTimer(timer_t * timerid)
 {
-    timer_t timerid;
+    timer_delete(*timerid);
+}
+
+static bool arch_setTimer(timer_t * timerid)
+{
     struct sigevent sevp = {
-        .sigev_value.sival_ptr = &timerid,
+        .sigev_value.sival_ptr = timerid,
         .sigev_signo = SIGALRM,
         .sigev_notify = SIGEV_THREAD_ID | SIGEV_SIGNAL,
         ._sigev_un._tid = syscall(__NR_gettid),
     };
-    if (timer_create(CLOCK_REALTIME, &sevp, &timerid) == -1) {
+    if (timer_create(CLOCK_REALTIME, &sevp, timerid) == -1) {
         LOGMSG_P(l_ERROR, "timer_create(CLOCK_REALTIME) failed");
-        return;
+        return false;
     }
     /* 
      * Kick in every 200ms, starting with the next second
@@ -195,8 +199,10 @@ static void arch_setTimer(void)
         .it_value = {.tv_sec = 1,.tv_nsec = 0},
         .it_interval = {.tv_sec = 0,.tv_nsec = 200000000,},
     };
-    if (timer_settime(timerid, 0, &ts, NULL) == -1) {
+    if (timer_settime(*timerid, 0, &ts, NULL) == -1) {
         LOGMSG_P(l_ERROR, "timer_settime() failed");
+        timer_delete(*timerid);
+        return false;
     }
     sigset_t smask;
     sigemptyset(&smask);
@@ -209,10 +215,10 @@ static void arch_setTimer(void)
     };
     if (sigaction(SIGALRM, &sa, NULL) == -1) {
         LOGMSG_P(l_ERROR, "sigaciton(SIGALRM) failed");
-        return;
+        return false;
     }
 
-    return;
+    return true;
 }
 
 static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
@@ -228,7 +234,10 @@ static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    arch_setTimer();
+    timer_t timerid;
+    if (arch_setTimer(&timerid) == false) {
+        LOGMSG(l_FATAL, "Couldn't set timer");
+    }
 
     int perfFd[3];
     if (hfuzz->pid == 0) {
@@ -264,11 +273,11 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 arch_perfAnalyze(hfuzz, fuzzer, perfFd);
             }
             LOGMSG(l_DEBUG, "No more processes to track");
+            arch_removeTimer(&timerid);
             return;
         }
         if (pid == -1) {
             LOGMSG_P(l_FATAL, "wait3() failed");
-            return;
         }
 
         if (hfuzz->pid == 0) {
