@@ -133,6 +133,10 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         }
     }
 
+    for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs) && hfuzz->envs[i]; i++) {
+        putenv(hfuzz->envs[i]);
+    }
+
     if (hfuzz->nullifyStdio) {
         util_nullifyStdio();
     }
@@ -145,14 +149,9 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
             return false;
         }
     }
-
-    for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs) && hfuzz->envs[i]; i++) {
-        putenv(hfuzz->envs[i]);
-    }
-
-/*
- * Wait for the ptrace to attach
- */
+    /*
+     * Wait for the ptrace to attach
+     */
     syscall(__NR_tkill, syscall(__NR_gettid), SIGSTOP);
     execvp(args[0], args);
 
