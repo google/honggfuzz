@@ -76,20 +76,6 @@ struct {
 };
 /*  *INDENT-ON* */
 
-bool arch_ptraceEnable(honggfuzz_t * hfuzz)
-{
-    // We're fuzzing an external process, so just return true
-    if (hfuzz->pid) {
-        return true;
-    }
-
-    if (ptrace(PT_TRACE_ME, 0, 0, 0) == -1) {
-        LOGMSG_P(l_FATAL, "Couldn't attach ptrace to pid %d", getpid());
-        return false;
-    }
-    return true;
-}
-
 static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, uint64_t pc)
 {
     /*
@@ -511,16 +497,13 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
     return true;
 }
 
-bool arch_ptracePrepare(honggfuzz_t * hfuzz)
+bool arch_ptraceAttach(pid_t pid)
 {
-    if (!hfuzz->pid) {
-        return true;
-    }
 #define MAX_THREAD_IN_TASK 4096
     int tasks[MAX_THREAD_IN_TASK + 1];
     tasks[MAX_THREAD_IN_TASK] = 0;
-    if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, hfuzz->pid)) {
-        LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", hfuzz->pid);
+    if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
+        LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", pid);
         return false;
     }
 
@@ -549,4 +532,12 @@ bool arch_ptracePrepare(honggfuzz_t * hfuzz)
         LOGMSG(l_INFO, "Successfully attached to pid/tid: %d", tasks[i]);
     }
     return true;
+}
+
+bool arch_ptracePrepare(honggfuzz_t * hfuzz)
+{
+    if (!hfuzz->pid) {
+        return true;
+    }
+    return arch_ptraceAttach(hfuzz->pid);
 }

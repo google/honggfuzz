@@ -150,10 +150,10 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         putenv(hfuzz->envs[i]);
     }
 
-    if (!arch_ptraceEnable(hfuzz)) {
-        return false;
-    }
-
+/*
+ * Wait for the ptrace to attach
+ */
+    syscall(__NR_tkill, syscall(__NR_gettid), SIGSTOP);
     execvp(args[0], args);
 
     util_recoverStdio();
@@ -230,22 +230,27 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     arch_setTimer();
 
-    int status;
-    pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
-    if (pid == -1) {
-        LOGMSG(l_FATAL, "wait3() pid=-1");
-    }
-    if (!WIFSTOPPED(status)) {
-        LOGMSG(l_FATAL, "PID '%d' is not in a stopped state");
-    }
-
     int perfFd[3];
-    if (arch_perfEnable(pid, hfuzz, perfFd) == false) {
-        return;
+    if (hfuzz->pid == 0) {
+        int status;
+        pid_t pid = wait4(fuzzer->pid, &status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
+        if (pid != pid) {
+            LOGMSG(l_FATAL, "wait4() =! pid (%d)", fuzzer->pid);
+        }
+        if (!WIFSTOPPED(status)) {
+            LOGMSG(l_FATAL, "PID '%d' is not in a stopped state", fuzzer->pid);
+        }
+        if (arch_ptraceAttach(fuzzer->pid) == false) {
+            LOGMSG(l_FATAL, "Couldn't attach to pid %d", fuzzer->pid);
+        }
+        if (arch_perfEnable(fuzzer->pid, hfuzz, perfFd) == false) {
+            LOGMSG(l_FATAL, "Couldn't enable perf counters for pid %d", fuzzer->pid);
+        }
+        arch_ptraceAnalyze(hfuzz, status, fuzzer->pid, fuzzer);
     }
-    arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
 
     for (;;) {
+        int status;
         pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
 
         LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
@@ -255,7 +260,9 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             continue;
         }
         if (pid == -1 && errno == ECHILD) {
-            arch_perfAnalyze(hfuzz, fuzzer, perfFd);
+            if (hfuzz->pid == 0) {
+                arch_perfAnalyze(hfuzz, fuzzer, perfFd);
+            }
             LOGMSG(l_DEBUG, "No more processes to track");
             return;
         }
@@ -264,7 +271,9 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             return;
         }
 
-        arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
+        if (hfuzz->pid == 0) {
+            arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
+        }
     }
 }
 
