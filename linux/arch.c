@@ -186,8 +186,45 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     return false;
 }
 
+static void arch_timerSig(int sig)
+{
+    if (sig != SIGALRM) {
+        LOGMSG(l_FATAL, "sig (%d) != SIGLARM", sig);
+    }
+    return;
+}
+
+static void arch_setTimer(void)
+{
+    sigset_t smask;
+    sigemptyset(&smask);
+    struct sigaction sa = {
+        .sa_handler = arch_timerSig,
+        .sa_sigaction = NULL,
+        .sa_mask = smask,
+        .sa_flags = 0,
+        .sa_restorer = NULL,
+    };
+    if (sigaction(SIGALRM, &sa, NULL) == -1) {
+        LOGMSG_P(l_ERROR, "sigaction(SIGALRM)");
+    }
+    return;
+}
+
+static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    time_t cur = time(NULL);
+    if (cur - fuzzer->timeStarted > hfuzz->tmOut) {
+        LOGMSG(l_WARN, "PID %d took too much time (%d s), limit %d s. Sending SIGKILL",
+               cur - fuzzer->timeStarted, hfuzz->tmOut);
+    }
+    kill(fuzzer->pid, SIGKILL);
+}
+
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
+    arch_setTimer();
+
     int status;
     pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
     if (pid == -1) {
@@ -209,6 +246,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
 
         if (pid == -1 && errno == EINTR) {
+            arch_checkTimeLimit(hfuzz, fuzzer);
             continue;
         }
         if (pid == -1 && errno == ECHILD) {
