@@ -110,11 +110,8 @@ unsigned int _nop(unsigned int x)
                       "    test %%eax, %%eax\n    "
                       "    jz 2f\n                "
                       "    jmp 1b\n               "
-                      "2:\n                       "
-                      "    mov %%edx, %1\n        "
-
-                      :"=r" (x)
-                      :"0" (x)
+                      "2:\n                       " "    mov %%edx, %1\n        ":"=r" (x)
+                      :"0"(x)
                       :"%eax");
 
     return x;
@@ -132,7 +129,11 @@ int __memcmp(const void *m1, const void *m2, size_t n)
             return (s1[i] - s2[i]);
         }
 #if defined(__i386__) || defined(__x86_64__)
-        _nop(1000);
+        if (i == 0) {
+            _nop(10000);
+        } else {
+            _nop(2000);
+        }
 #endif
     }
 #if defined(__i386__) || defined(__x86_64__)
@@ -142,8 +143,9 @@ int __memcmp(const void *m1, const void *m2, size_t n)
 }
 
 __attribute__ ((optimize("0")))
-int memcmp(const void *m1, const void *m2, size_t n) {
-	return __memcmp(m2, m2, n);
+int memcmp(const void *m1, const void *m2, size_t n)
+{
+    return __memcmp(m1, m2, n);
 }
 
 __attribute__ ((optimize("0")))
