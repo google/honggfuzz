@@ -103,16 +103,19 @@ char *strcasestr(const char *haystack, const char *needle)
 __attribute__ ((optimize("0")))
 unsigned int _nop(unsigned int x)
 {
-    __asm__ volatile ("    movl %0, %%eax\n"
-                      " movl $0, %%edx\n"
-                      "1:\n"
-                      "    nop\n"
-                      "    dec %%ecx\n"
-                      "    add %%ecx, %%edx\n"
-                      "    test %%ecx, %%ecx\n"
-                      "    jz 2f\n" "    jmp 1b\n" "2:\n" "    mov %%edx, %1\n":"=r" (x)
-                      :"0"(x)
-                      :"%ecx", "%edx");
+    __asm__ volatile ("    movl %0, %%eax\n       "
+                      "1:\n                       "
+                      "    nop\n                  "
+                      "    dec %%eax\n            "
+                      "    test %%eax, %%eax\n    "
+                      "    jz 2f\n                "
+                      "    jmp 1b\n               "
+                      "2:\n                       "
+                      "    mov %%edx, %1\n        "
+
+                      :"=r" (x)
+                      :"0" (x)
+                      :"%eax");
 
     return x;
 }
@@ -129,11 +132,11 @@ int __memcmp(const void *m1, const void *m2, size_t n)
             return (s1[i] - s2[i]);
         }
 #if defined(__i386__) || defined(__x86_64__)
-        _nop(10000);
+        _nop(1000);
 #endif
     }
 #if defined(__i386__) || defined(__x86_64__)
-    _nop(100000);
+    _nop(10000);
 #endif
     return 0;
 }
