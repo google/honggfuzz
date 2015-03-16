@@ -33,14 +33,17 @@ extern int tolower(int c);
  */
 #pragma GCC optimize ("0")
 
+#if defined(__x86_64__)
+int syscall(int number, ...);
+#endif
+
 void interceptor_increaseBy(unsigned long v)
 {
 #if defined(__x86_64__)
-#include <unistd.h>
-#include <sys/syscall.h>
-    unsigned long gs;
 #define ARCH_GET_GS 0x1004
 #define ARCH_SET_GS 0x1001
+#define __NR_arch_prctl 158
+    unsigned long gs;
     syscall(__NR_arch_prctl, ARCH_GET_GS, &gs);
     gs += v;
     syscall(__NR_arch_prctl, ARCH_SET_GS, gs);
