@@ -210,6 +210,9 @@ int main(int argc, char **argv)
             case 'e':
                 hfuzz.dynFileMethod |= _HF_DYNFILE_UNIQUE_EDGE_COUNT;
                 break;
+            case 'f':
+                hfuzz.dynFileMethod |= _HF_DYNFILE_CUSTOM;
+                break;
             default:
                 LOGMSG(l_ERROR, "Unknown -D mode");
                 usage(EXIT_FAILURE);

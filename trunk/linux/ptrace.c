@@ -115,6 +115,86 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, uint64_t pc)
     return memsz;
 }
 
+uint64_t arch_ptraceGetCustomPerf(pid_t pid)
+{
+#if defined(__i386__) || defined(__x86_64__)
+    char buf[1024];
+    struct iovec pt_iov = {
+        .iov_base = buf,
+        .iov_len = sizeof(buf),
+    };
+    if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
+        return 0ULL;
+    }
+    struct user_regs_struct_32 {
+        uint32_t ebx;
+        uint32_t ecx;
+        uint32_t edx;
+        uint32_t esi;
+        uint32_t edi;
+        uint32_t ebp;
+        uint32_t eax;
+        uint16_t ds, __ds;
+        uint16_t es, __es;
+        uint16_t fs, __fs;
+        uint16_t gs, __gs;
+        uint32_t orig_eax;
+        uint32_t eip;
+        uint16_t cs, __cs;
+        uint32_t eflags;
+        uint32_t esp;
+        uint16_t ss, __ss;
+    };
+
+    struct user_regs_struct_64 {
+        uint64_t r15;
+        uint64_t r14;
+        uint64_t r13;
+        uint64_t r12;
+        uint64_t bp;
+        uint64_t bx;
+        uint64_t r11;
+        uint64_t r10;
+        uint64_t r9;
+        uint64_t r8;
+        uint64_t ax;
+        uint64_t cx;
+        uint64_t dx;
+        uint64_t si;
+        uint64_t di;
+        uint64_t orig_ax;
+        uint64_t ip;
+        uint64_t cs;
+        uint64_t flags;
+        uint64_t sp;
+        uint64_t ss;
+        uint64_t fs_base;
+        uint64_t gs_base;
+        uint64_t ds;
+        uint64_t es;
+        uint64_t fs;
+        uint64_t gs;
+    };
+
+    /*
+     * 32-bit
+     */
+    if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
+        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
+        return (uint64_t) r32->gs;
+    }
+    /*
+     * 64-bit
+     */
+    if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
+        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
+        return (uint64_t) r64->gs_base;
+    }
+    LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
+#endif
+    return 0ULL;
+}
+
 static bool arch_getPC(pid_t pid, uint64_t * pc)
 {
     char buf[1024];
@@ -516,7 +596,8 @@ bool arch_ptraceAttach(pid_t pid)
         while (waitpid(tasks[i], &status, WUNTRACED | __WALL) != tasks[i]) ;
 
         if (ptrace(PTRACE_SETOPTIONS, tasks[i], NULL,
-                   PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK) == -1) {
+                   PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK |
+                   PTRACE_O_TRACEEXIT | PTRACE_O_EXITKILL) == -1) {
             LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_SETOPTIONS) pid: %d", tasks[i]);
             ptrace(PT_DETACH, tasks[i], 0, SIGCONT);
             return false;
