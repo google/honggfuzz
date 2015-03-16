@@ -99,8 +99,27 @@ char *strcasestr(const char *haystack, const char *needle)
     return NULL;
 }
 
+#if defined(__i386__) || defined(__x86_64__)
 __attribute__ ((optimize("0")))
-int memcmp(const void *m1, const void *m2, size_t n)
+unsigned int _nop(unsigned int x)
+{
+    __asm__ volatile ("    movl %0, %%eax\n"
+                      " movl $0, %%edx\n"
+                      "1:\n"
+                      "    nop\n"
+                      "    dec %%ecx\n"
+                      "    add %%ecx, %%edx\n"
+                      "    test %%ecx, %%ecx\n"
+                      "    jz 2f\n" "    jmp 1b\n" "2:\n" "    mov %%edx, %1\n":"=r" (x)
+                      :"0"(x)
+                      :"%ecx", "%edx");
+
+    return x;
+}
+#endif
+
+__attribute__ ((optimize("0")))
+int __memcmp(const void *m1, const void *m2, size_t n)
 {
     const char *s1 = (const char *)m1;
     const char *s2 = (const char *)m2;
@@ -109,8 +128,19 @@ int memcmp(const void *m1, const void *m2, size_t n)
         if (s1[i] != s2[i]) {
             return (s1[i] - s2[i]);
         }
+#if defined(__i386__) || defined(__x86_64__)
+        _nop(10000);
+#endif
     }
+#if defined(__i386__) || defined(__x86_64__)
+    _nop(100000);
+#endif
     return 0;
+}
+
+__attribute__ ((optimize("0")))
+int memcmp(const void *m1, const void *m2, size_t n) {
+	return __memcmp(m2, m2, n);
 }
 
 __attribute__ ((optimize("0")))
@@ -148,10 +178,10 @@ void *memmem(const void *haystack, size_t haystacklen, const void *needle, size_
 
 int _CMP_EQ(unsigned long a, unsigned long b)
 {
-        return (memcmp(&a, &b, sizeof(a)) == 0);
+    return (__memcmp(&a, &b, sizeof(a)) == 0);
 }
 
 int _CMP_NEQ(unsigned long a, unsigned long b)
 {
-        return (memcmp(&a, &b, sizeof(a)) != 0);
+    return (__memcmp(&a, &b, sizeof(a)) != 0);
 }
