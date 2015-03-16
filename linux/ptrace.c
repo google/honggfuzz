@@ -115,8 +115,11 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, uint64_t pc)
     return memsz;
 }
 
-uint64_t arch_ptraceGetCustomPerf(pid_t pid)
+uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
 {
+    if ((hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) == 0) {
+        return 0ULL;
+    }
 #if defined(__i386__) || defined(__x86_64__)
     char buf[1024];
     struct iovec pt_iov = {
