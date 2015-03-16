@@ -254,10 +254,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (arch_perfEnable(fuzzer->pid, hfuzz, perfFd) == false) {
             LOGMSG(l_FATAL, "Couldn't enable perf counters for pid %d", fuzzer->pid);
         }
-        uint64_t tmp = arch_ptraceGetCustomPerf(pid);
-        if (tmp != 0ULL) {
-            fuzzer->branchCnt[3] = tmp;
-        }
         arch_ptraceAnalyze(hfuzz, status, fuzzer->pid, fuzzer);
     }
 
@@ -284,7 +280,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
 
         if (hfuzz->pid == 0) {
-            uint64_t tmp = arch_ptraceGetCustomPerf(pid);
+            uint64_t tmp = arch_ptraceGetCustomPerf(hfuzz, pid);
             if (tmp != 0ULL) {
                 fuzzer->branchCnt[3] = tmp;
             }
