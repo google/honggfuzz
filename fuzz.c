@@ -91,7 +91,8 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
 
     /* The first pass should be on an empty/initial file */
-    if (hfuzz->branchBestCnt[0] > 0 || hfuzz->branchBestCnt[1] > 0 || hfuzz->branchBestCnt[2] > 0) {
+    if (hfuzz->branchBestCnt[0] > 0 || hfuzz->branchBestCnt[1] > 0 || hfuzz->branchBestCnt[2] > 0
+        || hfuzz->branchBestCnt[3] > 0) {
         mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz);
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
@@ -270,24 +271,29 @@ static void *fuzz_threadNew(void *arg)
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
 
+        LOGMSG(l_INFO,
+               "File size (New/Best): %zu/%zu, Perf feedback (instr/branch/block-edge/custom): Best: [%"
+               PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64 ",%"
+               PRIu64 ",%" PRIu64 "]", fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz,
+               hfuzz->branchBestCnt[0], hfuzz->branchBestCnt[1], hfuzz->branchBestCnt[2],
+               hfuzz->branchBestCnt[3], fuzzer.branchCnt[0], fuzzer.branchCnt[1],
+               fuzzer.branchCnt[2], fuzzer.branchCnt[3]);
+
         int64_t diff0 = hfuzz->branchBestCnt[0] - fuzzer.branchCnt[0];
         int64_t diff1 = hfuzz->branchBestCnt[1] - fuzzer.branchCnt[1];
         int64_t diff2 = hfuzz->branchBestCnt[2] - fuzzer.branchCnt[2];
-
-        if (diff2 < 0) {
-            diff0 = hfuzz->branchBestCnt[0] = fuzzer.branchCnt[0] = 0;
-            diff1 = hfuzz->branchBestCnt[1] = fuzzer.branchCnt[1] = 0;
-        }
+        int64_t diff3 = hfuzz->branchBestCnt[3] - fuzzer.branchCnt[3];
 
         if (diff0 <= hfuzz->dynamicRegressionCnt && diff1 <= hfuzz->dynamicRegressionCnt
-            && diff2 <= hfuzz->dynamicRegressionCnt) {
+            && diff2 <= hfuzz->dynamicRegressionCnt && diff3 <= hfuzz->dynamicRegressionCnt) {
 
             LOGMSG(l_INFO,
                    "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr, High): %"
-                   PRId64 "/%" PRId64 "/%" PRId64 ", %" PRId64 "/%" PRId64 "/%" PRId64,
-                   fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz, fuzzer.branchCnt[0],
-                   fuzzer.branchCnt[1], fuzzer.branchCnt[2], hfuzz->branchBestCnt[0],
-                   hfuzz->branchBestCnt[1], hfuzz->branchBestCnt[2]);
+                   PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 ",%" PRId64 "/%" PRId64 "/%" PRId64
+                   "/%" PRId64, fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz, fuzzer.branchCnt[0],
+                   fuzzer.branchCnt[1], fuzzer.branchCnt[2], fuzzer.branchCnt[3],
+                   hfuzz->branchBestCnt[0], hfuzz->branchBestCnt[1], hfuzz->branchBestCnt[2],
+                   hfuzz->branchBestCnt[3]);
 
             memcpy(hfuzz->dynamicFileBest, fuzzer.dynamicFile, fuzzer.dynamicFileSz);
 
@@ -301,6 +307,9 @@ static void *fuzz_threadNew(void *arg)
             hfuzz->branchBestCnt[2] =
                 fuzzer.branchCnt[2] >
                 hfuzz->branchBestCnt[2] ? fuzzer.branchCnt[2] : hfuzz->branchBestCnt[2];
+            hfuzz->branchBestCnt[3] =
+                fuzzer.branchCnt[3] >
+                hfuzz->branchBestCnt[3] ? fuzzer.branchCnt[3] : hfuzz->branchBestCnt[3];
 
 #define _HF_CURRENT_BEST "CURRENT_BEST"
 #define _HF_CURRENT_BEST_TMP ".tmp.CURRENT_BEST"
