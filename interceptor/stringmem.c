@@ -34,7 +34,7 @@ extern int tolower(int c);
 #pragma GCC optimize ("0")
 
 __attribute__ ((optimize("0")))
-inline int strcmp(const char *s1, const char *s2)
+int strcmp(const char *s1, const char *s2)
 {
     for (size_t i = 0; s1[i] || s2[i]; i++) {
         if (s1[i] != s2[i]) {
@@ -45,7 +45,7 @@ inline int strcmp(const char *s1, const char *s2)
 }
 
 __attribute__ ((optimize("0")))
-inline int strcasecmp(const char *s1, const char *s2)
+int strcasecmp(const char *s1, const char *s2)
 {
     for (size_t i = 0; s1[i] || s2[i]; i++) {
         if (tolower(s1[i]) != tolower(s2[i])) {
@@ -56,7 +56,7 @@ inline int strcasecmp(const char *s1, const char *s2)
 }
 
 __attribute__ ((optimize("0")))
-inline int strncmp(const char *s1, const char *s2, size_t n)
+int strncmp(const char *s1, const char *s2, size_t n)
 {
     for (size_t i = 0; (s1[i] || s2[i]) && i < n; i++) {
         if (s1[i] != s2[i]) {
@@ -67,7 +67,7 @@ inline int strncmp(const char *s1, const char *s2, size_t n)
 }
 
 __attribute__ ((optimize("0")))
-inline int strncasecmp(const char *s1, const char *s2, size_t n)
+int strncasecmp(const char *s1, const char *s2, size_t n)
 {
     for (size_t i = 0; (s1[i] || s2[i]) && i < n; i++) {
         if (tolower(s1[i]) != tolower(s2[i])) {
@@ -78,7 +78,7 @@ inline int strncasecmp(const char *s1, const char *s2, size_t n)
 }
 
 __attribute__ ((optimize("0")))
-inline char *strstr(const char *haystack, const char *needle)
+char *strstr(const char *haystack, const char *needle)
 {
     for (size_t i = 0; haystack[i]; i++) {
         if (strcmp(&haystack[i], needle) == 0) {
@@ -89,7 +89,7 @@ inline char *strstr(const char *haystack, const char *needle)
 }
 
 __attribute__ ((optimize("0")))
-inline char *strcasestr(const char *haystack, const char *needle)
+char *strcasestr(const char *haystack, const char *needle)
 {
     for (size_t i = 0; haystack[i]; i++) {
         if (strcasecmp(&haystack[i], needle) == 0) {
@@ -100,7 +100,7 @@ inline char *strcasestr(const char *haystack, const char *needle)
 }
 
 __attribute__ ((optimize("0")))
-inline int memcmp(const void *m1, const void *m2, size_t n)
+int memcmp(const void *m1, const void *m2, size_t n)
 {
     const char *s1 = (const char *)m1;
     const char *s2 = (const char *)m2;
@@ -114,7 +114,7 @@ inline int memcmp(const void *m1, const void *m2, size_t n)
 }
 
 __attribute__ ((optimize("0")))
-inline int bcmp(const void *m1, const void *m2, size_t n)
+int bcmp(const void *m1, const void *m2, size_t n)
 {
     const char *s1 = (const char *)m1;
     const char *s2 = (const char *)m2;
@@ -128,7 +128,7 @@ inline int bcmp(const void *m1, const void *m2, size_t n)
 }
 
 __attribute__ ((optimize("0")))
-inline void *memmem(const void *haystack, size_t haystacklen, const void *needle, size_t needlelen)
+void *memmem(const void *haystack, size_t haystacklen, const void *needle, size_t needlelen)
 {
     if (needlelen > haystacklen) {
         return NULL;
@@ -144,4 +144,14 @@ inline void *memmem(const void *haystack, size_t haystacklen, const void *needle
         }
     }
     return NULL;
+}
+
+int _CMP_EQ(unsigned long a, unsigned long b)
+{
+        return (memcmp(&a, &b, sizeof(a)) == 0);
+}
+
+int _CMP_NEQ(unsigned long a, unsigned long b)
+{
+        return (memcmp(&a, &b, sizeof(a)) != 0);
 }
