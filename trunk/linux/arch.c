@@ -236,7 +236,7 @@ static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     timer_t timerid;
-    if (arch_setTimer(&timerid) == false) {
+    if (fuzzer->pid != hfuzz->pid && arch_setTimer(&timerid) == false) {
         LOGMSG(l_FATAL, "Couldn't set timer");
     }
 
@@ -274,7 +274,9 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 arch_perfAnalyze(hfuzz, fuzzer, perfFd);
             }
             LOGMSG(l_DEBUG, "No more processes to track");
-            arch_removeTimer(&timerid);
+            if (fuzzer->pid != hfuzz->pid) {
+                arch_removeTimer(&timerid);
+            }
             return;
         }
         if (pid == -1) {
