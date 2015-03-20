@@ -152,7 +152,9 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     /*
      * Wait for the ptrace to attach
      */
-    syscall(__NR_tkill, syscall(__NR_gettid), SIGSTOP);
+    if (hfuzz->pid == 0) {
+        syscall(__NR_tkill, syscall(__NR_gettid), SIGSTOP);
+    }
     execvp(args[0], args);
 
     util_recoverStdio();
@@ -259,9 +261,9 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     for (;;) {
         int status;
-        pid_t pid = wait3(&status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
+        pid_t pid = wait3(&status, __WNOTHREAD | __WALL, NULL);
 
-        LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
+        LOGMSG_P(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
 
         if (pid == -1 && errno == EINTR) {
             arch_checkTimeLimit(hfuzz, fuzzer);
