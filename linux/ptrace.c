@@ -600,7 +600,7 @@ bool arch_ptraceAttach(pid_t pid)
 
         if (ptrace(PTRACE_SETOPTIONS, tasks[i], NULL,
                    PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK |
-                   PTRACE_O_TRACEEXIT | PTRACE_O_EXITKILL) == -1) {
+                   PTRACE_O_TRACEEXIT) == -1) {
             LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_SETOPTIONS) pid: %d", tasks[i]);
             ptrace(PT_DETACH, tasks[i], 0, SIGCONT);
             return false;
