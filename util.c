@@ -65,7 +65,7 @@ void util_rndBuf(uint8_t * buf, size_t sz)
     /* MMIX LCG PRNG */
     uint64_t a = 6364136223846793005ULL;
     uint64_t c = 1442695040888963407ULL;
-    uint64_t x = util_rndGet(0, 1ULL << 47);
+    uint64_t x = util_rndGet(0, 1ULL << 60);
 
     for (size_t i = 0; i < sz; i++) {
         x = (a * x + c);

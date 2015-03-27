@@ -284,6 +284,12 @@ static void *fuzz_threadNew(void *arg)
         int64_t diff2 = hfuzz->branchBestCnt[2] - fuzzer.branchCnt[2];
         int64_t diff3 = hfuzz->branchBestCnt[3] - fuzzer.branchCnt[3];
 
+        if (diff2 < 0) {
+            diff0 = hfuzz->branchBestCnt[0] = fuzzer.branchCnt[0] = 0;
+            diff1 = hfuzz->branchBestCnt[1] = fuzzer.branchCnt[1] = 0;
+            diff3 = hfuzz->branchBestCnt[3] = fuzzer.branchCnt[3] = 0;
+        }
+
         if (diff0 <= hfuzz->dynamicRegressionCnt && diff1 <= hfuzz->dynamicRegressionCnt
             && diff2 <= hfuzz->dynamicRegressionCnt && diff3 <= hfuzz->dynamicRegressionCnt) {
 

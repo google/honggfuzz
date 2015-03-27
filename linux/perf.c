@@ -48,6 +48,8 @@
 static __thread uint8_t *perfMmapBuf = NULL;
 /* By default it's 1MB which allows to run 1 fuzzing thread */
 static __thread size_t perfMmapSz = 0UL;
+/* Unique path counter */
+static __thread uint64_t perfBranchesCnt = 0;
 /* Have we seen PERF_RECRORD_LOST events */
 static __thread uint64_t perfRecordsLost = 0;
 /* Don't record branches using address above this parameter */
@@ -60,12 +62,7 @@ static __thread uint8_t perfBloom[_HF_PERF_BLOOM_SZ];
 
 static size_t arch_perfCountBranches(void)
 {
-    size_t cnt = 0;
-    for (size_t i = 0; i < sizeof(perfBloom); i += sizeof(uint64_t)) {
-        uint64_t *ptr = (uint64_t *) & perfBloom[i];
-        cnt += __builtin_popcountll(*ptr);
-    }
-    return cnt;
+    return perfBranchesCnt;
 }
 
 static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
@@ -95,6 +92,10 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
     size_t byteOff = pos / 8;
     size_t bitOff = pos % 8;
 
+    if (perfBloom[byteOff] & ((uint8_t) 1 << bitOff)) {
+        return;
+    }
+    perfBranchesCnt++;
     perfBloom[byteOff] |= (uint8_t) 1 << bitOff;
 }
 
@@ -237,7 +238,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.sample_type = PERF_SAMPLE_IP;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.watermark = 1;
-        pe.wakeup_watermark = perfMmapSz / 2;
+        pe.wakeup_watermark = perfMmapSz / 4;
         break;
     case _HF_DYNFILE_UNIQUE_EDGE_COUNT:
         bzero(perfBloom, sizeof(perfBloom));
@@ -247,7 +248,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.watermark = 1;
-        pe.wakeup_watermark = perfMmapSz / 2;
+        pe.wakeup_watermark = perfMmapSz / 4;
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%d' for PID: %d", method, pid);
