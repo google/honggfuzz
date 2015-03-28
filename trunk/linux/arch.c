@@ -274,23 +274,24 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 arch_perfAnalyze(hfuzz, fuzzer, perfFd);
             }
             LOGMSG(l_DEBUG, "No more processes to track");
-            if (fuzzer->pid != hfuzz->pid) {
-                arch_removeTimer(&timerid);
-            }
-            return;
+            break;
         }
         if (pid == -1) {
             LOGMSG_P(l_FATAL, "wait3() failed");
         }
 
         if (hfuzz->pid == 0) {
-            uint64_t tmp = arch_ptraceGetCustomPerf(hfuzz, pid);
-            if (tmp != 0ULL) {
+            uint64_t tmp;
+            if ((tmp = arch_ptraceGetCustomPerf(hfuzz, pid)) != 0ULL) {
                 fuzzer->branchCnt[3] = tmp;
             }
             arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
         }
     }
+    if (fuzzer->pid != hfuzz->pid) {
+        arch_removeTimer(&timerid);
+    }
+    return;
 }
 
 bool arch_archInit(honggfuzz_t * hfuzz)
