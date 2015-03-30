@@ -259,19 +259,19 @@ bool files_init(honggfuzz_t * hfuzz)
         return false;
     }
 
-    if (st.st_size > (off_t) hfuzz->maxFileSz) {
-        LOGMSG(l_ERROR,
-               "File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %" PRId64,
-               hfuzz->inputFile, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
-        return false;
-    }
-
     if (S_ISDIR(st.st_mode)) {
         return files_readdir(hfuzz);
     }
 
     if (!S_ISREG(st.st_mode)) {
         LOGMSG(l_ERROR, "'%s' is not a regular file, nor a directory", hfuzz->inputFile);
+        return false;
+    }
+
+    if (st.st_size > (off_t) hfuzz->maxFileSz) {
+        LOGMSG(l_ERROR,
+               "File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %" PRId64,
+               hfuzz->inputFile, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
         return false;
     }
 
