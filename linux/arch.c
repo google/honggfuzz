@@ -256,10 +256,10 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
     }
     if (arch_ptraceAttach(ptracePid) == false) {
-        LOGMSG(l_FATAL, "Couldn't attach to pid %d", fuzzer->pid);
+        LOGMSG(l_FATAL, "Couldn't attach to pid %d", ptracePid);
     }
     if (arch_perfEnable(ptracePid, hfuzz, perfFd) == false) {
-        LOGMSG(l_FATAL, "Couldn't enable perf counters for pid %d", fuzzer->pid);
+        LOGMSG(l_FATAL, "Couldn't enable perf counters for pid %d", ptracePid);
     }
 
     for (;;) {
