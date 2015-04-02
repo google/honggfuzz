@@ -153,6 +153,7 @@ int main(int argc, char **argv)
         .dynamicRegressionCnt = 0,
         .dynamicCutOffAddr = ~(0ULL),
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
+        .ptraceAttached = false,
     };
 
     if (argc < 2) {
@@ -286,6 +287,11 @@ int main(int argc, char **argv)
     if (strchr(hfuzz.fileExtn, '/')) {
         LOGMSG(l_FATAL, "The file extension contains the '/' character: '%s'", hfuzz.fileExtn);
         usage(false);
+    }
+
+    if (hfuzz.pid > 0) {
+        LOGMSG(l_INFO, "PID=%d specified, lowering maximum number of concurrent threads to 1");
+        hfuzz.threadsMax = 1;
     }
 
     LOGMSG(l_INFO,

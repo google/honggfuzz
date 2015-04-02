@@ -616,15 +616,3 @@ bool arch_ptraceAttach(pid_t pid)
     }
     return true;
 }
-
-bool arch_ptracePrepare(honggfuzz_t * hfuzz)
-{
-    if (!hfuzz->pid) {
-        return true;
-    }
-    if (arch_ptraceAttach(hfuzz->pid) == false) {
-        return false;
-    }
-    LOGMSG(l_INFO, "Successfully attacked to PID: %d", hfuzz->pid);
-    return true;
-}
