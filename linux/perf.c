@@ -402,9 +402,9 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int *perfFd)
     if ((hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT)
         || (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT)) {
         ioctl(perfFd[2], PERF_EVENT_IOC_DISABLE, 0);
+        close(perfFd[2]);
         arch_perfMmapParse();
         edgeCount = arch_perfCountBranches();
-        close(perfFd[2]);
 
         if (perfRecordsLost > 0UL) {
             LOGMSG(l_WARN,
