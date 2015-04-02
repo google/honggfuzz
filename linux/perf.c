@@ -105,7 +105,9 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
 
+    __sync_synchronize();
     register uint64_t dataHeadOff = pem->data_head % perfMmapSz;
+    __sync_synchronize();
     register uint64_t dataTailOff = pem->data_tail % perfMmapSz;
     /* Memory barrier - needed as per perf_event_open(2) */
     __sync_synchronize();
