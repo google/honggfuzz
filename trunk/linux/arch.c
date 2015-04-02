@@ -235,7 +235,7 @@ static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    pid_t ptracePid = (hfuzz->pid) ? hfuzz->pid : fuzzer->pid;
+    pid_t ptracePid = (hfuzz->pid > 0) ? hfuzz->pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
 
     timer_t timerid;
@@ -290,8 +290,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
             continue;
         }
-
-        if (pid == childPid && (WIFEXITED(childPid) || WIFSIGNALED(childPid))) {
+        if (pid == childPid && (WIFEXITED(status) || WIFSIGNALED(status))) {
             arch_perfAnalyze(hfuzz, fuzzer, perfFd);
             break;
         }
