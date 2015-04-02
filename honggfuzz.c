@@ -153,7 +153,6 @@ int main(int argc, char **argv)
         .dynamicRegressionCnt = 0,
         .dynamicCutOffAddr = ~(0ULL),
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
-        .ptraceAttached = false,
     };
 
     if (argc < 2) {
