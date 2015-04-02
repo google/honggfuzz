@@ -152,9 +152,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     /*
      * Wait for the ptrace to attach
      */
-    if (hfuzz->pid == 0) {
-        syscall(__NR_tkill, syscall(__NR_gettid), SIGSTOP);
-    }
+    syscall(__NR_tkill, syscall(__NR_gettid), SIGSTOP);
     execvp(args[0], args);
 
     util_recoverStdio();
@@ -246,20 +244,21 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int perfFd[3];
 
     int status;
-    if (childPid == ptracePid) {
-        pid_t pid = wait4(ptracePid, &status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
-        if (pid != ptracePid) {
-            LOGMSG(l_FATAL, "wait4() =! pid (%d)", ptracePid);
-        }
-        if (!WIFSTOPPED(status)) {
-            LOGMSG(l_FATAL, "PID '%d' is not in a stopped state", fuzzer->pid);
-        }
+    pid_t pid = wait4(childPid, &status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
+    if (pid != childPid) {
+    	LOGMSG(l_FATAL, "wait4() =! pid (%d)", childPid);
+    }
+    if (!WIFSTOPPED(status)) {
+        LOGMSG(l_FATAL, "PID '%d' is not in a stopped state", pid);
     }
     if (arch_ptraceAttach(ptracePid) == false) {
         LOGMSG(l_FATAL, "Couldn't attach to pid %d", ptracePid);
     }
     if (arch_perfEnable(ptracePid, hfuzz, perfFd) == false) {
         LOGMSG(l_FATAL, "Couldn't enable perf counters for pid %d", ptracePid);
+    }
+    if (childPid != ptracePid) {
+	kill(childPid, SIGCONT);
     }
 
     for (;;) {
