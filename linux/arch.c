@@ -235,28 +235,37 @@ static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
+    pid_t ptracePid = (hfuzz->pid) ? hfuzz->pid : fuzzer->pid;
+    pid_t childPid = fuzzer->pid;
+
     timer_t timerid;
-    if (fuzzer->pid != hfuzz->pid && arch_setTimer(&timerid) == false) {
+    if (arch_setTimer(&timerid) == false) {
         LOGMSG(l_FATAL, "Couldn't set timer");
     }
 
     int perfFd[3];
-    if (hfuzz->pid == 0) {
-        int status;
-        pid_t pid = wait4(fuzzer->pid, &status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
-        if (pid != pid) {
-            LOGMSG(l_FATAL, "wait4() =! pid (%d)", fuzzer->pid);
+
+    int status;
+    if (childPid == ptracePid) {
+        pid_t pid = wait4(ptracePid, &status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
+        if (pid != ptracePid) {
+            LOGMSG(l_FATAL, "wait4() =! pid (%d)", ptracePid);
         }
         if (!WIFSTOPPED(status)) {
             LOGMSG(l_FATAL, "PID '%d' is not in a stopped state", fuzzer->pid);
         }
-        if (arch_ptraceAttach(fuzzer->pid) == false) {
+    }
+    if (hfuzz->ptraceAttached == false) {
+        if (arch_ptraceAttach(ptracePid) == false) {
             LOGMSG(l_FATAL, "Couldn't attach to pid %d", fuzzer->pid);
         }
-        if (arch_perfEnable(fuzzer->pid, hfuzz, perfFd) == false) {
-            LOGMSG(l_FATAL, "Couldn't enable perf counters for pid %d", fuzzer->pid);
-        }
-        arch_ptraceAnalyze(hfuzz, status, fuzzer->pid, fuzzer);
+    }
+    if (ptracePid != childPid) {
+        hfuzz->ptraceAttached = true;
+    }
+
+    if (arch_perfEnable(ptracePid, hfuzz, perfFd) == false) {
+        LOGMSG(l_FATAL, "Couldn't enable perf counters for pid %d", fuzzer->pid);
     }
 
     for (;;) {
@@ -270,9 +279,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             continue;
         }
         if (pid == -1 && errno == ECHILD) {
-            if (hfuzz->pid == 0) {
-                arch_perfAnalyze(hfuzz, fuzzer, perfFd);
-            }
+            arch_perfAnalyze(hfuzz, fuzzer, perfFd);
             LOGMSG(l_DEBUG, "No more processes to track");
             break;
         }
@@ -280,21 +287,34 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             LOGMSG_P(l_FATAL, "wait3() failed");
         }
 
-        if (hfuzz->pid == 0) {
-            uint64_t tmp;
-            if ((tmp = arch_ptraceGetCustomPerf(hfuzz, pid)) != 0ULL) {
-                fuzzer->branchCnt[3] = tmp;
-            }
-            arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
+        uint64_t tmp;
+        if ((tmp = arch_ptraceGetCustomPerf(hfuzz, ptracePid)) != 0ULL) {
+            fuzzer->branchCnt[3] = tmp;
         }
+
+        if (ptracePid == childPid) {
+            arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
+            continue;
+        }
+
+        if (pid == childPid && (WIFEXITED(childPid) || WIFSIGNALED(childPid))) {
+            arch_perfAnalyze(hfuzz, fuzzer, perfFd);
+            break;
+        }
+        if (pid == childPid) {
+            continue;
+        }
+
+        arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
     }
-    if (fuzzer->pid != hfuzz->pid) {
-        arch_removeTimer(&timerid);
-    }
+    arch_removeTimer(&timerid);
     return;
 }
 
 bool arch_archInit(honggfuzz_t * hfuzz)
 {
-    return arch_ptracePrepare(hfuzz);
+    return true;
+    if (hfuzz) {
+        return true;
+    }
 }

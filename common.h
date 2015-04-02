@@ -88,6 +88,7 @@ typedef struct {
     int dynamicRegressionCnt;
     uint64_t dynamicCutOffAddr;
     pthread_mutex_t dynamicFile_mutex;
+    bool ptraceAttached;
 } honggfuzz_t;
 
 typedef struct fuzzer_t {

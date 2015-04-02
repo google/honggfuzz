@@ -336,54 +336,6 @@ static void *fuzz_threadNew(void *arg)
     return NULL;
 }
 
-static void *fuzz_threadPid(void *arg)
-{
-    honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
-    if (!arch_archInit(hfuzz)) {
-        LOGMSG(l_FATAL, "Couldn't prepare parent for fuzzing");
-    }
-
-    fuzzer_t fuzzer = {
-        .pid = hfuzz->pid,
-        .timeStartedMillis = util_timeNowMillis(),
-        .pc = 0ULL,
-        .backtrace = 0ULL,
-        .access = 0ULL,
-        .exception = 0,
-        .dynamicFileSz = 0,
-        .dynamicFile = malloc(hfuzz->maxFileSz),
-        .branchCnt = {[0 ... (ARRAYSIZE(fuzzer.branchCnt) - 1)] = 0}
-        ,
-        .report = {'\0'}
-    };
-    if (fuzzer.dynamicFile == NULL) {
-        LOGMSG(l_FATAL, "malloc(%zu) failed", hfuzz->maxFileSz);
-    }
-
-    char fileName[] = ".honggfuzz.empty.XXXXXX";
-    int fd;
-    if ((fd = mkstemp(fileName)) == -1) {
-        free(fuzzer.dynamicFile);
-        LOGMSG_P(l_ERROR, "Couldn't create a temporary file");
-        return NULL;
-    }
-    close(fd);
-
-    strncpy(fuzzer.origFileName, "PID_FUZZING", PATH_MAX);
-    strncpy(fuzzer.fileName, fileName, PATH_MAX);
-
-    arch_reapChild(hfuzz, &fuzzer);
-    unlink(fuzzer.fileName);
-    report_Report(hfuzz, fuzzer.report);
-    free(fuzzer.dynamicFile);
-
-    // There's no more hfuzz->pid to analyze. Just exit
-    LOGMSG(l_INFO, "PID: %d exited. Exiting", fuzzer.pid);
-    exit(EXIT_SUCCESS);
-
-    return NULL;
-}
-
 static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
 {
     pthread_attr_t attr;
@@ -411,11 +363,8 @@ void fuzz_main(honggfuzz_t * hfuzz)
     if (hfuzz->sem == SEM_FAILED) {
         LOGMSG_P(l_FATAL, "sem_open() failed");
     }
-    // If we're doing a PID fuzzing, the parent of the PID will be a
-    // dedicated thread anyway
-    if (hfuzz->pid) {
-        fuzz_runThread(hfuzz, fuzz_threadPid);
-    } else {
+
+    if (hfuzz->pid == 0) {
         if (!arch_archInit(hfuzz)) {
             LOGMSG(l_FATAL, "Couldn't prepare parent for fuzzing");
         }
