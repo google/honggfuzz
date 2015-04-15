@@ -246,7 +246,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int status;
     pid_t pid = wait4(childPid, &status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
     if (pid != childPid) {
-    	LOGMSG(l_FATAL, "wait4() =! pid (%d)", childPid);
+        LOGMSG(l_FATAL, "wait4() =! pid (%d)", childPid);
     }
     if (!WIFSTOPPED(status)) {
         LOGMSG(l_FATAL, "PID '%d' is not in a stopped state", pid);
