@@ -78,7 +78,7 @@ static void mangle_Bit(uint8_t * buf, size_t bufSz, size_t off)
 static void mangle_Magic(uint8_t * buf, size_t bufSz, size_t off)
 {
     /*  *INDENT-OFF* */
-    const struct {
+    static const struct {
         const uint8_t val[8];
         const size_t size;
     } mangleMagicVals[] = {
