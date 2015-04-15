@@ -162,10 +162,13 @@ void util_recoverStdio(void)
     dup2(fd, 1);
     dup2(fd, 2);
 
+    if (tcsetpgrp(fd, getpid()) == -1) {
+        LOGMSG_P(l_WARN, "tcsetpgrp(%d) failed", getpid());
+    }
+
     if (fd > 2) {
         close(fd);
     }
-
     return;
 }
 
