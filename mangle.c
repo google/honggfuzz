@@ -38,7 +38,6 @@
 static void mangle_Overwrite(uint8_t * dst, const uint8_t * src, size_t dstSz, size_t off,
                              size_t sz)
 {
-    return;
     size_t maxToCopy = dstSz - off;
     if (sz > maxToCopy) {
         sz = maxToCopy;
