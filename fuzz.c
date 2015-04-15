@@ -355,9 +355,22 @@ static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
 
 void fuzz_main(honggfuzz_t * hfuzz)
 {
+#if defined(_HF_ARCH_DARWIN)
+    /*
+     * In OS X semName cannot exceed SEM_NAME_LEN characters otherwise
+     * sem_open() will fail with ENAMETOOLONG. Apple, doesn't define
+     * SEM_NAME_LEN in any header file so we define it here using the value
+     * of PSEMNAMLEN from bsd/kern/posix_sem.c.
+     */
+    #define SEM_NAME_LEN 31
+    char semName[SEM_NAME_LEN];
+    snprintf(semName, sizeof(semName), "/hgfz.%d.%" PRIx64, getpid(),
+             util_rndGet(1, 1ULL << 62));
+#else                           /* defined(_HF_ARCH_DARWIN) */
     char semName[PATH_MAX];
     snprintf(semName, sizeof(semName), "/honggfuzz.%d.%d.%" PRIx64, getpid(),
              (int)time(NULL), util_rndGet(1, 1ULL << 62));
+#endif
 
     hfuzz->sem = sem_open(semName, O_CREAT, 0644, hfuzz->threadsMax);
     if (hfuzz->sem == SEM_FAILED) {

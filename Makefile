@@ -37,6 +37,7 @@ MARCH ?= $(shell uname -m)
 
 ARCH_SRCS := $(wildcard posix/*.c)
 ARCH = POSIX
+SDK = 
 
 ifeq ($(OS),Linux)
 	ARCH = LINUX
@@ -62,23 +63,38 @@ ifeq ($(OS),Linux)
 endif	# OS
 
 ifeq ($(OS),Darwin)
-	CC ?= cc
-	CFLAGS = -arch x86_64 -O3 -g -ggdb -std=c99 -I. -I~/.homebrew/include -I/usr/include \
+	OS_VERSION = $(shell sw_vers -productVersion)
+ifneq (,$(findstring 10.10,$(OS_VERSION)))
+	SDK_NAME = "macosx10.10"
+	CRASH_REPORT = third_party/CrashReport_Yosemite.o
+else ifneq (,$(findstring 10.9,$(OS_VERSION)))
+	SDK_NAME = "macosx10.9"
+	CRASH_REPORT = third_party/CrashReport_Mavericks.o
+else ifneq (,$(findstring 10.8,$(OS_VERSION)))
+	SDK_NAME = "macosx10.8"
+	CRASH_REPORT = third_party/CrashReport_Mountain_Lion.o
+else
+	SDK_NAME = "macosx"
+	CRASH_REPORT = 
+endif
+	CC = $(shell xcrun --sdk $(SDK_NAME) --find cc)
+	SDK = $(shell xcrun --sdk $(SDK_NAME) --show-sdk-path)
+	CFLAGS = -arch x86_64 -O3 -g -ggdb -std=c99 -isysroot $(SDK) -I. -I~/.homebrew/include -I/usr/include \
 	    -x objective-c \
 		-D_GNU_SOURCE \
 		-pedantic \
-		-Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized -Wcast-align \
-		-Wreturn-type -Wpointer-arith
-	LD ?= cc
+		-Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
+		-Wreturn-type -Wpointer-arith -Wno-gnu-case-range -Wno-gnu-designator \
+		-Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-attributes
+	LD = $(shell xcrun --sdk $(SDK_NAME) --find cc)
 	LDFLAGS = -F/System/Library/PrivateFrameworks -framework CoreSymbolication -framework IOKit \
+		-F$(SDK)/System/Library/Frameworks -F$(SDK)/System/Library/PrivateFrameworks \
 		-framework Foundation -framework ApplicationServices -framework Symbolication \
 		-framework CoreServices -framework CrashReporterSupport -framework CoreFoundation \
 		-framework CommerceKit -lm -L/usr/include -L$(shell echo ~)/.homebrew/lib
 	ARCH_SRCS = $(wildcard mac/*.c)
 	MIG_OUTPUT = mach_exc.h mach_excUser.c mach_excServer.h mach_excServer.c
 	MIG_OBJECTS = mach_excUser.o mach_excServer.o
-	#CRASH_REPORT = third_party/CrashReport_Yosemite.o
-	CRASH_REPORT = third_party/CrashReport_Mavericks.o
 	ARCH = DARWIN
 endif
 
@@ -107,8 +123,8 @@ endif
 $(BIN): $(MIG_OBJECTS) $(OBJS)
 	$(LD) -o $(BIN) $(OBJS) $(MIG_OBJECTS) $(CRASH_REPORT) $(LDFLAGS)
 
-$(MIG_OUTPUT): /usr/include/mach/mach_exc.defs
-	mig -header mach_exc.h -user mach_excUser.c -sheader mach_excServer.h -server mach_excServer.c /usr/include/mach/mach_exc.defs
+$(MIG_OUTPUT): $(SDK)/usr/include/mach/mach_exc.defs
+	mig -header mach_exc.h -user mach_excUser.c -sheader mach_excServer.h -server mach_excServer.c $(SDK)/usr/include/mach/mach_exc.defs
 
 $(MIG_OBJECTS): $(MIG_OUTPUT)
 	$(CC) -c $(CFLAGS) mach_excUser.c

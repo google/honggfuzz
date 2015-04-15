@@ -365,7 +365,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      * First check manually if we have expired childs
      */
 
-    double diff = difftime(time(NULL), fuzzer->timeStarted);
+    double diff = difftime(time(NULL), fuzzer->timeStartedMillis);
     if (diff > (double)hfuzz->tmOut) {
         LOGMSG(l_WARN,
                "Process pid %d is overdue (%f seconds, max %f seconds %f), sending a SIGKILL",
@@ -438,7 +438,7 @@ bool arch_archInit(honggfuzz_t * hfuzz)
      * Generate and register exception port service.
      */
     snprintf(g_service_name, sizeof(g_service_name), "com.google.code.honggfuzz.%d",
-             util_rndGet(0, 999999));
+             (int)util_rndGet(0, 999999));
     if (bootstrap_check_in(bootstrap, g_service_name, &g_exception_port) != KERN_SUCCESS) {
         return false;
     }
