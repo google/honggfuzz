@@ -92,11 +92,10 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
     size_t byteOff = pos / 8;
     size_t bitOff = pos % 8;
 
-    if (perfBloom[byteOff] & ((uint8_t) 1 << bitOff)) {
-        return;
+    uint8_t prev = __sync_fetch_and_or(&perfBloom[byteOff], ((uint8_t) 1 << bitOff));
+    if ((prev & ((uint8_t) 1 << bitOff)) == 0) {
+        perfBranchesCnt++;
     }
-    perfBranchesCnt++;
-    perfBloom[byteOff] |= (uint8_t) 1 << bitOff;
 }
 
 /* Memory Barriers */
