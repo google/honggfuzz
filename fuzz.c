@@ -370,10 +370,8 @@ void fuzz_main(honggfuzz_t * hfuzz)
         LOGMSG_P(l_FATAL, "sem_open() failed");
     }
 
-    if (hfuzz->pid == 0) {
-        if (!arch_archInit(hfuzz)) {
-            LOGMSG(l_FATAL, "Couldn't prepare parent for fuzzing");
-        }
+    if (!arch_archInit(hfuzz)) {
+        LOGMSG(l_FATAL, "Couldn't prepare arch for fuzzing");
     }
 
     for (;;) {
