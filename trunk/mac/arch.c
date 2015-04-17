@@ -299,7 +299,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
          * ...so, if a process sleeps, this one should
          * trigger a signal...
          */
-        it.it_value.tv_sec = hfuzz->tmOut * 2UL;
+        it.it_value.tv_sec = hfuzz->tmOut;
         it.it_value.tv_usec = 0;
         it.it_interval.tv_sec = 0;
         it.it_interval.tv_usec = 0;
@@ -310,12 +310,14 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 
         /*
          * ..if a process sleeps and catches SIGPROF/SIGALRM
-         * rlimits won't help either
+         * rlimits won't help either. However, arch_checkTimeLimit
+         * will send a SIGKILL at tmOut + 2 seconds. That should
+         * do it :)
          */
         struct rlimit rl;
 
-        rl.rlim_cur = hfuzz->tmOut * 2;
-        rl.rlim_max = hfuzz->tmOut * 2;
+        rl.rlim_cur = hfuzz->tmOut + 1;
+        rl.rlim_max = hfuzz->tmOut + 1;
         if (setrlimit(RLIMIT_CPU, &rl) == -1) {
             LOGMSG_P(l_ERROR, "Couldn't enforce the RLIMIT_CPU resource limit");
             return false;
@@ -359,27 +361,43 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     return false;
 }
 
+static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    if (!hfuzz->tmOut) {
+        return;
+    }
+    int64_t curMillis = util_timeNowMillis();
+    int64_t diffMillis = curMillis - fuzzer->timeStartedMillis;
+    if (diffMillis > ((hfuzz->tmOut + 2) * 1000)) {
+        LOGMSG(l_WARN, "PID %d took too much time (limit %ld s). Sending SIGKILL",
+               fuzzer->pid, hfuzz->tmOut);
+        kill(fuzzer->pid, SIGKILL);
+    }
+}
+
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     /*
      * First check manually if we have expired childs
      */
-
-    double diff = difftime(time(NULL), fuzzer->timeStartedMillis);
-    if (diff > (double)hfuzz->tmOut) {
-        LOGMSG(l_WARN,
-               "Process pid %d is overdue (%f seconds, max %f seconds %f), sending a SIGKILL",
-               fuzzer->pid, diff, (double)hfuzz->tmOut);
-        kill(fuzzer->pid, SIGKILL);
-    }
+    arch_checkTimeLimit(hfuzz, fuzzer);
 
     /*
      * Now check for signals using wait4
      */
+    int options = WUNTRACED;
+    if (hfuzz->tmOut) {
+      options |= WNOHANG;
+    }
 
     for (;;) {
         int status = 0;
-        while (wait4(fuzzer->pid, &status, WUNTRACED, NULL) != fuzzer->pid) ;
+        while (wait4(fuzzer->pid, &status, options, NULL) != fuzzer->pid) {
+            if (hfuzz->tmOut) {
+              arch_checkTimeLimit(hfuzz, fuzzer);
+              usleep(0.20 * 1000000);
+            }
+        }
         LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", fuzzer->pid, status);
 
         if (arch_analyzeSignal(hfuzz, status, fuzzer)) {
