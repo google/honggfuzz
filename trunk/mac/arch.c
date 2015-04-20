@@ -387,15 +387,15 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      */
     int options = WUNTRACED;
     if (hfuzz->tmOut) {
-      options |= WNOHANG;
+        options |= WNOHANG;
     }
 
     for (;;) {
         int status = 0;
         while (wait4(fuzzer->pid, &status, options, NULL) != fuzzer->pid) {
             if (hfuzz->tmOut) {
-              arch_checkTimeLimit(hfuzz, fuzzer);
-              usleep(0.20 * 1000000);
+                arch_checkTimeLimit(hfuzz, fuzzer);
+                usleep(0.20 * 1000000);
             }
         }
         LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", fuzzer->pid, status);
