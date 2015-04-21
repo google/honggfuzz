@@ -45,4 +45,6 @@ extern bool files_exists(char *fileName);
 
 extern char *files_basename(char *fileName);
 
+extern bool files_parseDictionary(honggfuzz_t * hfuzz);
+
 #endif
