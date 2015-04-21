@@ -294,9 +294,12 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         return false;
     }
 
-    char *lineptr = NULL;
-    size_t n;
-    while (getdelim(&lineptr, &n, '\0', fDict) > 0) {
+    for (;;) {
+        char *lineptr = NULL;
+        size_t n = 0;
+        if (getdelim(&lineptr, &n, '\0', fDict) == -1) {
+            break;
+        }
         if ((hfuzz->dictionary =
              realloc(hfuzz->dictionary,
                      (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]))) == NULL) {
@@ -310,7 +313,6 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
                hfuzz->dictionary[hfuzz->dictionaryCnt],
                strlen(hfuzz->dictionary[hfuzz->dictionaryCnt]));
         hfuzz->dictionaryCnt += 1;
-        lineptr = NULL;
     }
     LOGMSG(l_INFO, "Loaded %zu words from the dictionary", hfuzz->dictionaryCnt);
     fclose(fDict);
