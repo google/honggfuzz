@@ -294,21 +294,23 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         return false;
     }
 
-    char *lineptr;
+    char *lineptr = NULL;
     size_t n;
     while (getdelim(&lineptr, &n, '\0', fDict) > 0) {
         if ((hfuzz->dictionary =
              realloc(hfuzz->dictionary,
-                     (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary))) == NULL) {
+                     (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]))) == NULL) {
             LOGMSG_P(l_ERROR, "Realloc failed (sz=%zu)",
-                     (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary));
+                     (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]));
             fclose(fDict);
             return false;
         }
         hfuzz->dictionary[hfuzz->dictionaryCnt] = lineptr;
-        LOGMSG(l_DEBUG, "Loaded word: '%s' (len=%zu)", hfuzz->dictionary[hfuzz->dictionaryCnt],
+        LOGMSG(l_DEBUG, "Dictionary: loaded word: '%s' (len=%zu)",
+               hfuzz->dictionary[hfuzz->dictionaryCnt],
                strlen(hfuzz->dictionary[hfuzz->dictionaryCnt]));
         hfuzz->dictionaryCnt += 1;
+        lineptr = NULL;
     }
     LOGMSG(l_INFO, "Loaded %zu words from the dictionary", hfuzz->dictionaryCnt);
     fclose(fDict);
