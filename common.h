@@ -66,6 +66,9 @@ typedef struct {
     char *fileExtn;
     double flipRate;
     char *externalCommand;
+    const char *dictionaryFile;
+    const char **dictionary;
+    size_t dictionaryCnt;
     long tmOut;
     long mutationsMax;
     long mutationsCnt;

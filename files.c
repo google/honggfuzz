@@ -285,3 +285,32 @@ char *files_basename(char *path)
     char *base = strrchr(path, '/');
     return base ? base + 1 : path;
 }
+
+bool files_parseDictionary(honggfuzz_t * hfuzz)
+{
+    FILE *fDict = fopen(hfuzz->dictionaryFile, "rb");
+    if (fDict == NULL) {
+        LOGMSG_P(l_ERROR, "Couldn't open '%s' - R/O mode", hfuzz->dictionaryFile);
+        return false;
+    }
+
+    char *lineptr;
+    size_t n;
+    while (getdelim(&lineptr, &n, '\0', fDict) > 0) {
+        if ((hfuzz->dictionary =
+             realloc(hfuzz->dictionary,
+                     (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary))) == NULL) {
+            LOGMSG_P(l_ERROR, "Realloc failed (sz=%zu)",
+                     (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary));
+            fclose(fDict);
+            return false;
+        }
+        hfuzz->dictionary[hfuzz->dictionaryCnt] = lineptr;
+        LOGMSG(l_DEBUG, "Loaded word: '%s' (len=%zu)", hfuzz->dictionary[hfuzz->dictionaryCnt],
+               strlen(hfuzz->dictionary[hfuzz->dictionaryCnt]));
+        hfuzz->dictionaryCnt += 1;
+    }
+    LOGMSG(l_INFO, "Loaded %zu words from the dictionary", hfuzz->dictionaryCnt);
+    fclose(fDict);
+    return true;
+}
