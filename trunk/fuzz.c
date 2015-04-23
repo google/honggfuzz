@@ -52,15 +52,12 @@
 #include "report.h"
 #include "util.h"
 
-static bool fuzz_sigReceived = false;
+static int fuzz_sigReceived = 0;
 
 static void fuzz_sigHandler(int sig, siginfo_t * si, void *v)
 {
-    fuzz_sigReceived = true;
+    fuzz_sigReceived = sig;
     return;
-    if (sig == SIGSTOP) {
-        return;
-    }
     if (si == NULL) {
         return;
     }
@@ -409,13 +406,13 @@ void fuzz_main(honggfuzz_t * hfuzz)
     }
 
     for (;;) {
-        if (fuzz_sigReceived) {
-            LOGMSG(l_INFO, "Signal received, terminating");
+        if (fuzz_sigReceived > 0) {
+            LOGMSG(l_INFO, "%d signal received, terminating");
             break;
         }
         if (sem_wait(hfuzz->sem) == -1) {
             if (errno == EINTR) {
-              continue;
+                continue;
             }
             LOGMSG_P(l_FATAL, "sem_wait() failed");
         }
@@ -440,5 +437,12 @@ void fuzz_main(honggfuzz_t * hfuzz)
     }
 
     sem_unlink(semName);
+
+    if (fuzz_sigReceived > 0) {
+        signal(SIGTERM, SIG_DFL);
+        signal(SIGINT, SIG_DFL);
+        signal(SIGQUIT, SIG_DFL);
+        raise(fuzz_sigReceived);
+    }
     exit(EXIT_SUCCESS);
 }
