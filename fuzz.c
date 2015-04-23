@@ -391,7 +391,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
             }
 #endif                          /* defined(_HF_ARCH_DARWIN) */
             LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
-            sem_destroy(hfuzz->sem);
+            sem_unlink(semName);
             exit(EXIT_SUCCESS);
         }
 
