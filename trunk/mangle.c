@@ -87,7 +87,8 @@ static void mangle_Bit(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz, size_t 
 static void mangle_Dictionary(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz, size_t off)
 {
     if (hfuzz->dictionaryCnt == 0) {
-        return mangle_Bit(hfuzz, buf, bufSz, off);
+        mangle_Bit(hfuzz, buf, bufSz, off);
+        return;
     }
 
     uint64_t choice = util_rndGet(0, hfuzz->dictionaryCnt - 1);
