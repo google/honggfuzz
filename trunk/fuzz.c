@@ -54,11 +54,17 @@
 
 static bool fuzz_sigReceived = false;
 
-static void fuzz_sigHandler(int sig)
+static void fuzz_sigHandler(int sig, siginfo_t * si, void *v)
 {
     fuzz_sigReceived = true;
     return;
     if (sig == SIGSTOP) {
+        return;
+    }
+    if (si == NULL) {
+        return;
+    }
+    if (v == NULL) {
         return;
     }
 }
@@ -367,9 +373,9 @@ static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
 void fuzz_main(honggfuzz_t * hfuzz)
 {
     struct sigaction sa = {
-        .sa_handler = fuzz_sigHandler,
-        .sa_sigaction = NULL,
-        .sa_flags = 0,
+        .sa_handler = NULL,
+        .sa_sigaction = fuzz_sigHandler,
+        .sa_flags = SA_SIGINFO,
         .sa_restorer = NULL,
     };
     sigemptyset(&sa.sa_mask);
@@ -425,6 +431,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
         hfuzz->mutationsCnt++;
         fuzz_runThread(hfuzz, fuzz_threadNew);
         if (fuzz_sigReceived) {
+            LOGMSG(l_INFO, "Signal received, terminating");
             break;
         }
     }
