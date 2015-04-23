@@ -52,6 +52,17 @@
 #include "report.h"
 #include "util.h"
 
+static bool fuzz_sigReceived = false;
+
+static void fuzz_sigHandler(int sig)
+{
+    fuzz_sigReceived = true;
+    return;
+    if (sig == SIGSTOP) {
+        return;
+    }
+}
+
 static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
 {
     struct timeval tv;
@@ -355,6 +366,23 @@ static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
 
 void fuzz_main(honggfuzz_t * hfuzz)
 {
+    struct sigaction sa = {
+        .sa_handler = fuzz_sigHandler,
+        .sa_sigaction = NULL,
+        .sa_flags = 0,
+        .sa_restorer = NULL,
+    };
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(SIGTERM, &sa, NULL) == -1) {
+        LOGMSG(l_FATAL, "sigaction(SIGTERM) failed");
+    }
+    if (sigaction(SIGINT, &sa, NULL) == -1) {
+        LOGMSG(l_FATAL, "sigaction(SIGTERM) failed");
+    }
+    if (sigaction(SIGQUIT, &sa, NULL) == -1) {
+        LOGMSG(l_FATAL, "sigaction(SIGTERM) failed");
+    }
+
     /*
      * In OS X semName cannot exceed SEM_NAME_LEN characters otherwise
      * sem_open() will fail with ENAMETOOLONG. Apple, doesn't define
@@ -391,11 +419,16 @@ void fuzz_main(honggfuzz_t * hfuzz)
             }
 #endif                          /* defined(_HF_ARCH_DARWIN) */
             LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
-            sem_unlink(semName);
-            exit(EXIT_SUCCESS);
+            break;
         }
 
         hfuzz->mutationsCnt++;
         fuzz_runThread(hfuzz, fuzz_threadNew);
+        if (fuzz_sigReceived) {
+            break;
+        }
     }
+
+    sem_unlink(semName);
+    exit(EXIT_SUCCESS);
 }
