@@ -409,7 +409,14 @@ void fuzz_main(honggfuzz_t * hfuzz)
     }
 
     for (;;) {
+        if (fuzz_sigReceived) {
+            LOGMSG(l_INFO, "Signal received, terminating");
+            break;
+        }
         if (sem_wait(hfuzz->sem) == -1) {
+            if (errno == EINTR) {
+              continue;
+            }
             LOGMSG_P(l_FATAL, "sem_wait() failed");
         }
 
@@ -430,10 +437,6 @@ void fuzz_main(honggfuzz_t * hfuzz)
 
         hfuzz->mutationsCnt++;
         fuzz_runThread(hfuzz, fuzz_threadNew);
-        if (fuzz_sigReceived) {
-            LOGMSG(l_INFO, "Signal received, terminating");
-            break;
-        }
     }
 
     sem_unlink(semName);
