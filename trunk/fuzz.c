@@ -370,10 +370,8 @@ static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
 void fuzz_main(honggfuzz_t * hfuzz)
 {
     struct sigaction sa = {
-        .sa_handler = NULL,
         .sa_sigaction = fuzz_sigHandler,
         .sa_flags = SA_SIGINFO,
-        .sa_restorer = NULL,
     };
     sigemptyset(&sa.sa_mask);
     if (sigaction(SIGTERM, &sa, NULL) == -1) {
@@ -407,7 +405,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
 
     for (;;) {
         if (fuzz_sigReceived > 0) {
-            LOGMSG(l_INFO, "%d signal received, terminating");
+            LOGMSG(l_INFO, "signal %d received, terminating", fuzz_sigReceived);
             break;
         }
         if (sem_wait(hfuzz->sem) == -1) {
