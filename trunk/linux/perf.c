@@ -118,6 +118,7 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
         return ~(0ULL);
     }
 
+    __sync_synchronize();
     register uint64_t ret = *(uint64_t *) (perfMmapBuf + getpagesize() + dataTailOff);
     pem->data_tail = dataTailOff + sizeof(uint64_t);
     __sync_synchronize();

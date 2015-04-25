@@ -378,10 +378,10 @@ void fuzz_main(honggfuzz_t * hfuzz)
         LOGMSG(l_FATAL, "sigaction(SIGTERM) failed");
     }
     if (sigaction(SIGINT, &sa, NULL) == -1) {
-        LOGMSG(l_FATAL, "sigaction(SIGTERM) failed");
+        LOGMSG(l_FATAL, "sigaction(SIGINT) failed");
     }
     if (sigaction(SIGQUIT, &sa, NULL) == -1) {
-        LOGMSG(l_FATAL, "sigaction(SIGTERM) failed");
+        LOGMSG(l_FATAL, "sigaction(SIGQUIT) failed");
     }
 
     /*
@@ -405,7 +405,6 @@ void fuzz_main(honggfuzz_t * hfuzz)
 
     for (;;) {
         if (fuzz_sigReceived > 0) {
-            LOGMSG(l_INFO, "signal %d received, terminating", fuzz_sigReceived);
             break;
         }
         if (sem_wait(hfuzz->sem) == -1) {
@@ -437,6 +436,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
     sem_unlink(semName);
 
     if (fuzz_sigReceived > 0) {
+        LOGMSG(l_INFO, "Signal %d received, terminating", fuzz_sigReceived);
         signal(SIGTERM, SIG_DFL);
         signal(SIGINT, SIG_DFL);
         signal(SIGQUIT, SIG_DFL);
