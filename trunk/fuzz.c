@@ -212,7 +212,9 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, i
 static int fuzz_numOfProc(honggfuzz_t * hfuzz)
 {
     int i;
-    sem_getvalue(hfuzz->sem, &i);
+    if (sem_getvalue(hfuzz->sem, &i) == -1) {
+        return 0;
+    }
     return hfuzz->threadsMax - i;
 }
 
