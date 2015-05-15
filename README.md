@@ -1,6 +1,8 @@
 # honggfuzz #
 
 **Description**
+This is NOT an official Google product.
+
   * A general-purpose, easy-to-use fuzzer with interesting analysis options. See [README](README.md) wiki page for more details
   * Supports hardware-based [feedback-driven fuzzing](docs/FeedbackDrivenFuzzing.md) (requires Linux and a supported CPU model)
   * It works, at least, under GNU/Linux and FreeBSD (possibly under Mac OS X as well)
