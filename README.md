@@ -1,7 +1,6 @@
 # honggfuzz #
 
 **Description**
-This is NOT an official Google product.
 
   * A general-purpose, easy-to-use fuzzer with interesting analysis options. See [README](README.md) wiki page for more details
   * Supports hardware-based [feedback-driven fuzzing](docs/FeedbackDrivenFuzzing.md) (requires Linux and a supported CPU model)
@@ -14,6 +13,8 @@ This is NOT an official Google product.
     * [Multiple bugs in the poppler library](http://lists.freedesktop.org/archives/poppler/2010-November/006726.html)
     * [Multiple exploitable bugs in IDA-Pro](https://www.hex-rays.com/bugbounty.shtml)
 
+
+This is NOT an official Google product.
 
 **Code**
   * Latest version: 0.5 [CHANGELOG](CHANGELOG) - using a fresh version from the code repository is strongly suggested
