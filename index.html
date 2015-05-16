@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Honggfuzz by google</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">Honggfuzz</h1>
+        <p class="header">A general-purpose, easy-to-use fuzzer with interesting analysis options. Supports feedback-driven code coverage modes.</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/google/honggfuzz/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/google/honggfuzz/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/google/honggfuzz">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/google">google</a></p>
+
+
+      </header>
+      <section>
+        <h1>
+<a id="honggfuzz" class="anchor" href="#honggfuzz" aria-hidden="true"><span class="octicon octicon-link"></span></a>honggfuzz</h1>
+
+<p><strong>Description</strong></p>
+
+<ul>
+<li>A general-purpose, easy-to-use fuzzer with interesting analysis options. See <a href="README.md">README</a> wiki page for more details</li>
+<li>Supports hardware-based <a href="docs/FeedbackDrivenFuzzing.md">feedback-driven fuzzing</a> (requires Linux and a supported CPU model)</li>
+<li>It works, at least, under GNU/Linux and FreeBSD (possibly under Mac OS X as well)</li>
+<li>
+<a href="docs/AttachingToPid.md">Can fuzz long-lasting processes</a> (e.g. network servers like Apache's httpd and ISC's bind)</li>
+<li>It's been used to find a few interesting security problems in major software; examples:
+
+<ul>
+<li>FreeType 2 project: <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2497">CVE-2010-2497</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2498">CVE-2010-2498</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2499">CVE-2010-2499</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2500">CVE-2010-2500</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2519">CVE-2010-2519</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2520">CVE-2010-2520</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2527">CVE-2010-2527</a>
+</li>
+<li><a href="http://bugzilla.maptools.org/buglist.cgi?query_format=advanced;emailreporter1=1;email1=robert@swiecki.net;product=libtiff;emailtype1=substring">Multiple bugs in the libtiff library</a></li>
+<li><a href="https://bugzilla.gnome.org/buglist.cgi?query_format=advanced;emailreporter1=1;email1=robert%40swiecki.net;product=librsvg;emailtype1=substring">Multiple bugs in the librsvg library</a></li>
+<li><a href="http://lists.freedesktop.org/archives/poppler/2010-November/006726.html">Multiple bugs in the poppler library</a></li>
+<li><a href="https://www.hex-rays.com/bugbounty.shtml">Multiple exploitable bugs in IDA-Pro</a></li>
+</ul>
+</li>
+</ul>
+
+<p>This is NOT an official Google product.</p>
+
+<p><strong>Code</strong></p>
+
+<ul>
+<li>Latest version: 0.5 <a href="CHANGELOG">CHANGELOG</a> - using a fresh version from the code repository is strongly suggested</li>
+<li>Tarball: <a href="https://docs.google.com/file/d/0B86hdL7CeBvAX1NzMkMtUzN4Rms/view">Honggfuzz 0.5</a>, <a href="https://docs.google.com/uc?id=0B86hdL7CeBvAX1NzMkMtUzN4Rms&amp;export=download">Direct download link</a> and <a href="https://drive.google.com/folderview?id=0B86hdL7CeBvAfmJXcTJCeTJSeFdHd3E5Q3VGZFdCY192aVBxcHJSbkIyUVZGMG9ualJ6aE0&amp;usp=sharing">earlier versions</a>
+</li>
+</ul>
+
+<p><strong>Requirements</strong></p>
+
+<ul>
+<li>(under Linux) - BFD library (libbfd-dev) and LibUnwind (libunwind-dev/libunwind8-dev)</li>
+<li>(under FreeBSD) - gmake</li>
+</ul>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
+  </body>
+</html>
