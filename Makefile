@@ -131,7 +131,7 @@ $(MIG_OBJECTS): $(MIG_OUTPUT)
 	$(CC) -c $(CFLAGS) mach_excServer.c
 
 clean:
-	$(RM) core $(OBJS) $(BIN) $(MIG_OUTPUT) $(MIG_OBJECTS)
+	$(RM) core $(OBJS) $(BIN) $(MIG_OUTPUT) $(MIG_OBJECTS) $(INTERCEPTOR_LIBS)
 
 indent:
 	indent -linux -l100 -lc100 -nut -i4 -sob -c33 -cp33 *.c *.h */*.c */*.h; rm -f *~ */*~
