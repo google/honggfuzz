@@ -22,5 +22,5 @@
   * (under Linux) - BFD library (libbfd-dev) and LibUnwind (libunwind-dev/libunwind8-dev)
   * (under FreeBSD) - gmake
 
-**_**
+**Other**
 This is NOT an official Google product.
