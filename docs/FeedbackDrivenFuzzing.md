@@ -58,7 +58,7 @@ $ honggfuzz -q -Db -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./d
 
 ```
 
-## Unique branch pointes counting (-Dp) ##
+## Unique branch points counting (-Dp) ##
 ## Unique branch pair (edges) counting (-De) ##
 This is the most powerfull mode of feedback-driven counting that honggfuzz supports. It utilizes Intel's BTS (Branch Trace Store) feature to record all branch events (edges) inside the fuzzed process. Later, honggfuzz will de-duplicate those entries. The resulting number of branch pairs (edges) is good approximation of how much code of a given tool have been actively executed/used (code coverage).
 
