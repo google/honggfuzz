@@ -3,7 +3,7 @@
 **Description**
 
   * A general-purpose, easy-to-use fuzzer with interesting analysis options. See [README](README.md) wiki page for more details
-  * Supports hardware-based [feedback-driven fuzzing](docs/FeedbackDrivenFuzzing.md) (requires Linux and a supported CPU model)
+  * Supports hardware-based [feedback-driven fuzzing](docs/FeedbackDrivenFuzzing.md) (requires Linux and a supported CPU model), also for closed-source binaries (as opposed to e.g. afl-fuzz)
   * It works, at least, under GNU/Linux and FreeBSD (possibly under Mac OS X as well)
   * [Can fuzz long-lasting processes](docs/AttachingToPid.md) (e.g. network servers like Apache's httpd and ISC's bind)
   * It's been used to find a few interesting security problems in major software; examples:
@@ -12,9 +12,8 @@
     * [Multiple bugs in the librsvg library](https://bugzilla.gnome.org/buglist.cgi?query_format=advanced;emailreporter1=1;email1=robert%40swiecki.net;product=librsvg;emailtype1=substring)
     * [Multiple bugs in the poppler library](http://lists.freedesktop.org/archives/poppler/2010-November/006726.html)
     * [Multiple exploitable bugs in IDA-Pro](https://www.hex-rays.com/bugbounty.shtml)
+    * ... and some more
 
-
-This is NOT an official Google product.
 
 **Code**
   * Latest version: 0.5 [CHANGELOG](CHANGELOG) - using a fresh version from the code repository is strongly suggested
@@ -23,3 +22,6 @@ This is NOT an official Google product.
 **Requirements**
   * (under Linux) - BFD library (libbfd-dev) and LibUnwind (libunwind-dev/libunwind8-dev)
   * (under FreeBSD) - gmake
+
+**_**
+This is NOT an official Google product.
