@@ -2,7 +2,7 @@
 
 **Description**
 
-  * A general-purpose, easy-to-use fuzzer with interesting analysis options. See [README](README.md) wiki page for more details
+  * A general-purpose, easy-to-use fuzzer with interesting analysis options. See [README](https://github.com/google/honggfuzz/blob/master/README.md) wiki page for more details
   * Supports hardware-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) (requires Linux and a supported CPU model)
   * It works, at least, under GNU/Linux and FreeBSD (possibly under Mac OS X as well)
   * [Can fuzz long-lasting processes](https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md) (e.g. network servers like Apache's httpd and ISC's bind)
