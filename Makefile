@@ -37,7 +37,7 @@ MARCH ?= $(shell uname -m)
 
 ARCH_SRCS := $(wildcard posix/*.c)
 ARCH = POSIX
-SDK = 
+SDK =
 
 ifeq ($(OS),Linux)
 	ARCH = LINUX
@@ -75,11 +75,11 @@ else ifneq (,$(findstring 10.8,$(OS_VERSION)))
 	CRASH_REPORT = third_party/CrashReport_Mountain_Lion.o
 else
 	SDK_NAME = "macosx"
-	CRASH_REPORT = 
+	CRASH_REPORT =
 endif
 	CC = $(shell xcrun --sdk $(SDK_NAME) --find cc)
 	SDK = $(shell xcrun --sdk $(SDK_NAME) --show-sdk-path)
-	CFLAGS = -arch x86_64 -O3 -g -ggdb -std=c99 -isysroot $(SDK) -I. -I~/.homebrew/include -I/usr/include \
+	CFLAGS = -arch x86_64 -O3 -g -ggdb -std=c99 -isysroot $(SDK) -I. \
 	    -x objective-c \
 		-D_GNU_SOURCE \
 		-pedantic \
@@ -91,7 +91,7 @@ endif
 		-F$(SDK)/System/Library/Frameworks -F$(SDK)/System/Library/PrivateFrameworks \
 		-framework Foundation -framework ApplicationServices -framework Symbolication \
 		-framework CoreServices -framework CrashReporterSupport -framework CoreFoundation \
-		-framework CommerceKit -lm -L/usr/include -L$(shell echo ~)/.homebrew/lib
+		-framework CommerceKit -lm
 	ARCH_SRCS = $(wildcard mac/*.c)
 	MIG_OUTPUT = mach_exc.h mach_excUser.c mach_excServer.h mach_excServer.c
 	MIG_OBJECTS = mach_excUser.o mach_excServer.o
