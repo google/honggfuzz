@@ -241,7 +241,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.sample_type = PERF_SAMPLE_IP;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.watermark = 1;
-        pe.wakeup_watermark = perfMmapSz / 4;
+        pe.wakeup_watermark = perfMmapSz / 32;
         break;
     case _HF_DYNFILE_UNIQUE_EDGE_COUNT:
         bzero(perfBloom, sizeof(perfBloom));
@@ -251,7 +251,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.watermark = 1;
-        pe.wakeup_watermark = perfMmapSz / 4;
+        pe.wakeup_watermark = perfMmapSz / 32;
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%d' for PID: %d", method, pid);

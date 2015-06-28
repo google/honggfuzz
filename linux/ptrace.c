@@ -494,24 +494,30 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     arch_ptraceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr);
 }
 
+#define __WEVENT(status) ((status & 0xFF0000) >> 16)
+static void arch_ptraceEvent(int status, pid_t pid)
+{
+    LOGMSG(l_DEBUG, "PID: %d, Ptrace event %d", pid, __WEVENT(status));
+    ptrace(PT_CONTINUE, pid, 0, 0);
+    return;
+}
+
 void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer)
 {
     /*
-     * If it's an uninteresting signal (even SIGTRAP), let it run and relay the
-     * signal (if not SIGTRAP)
+     * It's a ptrace event, deal with it elsewhere
      */
-    if (WIFSTOPPED(status) && !arch_sigs[WSTOPSIG(status)].important) {
-        int sig = WSTOPSIG(status) == SIGTRAP ? 0 : WSTOPSIG(status);
-        ptrace(PT_CONTINUE, pid, 0, sig);
-        return;
+    if (WIFSTOPPED(status) && __WEVENT(status)) {
+        return arch_ptraceEvent(status, pid);
     }
 
-    /*
-     * If it's an interesting signal, save the testcase, and detach
-     * the tracer (relay the signal as well)
-     */
-    if (WIFSTOPPED(status) && arch_sigs[WSTOPSIG(status)].important) {
-        arch_ptraceSaveData(hfuzz, pid, fuzzer);
+    if (WIFSTOPPED(status)) {
+        /*
+         * If it's an interesting signal, save the testcase
+         */
+        if (arch_sigs[WSTOPSIG(status)].important) {
+            arch_ptraceSaveData(hfuzz, pid, fuzzer);
+        }
         ptrace(PT_CONTINUE, pid, 0, WSTOPSIG(status));
         return;
     }
@@ -591,27 +597,17 @@ bool arch_ptraceAttach(pid_t pid)
     }
 
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
-        if (ptrace(PT_ATTACH, tasks[i], NULL, NULL) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_ATTACH) to pid: %d", tasks[i]);
-            return false;
-        }
-        int status;
-        while (waitpid(tasks[i], &status, WUNTRACED | __WALL) != tasks[i]) ;
-
-        if (ptrace(PTRACE_SETOPTIONS, tasks[i], NULL,
-                   PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK |
-                   PTRACE_O_TRACEEXIT) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_SETOPTIONS) pid: %d", tasks[i]);
-            ptrace(PT_DETACH, tasks[i], 0, SIGCONT);
+        if (ptrace
+            (PTRACE_SEIZE, tasks[i], NULL,
+             PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACEEXIT) ==
+            -1) {
+            LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_SEIZE) to pid: %d", tasks[i]);
             return false;
         }
         LOGMSG(l_DEBUG, "Successfully attached to pid/tid: %d", tasks[i]);
     }
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
-        if (ptrace(PT_CONTINUE, tasks[i], NULL, NULL) == -1) {
-            LOGMSG_P(l_FATAL, "Couldn't ptrace(PTRACE_CONTINUE) pid: %d", tasks[i]);
-        }
-        LOGMSG(l_DEBUG, "Successfully continued pid/tid: %d", tasks[i]);
+        ptrace(PT_CONTINUE, tasks[i], NULL, NULL);
     }
     return true;
 }
