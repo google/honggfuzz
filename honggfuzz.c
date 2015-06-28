@@ -298,7 +298,7 @@ int main(int argc, char **argv)
     }
 
     if (hfuzz.pid > 0) {
-        LOGMSG(l_INFO, "PID=%d specified, lowering maximum number of concurrent threads to 1");
+        LOGMSG(l_INFO, "PID=%d specified, lowering maximum number of concurrent threads to 1", hfuzz.pid);
         hfuzz.threadsMax = 1;
     }
 
