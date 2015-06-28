@@ -605,14 +605,13 @@ bool arch_ptraceAttach(pid_t pid)
             ptrace(PT_DETACH, tasks[i], 0, SIGCONT);
             return false;
         }
-
-        if (ptrace(PT_CONTINUE, tasks[i], NULL, NULL) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_CONTINUE) pid: %d", tasks[i]);
-            ptrace(PT_DETACH, tasks[i], 0, SIGCONT);
-            return false;
-        }
-
         LOGMSG(l_DEBUG, "Successfully attached to pid/tid: %d", tasks[i]);
+    }
+    for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
+        if (ptrace(PT_CONTINUE, tasks[i], NULL, NULL) == -1) {
+            LOGMSG_P(l_FATAL, "Couldn't ptrace(PTRACE_CONTINUE) pid: %d", tasks[i]);
+        }
+        LOGMSG(l_DEBUG, "Successfully continued pid/tid: %d", tasks[i]);
     }
     return true;
 }
