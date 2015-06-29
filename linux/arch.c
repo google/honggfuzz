@@ -276,7 +276,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             continue;
         }
         if (pid == -1 && errno == ECHILD) {
-            arch_perfAnalyze(hfuzz, fuzzer, perfFd);
             LOGMSG(l_DEBUG, "No more processes to track");
             break;
         }
@@ -294,7 +293,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             continue;
         }
         if (pid == childPid && (WIFEXITED(status) || WIFSIGNALED(status))) {
-            arch_perfAnalyze(hfuzz, fuzzer, perfFd);
             break;
         }
         if (pid == childPid) {
@@ -304,6 +302,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
     }
     arch_removeTimer(&timerid);
+    arch_perfAnalyze(hfuzz, fuzzer, perfFd);
     return;
 }
 
