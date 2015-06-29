@@ -252,9 +252,10 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (pid != childPid) {
             LOGMSG_P(l_FATAL, "wait4()=%d =! %d", pid, childPid);
         }
-        if (!WIFSTOPPED(status)) {
-            LOGMSG(l_FATAL, "PID '%d' is not in a stopped state", pid);
+        if (WIFSTOPPED(status)) {
+            break;
         }
+        LOGMSG_P(l_FATAL, "PID '%d' is not in a stopped state", pid);
     }
     if (arch_ptraceAttach(ptracePid) == false) {
         LOGMSG(l_FATAL, "Couldn't attach to pid %d", ptracePid);
