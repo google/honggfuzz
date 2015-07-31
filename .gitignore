@@ -1,0 +1,10 @@
+*.o
+*.so
+honggfuzz
+*.dSYM
+mach_exc.h
+mach_excUser.c
+mach_excServer.h
+mach_excServer.c
+libs
+obj
