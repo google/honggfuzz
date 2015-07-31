@@ -44,7 +44,7 @@
 static bool checkFor_FILE_PLACEHOLDER(char **args)
 {
     for (int x = 0; args[x]; x++) {
-        if (!strcmp(args[x], _HF_FILE_PLACEHOLDER))
+        if (strstr(args[x], _HF_FILE_PLACEHOLDER))
             return true;
     }
     return false;
