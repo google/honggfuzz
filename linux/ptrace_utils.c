@@ -22,7 +22,7 @@
  */
 
 #include "common.h"
-#include "ptrace.h"
+#include "ptrace_utils.h"
 
 #include <ctype.h>
 #include <dirent.h>
@@ -55,6 +55,132 @@
 #include "log.h"
 #include "util.h"
 
+#if defined(__ANDROID__)
+#include <linux/ptrace.h>
+#include <asm/ptrace.h>
+#include <sys/syscall.h>
+#include "capstone.h"
+#endif
+
+#if defined(__i386__) || defined(__arm__) || defined(__powerpc__)
+#define REG_TYPE uint32_t
+#define REG_PM   PRIx32
+#define REG_PD   "0x%08"
+#elif defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__)
+#define REG_TYPE uint64_t
+#define REG_PM   PRIx64
+#define REG_PD   "0x%016"
+#endif
+
+#if defined(__i386__) || defined(__x86_64__)
+#define MAX_INSTR_SZ 16
+#elif defined(__arm__) || defined(__powerpc__) || defined(__powerpc64__)
+#define MAX_INSTR_SZ 4
+#elif defined(__aarch64__)
+#define MAX_INSTR_SZ 8
+#endif
+
+#ifdef __ANDROID__
+#ifndef WIFCONTINUED
+#define WIFCONTINUED(x) WEXITSTATUS(0)
+#endif
+#endif
+
+#if defined(__ANDROID__)
+#if defined(__NR_process_vm_readv)
+static ssize_t honggfuzz_process_vm_readv(pid_t pid,
+            const struct iovec *lvec,
+            unsigned long liovcnt,
+            const struct iovec *rvec,
+            unsigned long riovcnt,
+            unsigned long flags)
+{
+	return syscall(__NR_process_vm_readv, (long)pid, lvec, liovcnt, rvec, riovcnt, flags);
+}
+# define process_vm_readv honggfuzz_process_vm_readv
+#else                           /* defined(__NR_process_vm_readv) */
+# define process_vm_readv(...) (errno = ENOSYS, -1)
+#endif                           /* !defined(__NR_process_vm_readv) */
+
+// Naming compatibilities
+#if !defined(PT_TRACE_ME)
+# define PT_TRACE_ME PTRACE_TRACEME
+#endif
+
+#if !defined(PT_READ_I)
+# define PT_READ_I PTRACE_PEEKTEXT
+#endif
+
+#if !defined(PT_READ_D)
+# define PT_READ_D PTRACE_PEEKDATA
+#endif
+
+#if !defined(PT_READ_U)
+# define PT_READ_U PTRACE_PEEKUSR
+#endif
+
+#if !defined(PT_WRITE_I)
+# define PT_WRITE_I PTRACE_POKETEXT
+#endif
+
+#if !defined(PT_WRITE_D)
+# define PT_WRITE_D PTRACE_POKEDATA
+#endif
+
+#if !defined(PT_WRITE_U)
+# define PT_WRITE_U PTRACE_POKEUSR
+#endif
+
+#if !defined(PT_CONT)
+# define PT_CONT PTRACE_CONT
+#endif
+
+#if !defined(PT_CONTINUE)
+# define PT_CONTINUE PTRACE_CONT
+#endif
+
+#if !defined(PT_KILL)
+# define PT_KILL PTRACE_KILL
+#endif
+
+#if !defined(PT_STEP)
+# define PT_STEP PTRACE_SINGLESTEP
+#endif
+
+#if !defined(PT_GETFPREGS)
+# define PT_GETFPREGS PTRACE_GETFPREGS
+#endif
+
+#if !defined(PT_ATTACH)
+# define PT_ATTACH PTRACE_ATTACH
+#endif
+
+#if !defined(PT_DETACH)
+# define PT_DETACH PTRACE_DETACH
+#endif
+
+#if !defined(PT_SYSCALL)
+# define PT_SYSCALL PTRACE_SYSCALL
+#endif
+
+#if !defined(PT_SETOPTIONS)
+# define PT_SETOPTIONS PTRACE_SETOPTIONS
+#endif
+
+#if !defined(PT_GETEVENTMSG)
+# define PT_GETEVENTMSG PTRACE_GETEVENTMSG
+#endif
+
+#if !defined(PT_GETSIGINFO)
+# define PT_GETSIGINFO PTRACE_GETSIGINFO
+#endif
+
+#if !defined(PT_SETSIGINFO)
+# define PT_SETSIGINFO PTRACE_SETSIGINFO
+#endif
+
+#endif                           /* defined(__ANDROID__) */
+
 /*  *INDENT-OFF* */
 struct {
     bool important;
@@ -76,7 +202,7 @@ struct {
 };
 /*  *INDENT-ON* */
 
-static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, uint64_t pc)
+static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
 {
     /*
      * Let's try process_vm_readv first
@@ -92,6 +218,9 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, uint64_t pc)
     if (process_vm_readv(pid, &local_iov, 1, &remote_iov, 1, 0) == (ssize_t) len) {
         return len;
     }
+
+    // Debug if failed since it shouldn't happen very often
+    LOGMSG_P(l_DEBUG, "process_vm_readv() failed");
 
     /*
      * Ok, let's do it via ptrace() then.
@@ -115,6 +244,9 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, uint64_t pc)
     return memsz;
 }
 
+// Non i386 / x86_64 ISA fail build due to unused pid argument
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
 {
     if ((hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) == 0) {
@@ -197,8 +329,9 @@ uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
 #endif
     return 0ULL;
 }
+#pragma GCC diagnostic pop
 
-static bool arch_getPC(pid_t pid, uint64_t * pc)
+static bool arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
 {
     char buf[1024];
     struct iovec pt_iov = {
@@ -266,6 +399,7 @@ static bool arch_getPC(pid_t pid, uint64_t * pc)
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
         struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
         *pc = r32->eip;
+        *status_reg = r32->eflags;
         return true;
     }
     /*
@@ -274,6 +408,7 @@ static bool arch_getPC(pid_t pid, uint64_t * pc)
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
         struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
         *pc = r64->ip;
+        *status_reg = r64->flags;
         return true;
     }
     LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
@@ -286,10 +421,23 @@ static bool arch_getPC(pid_t pid, uint64_t * pc)
     };
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
         struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
+
 #ifndef ARM_pc
+#ifdef __ANDROID__              /* Building with NDK headers */
+#define ARM_pc uregs[15]
+#else                           /* Building with glibc headers */
 #define ARM_pc 15
+#endif
 #endif                          /* ARM_pc */
+
+#ifdef __ANDROID__
+        *pc = r32->ARM_pc;
+        *status_reg = r32->ARM_cpsr;
+#else
         *pc = r32->uregs[ARM_pc];
+        *status_reg = r32->uregs[ARM_cpsr];
+#endif
+
         return true;
     }
     LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
@@ -305,6 +453,7 @@ static bool arch_getPC(pid_t pid, uint64_t * pc)
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
         struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
         *pc = r64->pc;
+        *status_reg = r64->pstate;
         return true;
     }
     LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
@@ -375,18 +524,20 @@ static bool arch_getPC(pid_t pid, uint64_t * pc)
     return false;
 }
 
-static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
+static void arch_getInstrStr(pid_t pid, REG_TYPE *pc, char *instr)
 {
     /*
      * We need a value aligned to 8
      * which is sizeof(long) on 64bit CPU archs (on most of them, I hope;)
      */
-    uint8_t buf[16];
+    uint8_t buf[MAX_INSTR_SZ];
     size_t memsz;
+
+    REG_TYPE status_reg = 0;
 
     snprintf(instr, _HF_INSTR_SZ, "%s", "[UNKNOWN]");
 
-    if (!arch_getPC(pid, pc)) {
+    if (!arch_getPC(pid, pc, &status_reg)) {
         LOGMSG(l_WARN, "Current architecture not supported for disassembly");
         return;
     }
@@ -396,7 +547,48 @@ static void arch_getInstrStr(pid_t pid, uint64_t * pc, char *instr)
         return;
     }
 
+#if !defined(__ANDROID__)
     arch_bfdDisasm(pid, buf, memsz, instr);
+
+#else
+#if defined(__arm__)
+    cs_arch arch = CS_ARCH_ARM;
+    cs_mode mode = (status_reg & 0x20) ? CS_MODE_THUMB : CS_MODE_ARM;
+#elif defined(__aarch64__)
+    // We shouldn't need any execution detection logic here
+    cs_arch arch = CS_ARCH_ARM64;
+    cs_mode mode = CS_MODE_ARM;
+#elif defined(__i386__)
+    cs_arch arch = CS_ARCH_X86;
+    cs_mode mode = CS_MODE_32;
+#elif defined(__x86_64__)
+    cs_arch arch = CS_ARCH_X86;
+    cs_mode mode = CS_MODE_64;
+#else
+    LOGMSG(l_ERROR, "Unknown/unsupported Android CPU architecture");
+#endif
+
+    csh handle;
+    cs_err err = cs_open(arch, mode, &handle);
+    if (err != CS_ERR_OK) {
+        LOGMSG(l_WARN, "Capstone initilization failed: '%s'", cs_strerror(err));
+        return;
+    }
+
+    cs_insn *insn;
+    size_t count = cs_disasm(handle, buf, sizeof(buf), *pc, 0, &insn);
+
+    if (count < 1) {
+        LOGMSG(l_WARN, "Couldn't disassemble the assembler instructions' stream: '%s'",
+                cs_strerror(cs_errno(handle)));
+        cs_close(&handle);
+        return;
+    }
+
+    snprintf(instr, _HF_INSTR_SZ, "%s %s", insn[0].mnemonic, insn[0].op_str);
+    cs_free(insn, count);
+    cs_close(&handle);
+#endif
 
     for (int x = 0; instr[x] && x < _HF_INSTR_SZ; x++) {
         if (instr[x] == '/' || instr[x] == '\\' || isspace(instr[x])
@@ -423,8 +615,18 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs,
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "INSTRUCTION: %s\n", instr);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK:\n");
     for (size_t i = 0; i < funcCnt; i++) {
-        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <0x%016" PRIx64 "> [%s():%d]\n",
-                       (uint64_t) (long)funcs[i].pc, funcs[i].func, funcs[i].line);
+#ifdef __HF_USE_CAPSTONE__
+        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <"REG_PD REG_PM "> ",
+                       (REG_TYPE) (long)funcs[i].pc, funcs[i].func, funcs[i].line);
+        if (funcs[i].func[0] != '\0')
+             util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[%s + 0x%x]\n", 
+                     funcs[i].func, funcs[i].line);
+        else
+            util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[]\n");
+#else
+        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <"REG_PD REG_PM "> [%s():%u]\n",
+                       (REG_TYPE) (long)funcs[i].pc, funcs[i].func, funcs[i].line);
+#endif
     }
 
     return;
@@ -432,7 +634,7 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs,
 
 static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
-    uint64_t pc = 0ULL;
+    REG_TYPE pc = 0;
 
     char instr[_HF_INSTR_SZ] = "\x00";
     siginfo_t si;
@@ -446,7 +648,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 
     LOGMSG(l_DEBUG,
            "Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %"
-           PRIx64 ", instr: '%s'", pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc,
+           REG_PM ", instr: '%s'", pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc,
            instr);
 
     if (si.si_addr < hfuzz->ignoreAddr) {
@@ -459,14 +661,14 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     char newname[PATH_MAX];
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
-                 "%s.PC.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%s",
+                 "%s.PC.%" REG_PM ".CODE.%d.ADDR.%p.INSTR.%s.%s.%s",
                  arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr,
                  instr, fuzzer->origFileName, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr));
         snprintf(newname, sizeof(newname),
-                 "%s.PC.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s.%s",
+                 "%s.PC.%" REG_PM ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s.%s",
                  arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr,
                  instr, localtmstr, pid, fuzzer->origFileName, hfuzz->fileExtn);
     }
@@ -476,6 +678,8 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     } else {
         if (errno == EEXIST) {
             LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", newname);
+            // Don't bother unwinding & generating reports for duplicate crashes
+            return;
         } else {
             LOGMSG_P(l_ERROR, "Couldn't link '%s' to '%s'", fuzzer->fileName, newname);
         }
@@ -488,8 +692,12 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
         ,
     };
 
+#if !defined(__ANDROID__)
     size_t funcCnt = arch_unwindStack(pid, funcs);
     arch_bfdResolveSyms(pid, funcs, funcCnt);
+#else
+    size_t funcCnt = arch_unwindStack(pid, funcs);
+#endif
 
     arch_ptraceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr);
 }
@@ -512,13 +720,25 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
     }
 
     if (WIFSTOPPED(status)) {
+        int curStatus = WSTOPSIG(status);
+
         /*
          * If it's an interesting signal, save the testcase
          */
         if (arch_sigs[WSTOPSIG(status)].important) {
             arch_ptraceSaveData(hfuzz, pid, fuzzer);
+
+            /* 
+             * An kind of ugly (although necessary) hack due to custom signal handlers
+             * in Android from debuggerd. If we pass one of the monitored signals, 
+             * we'll end-up running the processing routine twice. A cost that we 
+             * don't want to pay.
+             */
+#if defined(__ANDROID__)
+            curStatus = SIGINT;
+#endif
         }
-        ptrace(PT_CONTINUE, pid, 0, WSTOPSIG(status));
+        ptrace(PT_CONTINUE, pid, 0, curStatus);
         return;
     }
 

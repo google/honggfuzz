@@ -52,6 +52,18 @@
 #include "report.h"
 #include "util.h"
 
+#if defined(__ANDROID__)
+#if defined(__aarch64__) && !defined(__NR_fork)
+#include <sys/syscall.h>
+
+pid_t honggfuzz_aarch64_fork(void)
+{
+	return syscall(__NR_clone, SIGCHLD, NULL);
+}
+# define fork honggfuzz_aarch64_fork
+#endif
+#endif
+
 static int fuzz_sigReceived = 0;
 
 static void fuzz_sigHandler(int sig, siginfo_t * si, void *v)
@@ -255,7 +267,7 @@ static void *fuzz_threadNew(void *arg)
         }
     }
 
-#if defined(_HF_ARCH_LINUX)
+#if defined(_HF_ARCH_LINUX) && defined(__NR_fork)
 #include <unistd.h>
 #include <sys/syscall.h>
     fuzzer.pid = syscall(__NR_fork);
@@ -407,7 +419,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
     }
     hfuzz->sem = &semName;
 #endif                          /* defined(__ANDROID__) */
-    
+
     if (hfuzz->sem == SEM_FAILED) {
         LOGMSG_P(l_FATAL, "sem_open() failed");
     }
