@@ -18,7 +18,7 @@
 if [ -z "$NDK" ]; then
   # Search in $PATH
   if [[ $(which ndk-build) != "" ]]; then
-    $NDK=$(dirname $(which ndk-build))
+    NDK=$(dirname $(which ndk-build))
   else
     echo "[-] Could not detect Android NDK dir"
     exit 1
