@@ -18,7 +18,7 @@
 if [ -z "$NDK" ]; then
   # Search in $PATH
   if [[ $(which ndk-build) != "" ]]; then
-    $NDK=$(dirname $(which ndk-build))
+    NDK=$(dirname $(which ndk-build))
   else
     echo "[-] Could not detect Android NDK dir"
     exit 1
@@ -119,10 +119,6 @@ if [ ! -f configure ]; then
   sed -i -e 's/-lgcc_s/-lgcc/g' configure
 else
   make clean
-  if [ $? -ne 0 ]; then
-    echo "[-] Old build detected, although clean failed. Consider manual clean-up."
-    exit 1
-  fi
 fi
 
 ./configure --host=$TOOLCHAIN --disable-coredump
