@@ -34,6 +34,38 @@
 
 static int reportFD = -1;
 
+#if defined(_HF_ARCH_LINUX)
+static void report_printdynFileMethod(honggfuzz_t * hfuzz)
+{
+    dprintf(reportFD, " dynFileMethod: ");
+    if (hfuzz->dynFileMethod == 0)
+        dprintf(reportFD, "NONE\n");
+    else {
+        if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT)
+            dprintf(reportFD, "INSTR_COUNT ");
+        if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT)
+            dprintf(reportFD, "BRANCH_COUNT ");
+        if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT)
+            dprintf(reportFD, "BLOCK_COUNT ");
+        if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT)
+            dprintf(reportFD, "EDGE_COUNT ");
+        if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM)
+            dprintf(reportFD, "CUSTOM ");
+        
+        dprintf(reportFD, "\n");
+    }
+}
+#endif
+
+static void report_printTargetCmd(honggfuzz_t * hfuzz)
+{
+    dprintf(reportFD, " fuzzTarget   : ");
+    for (int x = 0; hfuzz->cmdline[x]; x++) {
+        dprintf(reportFD, "%s ", hfuzz->cmdline[x]);
+    }
+    dprintf(reportFD, "\n");
+}
+
 void report_Report(honggfuzz_t * hfuzz, char *s)
 {
     if (s[0] == '\0') {
@@ -54,8 +86,34 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
             "=====================================================================\n"
             "TIME: %s\n"
             "=====================================================================\n"
+            "FUZZER ARGS:\n"
+            " flipRate     : %lf\n"
+            " externalCmd  : %s\n"
+            " fuzzStdin    : %s\n"
+            " timeout      : %ld (sec)\n"
+            " ignoreAddr   : %p\n"
+            " memoryLimit  : %lu (MiB)\n"
+            " targetPid    : %d\n"
+            " wordlistFile : %s\n",
+            localtmstr,
+            hfuzz->flipRate,
+            hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand,
+            hfuzz->fuzzStdin ? "TRUE" : "FALSE",
+            hfuzz->tmOut,
+            hfuzz->ignoreAddr,
+            hfuzz->asLimit,
+            hfuzz->pid,
+            hfuzz->dictionaryFile == NULL ? "NULL" : hfuzz->dictionaryFile);
+
+#if defined(_HF_ARCH_LINUX)
+    report_printdynFileMethod(hfuzz);
+#endif
+
+    report_printTargetCmd(hfuzz);
+
+    dprintf(reportFD,
             "%s" "=====================================================================\n",
-            localtmstr, s);
+            s);
 
     return;
 }
