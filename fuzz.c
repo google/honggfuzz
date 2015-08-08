@@ -52,16 +52,14 @@
 #include "report.h"
 #include "util.h"
 
-#if defined(__ANDROID__)
-#if defined(__aarch64__) && !defined(__NR_fork)
+#if defined(__ANDROID__) && !defined(__NR_fork)
 #include <sys/syscall.h>
 
 pid_t honggfuzz_aarch64_fork(void)
 {
-	return syscall(__NR_clone, SIGCHLD, NULL);
+	return syscall(__NR_clone, SIGCHLD, 0, 0, 0);
 }
 # define fork honggfuzz_aarch64_fork
-#endif
 #endif
 
 static int fuzz_sigReceived = 0;
