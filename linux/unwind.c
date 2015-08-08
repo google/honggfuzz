@@ -60,7 +60,7 @@ static const char *UNW_ER[] = {
 #ifndef __ANDROID__
 size_t arch_unwindStack(pid_t pid, funcs_t *funcs)
 {
-    size_t frames = 0;
+    size_t num_frames = 0;
     void *ui = NULL;
 
     unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, __BYTE_ORDER);
@@ -82,21 +82,21 @@ size_t arch_unwindStack(pid_t pid, funcs_t *funcs)
         goto out;
     }
 
-    for (frames = 0; unw_step(&c) > 0 && frames < _HF_MAX_FUNCS; frames++) {
+    for (num_frames = 0; unw_step(&c) > 0 && num_frames < _HF_MAX_FUNCS; num_frames++) {
         unw_word_t ip;
         ret = unw_get_reg(&c, UNW_REG_IP, &ip);
         if (ret < 0) {
-            LOMGSG(l_ERROR, "[pid='%d'] [%d] failed to read IP (%s)", pid, frames, UNW_ER[-ret]);
-            funcs[ret].pc = 0;
+            LOGMSG(l_ERROR, "[pid='%d'] [%d] failed to read IP (%s)", pid, num_frames, UNW_ER[-ret]);
+            funcs[num_frames].pc = 0;
         }
         else
-            funcs[ret].pc = (void *)ip;
+            funcs[num_frames].pc = (void *)ip;
     }
 
  out:
     ui ? _UPT_destroy(ui) : 0;
     as ? unw_destroy_addr_space(as) : 0;
-    return ret;
+    return num_frames;
 }
 
 #else                          /* !defined(__ANDROID__) */
