@@ -57,7 +57,7 @@
 
 #if defined(__ANDROID__)
 #include <linux/ptrace.h>
-#include <asm/ptrace.h>
+#include <asm/ptrace.h>     /* For pt_regs structs */
 #include <sys/syscall.h>
 #include "capstone.h"
 #endif
@@ -80,6 +80,133 @@
 #define MAX_INSTR_SZ 8
 #endif
 
+#if defined(__i386__) || defined(__x86_64__)
+struct user_regs_struct_32 {
+    uint32_t ebx;
+    uint32_t ecx;
+    uint32_t edx;
+    uint32_t esi;
+    uint32_t edi;
+    uint32_t ebp;
+    uint32_t eax;
+    uint16_t ds, __ds;
+    uint16_t es, __es;
+    uint16_t fs, __fs;
+    uint16_t gs, __gs;
+    uint32_t orig_eax;
+    uint32_t eip;
+    uint16_t cs, __cs;
+    uint32_t eflags;
+    uint32_t esp;
+    uint16_t ss, __ss;
+};
+
+struct user_regs_struct_64 {
+    uint64_t r15;
+    uint64_t r14;
+    uint64_t r13;
+    uint64_t r12;
+    uint64_t bp;
+    uint64_t bx;
+    uint64_t r11;
+    uint64_t r10;
+    uint64_t r9;
+    uint64_t r8;
+    uint64_t ax;
+    uint64_t cx;
+    uint64_t dx;
+    uint64_t si;
+    uint64_t di;
+    uint64_t orig_ax;
+    uint64_t ip;
+    uint64_t cs;
+    uint64_t flags;
+    uint64_t sp;
+    uint64_t ss;
+    uint64_t fs_base;
+    uint64_t gs_base;
+    uint64_t ds;
+    uint64_t es;
+    uint64_t fs;
+    uint64_t gs;
+};
+#define HEADERS_STRUCT struct user_regs_struct_64
+#endif                          /* defined(__i386__) || defined(__x86_64__) */
+
+#if defined(__arm__)
+#define HEADERS_STRUCT struct pt_regs
+# ifndef ARM_pc
+#  ifdef __ANDROID__            /* Building with NDK headers */
+#   define ARM_pc uregs[15]
+#  else                         /* Building with glibc headers */
+#   define ARM_pc 15
+#  endif
+# endif                         /* ARM_pc */
+struct user_regs_struct_32 {
+    uint32_t uregs[18];
+};
+#endif                          /* defined(__arm__) */
+
+#if defined(__aarch64__)
+#define HEADERS_STRUCT struct user_pt_regs
+struct user_regs_struct_64 {
+    uint64_t regs[31];
+    uint64_t sp;
+    uint64_t pc;
+    uint64_t pstate;
+};
+#endif                          /* defined(__aarch64__) */
+
+#if defined(__powerpc64__) || defined(__powerpc__)
+#define HEADERS_STRUCT struct pt_regs
+struct user_regs_struct_32 {
+    uint32_t gpr[32];
+    uint32_t nip;
+    uint32_t msr;
+    uint32_t orig_gpr3;
+    uint32_t ctr;
+    uint32_t link;
+    uint32_t xer;
+    uint32_t ccr;
+    uint32_t mq;
+    uint32_t trap;
+    uint32_t dar;
+    uint32_t dsisr;
+    uint32_t result;
+    /*
+     * elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in
+     * with some zeros
+     */
+    uint32_t zero0;
+    uint32_t zero1;
+    uint32_t zero2;
+    uint32_t zero3;
+};
+struct user_regs_struct_64 {
+    uint64_t gpr[32];
+    uint64_t nip;
+    uint64_t msr;
+    uint64_t orig_gpr3;
+    uint64_t ctr;
+    uint64_t link;
+    uint64_t xer;
+    uint64_t ccr;
+    uint64_t softe;
+    uint64_t trap;
+    uint64_t dar;
+    uint64_t dsisr;
+    uint64_t result;
+    /*
+     * elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in
+     * with some zeros
+     */
+    uint64_t zero0;
+    uint64_t zero1;
+    uint64_t zero2;
+    uint64_t zero3;
+};
+#endif                          /* defined(__powerpc64__) || defined(__powerpc__) */
+
 #ifdef __ANDROID__
 #ifndef WIFCONTINUED
 #define WIFCONTINUED(x) WEXITSTATUS(0)
@@ -100,7 +227,7 @@ static ssize_t honggfuzz_process_vm_readv(pid_t pid,
 # define process_vm_readv honggfuzz_process_vm_readv
 #else                           /* defined(__NR_process_vm_readv) */
 # define process_vm_readv(...) (errno = ENOSYS, -1)
-#endif                           /* !defined(__NR_process_vm_readv) */
+#endif                          /* !defined(__NR_process_vm_readv) */
 
 // Naming compatibilities
 #if !defined(PT_TRACE_ME)
@@ -179,6 +306,17 @@ static ssize_t honggfuzz_process_vm_readv(pid_t pid,
 # define PT_SETSIGINFO PTRACE_SETSIGINFO
 #endif
 
+/* 
+ * WARNING: NOT TESTED YET
+ * If doesn't work, remove PTRACE_GETREGSET failover support via
+ * the PTRACE_GETREGS call. Considering recent kernels in arm64, 
+ * PTRACE_GETREGSET should be always implemented and be enough for
+ * fuzzer to work.
+ */
+#if defined(__aarch64__) && !defined(PTRACE_GETREGS)
+#define PTRACE_GETREGS 12
+#endif
+
 #endif                           /* defined(__ANDROID__) */
 
 /*  *INDENT-OFF* */
@@ -252,184 +390,96 @@ uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
     if ((hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) == 0) {
         return 0ULL;
     }
+
 #if defined(__i386__) || defined(__x86_64__)
-    char buf[1024];
+    HEADERS_STRUCT regs;
     struct iovec pt_iov = {
-        .iov_base = buf,
-        .iov_len = sizeof(buf),
-    };
-    if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
-        return 0ULL;
-    }
-    struct user_regs_struct_32 {
-        uint32_t ebx;
-        uint32_t ecx;
-        uint32_t edx;
-        uint32_t esi;
-        uint32_t edi;
-        uint32_t ebp;
-        uint32_t eax;
-        uint16_t ds, __ds;
-        uint16_t es, __es;
-        uint16_t fs, __fs;
-        uint16_t gs, __gs;
-        uint32_t orig_eax;
-        uint32_t eip;
-        uint16_t cs, __cs;
-        uint32_t eflags;
-        uint32_t esp;
-        uint16_t ss, __ss;
+        .iov_base = &regs,
+        .iov_len = sizeof(regs),
     };
 
-    struct user_regs_struct_64 {
-        uint64_t r15;
-        uint64_t r14;
-        uint64_t r13;
-        uint64_t r12;
-        uint64_t bp;
-        uint64_t bx;
-        uint64_t r11;
-        uint64_t r10;
-        uint64_t r9;
-        uint64_t r8;
-        uint64_t ax;
-        uint64_t cx;
-        uint64_t dx;
-        uint64_t si;
-        uint64_t di;
-        uint64_t orig_ax;
-        uint64_t ip;
-        uint64_t cs;
-        uint64_t flags;
-        uint64_t sp;
-        uint64_t ss;
-        uint64_t fs_base;
-        uint64_t gs_base;
-        uint64_t ds;
-        uint64_t es;
-        uint64_t fs;
-        uint64_t gs;
-    };
+    if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
+        LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGSET) failed");
+        
+        // If PTRACE_GETREGSET fails, try PTRACE_GETREGS
+        if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
+            LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGS) failed");
+            LOGMSG(l_WARN, "ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to"
+                    " extract target registers");
+            return 0ULL;
+        }
+    }
 
     /*
      * 32-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
+        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)&regs;
         return (uint64_t) r32->gs;
     }
+
     /*
      * 64-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
+        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64*)&regs;
         return (uint64_t) r64->gs_base;
     }
-    LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
-#endif
+
+    LOGMSG(l_WARN, "Unknown registers structure size: '%d'", pt_iov.iov_len);
+#endif                          /* defined(__i386__) || defined(__x86_64__) */
+
     return 0ULL;
 }
-#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop      /* ignored "-Wunused-parameter" */
 
 static bool arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
 {
-    char buf[1024];
+    HEADERS_STRUCT regs;
     struct iovec pt_iov = {
-        .iov_base = buf,
-        .iov_len = sizeof(buf),
+        .iov_base = &regs,
+        .iov_len = sizeof(regs),
     };
+
     if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
-        LOGMSG_P(l_WARN, "ptrace(PTRACE_GETREGSET) failed");
-        return false;
+        LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGSET) failed");
+        
+        // If PTRACE_GETREGSET fails, try PTRACE_GETREGS
+        if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
+            LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGS) failed");
+            LOGMSG(l_WARN, "ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to"
+                    " extract target registers");
+            return false;
+        }
     }
+
 #if defined(__i386__) || defined(__x86_64__)
-    struct user_regs_struct_32 {
-        uint32_t ebx;
-        uint32_t ecx;
-        uint32_t edx;
-        uint32_t esi;
-        uint32_t edi;
-        uint32_t ebp;
-        uint32_t eax;
-        uint16_t ds, __ds;
-        uint16_t es, __es;
-        uint16_t fs, __fs;
-        uint16_t gs, __gs;
-        uint32_t orig_eax;
-        uint32_t eip;
-        uint16_t cs, __cs;
-        uint32_t eflags;
-        uint32_t esp;
-        uint16_t ss, __ss;
-    };
-
-    struct user_regs_struct_64 {
-        uint64_t r15;
-        uint64_t r14;
-        uint64_t r13;
-        uint64_t r12;
-        uint64_t bp;
-        uint64_t bx;
-        uint64_t r11;
-        uint64_t r10;
-        uint64_t r9;
-        uint64_t r8;
-        uint64_t ax;
-        uint64_t cx;
-        uint64_t dx;
-        uint64_t si;
-        uint64_t di;
-        uint64_t orig_ax;
-        uint64_t ip;
-        uint64_t cs;
-        uint64_t flags;
-        uint64_t sp;
-        uint64_t ss;
-        uint64_t fs_base;
-        uint64_t gs_base;
-        uint64_t ds;
-        uint64_t es;
-        uint64_t fs;
-        uint64_t gs;
-    };
-
     /*
      * 32-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
+        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)&regs;
         *pc = r32->eip;
         *status_reg = r32->eflags;
         return true;
     }
+
     /*
      * 64-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
+        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64*)&regs;
         *pc = r64->ip;
         *status_reg = r64->flags;
         return true;
     }
-    LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
+    LOGMSG(l_WARN, "Unknown registers structure size: '%d'", pt_iov.iov_len);
     return false;
-#endif                          /* defined(__i386__) ||
-                                 * defined(__x86_64__) */
+#endif                          /* defined(__i386__) || defined(__x86_64__) */
+
 #if defined(__arm__)
-    struct user_regs_struct_32 {
-        uint32_t uregs[18];
-    };
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
-
-#ifndef ARM_pc
-#ifdef __ANDROID__              /* Building with NDK headers */
-#define ARM_pc uregs[15]
-#else                           /* Building with glibc headers */
-#define ARM_pc 15
-#endif
-#endif                          /* ARM_pc */
-
+        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)&regs;
 #ifdef __ANDROID__
         *pc = r32->ARM_pc;
         *status_reg = r32->ARM_cpsr;
@@ -437,89 +487,46 @@ static bool arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
         *pc = r32->uregs[ARM_pc];
         *status_reg = r32->uregs[ARM_cpsr];
 #endif
-
         return true;
     }
-    LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
+    LOGMSG(l_WARN, "Unknown registers structure size: '%d'", pt_iov.iov_len);
     return false;
 #endif                          /* defined(__arm__) */
+
 #if defined(__aarch64__)
-    struct user_regs_struct_64 {
-        uint64_t regs[31];
-        uint64_t sp;
-        uint64_t pc;
-        uint64_t pstate;
-    };
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
+        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)&regs;
         *pc = r64->pc;
         *status_reg = r64->pstate;
         return true;
     }
-    LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
+    LOGMSG(l_WARN, "Unknown registers structure size: '%d'", pt_iov.iov_len);
     return false;
 #endif                          /* defined(__aarch64__) */
+
 #if defined(__powerpc64__) || defined(__powerpc__)
-    struct user_regs_struct_32 {
-        uint32_t gpr[32];
-        uint32_t nip;
-        uint32_t msr;
-        uint32_t orig_gpr3;
-        uint32_t ctr;
-        uint32_t link;
-        uint32_t xer;
-        uint32_t ccr;
-        uint32_t mq;
-        uint32_t trap;
-        uint32_t dar;
-        uint32_t dsisr;
-        uint32_t result;
-        /*
-         * elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in
-         * with some zeros
-         */
-        uint32_t zero0;
-        uint32_t zero1;
-        uint32_t zero2;
-        uint32_t zero3;
-    };
-    struct user_regs_struct_64 {
-        uint64_t gpr[32];
-        uint64_t nip;
-        uint64_t msr;
-        uint64_t orig_gpr3;
-        uint64_t ctr;
-        uint64_t link;
-        uint64_t xer;
-        uint64_t ccr;
-        uint64_t softe;
-        uint64_t trap;
-        uint64_t dar;
-        uint64_t dsisr;
-        uint64_t result;
-        /*
-         * elf.h's ELF_NGREG says it's 48 registers, so kernel fills it in
-         * with some zeros
-         */
-        uint64_t zero0;
-        uint64_t zero1;
-        uint64_t zero2;
-        uint64_t zero3;
-    };
+    /*
+     * 32-bit
+     */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)buf;
+        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)&regs;
         *pc = r32->nip;
         return true;
     }
+
+    /*
+     * 64-bit
+     */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)buf;
+        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)&regs;
         *pc = r64->nip;
         return true;
     }
-    LOGMSG(l_WARN, "Unknown PTRACE_GETREGSET structure size: '%d'", pt_iov.iov_len);
+
+    LOGMSG(l_WARN, "Unknown registers structure size: '%d'", pt_iov.iov_len);
     return false;
-#endif                          /* defined(__powerpc64__) ||
-                                 * defined(__powerpc__) */
+#endif                          /* defined(__powerpc64__) || defined(__powerpc__) */
+
     LOGMSG(l_DEBUG, "Unknown/unsupported CPU architecture");
     return false;
 }
@@ -532,7 +539,6 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE *pc, char *instr)
      */
     uint8_t buf[MAX_INSTR_SZ];
     size_t memsz;
-
     REG_TYPE status_reg = 0;
 
     snprintf(instr, _HF_INSTR_SZ, "%s", "[UNKNOWN]");
