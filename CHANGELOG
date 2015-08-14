@@ -1,4 +1,4 @@
-2015-03-03 - Version 0.6rc (revision ...)
+2015-08-14 - Version 0.6 (rev aa61adb)
         - Improvements to feedback-driven fuzzing. Using bloom-style filter to record branches (much faster).
         - Using multiple hardware-assisted feedback signals at once.
         - Multiple small things: usage notes, logging
