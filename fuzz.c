@@ -386,6 +386,8 @@ void fuzz_main(honggfuzz_t * hfuzz)
         LOGMSG(l_FATAL, "sigaction(SIGQUIT) failed");
     }
 
+    // Android doesn't support named semaphores
+#if !defined(__ANDROID__)
     /*
      * In OS X semName cannot exceed SEM_NAME_LEN characters otherwise
      * sem_open() will fail with ENAMETOOLONG. Apple, doesn't define
@@ -397,6 +399,15 @@ void fuzz_main(honggfuzz_t * hfuzz)
     snprintf(semName, sizeof(semName), "/hgfz.%d.%" PRIx64, getpid(), util_rndGet(1, 1ULL << 62));
 
     hfuzz->sem = sem_open(semName, O_CREAT, 0644, hfuzz->threadsMax);
+
+#else                           /* !defined(__ANDROID__) */
+    sem_t semName;
+    if (sem_init(&semName, 1, hfuzz->threadsMax)) {
+        LOGMSG(l_FATAL, "sem_init() failed");
+    }
+    hfuzz->sem = &semName;
+#endif                          /* defined(__ANDROID__) */
+    
     if (hfuzz->sem == SEM_FAILED) {
         LOGMSG_P(l_FATAL, "sem_open() failed");
     }
@@ -426,7 +437,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
             while (fuzz_numOfProc(hfuzz) > 1) {
                 usleep(10000);
             }
-#endif                          /* defined(_HF_ARCH_DARWIN) */
+#endif                          /* !defined(_HF_ARCH_DARWIN) */
             LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
             break;
         }
@@ -435,7 +446,11 @@ void fuzz_main(honggfuzz_t * hfuzz)
         fuzz_runThread(hfuzz, fuzz_threadNew);
     }
 
+#ifdef __ANDROID__
+    sem_destroy(&semName);
+#else
     sem_unlink(semName);
+#endif
 
     if (fuzz_sigReceived > 0) {
         LOGMSG(l_INFO, "Signal %d received, terminating", fuzz_sigReceived);

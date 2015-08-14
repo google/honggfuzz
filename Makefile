@@ -60,7 +60,7 @@ ifeq ($(OS),Linux)
 		# Support for popcnt (used in linux/perf.c)
 		CFLAGS += -msse4.2
 	endif	# MARCH
-endif	# OS
+endif	# OS Linux
 
 ifeq ($(OS),Darwin)
 	OS_VERSION = $(shell sw_vers -productVersion)
@@ -96,7 +96,7 @@ endif
 	MIG_OUTPUT = mach_exc.h mach_excUser.c mach_excServer.h mach_excServer.c
 	MIG_OBJECTS = mach_excUser.o mach_excServer.o
 	ARCH = DARWIN
-endif
+endif	# OS Darwin
 
 SRCS += $(ARCH_SRCS)
 CFLAGS += -D_HF_ARCH_${ARCH}
@@ -131,13 +131,17 @@ $(MIG_OBJECTS): $(MIG_OUTPUT)
 	$(CC) -c $(CFLAGS) mach_excServer.c
 
 clean:
-	$(RM) core $(OBJS) $(BIN) $(MIG_OUTPUT) $(MIG_OBJECTS) $(INTERCEPTOR_LIBS)
+	$(RM) -r core $(OBJS) $(BIN) $(MIG_OUTPUT) $(MIG_OBJECTS) $(INTERCEPTOR_LIBS) obj libs
 
 indent:
 	indent -linux -l100 -lc100 -nut -i4 -sob -c33 -cp33 *.c *.h */*.c */*.h; rm -f *~ */*~
 
 depend:
 	makedepend -Y. -Y* -- $(SRCS)
+	
+.PHONY:android
+android:
+	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk APP_PLATFORM=android-21
 
 # DO NOT DELETE
 
