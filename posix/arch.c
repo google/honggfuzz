@@ -136,7 +136,8 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
             args[x] = fileName;
         } else if (!hfuzz->fuzzStdin && strstr(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER)) {
             const char *off = strstr(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER);
-            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - hfuzz->cmdline[x]), hfuzz->cmdline[x], fileName);
+            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - hfuzz->cmdline[x]), hfuzz->cmdline[x],
+                     fileName);
             args[x] = argData;
         } else {
             args[x] = hfuzz->cmdline[x];

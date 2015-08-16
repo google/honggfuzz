@@ -385,7 +385,6 @@ void fuzz_main(honggfuzz_t * hfuzz)
     if (sigaction(SIGQUIT, &sa, NULL) == -1) {
         LOGMSG(l_FATAL, "sigaction(SIGQUIT) failed");
     }
-
     // Android doesn't support named semaphores
 #if !defined(__ANDROID__)
     /*
@@ -407,7 +406,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
     }
     hfuzz->sem = &semName;
 #endif                          /* defined(__ANDROID__) */
-    
+
     if (hfuzz->sem == SEM_FAILED) {
         LOGMSG_P(l_FATAL, "sem_open() failed");
     }
