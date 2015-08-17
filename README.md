@@ -15,8 +15,8 @@
     * ... and some more
 
 **Code**
-  * Latest version: 0.5 [CHANGELOG](https://github.com/google/honggfuzz/blob/master/CHANGELOG) - using a fresh version from the code repository is strongly suggested
-  * Tarball: [Honggfuzz 0.5](https://docs.google.com/file/d/0B86hdL7CeBvAX1NzMkMtUzN4Rms/view), [Direct download link](https://docs.google.com/uc?id=0B86hdL7CeBvAX1NzMkMtUzN4Rms&export=download) and [earlier versions](https://drive.google.com/folderview?id=0B86hdL7CeBvAfmJXcTJCeTJSeFdHd3E5Q3VGZFdCY192aVBxcHJSbkIyUVZGMG9ualJ6aE0&usp=sharing)
+  * Latest version: [0.6](https://github.com/google/honggfuzz/releases/tag/0.6) [CHANGELOG](https://github.com/google/honggfuzz/blob/master/CHANGELOG)
+  * Older versions and static builds: [Honggfuzz 0.5](https://docs.google.com/file/d/0B86hdL7CeBvAX1NzMkMtUzN4Rms/view), [Direct download link](https://docs.google.com/uc?id=0B86hdL7CeBvAX1NzMkMtUzN4Rms&export=download) and [earlier versions](https://drive.google.com/folderview?id=0B86hdL7CeBvAfmJXcTJCeTJSeFdHd3E5Q3VGZFdCY192aVBxcHJSbkIyUVZGMG9ualJ6aE0&usp=sharing)
 
 **Requirements**
   * (under Linux) - BFD library (libbfd-dev) and LibUnwind (libunwind-dev/libunwind8-dev)

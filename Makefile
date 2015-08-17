@@ -142,27 +142,29 @@ clean:
 	$(RM) -r core $(OBJS) $(BIN) $(MIG_OUTPUT) $(MIG_OBJECTS) $(INTERCEPTOR_LIBS) obj libs
 
 indent:
-	indent -linux -l100 -lc100 -nut -i4 -sob -c33 -cp33 *.c *.h */*.c */*.h; rm -f *~ */*~
+	indent -linux -l100 -lc100 -nut -i4 *.c *.h */*.c */*.h; rm -f *~ */*~
 
 depend:
 	makedepend -Y. -Y* -- $(SRCS)
 	
 .PHONY:android
 android:
-	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
-	          APP_PLATFORM=android-21 APP_ABI=$(ANDROID_APP_ABI) $(NDK_BUILD_ARGS)
+		ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
+			APP_PLATFORM=android-21 APP_ABI=$(ANDROID_APP_ABI) $(NDK_BUILD_ARGS)
+
 
 # DO NOT DELETE
 
 honggfuzz.o: common.h log.h files.h fuzz.h util.h
-log.o: common.h log.h
+log.o: common.h log.h util.h
 files.o: common.h files.h log.h
-fuzz.o: common.h fuzz.h arch.h files.h log.h report.h util.h
-util.o: common.h log.h
+fuzz.o: common.h fuzz.h arch.h files.h log.h mangle.h report.h util.h
 report.o: common.h report.h log.h util.h
-linux/arch.o: common.h arch.h linux/perf.h linux/ptrace_utils.h log.h util.h
-linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
-linux/perf.o: common.h linux/perf.h log.h
-linux/ptrace.o: common.h linux/ptrace.h files.h linux/bfd.h linux/unwind.h
+mangle.o: common.h mangle.h log.h util.h
+util.o: common.h files.h log.h
+linux/ptrace.o: common.h linux/ptrace_utils.h files.h linux/bfd.h linux/unwind.h
 linux/ptrace.o: log.h util.h
+linux/perf.o: common.h linux/perf.h log.h util.h
+linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
 linux/unwind.o: common.h linux/unwind.h log.h
+linux/arch.o: common.h arch.h linux/perf.h linux/ptrace_utils.h log.h util.h

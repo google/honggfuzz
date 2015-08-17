@@ -395,7 +395,6 @@ void fuzz_main(honggfuzz_t * hfuzz)
     if (sigaction(SIGQUIT, &sa, NULL) == -1) {
         LOGMSG(l_FATAL, "sigaction(SIGQUIT) failed");
     }
-
     // Android doesn't support named semaphores
 #if !defined(__ANDROID__)
     /*
