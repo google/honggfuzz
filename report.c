@@ -51,7 +51,7 @@ static void report_printdynFileMethod(honggfuzz_t * hfuzz)
             dprintf(reportFD, "EDGE_COUNT ");
         if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM)
             dprintf(reportFD, "CUSTOM ");
-        
+
         dprintf(reportFD, "\n");
     }
 }
