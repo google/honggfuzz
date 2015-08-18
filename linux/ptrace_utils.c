@@ -133,8 +133,7 @@ struct user_regs_struct_64 {
 #define HEADERS_STRUCT struct user_regs_struct_64
 #endif                          /* defined(__i386__) || defined(__x86_64__) */
 
-#if defined(__arm__)
-#define HEADERS_STRUCT struct pt_regs
+#if defined(__arm__) || defined(__aarch64__)
 # ifndef ARM_pc
 #  ifdef __ANDROID__            /* Building with NDK headers */
 #   define ARM_pc uregs[15]
@@ -152,17 +151,15 @@ struct user_regs_struct_64 {
 struct user_regs_struct_32 {
     uint32_t uregs[18];
 };
-#endif                          /* defined(__arm__) */
 
-#if defined(__aarch64__)
-#define HEADERS_STRUCT struct user_pt_regs
 struct user_regs_struct_64 {
     uint64_t regs[31];
     uint64_t sp;
     uint64_t pc;
     uint64_t pstate;
 };
-#endif                          /* defined(__aarch64__) */
+#define HEADERS_STRUCT struct user_regs_struct_64
+#endif                          /* defined(__arm__) || defined(__aarch64__) */
 
 #if defined(__powerpc64__) || defined(__powerpc__)
 #define HEADERS_STRUCT struct pt_regs
@@ -407,7 +404,7 @@ uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
 
     if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
         LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGSET) failed");
-        
+
         // If PTRACE_GETREGSET fails, try PTRACE_GETREGS
         if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
             LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGS) failed");
@@ -440,7 +437,7 @@ uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
 }
 #pragma GCC diagnostic pop      /* ignored "-Wunused-parameter" */
 
-static bool arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
+static size_t arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
 {
     HEADERS_STRUCT regs;
     struct iovec pt_iov = {
@@ -450,13 +447,13 @@ static bool arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
 
     if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
         LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGSET) failed");
-        
+
         // If PTRACE_GETREGSET fails, try PTRACE_GETREGS
         if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
             LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGS) failed");
             LOGMSG(l_WARN, "ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to"
                     " extract target registers");
-            return false;
+            return 0;
         }
     }
 
@@ -468,7 +465,7 @@ static bool arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
         struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)&regs;
         *pc = r32->eip;
         *status_reg = r32->eflags;
-        return true;
+        return pt_iov.iov_len;
     }
 
     /*
@@ -478,13 +475,16 @@ static bool arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
         struct user_regs_struct_64 *r64 = (struct user_regs_struct_64*)&regs;
         *pc = r64->ip;
         *status_reg = r64->flags;
-        return true;
+        return pt_iov.iov_len;
     }
     LOGMSG(l_WARN, "Unknown registers structure size: '%d'", pt_iov.iov_len);
-    return false;
+    return 0;
 #endif                          /* defined(__i386__) || defined(__x86_64__) */
 
-#if defined(__arm__)
+#if defined(__arm__) || defined(__aarch64__)
+    /*
+     * 32-bit
+     */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
         struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)&regs;
 #ifdef __ANDROID__
@@ -494,22 +494,21 @@ static bool arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
         *pc = r32->uregs[ARM_pc];
         *status_reg = r32->uregs[ARM_cpsr];
 #endif
-        return true;
+        return pt_iov.iov_len;
     }
-    LOGMSG(l_WARN, "Unknown registers structure size: '%d'", pt_iov.iov_len);
-    return false;
-#endif                          /* defined(__arm__) */
 
-#if defined(__aarch64__)
+    /*
+     * 64-bit
+     */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
         struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)&regs;
         *pc = r64->pc;
         *status_reg = r64->pstate;
-        return true;
+        return pt_iov.iov_len;
     }
     LOGMSG(l_WARN, "Unknown registers structure size: '%d'", pt_iov.iov_len);
-    return false;
-#endif                          /* defined(__aarch64__) */
+    return 0;
+#endif                          /* defined(__arm__) || defined(__aarch64__) */
 
 #if defined(__powerpc64__) || defined(__powerpc__)
     /*
@@ -518,7 +517,7 @@ static bool arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
         struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)&regs;
         *pc = r32->nip;
-        return true;
+        return pt_iov.iov_len;
     }
 
     /*
@@ -527,15 +526,15 @@ static bool arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
         struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)&regs;
         *pc = r64->nip;
-        return true;
+        return pt_iov.iov_len;
     }
 
     LOGMSG(l_WARN, "Unknown registers structure size: '%d'", pt_iov.iov_len);
-    return false;
+    return 0;
 #endif                          /* defined(__powerpc64__) || defined(__powerpc__) */
 
     LOGMSG(l_DEBUG, "Unknown/unsupported CPU architecture");
-    return false;
+    return 0;
 }
 
 static void arch_getInstrStr(pid_t pid, REG_TYPE *pc, char *instr)
@@ -550,7 +549,8 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE *pc, char *instr)
 
     snprintf(instr, _HF_INSTR_SZ, "%s", "[UNKNOWN]");
 
-    if (!arch_getPC(pid, pc, &status_reg)) {
+    size_t pcRegSz = arch_getPC(pid, pc, &status_reg);
+    if (!pcRegSz) {
         LOGMSG(l_WARN, "Current architecture not supported for disassembly");
         return;
     }
@@ -562,21 +562,20 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE *pc, char *instr)
 
 #if !defined(__ANDROID__)
     arch_bfdDisasm(pid, buf, memsz, instr);
-
 #else
-#if defined(__arm__)
-    cs_arch arch = CS_ARCH_ARM;
-    cs_mode mode = (status_reg & 0x20) ? CS_MODE_THUMB : CS_MODE_ARM;
-#elif defined(__aarch64__)
-    // We shouldn't need any execution detection logic here
-    cs_arch arch = CS_ARCH_ARM64;
-    cs_mode mode = CS_MODE_ARM;
-#elif defined(__i386__)
-    cs_arch arch = CS_ARCH_X86;
-    cs_mode mode = CS_MODE_32;
-#elif defined(__x86_64__)
-    cs_arch arch = CS_ARCH_X86;
-    cs_mode mode = CS_MODE_64;
+    cs_arch arch;
+    cs_mode mode;
+#if defined(__arm__) || defined(__aarch64__)
+    arch = (pcRegSz == sizeof(struct user_regs_struct_64)) ? CS_ARCH_ARM64 : CS_ARCH_ARM;
+    if (arch == CS_ARCH_ARM) {
+        mode = (status_reg & 0x20) ? CS_MODE_THUMB : CS_MODE_ARM;
+    }
+    else {
+        mode = CS_MODE_ARM;
+    }   
+#elif defined(__i386__) || defined(__x86_64__)
+    arch = CS_ARCH_X86;
+    mode = (pcRegSz == sizeof(struct user_regs_struct_64)) ? CS_MODE_64 : CS_MODE_32;
 #else
     LOGMSG(l_ERROR, "Unknown/unsupported Android CPU architecture");
 #endif
@@ -584,7 +583,7 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE *pc, char *instr)
     csh handle;
     cs_err err = cs_open(arch, mode, &handle);
     if (err != CS_ERR_OK) {
-        LOGMSG(l_WARN, "Capstone initilization failed: '%s'", cs_strerror(err));
+        LOGMSG(l_WARN, "Capstone initialization failed: '%s'", cs_strerror(err));
         return;
     }
 
@@ -641,6 +640,14 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs,
                        (REG_TYPE) (long)funcs[i].pc, funcs[i].func, funcs[i].line);
 #endif
     }
+
+// libunwind is not working for 32bit targets in 64bit systems
+#if defined(__aarch64__)
+    if (funcCnt == 0) {
+        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " !ERROR: If 32bit fuzz target"
+                " in aarch64 system, try ARM 32bit build\n");
+    }
+#endif
 
     return;
 }

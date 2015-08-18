@@ -53,21 +53,21 @@ esac
 
 case "$ARCH" in
   arm)
-    CS_ARCH=arm
+    CS_ARCH="arm"
     CS_BUILD_BIN="./make.sh cross-android $ARCH"
     ;;
   arm64)
-    CS_ARCH=aarch64
+    CS_ARCH="arm aarch64"
     CS_BUILD_BIN="./make.sh cross-android $ARCH"
     ;;
   x86)
-    CS_ARCH=x86
+    CS_ARCH="x86"
     CS_BUILD_BIN="make"
     TOOLCHAIN=i686-linux-android
     TOOLCHAIN_S=x86-4.9
     ;;
   x86_64)
-    CS_ARCH=x86
+    CS_ARCH="x86"
     CS_BUILD_BIN="make"
     TOOLCHAIN=x86_64-linux-android
     TOOLCHAIN_S=x86_64-4.9
