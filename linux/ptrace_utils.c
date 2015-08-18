@@ -142,6 +142,13 @@ struct user_regs_struct_64 {
 #   define ARM_pc 15
 #  endif
 # endif                         /* ARM_pc */
+# ifndef ARM_cpsr
+#  ifdef __ANDROID__            /* Building with NDK headers */
+#   define ARM_cpsr uregs[16]
+#  else                         /* Building with glibc headers */
+#   define ARM_cpsr 16
+#  endif
+# endif                         /* ARM_cpsr */
 struct user_regs_struct_32 {
     uint32_t uregs[18];
 };
