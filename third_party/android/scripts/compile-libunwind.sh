@@ -51,6 +51,13 @@ case "$2" in
     ;;
 esac
 
+LC_LDFLAGS="-static"
+
+# For debugging
+# Remember to export UNW_DEBUG_LEVEL=<level>
+# whre 1 < level < 16 (usually values up to 5 are enough)
+#LC_CFLAGS="$LC_FLAGS -DDEBUG"
+
 # Change workdir to simplify args
 cd $LIBUNWIND_DIR
 
@@ -76,13 +83,42 @@ esac
 
 # Apply patches required for Android
 # TODO: Automate global patching when all archs have been tested
+
+# Ptrace patches due to Android incompatibilities
+patch -N --dry-run --silent src/ptrace/_UPT_access_reg.c < ../patches/ptrace-libunwind_1.patch &>/dev/null
+if [ $? -eq 0 ]; then
+  patch src/ptrace/_UPT_access_reg.c < ../patches/ptrace-libunwind_1.patch
+  if [ $? -ne 0 ]; then
+    echo "[-] ptrace-libunwind_1 patch failed"
+    exit 1
+  fi
+fi
+
+patch -N --dry-run --silent src/ptrace/_UPT_access_fpreg.c < ../patches/ptrace-libunwind_2.patch &>/dev/null
+if [ $? -eq 0 ]; then
+  patch src/ptrace/_UPT_access_fpreg.c < ../patches/ptrace-libunwind_2.patch
+  if [ $? -ne 0 ]; then
+    echo "[-] ptrace-libunwind_2 patch failed"
+    exit 1
+  fi
+fi
+
 if [ "$ARCH" == "arm64" ]; then
   # Missing libc functionality
-  patch -N --dry-run --silent include/libunwind-aarch64.h < ../patches/aarch64-libunwind.patch &>/dev/null
+  patch -N --dry-run --silent include/libunwind-aarch64.h < ../patches/aarch64-libunwind_1.patch &>/dev/null
   if [ $? -eq 0 ]; then
-    patch include/libunwind-aarch64.h < ../patches/aarch64-libunwind.patch
+    patch include/libunwind-aarch64.h < ../patches/aarch64-libunwind_1.patch
     if [ $? -ne 0 ]; then
-      echo "[-] aarch64-libunwind patch failed"
+      echo "[-] aarch64-libunwind_1 patch failed"
+      exit 1
+    fi
+  fi
+  # Frames ip bugs
+  patch -N --dry-run --silent src/aarch64/Gstep.c < ../patches/aarch64-libunwind_2.patch &>/dev/null
+  if [ $? -eq 0 ]; then
+    patch src/aarch64/Gstep.c < ../patches/aarch64-libunwind_2.patch
+    if [ $? -ne 0 ]; then
+      echo "[-] aarch64-libunwind_2 patch failed"
       exit 1
     fi
   fi
@@ -127,7 +163,14 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-make CFLAGS="-static" LDFLAGS="-static"
+# Fix stuff that configure failed to detect
+# TODO: Investigate for more ellegant patches
+if [ "$ARCH" == "arm64" ]; then
+  sed -i -e 's/#define HAVE_DECL_PTRACE_POKEUSER 1/#define HAVE_DECL_PTRACE_POKEUSER 0/g' include/config.h
+  echo "#define HAVE_DECL_PT_GETREGSET 1" >> include/config.h
+fi
+
+make CFLAGS="$LC_CFLAGS" LDFLAGS="$LC_LDFLAGS"
 if [ $? -ne 0 ]; then
     echo "[-] Compilation failed"
     cd -

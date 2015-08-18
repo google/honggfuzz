@@ -37,11 +37,6 @@
  * http://www.nongnu.org/libunwind/man/libunwind-ptrace(3).html
  */
 
-/*
- * TODO: Subtract from load map to have relative PC stored in report file. 
- * link_map seems to be the easiest road for that.
- */
-
 // libunwind error codes used for debugging
 static const char *UNW_ER[] = {
     "UNW_ESUCCESS",             /* no error */
