@@ -15,32 +15,27 @@
 
 LOCAL_PATH := $(abspath $(call my-dir)/..)
 
-# Enable Linux ptrace inesead of POSIX by default 
+# Enable Linux ptrace() instead of POSIX signal interface by default 
 ANDROID_WITH_PTRACE ?= true
 
-ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi armeabi-v7a))
-  ARCH_ABI := arm
-  UNW_ARCH := arm
-else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86))
-  ARCH_ABI := x86
-  UNW_ARCH := x86
-  # TODO: Remove this when x86 testing is completed
-  $(info $(APP_ABI) Android not fully tested yet (consider providing feedback if tested))
-else ifeq ($(APP_ABI),$(filter $(APP_ABI),arm64-v8a))
-  ARCH_ABI := arm64
-  UNW_ARCH := aarch64
-  # TODO: Remove this when arm64 testing is completed
-  $(info $(APP_ABI) Android not fully tested yet (consider providing feedback if tested))
-else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86_64))
-  ARCH_ABI := x86_64
-  UNW_ARCH := x86_64
-  $(error $(APP_ABI) Android not supported (issues with libunwind))
-else
-  # ndk-build will have already failed, so just in case
-  $(error Unknown APP_API '$(APP_ABI)')
-endif
-
 ifeq ($(ANDROID_WITH_PTRACE),true)
+  ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi armeabi-v7a))
+    ARCH_ABI := arm
+    UNW_ARCH := arm
+  else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86))
+    ARCH_ABI := x86
+    UNW_ARCH := x86
+  else ifeq ($(APP_ABI),$(filter $(APP_ABI),arm64-v8a))
+    ARCH_ABI := arm64
+    UNW_ARCH := aarch64
+  else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86_64))
+    ARCH_ABI := x86_64
+    UNW_ARCH := x86_64
+    $(error $(APP_ABI) Android not supported with ptrace API (issues with libunwind))
+  else
+    $(error Unsuported / Unknown APP_API '$(APP_ABI)')
+  endif
+
   # Upstream libunwind compiled from sources with Android NDK toolchain
   LIBUNWIND_A := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(UNW_ARCH).a
   ifeq ("$(wildcard $(LIBUNWIND_A))","")
