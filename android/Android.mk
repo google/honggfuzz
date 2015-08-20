@@ -103,7 +103,7 @@ else
   ARCH_SRCS := posix/arch.c
   ARCH := POSIX
   $(info $(shell (echo "********************************************************************")))
-  $(info $(shell (echo "Android POSIX build: Will allow debuggerd to process crashes")))
+  $(info $(shell (echo "Android POSIX build: Will allow debuggerd to also process crashes")))
   $(info $(shell (echo "********************************************************************")))
 endif
 
