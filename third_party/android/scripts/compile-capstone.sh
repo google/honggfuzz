@@ -118,4 +118,4 @@ fi
 cp libcapstone.a $ARCH/
 
 # Revert workdir to caller
-cd -
+cd - &>/dev/null

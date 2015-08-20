@@ -173,10 +173,10 @@ fi
 make CFLAGS="$LC_CFLAGS" LDFLAGS="$LC_LDFLAGS"
 if [ $? -ne 0 ]; then
     echo "[-] Compilation failed"
-    cd -
+    cd - &>/dev/null
     exit 1
 else
     echo "[*] '$ARCH' libunwind  available at '$LIBUNWIND_DIR/$ARCH'"
     cp src/.libs/*.a $ARCH
-    cd -
+    cd - &>/dev/null
 fi
