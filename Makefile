@@ -163,8 +163,8 @@ fuzz.o: common.h fuzz.h arch.h files.h log.h mangle.h report.h util.h
 report.o: common.h report.h log.h util.h
 mangle.o: common.h mangle.h log.h util.h
 util.o: common.h files.h log.h
-linux/ptrace.o: common.h linux/ptrace_utils.h files.h linux/bfd.h linux/unwind.h
-linux/ptrace.o: log.h util.h
+linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h linux/bfd.h
+linux/ptrace_utils.o: linux/unwind.h log.h util.h
 linux/perf.o: common.h linux/perf.h log.h util.h
 linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
 linux/unwind.o: common.h linux/unwind.h log.h
