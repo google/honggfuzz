@@ -49,7 +49,7 @@
 #define _HF_PAGE_ALIGN_UP(x)  (((size_t)x + (size_t)getpagesize() - (size_t)1) & ~((size_t)getpagesize() - (size_t)1))
 
 /* String buffer size for function names in stack traces produced from libunwind */
-#define _HF_FUNC_NAME_SZ    256  //Should be alright for mangled C++ procs too
+#define _HF_FUNC_NAME_SZ    256 // Should be alright for mangled C++ procs too
 
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,

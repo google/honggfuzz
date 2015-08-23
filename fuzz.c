@@ -57,9 +57,10 @@
 
 pid_t honggfuzz_aarch64_fork(void)
 {
-	return syscall(__NR_clone, SIGCHLD, 0, 0, 0);
+    return syscall(__NR_clone, SIGCHLD, 0, 0, 0);
 }
-# define fork honggfuzz_aarch64_fork
+
+#define fork honggfuzz_aarch64_fork
 #endif
 
 static int fuzz_sigReceived = 0;

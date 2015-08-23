@@ -102,8 +102,7 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
             hfuzz->tmOut,
             hfuzz->ignoreAddr,
             hfuzz->asLimit,
-            hfuzz->pid,
-            hfuzz->dictionaryFile == NULL ? "NULL" : hfuzz->dictionaryFile);
+            hfuzz->pid, hfuzz->dictionaryFile == NULL ? "NULL" : hfuzz->dictionaryFile);
 
 #if defined(_HF_ARCH_LINUX)
     report_printdynFileMethod(hfuzz);
@@ -112,8 +111,7 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
     report_printTargetCmd(hfuzz);
 
     dprintf(reportFD,
-            "%s" "=====================================================================\n",
-            s);
+            "%s" "=====================================================================\n", s);
 
     return;
 }

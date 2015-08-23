@@ -53,7 +53,7 @@ static const char *UNW_ER[] = {
 };
 
 #ifndef __ANDROID__
-size_t arch_unwindStack(pid_t pid, funcs_t *funcs)
+size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
 {
     size_t num_frames = 0;
     void *ui = NULL;
@@ -81,10 +81,10 @@ size_t arch_unwindStack(pid_t pid, funcs_t *funcs)
         unw_word_t ip;
         ret = unw_get_reg(&c, UNW_REG_IP, &ip);
         if (ret < 0) {
-            LOGMSG(l_ERROR, "[pid='%d'] [%d] failed to read IP (%s)", pid, num_frames, UNW_ER[-ret]);
+            LOGMSG(l_ERROR, "[pid='%d'] [%d] failed to read IP (%s)", pid, num_frames,
+                   UNW_ER[-ret]);
             funcs[num_frames].pc = 0;
-        }
-        else
+        } else
             funcs[num_frames].pc = (void *)ip;
     }
 
@@ -94,10 +94,10 @@ size_t arch_unwindStack(pid_t pid, funcs_t *funcs)
     return num_frames;
 }
 
-#else                          /* !defined(__ANDROID__) */
-size_t arch_unwindStack(pid_t pid, funcs_t *funcs)
+#else                           /* !defined(__ANDROID__) */
+size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
 {
-    size_t num_frames = 0;    
+    size_t num_frames = 0;
     struct UPT_info *ui = NULL;
     unw_addr_space_t as = NULL;
 
@@ -107,7 +107,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t *funcs)
         goto out;
     }
 
-    ui = (struct UPT_info*)_UPT_create(pid);
+    ui = (struct UPT_info *)_UPT_create(pid);
     if (ui == NULL) {
         LOGMSG(l_ERROR, "[pid='%d'] _UPT_create failed", pid);
         goto out;
@@ -128,7 +128,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t *funcs)
         ret = unw_get_proc_info(&cursor, &frameInfo);
         if (ret < 0) {
             LOGMSG(l_DEBUG, "[pid='%d'] [%d] unw_get_proc_info (%s)",
-                    pid, num_frames, UNW_ER[-ret]);
+                   pid, num_frames, UNW_ER[-ret]);
             // Not safe to keep reading
             goto out;
         }
@@ -136,7 +136,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t *funcs)
         ret = unw_get_reg(&cursor, UNW_REG_IP, &pc);
         if (ret < 0) {
             LOGMSG(l_ERROR, "[pid='%d'] [%d] failed to read IP (%s)",
-                    pid, num_frames, UNW_ER[-ret]);
+                   pid, num_frames, UNW_ER[-ret]);
             // We don't want to try to extract info from an arbitrary IP
             // TODO: Maybe abort completely (goto out))
             goto skip_frame_info;
@@ -145,11 +145,11 @@ size_t arch_unwindStack(pid_t pid, funcs_t *funcs)
         ret = unw_get_proc_name(&cursor, buf, sizeof(buf), &offset);
         if (ret < 0) {
             LOGMSG(l_DEBUG, "[pid='%d'] [%d] unw_get_proc_name() failed (%s)",
-                    pid, num_frames, UNW_ER[-ret]);
+                   pid, num_frames, UNW_ER[-ret]);
             buf[0] = '\0';
         }
 
-skip_frame_info:
+ skip_frame_info:
         // Compared to bfd, line var plays the role of offset from func_name
         // Reports format is adjusted accordingly to reflect in saved file
         funcs[num_frames].line = offset;

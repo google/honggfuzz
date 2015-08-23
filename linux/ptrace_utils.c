@@ -57,7 +57,7 @@
 
 #if defined(__ANDROID__)
 #include <linux/ptrace.h>
-#include <asm/ptrace.h>     /* For pt_regs structs */
+#include <asm/ptrace.h>         /* For pt_regs structs */
 #include <sys/syscall.h>
 #include "capstone.h"
 #endif
@@ -134,20 +134,20 @@ struct user_regs_struct_64 {
 #endif                          /* defined(__i386__) || defined(__x86_64__) */
 
 #if defined(__arm__) || defined(__aarch64__)
-# ifndef ARM_pc
-#  ifdef __ANDROID__            /* Building with NDK headers */
-#   define ARM_pc uregs[15]
-#  else                         /* Building with glibc headers */
-#   define ARM_pc 15
-#  endif
-# endif                         /* ARM_pc */
-# ifndef ARM_cpsr
-#  ifdef __ANDROID__            /* Building with NDK headers */
-#   define ARM_cpsr uregs[16]
-#  else                         /* Building with glibc headers */
-#   define ARM_cpsr 16
-#  endif
-# endif                         /* ARM_cpsr */
+#ifndef ARM_pc
+#ifdef __ANDROID__              /* Building with NDK headers */
+#define ARM_pc uregs[15]
+#else                           /* Building with glibc headers */
+#define ARM_pc 15
+#endif
+#endif                          /* ARM_pc */
+#ifndef ARM_cpsr
+#ifdef __ANDROID__              /* Building with NDK headers */
+#define ARM_cpsr uregs[16]
+#else                           /* Building with glibc headers */
+#define ARM_cpsr 16
+#endif
+#endif                          /* ARM_cpsr */
 struct user_regs_struct_32 {
     uint32_t uregs[18];
 };
@@ -220,94 +220,94 @@ struct user_regs_struct_64 {
 #if defined(__ANDROID__)
 #if defined(__NR_process_vm_readv)
 static ssize_t honggfuzz_process_vm_readv(pid_t pid,
-            const struct iovec *lvec,
-            unsigned long liovcnt,
-            const struct iovec *rvec,
-            unsigned long riovcnt,
-            unsigned long flags)
+                                          const struct iovec *lvec,
+                                          unsigned long liovcnt,
+                                          const struct iovec *rvec,
+                                          unsigned long riovcnt, unsigned long flags)
 {
-	return syscall(__NR_process_vm_readv, (long)pid, lvec, liovcnt, rvec, riovcnt, flags);
+    return syscall(__NR_process_vm_readv, (long)pid, lvec, liovcnt, rvec, riovcnt, flags);
 }
-# define process_vm_readv honggfuzz_process_vm_readv
+
+#define process_vm_readv honggfuzz_process_vm_readv
 #else                           /* defined(__NR_process_vm_readv) */
-# define process_vm_readv(...) (errno = ENOSYS, -1)
+#define process_vm_readv(...) (errno = ENOSYS, -1)
 #endif                          /* !defined(__NR_process_vm_readv) */
 
 // Naming compatibilities
 #if !defined(PT_TRACE_ME)
-# define PT_TRACE_ME PTRACE_TRACEME
+#define PT_TRACE_ME PTRACE_TRACEME
 #endif
 
 #if !defined(PT_READ_I)
-# define PT_READ_I PTRACE_PEEKTEXT
+#define PT_READ_I PTRACE_PEEKTEXT
 #endif
 
 #if !defined(PT_READ_D)
-# define PT_READ_D PTRACE_PEEKDATA
+#define PT_READ_D PTRACE_PEEKDATA
 #endif
 
 #if !defined(PT_READ_U)
-# define PT_READ_U PTRACE_PEEKUSR
+#define PT_READ_U PTRACE_PEEKUSR
 #endif
 
 #if !defined(PT_WRITE_I)
-# define PT_WRITE_I PTRACE_POKETEXT
+#define PT_WRITE_I PTRACE_POKETEXT
 #endif
 
 #if !defined(PT_WRITE_D)
-# define PT_WRITE_D PTRACE_POKEDATA
+#define PT_WRITE_D PTRACE_POKEDATA
 #endif
 
 #if !defined(PT_WRITE_U)
-# define PT_WRITE_U PTRACE_POKEUSR
+#define PT_WRITE_U PTRACE_POKEUSR
 #endif
 
 #if !defined(PT_CONT)
-# define PT_CONT PTRACE_CONT
+#define PT_CONT PTRACE_CONT
 #endif
 
 #if !defined(PT_CONTINUE)
-# define PT_CONTINUE PTRACE_CONT
+#define PT_CONTINUE PTRACE_CONT
 #endif
 
 #if !defined(PT_KILL)
-# define PT_KILL PTRACE_KILL
+#define PT_KILL PTRACE_KILL
 #endif
 
 #if !defined(PT_STEP)
-# define PT_STEP PTRACE_SINGLESTEP
+#define PT_STEP PTRACE_SINGLESTEP
 #endif
 
 #if !defined(PT_GETFPREGS)
-# define PT_GETFPREGS PTRACE_GETFPREGS
+#define PT_GETFPREGS PTRACE_GETFPREGS
 #endif
 
 #if !defined(PT_ATTACH)
-# define PT_ATTACH PTRACE_ATTACH
+#define PT_ATTACH PTRACE_ATTACH
 #endif
 
 #if !defined(PT_DETACH)
-# define PT_DETACH PTRACE_DETACH
+#define PT_DETACH PTRACE_DETACH
 #endif
 
 #if !defined(PT_SYSCALL)
-# define PT_SYSCALL PTRACE_SYSCALL
+#define PT_SYSCALL PTRACE_SYSCALL
 #endif
 
 #if !defined(PT_SETOPTIONS)
-# define PT_SETOPTIONS PTRACE_SETOPTIONS
+#define PT_SETOPTIONS PTRACE_SETOPTIONS
 #endif
 
 #if !defined(PT_GETEVENTMSG)
-# define PT_GETEVENTMSG PTRACE_GETEVENTMSG
+#define PT_GETEVENTMSG PTRACE_GETEVENTMSG
 #endif
 
 #if !defined(PT_GETSIGINFO)
-# define PT_GETSIGINFO PTRACE_GETSIGINFO
+#define PT_GETSIGINFO PTRACE_GETSIGINFO
 #endif
 
 #if !defined(PT_SETSIGINFO)
-# define PT_SETSIGINFO PTRACE_SETSIGINFO
+#define PT_SETSIGINFO PTRACE_SETSIGINFO
 #endif
 
 /* 
@@ -321,7 +321,7 @@ static ssize_t honggfuzz_process_vm_readv(pid_t pid,
 #define PTRACE_GETREGS 12
 #endif
 
-#endif                           /* defined(__ANDROID__) */
+#endif                          /* defined(__ANDROID__) */
 
 /*  *INDENT-OFF* */
 struct {
@@ -360,7 +360,6 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
     if (process_vm_readv(pid, &local_iov, 1, &remote_iov, 1, 0) == (ssize_t) len) {
         return len;
     }
-
     // Debug if failed since it shouldn't happen very often
     LOGMSG_P(l_DEBUG, "process_vm_readv() failed");
 
@@ -394,7 +393,6 @@ uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
     if ((hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) == 0) {
         return 0ULL;
     }
-
 #if defined(__i386__) || defined(__x86_64__)
     HEADERS_STRUCT regs;
     struct iovec pt_iov = {
@@ -409,7 +407,7 @@ uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
         if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
             LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGS) failed");
             LOGMSG(l_WARN, "ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to"
-                    " extract target registers");
+                   " extract target registers");
             return 0ULL;
         }
     }
@@ -426,7 +424,7 @@ uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
      * 64-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64*)&regs;
+        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)&regs;
         return (uint64_t) r64->gs_base;
     }
 
@@ -435,9 +433,10 @@ uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
 
     return 0ULL;
 }
+
 #pragma GCC diagnostic pop      /* ignored "-Wunused-parameter" */
 
-static size_t arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
+static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
 {
     HEADERS_STRUCT regs;
     struct iovec pt_iov = {
@@ -452,11 +451,10 @@ static size_t arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
         if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
             LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGS) failed");
             LOGMSG(l_WARN, "ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to"
-                    " extract target registers");
+                   " extract target registers");
             return 0;
         }
     }
-
 #if defined(__i386__) || defined(__x86_64__)
     /*
      * 32-bit
@@ -472,7 +470,7 @@ static size_t arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
      * 64-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64*)&regs;
+        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)&regs;
         *pc = r64->ip;
         *status_reg = r64->flags;
         return pt_iov.iov_len;
@@ -537,7 +535,7 @@ static size_t arch_getPC(pid_t pid, REG_TYPE *pc, REG_TYPE *status_reg)
     return 0;
 }
 
-static void arch_getInstrStr(pid_t pid, REG_TYPE *pc, char *instr)
+static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
 {
     /*
      * We need a value aligned to 8
@@ -559,7 +557,6 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE *pc, char *instr)
         snprintf(instr, _HF_INSTR_SZ, "%s", "[NOT_MMAPED]");
         return;
     }
-
 #if !defined(__ANDROID__)
     arch_bfdDisasm(pid, buf, memsz, instr);
 #else
@@ -569,10 +566,9 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE *pc, char *instr)
     arch = (pcRegSz == sizeof(struct user_regs_struct_64)) ? CS_ARCH_ARM64 : CS_ARCH_ARM;
     if (arch == CS_ARCH_ARM) {
         mode = (status_reg & 0x20) ? CS_MODE_THUMB : CS_MODE_ARM;
-    }
-    else {
+    } else {
         mode = CS_MODE_ARM;
-    }   
+    }
 #elif defined(__i386__) || defined(__x86_64__)
     arch = CS_ARCH_X86;
     mode = (pcRegSz == sizeof(struct user_regs_struct_64)) ? CS_MODE_64 : CS_MODE_32;
@@ -592,7 +588,7 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE *pc, char *instr)
 
     if (count < 1) {
         LOGMSG(l_WARN, "Couldn't disassemble the assembler instructions' stream: '%s'",
-                cs_strerror(cs_errno(handle)));
+               cs_strerror(cs_errno(handle)));
         cs_close(&handle);
         return;
     }
@@ -628,15 +624,15 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs,
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK:\n");
     for (size_t i = 0; i < funcCnt; i++) {
 #ifdef __HF_USE_CAPSTONE__
-        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <"REG_PD REG_PM "> ",
+        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <" REG_PD REG_PM "> ",
                        (REG_TYPE) (long)funcs[i].pc, funcs[i].func, funcs[i].line);
         if (funcs[i].func[0] != '\0')
-             util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[%s + 0x%x]\n", 
-                     funcs[i].func, funcs[i].line);
+            util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[%s + 0x%x]\n",
+                           funcs[i].func, funcs[i].line);
         else
             util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[]\n");
 #else
-        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <"REG_PD REG_PM "> [%s():%u]\n",
+        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <" REG_PD REG_PM "> [%s():%u]\n",
                        (REG_TYPE) (long)funcs[i].pc, funcs[i].func, funcs[i].line);
 #endif
     }
@@ -645,7 +641,7 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs,
 #if defined(__aarch64__)
     if (funcCnt == 0) {
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " !ERROR: If 32bit fuzz target"
-                " in aarch64 system, try ARM 32bit build\n");
+                       " in aarch64 system, try ARM 32bit build\n");
     }
 #endif
 
