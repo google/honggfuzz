@@ -48,6 +48,9 @@
 /* Align to the upper-page boundary */
 #define _HF_PAGE_ALIGN_UP(x)  (((size_t)x + (size_t)getpagesize() - (size_t)1) & ~((size_t)getpagesize() - (size_t)1))
 
+/* String buffer size for function names in stack traces produced from libunwind */
+#define _HF_FUNC_NAME_SZ    256  //Should be alright for mangled C++ procs too
+
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
     _HF_DYNFILE_INSTR_COUNT = 0x1,
@@ -110,11 +113,11 @@ typedef struct fuzzer_t {
     size_t dynamicFileSz;
 } fuzzer_t;
 
-#define _HF_MAX_FUNCS 200
+#define _HF_MAX_FUNCS 80
 typedef struct {
     void *pc;
-    char func[64];
-    int line;
+    char func[_HF_FUNC_NAME_SZ];
+    size_t line;
 } funcs_t;
 
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))

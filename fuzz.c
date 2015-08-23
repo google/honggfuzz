@@ -52,6 +52,16 @@
 #include "report.h"
 #include "util.h"
 
+#if defined(__ANDROID__) && !defined(__NR_fork)
+#include <sys/syscall.h>
+
+pid_t honggfuzz_aarch64_fork(void)
+{
+	return syscall(__NR_clone, SIGCHLD, 0, 0, 0);
+}
+# define fork honggfuzz_aarch64_fork
+#endif
+
 static int fuzz_sigReceived = 0;
 
 static void fuzz_sigHandler(int sig, siginfo_t * si, void *v)
@@ -255,7 +265,7 @@ static void *fuzz_threadNew(void *arg)
         }
     }
 
-#if defined(_HF_ARCH_LINUX)
+#if defined(_HF_ARCH_LINUX) && defined(__NR_fork)
 #include <unistd.h>
 #include <sys/syscall.h>
     fuzzer.pid = syscall(__NR_fork);

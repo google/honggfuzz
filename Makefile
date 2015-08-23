@@ -103,6 +103,15 @@ CFLAGS += -D_HF_ARCH_${ARCH}
 INTERCEPTOR_SRCS = $(wildcard interceptor/*.c)
 INTERCEPTOR_LIBS = $(INTERCEPTOR_SRCS:.c=.so)
 
+# Control Android builds
+ANDROID_DEBUG_ENABLED ?= false
+ANDROID_APP_ABI       ?= armeabi-v7a
+ANDROID_API           ?= android-21
+NDK_BUILD_ARGS :=
+ifeq ($(ANDROID_DEBUG_ENABLED),true)
+	NDK_BUILD_ARGS += V=1 NDK_DEBUG=1 APP_OPTIM=debug
+endif
+
 all: warn_libs $(BIN) $(INTERCEPTOR_LIBS)
 
 %.o: %.c
@@ -141,7 +150,9 @@ depend:
 	
 .PHONY:android
 android:
-	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk APP_PLATFORM=android-21
+		ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
+			APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) $(NDK_BUILD_ARGS)
+
 
 # DO NOT DELETE
 
@@ -152,9 +163,9 @@ fuzz.o: common.h fuzz.h arch.h files.h log.h mangle.h report.h util.h
 report.o: common.h report.h log.h util.h
 mangle.o: common.h mangle.h log.h util.h
 util.o: common.h files.h log.h
-linux/ptrace.o: common.h linux/ptrace.h files.h linux/bfd.h linux/unwind.h
+linux/ptrace.o: common.h linux/ptrace_utils.h files.h linux/bfd.h linux/unwind.h
 linux/ptrace.o: log.h util.h
 linux/perf.o: common.h linux/perf.h log.h util.h
 linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
 linux/unwind.o: common.h linux/unwind.h log.h
-linux/arch.o: common.h arch.h linux/perf.h linux/ptrace.h log.h util.h
+linux/arch.o: common.h arch.h linux/perf.h linux/ptrace_utils.h log.h util.h
