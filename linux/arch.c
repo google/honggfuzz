@@ -134,7 +134,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
             .rlim_max = hfuzz->asLimit * 1024UL * 1024UL,
         };
         if (setrlimit(RLIMIT_AS, &rl) == -1) {
-            LOGMSG_P(l_DEBUG, "Couldn't encforce the RLIMIT_AS resource limit, ignoring");
+            LOGMSG_P(l_DEBUG, "Couldn't enforce the RLIMIT_AS resource limit, ignoring");
         }
     }
 
@@ -218,7 +218,7 @@ static bool arch_setTimer(timer_t * timerid)
         .sa_restorer = NULL,
     };
     if (sigaction(SIGALRM, &sa, NULL) == -1) {
-        LOGMSG_P(l_ERROR, "sigaciton(SIGALRM) failed");
+        LOGMSG_P(l_ERROR, "sigaction(SIGALRM) failed");
         return false;
     }
 
