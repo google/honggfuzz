@@ -19,7 +19,7 @@
   * Older versions and static builds: [Honggfuzz 0.5](https://docs.google.com/file/d/0B86hdL7CeBvAX1NzMkMtUzN4Rms/view), [Direct download link](https://docs.google.com/uc?id=0B86hdL7CeBvAX1NzMkMtUzN4Rms&export=download) and [earlier versions](https://drive.google.com/folderview?id=0B86hdL7CeBvAfmJXcTJCeTJSeFdHd3E5Q3VGZFdCY192aVBxcHJSbkIyUVZGMG9ualJ6aE0&usp=sharing)
 
 **Requirements**
-  * Linux) - BFD library (libbfd-dev) and LibUnwind (libunwind-dev/libunwind8-dev)
+  * Linux - BFD library (libbfd-dev) and LibUnwind (libunwind-dev/libunwind8-dev)
   * FreeBSD - gmake
   * Android - Android SDK/NDK
 
