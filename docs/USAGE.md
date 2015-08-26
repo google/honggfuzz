@@ -14,24 +14,24 @@ This document describes the **honggfuzz** project.
 
 # OBJECTIVE #
 
-Honggfuzz is a general-purpose fuzzing tool. Given a starting corpus of test files, Hongfuzz supplies and modifies input to a test program and utilize the **ptrace() API**/**POSIX signal interface** to detect and log crashes.
+Honggfuzz is a general-purpose fuzzing tool. Given a starting corpus of test files, honggfuzz supplies and modifies input to a test program and utilize the **ptrace() API**/**POSIX signal interface** to detect and log crashes.
 
 
 ---
 
 # FEATURES #
 
-  * **Easy setup**: No complicated configuration files or setup necessary -- Hongfuzz can be run directly from the command line.
-  * **Fast**: Multiple Hongfuzz instances can be run simultaneously for more efficient fuzzing.
-  * **Powerful analysis capabilities**: Hongfuzz will use the most powerful process state analysis (e.g. ptrace) interface under a given OS.
+  * **Easy setup**: No complicated configuration files or setup necessary -- honggfuzz can be run directly from the command line.
+  * **Fast**: Multiple honggfuzz instances can be run simultaneously for more efficient fuzzing.
+  * **Powerful analysis capabilities**: honggfuzz will use the most powerful process state analysis (e.g. ptrace) interface under a given OS.
 
 
 ---
 
 # REQUIREMENTS #
 
-  * A POSIX compilant operating system (See the compatibility list for more)
-  * The **[capstone](capstone.md)** library (wth x86/amd64 Linux boxes)
+  * A POSIX compliant operating system (See the compatibility list for more)
+  * The **[capstone](capstone.md)** library (with x86/amd64 Linux boxes)
   * A corpus of input files. Honggfuzz expects a set of files to use and modify as input to the application you're fuzzing. How you get or create these files is up to you, but you might be interested in the following sources:
     * Image formats: Tavis Ormandy's [Image Testuite](http://code.google.com/p/imagetestsuite/) has been effective at finding vulnerabilities in various graphics libraries.
     * PDF: Adobe provides some [test PDF files](http://acroeng.adobe.com/).
@@ -113,7 +113,7 @@ Honggfuzz offers simple file mutation algorithm only (bits/bytes). This [documen
   * A: The ptrace() API is more flexible when it comes to analyzing a process' crash. wait3/4() syscalls are only able to determine the type of signal which crashed an application and limited resource usage information (see _man wait4_).
 
   * Q: **Why isn't there any support for the ptrace() API when compiling under FreeBSD or Mac OS X operating systems**?
-  * A: These operating systems lack some specific ptrace() operations, including **PT`_`GETREGS** (Mac OS X) and **PT`_`GETSIGINFO**, both of which Hongfuzz depends on. If you have any ideas on how to get around this limitation, send us an email or patch.
+  * A: These operating systems lack some specific ptrace() operations, including **PT`_`GETREGS** (Mac OS X) and **PT`_`GETSIGINFO**, both of which honggfuzz depends on. If you have any ideas on how to get around this limitation, send us an email or patch.
 
 
 ---

@@ -11,7 +11,7 @@ Developers can provide their own initial file (-f flag) which will be gradually 
   * CPU supporting [BTS (Branch Trace Store)](https://software.intel.com/en-us/forums/topic/277868?language=es) for hardware assisted unique edge (branch pairs) counting. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
 
 # Examples #
-The main fuzzing strategy is quite simple. It tries to maximize the number of perf events while mangling the file which servers as an unput for fuzzing.
+The main fuzzing strategy is quite simple. It tries to maximize the number of perf events while mangling the file which servers as an input for fuzzing.
 
 ## Instruction counting (-Di) ##
 
@@ -38,7 +38,7 @@ It will start with some initial file (or with no file at all), and subsequent fu
 
 ## Branch counting (-Db) ##
 
-As above, it will try to maximine the number of branches taken by CPU on behalf of the fuzzed process (here: djpeg.static) while performing the fuzzing process.
+As above, it will try to maximize the number of branches taken by CPU on behalf of the fuzzed process (here: djpeg.static) while performing the fuzzing process.
 
 ```
 $ honggfuzz -q -Db -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djpeg.static ___FILE___
