@@ -1,6 +1,6 @@
 # Introduction #
 
-WIth honggfuzz you can fuzz files by flipping bytes (`-mB`) or bits (`-mb`). You can also specify the rate (`-r`) of how many bytes or bits should be changed in the input file.
+With honggfuzz you can fuzz files by flipping bytes (`-mB`) or bits (`-mb`). You can also specify the rate (`-r`) of how many bytes or bits should be changed in the input file.
 
 Alternatively to this _"dumb"_ fuzzing mode, you can specify a custom fuzzer (`-c`) to modify input files.
 

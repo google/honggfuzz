@@ -6,7 +6,7 @@ _Note: This currently works with Linux OS only_
 
 # What do we need? #
 
-We need to choose what we actually want to fuzz. In this example it'd be HTTP header parser of Apache WS. We need to create a fuzzing tool which will create those headers and then we'll use netcat (_/bin/nc_) to send it to the Apach. I had created my own tool (_headfuzz_), it will create output which looks like:
+We need to choose what we actually want to fuzz. In this example it'd be HTTP header parser of Apache WS. We need to create a fuzzing tool which will create those headers and then we'll use netcat (_/bin/nc_) to send it to Apache. I had created my own tool (_headfuzz_), it will create output which looks like:
 
 ```
 GET (Orig-Uri) HTTP/1.0
