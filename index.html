@@ -1,37 +1,34 @@
 <!DOCTYPE html>
 <html>
-
   <head>
     <meta charset='utf-8'>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="description" content="Honggfuzz : A general-purpose, easy-to-use fuzzer with interesting analysis options. Supports feedback-driven code coverage modes.">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
 
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
 
-    <title>Honggfuzz</title>
+    <title>Honggfuzz by google</title>
   </head>
 
   <body>
+    <header>
+      <div class="inner">
+        <h1>Honggfuzz</h1>
+        <h2>A general-purpose, easy-to-use fuzzer with interesting analysis options. Supports feedback-driven code coverage modes.</h2>
+        <a href="https://github.com/google/honggfuzz" class="button"><small>View project on</small> GitHub</a>
+      </div>
+    </header>
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/google/honggfuzz">View on GitHub</a>
-
-          <h1 id="project_title">Honggfuzz</h1>
-          <h2 id="project_tagline">A general-purpose, easy-to-use fuzzer with interesting analysis options. Supports feedback-driven code coverage modes.</h2>
-
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/google/honggfuzz/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/google/honggfuzz/tarball/master">Download this project as a tar.gz file</a>
-            </section>
-        </header>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
-        <h1>
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>
 <a id="honggfuzz" class="anchor" href="#honggfuzz" aria-hidden="true"><span class="octicon octicon-link"></span></a>honggfuzz</h1>
 
 <p><strong>Description</strong></p>
@@ -39,7 +36,8 @@
 <ul>
 <li>A general-purpose, easy-to-use fuzzer with interesting analysis options. See <a href="https://github.com/google/honggfuzz/blob/master/README.md">README</a> wiki page for more details</li>
 <li>Supports hardware-based <a href="https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md">feedback-driven fuzzing</a> (requires Linux and a supported CPU model), also for closed-source binaries</li>
-<li>It works, at least, under GNU/Linux and FreeBSD (possibly under Mac OS X as well)</li>
+<li>It works, at least, under GNU/Linux, FreeBSD, Mac OSX and <a href="https://github.com/google/honggfuzz/blob/master/docs/Android.md">Android</a>
+</li>
 <li>
 <a href="https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md">Can fuzz long-lasting processes</a> (e.g. network servers like Apache's httpd and ISC's bind)</li>
 <li>It's been used to find a few interesting security problems in major software; examples:
@@ -51,7 +49,7 @@
 <li><a href="https://bugzilla.gnome.org/buglist.cgi?query_format=advanced;emailreporter1=1;email1=robert%40swiecki.net;product=librsvg;emailtype1=substring">Multiple bugs in the librsvg library</a></li>
 <li><a href="http://lists.freedesktop.org/archives/poppler/2010-November/006726.html">Multiple bugs in the poppler library</a></li>
 <li><a href="https://www.hex-rays.com/bugbounty.shtml">Multiple exploitable bugs in IDA-Pro</a></li>
-<li>... and some more</li>
+<li>... and more</li>
 </ul>
 </li>
 </ul>
@@ -68,25 +66,33 @@
 <p><strong>Requirements</strong></p>
 
 <ul>
-<li>(under Linux) - BFD library (libbfd-dev) and LibUnwind (libunwind-dev/libunwind8-dev)</li>
-<li>(under FreeBSD) - gmake</li>
+<li>Linux) - BFD library (libbfd-dev) and LibUnwind (libunwind-dev/libunwind8-dev)</li>
+<li>FreeBSD - gmake</li>
+<li>Android - Android SDK/NDK</li>
 </ul>
 
 <p><strong>Other</strong></p>
 
 <p>This is NOT an official Google product.</p>
-      </section>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/google/honggfuzz/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/google/honggfuzz/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/google/honggfuzz"></a> is maintained by <a href="https://github.com/google">google</a>.</p>
+
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
     </div>
 
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p class="copyright">Honggfuzz maintained by <a href="https://github.com/google">google</a></p>
-        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
-      </footer>
-    </div>
-
-    
-
+  
   </body>
 </html>
