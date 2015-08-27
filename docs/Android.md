@@ -1,10 +1,10 @@
 # Android Platform #
 
-Honggfuzz (as of version 0.6) is supporting Android OS (NDK cross-compilation) using both ptrace() API and POSIX signals interface. When ptrace() API is enabled, hongfuzz engine is preventing monitored signals from reaching debuggerd (no logcat backtraces & tombstones), since fuzzer's runtime analysis was affected.
+Honggfuzz (as of version 0.6) supports Android OS (NDK cross-compilation) using both ptrace() API and POSIX signals interface. When ptrace() API is enabled, honggfuzz's engine prevents monitored signals from reaching the debugger (no logcat backtraces & tombstones), since the fuzzer's runtime analysis was affected.
 
 ## Requirements ##
 
-  * [Android NDK](https://developer.android.com/ndk/index.html): User has to manually install NDK and set envrinment PATH
+  * [Android NDK](https://developer.android.com/ndk/index.html): User has to manually install NDK and set environment PATH
   * [libunwind](http://www.nongnu.org/libunwind/download.html): In case of first build an upstream git fork is executed followed by required patches
   * [capstone](http://www.capstone-engine.org/download.html): In case of first build an upstream git fork is executed
   
@@ -24,7 +24,7 @@ It has been tested under the following CPU architectures:
 | **armeabi-v7a** | ptrace() API & POSIX signal interface |
 | **arm64-v8a** | ptrace() API & POSIX signal interface `*`|
 | **x86** | ptrace() API & POSIX signal interface |
-| **x86_64** | ptrace() API & POSIX signal interface |
+| **x86_64** | POSIX signal interface (ptrace API & capstone work, although libunwind does not) |
 
 _`*`) libunwind fails to extract frames if fuzzing target is 32bit. Prefer a 32bit build for such targets._
 
@@ -74,7 +74,7 @@ Checking connectivity... done.
 [*] 'arm' libcapstone  available at 'third_party/android/capstone/arm'
 ```
 
-## Hongfuzz ##
+## Honggfuzz ##
 
 | **Flags** | **Allowed Values** | 
 |:-------|:-----------|
