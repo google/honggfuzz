@@ -24,7 +24,7 @@ It has been tested under the following CPU architectures:
 | **armeabi-v7a** | ptrace() API & POSIX signal interface |
 | **arm64-v8a** | ptrace() API & POSIX signal interface `*`|
 | **x86** | ptrace() API & POSIX signal interface |
-| **x86_64** | POSIX signal interface (ptrace API & capstone work, although libunwind does not) |
+| **x86_64** | ptrace() API & POSIX signal interface |
 
 _`*`) libunwind fails to extract frames if fuzzing target is 32bit. Prefer a 32bit build for such targets._
 
