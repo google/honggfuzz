@@ -338,7 +338,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         rl.rlim_cur = hfuzz->asLimit * 1024UL * 1024UL;
         rl.rlim_max = hfuzz->asLimit * 1024UL * 1024UL;
         if (setrlimit(RLIMIT_AS, &rl) == -1) {
-            LOGMSG_P(l_DEBUG, "Couldn't encforce the RLIMIT_AS resource limit, ignoring");
+            LOGMSG_P(l_DEBUG, "Couldn't enforce the RLIMIT_AS resource limit, ignoring");
         }
     }
 
@@ -383,7 +383,7 @@ static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     /*
-     * First check manually if we have expired childs
+     * First check manually if we have expired children
      */
     arch_checkTimeLimit(hfuzz, fuzzer);
 

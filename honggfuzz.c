@@ -75,7 +75,7 @@ static void usage(bool exit_success)
            " [" AB "-a val" AC "] : address limit (from si.si_addr) below which crashes\n"
            "            are not reported, (default: '" AB "0" AC "' [suggested: 65535])\n"
            " [" AB "-n val" AC "] : number of concurrent fuzzing threads, (default: '" AB "2" AC "')\n"
-           " [" AB "-N val" AC "] : number of fuzzing mutations, (default: '" AB "0" AC "' [infinte])\n"
+           " [" AB "-N val" AC "] : number of fuzzing mutations, (default: '" AB "0" AC "' [infinite])\n"
            " [" AB "-l val" AC "] : per process memory limit in MiB, (default: '" AB "0" AC "' [no limit])\n"
            " [" AB "-R val" AC "] : write report to this file, (default: '" AB _HF_REPORT_FILE AC "')\n"
            " [" AB "-F val" AC "] : Maximal size of files created by the fuzzer (default '" AB "1048576" AC "')\n"

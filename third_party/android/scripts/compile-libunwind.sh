@@ -55,7 +55,7 @@ LC_LDFLAGS="-static"
 
 # For debugging
 # Remember to export UNW_DEBUG_LEVEL=<level>
-# whre 1 < level < 16 (usually values up to 5 are enough)
+# where 1 < level < 16 (usually values up to 5 are enough)
 #LC_CFLAGS="$LC_FLAGS -DDEBUG"
 
 # Change workdir to simplify args
@@ -164,7 +164,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Fix stuff that configure failed to detect
-# TODO: Investigate for more ellegant patches
+# TODO: Investigate for more elegant patches
 if [ "$ARCH" == "arm64" ]; then
   sed -i -e 's/#define HAVE_DECL_PTRACE_POKEUSER 1/#define HAVE_DECL_PTRACE_POKEUSER 0/g' include/config.h
   echo "#define HAVE_DECL_PT_GETREGSET 1" >> include/config.h

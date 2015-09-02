@@ -31,7 +31,6 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86_64))
     ARCH_ABI := x86_64
     UNW_ARCH := x86_64
-    $(error $(APP_ABI) Android not supported with ptrace API (issues with libunwind))
   else
     $(error Unsuported / Unknown APP_API '$(APP_ABI)')
   endif
@@ -92,7 +91,7 @@ LOCAL_LDFLAGS := -lm
 
 ifeq ($(ANDROID_WITH_PTRACE),true)
   LOCAL_C_INCLUDES := third_party/android/libunwind/include third_party/android/capstone/include
-  LOCAL_STATIC_LIBRARIES := libunwind libunwind-arch libunwind-ptrace libunwind-dwarf-generic libcapstone
+  LOCAL_STATIC_LIBRARIES := libunwind-arch libunwind libunwind-ptrace libunwind-dwarf-generic libcapstone
   LOCAL_CFLAGS += -D__HF_USE_CAPSTONE__
   ARCH_SRCS := linux/arch.c linux/ptrace_utils.c linux/perf.c linux/unwind.c
   ARCH := LINUX

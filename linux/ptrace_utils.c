@@ -311,16 +311,13 @@ static ssize_t honggfuzz_process_vm_readv(pid_t pid,
 #endif
 
 /* 
- * WARNING: NOT TESTED YET
- * If doesn't work, remove PTRACE_GETREGSET failover support via
- * the PTRACE_GETREGS call. Considering recent kernels in arm64, 
- * PTRACE_GETREGSET should be always implemented and be enough for
- * fuzzer to work.
+ * Some Android ABIs don't implement PTRACE_GETREGS (e.g. aarch64)
  */
-#if defined(__aarch64__) && !defined(PTRACE_GETREGS)
-#define PTRACE_GETREGS 12
-#endif
-
+#if defined(PTRACE_GETREGS)
+#define PTRACE_GETREGS_AVAILABLE 1
+#else
+#define PTRACE_GETREGS_AVAILABLE 0
+#endif                          /* defined(PTRACE_GETREGS) */
 #endif                          /* defined(__ANDROID__) */
 
 /*  *INDENT-OFF* */
@@ -403,13 +400,17 @@ uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
     if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
         LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGSET) failed");
 
-        // If PTRACE_GETREGSET fails, try PTRACE_GETREGS
+        // If PTRACE_GETREGSET fails, try PTRACE_GETREGS if available
+#if PTRACE_GETREGS_AVAILABLE
         if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
             LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGS) failed");
             LOGMSG(l_WARN, "ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to"
                    " extract target registers");
             return 0ULL;
         }
+#else
+        return 0ULL;
+#endif
     }
 
     /*
@@ -447,13 +448,17 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
     if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
         LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGSET) failed");
 
-        // If PTRACE_GETREGSET fails, try PTRACE_GETREGS
+        // If PTRACE_GETREGSET fails, try PTRACE_GETREGS if available
+#if PTRACE_GETREGS_AVAILABLE
         if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
             LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGS) failed");
             LOGMSG(l_WARN, "ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to"
                    " extract target registers");
             return 0;
         }
+#else
+        return 0;
+#endif
     }
 #if defined(__i386__) || defined(__x86_64__)
     /*

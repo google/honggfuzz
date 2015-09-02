@@ -106,7 +106,7 @@ static void mangle_Magic(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz, size_
         const uint8_t val[8];
         const size_t size;
     } mangleMagicVals[] = {
-        /* 1B - No endianess */
+        /* 1B - No endianness */
         { "\x00\x00\x00\x00\x00\x00\x00\x00", 1},
         { "\x01\x00\x00\x00\x00\x00\x00\x00", 1},
         { "\x02\x00\x00\x00\x00\x00\x00\x00", 1},
