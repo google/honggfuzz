@@ -220,147 +220,147 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, i
     abort();                    /* NOTREACHED */
 }
 
-static int fuzz_numOfProc(honggfuzz_t * hfuzz)
-{
-    int i;
-    if (sem_getvalue(hfuzz->sem, &i) == -1) {
-        return 0;
-    }
-    return hfuzz->threadsMax - i;
-}
-
 static void *fuzz_threadNew(void *arg)
 {
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
-    fuzzer_t fuzzer = {
-        .pid = 0,
-        .timeStartedMillis = util_timeNowMillis(),
-        .pc = 0ULL,
-        .backtrace = 0ULL,
-        .access = 0ULL,
-        .exception = 0,
-        .dynamicFileSz = 0,
-        .dynamicFile = malloc(hfuzz->maxFileSz),
-        .branchCnt = {[0 ... (ARRAYSIZE(fuzzer.branchCnt) - 1)] = 0},
-        .report = {'\0'}
-    };
-    if (fuzzer.dynamicFile == NULL) {
-        LOGMSG(l_FATAL, "malloc(%zu) failed", hfuzz->maxFileSz);
-    }
+    for (;;) {
+        while (pthread_mutex_lock(&hfuzz->threads_mutex)) ;
+        if (hfuzz->mutationsCnt >= hfuzz->mutationsMax) {
+            hfuzz->threadsFinished++;
+            while (pthread_mutex_unlock(&hfuzz->threads_mutex)) ;
+            sem_post(hfuzz->sem);
+            return NULL;
+        }
+        hfuzz->mutationsCnt++;
+        while (pthread_mutex_unlock(&hfuzz->threads_mutex)) ;
 
-    int rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
-    strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
-    fuzz_getFileName(hfuzz, fuzzer.fileName);
+        fuzzer_t fuzzer = {
+            .pid = 0,
+            .timeStartedMillis = util_timeNowMillis(),
+            .pc = 0ULL,
+            .backtrace = 0ULL,
+            .access = 0ULL,
+            .exception = 0,
+            .dynamicFileSz = 0,
+            .dynamicFile = malloc(hfuzz->maxFileSz),
+            .branchCnt = {[0 ... (ARRAYSIZE(fuzzer.branchCnt) - 1)] = 0}
+            ,
+            .report = {'\0'}
+        };
+        if (fuzzer.dynamicFile == NULL) {
+            LOGMSG(l_FATAL, "malloc(%zu) failed", hfuzz->maxFileSz);
+        }
 
-    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
-        if (!fuzz_prepareFileDynamically(hfuzz, &fuzzer, rnd_index)) {
-            exit(EXIT_FAILURE);
+        int rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
+        strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
+        fuzz_getFileName(hfuzz, fuzzer.fileName);
+
+        if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+            if (!fuzz_prepareFileDynamically(hfuzz, &fuzzer, rnd_index)) {
+                exit(EXIT_FAILURE);
+            }
+        } else if (hfuzz->externalCommand != NULL) {
+            if (!fuzz_prepareFileExternally(hfuzz, &fuzzer, rnd_index)) {
+                exit(EXIT_FAILURE);
+            }
+        } else {
+            if (!fuzz_prepareFile(hfuzz, &fuzzer, rnd_index)) {
+                exit(EXIT_FAILURE);
+            }
         }
-    } else if (hfuzz->externalCommand != NULL) {
-        if (!fuzz_prepareFileExternally(hfuzz, &fuzzer, rnd_index)) {
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        if (!fuzz_prepareFile(hfuzz, &fuzzer, rnd_index)) {
-            exit(EXIT_FAILURE);
-        }
-    }
 
 #if defined(_HF_ARCH_LINUX) && defined(__NR_fork)
 #include <unistd.h>
 #include <sys/syscall.h>
-    fuzzer.pid = syscall(__NR_fork);
+        fuzzer.pid = syscall(__NR_fork);
 #else                           /* defined(_HF_ARCH_LINUX) */
-    fuzzer.pid = fork();
+        fuzzer.pid = fork();
 #endif                          /* defined(_HF_ARCH_LINUX) */
 
-    if (fuzzer.pid == -1) {
-        LOGMSG_P(l_FATAL, "Couldn't fork");
-        exit(EXIT_FAILURE);
-    }
-
-    if (!fuzzer.pid) {
-        /*
-         * Ok, kill the parent if this fails
-         */
-        if (!arch_launchChild(hfuzz, fuzzer.fileName)) {
-            LOGMSG(l_ERROR, "Error launching child process, killing parent");
+        if (fuzzer.pid == -1) {
+            LOGMSG_P(l_FATAL, "Couldn't fork");
             exit(EXIT_FAILURE);
         }
-    }
 
-    LOGMSG(l_INFO, "Launched new process, pid: %d, (%d/%d)", fuzzer.pid, fuzz_numOfProc(hfuzz),
-           hfuzz->threadsMax);
-
-    arch_reapChild(hfuzz, &fuzzer);
-    unlink(fuzzer.fileName);
-
-    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
-        while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
-
-        LOGMSG(l_INFO,
-               "File size (New/Best): %zu/%zu, Perf feedback (instr/branch/block-edge/custom): Best: [%"
-               PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64 ",%"
-               PRIu64 ",%" PRIu64 "]", fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz,
-               hfuzz->branchBestCnt[0], hfuzz->branchBestCnt[1], hfuzz->branchBestCnt[2],
-               hfuzz->branchBestCnt[3], fuzzer.branchCnt[0], fuzzer.branchCnt[1],
-               fuzzer.branchCnt[2], fuzzer.branchCnt[3]);
-
-        int64_t diff0 = hfuzz->branchBestCnt[0] - fuzzer.branchCnt[0];
-        int64_t diff1 = hfuzz->branchBestCnt[1] - fuzzer.branchCnt[1];
-        int64_t diff2 = hfuzz->branchBestCnt[2] - fuzzer.branchCnt[2];
-        int64_t diff3 = hfuzz->branchBestCnt[3] - fuzzer.branchCnt[3];
-
-        if (diff2 < 0) {
-            diff0 = hfuzz->branchBestCnt[0] = fuzzer.branchCnt[0] = 0;
-            diff1 = hfuzz->branchBestCnt[1] = fuzzer.branchCnt[1] = 0;
-            diff3 = hfuzz->branchBestCnt[3] = fuzzer.branchCnt[3] = 0;
+        if (!fuzzer.pid) {
+            /*
+             * Ok, kill the parent if this fails
+             */
+            if (!arch_launchChild(hfuzz, fuzzer.fileName)) {
+                LOGMSG(l_ERROR, "Error launching child process, killing parent");
+                exit(EXIT_FAILURE);
+            }
         }
 
-        if (diff0 <= hfuzz->dynamicRegressionCnt && diff1 <= hfuzz->dynamicRegressionCnt
-            && diff2 <= hfuzz->dynamicRegressionCnt && diff3 <= hfuzz->dynamicRegressionCnt) {
+        LOGMSG(l_INFO, "Launched new process, pid: %d, (concurrency: %d)", fuzzer.pid,
+               hfuzz->threadsMax);
 
-            LOGMSG(l_WARN,
-                   "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr, High): %"
-                   PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 ",%" PRId64 "/%" PRId64 "/%" PRId64
-                   "/%" PRId64, fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz, fuzzer.branchCnt[0],
-                   fuzzer.branchCnt[1], fuzzer.branchCnt[2], fuzzer.branchCnt[3],
+        arch_reapChild(hfuzz, &fuzzer);
+        unlink(fuzzer.fileName);
+
+        if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+            while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
+
+            LOGMSG(l_INFO,
+                   "File size (New/Best): %zu/%zu, Perf feedback (instr/branch/block-edge/custom): Best: [%"
+                   PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64 ",%"
+                   PRIu64 ",%" PRIu64 "]", fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz,
                    hfuzz->branchBestCnt[0], hfuzz->branchBestCnt[1], hfuzz->branchBestCnt[2],
-                   hfuzz->branchBestCnt[3]);
+                   hfuzz->branchBestCnt[3], fuzzer.branchCnt[0], fuzzer.branchCnt[1],
+                   fuzzer.branchCnt[2], fuzzer.branchCnt[3]);
 
-            memcpy(hfuzz->dynamicFileBest, fuzzer.dynamicFile, fuzzer.dynamicFileSz);
+            int64_t diff0 = hfuzz->branchBestCnt[0] - fuzzer.branchCnt[0];
+            int64_t diff1 = hfuzz->branchBestCnt[1] - fuzzer.branchCnt[1];
+            int64_t diff2 = hfuzz->branchBestCnt[2] - fuzzer.branchCnt[2];
+            int64_t diff3 = hfuzz->branchBestCnt[3] - fuzzer.branchCnt[3];
 
-            hfuzz->dynamicFileBestSz = fuzzer.dynamicFileSz;
-            hfuzz->branchBestCnt[0] =
-                fuzzer.branchCnt[0] >
-                hfuzz->branchBestCnt[0] ? fuzzer.branchCnt[0] : hfuzz->branchBestCnt[0];
-            hfuzz->branchBestCnt[1] =
-                fuzzer.branchCnt[1] >
-                hfuzz->branchBestCnt[1] ? fuzzer.branchCnt[1] : hfuzz->branchBestCnt[1];
-            hfuzz->branchBestCnt[2] =
-                fuzzer.branchCnt[2] >
-                hfuzz->branchBestCnt[2] ? fuzzer.branchCnt[2] : hfuzz->branchBestCnt[2];
-            hfuzz->branchBestCnt[3] =
-                fuzzer.branchCnt[3] >
-                hfuzz->branchBestCnt[3] ? fuzzer.branchCnt[3] : hfuzz->branchBestCnt[3];
+            if (diff2 < 0) {
+                diff0 = hfuzz->branchBestCnt[0] = fuzzer.branchCnt[0] = 0;
+                diff1 = hfuzz->branchBestCnt[1] = fuzzer.branchCnt[1] = 0;
+                diff3 = hfuzz->branchBestCnt[3] = fuzzer.branchCnt[3] = 0;
+            }
+
+            if (diff0 <= hfuzz->dynamicRegressionCnt && diff1 <= hfuzz->dynamicRegressionCnt
+                && diff2 <= hfuzz->dynamicRegressionCnt && diff3 <= hfuzz->dynamicRegressionCnt) {
+
+                LOGMSG(l_WARN,
+                       "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr, High): %"
+                       PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 ",%" PRId64 "/%" PRId64 "/%"
+                       PRId64 "/%" PRId64, fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz,
+                       fuzzer.branchCnt[0], fuzzer.branchCnt[1], fuzzer.branchCnt[2],
+                       fuzzer.branchCnt[3], hfuzz->branchBestCnt[0], hfuzz->branchBestCnt[1],
+                       hfuzz->branchBestCnt[2], hfuzz->branchBestCnt[3]);
+
+                memcpy(hfuzz->dynamicFileBest, fuzzer.dynamicFile, fuzzer.dynamicFileSz);
+
+                hfuzz->dynamicFileBestSz = fuzzer.dynamicFileSz;
+                hfuzz->branchBestCnt[0] =
+                    fuzzer.branchCnt[0] >
+                    hfuzz->branchBestCnt[0] ? fuzzer.branchCnt[0] : hfuzz->branchBestCnt[0];
+                hfuzz->branchBestCnt[1] =
+                    fuzzer.branchCnt[1] >
+                    hfuzz->branchBestCnt[1] ? fuzzer.branchCnt[1] : hfuzz->branchBestCnt[1];
+                hfuzz->branchBestCnt[2] =
+                    fuzzer.branchCnt[2] >
+                    hfuzz->branchBestCnt[2] ? fuzzer.branchCnt[2] : hfuzz->branchBestCnt[2];
+                hfuzz->branchBestCnt[3] =
+                    fuzzer.branchCnt[3] >
+                    hfuzz->branchBestCnt[3] ? fuzzer.branchCnt[3] : hfuzz->branchBestCnt[3];
 
 #define _HF_CURRENT_BEST "CURRENT_BEST"
 #define _HF_CURRENT_BEST_TMP ".tmp.CURRENT_BEST"
-            if (files_writeBufToFile
-                (_HF_CURRENT_BEST_TMP, fuzzer.dynamicFile, fuzzer.dynamicFileSz,
-                 O_WRONLY | O_CREAT | O_TRUNC)) {
-                rename(_HF_CURRENT_BEST_TMP, _HF_CURRENT_BEST);
+                if (files_writeBufToFile
+                    (_HF_CURRENT_BEST_TMP, fuzzer.dynamicFile, fuzzer.dynamicFileSz,
+                     O_WRONLY | O_CREAT | O_TRUNC)) {
+                    rename(_HF_CURRENT_BEST_TMP, _HF_CURRENT_BEST);
+                }
             }
+            while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
         }
-        while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
+
+        report_Report(hfuzz, fuzzer.report);
+        free(fuzzer.dynamicFile);
     }
-
-    report_Report(hfuzz, fuzzer.report);
-    free(fuzzer.dynamicFile);
-
-    sem_post(hfuzz->sem);
-
-    return NULL;
 }
 
 static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
@@ -388,13 +388,13 @@ void fuzz_main(honggfuzz_t * hfuzz)
     };
     sigemptyset(&sa.sa_mask);
     if (sigaction(SIGTERM, &sa, NULL) == -1) {
-        LOGMSG(l_FATAL, "sigaction(SIGTERM) failed");
+        LOGMSG_P(l_FATAL, "sigaction(SIGTERM) failed");
     }
     if (sigaction(SIGINT, &sa, NULL) == -1) {
-        LOGMSG(l_FATAL, "sigaction(SIGINT) failed");
+        LOGMSG_P(l_FATAL, "sigaction(SIGINT) failed");
     }
     if (sigaction(SIGQUIT, &sa, NULL) == -1) {
-        LOGMSG(l_FATAL, "sigaction(SIGQUIT) failed");
+        LOGMSG_P(l_FATAL, "sigaction(SIGQUIT) failed");
     }
     // Android doesn't support named semaphores
 #if !defined(__ANDROID__)
@@ -408,11 +408,11 @@ void fuzz_main(honggfuzz_t * hfuzz)
     char semName[_HF_SEM_NAME_LEN];
     snprintf(semName, sizeof(semName), "/hgfz.%d.%" PRIx64, getpid(), util_rndGet(1, 1ULL << 62));
 
-    hfuzz->sem = sem_open(semName, O_CREAT, 0644, hfuzz->threadsMax);
+    hfuzz->sem = sem_open(semName, O_CREAT, 0644, 0);
 
 #else                           /* !defined(__ANDROID__) */
     sem_t semName;
-    if (sem_init(&semName, 1, hfuzz->threadsMax)) {
+    if (sem_init(&semName, 1, 0)) {
         LOGMSG(l_FATAL, "sem_init() failed");
     }
     hfuzz->sem = &semName;
@@ -426,41 +426,26 @@ void fuzz_main(honggfuzz_t * hfuzz)
         LOGMSG(l_FATAL, "Couldn't prepare arch for fuzzing");
     }
 
-    for (;;) {
-        if (fuzz_sigReceived > 0) {
-            break;
-        }
-        if (sem_wait(hfuzz->sem) == -1) {
-            if (errno == EINTR) {
-                continue;
-            }
-            LOGMSG_P(l_FATAL, "sem_wait() failed");
-        }
-
-        if (hfuzz->mutationsMax && (hfuzz->mutationsCnt >= hfuzz->mutationsMax)) {
-#if defined(_HF_ARCH_DARWIN)
-            /*
-             * Sleep a bit to let any running fuzzers terminate
-             */
-            usleep(1.2 * hfuzz->tmOut * 1000000);
-#else                           /* defined(_HF_ARCH_DARWIN) */
-            while (fuzz_numOfProc(hfuzz) > 1) {
-                usleep(10000);
-            }
-#endif                          /* !defined(_HF_ARCH_DARWIN) */
-            LOGMSG(l_INFO, "Finished fuzzing %ld times.", hfuzz->mutationsMax);
-            break;
-        }
-
-        hfuzz->mutationsCnt++;
+    for (size_t i = 0; i < hfuzz->threadsMax; i++) {
         fuzz_runThread(hfuzz, fuzz_threadNew);
     }
 
-#ifdef __ANDROID__
-    sem_destroy(&semName);
-#else
-    sem_unlink(semName);
-#endif
+    for (;;) {
+        if (sem_wait(hfuzz->sem) == -1 && errno != EINTR) {
+            LOGMSG_P(l_FATAL, "sem_wait() failed");
+        }
+        if (fuzz_sigReceived > 0) {
+            break;
+        }
+        while (pthread_mutex_lock(&hfuzz->threads_mutex)) ;
+        if (hfuzz->threadsFinished == hfuzz->threadsMax) {
+            pthread_mutex_unlock(&hfuzz->threads_mutex);
+            break;
+        }
+        pthread_mutex_unlock(&hfuzz->threads_mutex);
+    }
+
+    LOGMSG(l_INFO, "Finished fuzzing %zu times", hfuzz->mutationsCnt);
 
     if (fuzz_sigReceived > 0) {
         LOGMSG(l_INFO, "Signal %d received, terminating", fuzz_sigReceived);
@@ -469,5 +454,10 @@ void fuzz_main(honggfuzz_t * hfuzz)
         signal(SIGQUIT, SIG_DFL);
         raise(fuzz_sigReceived);
     }
+#ifdef __ANDROID__
+    sem_destroy(&semName);
+#else
+    sem_unlink(semName);
+#endif
     exit(EXIT_SUCCESS);
 }

@@ -71,11 +71,13 @@ typedef struct {
     char *externalCommand;
     const char *dictionaryFile;
     const char **dictionary;
-    size_t dictionaryCnt;
     long tmOut;
-    long mutationsMax;
-    long mutationsCnt;
-    long threadsMax;
+    size_t dictionaryCnt;
+    size_t mutationsMax;
+    size_t mutationsCnt;
+    pthread_mutex_t threads_mutex;
+    size_t threadsMax;
+    size_t threadsFinished;
     size_t maxFileSz;
     void *ignoreAddr;
     char *reportFile;
