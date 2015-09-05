@@ -72,7 +72,7 @@ extern void display_Display(honggfuzz_t * hfuzz)
             __sync_add_and_fetch(&hfuzz->branchBestCnt[0], 0UL));
     dprintf(OUTFD, "  max branches taken:           %zu\n",
             __sync_add_and_fetch(&hfuzz->branchBestCnt[1], 0UL));
-    if (hfuzz->dynFileMethod == _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
         dprintf(OUTFD, "  max individual PCs seen:      ");
     } else {
         dprintf(OUTFD, "  max individual branches seen: ");
