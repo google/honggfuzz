@@ -91,14 +91,14 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
 
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
 {
-    while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
+    MX_LOCK(&hfuzz->dynamicFile_mutex);
 
     if (hfuzz->inputFile && hfuzz->branchBestCnt[0] == 0 && hfuzz->branchBestCnt[1] == 0
         && hfuzz->branchBestCnt[2] == 0 && hfuzz->branchBestCnt[3] == 0) {
         size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
                                                hfuzz->maxFileSz);
         if (fileSz == 0) {
-            while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
+            MX_UNLOCK(&hfuzz->dynamicFile_mutex);
             LOGMSG(l_ERROR, "Couldn't read '%s'", hfuzz->files[rnd_index]);
             return false;
         }
@@ -113,7 +113,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
     memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
 
-    while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
+    MX_UNLOCK(&hfuzz->dynamicFile_mutex);
 
     /* The first pass should be on an empty/initial file */
     if (hfuzz->branchBestCnt[0] > 0 || hfuzz->branchBestCnt[1] > 0 || hfuzz->branchBestCnt[2] > 0
@@ -224,15 +224,15 @@ static void *fuzz_threadNew(void *arg)
 {
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
     for (;;) {
-        while (pthread_mutex_lock(&hfuzz->threads_mutex)) ;
+        MX_LOCK(&hfuzz->threads_mutex);
         if (hfuzz->mutationsMax && hfuzz->mutationsCnt >= hfuzz->mutationsMax) {
             hfuzz->threadsFinished++;
-            while (pthread_mutex_unlock(&hfuzz->threads_mutex)) ;
+            MX_UNLOCK(&hfuzz->threads_mutex);
             sem_post(hfuzz->sem);
             return NULL;
         }
         hfuzz->mutationsCnt++;
-        while (pthread_mutex_unlock(&hfuzz->threads_mutex)) ;
+        MX_UNLOCK(&hfuzz->threads_mutex);
 
         fuzzer_t fuzzer = {
             .pid = 0,
@@ -299,7 +299,7 @@ static void *fuzz_threadNew(void *arg)
         unlink(fuzzer.fileName);
 
         if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
-            while (pthread_mutex_lock(&hfuzz->dynamicFile_mutex)) ;
+            MX_LOCK(&hfuzz->dynamicFile_mutex);
 
             LOGMSG(l_INFO,
                    "File size (New/Best): %zu/%zu, Perf feedback (instr/branch/block-edge/custom): Best: [%"
@@ -355,7 +355,7 @@ static void *fuzz_threadNew(void *arg)
                     rename(_HF_CURRENT_BEST_TMP, _HF_CURRENT_BEST);
                 }
             }
-            while (pthread_mutex_unlock(&hfuzz->dynamicFile_mutex)) ;
+            MX_UNLOCK(&hfuzz->dynamicFile_mutex);
         }
 
         report_Report(hfuzz, fuzzer.report);
@@ -437,12 +437,12 @@ void fuzz_main(honggfuzz_t * hfuzz)
         if (fuzz_sigReceived > 0) {
             break;
         }
-        while (pthread_mutex_lock(&hfuzz->threads_mutex)) ;
+        MX_LOCK(&hfuzz->threads_mutex);
         if (hfuzz->threadsFinished == hfuzz->threadsMax) {
-            pthread_mutex_unlock(&hfuzz->threads_mutex);
+            MX_UNLOCK(&hfuzz->threads_mutex);
             break;
         }
-        pthread_mutex_unlock(&hfuzz->threads_mutex);
+        MX_UNLOCK(&hfuzz->threads_mutex);
     }
 
     LOGMSG(l_INFO, "Finished fuzzing %zu times", hfuzz->mutationsCnt);
