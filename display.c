@@ -75,9 +75,6 @@ extern void display_Display(honggfuzz_t * hfuzz)
         dprintf(OUTFD, "  max individual branches seen: ");
     }
     dprintf(OUTFD, "%zu\n", __sync_add_and_fetch(&hfuzz->branchBestCnt[2], 0UL));
-
-    dprintf(OUTFD, "  max individual PCs seen:      %zu\n",
-            __sync_add_and_fetch(&hfuzz->branchBestCnt[2], 0UL));
     dprintf(OUTFD, "  max custom feedback:          %zu\n",
-            __sync_add_and_fetch(&hfuzz->branchBestCnt[2], 0UL));
+            __sync_add_and_fetch(&hfuzz->branchBestCnt[3], 0UL));
 }
