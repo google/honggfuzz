@@ -50,7 +50,7 @@ extern void display_Display(honggfuzz_t * hfuzz)
 
     dprintf(OUTFD, "%s", ESC_CLEAR);
 
-    dprintf(OUTFD, "Mutations: %zu", curr_exec_cnt);
+    dprintf(OUTFD, "Iterations: %zu", curr_exec_cnt);
     if (hfuzz->mutationsMax) {
         dprintf(OUTFD, " (out of: %zu)", hfuzz->mutationsMax);
     }
@@ -63,6 +63,9 @@ extern void display_Display(honggfuzz_t * hfuzz)
     dprintf(OUTFD, "Execs per second: %zu\n", exec_per_sec);
 
     dprintf(OUTFD, "Crashes: %zu\n", __sync_add_and_fetch(&hfuzz->crashesCnt, 0UL));
+
+    dprintf(OUTFD, "Dynamic file size: %zu (max: %zu)\n", hfuzz->dynamicFileBestSz,
+            hfuzz->maxFileSz);
 
     dprintf(OUTFD, "Coverage:\n");
     dprintf(OUTFD, "  max instructions taken:       %zu\n",
