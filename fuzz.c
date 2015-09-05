@@ -225,7 +225,7 @@ static void *fuzz_threadNew(void *arg)
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
     for (;;) {
         while (pthread_mutex_lock(&hfuzz->threads_mutex)) ;
-        if (hfuzz->mutationsCnt >= hfuzz->mutationsMax) {
+        if (hfuzz->mutationsMax && hfuzz->mutationsCnt >= hfuzz->mutationsMax) {
             hfuzz->threadsFinished++;
             while (pthread_mutex_unlock(&hfuzz->threads_mutex)) ;
             sem_post(hfuzz->sem);
