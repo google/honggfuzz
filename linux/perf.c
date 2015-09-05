@@ -212,6 +212,8 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
     LOGMSG(l_DEBUG, "Enabling PERF for PID=%d (mmapBufSz=%zu), method=%x", pid, perfMmapSz, method);
 
     perfDynamicMethod = method;
+    perfBranchesCnt = 0;
+    perfRecordsLost = 0;
 
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(struct perf_event_attr));
