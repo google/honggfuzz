@@ -46,6 +46,7 @@
 #include <unistd.h>
 
 #include "arch.h"
+#include "display.h"
 #include "files.h"
 #include "log.h"
 #include "mangle.h"
@@ -310,7 +311,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         if (diff0 <= hfuzz->dynamicRegressionCnt && diff1 <= hfuzz->dynamicRegressionCnt
             && diff2 <= hfuzz->dynamicRegressionCnt && diff3 <= hfuzz->dynamicRegressionCnt) {
 
-            LOGMSG(l_WARN,
+            LOGMSG(l_INFO,
                    "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr, High): %"
                    PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 ",%" PRId64 "/%" PRId64 "/%"
                    PRId64 "/%" PRId64, fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz,
@@ -361,7 +362,7 @@ static void *fuzz_threadNew(void *arg)
             sem_post(hfuzz->sem);
             return NULL;
         }
-        hfuzz->mutationsCnt++;
+        __sync_fetch_and_add(&hfuzz->mutationsCnt, 1UL);
         MX_UNLOCK(&hfuzz->threads_mutex);
 
         fuzz_fuzzLoop(hfuzz);
@@ -385,6 +386,31 @@ static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
     return;
 }
 
+bool fuzz_setupTimer(void)
+{
+    struct itimerval it = {
+        .it_value = {.tv_sec = 1,.tv_usec = 0},
+        .it_interval = {.tv_sec = 1,.tv_usec = 0},
+    };
+    if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
+        LOGMSG_P(l_ERROR, "setitimer(ITIMER_REAL)");
+        return false;
+    }
+    struct sigaction sa = {
+        .sa_handler = SIG_IGN,
+        .sa_flags = 0,
+        .sa_restorer = NULL,
+    };
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(SIGALRM, &sa, NULL) == -1) {
+        LOGMSG_P(l_ERROR, "sigaction(SIGALRM)");
+        return false;
+    }
+    return true;
+
+    return true;
+}
+
 void fuzz_main(honggfuzz_t * hfuzz)
 {
     struct sigaction sa = {
@@ -400,6 +426,9 @@ void fuzz_main(honggfuzz_t * hfuzz)
     }
     if (sigaction(SIGQUIT, &sa, NULL) == -1) {
         LOGMSG_P(l_FATAL, "sigaction(SIGQUIT) failed");
+    }
+    if (fuzz_setupTimer() == false) {
+        LOGMSG(l_FATAL, "fuzz_setupTimer()");
     }
     // Android doesn't support named semaphores
 #if !defined(__ANDROID__)
@@ -442,6 +471,9 @@ void fuzz_main(honggfuzz_t * hfuzz)
         if (fuzz_sigReceived > 0) {
             break;
         }
+
+        display_Display(hfuzz);
+
         MX_LOCK(&hfuzz->threads_mutex);
         if (hfuzz->threadsFinished == hfuzz->threadsMax) {
             MX_UNLOCK(&hfuzz->threads_mutex);

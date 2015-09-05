@@ -721,6 +721,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 #endif
 
     arch_ptraceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr);
+    __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
 }
 
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)

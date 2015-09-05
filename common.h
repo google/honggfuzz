@@ -66,6 +66,7 @@ typedef struct {
     bool nullifyStdio;
     bool fuzzStdin;
     bool saveUnique;
+    bool useScreen;
     char *fileExtn;
     double flipRate;
     char *externalCommand;
@@ -74,7 +75,6 @@ typedef struct {
     long tmOut;
     size_t dictionaryCnt;
     size_t mutationsMax;
-    size_t mutationsCnt;
     pthread_mutex_t threads_mutex;
     size_t threadsMax;
     size_t threadsFinished;
@@ -87,6 +87,9 @@ typedef struct {
     sem_t *sem;
     pid_t pid;
     char *envs[128];
+
+    size_t mutationsCnt;
+    size_t crashesCnt;
 
     /* For the linux/ code */
     uint8_t *dynamicFileBest;

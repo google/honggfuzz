@@ -27,7 +27,7 @@ CFLAGS += -std=c11 -I. -I/usr/local/include -I/usr/include \
 LD = $(CC)
 LDFLAGS += -lm -lpthread -L/usr/local/include -L/usr/include
 
-SRCS = honggfuzz.c log.c files.c fuzz.c report.c mangle.c util.c
+SRCS = honggfuzz.c display.c log.c files.c fuzz.c report.c mangle.c util.c
 
 OBJS = $(SRCS:.c=.o)
 BIN = honggfuzz
