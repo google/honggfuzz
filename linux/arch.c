@@ -263,11 +263,11 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
         LOGMSG_P(l_FATAL, "PID '%d' is not in a stopped state", pid);
     }
-    if (arch_ptraceAttach(ptracePid) == false) {
-        LOGMSG(l_FATAL, "Couldn't attach to pid %d", ptracePid);
-    }
     if (arch_perfEnable(ptracePid, hfuzz, perfFd) == false) {
         LOGMSG(l_FATAL, "Couldn't enable perf counters for pid %d", ptracePid);
+    }
+    if (arch_ptraceAttach(ptracePid) == false) {
+        LOGMSG(l_FATAL, "Couldn't attach to pid %d", ptracePid);
     }
     kill(childPid, SIGCONT);
 
