@@ -231,8 +231,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         .exception = 0,
         .dynamicFileSz = 0,
         .dynamicFile = malloc(hfuzz->maxFileSz),
-        .branchCnt = {[0 ... (ARRAYSIZE(fuzzer.branchCnt) - 1)] = 0}
-        ,
+        .branchCnt = {[0 ... (ARRAYSIZE(fuzzer.branchCnt) - 1)] = 0},
         .report = {'\0'}
     };
     if (fuzzer.dynamicFile == NULL) {
