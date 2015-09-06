@@ -8,3 +8,4 @@ mach_excServer.h
 mach_excServer.c
 libs
 obj
+examples/targets/badcode1
