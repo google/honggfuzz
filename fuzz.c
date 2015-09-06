@@ -472,7 +472,9 @@ void fuzz_main(honggfuzz_t * hfuzz)
             break;
         }
 
-        display_Display(hfuzz);
+        if (hfuzz->useScreen) {
+            display_Display(hfuzz);
+        }
 
         MX_LOCK(&hfuzz->threads_mutex);
         if (hfuzz->threadsFinished == hfuzz->threadsMax) {
