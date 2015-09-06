@@ -241,3 +241,17 @@ extern uint32_t util_ToFromLE32(uint32_t val)
 #error "Unknown ENDIANESS"
 #endif
 }
+
+extern void MX_LOCK(pthread_mutex_t * mutex)
+{
+    if (pthread_mutex_lock(mutex)) {
+        LOGMSG_P(l_FATAL, "pthread_mutex_lock(%p)", mutex);
+    }
+}
+
+extern void MX_UNLOCK(pthread_mutex_t * mutex)
+{
+    if (pthread_mutex_unlock(mutex)) {
+        LOGMSG_P(l_FATAL, "pthread_mutex_unlock(%p)", mutex);
+    }
+}

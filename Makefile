@@ -27,7 +27,7 @@ CFLAGS += -std=c11 -I. -I/usr/local/include -I/usr/include \
 LD = $(CC)
 LDFLAGS += -lm -lpthread -L/usr/local/include -L/usr/include
 
-SRCS = honggfuzz.c log.c files.c fuzz.c report.c mangle.c util.c
+SRCS = honggfuzz.c display.c log.c files.c fuzz.c report.c mangle.c util.c
 
 OBJS = $(SRCS:.c=.o)
 BIN = honggfuzz
@@ -157,9 +157,11 @@ android:
 # DO NOT DELETE
 
 honggfuzz.o: common.h log.h files.h fuzz.h util.h
+display.o: common.h display.h log.h
 log.o: common.h log.h util.h
 files.o: common.h files.h log.h
-fuzz.o: common.h fuzz.h arch.h files.h log.h mangle.h report.h util.h
+fuzz.o: common.h fuzz.h arch.h display.h files.h log.h mangle.h report.h
+fuzz.o: util.h
 report.o: common.h report.h log.h util.h
 mangle.o: common.h mangle.h log.h util.h
 util.o: common.h files.h log.h

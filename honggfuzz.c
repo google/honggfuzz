@@ -64,6 +64,8 @@ static void usage(bool exit_success)
            "            (default: " AB "false" AC ")\n"
            " [" AB "-u" AC "]     : save unique test-cases only, otherwise (if not used) append\n"
            "            current timestamp to the output filenames (default: " AB "false" AC ")\n"
+	   " [" AB "-v" AC "]     : display simple log messages on stdout instead of using ANSI\n"
+           "            console (default: " AB "false " AC ")\n"
            " [" AB "-d val" AC "] : debug level (0 - FATAL ... 4 - DEBUG), (default: '" AB "3" AC
            "' [INFO])\n"
            " [" AB "-e val" AC "] : file extension (e.g. 'swf'), (default: '" AB "fuzz" AC "')\n"
@@ -132,6 +134,7 @@ int main(int argc, char **argv)
         .cmdline = NULL,
         .inputFile = NULL,
         .nullifyStdio = false,
+        .useScreen = true,
         .fuzzStdin = false,
         .saveUnique = false,
         .fileExtn = "fuzz",
@@ -143,7 +146,8 @@ int main(int argc, char **argv)
         .maxFileSz = (1024 * 1024),
         .tmOut = 3,
         .mutationsMax = 0,
-        .mutationsCnt = 0,
+        .threadsFinished = 0,
+        .threads_mutex = PTHREAD_MUTEX_INITIALIZER,
         .threadsMax = 2,
         .ignoreAddr = NULL,
         .reportFile = _HF_REPORT_FILE,
@@ -152,6 +156,12 @@ int main(int argc, char **argv)
         .fileCnt = 0,
         .pid = 0,
         .envs = {[0 ... (ARRAYSIZE(hfuzz.envs) - 1)] = NULL,},
+
+        .timeStart = time(NULL),
+        .mutationsCnt = 0,
+        .crashesCnt = 0,
+        .timeoutedCnt = 0,
+
         .dynFileMethod = _HF_DYNFILE_NONE,
         .dynamicFileBest = NULL,
         .dynamicFileBestSz = 1,
@@ -166,7 +176,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "-?hqsuf:d:e:r:c:F:D:t:a:R:n:N:l:p:g:o:E:w:");
+        c = getopt(argc, argv, "-?hqvsuf:d:e:r:c:F:D:t:a:R:n:N:l:p:g:o:E:w:");
         if (c < 0)
             break;
 
@@ -180,6 +190,9 @@ int main(int argc, char **argv)
             break;
         case 'q':
             hfuzz.nullifyStdio = true;
+            break;
+        case 'v':
+            hfuzz.useScreen = false;
             break;
         case 's':
             hfuzz.fuzzStdin = true;
@@ -268,7 +281,12 @@ int main(int argc, char **argv)
         }
     }
     hfuzz.cmdline = &argv[optind];
-    log_setMinLevel(ll);
+
+    if (hfuzz.useScreen == true) {
+        log_setMinLevel(l_WARN);
+    } else {
+        log_setMinLevel(ll);
+    }
 
     if (hfuzz.dynamicFileBestSz > hfuzz.maxFileSz) {
         LOGMSG(l_FATAL,

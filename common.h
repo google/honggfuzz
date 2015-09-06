@@ -66,16 +66,18 @@ typedef struct {
     bool nullifyStdio;
     bool fuzzStdin;
     bool saveUnique;
+    bool useScreen;
     char *fileExtn;
     double flipRate;
     char *externalCommand;
     const char *dictionaryFile;
     const char **dictionary;
-    size_t dictionaryCnt;
     long tmOut;
-    long mutationsMax;
-    long mutationsCnt;
-    long threadsMax;
+    size_t dictionaryCnt;
+    size_t mutationsMax;
+    pthread_mutex_t threads_mutex;
+    size_t threadsMax;
+    size_t threadsFinished;
     size_t maxFileSz;
     void *ignoreAddr;
     char *reportFile;
@@ -85,6 +87,11 @@ typedef struct {
     sem_t *sem;
     pid_t pid;
     char *envs[128];
+
+    time_t timeStart;
+    size_t mutationsCnt;
+    size_t crashesCnt;
+    size_t timeoutedCnt;
 
     /* For the linux/ code */
     uint8_t *dynamicFileBest;

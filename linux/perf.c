@@ -99,17 +99,16 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
 }
 
 /* Memory Barriers */
-#define rmb()	__sync_synchronize()
+#define rmb()	__asm__ __volatile__("":::"memory")
+#define wmb()	__sync_synchronize()
 static inline uint64_t arch_perfGetMmap64(bool fatal)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
 
-    __sync_synchronize();
     register uint64_t dataHeadOff = pem->data_head % perfMmapSz;
-    __sync_synchronize();
     register uint64_t dataTailOff = pem->data_tail % perfMmapSz;
+    rmb();
     /* Memory barrier - needed as per perf_event_open(2) */
-    __sync_synchronize();
 
     if (__builtin_expect(dataHeadOff == dataTailOff, false)) {
         if (fatal) {
@@ -118,10 +117,9 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
         return ~(0ULL);
     }
 
-    __sync_synchronize();
     register uint64_t ret = *(uint64_t *) (perfMmapBuf + getpagesize() + dataTailOff);
     pem->data_tail = dataTailOff + sizeof(uint64_t);
-    __sync_synchronize();
+    wmb();
 
     return ret;
 }
@@ -212,6 +210,8 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
     LOGMSG(l_DEBUG, "Enabling PERF for PID=%d (mmapBufSz=%zu), method=%x", pid, perfMmapSz, method);
 
     perfDynamicMethod = method;
+    perfBranchesCnt = 0;
+    perfRecordsLost = 0;
 
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(struct perf_event_attr));
