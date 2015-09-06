@@ -39,6 +39,8 @@
 
 #define ESC_CLEAR "\033[H\033[2J"
 #define ESC_NAV(x,y) "\033["#x";"#y"H"
+#define ESC_BOLD "\033[1m"
+#define ESC_RESET "\033[0m"
 
 extern void display_Display(honggfuzz_t * hfuzz)
 {
@@ -50,34 +52,37 @@ extern void display_Display(honggfuzz_t * hfuzz)
 
     dprintf(OUTFD, "%s", ESC_CLEAR);
 
-    dprintf(OUTFD, "Iterations: %zu", curr_exec_cnt);
+    dprintf(OUTFD, "Iterations: " ESC_BOLD " %zu" ESC_RESET, curr_exec_cnt);
     if (hfuzz->mutationsMax) {
-        dprintf(OUTFD, " (out of: %zu)", hfuzz->mutationsMax);
+        dprintf(OUTFD, " (out of: " ESC_BOLD "%zu" ESC_RESET ")", hfuzz->mutationsMax);
     }
     dprintf(OUTFD, "\n");
 
-    dprintf(OUTFD, "Input file/dir: '%s'\n", hfuzz->inputFile);
-    dprintf(OUTFD, "Fuzzed cmd: '%s'\n", hfuzz->cmdline[0]);
+    dprintf(OUTFD, "Input file/dir: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
+    dprintf(OUTFD, "Fuzzed cmd: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline[0]);
 
-    dprintf(OUTFD, "Fuzzing threads: %zu\n", hfuzz->threadsMax);
-    dprintf(OUTFD, "Execs per second: %zu\n", exec_per_sec);
+    dprintf(OUTFD, "Fuzzing threads: " ESC_BOLD "%zu" ESC_RESET "\n", hfuzz->threadsMax);
+    dprintf(OUTFD, "Execs per second: " ESC_BOLD "%zu" ESC_RESET "\n", exec_per_sec);
 
-    dprintf(OUTFD, "Crashes: %zu\n", __sync_add_and_fetch(&hfuzz->crashesCnt, 0UL));
+    dprintf(OUTFD, "Crashes: " ESC_BOLD "%zu" ESC_RESET "\n",
+            __sync_add_and_fetch(&hfuzz->crashesCnt, 0UL));
 
-    dprintf(OUTFD, "Dynamic file size: %zu (max: %zu)\n", hfuzz->dynamicFileBestSz,
-            hfuzz->maxFileSz);
+    dprintf(OUTFD,
+            "Dynamic file size: " ESC_BOLD "%zu" ESC_RESET " (max: " ESC_BOLD "%zu" ESC_RESET ")\n",
+            hfuzz->dynamicFileBestSz, hfuzz->maxFileSz);
 
     dprintf(OUTFD, "Coverage:\n");
-    dprintf(OUTFD, "  max instructions taken:       %zu\n",
+    dprintf(OUTFD, "  max instructions taken:       " ESC_BOLD "%zu" ESC_RESET "\n",
             __sync_add_and_fetch(&hfuzz->branchBestCnt[0], 0UL));
-    dprintf(OUTFD, "  max branches taken:           %zu\n",
+    dprintf(OUTFD, "  max branches taken:           " ESC_BOLD "%zu" ESC_RESET "\n",
             __sync_add_and_fetch(&hfuzz->branchBestCnt[1], 0UL));
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
         dprintf(OUTFD, "  max individual PCs seen:      ");
     } else {
         dprintf(OUTFD, "  max individual branches seen: ");
     }
-    dprintf(OUTFD, "%zu\n", __sync_add_and_fetch(&hfuzz->branchBestCnt[2], 0UL));
-    dprintf(OUTFD, "  max custom feedback:          %zu\n",
+    dprintf(OUTFD, ESC_BOLD "%zu" ESC_RESET "\n",
+            __sync_add_and_fetch(&hfuzz->branchBestCnt[2], 0UL));
+    dprintf(OUTFD, "  max custom feedback:          " ESC_BOLD "%zu" ESC_RESET "\n",
             __sync_add_and_fetch(&hfuzz->branchBestCnt[3], 0UL));
 }
