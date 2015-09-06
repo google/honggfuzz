@@ -44,23 +44,21 @@
 
 extern void display_Display(honggfuzz_t * hfuzz)
 {
+    unsigned long elapsed = (unsigned long)(time(NULL) - hfuzz->timeStart);
     size_t curr_exec_cnt = __sync_add_and_fetch(&hfuzz->mutationsCnt, 0UL);
     static size_t prev_exec_cnt = 0UL;
-
     uintptr_t exec_per_sec = curr_exec_cnt - prev_exec_cnt;
     prev_exec_cnt = curr_exec_cnt;
 
     dprintf(OUTFD, "%s", ESC_CLEAR);
 
-    dprintf(OUTFD, "Iterations: " ESC_BOLD " %zu" ESC_RESET, curr_exec_cnt);
+    dprintf(OUTFD, "Iterations: " ESC_BOLD "%zu" ESC_RESET, curr_exec_cnt);
     if (hfuzz->mutationsMax) {
         dprintf(OUTFD, " (out of: " ESC_BOLD "%zu" ESC_RESET ")", hfuzz->mutationsMax);
     }
-    dprintf(OUTFD, "\n");
+    dprintf(OUTFD, " in " ESC_BOLD "%ld" ESC_RESET " sec.\n", elapsed);
 
-    unsigned long elapsed = (unsigned long)(time(NULL) - hfuzz->timeStart);
     dprintf(OUTFD, "Started: " ESC_BOLD "%s" ESC_RESET, asctime(localtime(&hfuzz->timeStart)));
-    dprintf(OUTFD, "Elapsed: " ESC_BOLD "%ld" ESC_RESET " seconds\n", elapsed);
 
     dprintf(OUTFD, "Input file/dir: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
     dprintf(OUTFD, "Fuzzed cmd: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline[0]);
