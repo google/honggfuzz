@@ -355,15 +355,12 @@ static void *fuzz_threadNew(void *arg)
 {
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
     for (;;) {
-        MX_LOCK(&hfuzz->threads_mutex);
-        if (hfuzz->mutationsMax && hfuzz->mutationsCnt >= hfuzz->mutationsMax) {
-            hfuzz->threadsFinished++;
-            MX_UNLOCK(&hfuzz->threads_mutex);
+        if (hfuzz->mutationsMax
+            && (__sync_fetch_and_add(&hfuzz->mutationsCnt, 1UL) >= hfuzz->mutationsMax)) {
+            __sync_fetch_and_add(&hfuzz->threadsFinished, 1UL);
             sem_post(hfuzz->sem);
             return NULL;
         }
-        __sync_fetch_and_add(&hfuzz->mutationsCnt, 1UL);
-        MX_UNLOCK(&hfuzz->threads_mutex);
 
         fuzz_fuzzLoop(hfuzz);
     }
@@ -473,12 +470,9 @@ void fuzz_main(honggfuzz_t * hfuzz)
         if (fuzz_sigReceived > 0) {
             break;
         }
-        MX_LOCK(&hfuzz->threads_mutex);
-        if (hfuzz->threadsFinished == hfuzz->threadsMax) {
-            MX_UNLOCK(&hfuzz->threads_mutex);
+        if (__sync_fetch_and_add(&hfuzz->threadsFinished, 0UL) >= hfuzz->threadsMax) {
             break;
         }
-        MX_UNLOCK(&hfuzz->threads_mutex);
     }
 
     LOGMSG(l_INFO, "Finished fuzzing %zu times", hfuzz->mutationsCnt);

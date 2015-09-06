@@ -147,7 +147,6 @@ int main(int argc, char **argv)
         .tmOut = 3,
         .mutationsMax = 0,
         .threadsFinished = 0,
-        .threads_mutex = PTHREAD_MUTEX_INITIALIZER,
         .threadsMax = 2,
         .ignoreAddr = NULL,
         .reportFile = _HF_REPORT_FILE,
