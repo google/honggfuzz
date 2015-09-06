@@ -439,7 +439,18 @@ uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
 
 static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
 {
+    /* 
+     * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
+     * the correct register values if struct size is bigger than expected. As such the
+     * 32/64-bit multiplexing trick is not working for them in case PTRACE_GETREGSET
+     * fails or is not implemented. To cover such cases we explicitly define
+     * the struct size to 32bit version for arm CPU.
+     */
+#if defined(__arm__)
+    struct user_regs_struct_32 regs;
+#else
     HEADERS_STRUCT regs;
+#endif
     struct iovec pt_iov = {
         .iov_base = &regs,
         .iov_len = sizeof(regs),
