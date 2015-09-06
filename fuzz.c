@@ -399,7 +399,6 @@ bool fuzz_setupTimer(void)
     struct sigaction sa = {
         .sa_handler = SIG_IGN,
         .sa_flags = 0,
-        .sa_restorer = NULL,
     };
     sigemptyset(&sa.sa_mask);
     if (sigaction(SIGALRM, &sa, NULL) == -1) {
