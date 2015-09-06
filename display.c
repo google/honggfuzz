@@ -57,15 +57,18 @@ extern void display_Display(honggfuzz_t * hfuzz)
         dprintf(OUTFD, " (out of: " ESC_BOLD "%zu" ESC_RESET ")", hfuzz->mutationsMax);
     }
     dprintf(OUTFD, "\n");
+
+    unsigned long elapsed = (unsigned long)(time(NULL) - hfuzz->timeStart);
     dprintf(OUTFD, "Started: " ESC_BOLD "%s" ESC_RESET, asctime(localtime(&hfuzz->timeStart)));
-    dprintf(OUTFD, "Elapsed: " ESC_BOLD "%ld" ESC_RESET " seconds\n",
-            (long)(time(NULL) - hfuzz->timeStart));
+    dprintf(OUTFD, "Elapsed: " ESC_BOLD "%ld" ESC_RESET " seconds\n", elapsed);
 
     dprintf(OUTFD, "Input file/dir: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
     dprintf(OUTFD, "Fuzzed cmd: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline[0]);
 
     dprintf(OUTFD, "Fuzzing threads: " ESC_BOLD "%zu" ESC_RESET "\n", hfuzz->threadsMax);
-    dprintf(OUTFD, "Execs per second: " ESC_BOLD "%zu" ESC_RESET "\n", exec_per_sec);
+    dprintf(OUTFD,
+            "Execs per second: " ESC_BOLD "%zu" ESC_RESET " (avg: " ESC_BOLD "%zu" ESC_RESET ")\n",
+            exec_per_sec, curr_exec_cnt / elapsed);
 
     dprintf(OUTFD, "Crashes: " ESC_BOLD "%zu" ESC_RESET "\n",
             __sync_add_and_fetch(&hfuzz->crashesCnt, 0UL));
