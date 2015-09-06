@@ -475,8 +475,6 @@ void fuzz_main(honggfuzz_t * hfuzz)
         }
     }
 
-    LOGMSG(l_INFO, "Finished fuzzing %zu times", hfuzz->mutationsCnt);
-
     if (fuzz_sigReceived > 0) {
         LOGMSG(l_INFO, "Signal %d received, terminating", fuzz_sigReceived);
         signal(SIGTERM, SIG_DFL);
@@ -484,6 +482,8 @@ void fuzz_main(honggfuzz_t * hfuzz)
         signal(SIGQUIT, SIG_DFL);
         raise(fuzz_sigReceived);
     }
+
+    LOGMSG(l_INFO, "Fuzzing finished");
 #ifdef __ANDROID__
     sem_destroy(&semName);
 #else
