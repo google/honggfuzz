@@ -281,12 +281,6 @@ int main(int argc, char **argv)
     }
     hfuzz.cmdline = &argv[optind];
 
-    if (hfuzz.useScreen == true) {
-        log_setMinLevel(l_WARN);
-    } else {
-        log_setMinLevel(ll);
-    }
-
     if (hfuzz.dynamicFileBestSz > hfuzz.maxFileSz) {
         LOGMSG(l_FATAL,
                "Initial dynamic file size cannot be larger than maximum file size (%zu > %zu)",

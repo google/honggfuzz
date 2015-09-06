@@ -289,7 +289,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         MX_LOCK(&hfuzz->dynamicFile_mutex);
 
-        LOGMSG(l_INFO,
+        LOGMSG(l_DEBUG,
                "File size (New/Best): %zu/%zu, Perf feedback (instr/branch/block-edge/custom): Best: [%"
                PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64 ",%"
                PRIu64 ",%" PRIu64 "]", fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz,
