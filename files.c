@@ -318,3 +318,77 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
     fclose(fDict);
     return true;
 }
+
+/*
+ * Returns 0 on success or matching errno otherwise. Local errno copies 
+ * ensure that correct value is always returned to caller.
+ */
+int files_copyFile(const char *source, const char *destination)
+{
+    if (link(source, destination) == 0) {
+        return 0;
+    } else {
+        if (errno == EEXIST) {
+            // Should kick-in before MAC, so avoid the hassle
+            return errno;
+        } else {
+            LOGMSG_P(l_DEBUG, "Couldn't link '%s' as '%s'", source, destination);
+            /*
+             * Don't fail yet as we might have a running env which doesn't allow
+             * hardlinks (e.g. SELinux)
+             */
+        }
+    }
+
+    // Now try with a verbose POSIX alternative
+    int inFD, outFD, dstOpenFlags;
+    mode_t dstFilePerms;
+    ssize_t nRead;
+    char buf[1024];
+
+    // O_EXCL is important for saving unique crashes
+    dstOpenFlags = O_CREAT | O_WRONLY | O_EXCL;
+    dstFilePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+
+    inFD = open(source, O_RDONLY);
+    if (inFD == -1) {
+        int lc_errno = errno;
+        LOGMSG_P(l_DEBUG, "Couldn't open '%s' source", source);
+        errno = lc_errno;
+        return errno;
+    }
+
+    outFD = open(destination, dstOpenFlags, dstFilePerms);
+    if (outFD == -1) {
+        int lc_errno = errno;
+        LOGMSG_P(l_DEBUG, "Couldn't open '%s' destination", destination);
+        close(inFD);
+        errno = lc_errno;
+        return errno;
+    }
+
+    while ((nRead = read(inFD, buf, 1024)) > 0) {
+        if (write(outFD, buf, nRead) != nRead) {
+            int lc_errno = errno;
+            LOGMSG_P(l_DEBUG, "write() to '%s' failed", destination);
+            close(inFD);
+            close(outFD);
+            unlink(destination);
+            errno = lc_errno;
+            return errno;
+        }
+    }
+
+    if (nRead == -1) {
+        int lc_errno = errno;
+        LOGMSG_P(l_DEBUG, "read() from '%s' failed", source);
+        close(inFD);
+        close(outFD);
+        errno = lc_errno;
+        return errno;
+    }
+
+    close(inFD);
+    close(outFD);
+    return 0;
+}

@@ -705,7 +705,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
                  instr, localtmstr, pid, fuzzer->origFileName, hfuzz->fileExtn);
     }
 
-    if (link(fuzzer->fileName, newname) == 0) {
+    if (files_copyFile(fuzzer->fileName, newname) == 0) {
         LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, newname);
     } else {
         if (errno == EEXIST) {

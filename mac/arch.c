@@ -216,7 +216,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
                  hfuzz->fileExtn);
     }
 
-    if (link(fuzzer->fileName, newname) == 0) {
+    if (files_copyFile(fuzzer->fileName, newname) == 0) {
         LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, newname);
     } else {
         if (errno == EEXIST) {
