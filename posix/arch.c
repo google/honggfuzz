@@ -112,9 +112,9 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr));
 
     char newname[PATH_MAX];
-    snprintf(newname, sizeof(newname), "%s.%d.%s.%s.%s",
-             arch_sigs[termsig].descr, fuzzer->pid, localtmstr, fuzzer->origFileName,
-             hfuzz->fileExtn);
+    snprintf(newname, sizeof(newname), "%s/%s.%d.%s.%s.%s",
+             hfuzz->workDir, arch_sigs[termsig].descr, fuzzer->pid, localtmstr,
+             fuzzer->origFileName, hfuzz->fileExtn);
 
     LOGMSG(l_INFO, "Ok, that's interesting, saving the '%s' as '%s'", fuzzer->fileName, newname);
 

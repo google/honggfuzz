@@ -199,8 +199,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
 
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
-                 "%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s.%s",
-                 arch_sigs[termsig].descr,
+                 "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s.%s",
+                 hfuzz->workDir, arch_sigs[termsig].descr,
                  exception_to_string(fuzzer->exception), fuzzer->pc,
                  fuzzer->backtrace, fuzzer->access, fuzzer->origFileName, hfuzz->fileExtn);
     } else {
@@ -209,8 +209,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
         util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr));
 
         snprintf(newname, sizeof(newname),
-                 "%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s.%s",
-                 arch_sigs[termsig].descr,
+                 "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s.%s",
+                 hfuzz->workDir, arch_sigs[termsig].descr,
                  exception_to_string(fuzzer->exception), fuzzer->pc,
                  fuzzer->backtrace, fuzzer->access, localtmstr, fuzzer->pid, fuzzer->origFileName,
                  hfuzz->fileExtn);
