@@ -24,6 +24,6 @@
 #ifndef _DISPLAY_H_
 #define _DISPLAY_H_
 
-extern void display_Display(honggfuzz_t * hfuzz);
+extern void display_display(honggfuzz_t * hfuzz);
 
 #endif

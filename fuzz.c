@@ -464,17 +464,15 @@ void fuzz_main(honggfuzz_t * hfuzz)
     }
 
     for (;;) {
+        if (hfuzz->useScreen) {
+            display_display(hfuzz);
+        }
         if (sem_wait(hfuzz->sem) == -1 && errno != EINTR) {
             LOGMSG_P(l_FATAL, "sem_wait() failed");
         }
         if (fuzz_sigReceived > 0) {
             break;
         }
-
-        if (hfuzz->useScreen) {
-            display_Display(hfuzz);
-        }
-
         MX_LOCK(&hfuzz->threads_mutex);
         if (hfuzz->threadsFinished == hfuzz->threadsMax) {
             MX_UNLOCK(&hfuzz->threads_mutex);
