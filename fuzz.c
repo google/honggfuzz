@@ -280,7 +280,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         }
     }
 
-    LOGMSG(l_INFO, "Launched new process, pid: %d, (concurrency: %d)", fuzzer.pid,
+    LOGMSG(l_DEBUG, "Launched new process, pid: %d, (concurrency: %d)", fuzzer.pid,
            hfuzz->threadsMax);
 
     arch_reapChild(hfuzz, &fuzzer);

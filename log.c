@@ -100,7 +100,7 @@ void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int 
     pid_t pid = getpid();
 #endif                          /* defined(_HF_ARCH_LINUX) */
 
-    if (log_minLevel >= l_DEBUG || log_minLevel == l_FATAL || !log_isStdioTTY) {
+    if (log_minLevel != l_INFO || !log_isStdioTTY) {
         util_ssnprintf(msg, sizeof(msg), "%s [%d] %d/%02d/%02d %02d:%02d:%02d (%s:%s %d) ",
                        logLevels[dl].descr, pid, tm.tm_year + 1900,
                        tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, file, func,
