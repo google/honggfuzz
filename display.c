@@ -64,6 +64,7 @@ extern void display_display(honggfuzz_t * hfuzz)
     prev_exec_cnt = curr_exec_cnt;
 
     display_put("%s", ESC_CLEAR);
+    display_put("============================== STAT ==============================\n");
 
     display_put("Iterations: " ESC_BOLD "%zu" ESC_RESET, curr_exec_cnt);
     if (hfuzz->mutationsMax) {
@@ -101,4 +102,5 @@ extern void display_display(honggfuzz_t * hfuzz)
     display_put(ESC_BOLD "%zu" ESC_RESET "\n", __sync_fetch_and_add(&hfuzz->branchBestCnt[2], 0UL));
     display_put("  max custom feedback:          " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->branchBestCnt[3], 0UL));
+    display_put("============================== LOGS ==============================\n");
 }
