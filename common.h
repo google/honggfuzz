@@ -76,7 +76,6 @@ typedef struct {
     long tmOut;
     size_t dictionaryCnt;
     size_t mutationsMax;
-    pthread_mutex_t threads_mutex;
     size_t threadsMax;
     size_t threadsFinished;
     size_t maxFileSz;

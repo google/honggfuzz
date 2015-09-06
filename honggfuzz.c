@@ -150,7 +150,6 @@ int main(int argc, char **argv)
         .tmOut = 3,
         .mutationsMax = 0,
         .threadsFinished = 0,
-        .threads_mutex = PTHREAD_MUTEX_INITIALIZER,
         .threadsMax = 2,
         .ignoreAddr = NULL,
         .reportFile = _HF_REPORT_FILE,
@@ -287,12 +286,6 @@ int main(int argc, char **argv)
         }
     }
     hfuzz.cmdline = &argv[optind];
-
-    if (hfuzz.useScreen == true) {
-        log_setMinLevel(l_WARN);
-    } else {
-        log_setMinLevel(ll);
-    }
 
     if (hfuzz.dynamicFileBestSz > hfuzz.maxFileSz) {
         LOGMSG(l_FATAL,
