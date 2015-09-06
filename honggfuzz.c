@@ -157,6 +157,7 @@ int main(int argc, char **argv)
         .pid = 0,
         .envs = {[0 ... (ARRAYSIZE(hfuzz.envs) - 1)] = NULL,},
 
+        .timeStart = time(NULL),
         .mutationsCnt = 0,
         .crashesCnt = 0,
         .timeoutedCnt = 0,

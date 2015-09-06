@@ -88,6 +88,7 @@ typedef struct {
     pid_t pid;
     char *envs[128];
 
+    time_t timeStart;
     size_t mutationsCnt;
     size_t crashesCnt;
     size_t timeoutedCnt;

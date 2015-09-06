@@ -57,6 +57,9 @@ extern void display_Display(honggfuzz_t * hfuzz)
         dprintf(OUTFD, " (out of: " ESC_BOLD "%zu" ESC_RESET ")", hfuzz->mutationsMax);
     }
     dprintf(OUTFD, "\n");
+    dprintf(OUTFD, "Started: " ESC_BOLD "%s" ESC_RESET, asctime(localtime(&hfuzz->timeStart)));
+    dprintf(OUTFD, "Elapsed: " ESC_BOLD "%ld" ESC_RESET " seconds\n",
+            (long)(time(NULL) - hfuzz->timeStart));
 
     dprintf(OUTFD, "Input file/dir: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
     dprintf(OUTFD, "Fuzzed cmd: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline[0]);
