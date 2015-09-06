@@ -90,17 +90,17 @@ extern void display_display(honggfuzz_t * hfuzz)
                 ")\n", hfuzz->dynamicFileBestSz, hfuzz->maxFileSz);
 
     display_put("Coverage:\n");
-    display_put("  max instructions taken:       " ESC_BOLD "%zu" ESC_RESET "\n",
+    display_put("  max instructions taken:         " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->branchBestCnt[0], 0UL));
-    display_put("  max branches taken:           " ESC_BOLD "%zu" ESC_RESET "\n",
+    display_put("  max branches taken:             " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->branchBestCnt[1], 0UL));
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
-        display_put("  max individual PCs seen:      ");
+        display_put("  max individual PCs seen:        ");
     } else {
-        display_put("  max individual branches seen: ");
+        display_put("  max unique branche pairs taken: ");
     }
     display_put(ESC_BOLD "%zu" ESC_RESET "\n", __sync_fetch_and_add(&hfuzz->branchBestCnt[2], 0UL));
-    display_put("  max custom feedback:          " ESC_BOLD "%zu" ESC_RESET "\n",
+    display_put("  max custom feedback:            " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->branchBestCnt[3], 0UL));
     display_put("============================== LOGS ==============================\n");
 }
