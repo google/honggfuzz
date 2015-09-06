@@ -355,8 +355,8 @@ static void *fuzz_threadNew(void *arg)
 {
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
     for (;;) {
-        if (hfuzz->mutationsMax
-            && (__sync_fetch_and_add(&hfuzz->mutationsCnt, 1UL) >= hfuzz->mutationsMax)) {
+        if ((__sync_fetch_and_add(&hfuzz->mutationsCnt, 1UL) >= hfuzz->mutationsMax)
+            && hfuzz->mutationsMax) {
             __sync_fetch_and_add(&hfuzz->threadsFinished, 1UL);
             sem_post(hfuzz->sem);
             return NULL;
