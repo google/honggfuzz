@@ -216,13 +216,14 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
                  hfuzz->fileExtn);
     }
 
-    if (files_copyFile(fuzzer->fileName, newname) == 0) {
+    bool dstFileExists = false;
+    if (files_copyFile(fuzzer->fileName, newname, &dstFileExists)) {
         LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, newname);
     } else {
-        if (errno == EEXIST) {
+        if (dstFileExists) {
             LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", newname);
         } else {
-            LOGMSG_P(l_ERROR, "Couldn't link '%s' to '%s'", fuzzer->fileName, newname);
+            LOGMSG(l_ERROR, "Couldn't copy '%s' to '%s'", fuzzer->fileName, newname);
         }
     }
 

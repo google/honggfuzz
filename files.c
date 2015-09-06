@@ -320,17 +320,19 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
 }
 
 /*
- * Returns 0 on success or matching errno otherwise. Local errno copies 
- * ensure that correct value is always returned to caller.
+ * dstExists argument can be used by caller for cases where existing destination
+ * file requires special handling (e.g. save unique crashes)
  */
-int files_copyFile(const char *source, const char *destination)
+bool files_copyFile(const char *source, const char *destination, bool * dstExists)
 {
+    *dstExists = false;
     if (link(source, destination) == 0) {
-        return 0;
+        return true;
     } else {
         if (errno == EEXIST) {
             // Should kick-in before MAC, so avoid the hassle
-            return errno;
+            *dstExists = true;
+            return false;
         } else {
             LOGMSG_P(l_DEBUG, "Couldn't link '%s' as '%s'", source, destination);
             /*
@@ -343,8 +345,6 @@ int files_copyFile(const char *source, const char *destination)
     // Now try with a verbose POSIX alternative
     int inFD, outFD, dstOpenFlags;
     mode_t dstFilePerms;
-    ssize_t nRead;
-    char buf[1024];
 
     // O_EXCL is important for saving unique crashes
     dstOpenFlags = O_CREAT | O_WRONLY | O_EXCL;
@@ -352,43 +352,55 @@ int files_copyFile(const char *source, const char *destination)
 
     inFD = open(source, O_RDONLY);
     if (inFD == -1) {
-        int lc_errno = errno;
         LOGMSG_P(l_DEBUG, "Couldn't open '%s' source", source);
-        errno = lc_errno;
-        return errno;
+        return false;
+    }
+
+    struct stat inSt;
+    if (fstat(inFD, &inSt) == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't fstat(fd='%d' fileName='%s')", inFD, source);
+        close(inFD);
+        return false;
     }
 
     outFD = open(destination, dstOpenFlags, dstFilePerms);
     if (outFD == -1) {
-        int lc_errno = errno;
+        if (errno == EEXIST) {
+            *dstExists = true;
+        }
         LOGMSG_P(l_DEBUG, "Couldn't open '%s' destination", destination);
         close(inFD);
-        errno = lc_errno;
-        return errno;
+        return false;
     }
 
-    while ((nRead = read(inFD, buf, 1024)) > 0) {
-        if (write(outFD, buf, nRead) != nRead) {
-            int lc_errno = errno;
-            LOGMSG_P(l_DEBUG, "write() to '%s' failed", destination);
-            close(inFD);
-            close(outFD);
-            unlink(destination);
-            errno = lc_errno;
-            return errno;
-        }
-    }
-
-    if (nRead == -1) {
-        int lc_errno = errno;
-        LOGMSG_P(l_DEBUG, "read() from '%s' failed", source);
+    uint8_t *inFileBuf = malloc(inSt.st_size);
+    if (!inFileBuf) {
+        LOGMSG(l_ERROR, "malloc(%zu) failed", inSt.st_size);
         close(inFD);
         close(outFD);
-        errno = lc_errno;
-        return errno;
+        return false;
     }
 
+    if (files_readFromFd(inFD, inFileBuf, (size_t) inSt.st_size) == false) {
+        LOGMSG(l_ERROR, "Couldn't read '%s' to a buf", source);
+        free(inFileBuf);
+        close(inFD);
+        close(outFD);
+        return false;
+    }
+
+    if (files_writeToFd(outFD, inFileBuf, inSt.st_size) == false) {
+        LOGMSG(l_ERROR, "Couldn't write '%zu' bytes to file '%s' (fd='%d')", inSt.st_size,
+               destination, outFD);
+        free(inFileBuf);
+        close(inFD);
+        close(outFD);
+        unlink(destination);
+        return false;
+    }
+
+    free(inFileBuf);
     close(inFD);
     close(outFD);
-    return 0;
+    return true;
 }
