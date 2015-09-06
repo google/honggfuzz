@@ -66,6 +66,8 @@ extern void display_Display(honggfuzz_t * hfuzz)
 
     dprintf(OUTFD, "Crashes: " ESC_BOLD "%zu" ESC_RESET "\n",
             __sync_add_and_fetch(&hfuzz->crashesCnt, 0UL));
+    dprintf(OUTFD, "Timeouts: " ESC_BOLD "%zu" ESC_RESET "\n",
+            __sync_add_and_fetch(&hfuzz->timeoutedCnt, 0UL));
 
     dprintf(OUTFD,
             "Dynamic file size: " ESC_BOLD "%zu" ESC_RESET " (max: " ESC_BOLD "%zu" ESC_RESET ")\n",

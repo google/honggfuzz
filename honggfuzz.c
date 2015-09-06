@@ -159,6 +159,7 @@ int main(int argc, char **argv)
 
         .mutationsCnt = 0,
         .crashesCnt = 0,
+        .timeoutedCnt = 0,
 
         .dynFileMethod = _HF_DYNFILE_NONE,
         .dynamicFileBest = NULL,

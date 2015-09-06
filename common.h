@@ -90,6 +90,7 @@ typedef struct {
 
     size_t mutationsCnt;
     size_t crashesCnt;
+    size_t timeoutedCnt;
 
     /* For the linux/ code */
     uint8_t *dynamicFileBest;

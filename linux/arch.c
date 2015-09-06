@@ -233,6 +233,7 @@ static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOGMSG(l_WARN, "PID %d took too much time (limit %ld s). Sending SIGKILL",
                fuzzer->pid, hfuzz->tmOut);
         kill(fuzzer->pid, SIGKILL);
+        __sync_add_and_fetch(&hfuzz->timeoutedCnt, 1UL);
     }
 }
 
