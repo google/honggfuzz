@@ -625,13 +625,13 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
 }
 
 static void
-arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs,
-                          size_t funcCnt, siginfo_t * si, const char *instr)
+arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCnt,
+                          siginfo_t * si, const char *instr, const char *crashName)
 {
     fuzzer->report[0] = '\0';
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n",
                    fuzzer->origFileName);
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n", fuzzer->fileName);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n", crashName);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "PID: %d\n", pid);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "SIGNAL: %s (%d)\n",
                    arch_sigs[si->si_signo].descr, si->si_signo);
@@ -731,7 +731,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     size_t funcCnt = arch_unwindStack(pid, funcs);
 #endif
 
-    arch_ptraceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr);
+    arch_ptraceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr, newname);
     __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
 }
 
