@@ -24,6 +24,9 @@
 #ifndef _LINUX_PTRACE_UTILS_H_
 #define _LINUX_PTRACE_UTILS_H_
 
+#define HF_MSAN_EXIT_CODE 103
+#define HF_MSAN_EXIT_CODE_STR "103"
+
 extern bool arch_ptraceEnable(honggfuzz_t * fuzz);
 extern void arch_ptraceAnalyze(honggfuzz_t * fuzz, int status, pid_t pid, fuzzer_t * fuzzer);
 extern bool arch_ptraceAttach(pid_t pid);
