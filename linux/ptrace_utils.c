@@ -328,6 +328,8 @@ struct {
     [0 ... (NSIG - 1)].important = false,
     [0 ... (NSIG - 1)].descr = "UNKNOWN",
 
+    [SIGTRAP].important = false,
+    [SIGTRAP].descr = "SIGTRAP",
     [SIGILL].important = true,
     [SIGILL].descr = "SIGILL",
     [SIGFPE].important = true,
@@ -666,14 +668,15 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
 
 static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
+    __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
     REG_TYPE pc = 0;
 
     char instr[_HF_INSTR_SZ] = "\x00";
     siginfo_t si;
+    bzero(&si, sizeof(si));
 
     if (ptrace(PT_GETSIGINFO, pid, 0, &si) == -1) {
         LOGMSG_P(l_WARN, "Couldn't get siginfo for pid %d", pid);
-        return;
     }
 
     arch_getInstrStr(pid, &pc, instr);
@@ -733,13 +736,35 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 #endif
 
     arch_ptraceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr, newname);
-    __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
 }
 
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)
-static void arch_ptraceEvent(int status, pid_t pid)
+static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status, pid_t pid)
 {
-    LOGMSG(l_DEBUG, "PID: %d, Ptrace event %d", pid, __WEVENT(status));
+    unsigned long event_msg;
+    if (ptrace(PTRACE_GETEVENTMSG, pid, NULL, &event_msg) == -1) {
+        LOGMSG(l_ERROR, "ptrace(PTRACE_GETEVENTMSG,%d) failed", pid);
+        return;
+    }
+
+    LOGMSG(l_DEBUG, "PID: %d, Ptrace event: %d, event_msg: %ld", pid, __WEVENT(status), event_msg);
+    switch (__WEVENT(status)) {
+    case PTRACE_EVENT_EXIT:
+        if (WIFEXITED(event_msg)) {
+            LOGMSG(l_DEBUG, "PID: %d exited with exit_code: %d", pid, WEXITSTATUS(event_msg));
+            if (WEXITSTATUS(event_msg) == HF_MSAN_EXIT_CODE) {
+                arch_ptraceSaveData(hfuzz, pid, fuzzer);
+            }
+        } else if (WIFSIGNALED(event_msg)) {
+            LOGMSG(l_DEBUG, "PID: %d terminated with signal: %d", pid, WTERMSIG(event_msg));
+        } else {
+            LOGMSG(l_DEBUG, "PID: %d exited with unknown status: %ld", pid, event_msg);
+        }
+        break;
+    default:
+        break;
+    }
+
     ptrace(PT_CONTINUE, pid, 0, 0);
     return;
 }
@@ -750,7 +775,7 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
      * It's a ptrace event, deal with it elsewhere
      */
     if (WIFSTOPPED(status) && __WEVENT(status)) {
-        return arch_ptraceEvent(status, pid);
+        return arch_ptraceEvent(hfuzz, fuzzer, status, pid);
     }
 
     if (WIFSTOPPED(status)) {
@@ -786,7 +811,11 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
     /*
      * Process exited
      */
-    if (WIFEXITED(status) || WIFSIGNALED(status)) {
+    if (WIFEXITED(status)) {
+        return;
+    }
+
+    if (WIFSIGNALED(status)) {
         return;
     }
 
