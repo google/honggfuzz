@@ -696,16 +696,16 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     char newname[PATH_MAX];
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
-                 "%s/%s.PC.%" REG_PM ".CODE.%d.ADDR.%p.INSTR.%s.%s.%s",
+                 "%s/%s.PC.%" REG_PM ".CODE.%d.ADDR.%p.INSTR.%s.%s",
                  hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr,
-                 instr, fuzzer->origFileName, hfuzz->fileExtn);
+                 instr, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr));
         snprintf(newname, sizeof(newname),
-                 "%s/%s.PC.%" REG_PM ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s.%s",
+                 "%s/%s.PC.%" REG_PM ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
                  hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr,
-                 instr, localtmstr, pid, fuzzer->origFileName, hfuzz->fileExtn);
+                 instr, localtmstr, pid, hfuzz->fileExtn);
     }
 
     bool dstFileExists = false;
