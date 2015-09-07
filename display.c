@@ -72,7 +72,8 @@ extern void display_display(honggfuzz_t * hfuzz)
     }
     display_put("\n");
 
-    display_put("Seconds elapsed: " ESC_BOLD "%zu" ESC_RESET ", start time: " ESC_BOLD "%s" ESC_RESET, elapsed, asctime(localtime(&hfuzz->timeStart)));
+    display_put("Seconds elapsed: " ESC_BOLD "%zu" ESC_RESET ", start time: " ESC_BOLD "%s"
+                ESC_RESET, elapsed, asctime(localtime(&hfuzz->timeStart)));
 
     display_put("Input file/dir: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
     display_put("Fuzzed cmd: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline[0]);
