@@ -70,9 +70,10 @@ extern void display_display(honggfuzz_t * hfuzz)
     if (hfuzz->mutationsMax) {
         display_put(" (out of: " ESC_BOLD "%zu" ESC_RESET ")", hfuzz->mutationsMax);
     }
-    display_put(" in " ESC_BOLD "%ld" ESC_RESET " sec.\n", elapsed);
+    display_put("\n");
 
-    display_put("Started: " ESC_BOLD "%s" ESC_RESET, asctime(localtime(&hfuzz->timeStart)));
+    display_put("Seconds elapsed: " ESC_BOLD "%zu" ESC_RESET ", start time: " ESC_BOLD "%s"
+                ESC_RESET, elapsed, asctime(localtime(&hfuzz->timeStart)));
 
     display_put("Input file/dir: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
     display_put("Fuzzed cmd: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline[0]);
@@ -89,18 +90,18 @@ extern void display_display(honggfuzz_t * hfuzz)
     display_put("Dynamic file size: " ESC_BOLD "%zu" ESC_RESET " (max: " ESC_BOLD "%zu" ESC_RESET
                 ")\n", hfuzz->dynamicFileBestSz, hfuzz->maxFileSz);
 
-    display_put("Coverage:\n");
-    display_put("  max instructions taken:         " ESC_BOLD "%zu" ESC_RESET "\n",
+    display_put("Coverage (max):\n");
+    display_put("  CPU instructions:      " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->branchBestCnt[0], 0UL));
-    display_put("  max branches taken:             " ESC_BOLD "%zu" ESC_RESET "\n",
+    display_put("  CPU branches:          " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->branchBestCnt[1], 0UL));
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
-        display_put("  max individual PCs seen:        ");
+        display_put("  unique branch origins: ");
     } else {
-        display_put("  max unique branche pairs taken: ");
+        display_put("  unique branch pairs:   ");
     }
     display_put(ESC_BOLD "%zu" ESC_RESET "\n", __sync_fetch_and_add(&hfuzz->branchBestCnt[2], 0UL));
-    display_put("  max custom feedback:            " ESC_BOLD "%zu" ESC_RESET "\n",
+    display_put("  custom counter:        " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->branchBestCnt[3], 0UL));
     display_put("============================== LOGS ==============================\n");
 }
