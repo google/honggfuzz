@@ -436,5 +436,5 @@ void fuzz_main(honggfuzz_t * hfuzz)
         LOGMSG(l_INFO, "Signal %d received, terminating", fuzz_sigReceived);
     }
 
-    exit(EXIT_SUCCESS);
+    _exit(EXIT_SUCCESS);
 }
