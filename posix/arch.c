@@ -40,6 +40,7 @@
 
 #include "log.h"
 #include "util.h"
+#include "files.h"
 
 #ifdef __ANDROID__
 #ifndef WIFCONTINUED
@@ -118,7 +119,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
 
     LOGMSG(l_INFO, "Ok, that's interesting, saving the '%s' as '%s'", fuzzer->fileName, newname);
 
-    if (files_copyFile(fuzzer->fileName, newname) == false) {
+    if (files_copyFile(fuzzer->fileName, newname, NULL) == false) {
         LOGMSG(l_ERROR, "Couldn't save '%s' as '%s'", fuzzer->fileName, newname);
     }
     return true;
