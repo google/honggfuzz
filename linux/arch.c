@@ -261,8 +261,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     for (;;) {
         int status;
-        pid_t pid =
-            TEMP_FAILURE_RETRY(wait4(childPid, &status, __WNOTHREAD | __WALL | WUNTRACED, NULL));
+        pid_t pid = wait4(childPid, &status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
         if (pid == -1 && errno == EINTR) {
             continue;
         }
@@ -286,11 +285,10 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         int status;
 
         // wait3 syscall is no longer present in Android
-        // wrap syscalls under TEMP_FAILURE_RETRY macro to avoid "Interrupted system call"
 #if !defined(__ANDROID__)
-        pid_t pid = TEMP_FAILURE_RETRY(wait3(&status, __WNOTHREAD | __WALL, NULL));
+        pid_t pid = wait3(&status, __WNOTHREAD | __WALL, NULL);
 #else
-        pid_t pid = TEMP_FAILURE_RETRY(wait4(-1, &status, __WNOTHREAD | __WALL, NULL));
+        pid_t pid = wait4(fuzzer->pid, &status, __WNOTHREAD | __WALL, NULL);
 #endif
 
         LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
