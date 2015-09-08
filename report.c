@@ -92,7 +92,7 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
             " fuzzStdin    : %s\n"
             " timeout      : %ld (sec)\n"
             " ignoreAddr   : %p\n"
-            " memoryLimit  : %lu (MiB)\n"
+            " memoryLimit  : %llu (MiB)\n"
             " targetPid    : %d\n"
             " wordlistFile : %s\n",
             localtmstr,
