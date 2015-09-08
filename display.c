@@ -56,7 +56,7 @@ static void display_put(const char *fmt, ...)
     }
 }
 
-extern void display_display(honggfuzz_t * hfuzz)
+static void display_displayLocked(honggfuzz_t * hfuzz)
 {
     unsigned long elapsed = (unsigned long)(time(NULL) - hfuzz->timeStart);
 
@@ -104,12 +104,12 @@ extern void display_display(honggfuzz_t * hfuzz)
                 ")\n", hfuzz->dynamicFileBestSz, hfuzz->maxFileSz);
 
     display_put("Coverage (max):\n");
-    display_put("  CPU instructions:      " ESC_BOLD "%zu" ESC_RESET "\n",
+    display_put("  cpu instructions:      " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->branchBestCnt[0], 0UL));
-    display_put("  CPU branches:          " ESC_BOLD "%zu" ESC_RESET "\n",
+    display_put("  cpu branches:          " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->branchBestCnt[1], 0UL));
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
-        display_put("  unique branch origins: ");
+        display_put("  unique branch targets: ");
     } else {
         display_put("  unique branch pairs:   ");
     }
@@ -117,4 +117,11 @@ extern void display_display(honggfuzz_t * hfuzz)
     display_put("  custom counter:        " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->branchBestCnt[3], 0UL));
     display_put("============================== LOGS ==============================\n");
+}
+
+extern void display_display(honggfuzz_t * hfuzz)
+{
+    log_mutexLock();
+    display_displayLocked(hfuzz);
+    log_mutexUnLock();
 }

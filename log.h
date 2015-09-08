@@ -24,6 +24,8 @@
 #ifndef _LOG_H_
 #define _LOG_H_
 
+#include <pthread.h>
+
 typedef enum {
     l_FATAL = 0, l_ERROR, l_WARN, l_INFO, l_DEBUG
 } log_level_t;
@@ -32,6 +34,9 @@ extern void log_setMinLevel(log_level_t dl);
 
 extern void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int line,
                     const char *fmt, ...);
+
+extern void log_mutexLock(void);
+extern void log_mutexUnLock(void);
 
 #define LOGMSG(ll, ...) log_msg(ll, false, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);
 #define LOGMSG_P(ll, ...) log_msg(ll, true, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);
