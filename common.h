@@ -101,8 +101,6 @@ typedef struct {
     int dynamicRegressionCnt;
     uint64_t dynamicCutOffAddr;
     pthread_mutex_t dynamicFile_mutex;
-    bool disableRandomization;
-    bool msanReportUMRS;
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
