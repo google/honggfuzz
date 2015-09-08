@@ -79,7 +79,7 @@ typedef struct {
     size_t maxFileSz;
     void *ignoreAddr;
     char *reportFile;
-    unsigned long asLimit;
+    uint64_t asLimit;
     char **files;
     int fileCnt;
     pid_t pid;

@@ -64,8 +64,8 @@ static void usage(bool exit_success)
            "            (default: " AB "false" AC ")\n"
            " [" AB "-u" AC "]     : save unique test-cases only, otherwise (if not used) append\n"
            "            current timestamp to the output filenames (default: " AB "false" AC ")\n"
-	   " [" AB "-v" AC "]     : display simple log messages on stdout instead of using ANSI\n"
-           "            console (default: " AB "false " AC ")\n"
+           " [" AB "-v" AC "]     : display simple log messages on stdout instead of using ANSI\n"
+           "            console (default: " AB "false" AC ")\n"
            " [" AB "-d val" AC "] : debug level (0 - FATAL ... 4 - DEBUG), (default: '" AB "3" AC
            "' [INFO])\n"
            " [" AB "-e val" AC "] : file extension (e.g. 'swf'), (default: '" AB "fuzz" AC "')\n"
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
         .threadsMax = 2,
         .ignoreAddr = NULL,
         .reportFile = _HF_REPORT_FILE,
-        .asLimit = 0UL,
+        .asLimit = 0ULL,
         .files = NULL,
         .fileCnt = 0,
         .pid = 0,
@@ -256,7 +256,7 @@ int main(int argc, char **argv)
             hfuzz.mutationsMax = atol(optarg);
             break;
         case 'l':
-            hfuzz.asLimit = strtoul(optarg, NULL, 0);
+            hfuzz.asLimit = strtoull(optarg, NULL, 0);
             break;
         case 'p':
             hfuzz.pid = atoi(optarg);
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
     LOGMSG(l_INFO,
            "debugLevel: %d, inputFile '%s', nullifyStdio: %d, fuzzStdin: %d, saveUnique: %d, flipRate: %lf, "
            "externalCommand: '%s', tmOut: %ld, mutationsMax: %ld, threadsMax: %ld, fileExtn '%s', ignoreAddr: %p, "
-           "memoryLimit: %lu (MiB), fuzzExe: '%s', fuzzedPid: %d",
+           "memoryLimit: %llu (MiB), fuzzExe: '%s', fuzzedPid: %d",
            ll, hfuzz.inputFile, hfuzz.nullifyStdio ? 1 : 0,
            hfuzz.fuzzStdin ? 1 : 0, hfuzz.saveUnique ? 1 : 0,
            hfuzz.flipRate,
