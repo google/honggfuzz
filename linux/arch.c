@@ -71,6 +71,17 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         return false;
     }
 
+    const char *msan_options =
+        "exit_code=" HF_MSAN_EXIT_CODE_STR ":report_umrs=0:wrap_signals=0:print_stats=1";
+    if (hfuzz->msanReportUMRS == true) {
+        msan_options =
+            "exit_code=" HF_MSAN_EXIT_CODE_STR ":report_umrs=1:wrap_signals=0:print_stats=1";
+    }
+    if (setenv("MSAN_OPTIONS", msan_options, 1) == -1) {
+        LOGMSG_P(l_ERROR, "setenv(MSAN_OPTIONS) failed");
+        return false;
+    }
+
     /*
      * Kill the children when fuzzer dies (e.g. due to Ctrl+C)
      */
@@ -78,11 +89,10 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         LOGMSG_P(l_ERROR, "prctl(PR_SET_PDEATHSIG, SIGKILL) failed");
         return false;
     }
-
     /*
      * Disable ASLR
      */
-    if (personality(ADDR_NO_RANDOMIZE) == -1) {
+    if (hfuzz->disableRandomization && personality(ADDR_NO_RANDOMIZE) == -1) {
         LOGMSG_P(l_ERROR, "personality(ADDR_NO_RANDOMIZE) failed");
         return false;
     }
@@ -283,7 +293,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         pid_t pid = TEMP_FAILURE_RETRY(wait4(-1, &status, __WNOTHREAD | __WALL, NULL));
 #endif
 
-        LOGMSG_P(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
+        LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
 
         if (pid == -1 && errno == EINTR) {
             arch_checkTimeLimit(hfuzz, fuzzer);

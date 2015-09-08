@@ -69,8 +69,6 @@ static void usage(bool exit_success)
            " [" AB "-d val" AC "] : debug level (0 - FATAL ... 4 - DEBUG), (default: '" AB "3" AC
            "' [INFO])\n"
            " [" AB "-e val" AC "] : file extension (e.g. 'swf'), (default: '" AB "fuzz" AC "')\n"
-           " [" AB "-W val" AC "] : Workspace directory to save crashes & runtime files\n"
-           "            (default: current '.')\n"
            " [" AB "-r val" AC "] : flip rate, (default: '" AB "0.001" AC "')\n"
            " [" AB "-w val" AC "] : wordlist, (default: empty) [tokens delimited by NUL-bytes]\n"
            " [" AB "-c val" AC "] : external command modifying the input corpus of files,\n"
@@ -88,6 +86,8 @@ static void usage(bool exit_success)
 #if defined(_HF_ARCH_LINUX)
            " [" AB "-p val" AC "] : [Linux] attach to a pid (and its thread group), instead of \n"
            "            monitoring a previously created process, (default: '" AB "0" AC "' [none])\n"
+           " [" AB "-LR" AC "]    : [Linux] Don't disable ASLR randomization, might be useful with MSAN\n"
+           " [" AB "-LU" AC "]    : [Linux] Report MSAN's UMRS (uninitialized memory access)\n"
            " [" AB "-g val" AC "] : [Linux] allow that many regressions (perf events) wrt the best one\n"
            " [" AB "-o val" AC "] : [Linux] cut-off address, don't record branches above that address\n"
            " [" AB "-D val" AC "] : [Linux] create a file dynamically with Linux perf counters,\n"
@@ -140,7 +140,6 @@ int main(int argc, char **argv)
         .fuzzStdin = false,
         .saveUnique = false,
         .fileExtn = "fuzz",
-        .workDir = ".",
         .flipRate = 0.001f,
         .externalCommand = NULL,
         .dictionaryFile = NULL,
@@ -171,6 +170,9 @@ int main(int argc, char **argv)
         .dynamicRegressionCnt = 0,
         .dynamicCutOffAddr = ~(0ULL),
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
+
+        .disableRandomization = true,
+        .msanReportUMRS = false,
     };
 
     if (argc < 2) {
@@ -178,7 +180,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "-?hqvsuf:d:e:W:r:c:F:D:t:a:R:n:N:l:p:g:o:E:w:");
+        c = getopt(argc, argv, "-?hqvsuf:d:e:r:c:F:D:t:a:R:n:N:l:p:g:o:E:w:L:");
         if (c < 0)
             break;
 
@@ -207,9 +209,6 @@ int main(int argc, char **argv)
             break;
         case 'e':
             hfuzz.fileExtn = optarg;
-            break;
-        case 'W':
-            hfuzz.workDir = optarg;
             break;
         case 'r':
             hfuzz.flipRate = strtod(optarg, NULL);
@@ -281,11 +280,25 @@ int main(int argc, char **argv)
         case 'w':
             hfuzz.dictionaryFile = optarg;
             break;
+        case 'L':
+            switch (optarg[0]) {
+            case 'R':
+                hfuzz.disableRandomization = false;
+                break;
+            case 'U':
+                hfuzz.msanReportUMRS = true;
+                break;
+            default:
+                LOGMSG(l_ERROR, "Unknown -L switch");
+                usage(EXIT_FAILURE);
+            }
         default:
             break;
         }
     }
     hfuzz.cmdline = &argv[optind];
+
+    log_setMinLevel(ll);
 
     if (hfuzz.dynamicFileBestSz > hfuzz.maxFileSz) {
         LOGMSG(l_FATAL,
