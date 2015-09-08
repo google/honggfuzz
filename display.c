@@ -32,6 +32,7 @@
 #include <unistd.h>
 
 #include "log.h"
+#include "util.h"
 
 #define ESC_CLEAR "\033[H\033[2J"
 #define ESC_NAV(x,y) "\033["#x";"#y"H"
@@ -55,10 +56,20 @@ static void display_put(const char *fmt, ...)
     }
 }
 
-extern void display_display(honggfuzz_t * hfuzz)
+static void display_displayLocked(honggfuzz_t * hfuzz)
 {
     unsigned long elapsed = (unsigned long)(time(NULL) - hfuzz->timeStart);
+
     size_t curr_exec_cnt = __sync_fetch_and_add(&hfuzz->mutationsCnt, 0UL);
+    /*
+     * We increase the mutation counter unconditionally in threads, but if it's
+     * above hfuzz->mutationsMax we don't really execute the fuzzing loop.
+     * Therefore at the end of fuzzing, the mutation counter might be higher
+     * than hfuzz->mutationsMax
+     */
+    if (hfuzz->mutationsMax > 0 && curr_exec_cnt > hfuzz->mutationsMax) {
+        curr_exec_cnt = hfuzz->mutationsMax;
+    }
     static size_t prev_exec_cnt = 0UL;
     uintptr_t exec_per_sec = curr_exec_cnt - prev_exec_cnt;
     prev_exec_cnt = curr_exec_cnt;
@@ -72,8 +83,10 @@ extern void display_display(honggfuzz_t * hfuzz)
     }
     display_put("\n");
 
-    display_put("Seconds elapsed: " ESC_BOLD "%zu" ESC_RESET ", start time: " ESC_BOLD "%s"
-                ESC_RESET, elapsed, asctime(localtime(&hfuzz->timeStart)));
+    char start_time_str[128];
+    util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
+    display_put("Start time: " ESC_BOLD "%s" ESC_RESET " (" ESC_BOLD "%lu"
+                ESC_RESET " seconds elapsed)\n", start_time_str, elapsed);
 
     display_put("Input file/dir: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
     display_put("Fuzzed cmd: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline[0]);
@@ -87,21 +100,37 @@ extern void display_display(honggfuzz_t * hfuzz)
     display_put("Timeouts: " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->timeoutedCnt, 0UL));
 
-    display_put("Dynamic file size: " ESC_BOLD "%zu" ESC_RESET " (max: " ESC_BOLD "%zu" ESC_RESET
-                ")\n", hfuzz->dynamicFileBestSz, hfuzz->maxFileSz);
-
-    display_put("Coverage (max):\n");
-    display_put("  CPU instructions:      " ESC_BOLD "%zu" ESC_RESET "\n",
-                __sync_fetch_and_add(&hfuzz->branchBestCnt[0], 0UL));
-    display_put("  CPU branches:          " ESC_BOLD "%zu" ESC_RESET "\n",
-                __sync_fetch_and_add(&hfuzz->branchBestCnt[1], 0UL));
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
-        display_put("  unique branch origins: ");
-    } else {
-        display_put("  unique branch pairs:   ");
+    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+        display_put("Dynamic file size: " ESC_BOLD "%zu" ESC_RESET " (max: " ESC_BOLD "%zu"
+                    ESC_RESET ")\n", hfuzz->dynamicFileBestSz, hfuzz->maxFileSz);
+        display_put("Coverage (max):\n");
     }
-    display_put(ESC_BOLD "%zu" ESC_RESET "\n", __sync_fetch_and_add(&hfuzz->branchBestCnt[2], 0UL));
-    display_put("  custom counter:        " ESC_BOLD "%zu" ESC_RESET "\n",
-                __sync_fetch_and_add(&hfuzz->branchBestCnt[3], 0UL));
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
+        display_put("  - cpu instructions:      " ESC_BOLD "%zu" ESC_RESET "\n",
+                    __sync_fetch_and_add(&hfuzz->branchBestCnt[0], 0UL));
+    }
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
+        display_put("  - cpu branches:          " ESC_BOLD "%zu" ESC_RESET "\n",
+                    __sync_fetch_and_add(&hfuzz->branchBestCnt[1], 0UL));
+    }
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
+        display_put("  - unique branch targets: " ESC_BOLD "%zu" ESC_RESET "\n",
+                    __sync_fetch_and_add(&hfuzz->branchBestCnt[2], 0UL));
+    }
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
+        display_put("  - unique branch pairs:   " ESC_BOLD "%zu" ESC_RESET "\n",
+                    __sync_fetch_and_add(&hfuzz->branchBestCnt[2], 0UL));
+    }
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) {
+        display_put("  - custom counter:        " ESC_BOLD "%zu" ESC_RESET "\n",
+                    __sync_fetch_and_add(&hfuzz->branchBestCnt[3], 0UL));
+    }
     display_put("============================== LOGS ==============================\n");
+}
+
+extern void display_display(honggfuzz_t * hfuzz)
+{
+    log_mutexLock();
+    display_displayLocked(hfuzz);
+    log_mutexUnLock();
 }

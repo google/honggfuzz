@@ -139,11 +139,11 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
      * The address space limit. If big enough - roughly the size of RAM used
      */
     if (hfuzz->asLimit) {
-        struct rlimit rl = {
-            .rlim_cur = hfuzz->asLimit * 1024UL * 1024UL,
-            .rlim_max = hfuzz->asLimit * 1024UL * 1024UL,
+        struct rlimit64 rl = {
+            .rlim_cur = hfuzz->asLimit * 1024ULL * 1024ULL,
+            .rlim_max = hfuzz->asLimit * 1024ULL * 1024ULL,
         };
-        if (setrlimit(RLIMIT_AS, &rl) == -1) {
+        if (prlimit64(getpid(), RLIMIT_AS, &rl, NULL) == -1) {
             LOGMSG_P(l_DEBUG, "Couldn't enforce the RLIMIT_AS resource limit, ignoring");
         }
     }

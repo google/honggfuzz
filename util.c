@@ -102,14 +102,13 @@ int util_ssnprintf(char *str, size_t size, const char *format, ...)
     return snprintf(str, size, "%s%s", buf1, buf2);
 }
 
-void util_getLocalTime(const char *fmt, char *buf, size_t len)
+void util_getLocalTime(const char *fmt, char *buf, size_t len, time_t tm)
 {
     struct tm ltime;
-
-    time_t t = time(NULL);
-
-    localtime_r(&t, &ltime);
-    strftime(buf, len, fmt, &ltime);
+    localtime_r(&tm, &ltime);
+    if (strftime(buf, len, fmt, &ltime) < 1) {
+        snprintf(buf, len, "[date fetch error]");
+    }
 }
 
 void util_nullifyStdio(void)

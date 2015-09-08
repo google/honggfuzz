@@ -701,7 +701,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
                  instr, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
-        util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr));
+        util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(newname, sizeof(newname),
                  "%s/%s.PC.%" REG_PM ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
                  hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr,

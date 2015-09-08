@@ -26,7 +26,6 @@
 
 #include <limits.h>
 #include <pthread.h>
-#include <semaphore.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/param.h>
@@ -81,10 +80,9 @@ typedef struct {
     size_t maxFileSz;
     void *ignoreAddr;
     char *reportFile;
-    unsigned long asLimit;
+    uint64_t asLimit;
     char **files;
     int fileCnt;
-    sem_t *sem;
     pid_t pid;
     char *envs[128];
 
@@ -98,7 +96,6 @@ typedef struct {
     size_t dynamicFileBestSz;
     dynFileMethod_t dynFileMethod;
     int64_t branchBestCnt[4];
-    int dynamicRegressionCnt;
     uint64_t dynamicCutOffAddr;
     pthread_mutex_t dynamicFile_mutex;
     bool disableRandomization;

@@ -35,7 +35,7 @@ extern int util_ssnprintf(char *str, size_t size, const char *format, ...);
 
 extern int util_vssnprintf(char *str, size_t size, const char *format, va_list ap);
 
-extern void util_getLocalTime(const char *fmt, char *buf, size_t len);
+extern void util_getLocalTime(const char *fmt, char *buf, size_t len, time_t tm);
 
 extern void util_nullifyStdio(void);
 

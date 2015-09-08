@@ -206,7 +206,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     } else {
 
         char localtmstr[PATH_MAX];
-        util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr));
+        util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr), time(NULL));
 
         snprintf(newname, sizeof(newname),
                  "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s.%s",
