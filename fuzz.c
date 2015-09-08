@@ -66,7 +66,7 @@ pid_t honggfuzz_aarch64_fork(void)
 
 static int fuzz_sigReceived = 0;
 
-static void fuzz_sigHandler(int sig, siginfo_t * si, void *v)
+static void fuzz_sigHandler(int sig)
 {
     /* We should not terminate upon SIGALRM delivery */
     if (sig == SIGALRM) {
@@ -74,13 +74,6 @@ static void fuzz_sigHandler(int sig, siginfo_t * si, void *v)
     }
 
     fuzz_sigReceived = sig;
-    return;
-    if (si == NULL) {
-        return;
-    }
-    if (v == NULL) {
-        return;
-    }
 }
 
 static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
@@ -385,7 +378,7 @@ static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
 bool fuzz_setupTimer(void)
 {
     struct itimerval it = {
-        .it_value = {.tv_sec = 1,.tv_usec = 0},
+        .it_value = {.tv_sec = 0,.tv_usec = 1},
         .it_interval = {.tv_sec = 1,.tv_usec = 0},
     };
     if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
@@ -398,8 +391,8 @@ bool fuzz_setupTimer(void)
 void fuzz_main(honggfuzz_t * hfuzz)
 {
     struct sigaction sa = {
-        .sa_sigaction = fuzz_sigHandler,
-        .sa_flags = SA_SIGINFO,
+        .sa_handler = fuzz_sigHandler,
+        .sa_flags = 0,
     };
     sigemptyset(&sa.sa_mask);
     if (sigaction(SIGTERM, &sa, NULL) == -1) {
@@ -430,13 +423,13 @@ void fuzz_main(honggfuzz_t * hfuzz)
         if (hfuzz->useScreen) {
             display_display(hfuzz);
         }
-        pause();
         if (fuzz_sigReceived > 0) {
             break;
         }
         if (__sync_fetch_and_add(&hfuzz->threadsFinished, 0UL) >= hfuzz->threadsMax) {
             break;
         }
+        pause();
     }
 
     if (fuzz_sigReceived > 0) {
