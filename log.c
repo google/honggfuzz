@@ -74,7 +74,7 @@ void log_mutexLock(void)
 void log_mutexUnLock(void)
 {
     while (pthread_mutex_unlock(&log_mutex)) ;
-};
+}
 
 void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int line,
              const char *fmt, ...)
