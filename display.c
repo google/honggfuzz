@@ -100,22 +100,31 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put("Timeouts: " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->timeoutedCnt, 0UL));
 
-    display_put("Dynamic file size: " ESC_BOLD "%zu" ESC_RESET " (max: " ESC_BOLD "%zu" ESC_RESET
-                ")\n", hfuzz->dynamicFileBestSz, hfuzz->maxFileSz);
-
-    display_put("Coverage (max):\n");
-    display_put("  cpu instructions:      " ESC_BOLD "%zu" ESC_RESET "\n",
-                __sync_fetch_and_add(&hfuzz->branchBestCnt[0], 0UL));
-    display_put("  cpu branches:          " ESC_BOLD "%zu" ESC_RESET "\n",
-                __sync_fetch_and_add(&hfuzz->branchBestCnt[1], 0UL));
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
-        display_put("  unique branch targets: ");
-    } else {
-        display_put("  unique branch pairs:   ");
+    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+        display_put("Dynamic file size: " ESC_BOLD "%zu" ESC_RESET " (max: " ESC_BOLD "%zu"
+                    ESC_RESET ")\n", hfuzz->dynamicFileBestSz, hfuzz->maxFileSz);
+        display_put("Coverage (max):\n");
     }
-    display_put(ESC_BOLD "%zu" ESC_RESET "\n", __sync_fetch_and_add(&hfuzz->branchBestCnt[2], 0UL));
-    display_put("  custom counter:        " ESC_BOLD "%zu" ESC_RESET "\n",
-                __sync_fetch_and_add(&hfuzz->branchBestCnt[3], 0UL));
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
+        display_put("  - cpu instructions:      " ESC_BOLD "%zu" ESC_RESET "\n",
+                    __sync_fetch_and_add(&hfuzz->branchBestCnt[0], 0UL));
+    }
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
+        display_put("  - cpu branches:          " ESC_BOLD "%zu" ESC_RESET "\n",
+                    __sync_fetch_and_add(&hfuzz->branchBestCnt[1], 0UL));
+    }
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
+        display_put("  - unique branch targets: " ESC_BOLD "%zu" ESC_RESET "\n",
+                    __sync_fetch_and_add(&hfuzz->branchBestCnt[2], 0UL));
+    }
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
+        display_put("  - unique branch pairs:   " ESC_BOLD "%zu" ESC_RESET "\n",
+                    __sync_fetch_and_add(&hfuzz->branchBestCnt[2], 0UL));
+    }
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) {
+        display_put("  - custom counter:        " ESC_BOLD "%zu" ESC_RESET "\n",
+                    __sync_fetch_and_add(&hfuzz->branchBestCnt[3], 0UL));
+    }
     display_put("============================== LOGS ==============================\n");
 }
 
