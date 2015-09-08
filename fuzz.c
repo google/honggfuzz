@@ -307,7 +307,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         int64_t diff2 = hfuzz->branchBestCnt[2] - fuzzer.branchCnt[2];
         int64_t diff3 = hfuzz->branchBestCnt[3] - fuzzer.branchCnt[3];
 
-        if (diff0 <= 0 && diff1 <= 0 && diff2 <= 0 && diff3 <= 0) {
+        if (diff0 < 0 || diff1 < 0 || diff2 < 0 || diff3 < 0) {
 
             LOGMSG(l_INFO,
                    "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr, High): %"
