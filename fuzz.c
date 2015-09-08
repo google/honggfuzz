@@ -68,6 +68,11 @@ static int fuzz_sigReceived = 0;
 
 static void fuzz_sigHandler(int sig, siginfo_t * si, void *v)
 {
+    /* We should not terminate upon SIGALRM delivery */
+    if (sig == SIGALRM) {
+        return;
+    }
+
     fuzz_sigReceived = sig;
     return;
     if (si == NULL) {
@@ -302,14 +307,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         int64_t diff2 = hfuzz->branchBestCnt[2] - fuzzer.branchCnt[2];
         int64_t diff3 = hfuzz->branchBestCnt[3] - fuzzer.branchCnt[3];
 
-        if (diff2 < 0) {
-            diff0 = hfuzz->branchBestCnt[0] = fuzzer.branchCnt[0] = 0;
-            diff1 = hfuzz->branchBestCnt[1] = fuzzer.branchCnt[1] = 0;
-            diff3 = hfuzz->branchBestCnt[3] = fuzzer.branchCnt[3] = 0;
-        }
-
-        if (diff0 <= hfuzz->dynamicRegressionCnt && diff1 <= hfuzz->dynamicRegressionCnt
-            && diff2 <= hfuzz->dynamicRegressionCnt && diff3 <= hfuzz->dynamicRegressionCnt) {
+        if (diff0 <= 0 && diff1 <= 0 && diff2 <= 0 && diff3 <= 0) {
 
             LOGMSG(l_INFO,
                    "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr, High): %"
@@ -358,7 +356,8 @@ static void *fuzz_threadNew(void *arg)
         if ((__sync_fetch_and_add(&hfuzz->mutationsCnt, 1UL) >= hfuzz->mutationsMax)
             && hfuzz->mutationsMax) {
             __sync_fetch_and_add(&hfuzz->threadsFinished, 1UL);
-            sem_post(hfuzz->sem);
+            // Wake-up the main process
+            kill(getpid(), SIGALRM);
             return NULL;
         }
 
@@ -393,17 +392,6 @@ bool fuzz_setupTimer(void)
         LOGMSG_P(l_ERROR, "setitimer(ITIMER_REAL)");
         return false;
     }
-    struct sigaction sa = {
-        .sa_handler = SIG_IGN,
-        .sa_flags = 0,
-    };
-    sigemptyset(&sa.sa_mask);
-    if (sigaction(SIGALRM, &sa, NULL) == -1) {
-        LOGMSG_P(l_ERROR, "sigaction(SIGALRM)");
-        return false;
-    }
-    return true;
-
     return true;
 }
 
@@ -423,33 +411,11 @@ void fuzz_main(honggfuzz_t * hfuzz)
     if (sigaction(SIGQUIT, &sa, NULL) == -1) {
         LOGMSG_P(l_FATAL, "sigaction(SIGQUIT) failed");
     }
+    if (sigaction(SIGALRM, &sa, NULL) == -1) {
+        LOGMSG_P(l_FATAL, "sigaction(SIGQUIT) failed");
+    }
     if (fuzz_setupTimer() == false) {
         LOGMSG(l_FATAL, "fuzz_setupTimer()");
-    }
-    // Android doesn't support named semaphores
-#if !defined(__ANDROID__)
-    /*
-     * In OS X semName cannot exceed SEM_NAME_LEN characters otherwise
-     * sem_open() will fail with ENAMETOOLONG. Apple, doesn't define
-     * SEM_NAME_LEN in any header file so we define it here using the value
-     * of PSEMNAMLEN from bsd/kern/posix_sem.c.
-     */
-#define _HF_SEM_NAME_LEN 31
-    char semName[_HF_SEM_NAME_LEN];
-    snprintf(semName, sizeof(semName), "/hgfz.%d.%" PRIx64, getpid(), util_rndGet(1, 1ULL << 62));
-
-    hfuzz->sem = sem_open(semName, O_CREAT, 0644, 0);
-
-#else                           /* !defined(__ANDROID__) */
-    sem_t semName;
-    if (sem_init(&semName, 1, 0)) {
-        LOGMSG(l_FATAL, "sem_init() failed");
-    }
-    hfuzz->sem = &semName;
-#endif                          /* defined(__ANDROID__) */
-
-    if (hfuzz->sem == SEM_FAILED) {
-        LOGMSG_P(l_FATAL, "sem_open() failed");
     }
 
     if (!arch_archInit(hfuzz)) {
@@ -464,9 +430,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
         if (hfuzz->useScreen) {
             display_display(hfuzz);
         }
-        if (sem_wait(hfuzz->sem) == -1 && errno != EINTR) {
-            LOGMSG_P(l_FATAL, "sem_wait() failed");
-        }
+        pause();
         if (fuzz_sigReceived > 0) {
             break;
         }
@@ -477,17 +441,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
 
     if (fuzz_sigReceived > 0) {
         LOGMSG(l_INFO, "Signal %d received, terminating", fuzz_sigReceived);
-        signal(SIGTERM, SIG_DFL);
-        signal(SIGINT, SIG_DFL);
-        signal(SIGQUIT, SIG_DFL);
-        raise(fuzz_sigReceived);
     }
 
-    LOGMSG(l_INFO, "Fuzzing finished");
-#ifdef __ANDROID__
-    sem_destroy(&semName);
-#else
-    sem_unlink(semName);
-#endif
     exit(EXIT_SUCCESS);
 }

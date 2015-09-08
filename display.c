@@ -32,6 +32,7 @@
 #include <unistd.h>
 
 #include "log.h"
+#include "util.h"
 
 #define ESC_CLEAR "\033[H\033[2J"
 #define ESC_NAV(x,y) "\033["#x";"#y"H"
@@ -58,7 +59,17 @@ static void display_put(const char *fmt, ...)
 extern void display_display(honggfuzz_t * hfuzz)
 {
     unsigned long elapsed = (unsigned long)(time(NULL) - hfuzz->timeStart);
+
     size_t curr_exec_cnt = __sync_fetch_and_add(&hfuzz->mutationsCnt, 0UL);
+    /*
+     * We increase the mutation counter unconditionally in threads, but if it's
+     * above hfuzz->mutationsMax we don't really execute the fuzzing loop.
+     * Therefore at the end of fuzzing, the mutation counter might be higher
+     * than hfuzz->mutationsMax
+     */
+    if (hfuzz->mutationsMax > 0 && curr_exec_cnt > hfuzz->mutationsMax) {
+        curr_exec_cnt = hfuzz->mutationsMax;
+    }
     static size_t prev_exec_cnt = 0UL;
     uintptr_t exec_per_sec = curr_exec_cnt - prev_exec_cnt;
     prev_exec_cnt = curr_exec_cnt;
@@ -72,8 +83,10 @@ extern void display_display(honggfuzz_t * hfuzz)
     }
     display_put("\n");
 
-    display_put("Seconds elapsed: " ESC_BOLD "%zu" ESC_RESET ", start time: " ESC_BOLD "%s"
-                ESC_RESET, elapsed, asctime(localtime(&hfuzz->timeStart)));
+    char start_time_str[128];
+    util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
+    display_put("Start time: " ESC_BOLD "%s" ESC_RESET " (" ESC_BOLD "%lu"
+                ESC_RESET " seconds elapsed)\n", start_time_str, elapsed);
 
     display_put("Input file/dir: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
     display_put("Fuzzed cmd: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline[0]);

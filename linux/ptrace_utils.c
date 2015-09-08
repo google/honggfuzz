@@ -686,11 +686,10 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
                  "%s.PC.%" REG_PM ".CODE.%d.ADDR.%p.INSTR.%s.%s",
-                 arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr,
-                 instr, hfuzz->fileExtn);
+                 arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr, instr, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
-        util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr));
+        util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(newname, sizeof(newname),
                  "%s.PC.%" REG_PM ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
                  arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr,

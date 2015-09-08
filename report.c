@@ -80,7 +80,7 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
     }
 
     char localtmstr[PATH_MAX];
-    util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr));
+    util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
 
     dprintf(reportFD,
             "=====================================================================\n"

@@ -88,7 +88,6 @@ static void usage(bool exit_success)
            "            monitoring a previously created process, (default: '" AB "0" AC "' [none])\n"
            " [" AB "-LR" AC "]    : [Linux] Don't disable ASLR randomization, might be useful with MSAN\n"
            " [" AB "-LU" AC "]    : [Linux] Report MSAN's UMRS (uninitialized memory access)\n"
-           " [" AB "-g val" AC "] : [Linux] allow that many regressions (perf events) wrt the best one\n"
            " [" AB "-o val" AC "] : [Linux] cut-off address, don't record branches above that address\n"
            " [" AB "-D val" AC "] : [Linux] create a file dynamically with Linux perf counters,\n"
            "            can be used with or without the '-f' flag (initial file contents)\n"
@@ -167,7 +166,6 @@ int main(int argc, char **argv)
         .dynamicFileBest = NULL,
         .dynamicFileBestSz = 1,
         .branchBestCnt = {[0 ... (ARRAYSIZE(hfuzz.branchBestCnt) - 1)] = 0,},
-        .dynamicRegressionCnt = 0,
         .dynamicCutOffAddr = ~(0ULL),
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
 
@@ -262,9 +260,6 @@ int main(int argc, char **argv)
             break;
         case 'p':
             hfuzz.pid = atoi(optarg);
-            break;
-        case 'g':
-            hfuzz.dynamicRegressionCnt = atoi(optarg);
             break;
         case 'o':
             hfuzz.dynamicCutOffAddr = strtoull(optarg, NULL, 0);
