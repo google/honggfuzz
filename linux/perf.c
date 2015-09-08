@@ -90,7 +90,7 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
         pos = from % (_HF_PERF_BLOOM_SZ * 8);
     }
     if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
-        pos = (from ^ (to << 24)) % (_HF_PERF_BLOOM_SZ * 8);
+        pos = (from * to) % (_HF_PERF_BLOOM_SZ * 8);
     }
 
     size_t byteOff = pos / 8;
@@ -239,7 +239,6 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.inherit = 1;
         break;
     case _HF_DYNFILE_UNIQUE_BLOCK_COUNT:
-        bzero(perfBloom, sizeof(perfBloom));
         LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP for PID: %d", pid);
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP;
@@ -248,7 +247,6 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.wakeup_watermark = perfMmapSz / 32;
         break;
     case _HF_DYNFILE_UNIQUE_EDGE_COUNT:
-        bzero(perfBloom, sizeof(perfBloom));
         LOGMSG(l_DEBUG,
                "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d", pid);
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
