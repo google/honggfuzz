@@ -57,8 +57,12 @@ static __thread uint64_t perfCutOffAddr = ~(0ULL);
 /* Perf method - to be used in signal handlers */
 static __thread dynFileMethod_t perfDynamicMethod = _HF_DYNFILE_NONE;
 
-#define _HF_PERF_BLOOM_SZ (1024 * 1024 * 2)
-static __thread uint8_t perfBloom[_HF_PERF_BLOOM_SZ];
+#if defined(__x86_64__)
+#define _HF_PERF_BLOOM_SZ (1024ULL * 1024ULL * 1024ULL * 4ULL)
+#else
+#define _HF_PERF_BLOOM_SZ (1024ULL * 1024ULL * 2);
+#endif
+static __thread uint8_t *perfBloom = NULL;
 
 static size_t arch_perfCountBranches(void)
 {
@@ -83,10 +87,10 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
     /* It's 24-bit max, so should fit in a 2MB bitmap */
     size_t pos = 0ULL;
     if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
-        pos = from & 0xFFFFFF;
+        pos = from % _HF_PERF_BLOOM_SZ;
     }
     if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
-        pos = ((from & 0xFFF) | ((to << 12) & 0xFFF000));
+        pos = (from * to) % _HF_PERF_BLOOM_SZ;
     }
 
     size_t byteOff = pos / 8;
@@ -323,6 +327,12 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
         return true;
     }
 
+    perfBloom =
+        mmap(NULL, _HF_PERF_BLOOM_SZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (perfBloom == MAP_FAILED) {
+        LOGMSG_P(l_FATAL, "mmap(size=%zu) failed", _HF_PERF_BLOOM_SZ);
+    }
+
     perfMmapSz = arch_perfGetMmapBufSz(hfuzz);
     perfCutOffAddr = hfuzz->dynamicCutOffAddr;
 
@@ -420,6 +430,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int *perfFd)
     if (perfMmapBuf != NULL) {
         munmap(perfMmapBuf, perfMmapSz + getpagesize());
     }
+    munmap(perfBloom, _HF_PERF_BLOOM_SZ);
 
     fuzzer->branchCnt[0] = instrCount;
     fuzzer->branchCnt[1] = branchCount;
