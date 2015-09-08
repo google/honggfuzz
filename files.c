@@ -325,13 +325,15 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
  */
 bool files_copyFile(const char *source, const char *destination, bool * dstExists)
 {
-    if (dstExists) *dstExists = false;
+    if (dstExists)
+        *dstExists = false;
     if (link(source, destination) == 0) {
         return true;
     } else {
         if (errno == EEXIST) {
             // Should kick-in before MAC, so avoid the hassle
-            if (dstExists) *dstExists = true;
+            if (dstExists)
+                *dstExists = true;
             return false;
         } else {
             LOGMSG_P(l_DEBUG, "Couldn't link '%s' as '%s'", source, destination);
@@ -366,7 +368,8 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
     outFD = open(destination, dstOpenFlags, dstFilePerms);
     if (outFD == -1) {
         if (errno == EEXIST) {
-            if (dstExists) *dstExists = true;
+            if (dstExists)
+                *dstExists = true;
         }
         LOGMSG_P(l_DEBUG, "Couldn't open '%s' destination", destination);
         close(inFD);
