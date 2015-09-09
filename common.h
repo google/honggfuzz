@@ -102,7 +102,6 @@ typedef struct {
     uint8_t *dynamicFileBest;
     size_t dynamicFileBestSz;
     dynFileMethod_t dynFileMethod;
-    int64_t branchBestCnt[4];
     hwcnt_t hwCnts;
     uint64_t dynamicCutOffAddr;
     pthread_mutex_t dynamicFile_mutex;

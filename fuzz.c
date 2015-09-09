@@ -92,8 +92,9 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 {
     MX_LOCK(&hfuzz->dynamicFile_mutex);
 
-    if (hfuzz->inputFile && hfuzz->branchBestCnt[0] == 0 && hfuzz->branchBestCnt[1] == 0
-        && hfuzz->branchBestCnt[2] == 0 && hfuzz->branchBestCnt[3] == 0) {
+    if (hfuzz->inputFile && hfuzz->hwCnts.cpuInstrCnt == 0ULL && hfuzz->hwCnts.cpuBranchCnt == 0ULL
+        && hfuzz->hwCnts.pcCnt == 0ULL && hfuzz->hwCnts.pathCnt == 0ULL
+        && hfuzz->hwCnts.customCnt == 0ULL) {
         size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
                                                hfuzz->maxFileSz);
         if (fileSz == 0) {
@@ -115,8 +116,8 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     MX_UNLOCK(&hfuzz->dynamicFile_mutex);
 
     /* The first pass should be on an empty/initial file */
-    if (hfuzz->branchBestCnt[0] > 0 || hfuzz->branchBestCnt[1] > 0 || hfuzz->branchBestCnt[2] > 0
-        || hfuzz->branchBestCnt[3] > 0) {
+    if (hfuzz->hwCnts.cpuInstrCnt > 0 || hfuzz->hwCnts.cpuBranchCnt > 0 || hfuzz->hwCnts.pcCnt > 0
+        || hfuzz->hwCnts.pathCnt > 0 || hfuzz->hwCnts.customCnt > 0) {
         mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz);
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }

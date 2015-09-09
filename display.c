@@ -107,23 +107,23 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
         display_put("  - cpu instructions:      " ESC_BOLD "%zu" ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->branchBestCnt[0], 0UL));
+                    __sync_fetch_and_add(&hfuzz->hwCnts.cpuInstrCnt, 0UL));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
         display_put("  - cpu branches:          " ESC_BOLD "%zu" ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->branchBestCnt[1], 0UL));
+                    __sync_fetch_and_add(&hfuzz->hwCnts.cpuBranchCnt, 0UL));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
         display_put("  - unique branch targets: " ESC_BOLD "%zu" ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->branchBestCnt[2], 0UL));
+                    __sync_fetch_and_add(&hfuzz->hwCnts.pcCnt, 0UL));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
         display_put("  - unique branch pairs:   " ESC_BOLD "%zu" ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->branchBestCnt[2], 0UL));
+                    __sync_fetch_and_add(&hfuzz->hwCnts.pathCnt, 0UL));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) {
         display_put("  - custom counter:        " ESC_BOLD "%zu" ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->branchBestCnt[3], 0UL));
+                    __sync_fetch_and_add(&hfuzz->hwCnts.customCnt, 0UL));
     }
     display_put("============================== LOGS ==============================\n");
 }
