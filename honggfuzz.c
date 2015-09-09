@@ -153,7 +153,7 @@ int main(int argc, char **argv)
         .threadsFinished = 0,
         .threadsMax = 2,
         .ignoreAddr = NULL,
-        .reportFile = _HF_REPORT_FILE,
+        .reportFile = NULL,
         .asLimit = 0ULL,
         .files = NULL,
         .fileCnt = 0,

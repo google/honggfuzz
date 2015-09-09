@@ -74,10 +74,17 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
     }
 
     if (reportFD == -1) {
-        reportFD = open(hfuzz->reportFile, O_WRONLY | O_CREAT | O_APPEND, 0644);
-    }
-    if (reportFD == -1) {
-        LOGMSG_P(l_FATAL, "Couldn't open('%s') for writing", hfuzz->reportFile);
+        char reportFName[PATH_MAX];
+        if (hfuzz->reportFile == NULL) {
+            snprintf(reportFName, sizeof(reportFName), "%s/%s", hfuzz->workDir, _HF_REPORT_FILE);
+        } else {
+            snprintf(reportFName, sizeof(reportFName), "%s", hfuzz->reportFile);
+        }
+
+        reportFD = open(reportFName, O_WRONLY | O_CREAT | O_APPEND, 0644);
+        if (reportFD == -1) {
+            LOGMSG_P(l_FATAL, "Couldn't open('%s') for writing", reportFName);
+        }
     }
 
     char localtmstr[PATH_MAX];
