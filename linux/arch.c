@@ -311,10 +311,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 #endif
         }
 
-        uint64_t tmp;
-        if ((tmp = arch_ptraceGetCustomPerf(hfuzz, ptracePid)) != 0ULL) {
-            fuzzer->hwCnts.customCnt = tmp;
-        }
+        arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->hwCnts.customCnt);
 
         if (ptracePid == childPid) {
             arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);

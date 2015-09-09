@@ -387,10 +387,10 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
 // Non i386 / x86_64 ISA fail build due to unused pid argument
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
+void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt)
 {
     if ((hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) == 0) {
-        return 0ULL;
+        return;
     }
 #if defined(__i386__) || defined(__x86_64__)
     HEADERS_STRUCT regs;
@@ -408,10 +408,10 @@ uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
             LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGS) failed");
             LOGMSG(l_WARN, "ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to"
                    " extract target registers");
-            return 0ULL;
+            return;
         }
 #else
-        return 0ULL;
+        return;
 #endif
     }
 
@@ -420,7 +420,8 @@ uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
         struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)&regs;
-        return (uint64_t) r32->gs;
+        *cnt = (uint64_t) r32->gs;
+        return;
     }
 
     /*
@@ -428,13 +429,12 @@ uint64_t arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid)
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
         struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)&regs;
-        return (uint64_t) r64->gs_base;
+        *cnt = (uint64_t) r64->gs_base;
+        return;
     }
 
     LOGMSG(l_WARN, "Unknown registers structure size: '%d'", pt_iov.iov_len);
 #endif                          /* defined(__i386__) || defined(__x86_64__) */
-
-    return 0ULL;
 }
 
 #pragma GCC diagnostic pop      /* ignored "-Wunused-parameter" */
