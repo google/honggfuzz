@@ -168,7 +168,13 @@ int main(int argc, char **argv)
         .dynFileMethod = _HF_DYNFILE_NONE,
         .dynamicFileBest = NULL,
         .dynamicFileBestSz = 1,
-        .branchBestCnt = {[0 ... (ARRAYSIZE(hfuzz.branchBestCnt) - 1)] = 0,},
+        .hwCnts = {
+                   .cpuInstrCnt = 0ULL,
+                   .cpuBranchCnt = 0ULL,
+                   .pcCnt = 0ULL,
+                   .pathCnt = 0ULL,
+                   .customCnt = 0ULL,
+                   },
         .dynamicCutOffAddr = ~(0ULL),
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
 

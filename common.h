@@ -60,6 +60,14 @@ typedef enum {
 } dynFileMethod_t;
 
 typedef struct {
+    uint64_t cpuInstrCnt;
+    uint64_t cpuBranchCnt;
+    uint64_t pcCnt;
+    uint64_t pathCnt;
+    uint64_t customCnt;
+} hwcnt_t;
+
+typedef struct {
     char **cmdline;
     char *inputFile;
     bool nullifyStdio;
@@ -95,7 +103,7 @@ typedef struct {
     uint8_t *dynamicFileBest;
     size_t dynamicFileBestSz;
     dynFileMethod_t dynFileMethod;
-    int64_t branchBestCnt[4];
+    hwcnt_t hwCnts;
     uint64_t dynamicCutOffAddr;
     pthread_mutex_t dynamicFile_mutex;
     bool disableRandomization;
@@ -115,7 +123,7 @@ typedef struct fuzzer_t {
 
     /* For linux/ code */
     uint8_t *dynamicFile;
-    int64_t branchCnt[4];
+    hwcnt_t hwCnts;
     size_t dynamicFileSz;
 } fuzzer_t;
 
