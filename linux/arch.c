@@ -313,7 +313,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         uint64_t tmp;
         if ((tmp = arch_ptraceGetCustomPerf(hfuzz, ptracePid)) != 0ULL) {
-            fuzzer->branchCnt[3] = tmp;
+            fuzzer->hwCnts.customCnt = tmp;
         }
 
         if (ptracePid == childPid) {

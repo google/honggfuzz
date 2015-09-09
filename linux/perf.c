@@ -57,10 +57,12 @@ static __thread uint64_t perfCutOffAddr = ~(0ULL);
 /* Perf method - to be used in signal handlers */
 static __thread dynFileMethod_t perfDynamicMethod = _HF_DYNFILE_NONE;
 
-#if defined(__x86_64__)
+#if __BITS_PER_LONG == 64
 #define _HF_PERF_BLOOM_SZ (1024ULL * 1024ULL * 1024ULL * 4ULL)
+#elif __BITS_PER_LONG == 32
+#define _HF_PERF_BLOOM_SZ (1024ULL * 1024ULL * 32ULL)
 #else
-#define _HF_PERF_BLOOM_SZ (1024ULL * 1024ULL * 2);
+#error "__BITS_PER_LONG not defined"
 #endif
 static __thread uint8_t *perfBloom = NULL;
 
@@ -409,9 +411,23 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int *perfFd)
         close(perfFd[1]);
     }
 
+    uint64_t pathCount = 0;
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
+        ioctl(perfFd[2], PERF_EVENT_IOC_DISABLE, 0);
+        close(perfFd[2]);
+        arch_perfMmapParse();
+        pathCount = arch_perfCountBranches();
+
+        if (perfRecordsLost > 0UL) {
+            LOGMSG(l_WARN,
+                   "%" PRId64
+                   " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
+                   perfRecordsLost);
+        }
+    }
+
     uint64_t edgeCount = 0;
-    if ((hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT)
-        || (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT)) {
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
         ioctl(perfFd[2], PERF_EVENT_IOC_DISABLE, 0);
         close(perfFd[2]);
         arch_perfMmapParse();
@@ -430,9 +446,10 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int *perfFd)
     }
     munmap(perfBloom, _HF_PERF_BLOOM_SZ);
 
-    fuzzer->branchCnt[0] = instrCount;
-    fuzzer->branchCnt[1] = branchCount;
-    fuzzer->branchCnt[2] = edgeCount;
+    fuzzer->hwCnts.cpuInstrCnt = instrCount;
+    fuzzer->hwCnts.cpuBranchCnt = branchCount;
+    fuzzer->hwCnts.pcCnt = pathCount;
+    fuzzer->hwCnts.pathCnt = edgeCount;
 
     return;
 }

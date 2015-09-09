@@ -230,7 +230,13 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         .exception = 0,
         .dynamicFileSz = 0,
         .dynamicFile = malloc(hfuzz->maxFileSz),
-        .branchCnt = {[0 ... (ARRAYSIZE(fuzzer.branchCnt) - 1)] = 0},
+        .hwCnts = {
+                   .cpuInstrCnt = 0ULL,
+                   .cpuBranchCnt = 0ULL,
+                   .pcCnt = 0ULL,
+                   .pathCnt = 0ULL,
+                   .customCnt = 0ULL,
+                   },
         .report = {'\0'}
     };
     if (fuzzer.dynamicFile == NULL) {
@@ -288,43 +294,39 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         MX_LOCK(&hfuzz->dynamicFile_mutex);
 
         LOGMSG(l_DEBUG,
-               "File size (New/Best): %zu/%zu, Perf feedback (instr/branch/block-edge/custom): Best: [%"
-               PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64 ",%"
-               PRIu64 ",%" PRIu64 "]", fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz,
-               hfuzz->branchBestCnt[0], hfuzz->branchBestCnt[1], hfuzz->branchBestCnt[2],
-               hfuzz->branchBestCnt[3], fuzzer.branchCnt[0], fuzzer.branchCnt[1],
-               fuzzer.branchCnt[2], fuzzer.branchCnt[3]);
+               "File size (New/Best): %zu/%zu, Perf feedback (instr/branch/block/block-edge/custom): Best: [%"
+               PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "] / New: [%" PRIu64 ",%"
+               PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "]", fuzzer.dynamicFileSz,
+               hfuzz->dynamicFileBestSz, hfuzz->hwCnts.cpuBranchCnt, hfuzz->hwCnts.cpuInstrCnt,
+               hfuzz->hwCnts.pcCnt, hfuzz->hwCnts.pathCnt, hfuzz->hwCnts.customCnt,
+               fuzzer.hwCnts.cpuBranchCnt, fuzzer.hwCnts.cpuInstrCnt, fuzzer.hwCnts.pcCnt,
+               fuzzer.hwCnts.pathCnt, fuzzer.hwCnts.customCnt);
 
-        int64_t diff0 = hfuzz->branchBestCnt[0] - fuzzer.branchCnt[0];
-        int64_t diff1 = hfuzz->branchBestCnt[1] - fuzzer.branchCnt[1];
-        int64_t diff2 = hfuzz->branchBestCnt[2] - fuzzer.branchCnt[2];
-        int64_t diff3 = hfuzz->branchBestCnt[3] - fuzzer.branchCnt[3];
+        int64_t diff0 = hfuzz->hwCnts.cpuBranchCnt - fuzzer.hwCnts.cpuBranchCnt;
+        int64_t diff1 = hfuzz->hwCnts.cpuInstrCnt - fuzzer.hwCnts.cpuInstrCnt;
+        int64_t diff2 = hfuzz->hwCnts.pcCnt - fuzzer.hwCnts.pcCnt;
+        int64_t diff3 = hfuzz->hwCnts.pathCnt - fuzzer.hwCnts.pathCnt;
+        int64_t diff4 = hfuzz->hwCnts.customCnt - fuzzer.hwCnts.customCnt;
 
-        if (diff0 < 0 || diff1 < 0 || diff2 < 0 || diff3 < 0) {
+        if (diff0 < 0 || diff1 < 0 || diff2 < 0 || diff3 < 0 || diff4 < 0) {
 
             LOGMSG(l_INFO,
                    "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr, High): %"
-                   PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 ",%" PRId64 "/%" PRId64 "/%"
-                   PRId64 "/%" PRId64, fuzzer.dynamicFileSz, hfuzz->dynamicFileBestSz,
-                   fuzzer.branchCnt[0], fuzzer.branchCnt[1], fuzzer.branchCnt[2],
-                   fuzzer.branchCnt[3], hfuzz->branchBestCnt[0], hfuzz->branchBestCnt[1],
-                   hfuzz->branchBestCnt[2], hfuzz->branchBestCnt[3]);
+                   PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 ",%" PRId64 "/%" PRId64
+                   "/%" PRId64 "/%" PRId64 "/%" PRId64, fuzzer.dynamicFileSz,
+                   hfuzz->dynamicFileBestSz, hfuzz->hwCnts.cpuBranchCnt, hfuzz->hwCnts.cpuInstrCnt,
+                   hfuzz->hwCnts.pcCnt, hfuzz->hwCnts.pathCnt, hfuzz->hwCnts.customCnt,
+                   fuzzer.hwCnts.cpuBranchCnt, fuzzer.hwCnts.cpuInstrCnt, fuzzer.hwCnts.pcCnt,
+                   fuzzer.hwCnts.pathCnt, fuzzer.hwCnts.customCnt);
 
             memcpy(hfuzz->dynamicFileBest, fuzzer.dynamicFile, fuzzer.dynamicFileSz);
 
             hfuzz->dynamicFileBestSz = fuzzer.dynamicFileSz;
-            hfuzz->branchBestCnt[0] =
-                fuzzer.branchCnt[0] >
-                hfuzz->branchBestCnt[0] ? fuzzer.branchCnt[0] : hfuzz->branchBestCnt[0];
-            hfuzz->branchBestCnt[1] =
-                fuzzer.branchCnt[1] >
-                hfuzz->branchBestCnt[1] ? fuzzer.branchCnt[1] : hfuzz->branchBestCnt[1];
-            hfuzz->branchBestCnt[2] =
-                fuzzer.branchCnt[2] >
-                hfuzz->branchBestCnt[2] ? fuzzer.branchCnt[2] : hfuzz->branchBestCnt[2];
-            hfuzz->branchBestCnt[3] =
-                fuzzer.branchCnt[3] >
-                hfuzz->branchBestCnt[3] ? fuzzer.branchCnt[3] : hfuzz->branchBestCnt[3];
+            hfuzz->hwCnts.cpuBranchCnt = fuzzer.hwCnts.cpuBranchCnt;
+            hfuzz->hwCnts.cpuInstrCnt = fuzzer.hwCnts.cpuInstrCnt;
+            hfuzz->hwCnts.pcCnt = fuzzer.hwCnts.pcCnt;
+            hfuzz->hwCnts.pathCnt = fuzzer.hwCnts.pathCnt;
+            hfuzz->hwCnts.customCnt = fuzzer.hwCnts.customCnt;
 
 #define _HF_CURRENT_BEST "CURRENT_BEST"
 #define _HF_CURRENT_BEST_TMP ".tmp.CURRENT_BEST"
