@@ -81,7 +81,7 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
     struct timeval tv;
     gettimeofday(&tv, NULL);
 
-    snprintf(fileName, PATH_MAX, ".honggfuzz.%d.%lu.%llx.%s", (int)getpid(),
+    snprintf(fileName, PATH_MAX, "%s/.honggfuzz.%d.%lu.%llx.%s", hfuzz->workDir, (int)getpid(),
              (unsigned long int)tv.tv_sec, (unsigned long long int)util_rndGet(0, 1ULL << 62),
              hfuzz->fileExtn);
 
@@ -157,8 +157,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, i
 {
     int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
     if (dstfd == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't create a temporary file '%s' in the current directory",
-                 fuzzer->fileName);
+        LOGMSG_P(l_ERROR, "Couldn't create a temporary file '%s'", fuzzer->fileName);
         return false;
     }
 
@@ -329,12 +328,14 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
             hfuzz->hwCnts.pathCnt = fuzzer.hwCnts.pathCnt;
             hfuzz->hwCnts.customCnt = fuzzer.hwCnts.customCnt;
 
-#define _HF_CURRENT_BEST "CURRENT_BEST"
-#define _HF_CURRENT_BEST_TMP ".tmp.CURRENT_BEST"
+            char currentBest[PATH_MAX], currentBestTmp[PATH_MAX];
+            snprintf(currentBest, PATH_MAX, "%s/CURRENT_BEST", hfuzz->workDir);
+            snprintf(currentBestTmp, PATH_MAX, "%s/.tmp.CURRENT_BEST", hfuzz->workDir);
+
             if (files_writeBufToFile
-                (_HF_CURRENT_BEST_TMP, fuzzer.dynamicFile, fuzzer.dynamicFileSz,
+                (currentBestTmp, fuzzer.dynamicFile, fuzzer.dynamicFileSz,
                  O_WRONLY | O_CREAT | O_TRUNC)) {
-                rename(_HF_CURRENT_BEST_TMP, _HF_CURRENT_BEST);
+                rename(currentBestTmp, currentBest);
             }
         }
         MX_UNLOCK(&hfuzz->dynamicFile_mutex);

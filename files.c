@@ -318,3 +318,92 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
     fclose(fDict);
     return true;
 }
+
+/*
+ * dstExists argument can be used by caller for cases where existing destination
+ * file requires special handling (e.g. save unique crashes)
+ */
+bool files_copyFile(const char *source, const char *destination, bool * dstExists)
+{
+    if (dstExists)
+        *dstExists = false;
+    if (link(source, destination) == 0) {
+        return true;
+    } else {
+        if (errno == EEXIST) {
+            // Should kick-in before MAC, so avoid the hassle
+            if (dstExists)
+                *dstExists = true;
+            return false;
+        } else {
+            LOGMSG_P(l_DEBUG, "Couldn't link '%s' as '%s'", source, destination);
+            /*
+             * Don't fail yet as we might have a running env which doesn't allow
+             * hardlinks (e.g. SELinux)
+             */
+        }
+    }
+
+    // Now try with a verbose POSIX alternative
+    int inFD, outFD, dstOpenFlags;
+    mode_t dstFilePerms;
+
+    // O_EXCL is important for saving unique crashes
+    dstOpenFlags = O_CREAT | O_WRONLY | O_EXCL;
+    dstFilePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+
+    inFD = open(source, O_RDONLY);
+    if (inFD == -1) {
+        LOGMSG_P(l_DEBUG, "Couldn't open '%s' source", source);
+        return false;
+    }
+
+    struct stat inSt;
+    if (fstat(inFD, &inSt) == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't fstat(fd='%d' fileName='%s')", inFD, source);
+        close(inFD);
+        return false;
+    }
+
+    outFD = open(destination, dstOpenFlags, dstFilePerms);
+    if (outFD == -1) {
+        if (errno == EEXIST) {
+            if (dstExists)
+                *dstExists = true;
+        }
+        LOGMSG_P(l_DEBUG, "Couldn't open '%s' destination", destination);
+        close(inFD);
+        return false;
+    }
+
+    uint8_t *inFileBuf = malloc(inSt.st_size);
+    if (!inFileBuf) {
+        LOGMSG(l_ERROR, "malloc(%zu) failed", inSt.st_size);
+        close(inFD);
+        close(outFD);
+        return false;
+    }
+
+    if (files_readFromFd(inFD, inFileBuf, (size_t) inSt.st_size) == false) {
+        LOGMSG(l_ERROR, "Couldn't read '%s' to a buf", source);
+        free(inFileBuf);
+        close(inFD);
+        close(outFD);
+        return false;
+    }
+
+    if (files_writeToFd(outFD, inFileBuf, inSt.st_size) == false) {
+        LOGMSG(l_ERROR, "Couldn't write '%zu' bytes to file '%s' (fd='%d')", inSt.st_size,
+               destination, outFD);
+        free(inFileBuf);
+        close(inFD);
+        close(outFD);
+        unlink(destination);
+        return false;
+    }
+
+    free(inFileBuf);
+    close(inFD);
+    close(outFD);
+    return true;
+}

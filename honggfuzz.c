@@ -69,6 +69,8 @@ static void usage(bool exit_success)
            " [" AB "-d val" AC "] : debug level (0 - FATAL ... 4 - DEBUG), (default: '" AB "3" AC
            "' [INFO])\n"
            " [" AB "-e val" AC "] : file extension (e.g. 'swf'), (default: '" AB "fuzz" AC "')\n"
+           " [" AB "-W val" AC "] : Workspace directory to save crashes & runtime files\n"
+           "            (default: current '.')\n"
            " [" AB "-r val" AC "] : flip rate, (default: '" AB "0.001" AC "')\n"
            " [" AB "-w val" AC "] : wordlist, (default: empty) [tokens delimited by NUL-bytes]\n"
            " [" AB "-c val" AC "] : external command modifying the input corpus of files,\n"
@@ -139,6 +141,7 @@ int main(int argc, char **argv)
         .fuzzStdin = false,
         .saveUnique = false,
         .fileExtn = "fuzz",
+        .workDir = ".",
         .flipRate = 0.001f,
         .externalCommand = NULL,
         .dictionaryFile = NULL,
@@ -184,7 +187,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "-?hqvsuf:d:e:r:c:F:D:t:a:R:n:N:l:p:g:o:E:w:L:");
+        c = getopt(argc, argv, "-?hqvsuf:d:e:W:r:c:F:D:t:a:R:n:N:l:p:g:o:E:w:L:");
         if (c < 0)
             break;
 
@@ -213,6 +216,9 @@ int main(int argc, char **argv)
             break;
         case 'e':
             hfuzz.fileExtn = optarg;
+            break;
+        case 'W':
+            hfuzz.workDir = optarg;
             break;
         case 'r':
             hfuzz.flipRate = strtod(optarg, NULL);

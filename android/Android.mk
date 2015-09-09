@@ -18,6 +18,12 @@ LOCAL_PATH := $(abspath $(call my-dir)/..)
 # Enable Linux ptrace() instead of POSIX signal interface by default 
 ANDROID_WITH_PTRACE ?= true
 
+# Make sure compiler toolchain is compatible / supported
+ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
+  $(error Clang toolchains are not supported yet. Clang uses __aeabi_read_tp to \
+  implement thread_local, which isn't supported by bionic [$(NDK_TOOLCHAIN)])
+endif
+
 ifeq ($(ANDROID_WITH_PTRACE),true)
   ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi armeabi-v7a))
     ARCH_ABI := arm

@@ -75,6 +75,7 @@ typedef struct {
     bool saveUnique;
     bool useScreen;
     char *fileExtn;
+    char *workDir;
     double flipRate;
     char *externalCommand;
     const char *dictionaryFile;

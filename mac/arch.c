@@ -199,8 +199,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
 
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
-                 "%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s.%s",
-                 arch_sigs[termsig].descr,
+                 "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s.%s",
+                 hfuzz->workDir, arch_sigs[termsig].descr,
                  exception_to_string(fuzzer->exception), fuzzer->pc,
                  fuzzer->backtrace, fuzzer->access, fuzzer->origFileName, hfuzz->fileExtn);
     } else {
@@ -209,20 +209,21 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
         util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr), time(NULL));
 
         snprintf(newname, sizeof(newname),
-                 "%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s.%s",
-                 arch_sigs[termsig].descr,
+                 "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s.%s",
+                 hfuzz->workDir, arch_sigs[termsig].descr,
                  exception_to_string(fuzzer->exception), fuzzer->pc,
                  fuzzer->backtrace, fuzzer->access, localtmstr, fuzzer->pid, fuzzer->origFileName,
                  hfuzz->fileExtn);
     }
 
-    if (link(fuzzer->fileName, newname) == 0) {
+    bool dstFileExists = false;
+    if (files_copyFile(fuzzer->fileName, newname, &dstFileExists)) {
         LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, newname);
     } else {
-        if (errno == EEXIST) {
+        if (dstFileExists) {
             LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", newname);
         } else {
-            LOGMSG_P(l_ERROR, "Couldn't link '%s' to '%s'", fuzzer->fileName, newname);
+            LOGMSG(l_ERROR, "Couldn't copy '%s' to '%s'", fuzzer->fileName, newname);
         }
     }
 
