@@ -41,6 +41,13 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
     $(error Unsuported / Unknown APP_API '$(APP_ABI)')
   endif
 
+  # Additional libcrypto OpenSSL flags required to mitigate bug (ARM systems with API <= 21)
+  ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi))
+    OPENSSL_ARMCAP_ABI := "5"
+   else
+    OPENSSL_ARMCAP_ABI := "7"
+  endif
+
   # Upstream libunwind compiled from sources with Android NDK toolchain
   LIBUNWIND_A := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(UNW_ARCH).a
   ifeq ("$(wildcard $(LIBUNWIND_A))","")
@@ -113,6 +120,6 @@ else
 endif
 
 LOCAL_SRC_FILES += $(ARCH_SRCS)
-LOCAL_CFLAGS += -D_HF_ARCH_${ARCH}
+LOCAL_CFLAGS += -D_HF_ARCH_${ARCH} -DOPENSSL_ARMCAP_ABI='$(OPENSSL_ARMCAP_ABI)'
 
 include $(BUILD_EXECUTABLE)
