@@ -291,8 +291,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     unlink(fuzzer.fileName);
 
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
-        MX_LOCK(&hfuzz->dynamicFile_mutex);
-
         LOGMSG(l_DEBUG,
                "File size (New/Best): %zu/%zu, Perf feedback (instr/branch/block/block-edge/custom): Best: [%"
                PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "] / New: [%" PRIu64 ",%"
@@ -301,6 +299,8 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
                hfuzz->hwCnts.pcCnt, hfuzz->hwCnts.pathCnt, hfuzz->hwCnts.customCnt,
                fuzzer.hwCnts.cpuBranchCnt, fuzzer.hwCnts.cpuInstrCnt, fuzzer.hwCnts.pcCnt,
                fuzzer.hwCnts.pathCnt, fuzzer.hwCnts.customCnt);
+
+        MX_LOCK(&hfuzz->dynamicFile_mutex);
 
         int64_t diff0 = hfuzz->hwCnts.cpuBranchCnt - fuzzer.hwCnts.cpuBranchCnt;
         int64_t diff1 = hfuzz->hwCnts.cpuInstrCnt - fuzzer.hwCnts.cpuInstrCnt;
