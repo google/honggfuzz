@@ -163,6 +163,7 @@ int main(int argc, char **argv)
         .timeStart = time(NULL),
         .mutationsCnt = 0,
         .crashesCnt = 0,
+        .uniqueCrashesCnt = 0,
         .timeoutedCnt = 0,
 
         .dynFileMethod = _HF_DYNFILE_NONE,

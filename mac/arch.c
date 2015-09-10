@@ -216,9 +216,16 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
                  hfuzz->fileExtn);
     }
 
+    /*
+     * Increase crashes counter presented by ASCII display
+     */
+    __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
+
     bool dstFileExists = false;
     if (files_copyFile(fuzzer->fileName, newname, &dstFileExists)) {
         LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, newname);
+        // Unique crashes
+        __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
     } else {
         if (dstFileExists) {
             LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", newname);
