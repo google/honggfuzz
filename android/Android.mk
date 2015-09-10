@@ -44,7 +44,7 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   # Additional libcrypto OpenSSL flags required to mitigate bug (ARM systems with API <= 21)
   ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi))
     OPENSSL_ARMCAP_ABI := "5"
-   else
+  else
     OPENSSL_ARMCAP_ABI := "7"
   endif
 
