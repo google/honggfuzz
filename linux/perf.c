@@ -58,9 +58,9 @@ static __thread uint64_t perfCutOffAddr = ~(0ULL);
 static __thread dynFileMethod_t perfDynamicMethod = _HF_DYNFILE_NONE;
 
 #if __BITS_PER_LONG == 64
-#define _HF_PERF_BLOOM_SZ (1024ULL * 1024ULL * 1024ULL * 4ULL)
+#define _HF_PERF_BLOOM_SZ (1024ULL * 1024ULL * 1024ULL)
 #elif __BITS_PER_LONG == 32
-#define _HF_PERF_BLOOM_SZ (1024ULL * 1024ULL * 32ULL)
+#define _HF_PERF_BLOOM_SZ (1024ULL * 1024ULL * 128ULL)
 #else
 #error "__BITS_PER_LONG not defined"
 #endif
