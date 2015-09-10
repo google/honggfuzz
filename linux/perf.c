@@ -42,7 +42,7 @@
 #include "log.h"
 #include "util.h"
 
-#define _HF_RT_SIG (SIGIO)
+#define _HF_RT_SIG (SIGRTMIN + 10)
 
 /* Buffer used with BTS (branch recording) */
 static __thread uint8_t *perfMmapBuf = NULL;
@@ -86,19 +86,17 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
         return;
     }
 
-    /* It's 24-bit max, so should fit in a 2MB bitmap */
-    size_t pos = 0ULL;
+    register size_t pos = 0ULL;
     if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
         pos = from % (_HF_PERF_BLOOM_SZ * 8);
-    }
-    if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
+    } else if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
         pos = (from * to) % (_HF_PERF_BLOOM_SZ * 8);
     }
 
     size_t byteOff = pos / 8;
     size_t bitOff = pos % 8;
 
-    uint8_t prev = __sync_fetch_and_or(&perfBloom[byteOff], ((uint8_t) 1 << bitOff));
+    register uint8_t prev = __sync_fetch_and_or(&perfBloom[byteOff], ((uint8_t) 1 << bitOff));
     if ((prev & ((uint8_t) 1 << bitOff)) == 0) {
         perfBranchesCnt++;
     }
@@ -111,9 +109,9 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
 
+    rmb();
     register uint64_t dataHeadOff = pem->data_head % perfMmapSz;
     register uint64_t dataTailOff = pem->data_tail % perfMmapSz;
-    rmb();
     /* Memory barrier - needed as per perf_event_open(2) */
 
     if (__builtin_expect(dataHeadOff == dataTailOff, false)) {
@@ -173,21 +171,13 @@ static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu
     return syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
 }
 
-static void arch_perfSigHandler(int signum, siginfo_t * si, void *unused)
+static void arch_perfSigHandler(int signum)
 {
     if (__builtin_expect(signum != _HF_RT_SIG, false)) {
         return;
     }
-    if (__builtin_expect(si->si_code != POLL_IN, false)) {
-        return;
-    }
-
     arch_perfMmapParse();
     return;
-
-    if (unused == NULL) {
-        return;
-    }
 }
 
 static size_t arch_perfGetMmapBufSz(honggfuzz_t * hfuzz)
@@ -245,8 +235,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
-        pe.watermark = 1;
-        pe.wakeup_watermark = perfMmapSz / 32;
+        pe.wakeup_events = 0;
         break;
     case _HF_DYNFILE_UNIQUE_EDGE_COUNT:
         LOGMSG(l_DEBUG,
@@ -254,8 +243,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
-        pe.watermark = 1;
-        pe.wakeup_watermark = perfMmapSz / 32;
+        pe.wakeup_events = 0;
         break;
     default:
         LOGMSG(l_ERROR, "Unknown perf mode: '%d' for PID: %d", method, pid);
@@ -267,7 +255,8 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
     if (*perfFd == -1) {
         if (method == _HF_DYNFILE_UNIQUE_BLOCK_COUNT || method == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
             LOGMSG(l_ERROR,
-                   "-Dp/-De mode (sample IP/jump) requires LBR/BTS, which present in Intel Haswell and newer CPUs (i.e. not in AMD CPUs)");
+                   "-Dp/-De mode (sample IP/jump) requires LBR/BTS, which present in Intel Haswell "
+                   "and newer CPUs (i.e. not in AMD CPUs)");
         }
         LOGMSG_P(l_FATAL, "perf_event_open() failed");
         return false;
@@ -285,15 +274,11 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         return false;
     }
 
-    sigset_t smask;
-    sigemptyset(&smask);
     struct sigaction sa = {
-        .sa_handler = NULL,
-        .sa_sigaction = arch_perfSigHandler,
-        .sa_mask = smask,
-        .sa_flags = SA_SIGINFO | SA_RESTART,
-        .sa_restorer = NULL
+        .sa_handler = arch_perfSigHandler,
+        .sa_flags = SA_RESTART,
     };
+    sigemptyset(&sa.sa_mask);
     if (sigaction(_HF_RT_SIG, &sa, NULL) == -1) {
         LOGMSG_P(l_ERROR, "sigaction() failed");
         return false;
@@ -358,7 +343,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
             goto out;
         }
     }
-
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
         if (arch_perfOpen(pid, _HF_DYNFILE_UNIQUE_BLOCK_COUNT, &perfFds->uniquePcFd) == false) {
             LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_UNIQUE_BLOCK_COUNT)", pid);
