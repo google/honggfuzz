@@ -318,7 +318,8 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
     }
 
     perfBloom =
-        mmap(NULL, _HF_PERF_BLOOM_SZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        mmap(NULL, _HF_PERF_BLOOM_SZ, PROT_READ | PROT_WRITE,
+             MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
     if (perfBloom == MAP_FAILED) {
         LOGMSG_P(l_FATAL, "mmap(size=%zu) failed", _HF_PERF_BLOOM_SZ);
     }
