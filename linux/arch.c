@@ -289,7 +289,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 #if !defined(__ANDROID__)
         pid_t pid = wait3(&status, __WNOTHREAD | __WALL, NULL);
 #else
-        pid_t pid = wait4(fuzzer->pid, &status, __WNOTHREAD | __WALL, NULL);
+        pid_t pid = wait4(-1, &status, __WNOTHREAD | __WALL, NULL);
 #endif
 
         LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
