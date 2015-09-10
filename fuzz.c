@@ -441,5 +441,8 @@ void fuzz_main(honggfuzz_t * hfuzz)
         LOGMSG(l_INFO, "Signal %d received, terminating", fuzz_sigReceived);
     }
 
+    free(hfuzz->files);
+    free(hfuzz->dynamicFileBest);
+
     _exit(EXIT_SUCCESS);
 }

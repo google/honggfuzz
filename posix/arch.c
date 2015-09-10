@@ -119,6 +119,12 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
 
     LOGMSG(l_INFO, "Ok, that's interesting, saving the '%s' as '%s'", fuzzer->fileName, newname);
 
+    /*
+     * All crashes are marked as unique due to lack of information in POSIX arch
+     */
+    __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
+    __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
+
     if (files_copyFile(fuzzer->fileName, newname, NULL) == false) {
         LOGMSG(l_ERROR, "Couldn't save '%s' as '%s'", fuzzer->fileName, newname);
     }

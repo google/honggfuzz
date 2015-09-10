@@ -79,7 +79,7 @@ else
 endif
 	CC = $(shell xcrun --sdk $(SDK_NAME) --find cc)
 	SDK = $(shell xcrun --sdk $(SDK_NAME) --show-sdk-path)
-	CFLAGS = -arch x86_64 -O3 -g -ggdb -std=c99 -isysroot $(SDK) -I. \
+	CFLAGS = -arch x86_64 -O3 -std=c99 -isysroot $(SDK) -I. \
 	    -x objective-c \
 		-D_GNU_SOURCE \
 		-pedantic \
@@ -102,6 +102,10 @@ SRCS += $(ARCH_SRCS)
 CFLAGS += -D_HF_ARCH_${ARCH}
 INTERCEPTOR_SRCS = $(wildcard interceptor/*.c)
 INTERCEPTOR_LIBS = $(INTERCEPTOR_SRCS:.c=.so)
+
+ifeq ($(DEBUG),true)
+	CFLAGS += -g -ggdb
+endif
 
 # Control Android builds
 ANDROID_DEBUG_ENABLED ?= false
