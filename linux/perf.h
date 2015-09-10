@@ -24,8 +24,15 @@
 #ifndef _LINUX_PERF_H_
 #define _LINUX_PERF_H_
 
-extern bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd);
-extern void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int *perfFd);
+typedef struct {
+    int cpuInstrFd;
+    int cpuBranchFd;
+    int uniquePcFd;
+    int uniqueEdgeFd;
+} perfFd_t;
+
+extern bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds);
+extern void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds);
 extern void arch_perfPoll(int perfFd);
 
 #endif

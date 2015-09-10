@@ -321,10 +321,15 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
     return true;
 }
 
-bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
+bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
 {
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return true;
+    }
+    if ((hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT)
+        && (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT)) {
+        LOGMSG(l_FATAL,
+               "_HF_DYNFILE_UNIQUE_BLOCK_COUNT and _HF_DYNFILE_UNIQUE_EDGE_COUNT cannot be specified together");
     }
 
     perfBloom =
@@ -336,58 +341,47 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, int *perfFd)
     perfMmapSz = arch_perfGetMmapBufSz(hfuzz);
     perfCutOffAddr = hfuzz->dynamicCutOffAddr;
 
-    perfFd[0] = -1;
-    perfFd[1] = -1;
-    perfFd[2] = -1;
+    perfFds->cpuInstrFd = -1;
+    perfFds->cpuBranchFd = -1;
+    perfFds->uniquePcFd = -1;
+    perfFds->uniqueEdgeFd = -1;
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_INSTR_COUNT, &perfFd[0]) == false) {
+        if (arch_perfOpen(pid, _HF_DYNFILE_INSTR_COUNT, &perfFds->cpuInstrFd) == false) {
             LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_INSTR_COUNT)", pid);
-            close(perfFd[0]);
-            close(perfFd[1]);
-            close(perfFd[2]);
-            return false;
+            goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_BRANCH_COUNT, &perfFd[1]) == false) {
+        if (arch_perfOpen(pid, _HF_DYNFILE_BRANCH_COUNT, &perfFds->cpuBranchFd) == false) {
             LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_BRANCH_COUNT)", pid);
-            close(perfFd[0]);
-            close(perfFd[1]);
-            close(perfFd[2]);
-            return false;
+            goto out;
         }
-    }
-
-    if ((hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT)
-        && (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT)) {
-        LOGMSG(l_FATAL,
-               "_HF_DYNFILE_UNIQUE_BLOCK_COUNT and _HF_DYNFILE_UNIQUE_EDGE_COUNT cannot be specified together");
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_UNIQUE_BLOCK_COUNT, &perfFd[2]) == false) {
+        if (arch_perfOpen(pid, _HF_DYNFILE_UNIQUE_BLOCK_COUNT, &perfFds->uniquePcFd) == false) {
             LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_UNIQUE_BLOCK_COUNT)", pid);
-            close(perfFd[0]);
-            close(perfFd[1]);
-            close(perfFd[2]);
-            return false;
+            goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_UNIQUE_EDGE_COUNT, &perfFd[2]) == false) {
+        if (arch_perfOpen(pid, _HF_DYNFILE_UNIQUE_EDGE_COUNT, &perfFds->uniqueEdgeFd) == false) {
             LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_UNIQUE_EDGE_COUNT)", pid);
-            close(perfFd[0]);
-            close(perfFd[1]);
-            close(perfFd[2]);
-            return false;
+            goto out;
         }
     }
 
     return true;
+ out:
+    close(perfFds->cpuInstrFd);
+    close(perfFds->cpuBranchFd);
+    close(perfFds->uniquePcFd);
+    close(perfFds->uniqueEdgeFd);
+    return false;
 }
 
-void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int *perfFd)
+void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds)
 {
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return;
@@ -395,26 +389,26 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int *perfFd)
 
     uint64_t instrCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        ioctl(perfFd[0], PERF_EVENT_IOC_DISABLE, 0);
-        if (read(perfFd[0], &instrCount, sizeof(instrCount)) != sizeof(instrCount)) {
-            LOGMSG_P(l_ERROR, "read(perfFd='%d') failed", perfFd);
+        ioctl(perfFds->cpuInstrFd, PERF_EVENT_IOC_DISABLE, 0);
+        if (read(perfFds->cpuInstrFd, &instrCount, sizeof(instrCount)) != sizeof(instrCount)) {
+            LOGMSG_P(l_ERROR, "read(perfFd='%d') failed", perfFds->cpuInstrFd);
         }
-        close(perfFd[0]);
+        close(perfFds->cpuInstrFd);
     }
 
     uint64_t branchCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        ioctl(perfFd[1], PERF_EVENT_IOC_DISABLE, 0);
-        if (read(perfFd[1], &branchCount, sizeof(branchCount)) != sizeof(branchCount)) {
-            LOGMSG_P(l_ERROR, "read(perfFd='%d') failed", perfFd);
+        ioctl(perfFds->cpuBranchFd, PERF_EVENT_IOC_DISABLE, 0);
+        if (read(perfFds->cpuBranchFd, &branchCount, sizeof(branchCount)) != sizeof(branchCount)) {
+            LOGMSG_P(l_ERROR, "read(perfFd='%d') failed", perfFds->cpuBranchFd);
         }
-        close(perfFd[1]);
+        close(perfFds->cpuBranchFd);
     }
 
     uint64_t pathCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
-        ioctl(perfFd[2], PERF_EVENT_IOC_DISABLE, 0);
-        close(perfFd[2]);
+        ioctl(perfFds->uniquePcFd, PERF_EVENT_IOC_DISABLE, 0);
+        close(perfFds->uniquePcFd);
         arch_perfMmapParse();
         pathCount = arch_perfCountBranches();
 
@@ -428,8 +422,8 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int *perfFd)
 
     uint64_t edgeCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
-        ioctl(perfFd[2], PERF_EVENT_IOC_DISABLE, 0);
-        close(perfFd[2]);
+        ioctl(perfFds->uniqueEdgeFd, PERF_EVENT_IOC_DISABLE, 0);
+        close(perfFds->uniqueEdgeFd);
         arch_perfMmapParse();
         edgeCount = arch_perfCountBranches();
 

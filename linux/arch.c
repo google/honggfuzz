@@ -257,7 +257,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOGMSG(l_FATAL, "Couldn't set timer");
     }
 
-    int perfFd[3];
+    perfFd_t perfFds;
 
     for (;;) {
         int status;
@@ -273,7 +273,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
         LOGMSG_P(l_FATAL, "PID '%d' is not in a stopped state", pid);
     }
-    if (arch_perfEnable(ptracePid, hfuzz, perfFd) == false) {
+    if (arch_perfEnable(ptracePid, hfuzz, &perfFds) == false) {
         LOGMSG(l_FATAL, "Couldn't enable perf counters for pid %d", ptracePid);
     }
     if (arch_ptraceAttach(ptracePid) == false) {
@@ -325,7 +325,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
     }
     arch_removeTimer(&timerid);
-    arch_perfAnalyze(hfuzz, fuzzer, perfFd);
+    arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
     return;
 }
 
