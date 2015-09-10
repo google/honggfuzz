@@ -97,6 +97,7 @@ typedef struct {
     time_t timeStart;
     size_t mutationsCnt;
     size_t crashesCnt;
+    size_t uniqueCrashesCnt;
     size_t timeoutedCnt;
 
     /* For the linux/ code */

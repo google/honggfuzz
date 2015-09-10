@@ -711,6 +711,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     bool dstFileExists = false;
     if (files_copyFile(fuzzer->fileName, newname, &dstFileExists)) {
         LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, newname);
+        __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
     } else {
         if (dstFileExists) {
             LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", newname);
@@ -872,8 +873,7 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
 bool arch_ptraceAttach(pid_t pid)
 {
 #define MAX_THREAD_IN_TASK 4096
-    int tasks[MAX_THREAD_IN_TASK + 1];
-    tasks[MAX_THREAD_IN_TASK] = 0;
+    int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
         LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", pid);
         return false;

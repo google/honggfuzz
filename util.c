@@ -38,6 +38,18 @@
 #include "files.h"
 #include "log.h"
 
+#if defined(__builtin_bswap16)
+#define SWAP16(x)   __builtin_bswap16(x)
+#else
+#define SWAP16(x)   ((x & 0xff) << 8) | ((x & 0xff00) >> 8)
+#endif
+
+#if defined(__builtin_bswap32)
+#define SWAP32(x)   __builtin_bswap32(x)
+#else
+#define SWAP32(x)   ((x & 0xff) << 24) | ((x & 0xff00) << 8) | ((x & 0xff0000) >> 8) | ((x & 0xff000000) >> 24)
+#endif
+
 static int util_urandomFd = -1;
 
 uint64_t util_rndGet(uint64_t min, uint64_t max)
@@ -202,7 +214,7 @@ extern uint16_t util_ToFromBE16(uint16_t val)
 #if __BYTE_ORDER == __BIG_ENDIAN
     return val;
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
-    return __builtin_bswap16(val);
+    return SWAP16(val);
 #else
 #error "Unknown ENDIANESS"
 #endif
@@ -211,7 +223,7 @@ extern uint16_t util_ToFromBE16(uint16_t val)
 extern uint16_t util_ToFromLE16(uint16_t val)
 {
 #if __BYTE_ORDER == __BIG_ENDIAN
-    return __builtin_bswap16(val);
+    return SWAP16(val);
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
     return val;
 #else
@@ -224,7 +236,7 @@ extern uint32_t util_ToFromBE32(uint32_t val)
 #if __BYTE_ORDER == __BIG_ENDIAN
     return val;
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
-    return __builtin_bswap32(val);
+    return SWAP32(val);
 #else
 #error "Unknown ENDIANESS"
 #endif
@@ -233,7 +245,7 @@ extern uint32_t util_ToFromBE32(uint32_t val)
 extern uint32_t util_ToFromLE32(uint32_t val)
 {
 #if __BYTE_ORDER == __BIG_ENDIAN
-    return __builtin_bswap32(val);
+    return SWAP32(val);
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
     return val;
 #else
