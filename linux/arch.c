@@ -293,7 +293,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
 
-        if (pid == -1 && errno == EINTR) {
+        if (pid == -1 && errno == EINTR && hfuzz->tmOut) {
             arch_checkTimeLimit(hfuzz, fuzzer);
             continue;
         }
