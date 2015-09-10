@@ -365,8 +365,6 @@ int main(int argc, char **argv)
      */
     fuzz_main(&hfuzz);
 
-    free(hfuzz.dynamicFileBest);
-
     abort();                    /* NOTREACHED */
     return EXIT_SUCCESS;
 }

@@ -872,8 +872,7 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
 bool arch_ptraceAttach(pid_t pid)
 {
 #define MAX_THREAD_IN_TASK 4096
-    int tasks[MAX_THREAD_IN_TASK + 1];
-    tasks[MAX_THREAD_IN_TASK] = 0;
+    int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
         LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", pid);
         return false;
