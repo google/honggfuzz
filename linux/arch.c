@@ -44,6 +44,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/utsname.h>
 
 #include "linux/perf.h"
 #include "linux/ptrace_utils.h"
@@ -288,7 +289,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 #if !defined(__ANDROID__)
         pid_t pid = wait3(&status, __WNOTHREAD | __WALL, NULL);
 #else
-        pid_t pid = wait4(fuzzer->pid, &status, __WNOTHREAD | __WALL, NULL);
+        pid_t pid = wait4(-1, &status, __WNOTHREAD | __WALL, NULL);
 #endif
 
         LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
@@ -333,8 +334,54 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 bool arch_archInit(honggfuzz_t * hfuzz)
 {
-    return true;
-    if (hfuzz) {
-        return true;
+    unsigned long major = 0, minor = 0;
+    char *p = NULL;
+
+    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+        /*
+         * Check that Linux kernel is compatible
+         *
+         * Compatibility list:
+         *  1) Perf exclude_callchain_kernel requires kernel >= 3.7
+         *     TODO: Runtime logic to disable it for unsupported kernels
+         *           if it doesn't affect perf counters processing
+         *  2) If 'PERF_TYPE_HARDWARE' is not supported by kernel, ENOENT
+         *     is returned from perf_event_open(). Unfortunately, no reliable
+         *     way to detect it here. libperf exports some list functions,
+         *     although small guarantees it's installed. Maybe a more targeted 
+         *     message at perf_event_open() error handling will help.
+         */
+        struct utsname uts;
+        if (uname(&uts) == -1) {
+            LOGMSG_P(l_FATAL, "uname() failed");
+            return false;
+        }
+
+        p = uts.release;
+        major = strtoul(p, &p, 10);
+        if (*p++ != '.') {
+            LOGMSG(l_FATAL, "Unsupported kernel version (%s)", uts.release);
+            return false;
+        }
+
+        minor = strtoul(p, &p, 10);
+        if ((major < 3) || ((major == 3) && (minor < 7))) {
+            LOGMSG(l_ERROR, "Unsupported kernel version (%s)", uts.release);
+            return false;
+        }
     }
+#if defined(__ANDROID__) && defined(__arm__)
+    /* 
+     * For ARM kernels running Android API <= 21, if fuzzing target links to 
+     * libcrypto (OpenSSL), OPENSSL_cpuid_setup initialization is triggering a
+     * SIGILL/ILLOPC at armv7_tick() due to  "mrrc p15, #1, r0, r1, c14)" instruction.
+     * Setups using BoringSSL (API >= 22) are not affected.
+     */
+    if (setenv("OPENSSL_armcap", OPENSSL_ARMCAP_ABI, 1) == -1) {
+        LOGMSG_P(l_ERROR, "setenv(OPENSSL_armcap) failed");
+        return false;
+    }
+#endif
+
+    return true;
 }

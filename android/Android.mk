@@ -41,6 +41,13 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
     $(error Unsuported / Unknown APP_API '$(APP_ABI)')
   endif
 
+  # Additional libcrypto OpenSSL flags required to mitigate bug (ARM systems with API <= 21)
+  ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi))
+    OPENSSL_ARMCAP_ABI := "5"
+  else ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi-v7a))
+    OPENSSL_ARMCAP_ABI := "7"
+  endif
+
   # Upstream libunwind compiled from sources with Android NDK toolchain
   LIBUNWIND_A := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(UNW_ARCH).a
   ifeq ("$(wildcard $(LIBUNWIND_A))","")
@@ -101,6 +108,9 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   LOCAL_CFLAGS += -D__HF_USE_CAPSTONE__
   ARCH_SRCS := linux/arch.c linux/ptrace_utils.c linux/perf.c linux/unwind.c
   ARCH := LINUX
+  ifeq ($(ARCH_ABI),arm)
+    LOCAL_CFLAGS += -DOPENSSL_ARMCAP_ABI='$(OPENSSL_ARMCAP_ABI)'
+  endif
   $(info $(shell (echo "********************************************************************")))
   $(info $(shell (echo "Android PTRACE build: Will prevent debuggerd from processing crashes")))
   $(info $(shell (echo "********************************************************************")))
