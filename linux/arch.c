@@ -339,12 +339,17 @@ bool arch_archInit(honggfuzz_t * hfuzz)
 
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         /*
-         * Check that linux kernel is compatible
+         * Check that Linux kernel is compatible
          *
          * Compatibility list:
          *  1) Perf exclude_callchain_kernel requires kernel >= 3.7
          *     TODO: Runtime logic to disable it for unsupported kernels
          *           if it doesn't affect perf counters processing
+         *  2) If 'PERF_TYPE_HARDWARE' is not supported by kernel, ENOENT
+         *     is returned from perf_event_open(). Unfortunately, no reliable
+         *     way to detect it here. libperf exports some list functions,
+         *     although small guarantees it's installed. Maybe a more targeted 
+         *     message at perf_event_open() error handling will help.
          */
         struct utsname uts;
         if (uname(&uts) == -1) {
