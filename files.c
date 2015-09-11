@@ -83,7 +83,8 @@ bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flag
     }
 
     if (files_writeToFd(fd, buf, fileSz) == false) {
-        LOGMSG_P(l_ERROR, "Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName, fd);
+        LOGMSG_P(l_ERROR, "Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName,
+                 fd);
         close(fd);
         unlink(fileName);
         return false;
@@ -394,7 +395,7 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
 
     if (files_writeToFd(outFD, inFileBuf, inSt.st_size) == false) {
         LOGMSG_P(l_ERROR, "Couldn't write '%zu' bytes to file '%s' (fd='%d')", inSt.st_size,
-               destination, outFD);
+                 destination, outFD);
         free(inFileBuf);
         close(inFD);
         close(outFD);
