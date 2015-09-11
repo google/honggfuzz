@@ -49,6 +49,9 @@ void interceptor_increaseBy(unsigned long v)
     syscall(__NR_arch_prctl, ARCH_SET_GS, gs);
 #endif
     return;
+    if (v == 5) {
+        return;
+    }
 }
 
 __attribute__ ((optimize("0")))
