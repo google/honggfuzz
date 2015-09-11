@@ -44,7 +44,7 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   # Additional libcrypto OpenSSL flags required to mitigate bug (ARM systems with API <= 21)
   ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi))
     OPENSSL_ARMCAP_ABI := "5"
-  else
+  else ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi-v7a))
     OPENSSL_ARMCAP_ABI := "7"
   endif
 
@@ -108,6 +108,9 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   LOCAL_CFLAGS += -D__HF_USE_CAPSTONE__
   ARCH_SRCS := linux/arch.c linux/ptrace_utils.c linux/perf.c linux/unwind.c
   ARCH := LINUX
+  ifeq ($(ARCH_ABI),arm)
+    LOCAL_CFLAGS += -DOPENSSL_ARMCAP_ABI='$(OPENSSL_ARMCAP_ABI)'
+  endif
   $(info $(shell (echo "********************************************************************")))
   $(info $(shell (echo "Android PTRACE build: Will prevent debuggerd from processing crashes")))
   $(info $(shell (echo "********************************************************************")))
@@ -120,6 +123,6 @@ else
 endif
 
 LOCAL_SRC_FILES += $(ARCH_SRCS)
-LOCAL_CFLAGS += -D_HF_ARCH_${ARCH} -DOPENSSL_ARMCAP_ABI='$(OPENSSL_ARMCAP_ABI)'
+LOCAL_CFLAGS += -D_HF_ARCH_${ARCH}
 
 include $(BUILD_EXECUTABLE)
