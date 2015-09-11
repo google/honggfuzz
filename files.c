@@ -83,7 +83,8 @@ bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flag
     }
 
     if (files_writeToFd(fd, buf, fileSz) == false) {
-        LOGMSG(l_ERROR, "Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName, fd);
+        LOGMSG_P(l_ERROR, "Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName,
+                 fd);
         close(fd);
         unlink(fileName);
         return false;
@@ -378,14 +379,14 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
 
     uint8_t *inFileBuf = malloc(inSt.st_size);
     if (!inFileBuf) {
-        LOGMSG(l_ERROR, "malloc(%zu) failed", inSt.st_size);
+        LOGMSG_P(l_ERROR, "malloc(%zu) failed", inSt.st_size);
         close(inFD);
         close(outFD);
         return false;
     }
 
     if (files_readFromFd(inFD, inFileBuf, (size_t) inSt.st_size) == false) {
-        LOGMSG(l_ERROR, "Couldn't read '%s' to a buf", source);
+        LOGMSG_P(l_ERROR, "Couldn't read '%s' to a buf", source);
         free(inFileBuf);
         close(inFD);
         close(outFD);
@@ -393,8 +394,8 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
     }
 
     if (files_writeToFd(outFD, inFileBuf, inSt.st_size) == false) {
-        LOGMSG(l_ERROR, "Couldn't write '%zu' bytes to file '%s' (fd='%d')", inSt.st_size,
-               destination, outFD);
+        LOGMSG_P(l_ERROR, "Couldn't write '%zu' bytes to file '%s' (fd='%d')", inSt.st_size,
+                 destination, outFD);
         free(inFileBuf);
         close(inFD);
         close(outFD);
