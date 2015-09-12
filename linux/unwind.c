@@ -124,21 +124,21 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
         unw_word_t pc = 0, offset = 0;
         char buf[_HF_FUNC_NAME_SZ] = { 0 };
 
-        unw_proc_info_t frameInfo;
-        ret = unw_get_proc_info(&cursor, &frameInfo);
-        if (ret < 0) {
-            LOGMSG(l_DEBUG, "[pid='%d'] [%d] unw_get_proc_info (%s)",
-                   pid, num_frames, UNW_ER[-ret]);
-            // Not safe to keep reading
-            goto out;
-        }
-
         ret = unw_get_reg(&cursor, UNW_REG_IP, &pc);
         if (ret < 0) {
             LOGMSG(l_ERROR, "[pid='%d'] [%d] failed to read IP (%s)",
                    pid, num_frames, UNW_ER[-ret]);
             // We don't want to try to extract info from an arbitrary IP
             // TODO: Maybe abort completely (goto out))
+            goto skip_frame_info;
+        }
+
+        unw_proc_info_t frameInfo;
+        ret = unw_get_proc_info(&cursor, &frameInfo);
+        if (ret < 0) {
+            LOGMSG(l_DEBUG, "[pid='%d'] [%d] unw_get_proc_info (%s)",
+                   pid, num_frames, UNW_ER[-ret]);
+            // Not safe to keep parsing frameInfo
             goto skip_frame_info;
         }
 
