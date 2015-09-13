@@ -410,7 +410,7 @@ void fuzz_main(honggfuzz_t * hfuzz)
         LOGMSG_P(l_FATAL, "sigaction(SIGQUIT) failed");
     }
     if (sigaction(SIGALRM, &sa, NULL) == -1) {
-        LOGMSG_P(l_FATAL, "sigaction(SIGQUIT) failed");
+        LOGMSG_P(l_FATAL, "sigaction(SIGALRM) failed");
     }
     if (fuzz_setupTimer() == false) {
         LOGMSG(l_FATAL, "fuzz_setupTimer()");
