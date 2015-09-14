@@ -1,7 +1,7 @@
 CC ?= gcc
-CFLAGS ?= -fno-stack-protector
+CFLAGS ?= -fno-stack-protector -Wno-builtin-memcpy-chk-size
 
-BINS = badcode1
+BINS = badcode1 badcode2
 
 all: $(BINS)
 	@(echo CC $<; $(CC) $(CFLAGS) $<.c -o $<)
