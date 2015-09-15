@@ -54,6 +54,14 @@
 bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 {
     /*
+     * Kill the children when fuzzer dies (e.g. due to Ctrl+C)
+     */
+    if (prctl(PR_SET_PDEATHSIG, (long)SIGKILL, 0L, 0L, 0L) == -1) {
+        LOGMSG_P(l_ERROR, "prctl(PR_SET_PDEATHSIG, SIGKILL) failed");
+        return false;
+    }
+
+    /*
      * Kill a process which corrupts its own heap (with ABRT)
      */
     if (setenv("MALLOC_CHECK_", "3", 1) == -1) {
@@ -83,13 +91,6 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         return false;
     }
 
-    /*
-     * Kill the children when fuzzer dies (e.g. due to Ctrl+C)
-     */
-    if (prctl(PR_SET_PDEATHSIG, (long)SIGKILL, 0L, 0L, 0L) == -1) {
-        LOGMSG_P(l_ERROR, "prctl(PR_SET_PDEATHSIG, SIGKILL) failed");
-        return false;
-    }
     /*
      * Disable ASLR
      */
