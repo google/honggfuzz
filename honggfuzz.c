@@ -101,6 +101,7 @@ static void usage(bool exit_success)
            "                     (newer Intel CPUs only)\n"
            "               " AB "'e' " AC "- PERF_SAMPLE_IP/PERF_SAMPLE_ADDR (unique branch edges)\n"
            "                     (newer Intel CPUs only)\n"
+           "               " AB "'f' " AC "- Custom counter (see the interceptor/ directory for examples)\n"
 #endif /* defined(_HF_ARCH_LINUX) */
            "\nExamples:\n"
            " Run the binary over a mutated file chosen from the directory:\n"
