@@ -9,3 +9,4 @@ mach_excServer.c
 libs
 obj
 examples/targets/badcode1
+examples/targets/badcode2

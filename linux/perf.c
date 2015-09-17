@@ -266,9 +266,17 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         return true;
     }
 
+    perfBloom = mmap(NULL, _HF_PERF_BLOOM_SZ, PROT_READ | PROT_WRITE,
+                     MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+    if (perfBloom == MAP_FAILED) {
+        perfBloom = NULL;
+        LOGMSG_P(l_ERROR, "mmap(size=%zu) failed", _HF_PERF_BLOOM_SZ);
+    }
+
     perfMmapBuf =
         mmap(NULL, perfMmapSz + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
     if (perfMmapBuf == MAP_FAILED) {
+        perfMmapBuf = NULL;
         LOGMSG_P(l_ERROR, "mmap() failed");
         close(*perfFd);
         return false;
@@ -317,12 +325,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
                "_HF_DYNFILE_UNIQUE_BLOCK_COUNT and _HF_DYNFILE_UNIQUE_EDGE_COUNT cannot be specified together");
     }
 
-    perfBloom =
-        mmap(NULL, _HF_PERF_BLOOM_SZ, PROT_READ | PROT_WRITE,
-             MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
-    if (perfBloom == MAP_FAILED) {
-        LOGMSG_P(l_FATAL, "mmap(size=%zu) failed", _HF_PERF_BLOOM_SZ);
-    }
+    perfBloom = NULL;
 
     perfMmapSz = arch_perfGetMmapBufSz(hfuzz);
     perfCutOffAddr = hfuzz->dynamicCutOffAddr;
@@ -423,7 +426,9 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
     if (perfMmapBuf != NULL) {
         munmap(perfMmapBuf, perfMmapSz + getpagesize());
     }
-    munmap(perfBloom, _HF_PERF_BLOOM_SZ);
+    if (perfBloom != NULL) {
+        munmap(perfBloom, _HF_PERF_BLOOM_SZ);
+    }
 
     fuzzer->hwCnts.cpuInstrCnt = instrCount;
     fuzzer->hwCnts.cpuBranchCnt = branchCount;

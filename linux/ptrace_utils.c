@@ -72,6 +72,17 @@
 #define REG_PD   "0x%016"
 #endif
 
+/*
+ * Size in characters required to store a string representation of a
+ * register value (0xdeadbeef style))
+ */
+#define REGSIZEINCHAR   (2 * sizeof(REG_TYPE) + 3)
+
+/*
+ * Number of frames to include in backtrace callstack signature
+ */
+#define NMAJORFRAMES    7
+
 #if defined(__i386__) || defined(__x86_64__)
 #define MAX_INSTR_SZ 16
 #elif defined(__arm__) || defined(__powerpc__) || defined(__powerpc64__)
@@ -626,6 +637,24 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
     return;
 }
 
+static void arch_hashCallstack(fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCnt)
+{
+    uint64_t hash = 0;
+    for (size_t i = 0; i < funcCnt && i < NMAJORFRAMES; i++) {
+        /*
+         * Convert PC to char array to be compatible with hash function
+         */
+        char pcStr[REGSIZEINCHAR] = { 0 };
+        snprintf(pcStr, REGSIZEINCHAR, REG_PD REG_PM, (REG_TYPE) (long)funcs[i].pc);
+
+        /*
+         * Hash the last three nibbles
+         */
+        hash ^= util_hash(&pcStr[strlen(pcStr) - 3], 3);
+    }
+    fuzzer->backtrace = hash;
+}
+
 static void
 arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCnt,
                           siginfo_t * si, const char *instr, const char *crashName)
@@ -639,6 +668,8 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
                    arch_sigs[si->si_signo].descr, si->si_signo);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FAULT ADDRESS: %p\n", si->si_addr);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "INSTRUCTION: %s\n", instr);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK HASH: %016llx\n",
+                   fuzzer->backtrace);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK:\n");
     for (size_t i = 0; i < funcCnt; i++) {
 #ifdef __HF_USE_CAPSTONE__
@@ -693,19 +724,41 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
         return;
     }
 
+    /*
+     * Unwind and resolve symbols
+     */
+    funcs_t funcs[_HF_MAX_FUNCS] = {
+        [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
+        [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
+        [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
+        ,
+    };
+
+#if !defined(__ANDROID__)
+    size_t funcCnt = arch_unwindStack(pid, funcs);
+    arch_bfdResolveSyms(pid, funcs, funcCnt);
+#else
+    size_t funcCnt = arch_unwindStack(pid, funcs);
+#endif
+
+    /*
+     * Calculate backtrace callstack hash signature
+     */
+    arch_hashCallstack(fuzzer, funcs, funcCnt);
+
     char newname[PATH_MAX];
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
-                 "%s/%s.PC.%" REG_PM ".CODE.%d.ADDR.%p.INSTR.%s.%s",
-                 hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr,
-                 instr, hfuzz->fileExtn);
+                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
+                 hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, fuzzer->backtrace,
+                 si.si_code, si.si_addr, instr, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(newname, sizeof(newname),
-                 "%s/%s.PC.%" REG_PM ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
-                 hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, si.si_code, si.si_addr,
-                 instr, localtmstr, pid, hfuzz->fileExtn);
+                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
+                 hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, fuzzer->backtrace,
+                 si.si_code, si.si_addr, instr, localtmstr, pid, hfuzz->fileExtn);
     }
 
     bool dstFileExists = false;
@@ -721,20 +774,6 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
             LOGMSG(l_ERROR, "Couldn't copy '%s' to '%s'", fuzzer->fileName, newname);
         }
     }
-
-    funcs_t funcs[_HF_MAX_FUNCS] = {
-        [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
-        [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
-        [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
-        ,
-    };
-
-#if !defined(__ANDROID__)
-    size_t funcCnt = arch_unwindStack(pid, funcs);
-    arch_bfdResolveSyms(pid, funcs, funcCnt);
-#else
-    size_t funcCnt = arch_unwindStack(pid, funcs);
-#endif
 
     arch_ptraceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr, newname);
 }
