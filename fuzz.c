@@ -308,8 +308,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         int64_t diff3 = hfuzz->hwCnts.pathCnt - fuzzer.hwCnts.pathCnt;
         int64_t diff4 = hfuzz->hwCnts.customCnt - fuzzer.hwCnts.customCnt;
 
-        if ((diff0 < 0 || diff1 < 0 || diff2 < 0 || diff3 < 0 || diff4 < 0) &&
-            (diff0 <= 0 && diff1 <= 0 && diff2 <= 0 && diff3 <= 0 && diff4 <= 0)) {
+        if (diff0 <= 0 && diff1 <= 0 && diff2 <= 0 && diff3 <= 0 && diff4 <= 0) {
 
             LOGMSG(l_INFO,
                    "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr, High): %"
