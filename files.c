@@ -420,7 +420,7 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
     for (;;) {
         char *lineptr = NULL;
         size_t n = 0;
-        if (getdelim(&lineptr, &n, '\r', fBl) == -1) {
+        if (getline(&lineptr, &n, fBl) == -1) {
             break;
         }
         if ((hfuzz->blacklist =
