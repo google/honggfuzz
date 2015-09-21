@@ -408,3 +408,34 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
     close(outFD);
     return true;
 }
+
+bool files_parseBlacklist(honggfuzz_t * hfuzz)
+{
+    FILE *fBl = fopen(hfuzz->blacklistFile, "rb");
+    if (fBl == NULL) {
+        LOGMSG_P(l_ERROR, "Couldn't open '%s' - R/O mode", hfuzz->blacklistFile);
+        return false;
+    }
+
+    for (;;) {
+        char *lineptr = NULL;
+        size_t n = 0;
+        if (getdelim(&lineptr, &n, '\r', fBl) == -1) {
+            break;
+        }
+        if ((hfuzz->blacklist =
+             realloc(hfuzz->blacklist,
+                     (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]))) == NULL) {
+            LOGMSG_P(l_ERROR, "realloc failed (sz=%zu)",
+                     (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]));
+            fclose(fBl);
+            return false;
+        }
+        hfuzz->blacklist[hfuzz->blacklistCnt] = strtoull(lineptr, 0, 16);
+        LOGMSG(l_DEBUG, "Blacklist: loaded '%llu'", hfuzz->blacklist[hfuzz->blacklistCnt]);
+        hfuzz->blacklistCnt += 1;
+    }
+    LOGMSG(l_INFO, "Loaded %zu stack hashes from the blacklist file", hfuzz->blacklistCnt);
+    fclose(fBl);
+    return true;
+}

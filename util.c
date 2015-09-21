@@ -266,3 +266,28 @@ extern void MX_UNLOCK(pthread_mutex_t * mutex)
         LOGMSG_P(l_FATAL, "pthread_mutex_unlock(%p)", mutex);
     }
 }
+
+extern int64_t fastArray64Search(uint64_t * array, size_t arraySz, uint64_t key)
+{
+    size_t low = 0;
+    size_t high = arraySz - 1;
+    size_t mid;
+
+    while (array[high] != array[low] && key >= array[low] && key <= array[high]) {
+        mid = low + (key - array[low]) * ((high - low) / (array[high] - array[low]));
+
+        if (array[mid] < key) {
+            low = mid + 1;
+        } else if (key < array[mid]) {
+            high = mid - 1;
+        } else {
+            return mid;
+        }
+    }
+
+    if (key == array[low]) {
+        return low;
+    } else {
+        return -1;
+    }
+}

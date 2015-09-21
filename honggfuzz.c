@@ -73,6 +73,7 @@ static void usage(bool exit_success)
            "            (default: current '.')\n"
            " [" AB "-r val" AC "] : flip rate, (default: '" AB "0.001" AC "')\n"
            " [" AB "-w val" AC "] : wordlist, (default: empty) [tokens delimited by NUL-bytes]\n"
+           " [" AB "-B val" AC "] : stackhashes blacklist file (one entry per line)\n"      
            " [" AB "-c val" AC "] : external command modifying the input corpus of files,\n"
            "            instead of -r/-m (default: " AB "none" AC ")\n"
            " [" AB "-t val" AC "] : timeout (in secs), (default: '" AB "3" AC "' [0 - no timeout])\n"
@@ -148,6 +149,9 @@ int main(int argc, char **argv)
         .dictionaryFile = NULL,
         .dictionary = NULL,
         .dictionaryCnt = 0,
+        .blacklistFile = NULL,
+        .blacklistCnt = 0,
+        .blacklist = NULL,
         .maxFileSz = (1024 * 1024),
         .tmOut = 3,
         .mutationsMax = 0,
@@ -165,6 +169,7 @@ int main(int argc, char **argv)
         .mutationsCnt = 0,
         .crashesCnt = 0,
         .uniqueCrashesCnt = 0,
+        .blCrashesCnt = 0,
         .timeoutedCnt = 0,
 
         .dynFileMethod = _HF_DYNFILE_NONE,
@@ -189,7 +194,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "-?hqvsuf:d:e:W:r:c:F:D:t:a:R:n:N:l:p:g:o:E:w:L:");
+        c = getopt(argc, argv, "-?hqvsuf:d:e:W:r:c:F:D:t:a:R:n:N:l:p:g:o:E:w:B:L:");
         if (c < 0)
             break;
 
@@ -289,6 +294,9 @@ int main(int argc, char **argv)
         case 'w':
             hfuzz.dictionaryFile = optarg;
             break;
+        case 'B':
+            hfuzz.blacklistFile = optarg;
+            break;
         case 'L':
             switch (optarg[0]) {
             case 'R':
@@ -360,6 +368,10 @@ int main(int argc, char **argv)
 
     if (hfuzz.dictionaryFile && (files_parseDictionary(&hfuzz) == false)) {
         LOGMSG(l_FATAL, "Couldn't parse dictionary file ('%s')", hfuzz.dictionaryFile);
+    }
+
+    if (hfuzz.blacklistFile && (files_parseBlacklist(&hfuzz) == false)) {
+        LOGMSG(l_FATAL, "Couldn't parse stackhash blacklist file ('%s')", hfuzz.blacklistFile);
     }
 
     /*
