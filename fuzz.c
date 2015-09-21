@@ -311,7 +311,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         if (diff0 <= 0 && diff1 <= 0 && diff2 <= 0 && diff3 <= 0 && diff4 <= 0) {
 
             LOGMSG(l_INFO,
-                   "New BEST feedback: File Size (New/Old): %zu/%zu', Perf feedback (Curr, High): %"
+                   "New: (Size New,Old): %zu,%zu, Perf (Cur,New): %"
                    PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 ",%" PRId64 "/%" PRId64
                    "/%" PRId64 "/%" PRId64 "/%" PRId64, fuzzer.dynamicFileSz,
                    hfuzz->dynamicFileBestSz, hfuzz->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuBranchCnt,
