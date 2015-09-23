@@ -435,7 +435,6 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
 
         hfuzz->blacklist[hfuzz->blacklistCnt] = strtoull(lineptr, 0, 16);
         LOGMSG(l_DEBUG, "Blacklist: loaded '%llu'", hfuzz->blacklist[hfuzz->blacklistCnt]);
-        hfuzz->blacklistCnt += 1;
 
         // Verify entries are sorted so we can use interpolation search
         if (hfuzz->blacklistCnt > 1) {
@@ -446,6 +445,7 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
                 return false;
             }
         }
+        hfuzz->blacklistCnt += 1;
     }
 
     if (hfuzz->blacklistCnt > 1) {
