@@ -909,9 +909,9 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
     return true;
 }
 
+#define MAX_THREAD_IN_TASK 4096
 bool arch_ptraceAttach(pid_t pid)
 {
-#define MAX_THREAD_IN_TASK 4096
     int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
         LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", pid);
@@ -932,4 +932,20 @@ bool arch_ptraceAttach(pid_t pid)
         ptrace(PT_CONTINUE, tasks[i], NULL, NULL);
     }
     return true;
+}
+
+void arch_ptraceDetach(pid_t pid)
+{
+    int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
+    if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
+        LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", pid);
+        return;
+    }
+
+    for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
+        ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL);
+        int status;
+        while (wait4(tasks[i], &status, __WALL, NULL) != pid) ;
+        ptrace(PTRACE_DETACH, tasks[i], NULL, NULL);
+    }
 }
