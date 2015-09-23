@@ -838,7 +838,7 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
             arch_ptraceSaveData(hfuzz, pid, fuzzer);
 
             /* 
-             * An kind of ugly (although necessary) hack due to custom signal handlers
+             * A kind of ugly (although necessary) hack due to custom signal handlers
              * in Android from debuggerd. If we pass one of the monitored signals, 
              * we'll end-up running the processing routine twice. A cost that we 
              * don't want to pay.

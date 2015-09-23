@@ -154,8 +154,8 @@ depend:
 	
 .PHONY:android
 android:
-		ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
-			APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) $(NDK_BUILD_ARGS)
+	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
+		APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) $(NDK_BUILD_ARGS)
 
 
 # DO NOT DELETE
