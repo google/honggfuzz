@@ -23,13 +23,20 @@ readonly tmpFile=$(pwd)/.hf.bl.txt
 declare -a sysTools=("perl" "cut" "sort" "paste" "wc" "tr" "cat")
 
 usage() {
-    echo "  Usage: $(basename $0) [options]"
-    echo "    OPTIONS:"
-    echo "      -i|--input  (mandatory): input crash(es) directory / file"
-    echo "      -o|--output (mandatory): output file to save found hashes (merge if exists)"
-    echo "      -e|--ext    (mandatory): file extension of fuzzer files (e.g. fuzz)"
-    echo "      -a|--arch   (mandatory): arch fuzzer have run against ('MAC' or 'LINUX')"
-    exit 1
+cat <<_EOF
+
+  Usage: $(basename $0) [options]
+    OPTIONS:
+      -i|--input   : input crash(es) directory / file
+      -B|--bl-file : output file to save found hashes (merge if exists)
+      -e|--ext     : file extension of fuzzer files (e.g. fuzz)
+      -a|--arch    : arch fuzzer have run against ('MAC' or 'LINUX')
+
+    INFO:
+      * Blacklist file sort mode only requires [-B/--bl-file] argument
+      * Hashes gather mode requires all argument to be set
+_EOF
+  exit 1
 }
 
 command_exists () {
@@ -46,10 +53,11 @@ do
 done
 
 INPUT_DIR=""
-OUTPUT_FILE=""
+BL_FILE=""
 FILE_EXT=""
 ARCH=""
 
+nArgs=$#
 while [[ $# > 1 ]]
 do
   arg="$1"
@@ -58,8 +66,8 @@ do
       INPUT_DIR="$2"
       shift
       ;;
-    -o|--output)
-      OUTPUT_FILE="$2"
+    -B|--bl-file)
+      BL_FILE="$2"
       shift
       ;;
     -e|--ext)
@@ -78,65 +86,75 @@ do
   shift
 done
 
-if [[ "$INPUT_DIR" == "" || ! -e "$INPUT_DIR" ]]; then
-  echo "[-] Missing or invalid input directory"
+gatherMode=false
+
+# Sort only mode
+if [[ "$BL_FILE" == "" ]]; then
+  echo "[-] Missing blacklist file"
   usage
 fi
 
-if [[ "$OUTPUT_FILE" == "" ]]; then
-  echo "[-] Missing output file"
-  usage
-fi
+# Hashes gather mode
+if [ $nArgs -gt 1 ]; then
+  if [[ "$INPUT_DIR" == "" || ! -e "$INPUT_DIR" ]]; then
+    echo "[-] Missing or invalid input directory"
+    usage
+  fi
 
-if [[ "$FILE_EXT" == "" ]]; then
-  echo "[-] Missing file extension"
-  usage
-fi
+  if [[ "$FILE_EXT" == "" ]]; then
+    echo "[-] Missing file extension"
+    usage
+  fi
 
-if [[ "$ARCH" != "MAC" && "$ARCH" != "LINUX" ]]; then
-  echo "[-] Invlid architecture, expecting 'MAC' or 'LINUX'"
-  usage
-fi
+  if [[ "$ARCH" != "MAC" && "$ARCH" != "LINUX" ]]; then
+    echo "[-] Invlid architecture, expecting 'MAC' or 'LINUX'"
+    usage
+  fi
 
-if [[ "$ARCH" == "LINUX" ]]; then
-  STACKHASH_FIELD=5
-elif [[ "$ARCH" == "MAC" ]]; then
-  STACKHASH_FIELD=6
-else
-  echo "[-] Unsupported architecture"
-  exit 1
+  if [[ "$ARCH" == "LINUX" ]]; then
+    STACKHASH_FIELD=5
+  elif [[ "$ARCH" == "MAC" ]]; then
+    STACKHASH_FIELD=6
+  else
+    echo "[-] Unsupported architecture"
+    exit 1
+  fi
+  gatherMode=true
 fi
 
 # save old data
-if [ -f $OUTPUT_FILE ]; then
-  cat $OUTPUT_FILE > $tmpFile
-  oldCount=$(cat $OUTPUT_FILE | wc -l | tr -d " ")
+if [ -f $BL_FILE ]; then
+  cat $BL_FILE > $tmpFile
+  oldCount=$(cat $BL_FILE | wc -l | tr -d " ")
 else
   oldCount=0
 fi
 
-echo "[*] Processing files from '$INPUT_DIR' ..."
-find $INPUT_DIR -type f -iname "*.$FILE_EXT" | while read -r FILE
-do
-  fileName=$(basename $FILE)
-  if ! echo $fileName | grep -qF ".STACK."; then
-    echo "[!] Skipping '$FILE'"
-    continue
-  fi
-  stackHash=$(echo $fileName | cut -d '.' -f$STACKHASH_FIELD)
+if $gatherMode; then
+  echo "[*] Processing files from '$INPUT_DIR' ..."
+  find $INPUT_DIR -type f -iname "*.$FILE_EXT" | while read -r FILE
+  do
+    fileName=$(basename $FILE)
+    if ! echo $fileName | grep -qF ".STACK."; then
+      echo "[!] Skipping '$FILE'"
+      continue
+    fi
+    stackHash=$(echo $fileName | cut -d '.' -f$STACKHASH_FIELD)
 
-  # We don't want to lose crashes where unwinder failed
-  if [[ "$stackHash" != "0" ]]; then
-    echo $stackHash >> $tmpFile
-  fi
-done
+    # We don't want to lose crashes where unwinder failed
+    if [[ "$stackHash" != "0" ]]; then
+      echo $stackHash >> $tmpFile
+    fi
+  done
+fi
 
 # sort hex values
+echo "[*] Sorting blacklist file entries"
 perl -lpe '$_=hex' $tmpFile | \
 paste -d" " - $tmpFile  | sort -nu | cut -d" " -f 2- \
-> $OUTPUT_FILE
+> $BL_FILE
 
-entries=$(cat $OUTPUT_FILE | wc -l | tr -d " ")
-echo "[*] $OUTPUT_FILE contains $entries blacklisted stack hashes"
+entries=$(cat $BL_FILE | wc -l | tr -d " ")
+echo "[*] $BL_FILE contains $entries blacklisted stack hashes"
 
 rm $tmpFile
