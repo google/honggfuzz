@@ -108,7 +108,7 @@ static void usage(bool exit_success)
            " Run the binary over a mutated file chosen from the directory:\n"
            AB "  " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
            " As above, provide input over STDIN:\n"
-           AB "  " PROG_NAME " -f input_dir -- /usr/bin/djpeg\n" AC
+           AB "  " PROG_NAME " -f input_dir -s -- /usr/bin/djpeg\n" AC
 #if defined(_HF_ARCH_LINUX)
            " Run the binary over a dynamic file, maximize total no. of instructions:\n"
            AB "  " PROG_NAME " -Di -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
@@ -255,7 +255,7 @@ int main(int argc, char **argv)
                 break;
             default:
                 LOGMSG(l_ERROR, "Unknown -D mode");
-                usage(EXIT_FAILURE);
+                usage(false);
                 break;
             }
             break;
@@ -307,7 +307,7 @@ int main(int argc, char **argv)
                 break;
             default:
                 LOGMSG(l_ERROR, "Unknown -L switch");
-                usage(EXIT_FAILURE);
+                usage(false);
             }
         default:
             break;
