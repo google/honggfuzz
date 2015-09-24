@@ -928,10 +928,10 @@ bool arch_ptraceAttach(pid_t pid)
         }
         LOGMSG(l_DEBUG, "Successfully attached to pid/tid: %d", tasks[i]);
     }
-    for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
-        ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL);
-        ptrace(PTRACE_CONT, tasks[i], NULL, NULL);
-    }
+    ptrace(PTRACE_INTERRUPT, pid, NULL, NULL);
+    int status;
+    while (wait4(pid, &status, __WALL, NULL) != pid) ;
+    ptrace(PTRACE_CONT, pid, NULL, NULL);
     return true;
 }
 
@@ -946,7 +946,7 @@ void arch_ptraceDetach(pid_t pid)
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
         ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL);
         int status;
-        while (wait4(tasks[i], &status, __WALL, NULL) != pid) ;
+        while (wait4(tasks[i], &status, __WALL, NULL) != tasks[i]) ;
         ptrace(PTRACE_DETACH, tasks[i], NULL, NULL);
     }
 }
