@@ -51,37 +51,47 @@
 #endif
 
 static int util_urandomFd = -1;
+static __thread uint64_t rndX;
+static __thread uint64_t rndIni = false;
 
 uint64_t util_rndGet(uint64_t min, uint64_t max)
 {
+    if (min > max) {
+        LOGMSG(l_FATAL, "min:%d > max:%d", min, max);
+    }
+
     if (util_urandomFd == -1) {
         if ((util_urandomFd = open("/dev/urandom", O_RDONLY)) == -1) {
             LOGMSG_P(l_FATAL, "Couldn't open /dev/urandom for writing");
         }
     }
 
-    uint64_t rnd;
-    if (files_readFromFd(util_urandomFd, (uint8_t *) & rnd, sizeof(rnd)) == false) {
-        LOGMSG_P(l_FATAL, "Failed reading from /dev/urandom");
+    if (rndIni == false) {
+        if (files_readFromFd(util_urandomFd, (uint8_t *) & rndX, sizeof(rndX)) == false) {
+            LOGMSG_P(l_FATAL, "Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndX));
+        }
+        rndIni = true;
     }
 
-    if (min > max) {
-        LOGMSG(l_FATAL, "min:%d > max:%d", min, max);
-    }
+    /* MMIX LCG PRNG */
+    static const uint64_t a = 6364136223846793005ULL;
+    static const uint64_t c = 1442695040888963407ULL;
 
-    return ((rnd % (max - min + 1)) + min);
+    rndX = (a * rndX + c);
+
+    return ((rndX % (max - min + 1)) + min);
 }
 
 void util_rndBuf(uint8_t * buf, size_t sz)
 {
     /* MMIX LCG PRNG */
-    uint64_t a = 6364136223846793005ULL;
-    uint64_t c = 1442695040888963407ULL;
-    uint64_t x = util_rndGet(0, 1ULL << 60);
+    static const uint64_t a = 6364136223846793005ULL;
+    static const uint64_t c = 1442695040888963407ULL;
+    uint64_t x = util_rndGet(0, 1ULL << 62);
 
     for (size_t i = 0; i < sz; i++) {
         x = (a * x + c);
-        buf[i] = (uint8_t) ((x >> 32) & 0xFF);
+        buf[i] = (uint8_t) (x & 0xFF);
     }
 
     return;
