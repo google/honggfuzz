@@ -18,93 +18,111 @@
 #   limitations under the License.
 
 
-CC ?= gcc
-CFLAGS += -std=c11 -I. -I/usr/local/include -I/usr/include \
-	-D_GNU_SOURCE \
-	-Wall -Wextra -Wno-initializer-overrides -Wno-override-init -Wno-unknown-warning-option -Werror \
-	-funroll-loops -O2
-
-LD = $(CC)
-LDFLAGS += -lm -lpthread -L/usr/local/include -L/usr/include
-
-SRCS = honggfuzz.c display.c log.c files.c fuzz.c report.c mangle.c util.c
-
-OBJS = $(SRCS:.c=.o)
-BIN = honggfuzz
+# Common for all architectures
+BIN := honggfuzz
+COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror
+COMMON_LDFLAGS := -lm
+COMMON_SRCS := honggfuzz.c display.c log.c files.c fuzz.c report.c mangle.c util.c
+INTERCEPTOR_SRCS := $(wildcard interceptor/*.c)
 
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
 
-ARCH_SRCS := $(wildcard posix/*.c)
-ARCH = POSIX
-SDK =
-
 ifeq ($(OS),Linux)
-	ARCH = LINUX
-	CFLAGS +=  -D_FILE_OFFSET_BITS=64
-	LDFLAGS += -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt
-	ARCH_SRCS := $(wildcard linux/*.c)
+    ARCH := LINUX
+    ARCH_DSUFFIX := .so
+    CC ?= gcc
+    LD = $(CC)
+    ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
+                   -Wextra -Wno-initializer-overrides -Wno-override-init \
+                   -Wno-unknown-warning-option -funroll-loops -O2 \
+                   -D_FILE_OFFSET_BITS=64
+    ARCH_LDFLAGS := -lpthread -L/usr/local/include -L/usr/include \
+                    -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt
+    ARCH_SRCS := $(wildcard linux/*.c)
 
-	ifeq ("$(wildcard /usr/include/bfd.h)","")
-		WARN_LIBRARY += "binutils-devel "
-	endif
-	ifeq ("$(wildcard /usr/include/libunwind-ptrace.h)","")
-		WARN_LIBRARY += "libunwind-devel/libunwind8-devel "
-	endif
+    ifeq ("$(wildcard /usr/include/bfd.h)","")
+        WARN_LIBRARY += binutils-devel
+    endif
+    ifeq ("$(wildcard /usr/include/libunwind-ptrace.h)","")
+        WARN_LIBRARY += libunwind-devel/libunwind8-devel
+    endif
+    ifdef WARN_LIBRARY
+        $(info ***************************************************************)
+        $(info Development libraries which are most likely missing on your OS:)
+        $(info $(WARN_LIBRARY))
+        $(info ***************************************************************)
+    endif
 
-	ifeq ($(MARCH),x86_64)
-		# Support for popcnt (used in linux/perf.c)
-		CFLAGS += -msse4.2
-	endif	# MARCH
-	ifeq ($(MARCH),i386)
-		# Support for popcnt (used in linux/perf.c)
-		CFLAGS += -msse4.2
-	endif	# MARCH
-endif	# OS Linux
-
-ifeq ($(OS),Darwin)
-	OS_VERSION = $(shell sw_vers -productVersion)
-ifneq (,$(findstring 10.10,$(OS_VERSION)))
-	SDK_NAME = "macosx10.10"
-	CRASH_REPORT = third_party/CrashReport_Yosemite.o
-else ifneq (,$(findstring 10.9,$(OS_VERSION)))
-	SDK_NAME = "macosx10.9"
-	CRASH_REPORT = third_party/CrashReport_Mavericks.o
-else ifneq (,$(findstring 10.8,$(OS_VERSION)))
-	SDK_NAME = "macosx10.8"
-	CRASH_REPORT = third_party/CrashReport_Mountain_Lion.o
+    ifeq ($(MARCH),$(filter $(MARCH),x86_64 i386))
+        # Support for popcnt (used in linux/perf.c)
+        ARCH_CFLAGS += -msse4.2
+    endif       # MARCH
+    # OS Linux
+else ifeq ($(OS),Darwin)
+    ARCH := DARWIN
+    ARCH_DSUFFIX := .dylib
+    OS_VERSION := $(shell sw_vers -productVersion)
+    ifneq (,$(findstring 10.10,$(OS_VERSION)))
+        SDK_NAME := "macosx10.10"
+        CRASH_REPORT := third_party/CrashReport_Yosemite.o
+    else ifneq (,$(findstring 10.9,$(OS_VERSION)))
+        SDK_NAME := "macosx10.9"
+        CRASH_REPORT := third_party/CrashReport_Mavericks.o
+    else ifneq (,$(findstring 10.8,$(OS_VERSION)))
+        SDK_NAME := "macosx10.8"
+        CRASH_REPORT := third_party/CrashReport_Mountain_Lion.o
+    else
+        SDK_NAME := "macosx"
+        CRASH_REPORT :=
+    endif
+    SDK := $(shell xcrun --sdk $(SDK_NAME) --show-sdk-path 2>/dev/null)
+    ifeq (,$(findstring MacOSX.platform,$(SDK)))
+        XC_PATH := $(shell xcode-select -p)
+        $(error $(SDK_NAME) not found in $(XC_PATH))
+    endif
+    CC := $(shell xcrun --sdk $(SDK_NAME) --find cc)
+    LD := $(shell xcrun --sdk $(SDK_NAME) --find cc)
+    ARCH_CFLAGS := -arch x86_64 -O3 -std=c99 -isysroot $(SDK) -I. \
+                   -x objective-c -pedantic \
+                   -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
+                   -Wreturn-type -Wpointer-arith -Wno-gnu-case-range -Wno-gnu-designator \
+                   -Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-attributes
+    ARCH_LDFLAGS := -F/System/Library/PrivateFrameworks -framework CoreSymbolication -framework IOKit \
+                    -F$(SDK)/System/Library/Frameworks -F$(SDK)/System/Library/PrivateFrameworks \
+                    -framework Foundation -framework ApplicationServices -framework Symbolication \
+                    -framework CoreServices -framework CrashReporterSupport -framework CoreFoundation \
+                    -framework CommerceKit $(CRASH_REPORT)
+    MIG_RET := $(shell mig -header mac/mach_exc.h -user mac/mach_excUser.c -sheader mac/mach_excServer.h \
+                 -server mac/mach_excServer.c $(SDK)/usr/include/mach/mach_exc.defs &>/dev/null; echo $$?)
+    ifeq ($(MIG_RET),1)
+        $(error mig failed to generate RPC code)
+    endif
+    ARCH_SRCS := $(wildcard mac/*.c)
+    # OS Darwin
 else
-	SDK_NAME = "macosx"
-	CRASH_REPORT =
+    ARCH := POSIX
+    ARCH_DSUFFIX := .so
+    CC ?= gcc
+    LD = $(CC)
+    ARCH_SRCS := $(wildcard posix/*.c)
+    ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
+                   -Wextra -Wno-initializer-overrides -Wno-override-init \
+                   -Wno-unknown-warning-option -funroll-loops -O2
+    ARCH_LDFLAGS := -lpthread -L/usr/local/include -L/usr/include
+    # OS Posix
 endif
-	CC = $(shell xcrun --sdk $(SDK_NAME) --find cc)
-	SDK = $(shell xcrun --sdk $(SDK_NAME) --show-sdk-path)
-	CFLAGS = -arch x86_64 -O3 -std=c99 -isysroot $(SDK) -I. \
-	    -x objective-c \
-		-D_GNU_SOURCE \
-		-pedantic \
-		-Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
-		-Wreturn-type -Wpointer-arith -Wno-gnu-case-range -Wno-gnu-designator \
-		-Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-attributes
-	LD = $(shell xcrun --sdk $(SDK_NAME) --find cc)
-	LDFLAGS = -F/System/Library/PrivateFrameworks -framework CoreSymbolication -framework IOKit \
-		-F$(SDK)/System/Library/Frameworks -F$(SDK)/System/Library/PrivateFrameworks \
-		-framework Foundation -framework ApplicationServices -framework Symbolication \
-		-framework CoreServices -framework CrashReporterSupport -framework CoreFoundation \
-		-framework CommerceKit -lm
-	ARCH_SRCS = $(wildcard mac/*.c)
-	MIG_OUTPUT = mach_exc.h mach_excUser.c mach_excServer.h mach_excServer.c
-	MIG_OBJECTS = mach_excUser.o mach_excServer.o
-	ARCH = DARWIN
-endif	# OS Darwin
 
-SRCS += $(ARCH_SRCS)
-CFLAGS += -D_HF_ARCH_${ARCH}
-INTERCEPTOR_SRCS = $(wildcard interceptor/*.c)
-INTERCEPTOR_LIBS = $(INTERCEPTOR_SRCS:.c=.so)
+SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
+OBJS := $(SRCS:.c=.o)
+INTERCEPTOR_LIBS := $(INTERCEPTOR_SRCS:.c=$(ARCH_DSUFFIX))
+
+# Respect external user defines
+CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH}
+LDFLAGS += $(COMMON_LDFLAGS) $(ARCH_LDFLAGS)
 
 ifeq ($(DEBUG),true)
-	CFLAGS += -g -ggdb
+    CFLAGS += -g -ggdb
 endif
 
 # Control Android builds
@@ -113,10 +131,17 @@ ANDROID_APP_ABI       ?= armeabi-v7a
 ANDROID_API           ?= android-21
 NDK_BUILD_ARGS :=
 ifeq ($(ANDROID_DEBUG_ENABLED),true)
-	NDK_BUILD_ARGS += V=1 NDK_DEBUG=1 APP_OPTIM=debug
+    NDK_BUILD_ARGS += V=1 NDK_DEBUG=1 APP_OPTIM=debug
 endif
 
-all: warn_libs $(BIN) $(INTERCEPTOR_LIBS)
+SUBDIR_ROOTS := linux mac posix interceptor
+DIRS := . $(shell find $(SUBDIR_ROOTS) -type d)
+CLEAN_PATTERNS := *.o *~ core *.a *.dSYM *.la *.so *.dylib
+SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
+MAC_GARGBAGE := $(wildcard mac/mach_exc*)
+ANDROID_GARBAGE := obj libs
+
+all: $(BIN) $(INTERCEPTOR_LIBS)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
@@ -124,38 +149,28 @@ all: warn_libs $(BIN) $(INTERCEPTOR_LIBS)
 %.so: %.c
 	$(CC) -fPIC -shared $(CFLAGS) -o $@ $<
 
-warn_libs:
-ifdef WARN_LIBRARY
-	@/bin/echo -e "*********************************************************"
-	@/bin/echo -e "Development libraries which are most likely missing on your OS:"
-	@/bin/echo    "$(WARN_LIBRARY)"
-	@/bin/echo -e "*********************************************************"
-else
-endif
+%.dylib: %.c
+	$(CC) -fPIC -shared $(CFLAGS) -o $@ $<
 
-$(BIN): $(MIG_OBJECTS) $(OBJS)
-	$(LD) -o $(BIN) $(OBJS) $(MIG_OBJECTS) $(CRASH_REPORT) $(LDFLAGS)
+$(BIN): $(OBJS)
+	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
 
-$(MIG_OUTPUT): $(SDK)/usr/include/mach/mach_exc.defs
-	mig -header mach_exc.h -user mach_excUser.c -sheader mach_excServer.h -server mach_excServer.c $(SDK)/usr/include/mach/mach_exc.defs
-
-$(MIG_OBJECTS): $(MIG_OUTPUT)
-	$(CC) -c $(CFLAGS) mach_excUser.c
-	$(CC) -c $(CFLAGS) mach_excServer.c
-
+.PHONY: clean 
 clean:
-	$(RM) -r core $(OBJS) $(BIN) $(MIG_OUTPUT) $(MIG_OBJECTS) $(INTERCEPTOR_LIBS) obj libs
+	$(RM) -r core $(OBJS) $(BIN) $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
 
+.PHONY: indent 
 indent:
 	indent -linux -l100 -lc100 -nut -i4 *.c *.h */*.c */*.h; rm -f *~ */*~
 
+.PHONY: depend
 depend:
 	makedepend -Y. -Y* -- $(SRCS)
-	
-.PHONY:android
+
+.PHONY: android
 android:
 	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
-		APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) $(NDK_BUILD_ARGS)
+                  APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) $(NDK_BUILD_ARGS)
 
 
 # DO NOT DELETE
