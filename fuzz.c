@@ -357,7 +357,6 @@ static void *fuzz_threadNew(void *arg)
             __sync_fetch_and_add(&hfuzz->threadsFinished, 1UL);
             // Wake-up the main process
             pthread_kill(fuzz_mainThread, SIGALRM);
-            kill(getpid(), SIGALRM);
             return NULL;
         }
 
