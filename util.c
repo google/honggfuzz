@@ -84,8 +84,14 @@ uint64_t util_rndGet(uint64_t min, uint64_t max)
 
 void util_rndBuf(uint8_t * buf, size_t sz)
 {
-    for (size_t i = 0; i < sz; i++) {
-        buf[i] = (uint8_t) util_rndGet(0, 255);
+    if (util_urandomFd == -1) {
+        if ((util_urandomFd = open("/dev/urandom", O_RDONLY)) == -1) {
+            LOGMSG_P(l_FATAL, "Couldn't open /dev/urandom for writing");
+        }
+    }
+
+    if (files_readFromFd(util_urandomFd, buf, sz) == false) {
+        LOGMSG_P(l_FATAL, "Couldn't read '%zu' bytes from /dev/urandom", sz);
     }
 
     return;
