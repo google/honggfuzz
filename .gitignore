@@ -1,11 +1,12 @@
 *.o
 *.so
-honggfuzz
+*.dylib
 *.dSYM
-mach_exc.h
-mach_excUser.c
-mach_excServer.h
-mach_excServer.c
+honggfuzz
+mac/mach_exc.h
+mac/mach_excUser.c
+mac/mach_excServer.h
+mac/mach_excServer.c
 libs
 obj
 examples/targets/badcode1
