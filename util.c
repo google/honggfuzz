@@ -84,8 +84,14 @@ uint64_t util_rndGet(uint64_t min, uint64_t max)
 
 void util_rndBuf(uint8_t * buf, size_t sz)
 {
+    /* MMIX LCG PRNG */
+    static const uint64_t a = 6364136223846793005ULL;
+    static const uint64_t c = 1442695040888963407ULL;
+    uint64_t x = util_rndGet(0, 1ULL << 62);
+
     for (size_t i = 0; i < sz; i++) {
-        buf[i] = (uint8_t) util_rndGet(0, 255);
+        x = (a * x + c);
+        buf[i] = (uint8_t) (x & 0xFF);
     }
 
     return;
