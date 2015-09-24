@@ -330,9 +330,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     arch_removeTimer(&timerid);
     arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
-    if (childPid != ptracePid) {
-        arch_ptraceDetach(ptracePid);
-    }
+    arch_ptraceDetach(ptracePid);
     return;
 }
 

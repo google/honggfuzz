@@ -937,6 +937,11 @@ bool arch_ptraceAttach(pid_t pid)
 
 void arch_ptraceDetach(pid_t pid)
 {
+    if (kill(pid, 0) == -1 && errno == ESRCH) {
+        LOGMSG(l_DEBUG, "PID: %d no longer exists", pid);
+        return;
+    }
+
     int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
         LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", pid);
