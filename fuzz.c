@@ -66,6 +66,8 @@ pid_t honggfuzz_aarch64_fork(void)
 
 static int fuzz_sigReceived = 0;
 
+static pthread_t fuzz_mainThread;
+
 static void fuzz_sigHandler(int sig)
 {
     /* We should not terminate upon SIGALRM delivery */
@@ -354,6 +356,7 @@ static void *fuzz_threadNew(void *arg)
             && hfuzz->mutationsMax) {
             __sync_fetch_and_add(&hfuzz->threadsFinished, 1UL);
             // Wake-up the main process
+            pthread_kill(fuzz_mainThread, SIGALRM);
             kill(getpid(), SIGALRM);
             return NULL;
         }
@@ -394,6 +397,8 @@ bool fuzz_setupTimer(void)
 
 void fuzz_main(honggfuzz_t * hfuzz)
 {
+    fuzz_mainThread = pthread_self();
+
     struct sigaction sa = {
         .sa_handler = fuzz_sigHandler,
         .sa_flags = 0,
