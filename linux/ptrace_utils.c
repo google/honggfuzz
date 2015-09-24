@@ -929,7 +929,8 @@ bool arch_ptraceAttach(pid_t pid)
         LOGMSG(l_DEBUG, "Successfully attached to pid/tid: %d", tasks[i]);
     }
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
-        ptrace(PT_CONTINUE, tasks[i], NULL, NULL);
+        ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL);
+        ptrace(PTRACE_CONT, tasks[i], NULL, NULL);
     }
     return true;
 }
