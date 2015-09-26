@@ -333,23 +333,31 @@ static ssize_t honggfuzz_process_vm_readv(pid_t pid,
 
 /*  *INDENT-OFF* */
 struct {
-    bool important;
     const char *descr;
+    bool important;
+    bool stack_only;
 } arch_sigs[NSIG] = {
+    [0 ... (NSIG - 1)].stack_only = false,
     [0 ... (NSIG - 1)].important = false,
     [0 ... (NSIG - 1)].descr = "UNKNOWN",
 
     [SIGTRAP].important = false,
     [SIGTRAP].descr = "SIGTRAP",
+
     [SIGILL].important = true,
     [SIGILL].descr = "SIGILL",
+
     [SIGFPE].important = true,
     [SIGFPE].descr = "SIGFPE",
+
     [SIGSEGV].important = true,
     [SIGSEGV].descr = "SIGSEGV",
+
     [SIGBUS].important = true,
     [SIGBUS].descr = "SIGBUS",
+
     [SIGABRT].important = true,
+    [SIGABRT].stack_only = true,
     [SIGABRT].descr = "SIGABRT"
 };
 /*  *INDENT-ON* */
@@ -746,19 +754,25 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
      */
     arch_hashCallstack(fuzzer, funcs, funcCnt);
 
+    void *sig_addr = si.si_addr;
+    if (arch_sigs[si.si_signo].stack_only == true) {
+        pc = 0UL;
+        sig_addr = NULL;
+    }
+
     char newname[PATH_MAX];
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
                  "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
                  hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, fuzzer->backtrace,
-                 si.si_code, si.si_addr, instr, hfuzz->fileExtn);
+                 si.si_code, sig_addr, instr, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(newname, sizeof(newname),
                  "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
                  hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, fuzzer->backtrace,
-                 si.si_code, si.si_addr, instr, localtmstr, pid, hfuzz->fileExtn);
+                 si.si_code, sig_addr, instr, localtmstr, pid, hfuzz->fileExtn);
     }
 
     bool dstFileExists = false;
