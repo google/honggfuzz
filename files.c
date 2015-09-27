@@ -448,8 +448,8 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
         hfuzz->blacklistCnt += 1;
     }
 
-    if (hfuzz->blacklistCnt > 1) {
-        LOGMSG(l_INFO, "Loaded %zu stack hashes from the blacklist file", hfuzz->blacklistCnt);
+    if (hfuzz->blacklistCnt > 0) {
+        LOGMSG(l_INFO, "Loaded %zu stack hash(es) from the blacklist file", hfuzz->blacklistCnt);
     } else {
         LOGMSG(l_FATAL, "Empty stack hashes blacklist file '%s'", hfuzz->blacklistFile);
     }
