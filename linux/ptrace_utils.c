@@ -333,23 +333,31 @@ static ssize_t honggfuzz_process_vm_readv(pid_t pid,
 
 /*  *INDENT-OFF* */
 struct {
-    bool important;
     const char *descr;
+    bool important;
+    bool stack_only;
 } arch_sigs[NSIG] = {
+    [0 ... (NSIG - 1)].stack_only = false,
     [0 ... (NSIG - 1)].important = false,
     [0 ... (NSIG - 1)].descr = "UNKNOWN",
 
     [SIGTRAP].important = false,
     [SIGTRAP].descr = "SIGTRAP",
+
     [SIGILL].important = true,
     [SIGILL].descr = "SIGILL",
+
     [SIGFPE].important = true,
     [SIGFPE].descr = "SIGFPE",
+
     [SIGSEGV].important = true,
     [SIGSEGV].descr = "SIGSEGV",
+
     [SIGBUS].important = true,
     [SIGBUS].descr = "SIGBUS",
+
     [SIGABRT].important = true,
+    [SIGABRT].stack_only = true,
     [SIGABRT].descr = "SIGABRT"
 };
 /*  *INDENT-ON* */
@@ -756,19 +764,25 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
         return;
     }
 
+    void *sig_addr = si.si_addr;
+    if (arch_sigs[si.si_signo].stack_only == true || hfuzz->disableRandomization == false) {
+        pc = 0UL;
+        sig_addr = NULL;
+    }
+
     char newname[PATH_MAX];
     if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
                  "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
                  hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, fuzzer->backtrace,
-                 si.si_code, si.si_addr, instr, hfuzz->fileExtn);
+                 si.si_code, sig_addr, instr, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(newname, sizeof(newname),
                  "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
                  hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, fuzzer->backtrace,
-                 si.si_code, si.si_addr, instr, localtmstr, pid, hfuzz->fileExtn);
+                 si.si_code, sig_addr, instr, localtmstr, pid, hfuzz->fileExtn);
     }
 
     bool dstFileExists = false;
@@ -938,15 +952,20 @@ bool arch_ptraceAttach(pid_t pid)
         }
         LOGMSG(l_DEBUG, "Successfully attached to pid/tid: %d", tasks[i]);
     }
-    for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
-        ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL);
-        ptrace(PTRACE_CONT, tasks[i], NULL, NULL);
-    }
+    ptrace(PTRACE_INTERRUPT, pid, NULL, NULL);
+    int status;
+    while (wait4(pid, &status, __WALL, NULL) != pid) ;
+    ptrace(PTRACE_CONT, pid, NULL, NULL);
     return true;
 }
 
 void arch_ptraceDetach(pid_t pid)
 {
+    if (kill(pid, 0) == -1 && errno == ESRCH) {
+        LOGMSG(l_DEBUG, "PID: %d no longer exists", pid);
+        return;
+    }
+
     int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
         LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", pid);
@@ -956,7 +975,7 @@ void arch_ptraceDetach(pid_t pid)
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
         ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL);
         int status;
-        while (wait4(tasks[i], &status, __WALL, NULL) != pid) ;
+        while (wait4(tasks[i], &status, __WALL, NULL) != tasks[i]) ;
         ptrace(PTRACE_DETACH, tasks[i], NULL, NULL);
     }
 }
