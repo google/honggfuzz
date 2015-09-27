@@ -755,7 +755,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     arch_hashCallstack(fuzzer, funcs, funcCnt);
 
     void *sig_addr = si.si_addr;
-    if (arch_sigs[si.si_signo].stack_only == true) {
+    if (arch_sigs[si.si_signo].stack_only == true || hfuzz->disableRandomization == false) {
         pc = 0UL;
         sig_addr = NULL;
     }
