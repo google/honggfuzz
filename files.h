@@ -49,6 +49,6 @@ extern bool files_parseDictionary(honggfuzz_t * hfuzz);
 
 extern bool files_copyFile(const char *source, const char *destination, bool * dstExists);
 
-bool files_parseBlacklist(honggfuzz_t * hfuzz);
+extern bool files_parseBlacklist(honggfuzz_t * hfuzz);
 
 #endif
