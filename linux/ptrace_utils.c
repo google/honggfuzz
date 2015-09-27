@@ -665,12 +665,12 @@ static void arch_hashCallstack(fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCn
 
 static void
 arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCnt,
-                          siginfo_t * si, const char *instr, const char *crashName)
+                          siginfo_t * si, const char *instr)
 {
     fuzzer->report[0] = '\0';
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n",
                    fuzzer->origFileName);
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n", crashName);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n", fuzzer->crashFileName);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "PID: %d\n", pid);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "SIGNAL: %s (%d)\n",
                    arch_sigs[si->si_signo].descr, si->si_signo);
@@ -703,6 +703,31 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
 #endif
 
     return;
+}
+
+static void arch_ptraceAnalyzeData(pid_t pid, fuzzer_t * fuzzer)
+{ 
+    /*
+     * Unwind and resolve symbols
+     */
+    funcs_t funcs[_HF_MAX_FUNCS] = {
+        [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
+        [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
+        [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
+        ,
+    };
+
+#if !defined(__ANDROID__)
+    size_t funcCnt = arch_unwindStack(pid, funcs);
+    arch_bfdResolveSyms(pid, funcs, funcCnt);
+#else
+    size_t funcCnt = arch_unwindStack(pid, funcs);
+#endif
+
+    /*
+     * Calculate backtrace callstack hash signature
+     */
+    arch_hashCallstack(fuzzer, funcs, funcCnt);
 }
 
 static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
@@ -760,36 +785,39 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
         sig_addr = NULL;
     }
 
-    char newname[PATH_MAX];
     if (hfuzz->saveUnique) {
-        snprintf(newname, sizeof(newname),
+        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
                  "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
                  hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, fuzzer->backtrace,
                  si.si_code, sig_addr, instr, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
-        snprintf(newname, sizeof(newname),
+        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
                  "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
                  hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, fuzzer->backtrace,
                  si.si_code, sig_addr, instr, localtmstr, pid, hfuzz->fileExtn);
     }
 
     bool dstFileExists = false;
-    if (files_copyFile(fuzzer->fileName, newname, &dstFileExists)) {
-        LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, newname);
+    if (files_copyFile(fuzzer->fileName, fuzzer->crashFileName, &dstFileExists)) {
+        LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, fuzzer->crashFileName);
         __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
     } else {
         if (dstFileExists) {
-            LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", newname);
+            LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", fuzzer->crashFileName);
+
+            // Clear filename so that verifier can understand we hit a duplicate
+            memset(fuzzer->crashFileName, 0 , sizeof(fuzzer->crashFileName));
+
             // Don't bother unwinding & generating reports for duplicate crashes
             return;
         } else {
-            LOGMSG(l_ERROR, "Couldn't copy '%s' to '%s'", fuzzer->fileName, newname);
+            LOGMSG(l_ERROR, "Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
         }
     }
 
-    arch_ptraceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr, newname);
+    arch_ptraceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr);
 }
 
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)
@@ -839,7 +867,11 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
          * If it's an interesting signal, save the testcase
          */
         if (arch_sigs[WSTOPSIG(status)].important) {
-            arch_ptraceSaveData(hfuzz, pid, fuzzer);
+            if (fuzzer->isVerifier) {
+                arch_ptraceAnalyzeData(pid, fuzzer);
+            } else { 
+                arch_ptraceSaveData(hfuzz, pid, fuzzer);
+            }
 
             /* 
              * A kind of ugly (although necessary) hack due to custom signal handlers

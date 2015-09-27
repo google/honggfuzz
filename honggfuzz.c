@@ -66,6 +66,9 @@ static void usage(bool exit_success)
            "            current timestamp to the output filenames (default: " AB "false" AC ")\n"
            " [" AB "-v" AC "]     : display simple log messages on stdout instead of using ANSI\n"
            "            console (default: " AB "false" AC ")\n"
+#if defined(_HF_ARCH_LINUX)
+           " [" AB "-V" AC "]     : enable crashes verifier (default: " AB "false" AC ")\n"
+#endif
            " [" AB "-d val" AC "] : debug level (0 - FATAL ... 4 - DEBUG), (default: '" AB "3" AC
            "' [INFO])\n"
            " [" AB "-e val" AC "] : file extension (e.g. 'swf'), (default: '" AB "fuzz" AC "')\n"
@@ -141,6 +144,7 @@ int main(int argc, char **argv)
         .useScreen = true,
         .fuzzStdin = false,
         .saveUnique = false,
+        .useVerifier = false,
         .fileExtn = "fuzz",
         .workDir = ".",
         .flipRate = 0.001f,
@@ -189,7 +193,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "-?hqvsuf:d:e:W:r:c:F:D:t:a:R:n:N:l:p:g:o:E:w:L:");
+        c = getopt(argc, argv, "-?hqvVsuf:d:e:W:r:c:F:D:t:a:R:n:N:l:p:g:o:E:w:L:");
         if (c < 0)
             break;
 
@@ -212,6 +216,9 @@ int main(int argc, char **argv)
             break;
         case 'u':
             hfuzz.saveUnique = true;
+            break;
+        case 'V':
+            hfuzz.useVerifier = true;
             break;
         case 'd':
             ll = atoi(optarg);
