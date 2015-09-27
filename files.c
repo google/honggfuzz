@@ -409,6 +409,54 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
     return true;
 }
 
+bool files_parseBlacklist(honggfuzz_t * hfuzz)
+{
+    FILE *fBl = fopen(hfuzz->blacklistFile, "rb");
+    if (fBl == NULL) {
+        LOGMSG_P(l_ERROR, "Couldn't open '%s' - R/O mode", hfuzz->blacklistFile);
+        return false;
+    }
+
+    for (;;) {
+        char *lineptr = NULL;
+        size_t n = 0;
+        if (getline(&lineptr, &n, fBl) == -1) {
+            break;
+        }
+
+        if ((hfuzz->blacklist =
+             realloc(hfuzz->blacklist,
+                     (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]))) == NULL) {
+            LOGMSG_P(l_ERROR, "realloc failed (sz=%zu)",
+                     (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]));
+            fclose(fBl);
+            return false;
+        }
+
+        hfuzz->blacklist[hfuzz->blacklistCnt] = strtoull(lineptr, 0, 16);
+        LOGMSG(l_DEBUG, "Blacklist: loaded '%llu'", hfuzz->blacklist[hfuzz->blacklistCnt]);
+
+        // Verify entries are sorted so we can use interpolation search
+        if (hfuzz->blacklistCnt > 1) {
+            if (hfuzz->blacklist[hfuzz->blacklistCnt - 1] > hfuzz->blacklist[hfuzz->blacklistCnt]) {
+                LOGMSG(l_FATAL,
+                       "Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort records");
+                fclose(fBl);
+                return false;
+            }
+        }
+        hfuzz->blacklistCnt += 1;
+    }
+
+    if (hfuzz->blacklistCnt > 0) {
+        LOGMSG(l_INFO, "Loaded %zu stack hash(es) from the blacklist file", hfuzz->blacklistCnt);
+    } else {
+        LOGMSG(l_FATAL, "Empty stack hashes blacklist file '%s'", hfuzz->blacklistFile);
+    }
+    fclose(fBl);
+    return true;
+}
+
 uint8_t *files_mapFile(char *fileName, off_t * fileSz, int *fd, bool isWritable)
 {
     int mmapProt = PROT_READ;
