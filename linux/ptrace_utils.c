@@ -754,6 +754,16 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
      */
     arch_hashCallstack(fuzzer, funcs, funcCnt);
 
+    /* 
+     * Check if stackhash is blacklisted
+     */
+    if (hfuzz->blacklist
+        && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) != -1)) {
+        LOGMSG(l_INFO, "Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
+        __sync_fetch_and_add(&hfuzz->blCrashesCnt, 1UL);
+        return;
+    }
+
     void *sig_addr = si.si_addr;
     if (arch_sigs[si.si_signo].stack_only == true || hfuzz->disableRandomization == false) {
         pc = 0UL;

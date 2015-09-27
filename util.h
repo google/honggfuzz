@@ -55,4 +55,6 @@ extern uint32_t util_ToFromLE32(uint32_t val);
 extern void MX_LOCK(pthread_mutex_t * mutex);
 extern void MX_UNLOCK(pthread_mutex_t * mutex);
 
+extern int64_t fastArray64Search(uint64_t * array, size_t arraySz, uint64_t key);
+
 #endif

@@ -221,6 +221,16 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      */
     __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
 
+    /* 
+     * Check if stackhash is blacklisted
+     */
+    if (hfuzz->blacklist
+        && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) != -1)) {
+        LOGMSG(l_INFO, "Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
+        __sync_fetch_and_add(&hfuzz->blCrashesCnt, 1UL);
+        return true;
+    }
+
     bool dstFileExists = false;
     if (files_copyFile(fuzzer->fileName, newname, &dstFileExists)) {
         LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, newname);

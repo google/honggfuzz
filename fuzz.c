@@ -446,6 +446,12 @@ void fuzz_main(honggfuzz_t * hfuzz)
 
     free(hfuzz->files);
     free(hfuzz->dynamicFileBest);
+    if (hfuzz->dictionary) {
+        free(hfuzz->dictionary);
+    }
+    if (hfuzz->blacklist) {
+        free(hfuzz->blacklist);
+    }
 
     _exit(EXIT_SUCCESS);
 }

@@ -80,6 +80,9 @@ typedef struct {
     char *externalCommand;
     const char *dictionaryFile;
     const char **dictionary;
+    const char *blacklistFile;
+    uint64_t *blacklist;
+    size_t blacklistCnt;
     long tmOut;
     size_t dictionaryCnt;
     size_t mutationsMax;
@@ -98,6 +101,7 @@ typedef struct {
     size_t mutationsCnt;
     size_t crashesCnt;
     size_t uniqueCrashesCnt;
+    size_t blCrashesCnt;
     size_t timeoutedCnt;
 
     /* For the linux/ code */
