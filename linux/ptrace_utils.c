@@ -670,7 +670,8 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
     fuzzer->report[0] = '\0';
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n",
                    fuzzer->origFileName);
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n", fuzzer->crashFileName);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n",
+                   fuzzer->crashFileName);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "PID: %d\n", pid);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "SIGNAL: %s (%d)\n",
                    arch_sigs[si->si_signo].descr, si->si_signo);
@@ -706,7 +707,7 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
 }
 
 static void arch_ptraceAnalyzeData(pid_t pid, fuzzer_t * fuzzer)
-{ 
+{
     /*
      * Unwind and resolve symbols
      */
@@ -801,14 +802,15 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 
     bool dstFileExists = false;
     if (files_copyFile(fuzzer->fileName, fuzzer->crashFileName, &dstFileExists)) {
-        LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, fuzzer->crashFileName);
+        LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName,
+               fuzzer->crashFileName);
         __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
     } else {
         if (dstFileExists) {
             LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", fuzzer->crashFileName);
 
             // Clear filename so that verifier can understand we hit a duplicate
-            memset(fuzzer->crashFileName, 0 , sizeof(fuzzer->crashFileName));
+            memset(fuzzer->crashFileName, 0, sizeof(fuzzer->crashFileName));
 
             // Don't bother unwinding & generating reports for duplicate crashes
             return;
@@ -869,7 +871,7 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
         if (arch_sigs[WSTOPSIG(status)].important) {
             if (fuzzer->isVerifier) {
                 arch_ptraceAnalyzeData(pid, fuzzer);
-            } else { 
+            } else {
                 arch_ptraceSaveData(hfuzz, pid, fuzzer);
             }
 

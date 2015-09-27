@@ -409,7 +409,7 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
     return true;
 }
 
-uint8_t* files_mapFile(char * fileName, off_t * fileSz, int * fd, bool isWritable)
+uint8_t *files_mapFile(char *fileName, off_t * fileSz, int *fd, bool isWritable)
 {
     int mmapProt = PROT_READ;
     if (isWritable) {

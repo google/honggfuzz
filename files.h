@@ -49,5 +49,5 @@ extern bool files_parseDictionary(honggfuzz_t * hfuzz);
 
 extern bool files_copyFile(const char *source, const char *destination, bool * dstExists);
 
-extern uint8_t* files_mapFile(char * fileName, off_t * fileSz, int * fd, bool isWritable);
+extern uint8_t *files_mapFile(char *fileName, off_t * fileSz, int *fd, bool isWritable);
 #endif

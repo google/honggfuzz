@@ -245,7 +245,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         fuzzer_t vFuzzer = {
             .pid = 0,
             .timeStartedMillis = util_timeNowMillis(),
-            .crashFileName = { 0 },
+            .crashFileName = {0},
             .pc = 0ULL,
             .backtrace = 0ULL,
             .access = 0ULL,
@@ -285,7 +285,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         arch_reapChild(hfuzz, &vFuzzer);
         unlink(vFuzzer.fileName);
 
-        /* If stack hash doesn't match skip name tag and exit*/
+        /* If stack hash doesn't match skip name tag and exit */
         if (crashedFuzzer->backtrace != vFuzzer.backtrace) {
             LOGMSG(l_INFO, "Verifier stack hash mismatch");
         }
@@ -294,13 +294,13 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     /* Workspace is inherited, just append a extra suffix */
     char verFile[PATH_MAX] = { 0 };
     snprintf(verFile, sizeof(verFile), "%s.verified", crashedFuzzer->crashFileName);
-    
+
     int verFileFd = open(verFile, O_CREAT | O_EXCL | O_RDWR, 0644);
     if (verFileFd == -1) {
         LOGMSG_P(l_ERROR, "Couldn't create verified file '%s' in the current directory", verFile);
         goto bail;
     }
-    
+
     if (!files_writeToFd(verFileFd, crashBuf, crashFileSz)) {
         close(verFileFd);
         goto bail;
@@ -309,7 +309,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     LOGMSG(l_INFO, "Crash has been successfully verified (%s)", verFile);
     ret = true;
 
-bail:
+ bail:
     if (crashBuf) {
         munmap(crashBuf, crashFileSz);
     }
@@ -324,7 +324,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     fuzzer_t fuzzer = {
         .pid = 0,
         .timeStartedMillis = util_timeNowMillis(),
-        .crashFileName = { 0 },
+        .crashFileName = {0},
         .pc = 0ULL,
         .backtrace = 0ULL,
         .access = 0ULL,
