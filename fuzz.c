@@ -53,16 +53,22 @@
 #include "report.h"
 #include "util.h"
 
-#if defined(__ANDROID__) && !defined(__NR_fork)
+/*
+ * Priority: NR_fork -> NR_clone -> fork() from linked libc
+ * Non-Linux archs default to libc implementation
+ */
+#if defined(_HF_ARCH_LINUX)
 #include <sys/syscall.h>
-
-pid_t honggfuzz_aarch64_fork(void)
-{
-    return syscall(__NR_clone, SIGCHLD, 0, 0, 0);
-}
-
-#define fork honggfuzz_aarch64_fork
+#if defined(__NR_fork)
+#define hf_fork()   syscall(__NR_fork, SIGCHLD, 0, 0, 0)
+#elif defined(__NR_clone)
+#define hf_fork()   syscall(__NR_clone, SIGCHLD, 0, 0, 0)
+#else
+#define hf_fork()   fork()
 #endif
+#else                           /* defined(_HF_ARCH_LINUX) */
+#define hf_fork()   fork()
+#endif                          /* defined(_HF_ARCH_LINUX) */
 
 static int fuzz_sigReceived = 0;
 
@@ -183,9 +189,9 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, i
 
     close(dstfd);
 
-    pid_t pid = fork();
+    pid_t pid = hf_fork();
     if (pid == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't vfork");
+        LOGMSG_P(l_ERROR, "Couldn't fork");
         return false;
     }
 
@@ -263,14 +269,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         }
     }
 
-#if defined(_HF_ARCH_LINUX) && defined(__NR_fork)
-#include <unistd.h>
-#include <sys/syscall.h>
-    fuzzer.pid = syscall(__NR_fork);
-#else                           /* defined(_HF_ARCH_LINUX) */
-    fuzzer.pid = fork();
-#endif                          /* defined(_HF_ARCH_LINUX) */
-
+    fuzzer.pid = hf_fork();
     if (fuzzer.pid == -1) {
         LOGMSG_P(l_FATAL, "Couldn't fork");
         exit(EXIT_FAILURE);
