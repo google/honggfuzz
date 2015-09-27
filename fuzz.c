@@ -279,6 +279,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         if (!vFuzzer.pid) {
             if (!arch_launchChild(hfuzz, crashedFuzzer->crashFileName)) {
                 LOGMSG(l_ERROR, "Error launching minimizer child process");
+                goto bail;
             }
         }
 
@@ -306,7 +307,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         goto bail;
     }
 
-    LOGMSG(l_INFO, "Crash has been successfully verified (%s)", verFile);
+    LOGMSG(l_DEBUG, "Successfully verified, saving as (%s)", verFile);
     ret = true;
 
  bail:
@@ -437,7 +438,9 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     }
 
     if (hfuzz->useVerifier && (fuzzer.crashFileName[0] != 0)) {
-        fuzz_runVerifier(hfuzz, &fuzzer);
+        if (!fuzz_runVerifier(hfuzz, &fuzzer)) {
+            LOGMSG(l_INFO, "Failed to verify %s", fuzzer.crashFileName);
+        }
     }
 
     report_Report(hfuzz, fuzzer.report);
