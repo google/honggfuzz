@@ -933,6 +933,25 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
     return true;
 }
 
+static void arch_ptraceWaitForPid(pid_t pid)
+{
+    for (;;) {
+        int status;
+        pid_t ret = wait4(pid, &status, __WALL, NULL);
+        if (ret == -1 && errno == ESRCH) {
+            LOGMSG(l_WARN, "PID %d doesn't exist", pid);
+            return;
+        }
+        if (ret == -1 && errno == EINTR) {
+            continue;
+        }
+        if (ret == -1) {
+            LOGMSG(l_FATAL, "wait4(pid=%d) failed");
+            return;
+        }
+    }
+}
+
 #define MAX_THREAD_IN_TASK 4096
 bool arch_ptraceAttach(pid_t pid)
 {
@@ -953,8 +972,7 @@ bool arch_ptraceAttach(pid_t pid)
         LOGMSG(l_DEBUG, "Successfully attached to pid/tid: %d", tasks[i]);
     }
     ptrace(PTRACE_INTERRUPT, pid, NULL, NULL);
-    int status;
-    while (wait4(pid, &status, __WALL, NULL) != pid) ;
+    arch_ptraceWaitForPid(pid);
     ptrace(PTRACE_CONT, pid, NULL, NULL);
     return true;
 }
@@ -974,8 +992,7 @@ void arch_ptraceDetach(pid_t pid)
 
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
         ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL);
-        int status;
-        while (wait4(tasks[i], &status, __WALL, NULL) != tasks[i]) ;
+        arch_ptraceWaitForPid(pid);
         ptrace(PTRACE_DETACH, tasks[i], NULL, NULL);
     }
 }
