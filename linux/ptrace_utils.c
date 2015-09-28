@@ -949,6 +949,9 @@ static void arch_ptraceWaitForPid(pid_t pid)
             LOGMSG(l_FATAL, "wait4(pid=%d) failed");
             return;
         }
+        if (ret == pid) {
+            return;
+        }
     }
 }
 
