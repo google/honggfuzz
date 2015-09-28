@@ -59,31 +59,28 @@ static void usage(bool exit_success)
            "            (or a path to a single input file)\n"
            " [" AB "-h" AC "]     : this help\n"
            " [" AB "-q" AC "]     : null-ify children's stdin, stdout, stderr; make them quiet\n"
-           "            (default: " AB "false" AC ")\n"
-           " [" AB "-s" AC "]     : provide fuzzing input on STDIN, instead of a file argument\n"
-           "            (default: " AB "false" AC ")\n"
-           " [" AB "-u" AC "]     : save unique test-cases only, otherwise (if not used) append\n"
-           "            current timestamp to the output filenames (default: " AB "false" AC ")\n"
-           " [" AB "-v" AC "]     : display simple log messages on stdout instead of using ANSI\n"
-           "            console (default: " AB "false" AC ")\n"
+           " [" AB "-s" AC "]     : provide fuzzing input on STDIN, instead of ___FILE___\n"
+           " [" AB "-u" AC "]     : save all test-cases (not only the unique ones) by appending\n"
+           "            the current time-stamp to the filenames\n"
+           " [" AB "-v" AC "]     : disable ANSI console; use simple log output\n"
            " [" AB "-d val" AC "] : debug level (0 - FATAL ... 4 - DEBUG), (default: '" AB "3" AC
            "' [INFO])\n"
            " [" AB "-e val" AC "] : file extension (e.g. 'swf'), (default: '" AB "fuzz" AC "')\n"
            " [" AB "-W val" AC "] : Workspace directory to save crashes & runtime files\n"
            "            (default: current '.')\n"
-           " [" AB "-r val" AC "] : flip rate, (default: '" AB "0.001" AC "')\n"
-           " [" AB "-w val" AC "] : wordlist, (default: empty) [tokens delimited by NUL-bytes]\n"
+           " [" AB "-r val" AC "] : maximal flip rate, (default: '" AB "0.001" AC "')\n"
+           " [" AB "-w val" AC "] : wordlist file (tokens delimited by NUL-bytes)\n"
            " [" AB "-B val" AC "] : stackhashes blacklist file (one entry per line)\n"      
            " [" AB "-c val" AC "] : external command modifying the input corpus of files,\n"
            "            instead of -r/-m (default: " AB "none" AC ")\n"
-           " [" AB "-t val" AC "] : timeout (in secs), (default: '" AB "3" AC "' [0 - no timeout])\n"
+           " [" AB "-t val" AC "] : timeout (in secs), (default: '" AB "3" AC "') [0 - no timeout]\n"
            " [" AB "-a val" AC "] : address limit (from si.si_addr) below which crashes\n"
-           "            are not reported, (default: '" AB "0" AC "' [suggested: 65535])\n"
+           "            are not reported, (default: '" AB "0" AC "') [suggested: 65535]\n"
            " [" AB "-n val" AC "] : number of concurrent fuzzing threads, (default: '" AB "2" AC "')\n"
            " [" AB "-N val" AC "] : number of fuzzing mutations, (default: '" AB "0" AC "' [infinite])\n"
            " [" AB "-l val" AC "] : per process memory limit in MiB, (default: '" AB "0" AC "' [no limit])\n"
            " [" AB "-R val" AC "] : write report to this file, (default: '" AB _HF_REPORT_FILE AC "')\n"
-           " [" AB "-F val" AC "] : Maximal size of files created by the fuzzer (default '" AB "1048576" AC "')\n"
+           " [" AB "-F val" AC "] : Maximal size of files processed by the fuzzer (default '" AB "1048576" AC "')\n"
            " [" AB "-E val" AC "] : Pass this environment variable (default '" AB "empty" AC "')\n"
            "            can be used multiple times\n"
 #if defined(_HF_ARCH_LINUX)
@@ -91,10 +88,9 @@ static void usage(bool exit_success)
            "            monitoring a previously created process, (default: '" AB "0" AC "' [none])\n"
            " [" AB "-LR" AC "]    : [Linux] Don't disable ASLR randomization, might be useful with MSAN\n"
            " [" AB "-LU" AC "]    : [Linux] Report MSAN's UMRS (uninitialized memory access)\n"
-           " [" AB "-o val" AC "] : [Linux] cut-off address, don't record branches above that address\n"
-           " [" AB "-D val" AC "] : [Linux] create a file dynamically with Linux perf counters,\n"
+           " [" AB "-LC val" AC "]: [Linux] cut-off address, don't record branches above that address\n"
+           " [" AB "-LD val" AC "]: [Linux] create a file dynamically with Linux perf counters,\n"
            "            can be used with or without the '-f' flag (initial file contents)\n"
-           "            (default: " AB "none" AC ")\n"
            "            Available counters: \n"
            "               " AB "'i' " AC "- PERF_COUNT_HW_INSTRUCTIONS (total IPs)\n"
            "               " AB "'b' " AC "- PERF_COUNT_HW_BRANCH_INSTRUCTIONS (total jumps/calls)\n"
@@ -102,7 +98,7 @@ static void usage(bool exit_success)
            "                     (newer Intel CPUs only)\n"
            "               " AB "'e' " AC "- PERF_SAMPLE_IP/PERF_SAMPLE_ADDR (unique branch edges)\n"
            "                     (newer Intel CPUs only)\n"
-           "               " AB "'f' " AC "- Custom counter (see the interceptor/ directory for examples)\n"
+           "               " AB "'f' " AC "- Custom counter (see interceptor directory for examples)\n"
 #endif /* defined(_HF_ARCH_LINUX) */
            "\nExamples:\n"
            " Run the binary over a mutated file chosen from the directory:\n"
@@ -111,15 +107,15 @@ static void usage(bool exit_success)
            AB "  " PROG_NAME " -f input_dir -s -- /usr/bin/djpeg\n" AC
 #if defined(_HF_ARCH_LINUX)
            " Run the binary over a dynamic file, maximize total no. of instructions:\n"
-           AB "  " PROG_NAME " -Di -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+           AB "  " PROG_NAME " -LD i -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
            " Run the binary over a dynamic file, maximize total no. of branches:\n"
-           AB "  " PROG_NAME " -Db -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+           AB "  " PROG_NAME " -LD b -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
            " Run the binary over a dynamic file, maximize unique code blocks (coverage):\n"
-           AB "  " PROG_NAME " -Dp -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+           AB "  " PROG_NAME " -LD p -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
            " Run the binary over a dynamic file, maximize unique branches (edges):\n"
-           AB "  " PROG_NAME " -De -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+           AB "  " PROG_NAME " -LD e -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
            " Run the binary over a dynamic file, maximize custom counters (experimental):\n"
-           AB "  " PROG_NAME " -Df -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+           AB "  " PROG_NAME " -LD f -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
 #endif /* defined(_HF_ARCH_LINUX) */
           );
     /*  *INDENT-ON* */
@@ -141,7 +137,7 @@ int main(int argc, char **argv)
         .nullifyStdio = false,
         .useScreen = true,
         .fuzzStdin = false,
-        .saveUnique = false,
+        .saveUnique = true,
         .fileExtn = "fuzz",
         .workDir = ".",
         .flipRate = 0.001f,
@@ -194,7 +190,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "-?hqvsuf:d:e:W:r:c:F:D:t:a:R:n:N:l:p:g:o:E:w:B:L:");
+        c = getopt(argc, argv, "-?hqvsuf:d:e:W:r:c:F:t:a:R:n:N:l:p:g:E:w:B:L:");
         if (c < 0)
             break;
 
@@ -216,7 +212,7 @@ int main(int argc, char **argv)
             hfuzz.fuzzStdin = true;
             break;
         case 'u':
-            hfuzz.saveUnique = true;
+            hfuzz.saveUnique = false;
             break;
         case 'd':
             ll = atoi(optarg);
@@ -235,29 +231,6 @@ int main(int argc, char **argv)
             break;
         case 'F':
             hfuzz.maxFileSz = strtoul(optarg, NULL, 0);
-            break;
-        case 'D':
-            switch (optarg[0]) {
-            case 'i':
-                hfuzz.dynFileMethod |= _HF_DYNFILE_INSTR_COUNT;
-                break;
-            case 'b':
-                hfuzz.dynFileMethod |= _HF_DYNFILE_BRANCH_COUNT;
-                break;
-            case 'p':
-                hfuzz.dynFileMethod |= _HF_DYNFILE_UNIQUE_BLOCK_COUNT;
-                break;
-            case 'e':
-                hfuzz.dynFileMethod |= _HF_DYNFILE_UNIQUE_EDGE_COUNT;
-                break;
-            case 'f':
-                hfuzz.dynFileMethod |= _HF_DYNFILE_CUSTOM;
-                break;
-            default:
-                LOGMSG(l_ERROR, "Unknown -D mode");
-                usage(false);
-                break;
-            }
             break;
         case 't':
             hfuzz.tmOut = atol(optarg);
@@ -281,7 +254,6 @@ int main(int argc, char **argv)
             hfuzz.pid = atoi(optarg);
             break;
         case 'o':
-            hfuzz.dynamicCutOffAddr = strtoull(optarg, NULL, 0);
             break;
         case 'E':
             for (size_t i = 0; i < ARRAYSIZE(hfuzz.envs); i++) {
@@ -304,6 +276,33 @@ int main(int argc, char **argv)
                 break;
             case 'U':
                 hfuzz.msanReportUMRS = true;
+                break;
+            case 'C':
+                hfuzz.dynamicCutOffAddr = strtoull(optarg + 2, NULL, 0);
+                break;
+            case 'D':{
+                    switch (optarg[2]) {
+                    case 'i':
+                        hfuzz.dynFileMethod |= _HF_DYNFILE_INSTR_COUNT;
+                        break;
+                    case 'b':
+                        hfuzz.dynFileMethod |= _HF_DYNFILE_BRANCH_COUNT;
+                        break;
+                    case 'p':
+                        hfuzz.dynFileMethod |= _HF_DYNFILE_UNIQUE_BLOCK_COUNT;
+                        break;
+                    case 'e':
+                        hfuzz.dynFileMethod |= _HF_DYNFILE_UNIQUE_EDGE_COUNT;
+                        break;
+                    case 'f':
+                        hfuzz.dynFileMethod |= _HF_DYNFILE_CUSTOM;
+                        break;
+                    default:
+                        LOGMSG(l_ERROR, "Unknown -D mode '%c'", optarg[2]);
+                        usage(false);
+                        break;
+                    }
+                }
                 break;
             default:
                 LOGMSG(l_ERROR, "Unknown -L switch");
