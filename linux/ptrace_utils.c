@@ -992,7 +992,7 @@ void arch_ptraceDetach(pid_t pid)
 
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
         ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL);
-        arch_ptraceWaitForPid(pid);
+        arch_ptraceWaitForPid(tasks[i]);
         ptrace(PTRACE_DETACH, tasks[i], NULL, NULL);
     }
 }
