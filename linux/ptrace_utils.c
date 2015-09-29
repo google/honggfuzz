@@ -958,6 +958,18 @@ static void arch_ptraceWaitForPid(pid_t pid)
 #define MAX_THREAD_IN_TASK 4096
 bool arch_ptraceAttach(pid_t pid)
 {
+    static const long seize_options =
+        PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACEEXIT;
+
+    if (ptrace(PTRACE_SEIZE, pid, NULL, seize_options) == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_SEIZE) to pid: %d", pid);
+        return false;
+    }
+    if (ptrace(PTRACE_INTERRUPT, pid, NULL, NULL) == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_INTERRUPT) to pid: %d", pid);
+        return false;
+    }
+
     int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
         LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", pid);
@@ -965,17 +977,16 @@ bool arch_ptraceAttach(pid_t pid)
     }
 
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
-        if (ptrace
-            (PTRACE_SEIZE, tasks[i], NULL,
-             PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACEEXIT) ==
-            -1) {
+        if (tasks[i] == pid) {
+            continue;
+        }
+        if (ptrace(PTRACE_SEIZE, tasks[i], NULL, seize_options) == -1) {
             LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_SEIZE) to pid: %d", tasks[i]);
             return false;
         }
         LOGMSG(l_DEBUG, "Successfully attached to pid/tid: %d", tasks[i]);
     }
-    ptrace(PTRACE_INTERRUPT, pid, NULL, NULL);
-    arch_ptraceWaitForPid(pid);
+
     ptrace(PTRACE_CONT, pid, NULL, NULL);
     return true;
 }
