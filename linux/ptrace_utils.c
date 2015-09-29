@@ -984,13 +984,22 @@ bool arch_ptraceAttach(pid_t pid)
             continue;
         }
         if (ptrace(PTRACE_SEIZE, tasks[i], NULL, seize_options) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_SEIZE) to pid: %d", tasks[i]);
-            return false;
+            LOGMSG_P(l_WARN, "Couldn't ptrace(PTRACE_SEIZE) to pid: %d", tasks[i]);
+            continue;
         }
-        LOGMSG(l_DEBUG, "Successfully attached to pid/tid: %d", tasks[i]);
+        if (ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL) == -1) {
+            LOGMSG_P(l_WARN, "Couldn't ptrace(PTRACE_INTERRUPT) to pid: %d", tasks[i]);
+            continue;
+        }
+        arch_ptraceWaitForPid(tasks[i]);
+        ptrace(PTRACE_CONT, tasks[i], NULL, NULL);
     }
 
-    ptrace(PTRACE_CONT, pid, NULL, NULL);
+    if (ptrace(PTRACE_CONT, pid, NULL, NULL) == -1) {
+        LOGMSG_P(l_WARN, "Couldn't ptrace(PTRACE_CONT) to pid: %d", pid);
+        return false;
+    }
+
     return true;
 }
 
