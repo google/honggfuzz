@@ -937,7 +937,7 @@ static void arch_ptraceWaitForPid(pid_t pid)
 {
     for (;;) {
         int status;
-        pid_t ret = wait4(pid, &status, __WALL, NULL);
+        pid_t ret = wait4(pid, &status, __WALL | WUNTRACED, NULL);
         if (ret == -1 && errno == ESRCH) {
             LOGMSG(l_WARN, "PID %d doesn't exist", pid);
             return;
@@ -969,6 +969,7 @@ bool arch_ptraceAttach(pid_t pid)
         LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_INTERRUPT) to pid: %d", pid);
         return false;
     }
+    arch_ptraceWaitForPid(pid);
 
     int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
@@ -998,6 +999,12 @@ void arch_ptraceDetach(pid_t pid)
         return;
     }
 
+    if (ptrace(PTRACE_INTERRUPT, pid, NULL, NULL) == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_INTERRUPT) to pid: %d", pid);
+        return;
+    }
+    arch_ptraceWaitForPid(pid);
+
     int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
         LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", pid);
@@ -1005,8 +1012,14 @@ void arch_ptraceDetach(pid_t pid)
     }
 
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
+        // Detach the main PID at the end
+        if (pid == tasks[i]) {
+            continue;
+        }
         ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL);
         arch_ptraceWaitForPid(tasks[i]);
         ptrace(PTRACE_DETACH, tasks[i], NULL, NULL);
     }
+
+    ptrace(PTRACE_DETACH, pid, NULL, NULL);
 }
