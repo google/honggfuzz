@@ -805,24 +805,26 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)
 static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status, pid_t pid)
 {
-    unsigned long event_msg;
-    if (ptrace(PTRACE_GETEVENTMSG, pid, NULL, &event_msg) == -1) {
-        LOGMSG(l_ERROR, "ptrace(PTRACE_GETEVENTMSG,%d) failed", pid);
-        return;
-    }
-
-    LOGMSG(l_DEBUG, "PID: %d, Ptrace event: %d, event_msg: %ld", pid, __WEVENT(status), event_msg);
+    LOGMSG(l_DEBUG, "PID: %d, Ptrace event: %d", pid, __WEVENT(status));
     switch (__WEVENT(status)) {
     case PTRACE_EVENT_EXIT:
-        if (WIFEXITED(event_msg)) {
-            LOGMSG(l_DEBUG, "PID: %d exited with exit_code: %d", pid, WEXITSTATUS(event_msg));
-            if (WEXITSTATUS(event_msg) == HF_MSAN_EXIT_CODE) {
-                arch_ptraceSaveData(hfuzz, pid, fuzzer);
+        {
+            unsigned long event_msg;
+            if (ptrace(PTRACE_GETEVENTMSG, pid, NULL, &event_msg) == -1) {
+                LOGMSG(l_ERROR, "ptrace(PTRACE_GETEVENTMSG,%d) failed", pid);
+                return;
             }
-        } else if (WIFSIGNALED(event_msg)) {
-            LOGMSG(l_DEBUG, "PID: %d terminated with signal: %d", pid, WTERMSIG(event_msg));
-        } else {
-            LOGMSG(l_DEBUG, "PID: %d exited with unknown status: %ld", pid, event_msg);
+
+            if (WIFEXITED(event_msg)) {
+                LOGMSG(l_DEBUG, "PID: %d exited with exit_code: %d", pid, WEXITSTATUS(event_msg));
+                if (WEXITSTATUS(event_msg) == HF_MSAN_EXIT_CODE) {
+                    arch_ptraceSaveData(hfuzz, pid, fuzzer);
+                }
+            } else if (WIFSIGNALED(event_msg)) {
+                LOGMSG(l_DEBUG, "PID: %d terminated with signal: %d", pid, WTERMSIG(event_msg));
+            } else {
+                LOGMSG(l_DEBUG, "PID: %d exited with unknown status: %ld", pid, event_msg);
+            }
         }
         break;
     default:
