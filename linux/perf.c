@@ -255,7 +255,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
     if (*perfFd == -1) {
         if (method == _HF_DYNFILE_UNIQUE_BLOCK_COUNT || method == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
             LOGMSG(l_ERROR,
-                   "-Dp/-De mode (sample IP/jump) requires LBR/BTS, which present in Intel Haswell "
+                   "'-LD p'/'-LD e' mode (sample IP/jump) requires LBR/BTS, which present in Intel Haswell "
                    "and newer CPUs (i.e. not in AMD CPUs)");
         }
         LOGMSG_P(l_FATAL, "perf_event_open() failed");

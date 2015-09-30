@@ -835,24 +835,26 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)
 static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status, pid_t pid)
 {
-    unsigned long event_msg;
-    if (ptrace(PTRACE_GETEVENTMSG, pid, NULL, &event_msg) == -1) {
-        LOGMSG(l_ERROR, "ptrace(PTRACE_GETEVENTMSG,%d) failed", pid);
-        return;
-    }
-
-    LOGMSG(l_DEBUG, "PID: %d, Ptrace event: %d, event_msg: %ld", pid, __WEVENT(status), event_msg);
+    LOGMSG(l_DEBUG, "PID: %d, Ptrace event: %d", pid, __WEVENT(status));
     switch (__WEVENT(status)) {
     case PTRACE_EVENT_EXIT:
-        if (WIFEXITED(event_msg)) {
-            LOGMSG(l_DEBUG, "PID: %d exited with exit_code: %d", pid, WEXITSTATUS(event_msg));
-            if (WEXITSTATUS(event_msg) == HF_MSAN_EXIT_CODE) {
-                arch_ptraceSaveData(hfuzz, pid, fuzzer);
+        {
+            unsigned long event_msg;
+            if (ptrace(PTRACE_GETEVENTMSG, pid, NULL, &event_msg) == -1) {
+                LOGMSG(l_ERROR, "ptrace(PTRACE_GETEVENTMSG,%d) failed", pid);
+                return;
             }
-        } else if (WIFSIGNALED(event_msg)) {
-            LOGMSG(l_DEBUG, "PID: %d terminated with signal: %d", pid, WTERMSIG(event_msg));
-        } else {
-            LOGMSG(l_DEBUG, "PID: %d exited with unknown status: %ld", pid, event_msg);
+
+            if (WIFEXITED(event_msg)) {
+                LOGMSG(l_DEBUG, "PID: %d exited with exit_code: %d", pid, WEXITSTATUS(event_msg));
+                if (WEXITSTATUS(event_msg) == HF_MSAN_EXIT_CODE) {
+                    arch_ptraceSaveData(hfuzz, pid, fuzzer);
+                }
+            } else if (WIFSIGNALED(event_msg)) {
+                LOGMSG(l_DEBUG, "PID: %d terminated with signal: %d", pid, WTERMSIG(event_msg));
+            } else {
+                LOGMSG(l_DEBUG, "PID: %d exited with unknown status: %ld", pid, event_msg);
+            }
         }
         break;
     default:
@@ -967,9 +969,44 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
     return true;
 }
 
+static void arch_ptraceWaitForPid(pid_t pid)
+{
+    for (;;) {
+        int status;
+        pid_t ret = wait4(pid, &status, __WALL | WUNTRACED, NULL);
+        if (ret == -1 && errno == ESRCH) {
+            LOGMSG(l_WARN, "PID %d doesn't exist", pid);
+            return;
+        }
+        if (ret == -1 && errno == EINTR) {
+            continue;
+        }
+        if (ret == -1) {
+            LOGMSG(l_FATAL, "wait4(pid=%d) failed");
+            return;
+        }
+        if (ret == pid) {
+            return;
+        }
+    }
+}
+
 #define MAX_THREAD_IN_TASK 4096
 bool arch_ptraceAttach(pid_t pid)
 {
+    static const long seize_options =
+        PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACEEXIT;
+
+    if (ptrace(PTRACE_SEIZE, pid, NULL, seize_options) == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_SEIZE) to pid: %d", pid);
+        return false;
+    }
+    if (ptrace(PTRACE_INTERRUPT, pid, NULL, NULL) == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_INTERRUPT) to pid: %d", pid);
+        return false;
+    }
+    arch_ptraceWaitForPid(pid);
+
     int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
         LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", pid);
@@ -977,19 +1014,26 @@ bool arch_ptraceAttach(pid_t pid)
     }
 
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
-        if (ptrace
-            (PTRACE_SEIZE, tasks[i], NULL,
-             PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACEEXIT) ==
-            -1) {
-            LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_SEIZE) to pid: %d", tasks[i]);
-            return false;
+        if (tasks[i] == pid) {
+            continue;
         }
-        LOGMSG(l_DEBUG, "Successfully attached to pid/tid: %d", tasks[i]);
+        if (ptrace(PTRACE_SEIZE, tasks[i], NULL, seize_options) == -1) {
+            LOGMSG_P(l_WARN, "Couldn't ptrace(PTRACE_SEIZE) to pid: %d", tasks[i]);
+            continue;
+        }
+        if (ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL) == -1) {
+            LOGMSG_P(l_WARN, "Couldn't ptrace(PTRACE_INTERRUPT) to pid: %d", tasks[i]);
+            continue;
+        }
+        arch_ptraceWaitForPid(tasks[i]);
+        ptrace(PTRACE_CONT, tasks[i], NULL, NULL);
     }
-    ptrace(PTRACE_INTERRUPT, pid, NULL, NULL);
-    int status;
-    while (wait4(pid, &status, __WALL, NULL) != pid) ;
-    ptrace(PTRACE_CONT, pid, NULL, NULL);
+
+    if (ptrace(PTRACE_CONT, pid, NULL, NULL) == -1) {
+        LOGMSG_P(l_WARN, "Couldn't ptrace(PTRACE_CONT) to pid: %d", pid);
+        return false;
+    }
+
     return true;
 }
 
@@ -1000,6 +1044,12 @@ void arch_ptraceDetach(pid_t pid)
         return;
     }
 
+    if (ptrace(PTRACE_INTERRUPT, pid, NULL, NULL) == -1) {
+        LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_INTERRUPT) to pid: %d", pid);
+        return;
+    }
+    arch_ptraceWaitForPid(pid);
+
     int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
         LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", pid);
@@ -1007,9 +1057,14 @@ void arch_ptraceDetach(pid_t pid)
     }
 
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
+        // Detach the main PID at the end
+        if (pid == tasks[i]) {
+            continue;
+        }
         ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL);
-        int status;
-        while (wait4(tasks[i], &status, __WALL, NULL) != tasks[i]) ;
+        arch_ptraceWaitForPid(tasks[i]);
         ptrace(PTRACE_DETACH, tasks[i], NULL, NULL);
     }
+
+    ptrace(PTRACE_DETACH, pid, NULL, NULL);
 }
