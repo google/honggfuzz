@@ -278,7 +278,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
 
         if (!vFuzzer.pid) {
             if (!arch_launchChild(hfuzz, crashedFuzzer->crashFileName)) {
-                LOGMSG(l_ERROR, "Error launching minimizer child process");
+                LOGMSG(l_ERROR, "Error launching verifier child process");
                 goto bail;
             }
         }
