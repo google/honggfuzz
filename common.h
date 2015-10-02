@@ -130,7 +130,7 @@ typedef struct fuzzer_t {
     uint64_t access;
     int exception;
     char report[8192];
-    bool isVerifier;
+    bool mainWorker;
 
     /* For linux/ code */
     uint8_t *dynamicFile;

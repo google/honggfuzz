@@ -881,10 +881,14 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
          * If it's an interesting signal, save the testcase
          */
         if (arch_sigs[WSTOPSIG(status)].important) {
-            if (fuzzer->isVerifier) {
-                arch_ptraceAnalyzeData(pid, fuzzer);
-            } else {
+            /*
+             * If fuzzer worker is from core fuzzing process run full
+             * analysis. Otherwise just unwind and get stack hash signature.
+             */
+            if (fuzzer->mainWorker) {
                 arch_ptraceSaveData(hfuzz, pid, fuzzer);
+            } else {
+                arch_ptraceAnalyzeData(pid, fuzzer);
             }
 
             /* 

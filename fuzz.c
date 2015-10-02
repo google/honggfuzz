@@ -260,7 +260,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                        .customCnt = 0ULL,
                        },
             .report = {'\0'},
-            .isVerifier = true
+            .mainWorker = false
         };
 
         fuzz_getFileName(hfuzz, vFuzzer.fileName);
@@ -289,6 +289,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         /* If stack hash doesn't match skip name tag and exit */
         if (crashedFuzzer->backtrace != vFuzzer.backtrace) {
             LOGMSG(l_INFO, "Verifier stack hash mismatch");
+            goto bail;
         }
     }
 
@@ -340,7 +341,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
                    .customCnt = 0ULL,
                    },
         .report = {'\0'},
-        .isVerifier = false
+        .mainWorker = true
     };
     if (fuzzer.dynamicFile == NULL) {
         LOGMSG(l_FATAL, "malloc(%zu) failed", hfuzz->maxFileSz);
