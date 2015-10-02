@@ -292,9 +292,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 #else
         pid_t pid = wait4(-1, &status, __WNOTHREAD | __WALL, NULL);
 #endif
-
-        LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
-
         if (pid == -1 && errno == EINTR) {
             if (hfuzz->tmOut) {
                 arch_checkTimeLimit(hfuzz, fuzzer);
@@ -312,6 +309,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             LOGMSG_P(l_FATAL, "wait4() failed");
 #endif
         }
+        LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
 
         arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->hwCnts.customCnt);
 
