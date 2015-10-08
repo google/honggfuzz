@@ -85,11 +85,6 @@ void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int 
              const char *fmt, ...)
 {
     char msg[8192] = { "\0" };
-
-    if (dl == l_FATAL) {
-        exit(EXIT_FAILURE);
-    }
-
     char strerr[512];
     if (perr) {
         snprintf(strerr, sizeof(strerr), "%s", strerror(errno));
