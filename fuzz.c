@@ -252,14 +252,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         }
     }
 
-#if defined(_HF_ARCH_LINUX)
-#include <unistd.h>
-#include <sys/syscall.h>
-    fuzzer.pid = syscall(__NR_clone, 0, NULL, NULL, NULL, 0);
-#else                           /* defined(_HF_ARCH_LINUX) */
-    fuzzer.pid = fork();
-#endif                          /* defined(_HF_ARCH_LINUX) */
-
+    fuzzer.pid = arch_fork(hfuzz);
     if (fuzzer.pid == -1) {
         LOGMSG_P(l_FATAL, "Couldn't fork");
         exit(EXIT_FAILURE);

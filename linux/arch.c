@@ -51,6 +51,19 @@
 #include "log.h"
 #include "util.h"
 
+pid_t arch_fork(honggfuzz_t * hfuzz)
+{
+    /*
+     * We need to wait for the child to finish with wait() in case we're fuzzing
+     * an external process
+     */
+    uintptr_t clone_flags = 0;
+    if (hfuzz->pid) {
+        clone_flags = SIGCHLD;
+    }
+    return syscall(__NR_clone, clone_flags, NULL, NULL, NULL, 0);
+}
+
 bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 {
     /*

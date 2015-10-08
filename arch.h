@@ -28,6 +28,8 @@ extern bool arch_launchChild(honggfuzz_t * fuzz, char *fileName);
 
 extern bool arch_archInit(honggfuzz_t * fuzz);
 
+extern pid_t arch_fork(honggfuzz_t * fuzz);
+
 extern void arch_reapChild(honggfuzz_t * fuzz, fuzzer_t * fuzzer);
 
 #endif
