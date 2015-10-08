@@ -66,6 +66,11 @@ void log_setMinLevel(log_level_t dl)
     log_minLevel = dl;
 }
 
+log_level_t log_getMinLevel(void)
+{
+    return log_minLevel;
+}
+
 void log_mutexLock(void)
 {
     while (pthread_mutex_lock(&log_mutex)) ;
@@ -81,11 +86,8 @@ void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int 
 {
     char msg[8192] = { "\0" };
 
-    if (dl > log_minLevel) {
-        if (dl == l_FATAL) {
-            exit(EXIT_FAILURE);
-        }
-        return;
+    if (dl == l_FATAL) {
+        exit(EXIT_FAILURE);
     }
 
     char strerr[512];
