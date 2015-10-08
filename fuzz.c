@@ -423,7 +423,8 @@ void fuzz_main(honggfuzz_t * hfuzz)
     }
 
     if (fuzz_sigReceived > 0) {
-        LOGMSG(l_INFO, "Signal %d received, terminating", fuzz_sigReceived);
+        LOGMSG(l_INFO, "Signal %d (%s) received, terminating", fuzz_sigReceived,
+               strsignal(fuzz_sigReceived));
     }
 
     free(hfuzz->files);
