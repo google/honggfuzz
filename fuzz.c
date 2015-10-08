@@ -53,23 +53,6 @@
 #include "report.h"
 #include "util.h"
 
-/*
- * Priority: NR_fork -> NR_clone -> fork() from linked libc
- * Non-Linux archs default to libc implementation
- */
-#if defined(_HF_ARCH_LINUX)
-#include <sys/syscall.h>
-#if defined(__NR_fork)
-#define hf_fork()   syscall(__NR_fork, SIGCHLD, 0, 0, 0)
-#elif defined(__NR_clone)
-#define hf_fork()   syscall(__NR_clone, SIGCHLD, 0, 0, 0)
-#else
-#define hf_fork()   fork()
-#endif
-#else                           /* defined(_HF_ARCH_LINUX) */
-#define hf_fork()   fork()
-#endif                          /* defined(_HF_ARCH_LINUX) */
-
 static int fuzz_sigReceived = 0;
 
 static pthread_t fuzz_mainThread;
@@ -189,7 +172,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, i
 
     close(dstfd);
 
-    pid_t pid = hf_fork();
+    pid_t pid = arch_fork(hfuzz);
     if (pid == -1) {
         LOGMSG_P(l_ERROR, "Couldn't fork");
         return false;
@@ -270,7 +253,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             goto bail;
         }
 
-        vFuzzer.pid = hf_fork();
+        vFuzzer.pid = arch_fork(hfuzz);
         if (vFuzzer.pid == -1) {
             LOGMSG_P(l_FATAL, "Couldn't fork");
             return false;
@@ -365,7 +348,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         }
     }
 
-    fuzzer.pid = hf_fork();
+    fuzzer.pid = arch_fork(hfuzz);
     if (fuzzer.pid == -1) {
         LOGMSG_P(l_FATAL, "Couldn't fork");
         exit(EXIT_FAILURE);
@@ -542,7 +525,8 @@ void fuzz_main(honggfuzz_t * hfuzz)
     }
 
     if (fuzz_sigReceived > 0) {
-        LOGMSG(l_INFO, "Signal %d received, terminating", fuzz_sigReceived);
+        LOGMSG(l_INFO, "Signal %d (%s) received, terminating", fuzz_sigReceived,
+               strsignal(fuzz_sigReceived));
     }
 
     free(hfuzz->files);
