@@ -62,19 +62,23 @@ ifeq ($(OS),Linux)
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
     ARCH_DSUFFIX := .dylib
+    CRASHWRANGLER := third_party/mac
     OS_VERSION := $(shell sw_vers -productVersion)
-    ifneq (,$(findstring 10.10,$(OS_VERSION)))
+    ifneq (,$(findstring 10.11,$(OS_VERSION)))
+        # El Capitan didn't break compatibility 
+        SDK_NAME := "macosx10.11"
+        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
+    else ifneq (,$(findstring 10.10,$(OS_VERSION)))
         SDK_NAME := "macosx10.10"
-        CRASH_REPORT := third_party/CrashReport_Yosemite.o
+        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
     else ifneq (,$(findstring 10.9,$(OS_VERSION)))
         SDK_NAME := "macosx10.9"
-        CRASH_REPORT := third_party/CrashReport_Mavericks.o
+        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mavericks.o
     else ifneq (,$(findstring 10.8,$(OS_VERSION)))
         SDK_NAME := "macosx10.8"
-        CRASH_REPORT := third_party/CrashReport_Mountain_Lion.o
+        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mountain_Lion.o
     else
-        SDK_NAME := "macosx"
-        CRASH_REPORT :=
+        $(error Unsupported MAC OS X version)
     endif
     SDK := $(shell xcrun --sdk $(SDK_NAME) --show-sdk-path 2>/dev/null)
     ifeq (,$(findstring MacOSX.platform,$(SDK)))
