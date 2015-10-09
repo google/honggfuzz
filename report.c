@@ -83,7 +83,7 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
 
         reportFD = open(reportFName, O_WRONLY | O_CREAT | O_APPEND, 0644);
         if (reportFD == -1) {
-            LOGMSG_P(l_FATAL, "Couldn't open('%s') for writing", reportFName);
+            PLOG_F("Couldn't open('%s') for writing", reportFName);
         }
     }
 

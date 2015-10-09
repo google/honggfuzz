@@ -286,7 +286,7 @@ static void mangle_AddSub(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz, size
         }
     default:
         {
-            LOGMSG(l_FATAL, "Unknown variable length size: %" PRId64, varLen);
+            LOG_F("Unknown variable length size: %" PRId64, varLen);
             break;
         }
     }
@@ -409,7 +409,7 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t * buf, size_t * bufSz)
         delta -= (int)(mangle_ExpDist() * (double)(*bufSz));
         break;
     default:
-        LOGMSG(l_FATAL, "Random value out of scope %u", val);
+        LOG_F("Random value out of scope %u", val);
         break;
     }
 
@@ -426,8 +426,8 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t * buf, size_t * bufSz)
         util_rndBuf(&buf[*bufSz], newSz - *bufSz);
     }
 
-    LOGMSG(l_DEBUG, "Current size: %zu, Maximal size: %zu, New Size: %zu, Delta: %d", *bufSz,
-           hfuzz->maxFileSz, newSz, delta);
+    LOG_D("Current size: %zu, Maximal size: %zu, New Size: %zu, Delta: %d", *bufSz,
+          hfuzz->maxFileSz, newSz, delta);
 
     *bufSz = (size_t) newSz;
     return true;

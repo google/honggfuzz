@@ -22,6 +22,7 @@
  */
 
 #include <fcntl.h>
+#include <inttypes.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -57,18 +58,18 @@ static __thread uint64_t rndIni = false;
 uint64_t util_rndGet(uint64_t min, uint64_t max)
 {
     if (min > max) {
-        LOGMSG(l_FATAL, "min:%d > max:%d", min, max);
+        LOG_F("min:%" PRId64 " > max:%" PRId64, min, max);
     }
 
     if (util_urandomFd == -1) {
         if ((util_urandomFd = open("/dev/urandom", O_RDONLY)) == -1) {
-            LOGMSG_P(l_FATAL, "Couldn't open /dev/urandom for writing");
+            PLOG_F("Couldn't open /dev/urandom for writing");
         }
     }
 
     if (rndIni == false) {
         if (files_readFromFd(util_urandomFd, (uint8_t *) & rndX, sizeof(rndX)) == false) {
-            LOGMSG_P(l_FATAL, "Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndX));
+            PLOG_F("Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndX));
         }
         rndIni = true;
     }
@@ -138,7 +139,7 @@ void util_nullifyStdio(void)
     int fd = open("/dev/null", O_RDWR);
 
     if (fd == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't open '/dev/null'");
+        PLOG_E("Couldn't open '/dev/null'");
         return;
     }
 
@@ -158,7 +159,7 @@ bool util_redirectStdin(char *inputFile)
     int fd = open(inputFile, O_RDONLY);
 
     if (fd == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't open '%s'", inputFile);
+        PLOG_E("Couldn't open '%s'", inputFile);
         return false;
     }
 
@@ -175,7 +176,7 @@ void util_recoverStdio(void)
     int fd = open("/dev/tty", O_RDWR);
 
     if (fd == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't open '/dev/tty'");
+        PLOG_E("Couldn't open '/dev/tty'");
         return;
     }
 
@@ -184,7 +185,7 @@ void util_recoverStdio(void)
     dup2(fd, 2);
 
     if (tcsetpgrp(fd, getpid()) == -1) {
-        LOGMSG_P(l_WARN, "tcsetpgrp(%d) failed", getpid());
+        PLOG_W("tcsetpgrp(%d) failed", getpid());
     }
 
     if (fd > 2) {
@@ -213,7 +214,7 @@ extern int64_t util_timeNowMillis(void)
 {
     struct timeval tv;
     if (gettimeofday(&tv, NULL) == -1) {
-        LOGMSG_P(l_FATAL, "gettimeofday()");
+        PLOG_F("gettimeofday()");
     }
 
     return (((int64_t) tv.tv_sec * 1000LL) + ((int64_t) tv.tv_usec / 1000LL));
@@ -266,14 +267,14 @@ extern uint32_t util_ToFromLE32(uint32_t val)
 extern void MX_LOCK(pthread_mutex_t * mutex)
 {
     if (pthread_mutex_lock(mutex)) {
-        LOGMSG_P(l_FATAL, "pthread_mutex_lock(%p)", mutex);
+        PLOG_F("pthread_mutex_lock(%p)", mutex);
     }
 }
 
 extern void MX_UNLOCK(pthread_mutex_t * mutex)
 {
     if (pthread_mutex_unlock(mutex)) {
-        LOGMSG_P(l_FATAL, "pthread_mutex_unlock(%p)", mutex);
+        PLOG_F("pthread_mutex_unlock(%p)", mutex);
     }
 }
 

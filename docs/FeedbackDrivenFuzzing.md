@@ -13,10 +13,10 @@ Developers can provide their own initial file (-f flag) which will be gradually 
 # Examples #
 The main fuzzing strategy is quite simple. It tries to maximize the number of perf events while mangling the file which servers as an input for fuzzing.
 
-## Instruction counting (-LD i) ##
+## Instruction counting (-LDi) ##
 
 ```
-$ honggfuzz -q -LD i -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djpeg.static ___FILE___
+$ honggfuzz -q -LDi -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djpeg.static ___FILE___
 ...
 [INFO] Launched new process, pid: 21168, (5/5)
 [INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1 / New: 1174343
@@ -36,12 +36,12 @@ $ honggfuzz -q -LD i -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- .
 
 It will start with some initial file (or with no file at all), and subsequent fuzzing iterations will try to maximize the number of instructions spent on parsing it.
 
-## Branch counting (-LD b) ##
+## Branch counting (-LDb) ##
 
 As above, it will try to maximize the number of branches taken by CPU on behalf of the fuzzed process (here: djpeg.static) while performing the fuzzing process.
 
 ```
-$ honggfuzz -q -LD b -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djpeg.static ___FILE___
+$ honggfuzz -q -LDb -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djpeg.static ___FILE___
 ...
 [INFO] Launched new process, pid: 21391, (5/5)
 [INFO] File size (New/Best): 2789/2789, Perf feedback: Best: 1 / New: 115586
@@ -58,11 +58,11 @@ $ honggfuzz -q -LD b -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- .
 
 ```
 
-## Unique branch points counting (-LD p) / Unique branch pair (edges) counting (-LD e) ##
+## Unique branch points counting (-LDp) / Unique branch pair (edges) counting (-LDe) ##
 This is the most powerfull mode of feedback-driven counting that honggfuzz supports. It utilizes Intel's BTS (Branch Trace Store) feature to record all branch events (edges) inside the fuzzed process. Later, honggfuzz will de-duplicate those entries. The resulting number of branch pairs (edges) is good approximation of how much code of a given tool have been actively executed/used (code coverage).
 
 ```
-$ honggfuzz -q -LD p -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djpeg.static ___FILE___
+$ honggfuzz -q -LDp -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- ./djpeg.static ___FILE___
 ...
 [INFO] Launched new process, pid: 21715, (5/5)
 [INFO] Launched new process, pid: 21719, (5/5)

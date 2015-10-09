@@ -60,20 +60,20 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
 
     unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, __BYTE_ORDER);
     if (!as) {
-        LOGMSG(l_ERROR, "[pid='%d'] unw_create_addr_space failed", pid);
+        LOG_E("[pid='%d'] unw_create_addr_space failed", pid);
         goto out;
     }
 
     ui = _UPT_create(pid);
     if (ui == NULL) {
-        LOGMSG(l_ERROR, "[pid='%d'] _UPT_create failed", pid);
+        LOG_E("[pid='%d'] _UPT_create failed", pid);
         goto out;
     }
 
     unw_cursor_t c;
     int ret = unw_init_remote(&c, as, ui);
     if (ret < 0) {
-        LOGMSG(l_ERROR, "[pid='%d'] unw_init_remote failed (%s)", pid, UNW_ER[-ret]);
+        LOG_E("[pid='%d'] unw_init_remote failed (%s)", pid, UNW_ER[-ret]);
         goto out;
     }
 
@@ -81,8 +81,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
         unw_word_t ip;
         ret = unw_get_reg(&c, UNW_REG_IP, &ip);
         if (ret < 0) {
-            LOGMSG(l_ERROR, "[pid='%d'] [%d] failed to read IP (%s)", pid, num_frames,
-                   UNW_ER[-ret]);
+            LOG_E("[pid='%d'] [%zd] failed to read IP (%s)", pid, num_frames, UNW_ER[-ret]);
             funcs[num_frames].pc = 0;
         } else
             funcs[num_frames].pc = (void *)ip;
@@ -103,20 +102,20 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
 
     as = unw_create_addr_space(&_UPT_accessors, __BYTE_ORDER);
     if (!as) {
-        LOGMSG(l_ERROR, "[pid='%d'] unw_create_addr_space failed", pid);
+        LOG_E("[pid='%d'] unw_create_addr_space failed", pid);
         goto out;
     }
 
     ui = (struct UPT_info *)_UPT_create(pid);
     if (ui == NULL) {
-        LOGMSG(l_ERROR, "[pid='%d'] _UPT_create failed", pid);
+        LOG_E("[pid='%d'] _UPT_create failed", pid);
         goto out;
     }
 
     unw_cursor_t cursor;
     int ret = unw_init_remote(&cursor, as, ui);
     if (ret < 0) {
-        LOGMSG(l_ERROR, "[pid='%d'] unw_init_remote failed (%s)", pid, UNW_ER[-ret]);
+        LOG_E("[pid='%d'] unw_init_remote failed (%s)", pid, UNW_ER[-ret]);
         goto out;
     }
 
@@ -126,8 +125,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
 
         ret = unw_get_reg(&cursor, UNW_REG_IP, &pc);
         if (ret < 0) {
-            LOGMSG(l_ERROR, "[pid='%d'] [%d] failed to read IP (%s)",
-                   pid, num_frames, UNW_ER[-ret]);
+            LOG_E("[pid='%d'] [%d] failed to read IP (%s)", pid, num_frames, UNW_ER[-ret]);
             // We don't want to try to extract info from an arbitrary IP
             // TODO: Maybe abort completely (goto out))
             goto skip_frame_info;
@@ -136,16 +134,14 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
         unw_proc_info_t frameInfo;
         ret = unw_get_proc_info(&cursor, &frameInfo);
         if (ret < 0) {
-            LOGMSG(l_DEBUG, "[pid='%d'] [%d] unw_get_proc_info (%s)",
-                   pid, num_frames, UNW_ER[-ret]);
+            LOG_D("[pid='%d'] [%d] unw_get_proc_info (%s)", pid, num_frames, UNW_ER[-ret]);
             // Not safe to keep parsing frameInfo
             goto skip_frame_info;
         }
 
         ret = unw_get_proc_name(&cursor, buf, sizeof(buf), &offset);
         if (ret < 0) {
-            LOGMSG(l_DEBUG, "[pid='%d'] [%d] unw_get_proc_name() failed (%s)",
-                   pid, num_frames, UNW_ER[-ret]);
+            LOG_D("[pid='%d'] [%d] unw_get_proc_name() failed (%s)", pid, num_frames, UNW_ER[-ret]);
             buf[0] = '\0';
         }
 

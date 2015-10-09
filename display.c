@@ -133,8 +133,5 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
 extern void display_display(honggfuzz_t * hfuzz)
 {
-    /* Don't mix up logs and display at this point */
-    log_mutexLock();
     display_displayLocked(hfuzz);
-    log_mutexUnLock();
 }

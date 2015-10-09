@@ -86,8 +86,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      * Boring, the process just exited
      */
     if (WIFEXITED(status)) {
-        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d", fuzzer->pid,
-               WEXITSTATUS(status));
+        LOG_D("Process (pid %d) exited normally with status %d", fuzzer->pid, WEXITSTATUS(status));
         return true;
     }
 
@@ -95,17 +94,15 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      * Shouldn't really happen, but, well..
      */
     if (!WIFSIGNALED(status)) {
-        LOGMSG(l_ERROR,
-               "Process (pid %d) exited with the following status %d, please report that as a bug",
-               fuzzer->pid, status);
+        LOG_E("Process (pid %d) exited with the following status %d, please report that as a bug",
+              fuzzer->pid, status);
         return true;
     }
 
     int termsig = WTERMSIG(status);
-    LOGMSG(l_DEBUG, "Process (pid %d) killed by signal %d '%s'", fuzzer->pid, termsig,
-           strsignal(termsig));
+    LOG_D("Process (pid %d) killed by signal %d '%s'", fuzzer->pid, termsig, strsignal(termsig));
     if (!arch_sigs[termsig].important) {
-        LOGMSG(l_DEBUG, "It's not that important signal, skipping");
+        LOG_D("It's not that important signal, skipping");
         return true;
     }
 
@@ -117,7 +114,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
              hfuzz->workDir, arch_sigs[termsig].descr, fuzzer->pid, localtmstr,
              fuzzer->origFileName, hfuzz->fileExtn);
 
-    LOGMSG(l_INFO, "Ok, that's interesting, saving the '%s' as '%s'", fuzzer->fileName, newname);
+    LOG_I("Ok, that's interesting, saving the '%s' as '%s'", fuzzer->fileName, newname);
 
     /*
      * All crashes are marked as unique due to lack of information in POSIX arch
@@ -126,7 +123,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
 
     if (files_copyFile(fuzzer->fileName, newname, NULL) == false) {
-        LOGMSG(l_ERROR, "Couldn't save '%s' as '%s'", fuzzer->fileName, newname);
+        LOG_E("Couldn't save '%s' as '%s'", fuzzer->fileName, newname);
     }
     return true;
 }
@@ -161,7 +158,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 
     args[x++] = NULL;
 
-    LOGMSG(l_DEBUG, "Launching '%s' on file '%s'", args[0], fileName);
+    LOG_D("Launching '%s' on file '%s'", args[0], fileName);
 
     /*
      * Set timeout (prof), real timeout (2*prof), and rlimit_cpu (2*prof)
@@ -177,7 +174,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         it.it_interval.tv_sec = 0;
         it.it_interval.tv_usec = 0;
         if (setitimer(ITIMER_PROF, &it, NULL) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't set the ITIMER_PROF timer");
+            PLOG_E("Couldn't set the ITIMER_PROF timer");
             return false;
         }
 
@@ -190,7 +187,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         it.it_interval.tv_sec = 0;
         it.it_interval.tv_usec = 0;
         if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't set the ITIMER_REAL timer");
+            PLOG_E("Couldn't set the ITIMER_REAL timer");
             return false;
         }
 
@@ -203,7 +200,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         rl.rlim_cur = hfuzz->tmOut * 2;
         rl.rlim_max = hfuzz->tmOut * 2;
         if (setrlimit(RLIMIT_CPU, &rl) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't enforce the RLIMIT_CPU resource limit");
+            PLOG_E("Couldn't enforce the RLIMIT_CPU resource limit");
             return false;
         }
     }
@@ -217,7 +214,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         rl.rlim_cur = hfuzz->asLimit * 1024UL * 1024UL;
         rl.rlim_max = hfuzz->asLimit * 1024UL * 1024UL;
         if (setrlimit(RLIMIT_AS, &rl) == -1) {
-            LOGMSG_P(l_DEBUG, "Couldn't enforce the RLIMIT_AS resource limit, ignoring");
+            PLOG_D("Couldn't enforce the RLIMIT_AS resource limit, ignoring");
         }
     }
 
@@ -241,7 +238,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     execvp(args[0], args);
 
     util_recoverStdio();
-    LOGMSG(l_FATAL, "Failed to create new '%s' process", args[0]);
+    LOG_F("Failed to create new '%s' process", args[0]);
     return false;
 }
 
@@ -254,7 +251,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 #define __WALL 0
 #endif
         while (wait4(fuzzer->pid, &status, __WALL, NULL) != fuzzer->pid) ;
-        LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", fuzzer->pid, status);
+        LOG_D("Process (pid %d) came back with status %d", fuzzer->pid, status);
 
         if (arch_analyzeSignal(hfuzz, status, fuzzer)) {
             return;

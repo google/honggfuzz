@@ -43,33 +43,32 @@ size_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
 {
     int fd = open(fileName, O_RDONLY);
     if (fd == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't open '%s' for R/O", fileName);
+        PLOG_E("Couldn't open '%s' for R/O", fileName);
         return 0UL;
     }
 
     struct stat st;
     if (fstat(fd, &st) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't fstat(fd='%d' fileName='%s')", fd, fileName);
+        PLOG_E("Couldn't fstat(fd='%d' fileName='%s')", fd, fileName);
         close(fd);
         return 0UL;
     }
 
     if (st.st_size > (off_t) fileMaxSz) {
-        LOGMSG(l_ERROR, "File '%s' size to big (%zu > %" PRId64 ")", fileName, (int64_t) st.st_size,
-               fileMaxSz);
+        LOG_E("File '%s' size to big (%zu > %" PRId64 ")", fileName, (int64_t) st.st_size,
+              fileMaxSz);
         close(fd);
         return 0UL;
     }
 
     if (files_readFromFd(fd, buf, (size_t) st.st_size) == false) {
-        LOGMSG(l_ERROR, "Couldn't read '%s' to a buf", fileName);
+        LOG_E("Couldn't read '%s' to a buf", fileName);
         close(fd);
         return 0UL;
     }
     close(fd);
 
-    LOGMSG(l_DEBUG, "Read '%zu' bytes (max: '%zu') from '%s'", (size_t) st.st_size, fileMaxSz,
-           fileName);
+    LOG_D("Read '%zu' bytes (max: '%zu') from '%s'", (size_t) st.st_size, fileMaxSz, fileName);
 
     return (size_t) st.st_size;
 }
@@ -78,20 +77,19 @@ bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flag
 {
     int fd = open(fileName, flags, 0644);
     if (fd == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't open '%s' for R/O", fileName);
+        PLOG_E("Couldn't open '%s' for R/O", fileName);
         return false;
     }
 
     if (files_writeToFd(fd, buf, fileSz) == false) {
-        LOGMSG_P(l_ERROR, "Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName,
-                 fd);
+        PLOG_E("Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName, fd);
         close(fd);
         unlink(fileName);
         return false;
     }
     close(fd);
 
-    LOGMSG(l_DEBUG, "Written '%zu' bytes to '%s'", fileSz, fileName);
+    LOG_D("Written '%zu' bytes to '%s'", fileSz, fileName);
 
     return true;
 }
@@ -142,7 +140,7 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
 {
     void *buf = malloc(size);
     if (!buf) {
-        LOGMSG_P(l_WARN, "Couldn't allocate memory");
+        PLOG_W("Couldn't allocate memory");
         return false;
     }
 
@@ -157,7 +155,7 @@ static bool files_readdir(honggfuzz_t * hfuzz)
 {
     DIR *dir = opendir(hfuzz->inputFile);
     if (!dir) {
-        LOGMSG_P(l_ERROR, "Couldn't open dir '%s'", hfuzz->inputFile);
+        PLOG_E("Couldn't open dir '%s'", hfuzz->inputFile);
         return false;
     }
 
@@ -165,19 +163,19 @@ static bool files_readdir(honggfuzz_t * hfuzz)
     for (;;) {
         struct dirent de, *res;
         if (readdir_r(dir, &de, &res) > 0) {
-            LOGMSG_P(l_ERROR, "Couldn't read the '%s' dir", hfuzz->inputFile);
+            PLOG_E("Couldn't read the '%s' dir", hfuzz->inputFile);
             closedir(dir);
             return false;
         }
 
         if (res == NULL && count > 0) {
-            LOGMSG(l_INFO, "%d input files have been added to the list", hfuzz->fileCnt);
+            LOG_I("%d input files have been added to the list", hfuzz->fileCnt);
             closedir(dir);
             return true;
         }
 
         if (res == NULL && count == 0) {
-            LOGMSG(l_ERROR, "Directory '%s' doesn't contain any regular files", hfuzz->inputFile);
+            LOG_E("Directory '%s' doesn't contain any regular files", hfuzz->inputFile);
             closedir(dir);
             return false;
         }
@@ -186,41 +184,40 @@ static bool files_readdir(honggfuzz_t * hfuzz)
         snprintf(path, sizeof(path), "%s/%s", hfuzz->inputFile, res->d_name);
         struct stat st;
         if (stat(path, &st) == -1) {
-            LOGMSG(l_WARN, "Couldn't stat() the '%s' file", path);
+            LOG_W("Couldn't stat() the '%s' file", path);
             continue;
         }
 
         if (!S_ISREG(st.st_mode)) {
-            LOGMSG(l_DEBUG, "'%s' is not a regular file, skipping", path);
+            LOG_D("'%s' is not a regular file, skipping", path);
             continue;
         }
 
         if (st.st_size == 0ULL) {
-            LOGMSG(l_DEBUG, "'%s' is empty", path);
+            LOG_D("'%s' is empty", path);
             continue;
         }
 
         if (st.st_size > (off_t) hfuzz->maxFileSz) {
-            LOGMSG(l_WARN,
-                   "File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %"
-                   PRId64, path, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
+            LOG_W("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %"
+                  PRId64, path, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
             continue;
         }
 
         if (!(hfuzz->files = realloc(hfuzz->files, sizeof(char *) * (count + 1)))) {
-            LOGMSG_P(l_ERROR, "Couldn't allocate memory");
+            PLOG_E("Couldn't allocate memory");
             closedir(dir);
             return false;
         }
 
         hfuzz->files[count] = strdup(path);
         if (!hfuzz->files[count]) {
-            LOGMSG_P(l_ERROR, "Couldn't allocate memory");
+            PLOG_E("Couldn't allocate memory");
             closedir(dir);
             return false;
         }
         hfuzz->fileCnt = ++count;
-        LOGMSG(l_DEBUG, "Added '%s' to the list of input files", path);
+        LOG_D("Added '%s' to the list of input files", path);
     }
 
     abort();                    /* NOTREACHED */
@@ -238,25 +235,25 @@ bool files_init(honggfuzz_t * hfuzz)
     if (hfuzz->externalCommand && !hfuzz->inputFile) {
         hfuzz->fileCnt = 1;
         hfuzz->files[0] = "CREATED";
-        LOGMSG(l_INFO,
-               "No input file corpus specified, the external command '%s' is responsible for creating the fuzz files",
-               hfuzz->externalCommand);
+        LOG_I
+            ("No input file corpus specified, the external command '%s' is responsible for creating the fuzz files",
+             hfuzz->externalCommand);
         return true;
     }
 
     if (!hfuzz->files) {
-        LOGMSG_P(l_ERROR, "Couldn't allocate memory");
+        PLOG_E("Couldn't allocate memory");
         return false;
     }
 
     if (!hfuzz->inputFile) {
-        LOGMSG(l_ERROR, "No input file/dir specified");
+        LOG_E("No input file/dir specified");
         return false;
     }
 
     struct stat st;
     if (stat(hfuzz->inputFile, &st) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't stat the input file/dir '%s'", hfuzz->inputFile);
+        PLOG_E("Couldn't stat the input file/dir '%s'", hfuzz->inputFile);
         return false;
     }
 
@@ -265,14 +262,13 @@ bool files_init(honggfuzz_t * hfuzz)
     }
 
     if (!S_ISREG(st.st_mode)) {
-        LOGMSG(l_ERROR, "'%s' is not a regular file, nor a directory", hfuzz->inputFile);
+        LOG_E("'%s' is not a regular file, nor a directory", hfuzz->inputFile);
         return false;
     }
 
     if (st.st_size > (off_t) hfuzz->maxFileSz) {
-        LOGMSG(l_ERROR,
-               "File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %" PRId64,
-               hfuzz->inputFile, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
+        LOG_E("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %" PRId64,
+              hfuzz->inputFile, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
         return false;
     }
 
@@ -291,7 +287,7 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
 {
     FILE *fDict = fopen(hfuzz->dictionaryFile, "rb");
     if (fDict == NULL) {
-        LOGMSG_P(l_ERROR, "Couldn't open '%s' - R/O mode", hfuzz->dictionaryFile);
+        PLOG_E("Couldn't open '%s' - R/O mode", hfuzz->dictionaryFile);
         return false;
     }
 
@@ -304,18 +300,18 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         if ((hfuzz->dictionary =
              realloc(hfuzz->dictionary,
                      (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]))) == NULL) {
-            LOGMSG_P(l_ERROR, "Realloc failed (sz=%zu)",
-                     (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]));
+            PLOG_E("Realloc failed (sz=%zu)",
+                   (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]));
             fclose(fDict);
             return false;
         }
         hfuzz->dictionary[hfuzz->dictionaryCnt] = lineptr;
-        LOGMSG(l_DEBUG, "Dictionary: loaded word: '%s' (len=%zu)",
-               hfuzz->dictionary[hfuzz->dictionaryCnt],
-               strlen(hfuzz->dictionary[hfuzz->dictionaryCnt]));
+        LOG_D("Dictionary: loaded word: '%s' (len=%zu)",
+              hfuzz->dictionary[hfuzz->dictionaryCnt],
+              strlen(hfuzz->dictionary[hfuzz->dictionaryCnt]));
         hfuzz->dictionaryCnt += 1;
     }
-    LOGMSG(l_INFO, "Loaded %zu words from the dictionary", hfuzz->dictionaryCnt);
+    LOG_I("Loaded %zu words from the dictionary", hfuzz->dictionaryCnt);
     fclose(fDict);
     return true;
 }
@@ -337,7 +333,7 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
                 *dstExists = true;
             return false;
         } else {
-            LOGMSG_P(l_DEBUG, "Couldn't link '%s' as '%s'", source, destination);
+            PLOG_D("Couldn't link '%s' as '%s'", source, destination);
             /*
              * Don't fail yet as we might have a running env which doesn't allow
              * hardlinks (e.g. SELinux)
@@ -355,13 +351,13 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
 
     inFD = open(source, O_RDONLY);
     if (inFD == -1) {
-        LOGMSG_P(l_DEBUG, "Couldn't open '%s' source", source);
+        PLOG_D("Couldn't open '%s' source", source);
         return false;
     }
 
     struct stat inSt;
     if (fstat(inFD, &inSt) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't fstat(fd='%d' fileName='%s')", inFD, source);
+        PLOG_E("Couldn't fstat(fd='%d' fileName='%s')", inFD, source);
         close(inFD);
         return false;
     }
@@ -372,21 +368,21 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
             if (dstExists)
                 *dstExists = true;
         }
-        LOGMSG_P(l_DEBUG, "Couldn't open '%s' destination", destination);
+        PLOG_D("Couldn't open '%s' destination", destination);
         close(inFD);
         return false;
     }
 
     uint8_t *inFileBuf = malloc(inSt.st_size);
     if (!inFileBuf) {
-        LOGMSG_P(l_ERROR, "malloc(%zu) failed", inSt.st_size);
+        PLOG_E("malloc(%zu) failed", inSt.st_size);
         close(inFD);
         close(outFD);
         return false;
     }
 
     if (files_readFromFd(inFD, inFileBuf, (size_t) inSt.st_size) == false) {
-        LOGMSG_P(l_ERROR, "Couldn't read '%s' to a buf", source);
+        PLOG_E("Couldn't read '%s' to a buf", source);
         free(inFileBuf);
         close(inFD);
         close(outFD);
@@ -394,8 +390,8 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
     }
 
     if (files_writeToFd(outFD, inFileBuf, inSt.st_size) == false) {
-        LOGMSG_P(l_ERROR, "Couldn't write '%zu' bytes to file '%s' (fd='%d')", inSt.st_size,
-                 destination, outFD);
+        PLOG_E("Couldn't write '%zu' bytes to file '%s' (fd='%d')", inSt.st_size,
+               destination, outFD);
         free(inFileBuf);
         close(inFD);
         close(outFD);
@@ -413,7 +409,7 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
 {
     FILE *fBl = fopen(hfuzz->blacklistFile, "rb");
     if (fBl == NULL) {
-        LOGMSG_P(l_ERROR, "Couldn't open '%s' - R/O mode", hfuzz->blacklistFile);
+        PLOG_E("Couldn't open '%s' - R/O mode", hfuzz->blacklistFile);
         return false;
     }
 
@@ -427,20 +423,20 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
         if ((hfuzz->blacklist =
              realloc(hfuzz->blacklist,
                      (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]))) == NULL) {
-            LOGMSG_P(l_ERROR, "realloc failed (sz=%zu)",
-                     (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]));
+            PLOG_E("realloc failed (sz=%zu)",
+                   (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]));
             fclose(fBl);
             return false;
         }
 
         hfuzz->blacklist[hfuzz->blacklistCnt] = strtoull(lineptr, 0, 16);
-        LOGMSG(l_DEBUG, "Blacklist: loaded '%llu'", hfuzz->blacklist[hfuzz->blacklistCnt]);
+        LOG_D("Blacklist: loaded %'" PRId64 "'", hfuzz->blacklist[hfuzz->blacklistCnt]);
 
         // Verify entries are sorted so we can use interpolation search
         if (hfuzz->blacklistCnt > 1) {
             if (hfuzz->blacklist[hfuzz->blacklistCnt - 1] > hfuzz->blacklist[hfuzz->blacklistCnt]) {
-                LOGMSG(l_FATAL,
-                       "Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort records");
+                LOG_F
+                    ("Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort records");
                 fclose(fBl);
                 return false;
             }
@@ -449,9 +445,9 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
     }
 
     if (hfuzz->blacklistCnt > 0) {
-        LOGMSG(l_INFO, "Loaded %zu stack hash(es) from the blacklist file", hfuzz->blacklistCnt);
+        LOG_I("Loaded %zu stack hash(es) from the blacklist file", hfuzz->blacklistCnt);
     } else {
-        LOGMSG(l_FATAL, "Empty stack hashes blacklist file '%s'", hfuzz->blacklistFile);
+        LOG_F("Empty stack hashes blacklist file '%s'", hfuzz->blacklistFile);
     }
     fclose(fBl);
     return true;

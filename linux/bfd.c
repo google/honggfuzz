@@ -53,29 +53,29 @@ static bool arch_bfdInit(pid_t pid, bfd_t * bfdParams)
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "/proc/%d/exe", pid);
     if ((bfdParams->bfdh = bfd_openr(fname, 0)) == NULL) {
-        LOGMSG(l_ERROR, "bfd_openr(%s) failed", fname);
+        LOG_E("bfd_openr(%s) failed", fname);
         return false;
     }
 
     if (!bfd_check_format(bfdParams->bfdh, bfd_object)) {
-        LOGMSG(l_ERROR, "bfd_check_format() failed");
+        LOG_E("bfd_check_format() failed");
         return false;
     }
 
     int storage_needed = bfd_get_symtab_upper_bound(bfdParams->bfdh);
     if (storage_needed <= 0) {
-        LOGMSG(l_ERROR, "bfd_get_symtab_upper_bound() returned '%d'", storage_needed);
+        LOG_E("bfd_get_symtab_upper_bound() returned '%d'", storage_needed);
         return false;
     }
 
     if ((bfdParams->syms = (asymbol **) malloc(storage_needed)) == NULL) {
-        LOGMSG_P(l_ERROR, "malloc(%d) failed", storage_needed);
+        PLOG_E("malloc(%d) failed", storage_needed);
         return false;
     }
     bfd_canonicalize_symtab(bfdParams->bfdh, bfdParams->syms);
 
     if ((bfdParams->section = bfd_get_section_by_name(bfdParams->bfdh, ".text")) == NULL) {
-        LOGMSG(l_ERROR, "bfd_get_section_by_name('.text') failed");
+        LOG_E("bfd_get_section_by_name('.text') failed");
         return false;
     }
 
@@ -156,18 +156,18 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
     snprintf(fname, sizeof(fname), "/proc/%d/exe", pid);
     bfd *bfdh = bfd_openr(fname, NULL);
     if (bfdh == NULL) {
-        LOGMSG(l_WARN, "bfd_openr('/proc/%d/exe') failed", pid);
+        LOG_W("bfd_openr('/proc/%d/exe') failed", pid);
         goto out;
     }
 
     if (!bfd_check_format(bfdh, bfd_object)) {
-        LOGMSG(l_WARN, "bfd_check_format() failed");
+        LOG_W("bfd_check_format() failed");
         goto out;
     }
 
     disassembler_ftype disassemble = disassembler(bfdh);
     if (disassemble == NULL) {
-        LOGMSG(l_WARN, "disassembler() failed");
+        LOG_W("disassembler() failed");
         goto out;
     }
 

@@ -161,8 +161,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      * Boring, the process just exited
      */
     if (WIFEXITED(status)) {
-        LOGMSG(l_DEBUG, "Process (pid %d) exited normally with status %d", fuzzer->pid,
-               WEXITSTATUS(status));
+        LOG_D("Process (pid %d) exited normally with status %d", fuzzer->pid, WEXITSTATUS(status));
         return true;
     }
 
@@ -170,17 +169,15 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      * Shouldn't really happen, but, well..
      */
     if (!WIFSIGNALED(status)) {
-        LOGMSG(l_ERROR,
-               "Process (pid %d) exited with the following status %d, please report that as a bug",
-               fuzzer->pid, status);
+        LOG_E("Process (pid %d) exited with the following status %d, please report that as a bug",
+              fuzzer->pid, status);
         return true;
     }
 
     int termsig = WTERMSIG(status);
-    LOGMSG(l_DEBUG, "Process (pid %d) killed by signal %d '%s'", fuzzer->pid, termsig,
-           strsignal(termsig));
+    LOG_D("Process (pid %d) killed by signal %d '%s'", fuzzer->pid, termsig, strsignal(termsig));
     if (!arch_sigs[termsig].important) {
-        LOGMSG(l_DEBUG, "It's not that important signal, skipping");
+        LOG_D("It's not that important signal, skipping");
         return true;
     }
 
@@ -226,21 +223,21 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      */
     if (hfuzz->blacklist
         && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) != -1)) {
-        LOGMSG(l_INFO, "Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
+        LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
         __sync_fetch_and_add(&hfuzz->blCrashesCnt, 1UL);
         return true;
     }
 
     bool dstFileExists = false;
     if (files_copyFile(fuzzer->fileName, newname, &dstFileExists)) {
-        LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, newname);
+        LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, newname);
         // Unique crashes
         __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
     } else {
         if (dstFileExists) {
-            LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", newname);
+            LOG_I("It seems that '%s' already exists, skipping", newname);
         } else {
-            LOGMSG(l_ERROR, "Couldn't copy '%s' to '%s'", fuzzer->fileName, newname);
+            LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, newname);
         }
     }
 
@@ -277,7 +274,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 
     args[x++] = NULL;
 
-    LOGMSG(l_DEBUG, "Launching '%s' on file '%s'", args[0], fileName);
+    LOG_D("Launching '%s' on file '%s'", args[0], fileName);
 
     /*
      * Get child's bootstrap port.
@@ -322,7 +319,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         it.it_interval.tv_sec = 0;
         it.it_interval.tv_usec = 0;
         if (setitimer(ITIMER_PROF, &it, NULL) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't set the ITIMER_PROF timer");
+            PLOG_E("Couldn't set the ITIMER_PROF timer");
             return false;
         }
 
@@ -335,7 +332,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         it.it_interval.tv_sec = 0;
         it.it_interval.tv_usec = 0;
         if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't set the ITIMER_REAL timer");
+            PLOG_E("Couldn't set the ITIMER_REAL timer");
             return false;
         }
 
@@ -350,7 +347,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         rl.rlim_cur = hfuzz->tmOut + 1;
         rl.rlim_max = hfuzz->tmOut + 1;
         if (setrlimit(RLIMIT_CPU, &rl) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't enforce the RLIMIT_CPU resource limit");
+            PLOG_E("Couldn't enforce the RLIMIT_CPU resource limit");
             return false;
         }
     }
@@ -364,7 +361,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         rl.rlim_cur = hfuzz->asLimit * 1024UL * 1024UL;
         rl.rlim_max = hfuzz->asLimit * 1024UL * 1024UL;
         if (setrlimit(RLIMIT_AS, &rl) == -1) {
-            LOGMSG_P(l_DEBUG, "Couldn't enforce the RLIMIT_AS resource limit, ignoring");
+            PLOG_D("Couldn't enforce the RLIMIT_AS resource limit, ignoring");
         }
     }
 
@@ -388,7 +385,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     execvp(args[0], args);
 
     util_recoverStdio();
-    LOGMSG(l_FATAL, "Failed to create new '%s' process", args[0]);
+    LOG_F("Failed to create new '%s' process", args[0]);
     return false;
 }
 
@@ -400,8 +397,8 @@ static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int64_t curMillis = util_timeNowMillis();
     int64_t diffMillis = curMillis - fuzzer->timeStartedMillis;
     if (diffMillis > ((hfuzz->tmOut + 2) * 1000)) {
-        LOGMSG(l_WARN, "PID %d took too much time (limit %ld s). Sending SIGKILL",
-               fuzzer->pid, hfuzz->tmOut);
+        LOG_W("PID %d took too much time (limit %ld s). Sending SIGKILL",
+              fuzzer->pid, hfuzz->tmOut);
         kill(fuzzer->pid, SIGKILL);
     }
 }
@@ -429,7 +426,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 usleep(0.20 * 1000000);
             }
         }
-        LOGMSG(l_DEBUG, "Process (pid %d) came back with status %d", fuzzer->pid, status);
+        LOG_D("Process (pid %d) came back with status %d", fuzzer->pid, status);
 
         if (arch_analyzeSignal(hfuzz, status, fuzzer)) {
             return;
@@ -454,8 +451,8 @@ bool arch_archInit(honggfuzz_t * hfuzz)
              getlogin());
 
     if (files_exists(plist)) {
-        LOGMSG(l_WARN,
-               "honggfuzz won't work if DBGShellCommands are set in ~/Library/Preferences/com.apple.DebugSymbols.plist");
+        LOG_W
+            ("honggfuzz won't work if DBGShellCommands are set in ~/Library/Preferences/com.apple.DebugSymbols.plist");
     }
 
     /*
@@ -499,12 +496,12 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     pthread_t exception_thread;
 
     if (pthread_create(&exception_thread, NULL, wait_for_exception, 0)) {
-        LOGMSG(l_FATAL, "Parent: could not create thread to wait for child's exception");
+        LOG_F("Parent: could not create thread to wait for child's exception");
         return false;
     }
 
     if (pthread_detach(exception_thread)) {
-        LOGMSG(l_FATAL, "Parent: could not detach thread to wait for child's exception");
+        LOG_F("Parent: could not detach thread to wait for child's exception");
         return false;
     }
 
@@ -540,7 +537,7 @@ write_crash_report(thread_port_t thread,
     NSString *crashDescription =[_crashReport description];
     char *description = (char *)[crashDescription UTF8String];
 
-    LOGMSG(l_DEBUG, "CrashReport: %s", description);
+    LOG_D("CrashReport: %s", description);
 
     [_crashReport release];
     [pool drain];
@@ -579,7 +576,7 @@ uint64_t hash_callstack(thread_port_t thread,
     char *callstack = strstr(description, "Crashed:");
 
     if (callstack == NULL) {
-        LOGMSG(l_FATAL, "Could not find callstack in crash report %s", description);
+        LOG_F("Could not find callstack in crash report %s", description);
     }
 
     /*
@@ -588,7 +585,7 @@ uint64_t hash_callstack(thread_port_t thread,
     char *callstack_start = strstr(callstack, "\n");
 
     if (callstack_start == NULL) {
-        LOGMSG(l_FATAL, "Could not find callstack start in crash report %s", description);
+        LOG_F("Could not find callstack start in crash report %s", description);
     }
 
     /*
@@ -602,7 +599,7 @@ uint64_t hash_callstack(thread_port_t thread,
     char *callstack_end = strstr(callstack, "\n\nThread");
 
     if (callstack_end == NULL) {
-        LOGMSG(l_FATAL, "Could not find callstack end in crash report %s", description);
+        LOG_F("Could not find callstack end in crash report %s", description);
     }
 
     /*
@@ -671,7 +668,7 @@ uint64_t hash_callstack(thread_port_t thread,
         pos++;
     }
 
-    LOGMSG(l_DEBUG, "Callstack hash %u", hash);
+    LOG_D("Callstack hash %u", hash);
 
     [_crashReport release];
     [pool drain];
@@ -686,7 +683,7 @@ catch_mach_exception_raise(mach_port_t exception_port,
                            exception_type_t exception, mach_exception_data_t code,
                            mach_msg_type_number_t codeCnt)
 {
-    LOGMSG(l_FATAL, "This function should never get called");
+    LOG_F("This function should never get called");
     return KERN_SUCCESS;
 }
 
@@ -700,7 +697,7 @@ catch_mach_exception_raise_state(mach_port_t exception_port,
                                  mach_msg_type_number_t old_stateCnt,
                                  thread_state_t new_state, mach_msg_type_number_t * new_stateCnt)
 {
-    LOGMSG(l_FATAL, "This function should never get called");
+    LOG_F("This function should never get called");
     return KERN_SUCCESS;
 }
 
@@ -719,7 +716,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
                                                         mach_msg_type_number_t * out_state_count)
 {
     if (exception != EXC_CRASH) {
-        LOGMSG(l_FATAL, "Got non EXC_CRASH! This should not happen.");
+        LOG_F("Got non EXC_CRASH! This should not happen.");
     }
 
     /*
@@ -727,7 +724,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
      */
     pid_t pid;
     pid_for_task(task, &pid);
-    LOGMSG(l_DEBUG, "Crash of pid %d", pid);
+    LOG_D("Crash of pid %d", pid);
 
     fuzzer_t *fuzzer = &g_fuzzer_crash_information[pid];
 
@@ -782,11 +779,11 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
      */
 
     if (mach_port_deallocate(mach_task_self(), task) != KERN_SUCCESS) {
-        LOGMSG(l_WARN, "Exception Handler: Could not deallocate task");
+        LOG_W("Exception Handler: Could not deallocate task");
     }
 
     if (mach_port_deallocate(mach_task_self(), thread) != KERN_SUCCESS) {
-        LOGMSG(l_WARN, "Exception Handler: Could not deallocate thread");
+        LOG_W("Exception Handler: Could not deallocate thread");
     }
 
     return KERN_SUCCESS;        // KERN_SUCCESS indicates that this should
