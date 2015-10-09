@@ -88,15 +88,16 @@ static void cmdlineHelp(const char *pname, struct custom_option *opts)
              AB "  " PROG_NAME " -f input_dir -s -- /usr/bin/djpeg\n" AC
 #if defined(_HF_ARCH_LINUX)
              " Run the binary over a dynamic file, maximize total no. of instructions:\n"
-             AB "  " PROG_NAME " --linux_perf_instr -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
-             " Run the binary over a dynamic file, maximize total no. of branches:\n"
-             AB "  " PROG_NAME " --linux_perf_branch -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
-             " Run the binary over a dynamic file, maximize unique code blocks (coverage):\n"
-             AB "  " PROG_NAME " --linux_perf_ip -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
-             " Run the binary over a dynamic file, maximize unique branches (edges):\n"
-             AB "  " PROG_NAME " --linux_perf_ip_addr -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
-             " Run the binary over a dynamic file, maximize custom counters (experimental):\n"
-             AB "  " PROG_NAME " --linux_perf_custom -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+             AB "  " PROG_NAME " --linux_perf_instr -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER
+             AC "\n" " Run the binary over a dynamic file, maximize total no. of branches:\n" AB
+             "  " PROG_NAME " --linux_perf_branch -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC
+             "\n" " Run the binary over a dynamic file, maximize unique code blocks (coverage):\n"
+             AB "  " PROG_NAME " --linux_perf_ip -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC
+             "\n" " Run the binary over a dynamic file, maximize unique branches (edges):\n" AB "  "
+             PROG_NAME " --linux_perf_ip_addr -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+             " Run the binary over a dynamic file, maximize custom counters (experimental):\n" AB
+             "  " PROG_NAME " --linux_perf_custom -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC
+             "\n"
 #endif                          /* defined(_HF_ARCH_LINUX) */
         );
 }
@@ -204,6 +205,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"nullify_stdio", no_argument, NULL, 'q'}, "Null-ify children's stdin, stdout, stderr; make them quiet"},
         {{"stdin_input", no_argument, NULL, 's'}, "Provide fuzzing input on STDIN, instead of ___FILE___"},
         {{"save_all", no_argument, NULL, 'u'}, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames"},
+        {{"logfile", required_argument, NULL, 'l'}, "Log file"},
         {{"verbose", no_argument, NULL, 'v'}, "Disable ANSI console; use simple log output"},
         {{"debug_level", required_argument, NULL, 'd'}, "Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])"},
         {{"extension", required_argument, NULL, 'e'}, "Input file extension (e.g. 'swf'), (default: 'fuzz')"},
@@ -215,7 +217,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"timeout", required_argument, NULL, 't'}, "Timeout in seconds (default: '3')"},
         {{"threads", required_argument, NULL, 'n'}, "Number of concurrent fuzzing threads (default: '2')"},
         {{"iterations", required_argument, NULL, 'N'}, "Number of fuzzing iterations (default: '0' [no limit])"},
-        {{"rlimit_as", required_argument, NULL, 'l'}, "Per process memory limit in MiB (default: '0' [no limit])"},
+        {{"rlimit_as", required_argument, NULL, 0x100}, "Per process memory limit in MiB (default: '0' [no limit])"},
         {{"report", required_argument, NULL, 'R'}, "Per process memory limit in MiB (default: '" _HF_REPORT_FILE "')"},
         {{"max_file_size", required_argument, NULL, 'F'}, "Maximal size of files processed by the fuzzer in bytes (default: '1048576')"},
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
@@ -269,6 +271,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         case 'u':
             hfuzz->saveUnique = false;
             break;
+        case 'l':
+            logfile = optarg;
+            break;
         case 'd':
             ll = atoi(optarg);
             break;
@@ -299,13 +304,11 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         case 'N':
             hfuzz->mutationsMax = atol(optarg);
             break;
-        case 'l':
+        case 0x100:
             hfuzz->asLimit = strtoull(optarg, NULL, 0);
             break;
         case 'p':
             hfuzz->pid = atoi(optarg);
-            break;
-        case 'o':
             break;
         case 'E':
             for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs); i++) {

@@ -158,7 +158,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
             .rlim_cur = hfuzz->asLimit * 1024ULL * 1024ULL,
             .rlim_max = hfuzz->asLimit * 1024ULL * 1024ULL,
         };
-        if (prlimit64(getpid(), RLIMIT_AS, &rl, NULL) == -1) {
+        if (prlimit64(0, RLIMIT_AS, &rl, NULL) == -1) {
             PLOG_D("Couldn't enforce the RLIMIT_AS resource limit, ignoring");
         }
     }
