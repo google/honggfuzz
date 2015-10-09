@@ -335,9 +335,7 @@ static ssize_t honggfuzz_process_vm_readv(pid_t pid,
 struct {
     const char *descr;
     bool important;
-    bool stack_only;
 } arch_sigs[NSIG] = {
-    [0 ... (NSIG - 1)].stack_only = false,
     [0 ... (NSIG - 1)].important = false,
     [0 ... (NSIG - 1)].descr = "UNKNOWN",
 
@@ -357,7 +355,6 @@ struct {
     [SIGBUS].descr = "SIGBUS",
 
     [SIGABRT].important = true,
-    [SIGABRT].stack_only = true,
     [SIGABRT].descr = "SIGABRT"
 };
 /*  *INDENT-ON* */
@@ -760,8 +757,12 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     }
 
     void *sig_addr = si.si_addr;
-    if (arch_sigs[si.si_signo].stack_only == true || hfuzz->disableRandomization == false) {
+    if (hfuzz->disableRandomization == false) {
         pc = 0UL;
+        sig_addr = NULL;
+    }
+    /* With this si_code, the addr is undefined */
+    if (si.si_code == SI_TKILL) {
         sig_addr = NULL;
     }
 
