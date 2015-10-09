@@ -30,28 +30,29 @@
 #define LOG_HELP(...) logLog(HELP, __FUNCTION__, __LINE__, false, __VA_ARGS__);
 #define LOG_HELP_BOLD(...) logLog(HELP_BOLD, __FUNCTION__, __LINE__, false, __VA_ARGS__);
 
-#define LOG_D(...) logLog(DEBUG, __FUNCTION__, __LINE__, false, __VA_ARGS__);
-#define LOG_I(...) logLog(INFO, __FUNCTION__, __LINE__, false, __VA_ARGS__);
-#define LOG_W(...) logLog(WARNING, __FUNCTION__, __LINE__, false, __VA_ARGS__);
-#define LOG_E(...) logLog(ERROR, __FUNCTION__, __LINE__, false, __VA_ARGS__);
-#define LOG_F(...) logLog(FATAL, __FUNCTION__, __LINE__, false, __VA_ARGS__);
+#define LOG_D(...) if (logGetLogLevel() >= DEBUG) { logLog(DEBUG, __FUNCTION__, __LINE__, false, __VA_ARGS__); }
+#define LOG_I(...) if (logGetLogLevel() >= INFO) { logLog(INFO, __FUNCTION__, __LINE__, false, __VA_ARGS__); }
+#define LOG_W(...) if (logGetLogLevel() >= WARNING) { logLog(WARNING, __FUNCTION__, __LINE__, false, __VA_ARGS__); }
+#define LOG_E(...) if (logGetLogLevel() >= ERROR) { logLog(ERROR, __FUNCTION__, __LINE__, false, __VA_ARGS__); }
+#define LOG_F(...) if (logGetLogLevel() >= FATAL) { logLog(FATAL, __FUNCTION__, __LINE__, false, __VA_ARGS__); }
 
-#define PLOG_D(...) logLog(DEBUG, __FUNCTION__, __LINE__, true, __VA_ARGS__);
-#define PLOG_I(...) logLog(INFO, __FUNCTION__, __LINE__, true, __VA_ARGS__);
-#define PLOG_W(...) logLog(WARNING, __FUNCTION__, __LINE__, true, __VA_ARGS__);
-#define PLOG_E(...) logLog(ERROR, __FUNCTION__, __LINE__, true, __VA_ARGS__);
-#define PLOG_F(...) logLog(FATAL, __FUNCTION__, __LINE__, true, __VA_ARGS__);
+#define PLOG_D(...) if (logGetLogLevel() >= DEBUG) { logLog(DEBUG, __FUNCTION__, __LINE__, true, __VA_ARGS__); }
+#define PLOG_I(...) if (logGetLogLevel() >= INFO) { logLog(INFO, __FUNCTION__, __LINE__, true, __VA_ARGS__); }
+#define PLOG_W(...) if (logGetLogLevel() >= WARNING) { logLog(WARNING, __FUNCTION__, __LINE__, true, __VA_ARGS__); }
+#define PLOG_E(...) if (logGetLogLevel() >= ERROR) { logLog(ERROR, __FUNCTION__, __LINE__, true, __VA_ARGS__); }
+#define PLOG_F(...) if (logGetLogLevel() >= FATAL) { logLog(FATAL, __FUNCTION__, __LINE__, true, __VA_ARGS__); }
 
 enum llevel_t {
-    HELP = 0,
-    HELP_BOLD,
-    DEBUG,
-    INFO,
-    WARNING,
+    FATAL = 0,
     ERROR,
-    FATAL
+    WARNING,
+    INFO,
+    DEBUG,
+    HELP,
+    HELP_BOLD
 };
 
+enum llevel_t logGetLogLevel(void);
 bool logInitLogFile(const char *logfile, enum llevel_t ll);
 void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt, ...)
     __attribute__ ((format(printf, 5, 6)));

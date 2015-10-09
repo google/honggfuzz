@@ -36,7 +36,7 @@
 
 static int log_fd = STDERR_FILENO;
 static bool log_fd_isatty = true;
-static bool log_level = INFO;
+enum llevel_t log_level = INFO;
 
 enum llevel_t logGetLogLevel(void)
 {
@@ -76,13 +76,13 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
         bool print_funcline;
     };
     struct ll_t logLevels[] = {
+        {"F", "\033[7;35m", true},
+        {"E", "\033[1;31m", true},
+        {"W", "\033[0;33m", true},
+        {"I", "\033[1m", true},
+        {"D", "\033[0;4m", true},
         {"HR", "\033[0m", false},
         {"HB", "\033[1m", false},
-        {"D", "\033[0;4m", true},
-        {"I", "\033[1m", true},
-        {"W", "\033[0;33m", true},
-        {"E", "\033[1;31m", true},
-        {"F", "\033[7;35m", true},
     };
 
     time_t ltstamp = time(NULL);
