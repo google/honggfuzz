@@ -25,17 +25,11 @@
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
-#include <grp.h>
 #include <inttypes.h>
 #include <limits.h>
-#include <pwd.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <strings.h>
-#include <sys/personality.h>
-#include <sys/time.h>
 #include <unistd.h>
 
 #include "common.h"
@@ -85,8 +79,9 @@ static void cmdlineHelp(const char *pname, struct custom_option *opts)
              " Run the binary over a mutated file chosen from the directory:\n"
              AB "  " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
              " As above, provide input over STDIN:\n"
-             AB "  " PROG_NAME " -f input_dir -s -- /usr/bin/djpeg\n" AC
+             AB "  " PROG_NAME " -f input_dir -s -- /usr/bin/djpeg\n" AC);
 #if defined(_HF_ARCH_LINUX)
+    LOG_HELP("%s",
              " Run the binary over a dynamic file, maximize total no. of instructions:\n"
              AB "  " PROG_NAME " --linux_perf_instr -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER
              AC "\n" " Run the binary over a dynamic file, maximize total no. of branches:\n" AB
@@ -96,10 +91,10 @@ static void cmdlineHelp(const char *pname, struct custom_option *opts)
              "\n" " Run the binary over a dynamic file, maximize unique branches (edges):\n" AB "  "
              PROG_NAME " --linux_perf_ip_addr -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
              " Run the binary over a dynamic file, maximize custom counters (experimental):\n" AB
-             "  " PROG_NAME " --linux_perf_custom -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC
-             "\n"
+             "  " PROG_NAME " --linux_perf_custom -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER
+             AC);
 #endif                          /* defined(_HF_ARCH_LINUX) */
-        );
+    LOG_HELP("\n");
 }
 
 static void cmdlineUsage(const char *pname, struct custom_option *opts)
@@ -397,7 +392,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     }
 
     LOG_I("inputFile '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, flipRate: %lf, "
-          "externalCommand: '%s', tmOut: %ld, mutationsMax: %ld, threadsMax: %ld, fileExtn '%s', ignoreAddr: %p, "
+          "externalCommand: '%s', tmOut: %ld, mutationsMax: %zu, threadsMax: %zu, fileExtn '%s', ignoreAddr: %p, "
           "memoryLimit: 0x%" PRIx64 "(MiB), fuzzExe: '%s', fuzzedPid: %d",
           hfuzz->inputFile,
           cmdlineYesNo(hfuzz->nullifyStdio), cmdlineYesNo(hfuzz->fuzzStdin),

@@ -668,7 +668,7 @@ uint64_t hash_callstack(thread_port_t thread,
         pos++;
     }
 
-    LOG_D("Callstack hash %u", hash);
+    LOG_D("Callstack hash %llu", hash);
 
     [_crashReport release];
     [pool drain];

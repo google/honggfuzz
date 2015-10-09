@@ -55,7 +55,7 @@ size_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
     }
 
     if (st.st_size > (off_t) fileMaxSz) {
-        LOG_E("File '%s' size to big (%zu > %" PRId64 ")", fileName, (int64_t) st.st_size,
+        LOG_E("File '%s' size to big (%zu > %zu)", fileName, (size_t) st.st_size,
               fileMaxSz);
         close(fd);
         return 0UL;
@@ -375,7 +375,7 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
 
     uint8_t *inFileBuf = malloc(inSt.st_size);
     if (!inFileBuf) {
-        PLOG_E("malloc(%zu) failed", inSt.st_size);
+        PLOG_E("malloc(%zu) failed", (size_t) inSt.st_size);
         close(inFD);
         close(outFD);
         return false;
@@ -390,7 +390,7 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
     }
 
     if (files_writeToFd(outFD, inFileBuf, inSt.st_size) == false) {
-        PLOG_E("Couldn't write '%zu' bytes to file '%s' (fd='%d')", inSt.st_size,
+        PLOG_E("Couldn't write '%zu' bytes to file '%s' (fd='%d')", (size_t) inSt.st_size,
                destination, outFD);
         free(inFileBuf);
         close(inFD);
