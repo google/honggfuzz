@@ -55,8 +55,7 @@ size_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
     }
 
     if (st.st_size > (off_t) fileMaxSz) {
-        LOG_E("File '%s' size to big (%zu > %zu)", fileName, (size_t) st.st_size,
-              fileMaxSz);
+        LOG_E("File '%s' size to big (%zu > %zu)", fileName, (size_t) st.st_size, fileMaxSz);
         close(fd);
         return 0UL;
     }

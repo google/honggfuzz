@@ -104,8 +104,7 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
         dprintf(log_fd, "%s", logLevels[ll].prefix);
     }
     if (logLevels[ll].print_funcline) {
-        dprintf(log_fd, "[%s][%s][%d] %s():%d ", timestr, logLevels[ll].descr,
-                __hf_pid(), fn, ln);
+        dprintf(log_fd, "[%s][%s][%d] %s():%d ", timestr, logLevels[ll].descr, __hf_pid(), fn, ln);
     }
 
     va_list args;

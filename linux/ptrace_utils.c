@@ -811,12 +811,14 @@ static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status,
             }
 
             if (WIFEXITED(event_msg)) {
-                LOG_D("PID: %d exited with exit_code: %lu", pid, WEXITSTATUS(event_msg));
-                if (WEXITSTATUS(event_msg) == (unsigned long) HF_MSAN_EXIT_CODE) {
+                LOG_D("PID: %d exited with exit_code: %lu", pid,
+                      (unsigned long)WEXITSTATUS(event_msg));
+                if (WEXITSTATUS(event_msg) == (unsigned long)HF_MSAN_EXIT_CODE) {
                     arch_ptraceSaveData(hfuzz, pid, fuzzer);
                 }
             } else if (WIFSIGNALED(event_msg)) {
-                LOG_D("PID: %d terminated with signal: %lu", pid, WTERMSIG(event_msg));
+                LOG_D("PID: %d terminated with signal: %lu", pid,
+                      (unsigned long)WTERMSIG(event_msg));
             } else {
                 LOG_D("PID: %d exited with unknown status: %lu", pid, event_msg);
             }
