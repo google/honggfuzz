@@ -30,9 +30,15 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/syscall.h>
 #include <time.h>
 #include <unistd.h>
+
+#if defined(_HF_ARCH_LINUX)
+#include <sys/syscall.h>
+#define __hf_pid()      (pid_t) syscall(__NR_gettid)
+#else                           /* defined(_HF_ARCH_LINUX) */
+#define __hf_pid()      getpid()
+#endif                          /* defined(_HF_ARCH_LINUX) */
 
 static int log_fd = STDERR_FILENO;
 static bool log_fd_isatty = true;
@@ -98,8 +104,8 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
         dprintf(log_fd, "%s", logLevels[ll].prefix);
     }
     if (logLevels[ll].print_funcline) {
-        dprintf(log_fd, "[%s][%s][%ld] %s():%d ", timestr, logLevels[ll].descr,
-                syscall(__NR_getpid), fn, ln);
+        dprintf(log_fd, "[%s][%s][%d] %s():%d ", timestr, logLevels[ll].descr,
+                __hf_pid(), fn, ln);
     }
 
     va_list args;

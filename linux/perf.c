@@ -267,7 +267,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
                      MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
     if (perfBloom == MAP_FAILED) {
         perfBloom = NULL;
-        PLOG_E("mmap(size=%zu) failed", _HF_PERF_BLOOM_SZ);
+        PLOG_E("mmap(size=%zu) failed", (size_t) _HF_PERF_BLOOM_SZ);
     }
 
     perfMmapBuf =
