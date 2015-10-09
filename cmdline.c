@@ -88,15 +88,15 @@ static void cmdlineHelp(const char *pname, struct custom_option *opts)
              AB "  " PROG_NAME " -f input_dir -s -- /usr/bin/djpeg\n" AC
 #if defined(_HF_ARCH_LINUX)
              " Run the binary over a dynamic file, maximize total no. of instructions:\n"
-             AB "  " PROG_NAME " -LDi -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+             AB "  " PROG_NAME " --linux_perf_instr -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
              " Run the binary over a dynamic file, maximize total no. of branches:\n"
-             AB "  " PROG_NAME " -LDb -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+             AB "  " PROG_NAME " --linux_perf_branch -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
              " Run the binary over a dynamic file, maximize unique code blocks (coverage):\n"
-             AB "  " PROG_NAME " -LDp -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+             AB "  " PROG_NAME " --linux_perf_ip -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
              " Run the binary over a dynamic file, maximize unique branches (edges):\n"
-             AB "  " PROG_NAME " -LDe -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+             AB "  " PROG_NAME " --linux_perf_ip_addr -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
              " Run the binary over a dynamic file, maximize custom counters (experimental):\n"
-             AB "  " PROG_NAME " -LDf -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
+             AB "  " PROG_NAME " --linux_perf_custom -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER AC "\n"
 #endif                          /* defined(_HF_ARCH_LINUX) */
         );
 }
