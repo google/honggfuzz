@@ -761,8 +761,11 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
         pc = 0UL;
         sig_addr = NULL;
     }
-    /* With kill/tkill/tgkill, si_addr is undefined */
-    if (si.si_code == SI_TKILL || si.si_code == SI_USER) {
+#ifndef SI_FROMUSER
+#define SI_FROMUSER(siptr)      ((siptr)->si_code <= 0)
+#endif                          /* SI_FROMUSER */
+    /* User-induced signals don't set si.si_addr */
+    if (SI_FROMUSER(&si)) {
         sig_addr = NULL;
     }
 
