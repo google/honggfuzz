@@ -963,6 +963,11 @@ bool arch_ptraceAttach(pid_t pid)
     static const long seize_options =
         PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACEEXIT;
 
+    if (ptrace(PTRACE_SEIZE, pid, NULL, seize_options) == -1) {
+        PLOG_W("Couldn't ptrace(PTRACE_SEIZE) to pid: %d", pid);
+        return false;
+    }
+
     kill(pid, SIGSTOP);
     arch_ptraceWaitForPid(pid);
 
@@ -973,19 +978,15 @@ bool arch_ptraceAttach(pid_t pid)
     }
 
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
+        if (tasks[i] == pid) {
+            continue;
+        }
         if (ptrace(PTRACE_SEIZE, tasks[i], NULL, seize_options) == -1) {
             PLOG_W("Couldn't ptrace(PTRACE_SEIZE) to pid: %d", tasks[i]);
             continue;
         }
     }
-    for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
-        if (ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL) == -1) {
-            PLOG_W("Couldn't ptrace(PTRACE_INTERRUPT) to pid: %d", tasks[i]);
-            continue;
-        }
-        arch_ptraceWaitForPid(tasks[i]);
-        ptrace(PTRACE_CONT, tasks[i], NULL, NULL);
-    }
+    ptrace(PTRACE_CONT, pid, NULL, NULL);
 
     return true;
 }
