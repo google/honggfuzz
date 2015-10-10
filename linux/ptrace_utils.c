@@ -1022,12 +1022,3 @@ void arch_ptraceDetach(pid_t pid)
 
     ptrace(PTRACE_DETACH, pid, NULL, NULL);
 }
-
-bool arch_ptraceInit(honggfuzz_t * hfuzz)
-{
-    if (hfuzz->pid == 0) {
-        return true;
-    }
-
-    return arch_ptraceAttach(hfuzz->pid);
-}

@@ -269,10 +269,15 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (ptracePid != childPid) {
         static bool ptraceAttached = false;
-        if (ptraceAttached == false && arch_ptraceInit(hfuzz) == false) {
-            PLOG_F("arch_ptraceInit(pid=%d) failed", hfuzz->pid);
+        if (ptraceAttached == false) {
+            if (arch_ptraceAttach(ptracePid) == false) {
+                LOG_F("arch_ptraceAttach(pid=%d) failed", ptracePid);
+            }
+            ptraceAttached = true;
         }
-        ptraceAttached = true;
+        if (kill(ptracePid, 0) == -1) {
+            PLOG_F("PID %d probably no longer exists", ptracePid);
+        }
     }
 
     timer_t timerid;
