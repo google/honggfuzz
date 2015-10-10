@@ -267,6 +267,14 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     pid_t ptracePid = (hfuzz->pid > 0) ? hfuzz->pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
 
+    if (ptracePid != childPid) {
+        static bool ptraceAttached = false;
+        if (ptraceAttached == false && arch_ptraceInit(hfuzz) == false) {
+            PLOG_F("arch_ptraceInit(pid=%d) failed", hfuzz->pid);
+        }
+        ptraceAttached = true;
+    }
+
     timer_t timerid;
     if (arch_setTimer(&timerid) == false) {
         LOG_F("Couldn't set timer");
@@ -290,9 +298,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     if (arch_perfEnable(ptracePid, hfuzz, &perfFds) == false) {
         LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
-    }
-    if (arch_ptraceAttach(ptracePid) == false) {
-        LOG_F("Couldn't attach to pid %d", ptracePid);
     }
     kill(childPid, SIGCONT);
 
@@ -341,16 +346,15 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     arch_removeTimer(&timerid);
     arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
-    arch_ptraceDetach(ptracePid);
     return;
 }
 
 bool arch_archInit(honggfuzz_t * hfuzz)
 {
-    unsigned long major = 0, minor = 0;
-    char *p = NULL;
-
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+        unsigned long major = 0, minor = 0;
+        char *p = NULL;
+
         /*
          * Check that Linux kernel is compatible
          *
