@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <getopt.h>
 #include <limits.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,6 +44,7 @@
 static int log_fd = STDERR_FILENO;
 static bool log_fd_isatty = true;
 enum llevel_t log_level = INFO;
+pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 enum llevel_t logGetLogLevel(void)
 {
@@ -55,11 +57,13 @@ enum llevel_t logGetLogLevel(void)
  */
 bool logInitLogFile(const char *logfile, enum llevel_t ll)
 {
+    log_fd_isatty = (isatty(log_fd) == 1 ? true : false);
     log_level = ll;
+
     if (logfile == NULL) {
-        log_fd = STDERR_FILENO;
         return true;
     }
+
     log_fd = open(logfile, O_CREAT | O_RDWR | O_APPEND, 0640);
     if (log_fd == -1) {
         log_fd = STDERR_FILENO;
@@ -100,6 +104,7 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
     }
 
     /* Start printing logs */
+    pthread_mutex_lock(&log_mutex);
     if (log_fd_isatty) {
         dprintf(log_fd, "%s", logLevels[ll].prefix);
     }
@@ -111,6 +116,7 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
     va_start(args, fmt);
     vdprintf(log_fd, fmt, args);
     va_end(args);
+
     if (perr == true) {
         dprintf(log_fd, ": %s", strerr);
     }
@@ -118,6 +124,7 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
         dprintf(log_fd, "\033[0m");
     }
     dprintf(log_fd, "\n");
+    pthread_mutex_unlock(&log_mutex);
     /* End printing logs */
 
     if (ll == FATAL) {

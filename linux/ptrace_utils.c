@@ -810,7 +810,7 @@ static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status,
         {
             unsigned long event_msg;
             if (ptrace(PTRACE_GETEVENTMSG, pid, NULL, &event_msg) == -1) {
-                LOG_E("ptrace(PTRACE_GETEVENTMSG,%d) failed", pid);
+                PLOG_E("ptrace(PTRACE_GETEVENTMSG,%d) failed", pid);
                 return;
             }
 
@@ -968,6 +968,8 @@ bool arch_ptraceAttach(pid_t pid)
         return false;
     }
 
+    LOG_D("Attached to PID: %d", pid);
+
     int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
         LOG_E("Couldn't read thread list for pid '%d'", pid);
@@ -982,6 +984,7 @@ bool arch_ptraceAttach(pid_t pid)
             PLOG_W("Couldn't ptrace(PTRACE_SEIZE) to pid: %d", tasks[i]);
             continue;
         }
+        LOG_D("Attached to PID: %d (thread_group:%d)", tasks[i], pid);
     }
     return true;
 }
