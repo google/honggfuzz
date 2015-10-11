@@ -287,6 +287,8 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         PLOG_F("PID '%d' is not in a stopped state", pid);
     }
 
+    LOG_D("PID: %d is in a stopped state now", childPid);
+
     static bool ptraceAttached = false;
     if (ptraceAttached == false) {
         if (arch_ptraceAttach(ptracePid) == false) {
@@ -312,7 +314,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     for (;;) {
         int status;
-        pid_t pid = wait4(-1, &status, __WALL, NULL);
+        pid_t pid = wait4(-1, &status, __WALL | __WNOTHREAD, NULL);
         if (pid == -1 && errno == EINTR) {
             if (hfuzz->tmOut) {
                 arch_checkTimeLimit(hfuzz, fuzzer);
