@@ -272,21 +272,9 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_F("Couldn't set timer");
     }
 
-    for (;;) {
-        int status;
-        pid_t pid = wait4(childPid, &status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
-        if (pid == -1 && errno == EINTR) {
-            continue;
-        }
-        if (pid != childPid) {
-            PLOG_F("wait4()=%d =! %d", pid, childPid);
-        }
-        if (WIFSTOPPED(status)) {
-            break;
-        }
-        PLOG_F("PID '%d' is not in a stopped state", pid);
+    if (arch_ptraceWaitForPidStop(childPid) == false) {
+        LOG_F("PID %d not in a stopped state", childPid);
     }
-
     LOG_D("PID: %d is in a stopped state now", childPid);
 
     static bool ptraceAttached = false;
