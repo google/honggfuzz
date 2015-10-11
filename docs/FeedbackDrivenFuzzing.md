@@ -47,6 +47,7 @@ As above, it will try to maximize the number of branches taken by CPU on behalf 
 
 ```
 $ honggfuzz -F3000 -q --linux_perf_branch -f /usr/share/doc/texlive-doc/latex/ctable/penguin.jpg -- /usr/bin/djpeg ___FILE___
+============================== STAT ==============================
 Iterations: 1617
 Start time: 2015-10-11 17:16:31 (3 seconds elapsed)
 Input file/dir: '/usr/share/doc/texlive-doc/latex/ctable/penguin.jpg'
@@ -71,8 +72,9 @@ This is the most powerfull mode of feedback-driven counting that honggfuzz suppo
 
 ```
 $ honggfuzz -F3000000 -q --linux_perf_ip -f /usr/share/lxde/wallpapers/lxde_red.jpg -- /usr/bin/djpeg ___FILE___
-Iterations: 2
-Start time: 2015-10-11 17:15:58 (1 seconds elapsed)
+============================== STAT ==============================
+Iterations: 10
+Start time: 2015-10-11 17:15:58 (10 seconds elapsed)
 Input file/dir: '/usr/share/lxde/wallpapers/lxde_red.jpg'
 Fuzzed cmd: '/usr/bin/djpeg'
 Fuzzing threads: 2
