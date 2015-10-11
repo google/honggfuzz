@@ -359,6 +359,10 @@ struct {
 };
 /*  *INDENT-ON* */
 
+#ifndef SI_FROMUSER
+#define SI_FROMUSER(siptr)      ((siptr)->si_code <= 0)
+#endif                          /* SI_FROMUSER */
+
 static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
 {
     /*
@@ -669,7 +673,8 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "PID: %d\n", pid);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "SIGNAL: %s (%d)\n",
                    arch_sigs[si->si_signo].descr, si->si_signo);
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FAULT ADDRESS: %p\n", si->si_addr);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FAULT ADDRESS: %p\n",
+                   SI_FROMUSER(si) ? NULL : si->si_addr);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "INSTRUCTION: %s\n", instr);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK HASH: %016llx\n",
                    fuzzer->backtrace);
@@ -718,7 +723,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %"
           REG_PM ", instr: '%s'", pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
 
-    if (si.si_addr < hfuzz->ignoreAddr) {
+    if (!SI_FROMUSER(&si) && si.si_addr < hfuzz->ignoreAddr) {
         LOG_I("'%s' is interesting (%s), but the si.si_addr is %p (below %p), skipping",
               fuzzer->fileName, arch_sigs[si.si_signo].descr, si.si_addr, hfuzz->ignoreAddr);
         return;
@@ -761,9 +766,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
         pc = 0UL;
         sig_addr = NULL;
     }
-#ifndef SI_FROMUSER
-#define SI_FROMUSER(siptr)      ((siptr)->si_code <= 0)
-#endif                          /* SI_FROMUSER */
+
     /* User-induced signals don't set si.si_addr */
     if (SI_FROMUSER(&si)) {
         sig_addr = NULL;
