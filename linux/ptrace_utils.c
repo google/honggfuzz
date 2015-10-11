@@ -968,9 +968,6 @@ bool arch_ptraceAttach(pid_t pid)
         return false;
     }
 
-    kill(pid, SIGSTOP);
-    arch_ptraceWaitForPid(pid);
-
     int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
         LOG_E("Couldn't read thread list for pid '%d'", pid);
@@ -986,8 +983,6 @@ bool arch_ptraceAttach(pid_t pid)
             continue;
         }
     }
-    ptrace(PTRACE_CONT, pid, NULL, NULL);
-
     return true;
 }
 

@@ -267,27 +267,15 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     pid_t ptracePid = (hfuzz->pid > 0) ? hfuzz->pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
 
-    if (ptracePid != childPid) {
-        static bool ptraceAttached = false;
-        if (ptraceAttached == false) {
-            if (arch_ptraceAttach(ptracePid) == false) {
-                LOG_F("arch_ptraceAttach(pid=%d) failed", ptracePid);
-            }
-            ptraceAttached = true;
-        }
-        if (kill(ptracePid, 0) == -1) {
-            PLOG_F("PID %d probably no longer exists", ptracePid);
-        }
-    }
-
     timer_t timerid;
     if (arch_setTimer(&timerid) == false) {
         LOG_F("Couldn't set timer");
     }
 
-    perfFd_t perfFds;
-
     for (;;) {
+        if (ptracePid != childPid) {
+            break;
+        }
         int status;
         pid_t pid = wait4(childPid, &status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
         if (pid == -1 && errno == EINTR) {
@@ -301,6 +289,22 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
         PLOG_F("PID '%d' is not in a stopped state", pid);
     }
+
+    static bool ptraceAttached = false;
+    if (ptraceAttached == false) {
+        if (arch_ptraceAttach(ptracePid) == false) {
+            LOG_F("arch_ptraceAttach(pid=%d) failed", ptracePid);
+        }
+        /* In case we fuzz a long-lived process (-p pid) we attach to it once only */
+        if (ptracePid != childPid) {
+            ptraceAttached = true;
+        }
+    }
+    if (kill(ptracePid, 0) == -1) {
+        PLOG_F("Liveness of %d questioned", ptracePid);
+    }
+
+    perfFd_t perfFds;
     if (arch_perfEnable(ptracePid, hfuzz, &perfFds) == false) {
         LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
     }
