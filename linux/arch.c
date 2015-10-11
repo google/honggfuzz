@@ -273,9 +273,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     for (;;) {
-        if (ptracePid != childPid) {
-            break;
-        }
         int status;
         pid_t pid = wait4(childPid, &status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
         if (pid == -1 && errno == EINTR) {
@@ -300,6 +297,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             ptraceAttached = true;
         }
     }
+    /* A long-lived processed could have already exited, and we wouldn't know */
     if (kill(ptracePid, 0) == -1) {
         PLOG_F("Liveness of %d questioned", ptracePid);
     }
@@ -308,17 +306,13 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (arch_perfEnable(ptracePid, hfuzz, &perfFds) == false) {
         LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
     }
-    kill(childPid, SIGCONT);
+    if (kill(childPid, SIGCONT) == -1) {
+        PLOG_F("Restarting PID: %d failed", childPid);
+    }
 
     for (;;) {
         int status;
-
-        // wait3 syscall is no longer present in Android
-#if !defined(__ANDROID__)
-        pid_t pid = wait3(&status, __WNOTHREAD | __WALL, NULL);
-#else
-        pid_t pid = wait4(-1, &status, __WNOTHREAD | __WALL, NULL);
-#endif
+        pid_t pid = wait4(-1, &status, __WALL, NULL);
         if (pid == -1 && errno == EINTR) {
             if (hfuzz->tmOut) {
                 arch_checkTimeLimit(hfuzz, fuzzer);
@@ -330,11 +324,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             break;
         }
         if (pid == -1) {
-#if !defined(__ANDROID__)
-            PLOG_F("wait3() failed");
-#else
             PLOG_F("wait4() failed");
-#endif
         }
         LOG_D("PID '%d' returned with status '%d'", pid, status);
 
