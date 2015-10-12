@@ -815,7 +815,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     bool dstFileExists = false;
     if (files_copyFile(fuzzer->fileName, fuzzer->crashFileName, &dstFileExists)) {
         LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName,
-               fuzzer->crashFileName);
+              fuzzer->crashFileName);
         __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
     } else {
         if (dstFileExists) {
