@@ -426,7 +426,7 @@ void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt)
 #if PTRACE_GETREGS_AVAILABLE
         if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
             PLOG_D("ptrace(PTRACE_GETREGS) failed");
-            LOG_W("ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to" " extract target registers");
+            LOG_W("ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to extract target registers");
             return;
         }
 #else
@@ -484,7 +484,7 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
 #if PTRACE_GETREGS_AVAILABLE
         if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
             PLOG_D("ptrace(PTRACE_GETREGS) failed");
-            LOG_W("ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to" " extract target registers");
+            LOG_W("ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to extract target registers");
             return 0;
         }
 #else
@@ -540,7 +540,7 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
         *status_reg = r64->pstate;
         return pt_iov.iov_len;
     }
-    LOG_W("Unknown registers structure size: '%d'", pt_iov.iov_len);
+    LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
     return 0;
 #endif                          /* defined(__arm__) || defined(__aarch64__) */
 
@@ -563,7 +563,7 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
         return pt_iov.iov_len;
     }
 
-    LOG_W("Unknown registers structure size: '%d'", pt_iov.iov_len);
+    LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
     return 0;
 #endif                          /* defined(__powerpc64__) || defined(__powerpc__) */
 

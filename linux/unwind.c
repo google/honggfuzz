@@ -125,7 +125,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
 
         ret = unw_get_reg(&cursor, UNW_REG_IP, &pc);
         if (ret < 0) {
-            LOG_E("[pid='%d'] [%d] failed to read IP (%s)", pid, num_frames, UNW_ER[-ret]);
+            LOG_E("[pid='%d'] [%zd] failed to read IP (%s)", pid, num_frames, UNW_ER[-ret]);
             // We don't want to try to extract info from an arbitrary IP
             // TODO: Maybe abort completely (goto out))
             goto skip_frame_info;
@@ -134,14 +134,15 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
         unw_proc_info_t frameInfo;
         ret = unw_get_proc_info(&cursor, &frameInfo);
         if (ret < 0) {
-            LOG_D("[pid='%d'] [%d] unw_get_proc_info (%s)", pid, num_frames, UNW_ER[-ret]);
+            LOG_D("[pid='%d'] [%zd] unw_get_proc_info (%s)", pid, num_frames, UNW_ER[-ret]);
             // Not safe to keep parsing frameInfo
             goto skip_frame_info;
         }
 
         ret = unw_get_proc_name(&cursor, buf, sizeof(buf), &offset);
         if (ret < 0) {
-            LOG_D("[pid='%d'] [%d] unw_get_proc_name() failed (%s)", pid, num_frames, UNW_ER[-ret]);
+            LOG_D("[pid='%d'] [%zd] unw_get_proc_name() failed (%s)", pid, num_frames,
+                  UNW_ER[-ret]);
             buf[0] = '\0';
         }
 
