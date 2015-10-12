@@ -540,7 +540,7 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
         *status_reg = r64->pstate;
         return pt_iov.iov_len;
     }
-    LOG_W("Unknown registers structure size: '%d'", pt_iov.iov_len);
+    LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
     return 0;
 #endif                          /* defined(__arm__) || defined(__aarch64__) */
 
@@ -563,7 +563,7 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
         return pt_iov.iov_len;
     }
 
-    LOG_W("Unknown registers structure size: '%d'", pt_iov.iov_len);
+    LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
     return 0;
 #endif                          /* defined(__powerpc64__) || defined(__powerpc__) */
 
