@@ -141,7 +141,8 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
 
         ret = unw_get_proc_name(&cursor, buf, sizeof(buf), &offset);
         if (ret < 0) {
-            LOG_D("[pid='%d'] [%zd] unw_get_proc_name() failed (%s)", pid, num_frames, UNW_ER[-ret]);
+            LOG_D("[pid='%d'] [%zd] unw_get_proc_name() failed (%s)", pid, num_frames,
+                  UNW_ER[-ret]);
             buf[0] = '\0';
         }
 

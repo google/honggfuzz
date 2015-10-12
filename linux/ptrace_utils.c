@@ -426,7 +426,7 @@ void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt)
 #if PTRACE_GETREGS_AVAILABLE
         if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
             PLOG_D("ptrace(PTRACE_GETREGS) failed");
-            LOG_W("ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to" " extract target registers");
+            LOG_W("ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to extract target registers");
             return;
         }
 #else
@@ -484,7 +484,7 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
 #if PTRACE_GETREGS_AVAILABLE
         if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
             PLOG_D("ptrace(PTRACE_GETREGS) failed");
-            LOG_W("ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to" " extract target registers");
+            LOG_W("ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to extract target registers");
             return 0;
         }
 #else
