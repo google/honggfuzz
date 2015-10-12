@@ -22,7 +22,7 @@
 BIN := honggfuzz
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror
 COMMON_LDFLAGS := -lm
-COMMON_SRCS := honggfuzz.c display.c log.c files.c fuzz.c report.c mangle.c util.c
+COMMON_SRCS := honggfuzz.c cmdline.c display.c log.c files.c fuzz.c report.c mangle.c util.c
 INTERCEPTOR_SRCS := $(wildcard interceptor/*.c)
 
 OS ?= $(shell uname -s)
@@ -179,18 +179,19 @@ android:
 
 # DO NOT DELETE
 
-honggfuzz.o: common.h log.h files.h fuzz.h util.h
+honggfuzz.o: common.h cmdline.h log.h files.h fuzz.h util.h
+cmdline.o: cmdline.h common.h log.h
 display.o: common.h display.h log.h util.h
-log.o: common.h log.h util.h
+log.o: log.h common.h
 files.o: common.h files.h log.h
 fuzz.o: common.h fuzz.h arch.h display.h files.h log.h mangle.h report.h
 fuzz.o: util.h
 report.o: common.h report.h log.h util.h
 mangle.o: common.h mangle.h log.h util.h
 util.o: common.h files.h log.h
-linux/arch.o: common.h arch.h linux/perf.h linux/ptrace_utils.h log.h util.h
-linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
-linux/perf.o: common.h linux/perf.h log.h util.h
 linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h linux/bfd.h
 linux/ptrace_utils.o: linux/unwind.h log.h util.h
+linux/perf.o: common.h linux/perf.h log.h util.h
+linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
 linux/unwind.o: common.h linux/unwind.h log.h
+linux/arch.o: common.h arch.h linux/perf.h linux/ptrace_utils.h log.h util.h

@@ -95,7 +95,7 @@ endif
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := honggfuzz
-LOCAL_SRC_FILES := honggfuzz.c display.c log.c files.c fuzz.c report.c mangle.c util.c
+LOCAL_SRC_FILES := honggfuzz.c cmdline.c display.c log.c files.c fuzz.c report.c mangle.c util.c
 LOCAL_CFLAGS := -std=c11 -I. \
     -D_GNU_SOURCE \
     -Wall -Wextra -Wno-initializer-overrides -Wno-override-init \

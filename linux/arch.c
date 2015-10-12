@@ -70,7 +70,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
      * Kill the children when fuzzer dies (e.g. due to Ctrl+C)
      */
     if (prctl(PR_SET_PDEATHSIG, (long)SIGKILL, 0L, 0L, 0L) == -1) {
-        LOGMSG_P(l_ERROR, "prctl(PR_SET_PDEATHSIG, SIGKILL) failed");
+        PLOG_E("prctl(PR_SET_PDEATHSIG, SIGKILL) failed");
         return false;
     }
 
@@ -78,7 +78,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
      * Kill a process which corrupts its own heap (with ABRT)
      */
     if (setenv("MALLOC_CHECK_", "3", 1) == -1) {
-        LOGMSG_P(l_ERROR, "setenv(MALLOC_CHECK_=3) failed");
+        PLOG_E("setenv(MALLOC_CHECK_=3) failed");
         return false;
     }
 
@@ -89,7 +89,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         ("ASAN_OPTIONS",
          "allow_user_segv_handler=1:handle_segv=0:abort_on_error=1:allocator_may_return_null=1",
          1) == -1) {
-        LOGMSG_P(l_ERROR, "setenv(ASAN_OPTIONS) failed");
+        PLOG_E("setenv(ASAN_OPTIONS) failed");
         return false;
     }
 
@@ -100,7 +100,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
             "exit_code=" HF_MSAN_EXIT_CODE_STR ":report_umrs=1:wrap_signals=0:print_stats=1";
     }
     if (setenv("MSAN_OPTIONS", msan_options, 1) == -1) {
-        LOGMSG_P(l_ERROR, "setenv(MSAN_OPTIONS) failed");
+        PLOG_E("setenv(MSAN_OPTIONS) failed");
         return false;
     }
 
@@ -108,7 +108,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
      * Disable ASLR
      */
     if (hfuzz->disableRandomization && personality(ADDR_NO_RANDOMIZE) == -1) {
-        LOGMSG_P(l_ERROR, "personality(ADDR_NO_RANDOMIZE) failed");
+        PLOG_E("personality(ADDR_NO_RANDOMIZE) failed");
         return false;
     }
 #define ARGS_MAX 512
@@ -131,7 +131,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 
     args[x++] = NULL;
 
-    LOGMSG(l_DEBUG, "Launching '%s' on file '%s'", args[0], fileName);
+    LOG_D("Launching '%s' on file '%s'", args[0], fileName);
 
     /*
      * Set timeout (prof), real timeout (2*prof), and rlimit_cpu (2*prof)
@@ -145,7 +145,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
             .rlim_max = hfuzz->tmOut * 2,
         };
         if (setrlimit(RLIMIT_CPU, &rl) == -1) {
-            LOGMSG_P(l_ERROR, "Couldn't enforce the RLIMIT_CPU resource limit");
+            PLOG_E("Couldn't enforce the RLIMIT_CPU resource limit");
             return false;
         }
     }
@@ -158,8 +158,8 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
             .rlim_cur = hfuzz->asLimit * 1024ULL * 1024ULL,
             .rlim_max = hfuzz->asLimit * 1024ULL * 1024ULL,
         };
-        if (prlimit64(getpid(), RLIMIT_AS, &rl, NULL) == -1) {
-            LOGMSG_P(l_DEBUG, "Couldn't enforce the RLIMIT_AS resource limit, ignoring");
+        if (prlimit64(0, RLIMIT_AS, &rl, NULL) == -1) {
+            PLOG_D("Couldn't enforce the RLIMIT_AS resource limit, ignoring");
         }
     }
 
@@ -186,14 +186,14 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     execvp(args[0], args);
 
     util_recoverStdio();
-    LOGMSG(l_FATAL, "Failed to create new '%s' process", args[0]);
+    LOG_F("Failed to create new '%s' process", args[0]);
     return false;
 }
 
 static void arch_sigFunc(int signo, siginfo_t * si, void *dummy)
 {
     if (signo != SIGALRM) {
-        LOGMSG(l_ERROR, "Signal != SIGALRM (%d)", signo);
+        LOG_E("Signal != SIGALRM (%d)", signo);
     }
     return;
     if (si == NULL) {
@@ -218,7 +218,7 @@ static bool arch_setTimer(timer_t * timerid)
         ._sigev_un._tid = syscall(__NR_gettid),
     };
     if (timer_create(CLOCK_REALTIME, &sevp, timerid) == -1) {
-        LOGMSG_P(l_ERROR, "timer_create(CLOCK_REALTIME) failed");
+        PLOG_E("timer_create(CLOCK_REALTIME) failed");
         return false;
     }
     /* 
@@ -229,7 +229,7 @@ static bool arch_setTimer(timer_t * timerid)
         .it_interval = {.tv_sec = 0,.tv_nsec = 200000000,},
     };
     if (timer_settime(*timerid, 0, &ts, NULL) == -1) {
-        LOGMSG_P(l_ERROR, "timer_settime() failed");
+        PLOG_E("timer_settime() failed");
         timer_delete(*timerid);
         return false;
     }
@@ -243,7 +243,7 @@ static bool arch_setTimer(timer_t * timerid)
         .sa_restorer = NULL,
     };
     if (sigaction(SIGALRM, &sa, NULL) == -1) {
-        LOGMSG_P(l_ERROR, "sigaction(SIGALRM) failed");
+        PLOG_E("sigaction(SIGALRM) failed");
         return false;
     }
 
@@ -255,8 +255,8 @@ static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int64_t curMillis = util_timeNowMillis();
     int64_t diffMillis = curMillis - fuzzer->timeStartedMillis;
     if (diffMillis > (hfuzz->tmOut * 1000)) {
-        LOGMSG(l_WARN, "PID %d took too much time (limit %ld s). Sending SIGKILL",
-               fuzzer->pid, hfuzz->tmOut);
+        LOG_W("PID %d took too much time (limit %ld s). Sending SIGKILL",
+              fuzzer->pid, hfuzz->tmOut);
         kill(fuzzer->pid, SIGKILL);
         __sync_fetch_and_add(&hfuzz->timeoutedCnt, 1UL);
     }
@@ -269,42 +269,40 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     timer_t timerid;
     if (arch_setTimer(&timerid) == false) {
-        LOGMSG(l_FATAL, "Couldn't set timer");
+        LOG_F("Couldn't set timer");
+    }
+
+    if (arch_ptraceWaitForPidStop(childPid) == false) {
+        LOG_F("PID %d not in a stopped state", childPid);
+    }
+    LOG_D("PID: %d is in a stopped state now", childPid);
+
+    static bool ptraceAttached = false;
+    if (ptraceAttached == false) {
+        if (arch_ptraceAttach(ptracePid) == false) {
+            LOG_F("arch_ptraceAttach(pid=%d) failed", ptracePid);
+        }
+        /* In case we fuzz a long-lived process (-p pid) we attach to it once only */
+        if (ptracePid != childPid) {
+            ptraceAttached = true;
+        }
+    }
+    /* A long-lived processed could have already exited, and we wouldn't know */
+    if (kill(ptracePid, 0) == -1) {
+        PLOG_F("Liveness of %d questioned", ptracePid);
     }
 
     perfFd_t perfFds;
-
-    for (;;) {
-        int status;
-        pid_t pid = wait4(childPid, &status, __WNOTHREAD | __WALL | WUNTRACED, NULL);
-        if (pid == -1 && errno == EINTR) {
-            continue;
-        }
-        if (pid != childPid) {
-            LOGMSG_P(l_FATAL, "wait4()=%d =! %d", pid, childPid);
-        }
-        if (WIFSTOPPED(status)) {
-            break;
-        }
-        LOGMSG_P(l_FATAL, "PID '%d' is not in a stopped state", pid);
-    }
     if (arch_perfEnable(ptracePid, hfuzz, &perfFds) == false) {
-        LOGMSG(l_FATAL, "Couldn't enable perf counters for pid %d", ptracePid);
+        LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
     }
-    if (arch_ptraceAttach(ptracePid) == false) {
-        LOGMSG(l_FATAL, "Couldn't attach to pid %d", ptracePid);
+    if (kill(childPid, SIGCONT) == -1) {
+        PLOG_F("Restarting PID: %d failed", childPid);
     }
-    kill(childPid, SIGCONT);
 
     for (;;) {
         int status;
-
-        // wait3 syscall is no longer present in Android
-#if !defined(__ANDROID__)
-        pid_t pid = wait3(&status, __WNOTHREAD | __WALL, NULL);
-#else
-        pid_t pid = wait4(-1, &status, __WNOTHREAD | __WALL, NULL);
-#endif
+        pid_t pid = wait4(-1, &status, __WALL | __WNOTHREAD, NULL);
         if (pid == -1 && errno == EINTR) {
             if (hfuzz->tmOut) {
                 arch_checkTimeLimit(hfuzz, fuzzer);
@@ -312,17 +310,13 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             continue;
         }
         if (pid == -1 && errno == ECHILD) {
-            LOGMSG(l_DEBUG, "No more processes to track");
+            LOG_D("No more processes to track");
             break;
         }
         if (pid == -1) {
-#if !defined(__ANDROID__)
-            LOGMSG_P(l_FATAL, "wait3() failed");
-#else
-            LOGMSG_P(l_FATAL, "wait4() failed");
-#endif
+            PLOG_F("wait4() failed");
         }
-        LOGMSG(l_DEBUG, "PID '%d' returned with status '%d'", pid, status);
+        LOG_D("PID '%d' returned with status '%d'", pid, status);
 
         arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->hwCnts.customCnt);
 
@@ -341,16 +335,15 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     arch_removeTimer(&timerid);
     arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
-    arch_ptraceDetach(ptracePid);
     return;
 }
 
 bool arch_archInit(honggfuzz_t * hfuzz)
 {
-    unsigned long major = 0, minor = 0;
-    char *p = NULL;
-
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+        unsigned long major = 0, minor = 0;
+        char *p = NULL;
+
         /*
          * Check that Linux kernel is compatible
          *
@@ -366,20 +359,20 @@ bool arch_archInit(honggfuzz_t * hfuzz)
          */
         struct utsname uts;
         if (uname(&uts) == -1) {
-            LOGMSG_P(l_FATAL, "uname() failed");
+            PLOG_F("uname() failed");
             return false;
         }
 
         p = uts.release;
         major = strtoul(p, &p, 10);
         if (*p++ != '.') {
-            LOGMSG(l_FATAL, "Unsupported kernel version (%s)", uts.release);
+            LOG_F("Unsupported kernel version (%s)", uts.release);
             return false;
         }
 
         minor = strtoul(p, &p, 10);
         if ((major < 3) || ((major == 3) && (minor < 7))) {
-            LOGMSG(l_ERROR, "Unsupported kernel version (%s)", uts.release);
+            LOG_E("Unsupported kernel version (%s)", uts.release);
             return false;
         }
     }
@@ -391,7 +384,7 @@ bool arch_archInit(honggfuzz_t * hfuzz)
      * Setups using BoringSSL (API >= 22) are not affected.
      */
     if (setenv("OPENSSL_armcap", OPENSSL_ARMCAP_ABI, 1) == -1) {
-        LOGMSG_P(l_ERROR, "setenv(OPENSSL_armcap) failed");
+        PLOG_E("setenv(OPENSSL_armcap) failed");
         return false;
     }
 #endif

@@ -27,10 +27,11 @@
 #define HF_MSAN_EXIT_CODE 103
 #define HF_MSAN_EXIT_CODE_STR "103"
 
-extern bool arch_ptraceEnable(honggfuzz_t * fuzz);
-extern void arch_ptraceAnalyze(honggfuzz_t * fuzz, int status, pid_t pid, fuzzer_t * fuzzer);
+extern bool arch_ptraceWaitForPidStop(pid_t pid);
+extern bool arch_ptraceEnable(honggfuzz_t * hfuzz);
+extern void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer);
 extern bool arch_ptraceAttach(pid_t pid);
 extern void arch_ptraceDetach(pid_t pid);
-extern void arch_ptraceGetCustomPerf(honggfuzz_t * fuzz, pid_t pid, uint64_t * cnt);
+extern void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt);
 
 #endif

@@ -335,9 +335,7 @@ static ssize_t honggfuzz_process_vm_readv(pid_t pid,
 struct {
     const char *descr;
     bool important;
-    bool stack_only;
 } arch_sigs[NSIG] = {
-    [0 ... (NSIG - 1)].stack_only = false,
     [0 ... (NSIG - 1)].important = false,
     [0 ... (NSIG - 1)].descr = "UNKNOWN",
 
@@ -357,10 +355,13 @@ struct {
     [SIGBUS].descr = "SIGBUS",
 
     [SIGABRT].important = true,
-    [SIGABRT].stack_only = true,
     [SIGABRT].descr = "SIGABRT"
 };
 /*  *INDENT-ON* */
+
+#ifndef SI_FROMUSER
+#define SI_FROMUSER(siptr)      ((siptr)->si_code <= 0)
+#endif                          /* SI_FROMUSER */
 
 static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
 {
@@ -379,7 +380,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
         return len;
     }
     // Debug if failed since it shouldn't happen very often
-    LOGMSG_P(l_DEBUG, "process_vm_readv() failed");
+    PLOG_D("process_vm_readv() failed");
 
     /*
      * Ok, let's do it via ptrace() then.
@@ -393,7 +394,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
         long ret = ptrace(PT_READ_D, pid, addr, NULL);
 
         if (errno != 0) {
-            LOGMSG_P(l_WARN, "Couldn't PT_READ_D on pid %d, addr: %p", pid, addr);
+            PLOG_W("Couldn't PT_READ_D on pid %d, addr: %p", pid, addr);
             break;
         }
 
@@ -419,14 +420,13 @@ void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt)
     };
 
     if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
-        LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGSET) failed");
+        PLOG_D("ptrace(PTRACE_GETREGSET) failed");
 
         // If PTRACE_GETREGSET fails, try PTRACE_GETREGS if available
 #if PTRACE_GETREGS_AVAILABLE
         if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
-            LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGS) failed");
-            LOGMSG(l_WARN, "ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to"
-                   " extract target registers");
+            PLOG_D("ptrace(PTRACE_GETREGS) failed");
+            LOG_W("ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to" " extract target registers");
             return;
         }
 #else
@@ -452,7 +452,7 @@ void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt)
         return;
     }
 
-    LOGMSG(l_WARN, "Unknown registers structure size: '%d'", pt_iov.iov_len);
+    LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
 #endif                          /* defined(__i386__) || defined(__x86_64__) */
 }
 
@@ -478,14 +478,13 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
     };
 
     if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
-        LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGSET) failed");
+        PLOG_D("ptrace(PTRACE_GETREGSET) failed");
 
         // If PTRACE_GETREGSET fails, try PTRACE_GETREGS if available
 #if PTRACE_GETREGS_AVAILABLE
         if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
-            LOGMSG_P(l_DEBUG, "ptrace(PTRACE_GETREGS) failed");
-            LOGMSG(l_WARN, "ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to"
-                   " extract target registers");
+            PLOG_D("ptrace(PTRACE_GETREGS) failed");
+            LOG_W("ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to" " extract target registers");
             return 0;
         }
 #else
@@ -512,7 +511,7 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
         *status_reg = r64->flags;
         return pt_iov.iov_len;
     }
-    LOGMSG(l_WARN, "Unknown registers structure size: '%d'", pt_iov.iov_len);
+    LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
     return 0;
 #endif                          /* defined(__i386__) || defined(__x86_64__) */
 
@@ -541,7 +540,7 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
         *status_reg = r64->pstate;
         return pt_iov.iov_len;
     }
-    LOGMSG(l_WARN, "Unknown registers structure size: '%d'", pt_iov.iov_len);
+    LOG_W("Unknown registers structure size: '%d'", pt_iov.iov_len);
     return 0;
 #endif                          /* defined(__arm__) || defined(__aarch64__) */
 
@@ -564,11 +563,11 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
         return pt_iov.iov_len;
     }
 
-    LOGMSG(l_WARN, "Unknown registers structure size: '%d'", pt_iov.iov_len);
+    LOG_W("Unknown registers structure size: '%d'", pt_iov.iov_len);
     return 0;
 #endif                          /* defined(__powerpc64__) || defined(__powerpc__) */
 
-    LOGMSG(l_DEBUG, "Unknown/unsupported CPU architecture");
+    LOG_D("Unknown/unsupported CPU architecture");
     return 0;
 }
 
@@ -586,7 +585,7 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
 
     size_t pcRegSz = arch_getPC(pid, pc, &status_reg);
     if (!pcRegSz) {
-        LOGMSG(l_WARN, "Current architecture not supported for disassembly");
+        LOG_W("Current architecture not supported for disassembly");
         return;
     }
 
@@ -610,13 +609,13 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
     arch = CS_ARCH_X86;
     mode = (pcRegSz == sizeof(struct user_regs_struct_64)) ? CS_MODE_64 : CS_MODE_32;
 #else
-    LOGMSG(l_ERROR, "Unknown/unsupported Android CPU architecture");
+    LOG_E("Unknown/unsupported Android CPU architecture");
 #endif
 
     csh handle;
     cs_err err = cs_open(arch, mode, &handle);
     if (err != CS_ERR_OK) {
-        LOGMSG(l_WARN, "Capstone initialization failed: '%s'", cs_strerror(err));
+        LOG_W("Capstone initialization failed: '%s'", cs_strerror(err));
         return;
     }
 
@@ -624,8 +623,8 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
     size_t count = cs_disasm(handle, buf, sizeof(buf), *pc, 0, &insn);
 
     if (count < 1) {
-        LOGMSG(l_WARN, "Couldn't disassemble the assembler instructions' stream: '%s'",
-               cs_strerror(cs_errno(handle)));
+        LOG_W("Couldn't disassemble the assembler instructions' stream: '%s'",
+              cs_strerror(cs_errno(handle)));
         cs_close(&handle);
         return;
     }
@@ -675,7 +674,8 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "PID: %d\n", pid);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "SIGNAL: %s (%d)\n",
                    arch_sigs[si->si_signo].descr, si->si_signo);
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FAULT ADDRESS: %p\n", si->si_addr);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FAULT ADDRESS: %p\n",
+                   SI_FROMUSER(si) ? NULL : si->si_addr);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "INSTRUCTION: %s\n", instr);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK HASH: %016llx\n",
                    fuzzer->backtrace);
@@ -741,20 +741,17 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     bzero(&si, sizeof(si));
 
     if (ptrace(PT_GETSIGINFO, pid, 0, &si) == -1) {
-        LOGMSG_P(l_WARN, "Couldn't get siginfo for pid %d", pid);
+        PLOG_W("Couldn't get siginfo for pid %d", pid);
     }
 
     arch_getInstrStr(pid, &pc, instr);
 
-    LOGMSG(l_DEBUG,
-           "Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %"
-           REG_PM ", instr: '%s'", pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc,
-           instr);
+    LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %"
+          REG_PM ", instr: '%s'", pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
 
-    if (si.si_addr < hfuzz->ignoreAddr) {
-        LOGMSG(l_INFO,
-               "'%s' is interesting (%s), but the si.si_addr is %p (below %p), skipping",
-               fuzzer->fileName, arch_sigs[si.si_signo].descr, si.si_addr, hfuzz->ignoreAddr);
+    if (!SI_FROMUSER(&si) && si.si_addr < hfuzz->ignoreAddr) {
+        LOG_I("'%s' is interesting (%s), but the si.si_addr is %p (below %p), skipping",
+              fuzzer->fileName, arch_sigs[si.si_signo].descr, si.si_addr, hfuzz->ignoreAddr);
         return;
     }
 
@@ -785,14 +782,19 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
      */
     if (hfuzz->blacklist
         && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) != -1)) {
-        LOGMSG(l_INFO, "Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
+        LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
         __sync_fetch_and_add(&hfuzz->blCrashesCnt, 1UL);
         return;
     }
 
     void *sig_addr = si.si_addr;
-    if (arch_sigs[si.si_signo].stack_only == true || hfuzz->disableRandomization == false) {
+    if (hfuzz->disableRandomization == false) {
         pc = 0UL;
+        sig_addr = NULL;
+    }
+
+    /* User-induced signals don't set si.si_addr */
+    if (SI_FROMUSER(&si)) {
         sig_addr = NULL;
     }
 
@@ -812,12 +814,12 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 
     bool dstFileExists = false;
     if (files_copyFile(fuzzer->fileName, fuzzer->crashFileName, &dstFileExists)) {
-        LOGMSG(l_INFO, "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName,
+        LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName,
                fuzzer->crashFileName);
         __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
     } else {
         if (dstFileExists) {
-            LOGMSG(l_INFO, "It seems that '%s' already exists, skipping", fuzzer->crashFileName);
+            LOG_I("It seems that '%s' already exists, skipping", fuzzer->crashFileName);
 
             // Clear filename so that verifier can understand we hit a duplicate
             memset(fuzzer->crashFileName, 0, sizeof(fuzzer->crashFileName));
@@ -825,7 +827,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
             // Don't bother unwinding & generating reports for duplicate crashes
             return;
         } else {
-            LOGMSG(l_ERROR, "Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
+            LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
         }
     }
 
@@ -835,25 +837,27 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)
 static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status, pid_t pid)
 {
-    LOGMSG(l_DEBUG, "PID: %d, Ptrace event: %d", pid, __WEVENT(status));
+    LOG_D("PID: %d, Ptrace event: %d", pid, __WEVENT(status));
     switch (__WEVENT(status)) {
     case PTRACE_EVENT_EXIT:
         {
             unsigned long event_msg;
             if (ptrace(PTRACE_GETEVENTMSG, pid, NULL, &event_msg) == -1) {
-                LOGMSG(l_ERROR, "ptrace(PTRACE_GETEVENTMSG,%d) failed", pid);
+                PLOG_E("ptrace(PTRACE_GETEVENTMSG,%d) failed", pid);
                 return;
             }
 
             if (WIFEXITED(event_msg)) {
-                LOGMSG(l_DEBUG, "PID: %d exited with exit_code: %d", pid, WEXITSTATUS(event_msg));
-                if (WEXITSTATUS(event_msg) == HF_MSAN_EXIT_CODE) {
+                LOG_D("PID: %d exited with exit_code: %lu", pid,
+                      (unsigned long)WEXITSTATUS(event_msg));
+                if (WEXITSTATUS(event_msg) == (unsigned long)HF_MSAN_EXIT_CODE) {
                     arch_ptraceSaveData(hfuzz, pid, fuzzer);
                 }
             } else if (WIFSIGNALED(event_msg)) {
-                LOGMSG(l_DEBUG, "PID: %d terminated with signal: %d", pid, WTERMSIG(event_msg));
+                LOG_D("PID: %d terminated with signal: %lu", pid,
+                      (unsigned long)WTERMSIG(event_msg));
             } else {
-                LOGMSG(l_DEBUG, "PID: %d exited with unknown status: %ld", pid, event_msg);
+                LOG_D("PID: %d exited with unknown status: %lu", pid, event_msg);
             }
         }
         break;
@@ -934,14 +938,14 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
     snprintf(path, sizeof(path), "/proc/%d/task", pid);
     DIR *dir = opendir(path);
     if (!dir) {
-        LOGMSG_P(l_ERROR, "Couldn't open dir '%s'", path);
+        PLOG_E("Couldn't open dir '%s'", path);
         return false;
     }
 
     for (;;) {
         struct dirent de, *res;
         if (readdir_r(dir, &de, &res) > 0) {
-            LOGMSG_P(l_ERROR, "Couldn't read contents of '%s'", path);
+            PLOG_E("Couldn't read contents of '%s'", path);
             closedir(dir);
             return false;
         }
@@ -952,20 +956,19 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
 
         pid_t pid = (pid_t) strtol(res->d_name, (char **)NULL, 10);
         if (pid == 0) {
-            LOGMSG(l_DEBUG, "The following dir entry couldn't be converted to pid_t '%s'",
-                   res->d_name);
+            LOG_D("The following dir entry couldn't be converted to pid_t '%s'", res->d_name);
             continue;
         }
 
         tasks[count++] = pid;
-        LOGMSG(l_DEBUG, "Added pid '%d' from '%s/%s'", pid, path, res->d_name);
+        LOG_D("Added pid '%d' from '%s/%s'", pid, path, res->d_name);
 
         if (count >= thrSz) {
             break;
         }
     }
     closedir(dir);
-    LOGMSG_P(l_DEBUG, "Total number of threads in pid '%d': '%d'", pid, count);
+    PLOG_D("Total number of threads in pid '%d': '%zd'", pid, count);
     tasks[count + 1] = 0;
     if (count < 1) {
         return false;
@@ -973,25 +976,23 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
     return true;
 }
 
-static void arch_ptraceWaitForPid(pid_t pid)
+bool arch_ptraceWaitForPidStop(pid_t pid)
 {
     for (;;) {
         int status;
         pid_t ret = wait4(pid, &status, __WALL | WUNTRACED, NULL);
-        if (ret == -1 && errno == ESRCH) {
-            LOGMSG(l_WARN, "PID %d doesn't exist", pid);
-            return;
-        }
         if (ret == -1 && errno == EINTR) {
             continue;
         }
         if (ret == -1) {
-            LOGMSG(l_FATAL, "wait4(pid=%d) failed");
-            return;
+            PLOG_W("wait4(pid=%d) failed", pid);
+            return false;
         }
-        if (ret == pid) {
-            return;
+        if (!WIFSTOPPED(status)) {
+            LOG_W("PID %d not in a stopped state - status:%d", pid, status);
+            return false;
         }
+        return true;
     }
 }
 
@@ -1002,18 +1003,15 @@ bool arch_ptraceAttach(pid_t pid)
         PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACEEXIT;
 
     if (ptrace(PTRACE_SEIZE, pid, NULL, seize_options) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_SEIZE) to pid: %d", pid);
+        PLOG_W("Couldn't ptrace(PTRACE_SEIZE) to pid: %d", pid);
         return false;
     }
-    if (ptrace(PTRACE_INTERRUPT, pid, NULL, NULL) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_INTERRUPT) to pid: %d", pid);
-        return false;
-    }
-    arch_ptraceWaitForPid(pid);
+
+    LOG_D("Attached to PID: %d", pid);
 
     int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
-        LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", pid);
+        LOG_E("Couldn't read thread list for pid '%d'", pid);
         return false;
     }
 
@@ -1022,53 +1020,30 @@ bool arch_ptraceAttach(pid_t pid)
             continue;
         }
         if (ptrace(PTRACE_SEIZE, tasks[i], NULL, seize_options) == -1) {
-            LOGMSG_P(l_WARN, "Couldn't ptrace(PTRACE_SEIZE) to pid: %d", tasks[i]);
+            PLOG_W("Couldn't ptrace(PTRACE_SEIZE) to pid: %d", tasks[i]);
             continue;
         }
-        if (ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL) == -1) {
-            LOGMSG_P(l_WARN, "Couldn't ptrace(PTRACE_INTERRUPT) to pid: %d", tasks[i]);
-            continue;
-        }
-        arch_ptraceWaitForPid(tasks[i]);
-        ptrace(PTRACE_CONT, tasks[i], NULL, NULL);
+        LOG_D("Attached to PID: %d (thread_group:%d)", tasks[i], pid);
     }
-
-    if (ptrace(PTRACE_CONT, pid, NULL, NULL) == -1) {
-        LOGMSG_P(l_WARN, "Couldn't ptrace(PTRACE_CONT) to pid: %d", pid);
-        return false;
-    }
-
     return true;
 }
 
 void arch_ptraceDetach(pid_t pid)
 {
     if (kill(pid, 0) == -1 && errno == ESRCH) {
-        LOGMSG(l_DEBUG, "PID: %d no longer exists", pid);
+        LOG_D("PID: %d no longer exists", pid);
         return;
     }
-
-    if (ptrace(PTRACE_INTERRUPT, pid, NULL, NULL) == -1) {
-        LOGMSG_P(l_ERROR, "Couldn't ptrace(PTRACE_INTERRUPT) to pid: %d", pid);
-        return;
-    }
-    arch_ptraceWaitForPid(pid);
 
     int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
-        LOGMSG(l_ERROR, "Couldn't read thread list for pid '%d'", pid);
+        LOG_E("Couldn't read thread list for pid '%d'", pid);
         return;
     }
 
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
-        // Detach the main PID at the end
-        if (pid == tasks[i]) {
-            continue;
-        }
         ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL);
-        arch_ptraceWaitForPid(tasks[i]);
+        arch_ptraceWaitForPidStop(tasks[i]);
         ptrace(PTRACE_DETACH, tasks[i], NULL, NULL);
     }
-
-    ptrace(PTRACE_DETACH, pid, NULL, NULL);
 }

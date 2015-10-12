@@ -58,7 +58,7 @@ static __thread uint64_t perfCutOffAddr = ~(0ULL);
 static __thread dynFileMethod_t perfDynamicMethod = _HF_DYNFILE_NONE;
 
 #if __BITS_PER_LONG == 64
-#define _HF_PERF_BLOOM_SZ (1024ULL * 1024ULL * 1024ULL)
+#define _HF_PERF_BLOOM_SZ (size_t)(1024ULL * 1024ULL * 1024ULL)
 #elif __BITS_PER_LONG == 32
 #define _HF_PERF_BLOOM_SZ (1024ULL * 1024ULL * 128ULL)
 #else
@@ -79,7 +79,7 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
      */
     if (__builtin_expect(from > 0xFFFFFFFF00000000, false)
         || __builtin_expect(to > 0xFFFFFFFF00000000, false)) {
-        LOGMSG(l_DEBUG, "Adding branch %#018" PRIx64 " - %#018" PRIx64, from, to);
+        LOG_D("Adding branch %#018" PRIx64 " - %#018" PRIx64, from, to);
         return;
     }
     if (from >= perfCutOffAddr || to >= perfCutOffAddr) {
@@ -116,7 +116,7 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
 
     if (__builtin_expect(dataHeadOff == dataTailOff, false)) {
         if (fatal) {
-            LOGMSG(l_FATAL, "No data in the mmap buffer");
+            LOG_F("No data in the mmap buffer");
         }
         return ~(0ULL);
     }
@@ -145,14 +145,13 @@ static inline void arch_perfMmapParse(void)
             continue;
         }
         if (__builtin_expect(peh->type != PERF_RECORD_SAMPLE, false)) {
-            LOGMSG(l_FATAL, "(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16 ")",
-                   peh->type);
+            LOG_F("(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16 ")",
+                  peh->type);
         }
         if (__builtin_expect
             (peh->misc != PERF_RECORD_MISC_USER && peh->misc != PERF_RECORD_MISC_KERNEL, false)) {
-            LOGMSG(l_FATAL,
-                   "(struct perf_event_header)->type != PERF_RECORD_MISC_USER (%" PRIu16 ")",
-                   peh->misc);
+            LOG_F("(struct perf_event_header)->type != PERF_RECORD_MISC_USER (%" PRIu16 ")",
+                  peh->misc);
         }
 
         register uint64_t from = arch_perfGetMmap64(true /* fatal */ );
@@ -193,8 +192,7 @@ static size_t arch_perfGetMmapBufSz(honggfuzz_t * hfuzz)
                 ret >>= 1;
             }
             if (ret < (size_t) getpagesize()) {
-                LOGMSG(l_FATAL, "Too many fuzzing threads for hardware support (%d)",
-                       hfuzz->threadsMax);
+                LOG_F("Too many fuzzing threads for hardware support (%td)", hfuzz->threadsMax);
             }
         }
     }
@@ -203,7 +201,7 @@ static size_t arch_perfGetMmapBufSz(honggfuzz_t * hfuzz)
 
 static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
 {
-    LOGMSG(l_DEBUG, "Enabling PERF for PID=%d (mmapBufSz=%zu), method=%x", pid, perfMmapSz, method);
+    LOG_D("Enabling PERF for PID=%d (mmapBufSz=%zu), method=%x", pid, perfMmapSz, method);
 
     perfDynamicMethod = method;
     perfBranchesCnt = 0;
@@ -221,32 +219,31 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
 
     switch (method) {
     case _HF_DYNFILE_INSTR_COUNT:
-        LOGMSG(l_DEBUG, "Using: PERF_COUNT_HW_INSTRUCTIONS for PID: %d", pid);
+        LOG_D("Using: PERF_COUNT_HW_INSTRUCTIONS for PID: %d", pid);
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         pe.inherit = 1;
         break;
     case _HF_DYNFILE_BRANCH_COUNT:
-        LOGMSG(l_DEBUG, "Using: PERF_COUNT_HW_BRANCH_INSTRUCTIONS for PID: %d", pid);
+        LOG_D("Using: PERF_COUNT_HW_BRANCH_INSTRUCTIONS for PID: %d", pid);
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.inherit = 1;
         break;
     case _HF_DYNFILE_UNIQUE_BLOCK_COUNT:
-        LOGMSG(l_DEBUG, "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP for PID: %d", pid);
+        LOG_D("Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP for PID: %d", pid);
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.wakeup_events = 0;
         break;
     case _HF_DYNFILE_UNIQUE_EDGE_COUNT:
-        LOGMSG(l_DEBUG,
-               "Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d", pid);
+        LOG_D("Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d", pid);
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.wakeup_events = 0;
         break;
     default:
-        LOGMSG(l_ERROR, "Unknown perf mode: '%d' for PID: %d", method, pid);
+        LOG_E("Unknown perf mode: '%d' for PID: %d", method, pid);
         return false;
         break;
     }
@@ -254,11 +251,11 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
     *perfFd = perf_event_open(&pe, pid, -1, -1, 0);
     if (*perfFd == -1) {
         if (method == _HF_DYNFILE_UNIQUE_BLOCK_COUNT || method == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
-            LOGMSG(l_ERROR,
-                   "'-LD p'/'-LD e' mode (sample IP/jump) requires LBR/BTS, which present in Intel Haswell "
-                   "and newer CPUs (i.e. not in AMD CPUs)");
+            LOG_E
+                ("'-LDp'/'-LDe' mode (sample IP/jump) requires LBR/BTS, which present in Intel Haswell "
+                 "and newer CPUs (i.e. not in AMD CPUs)");
         }
-        LOGMSG_P(l_FATAL, "perf_event_open() failed");
+        PLOG_F("perf_event_open() failed");
         return false;
     }
 
@@ -270,14 +267,14 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
                      MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
     if (perfBloom == MAP_FAILED) {
         perfBloom = NULL;
-        LOGMSG_P(l_ERROR, "mmap(size=%zu) failed", _HF_PERF_BLOOM_SZ);
+        PLOG_E("mmap(size=%zu) failed", (size_t) _HF_PERF_BLOOM_SZ);
     }
 
     perfMmapBuf =
         mmap(NULL, perfMmapSz + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
     if (perfMmapBuf == MAP_FAILED) {
         perfMmapBuf = NULL;
-        LOGMSG_P(l_ERROR, "mmap() failed");
+        PLOG_E("mmap() failed");
         close(*perfFd);
         return false;
     }
@@ -288,17 +285,17 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
     };
     sigemptyset(&sa.sa_mask);
     if (sigaction(_HF_RT_SIG, &sa, NULL) == -1) {
-        LOGMSG_P(l_ERROR, "sigaction() failed");
+        PLOG_E("sigaction() failed");
         return false;
     }
 
     if (fcntl(*perfFd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC) == -1) {
-        LOGMSG_P(l_ERROR, "fnctl(F_SETFL)");
+        PLOG_E("fnctl(F_SETFL)");
         close(*perfFd);
         return false;
     }
     if (fcntl(*perfFd, F_SETSIG, _HF_RT_SIG) == -1) {
-        LOGMSG_P(l_ERROR, "fnctl(F_SETSIG)");
+        PLOG_E("fnctl(F_SETSIG)");
         close(*perfFd);
         return false;
     }
@@ -307,7 +304,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         .pid = syscall(__NR_gettid)
     };
     if (fcntl(*perfFd, F_SETOWN_EX, &foe) == -1) {
-        LOGMSG_P(l_ERROR, "fnctl(F_SETOWN_EX)");
+        PLOG_E("fnctl(F_SETOWN_EX)");
         close(*perfFd);
         return false;
     }
@@ -321,8 +318,8 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
     }
     if ((hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT)
         && (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT)) {
-        LOGMSG(l_FATAL,
-               "_HF_DYNFILE_UNIQUE_BLOCK_COUNT and _HF_DYNFILE_UNIQUE_EDGE_COUNT cannot be specified together");
+        LOG_F
+            ("_HF_DYNFILE_UNIQUE_BLOCK_COUNT and _HF_DYNFILE_UNIQUE_EDGE_COUNT cannot be specified together");
     }
 
     perfBloom = NULL;
@@ -337,25 +334,25 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
         if (arch_perfOpen(pid, _HF_DYNFILE_INSTR_COUNT, &perfFds->cpuInstrFd) == false) {
-            LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_INSTR_COUNT)", pid);
+            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_INSTR_COUNT)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
         if (arch_perfOpen(pid, _HF_DYNFILE_BRANCH_COUNT, &perfFds->cpuBranchFd) == false) {
-            LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_BRANCH_COUNT)", pid);
+            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BRANCH_COUNT)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
         if (arch_perfOpen(pid, _HF_DYNFILE_UNIQUE_BLOCK_COUNT, &perfFds->uniquePcFd) == false) {
-            LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_UNIQUE_BLOCK_COUNT)", pid);
+            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_UNIQUE_BLOCK_COUNT)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
         if (arch_perfOpen(pid, _HF_DYNFILE_UNIQUE_EDGE_COUNT, &perfFds->uniqueEdgeFd) == false) {
-            LOGMSG(l_ERROR, "Cannot set up perf for PID=%d (_HF_DYNFILE_UNIQUE_EDGE_COUNT)", pid);
+            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_UNIQUE_EDGE_COUNT)", pid);
             goto out;
         }
     }
@@ -379,7 +376,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
         ioctl(perfFds->cpuInstrFd, PERF_EVENT_IOC_DISABLE, 0);
         if (read(perfFds->cpuInstrFd, &instrCount, sizeof(instrCount)) != sizeof(instrCount)) {
-            LOGMSG_P(l_ERROR, "read(perfFd='%d') failed", perfFds->cpuInstrFd);
+            PLOG_E("read(perfFd='%d') failed", perfFds->cpuInstrFd);
         }
         close(perfFds->cpuInstrFd);
     }
@@ -388,7 +385,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
         ioctl(perfFds->cpuBranchFd, PERF_EVENT_IOC_DISABLE, 0);
         if (read(perfFds->cpuBranchFd, &branchCount, sizeof(branchCount)) != sizeof(branchCount)) {
-            LOGMSG_P(l_ERROR, "read(perfFd='%d') failed", perfFds->cpuBranchFd);
+            PLOG_E("read(perfFd='%d') failed", perfFds->cpuBranchFd);
         }
         close(perfFds->cpuBranchFd);
     }
@@ -401,10 +398,9 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         pathCount = arch_perfCountBranches();
 
         if (perfRecordsLost > 0UL) {
-            LOGMSG(l_WARN,
-                   "%" PRId64
-                   " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
-                   perfRecordsLost);
+            LOG_W("%" PRId64
+                  " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
+                  perfRecordsLost);
         }
     }
 
@@ -416,10 +412,9 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         edgeCount = arch_perfCountBranches();
 
         if (perfRecordsLost > 0UL) {
-            LOGMSG(l_WARN,
-                   "%" PRId64
-                   " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
-                   perfRecordsLost);
+            LOG_W("%" PRId64
+                  " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
+                  perfRecordsLost);
         }
     }
 

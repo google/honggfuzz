@@ -1,142 +1,148 @@
 /*
- *
- * honggfuzz - log messages
- * -----------------------------------------
- *
- * Author: Robert Swiecki <swiecki@google.com>
- *
- * Copyright 2010-2015 by Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * permissions and limitations under the License.
- *
- */
 
-#include "common.h"
+   nsjail - logging
+   -----------------------------------------
+
+   Copyright 2014 Google Inc. All Rights Reserved.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+*/
 #include "log.h"
 
-#include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <getopt.h>
+#include <limits.h>
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
-#include "util.h"
-
-static unsigned int log_minLevel = l_INFO;
-static bool log_isStdioTTY;
-static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-/*  *INDENT-OFF* */
-static const struct {
-    const char *descr;
-    const char *prefix;
-} logLevels[] = {
-    { "[FATAL]",   "\033[1;41m" },
-    { "[ERROR]",   "\033[1;31m" },
-    { "[WARNING]", "\033[1;35m" },
-    { "[INFO]",    "\033[1m"    },
-    { "[DEBUG]",   "\033[0;37m" },
-};
-/*  *INDENT-ON* */
-
-__attribute__ ((constructor))
-void log_init(void)
-{
-    log_isStdioTTY = (isatty(STDOUT_FILENO) == 1);
-}
-
-void log_setMinLevel(log_level_t dl)
-{
-    log_minLevel = dl;
-}
-
-log_level_t log_getMinLevel(void)
-{
-    return log_minLevel;
-}
-
-void log_mutexLock(void)
-{
-    while (pthread_mutex_lock(&log_mutex)) ;
-}
-
-void log_mutexUnLock(void)
-{
-    while (pthread_mutex_unlock(&log_mutex)) ;
-}
-
-void log_msg(log_level_t dl, bool perr, const char *file, const char *func, int line,
-             const char *fmt, ...)
-{
-    char msg[8192] = { "\0" };
-    char strerr[512];
-    if (perr) {
-        snprintf(strerr, sizeof(strerr), "%s", strerror(errno));
-    }
-
-    struct tm tm;
-    struct timeval tv;
-
-    gettimeofday(&tv, NULL);
-    localtime_r((const time_t *)&tv.tv_sec, &tm);
-
-    if (log_isStdioTTY == true) {
-        util_ssnprintf(msg, sizeof(msg), "%s", logLevels[dl].prefix);
-    }
 #if defined(_HF_ARCH_LINUX)
-#include <unistd.h>
 #include <sys/syscall.h>
-    pid_t pid = (pid_t) syscall(__NR_gettid);
+#define __hf_pid()      (pid_t) syscall(__NR_gettid)
 #else                           /* defined(_HF_ARCH_LINUX) */
-    pid_t pid = getpid();
+#define __hf_pid()      getpid()
 #endif                          /* defined(_HF_ARCH_LINUX) */
 
-    if (log_minLevel != l_INFO || !log_isStdioTTY) {
-        util_ssnprintf(msg, sizeof(msg), "%s [%d] %d/%02d/%02d %02d:%02d:%02d (%s:%s %d) ",
-                       logLevels[dl].descr, pid, tm.tm_year + 1900,
-                       tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, file, func,
-                       line);
-    } else {
-        util_ssnprintf(msg, sizeof(msg), "%s ", logLevels[dl].descr);
+static int log_fd = STDERR_FILENO;
+static bool log_fd_isatty = true;
+enum llevel_t log_level = INFO;
+pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+enum llevel_t logGetLogLevel(void)
+{
+    return log_level;
+}
+
+/*
+ * Log to stderr by default. Use a dup()d fd, because in the future we'll associate the
+ * connection socket with fd (0, 1, 2).
+ */
+bool logInitLogFile(const char *logfile, enum llevel_t ll)
+{
+    log_fd_isatty = (isatty(log_fd) == 1 ? true : false);
+    log_level = ll;
+
+    if (logfile == NULL) {
+        return true;
+    }
+
+    log_fd = open(logfile, O_CREAT | O_RDWR | O_APPEND, 0640);
+    if (log_fd == -1) {
+        log_fd = STDERR_FILENO;
+        PLOG_E("Couldn't open logfile open('%s')", logfile);
+        return false;
+    }
+    log_fd_isatty = (isatty(log_fd) == 1 ? true : false);
+    return true;
+}
+
+void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt, ...)
+{
+    char strerr[512];
+    if (perr == true) {
+        snprintf(strerr, sizeof(strerr), "%s", strerror(errno));
+    }
+    struct ll_t {
+        char *descr;
+        char *prefix;
+        bool print_funcline;
+    };
+    struct ll_t logLevels[] = {
+        {"F", "\033[7;35m", true},
+        {"E", "\033[1;31m", true},
+        {"W", "\033[0;33m", true},
+        {"I", "\033[1m", true},
+        {"D", "\033[0;4m", true},
+        {"HR", "\033[0m", false},
+        {"HB", "\033[1m", false},
+    };
+
+    time_t ltstamp = time(NULL);
+    struct tm utctime;
+    localtime_r(&ltstamp, &utctime);
+    char timestr[32];
+    if (strftime(timestr, sizeof(timestr) - 1, "%FT%T%z", &utctime) == 0) {
+        timestr[0] = '\0';
+    }
+
+    /* Start printing logs */
+    pthread_mutex_lock(&log_mutex);
+    if (log_fd_isatty) {
+        dprintf(log_fd, "%s", logLevels[ll].prefix);
+    }
+    if (logLevels[ll].print_funcline) {
+        dprintf(log_fd, "[%s][%s][%d] %s():%d ", timestr, logLevels[ll].descr, __hf_pid(), fn, ln);
     }
 
     va_list args;
     va_start(args, fmt);
-    util_vssnprintf(msg, sizeof(msg), fmt, args);
+    vdprintf(log_fd, fmt, args);
     va_end(args);
 
-    if (perr) {
-        util_ssnprintf(msg, sizeof(msg), ": %s", strerr);
+    if (perr == true) {
+        dprintf(log_fd, ": %s", strerr);
     }
-
-    if (log_isStdioTTY == true) {
-        util_ssnprintf(msg, sizeof(msg), "\033[0m");
+    if (log_fd_isatty) {
+        dprintf(log_fd, "\033[0m");
     }
+    dprintf(log_fd, "\n");
+    pthread_mutex_unlock(&log_mutex);
+    /* End printing logs */
 
-    util_ssnprintf(msg, sizeof(msg), "\n");
-
-    log_mutexLock();
-    if (write(STDOUT_FILENO, msg, strlen(msg)) == -1) {
+    if (ll == FATAL) {
+        exit(1);
     }
-    log_mutexUnLock();
+}
 
-    if (dl == l_FATAL) {
-        exit(EXIT_FAILURE);
-    }
+void logStop(int sig)
+{
+    LOG_I("Server stops due to fatal signal (%d) caught. Exiting", sig);
+}
+
+void logRedirectLogFD(int fd)
+{
+    log_fd = fd;
+}
+
+void logDirectlyToFD(const char *msg)
+{
+    dprintf(log_fd, "%s", msg);
 }
