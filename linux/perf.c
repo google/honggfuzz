@@ -109,10 +109,11 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
 
-    rmb();
     register uint64_t dataHeadOff = pem->data_head % perfMmapSz;
-    register uint64_t dataTailOff = pem->data_tail % perfMmapSz;
     /* Memory barrier - needed as per perf_event_open(2) */
+    rmb();
+    register uint64_t dataTailOff = pem->data_tail % perfMmapSz;
+    rmb();
 
     if (__builtin_expect(dataHeadOff == dataTailOff, false)) {
         if (fatal) {
@@ -122,6 +123,7 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
     }
 
     register uint64_t ret = *(uint64_t *) (perfMmapBuf + getpagesize() + dataTailOff);
+    rmb();
     pem->data_tail = dataTailOff + sizeof(uint64_t);
     wmb();
 
