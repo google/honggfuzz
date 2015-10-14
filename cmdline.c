@@ -330,7 +330,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             hfuzz->msanReportUMRS = true;
             break;
         case 0x503:
-            hfuzz->dynamicCutOffAddr = strtoull(optarg + 1, NULL, 0);
+            hfuzz->dynamicCutOffAddr = strtoull(optarg, NULL, 0);
             break;
         case 0x510:
             hfuzz->dynFileMethod |= _HF_DYNFILE_INSTR_COUNT;
