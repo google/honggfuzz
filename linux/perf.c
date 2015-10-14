@@ -109,10 +109,10 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
 
-    register uint64_t dataHeadOff = pem->data_head % perfMmapSz;
     /* Memory barrier - needed as per perf_event_open(2) */
-    rmb();
-    register uint64_t dataTailOff = pem->data_tail % perfMmapSz;
+    wmb();
+    register uint64_t dataHeadOff = __sync_add_and_fetch(&pem->data_head, 0) % perfMmapSz;
+    register uint64_t dataTailOff = __sync_add_and_fetch(&pem->data_tail, 0) % perfMmapSz;
     rmb();
 
     if (__builtin_expect(dataHeadOff == dataTailOff, false)) {
@@ -123,9 +123,9 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
     }
 
     register uint64_t ret = *(uint64_t *) (perfMmapBuf + getpagesize() + dataTailOff);
-    rmb();
-    pem->data_tail = dataTailOff + sizeof(uint64_t);
     wmb();
+    __sync_fetch_and_add(&pem->data_tail, sizeof(uint64_t));
+    pem->data_tail = dataTailOff + sizeof(uint64_t);
 
     return ret;
 }
@@ -235,6 +235,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
+        pe.watermark = 0;
         pe.wakeup_events = 0;
         break;
     case _HF_DYNFILE_UNIQUE_EDGE_COUNT:
@@ -242,6 +243,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
+        pe.watermark = 0;
         pe.wakeup_events = 0;
         break;
     default:
