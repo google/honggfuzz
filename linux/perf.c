@@ -125,7 +125,6 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
     register uint64_t ret = *(uint64_t *) (perfMmapBuf + getpagesize() + dataTailOff);
     wmb();
     __sync_fetch_and_add(&pem->data_tail, sizeof(uint64_t));
-    pem->data_tail = dataTailOff + sizeof(uint64_t);
 
     return ret;
 }
