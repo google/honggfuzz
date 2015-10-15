@@ -105,6 +105,9 @@ static void cmdlineUsage(const char *pname, struct custom_option *opts)
 
 static bool cmdlineIsANumber(const char *s)
 {
+    if (!isdigit(s[0])) {
+        return false;
+    }
     for (int i = 0; s[i]; s++) {
         if (!isdigit(s[i]) && s[i] != 'x') {
             return false;
@@ -304,7 +307,15 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             hfuzz->asLimit = strtoull(optarg, NULL, 0);
             break;
         case 'p':
+            if (cmdlineIsANumber(optarg) == false) {
+                LOG_E("-p '%s' is not a number", optarg);
+                return false;
+            }
             hfuzz->pid = atoi(optarg);
+            if (hfuzz->pid < 1) {
+                LOG_E("-p '%d' is invalid", hfuzz->pid);
+                return false;
+            }
             break;
         case 'E':
             for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs); i++) {
