@@ -56,6 +56,8 @@ static __thread uint64_t perfRecordsLost = 0;
 static __thread uint64_t perfCutOffAddr = ~(0ULL);
 /* Perf method - to be used in signal handlers */
 static __thread dynFileMethod_t perfDynamicMethod = _HF_DYNFILE_NONE;
+/* Page Size for the current arch */
+static __thread size_t perfPageSz = 0x0;
 
 #if __BITS_PER_LONG == 64
 #define _HF_PERF_BLOOM_SZ (size_t)(1024ULL * 1024ULL * 1024ULL)
@@ -121,9 +123,10 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
         return ~(0ULL);
     }
 
-    register uint64_t ret = *(uint64_t *) (perfMmapBuf + getpagesize() + dataTailOff);
+    register uint64_t ret = *(uint64_t *) (perfMmapBuf + perfPageSz + dataTailOff);
     rmb();
     __sync_fetch_and_add(&pem->data_tail, sizeof(uint64_t));
+    wmb();
 
     return ret;
 }
@@ -325,6 +328,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
     }
 
     perfBloom = NULL;
+    perfPageSz = getpagesize();
 
     perfMmapSz = arch_perfGetMmapBufSz(hfuzz);
     perfCutOffAddr = hfuzz->dynamicCutOffAddr;
