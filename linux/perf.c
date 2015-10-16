@@ -56,6 +56,8 @@ static __thread uint64_t perfRecordsLost = 0;
 static __thread uint64_t perfCutOffAddr = ~(0ULL);
 /* Perf method - to be used in signal handlers */
 static __thread dynFileMethod_t perfDynamicMethod = _HF_DYNFILE_NONE;
+/* Page Size for the current arch */
+static __thread size_t perfPageSz = 0x0;
 
 #if __BITS_PER_LONG == 64
 #define _HF_PERF_BLOOM_SZ (size_t)(1024ULL * 1024ULL * 1024ULL)
@@ -109,10 +111,10 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
 
-    rmb();
-    register uint64_t dataHeadOff = pem->data_head % perfMmapSz;
-    register uint64_t dataTailOff = pem->data_tail % perfMmapSz;
     /* Memory barrier - needed as per perf_event_open(2) */
+    register uint64_t dataHeadOff = __sync_add_and_fetch(&pem->data_head, 0) % perfMmapSz;
+    register uint64_t dataTailOff = __sync_add_and_fetch(&pem->data_tail, 0) % perfMmapSz;
+    rmb();
 
     if (__builtin_expect(dataHeadOff == dataTailOff, false)) {
         if (fatal) {
@@ -121,8 +123,9 @@ static inline uint64_t arch_perfGetMmap64(bool fatal)
         return ~(0ULL);
     }
 
-    register uint64_t ret = *(uint64_t *) (perfMmapBuf + getpagesize() + dataTailOff);
-    pem->data_tail = dataTailOff + sizeof(uint64_t);
+    register uint64_t ret = *(uint64_t *) (perfMmapBuf + perfPageSz + dataTailOff);
+    rmb();
+    __sync_fetch_and_add(&pem->data_tail, sizeof(uint64_t));
     wmb();
 
     return ret;
@@ -233,6 +236,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
+        pe.watermark = 0;
         pe.wakeup_events = 0;
         break;
     case _HF_DYNFILE_UNIQUE_EDGE_COUNT:
@@ -240,6 +244,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
+        pe.watermark = 0;
         pe.wakeup_events = 0;
         break;
     default:
@@ -323,6 +328,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
     }
 
     perfBloom = NULL;
+    perfPageSz = getpagesize();
 
     perfMmapSz = arch_perfGetMmapBufSz(hfuzz);
     perfCutOffAddr = hfuzz->dynamicCutOffAddr;
