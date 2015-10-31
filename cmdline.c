@@ -207,7 +207,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"logfile", required_argument, NULL, 'l'}, "Log file"},
         {{"verbose", no_argument, NULL, 'v'}, "Disable ANSI console; use simple log output"},
 #if defined(_HF_ARCH_LINUX)
-        {{"verifier", no_argument, NULL, 'V'}, "Enable crashes verifier (default: false"},
+        {{"verifier", no_argument, NULL, 'V'}, "Enable crashes verifier (default: disabled)"},
 #endif
         {{"debug_level", required_argument, NULL, 'd'}, "Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])"},
         {{"extension", required_argument, NULL, 'e'}, "Input file extension (e.g. 'swf'), (default: 'fuzz')"},
