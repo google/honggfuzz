@@ -175,6 +175,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .mutationsCnt = 0,
         .crashesCnt = 0,
         .uniqueCrashesCnt = 0,
+        .verifiedCrashesCnt = 0,
         .blCrashesCnt = 0,
         .timeoutedCnt = 0,
 

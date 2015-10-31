@@ -104,6 +104,7 @@ typedef struct {
     size_t mutationsCnt;
     size_t crashesCnt;
     size_t uniqueCrashesCnt;
+    size_t verifiedCrashesCnt;
     size_t blCrashesCnt;
     size_t timeoutedCnt;
 
