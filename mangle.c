@@ -359,10 +359,6 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
     };
     /*  *INDENT-ON* */
 
-    /* if -r 0.0 then just return */
-    if (hfuzz->flipRate == 0.0L) {
-        return;
-    }
     /*
      * Minimal number of changes is 1
      */

@@ -788,7 +788,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
      */
     if (fuzzer->crashFileName) {
         LOG_D("Multiple crashes detected from worker against attached tids group");
-        
+
         /*
          * If stackhashes match, don't re-analyze. This will avoid duplicates
          * and prevent verifier from running multiple passes. Depth of check is
