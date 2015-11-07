@@ -195,7 +195,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
 
     /* If dry run mode, copy file with same name into workspace */
     if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
-        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s", fuzzer->origFileName);
+        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s",
+                 hfuzz->workDir, fuzzer->origFileName);
     } else if (hfuzz->saveUnique) {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
                  "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s",
