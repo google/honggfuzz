@@ -96,7 +96,8 @@ typedef struct {
     char *reportFile;
     uint64_t asLimit;
     char **files;
-    int fileCnt;
+    size_t fileCnt;
+    size_t lastCheckedFileIndex;
     pid_t pid;
     char *envs[128];
 

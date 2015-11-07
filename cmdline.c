@@ -168,6 +168,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .asLimit = 0ULL,
         .files = NULL,
         .fileCnt = 0,
+        .lastCheckedFileIndex = 0,
         .pid = 0,
         .envs = {[0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,},
 
@@ -409,6 +410,10 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     if (hfuzz->pid > 0) {
         LOG_I("PID=%d specified, lowering maximum number of concurrent threads to 1", hfuzz->pid);
         hfuzz->threadsMax = 1;
+    }
+
+    if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
+        LOG_I("Verifier enabled with 0.0flipRate, activating dry run mode");
     }
 
     LOG_I("inputFile '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, flipRate: %lf, "

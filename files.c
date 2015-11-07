@@ -168,7 +168,7 @@ static bool files_readdir(honggfuzz_t * hfuzz)
         }
 
         if (res == NULL && count > 0) {
-            LOG_I("%d input files have been added to the list", hfuzz->fileCnt);
+            LOG_I("%zu input files have been added to the list", hfuzz->fileCnt);
             closedir(dir);
             return true;
         }

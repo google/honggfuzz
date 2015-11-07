@@ -194,14 +194,16 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     fuzzer->access = g_fuzzer_crash_information[fuzzer->pid].access;
     fuzzer->backtrace = g_fuzzer_crash_information[fuzzer->pid].backtrace;
 
-    if (hfuzz->saveUnique) {
+    /* If dry run mode, copy file with same name into workspace */
+    if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
+        snprintf(newname, sizeof(newname), "%s", fuzzer->origFileName);
+    } else if (hfuzz->saveUnique) {
         snprintf(newname, sizeof(newname),
                  "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s.%s",
                  hfuzz->workDir, arch_sigs[termsig].descr,
                  exception_to_string(fuzzer->exception), fuzzer->pc,
                  fuzzer->backtrace, fuzzer->access, fuzzer->origFileName, hfuzz->fileExtn);
     } else {
-
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr), time(NULL));
 

@@ -798,7 +798,10 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
         sig_addr = NULL;
     }
 
-    if (hfuzz->saveUnique) {
+    /* If dry run mode, copy file with same name into workspace */
+    if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
+        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s", fuzzer->origFileName);
+    } else if (hfuzz->saveUnique) {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
                  "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
                  hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, fuzzer->backtrace,
