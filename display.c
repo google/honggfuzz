@@ -95,11 +95,17 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put("Execs per second: " ESC_BOLD "%zu" ESC_RESET " (avg: " ESC_BOLD "%zu" ESC_RESET
                 ")\n", exec_per_sec, elapsed ? (curr_exec_cnt / elapsed) : 0);
 
+    /* If dry run, print also the input file count */
+    if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
+        display_put("Input Files: '" ESC_BOLD "%zu" ESC_RESET "'\n", hfuzz->fileCnt);
+    }
+
     display_put("Crashes: " ESC_BOLD "%zu" ESC_RESET " (unique: " ESC_BOLD "%zu" ESC_RESET
-                ", blacklist: " ESC_BOLD "%zu" ESC_RESET ") \n",
-                __sync_fetch_and_add(&hfuzz->crashesCnt, 0UL),
+                ", blacklist: " ESC_BOLD "%zu" ESC_RESET ", verified: " ESC_BOLD "%zu" ESC_RESET
+                ") \n", __sync_fetch_and_add(&hfuzz->crashesCnt, 0UL),
                 __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 0UL),
-                __sync_fetch_and_add(&hfuzz->blCrashesCnt, 0UL));
+                __sync_fetch_and_add(&hfuzz->blCrashesCnt, 0UL),
+                __sync_fetch_and_add(&hfuzz->verifiedCrashesCnt, 0UL));
     display_put("Timeouts: " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->timeoutedCnt, 0UL));
 

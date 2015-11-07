@@ -51,4 +51,6 @@ extern bool files_copyFile(const char *source, const char *destination, bool * d
 
 extern bool files_parseBlacklist(honggfuzz_t * hfuzz);
 
+extern uint8_t *files_mapFile(char *fileName, off_t * fileSz, int *fd, bool isWritable);
+
 #endif

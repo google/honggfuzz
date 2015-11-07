@@ -147,6 +147,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .nullifyStdio = false,
         .useScreen = true,
         .fuzzStdin = false,
+        .useVerifier = false,
         .saveUnique = true,
         .fileExtn = "fuzz",
         .workDir = ".",
@@ -167,6 +168,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .asLimit = 0ULL,
         .files = NULL,
         .fileCnt = 0,
+        .lastCheckedFileIndex = 0,
         .pid = 0,
         .envs = {[0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,},
 
@@ -174,6 +176,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .mutationsCnt = 0,
         .crashesCnt = 0,
         .uniqueCrashesCnt = 0,
+        .verifiedCrashesCnt = 0,
         .blCrashesCnt = 0,
         .timeoutedCnt = 0,
 
@@ -205,6 +208,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"save_all", no_argument, NULL, 'u'}, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames"},
         {{"logfile", required_argument, NULL, 'l'}, "Log file"},
         {{"verbose", no_argument, NULL, 'v'}, "Disable ANSI console; use simple log output"},
+#if defined(_HF_ARCH_LINUX) || defined(_HF_ARCH_DARWIN)
+        {{"verifier", no_argument, NULL, 'V'}, "Enable crashes verifier (default: disabled)"},
+#endif
         {{"debug_level", required_argument, NULL, 'd'}, "Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])"},
         {{"extension", required_argument, NULL, 'e'}, "Input file extension (e.g. 'swf'), (default: 'fuzz')"},
         {{"wokspace", required_argument, NULL, 'W'}, "Workspace directory to save crashes & runtime files (default: '.')"},
@@ -245,7 +251,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     const char *logfile = NULL;
     int opt_index = 0;
     for (;;) {
-        int c = getopt_long(argc, argv, "-?hqvsuf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:", opts,
+        int c = getopt_long(argc, argv, "-?hqvVsuf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:", opts,
                             &opt_index);
         if (c < 0)
             break;
@@ -263,6 +269,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 'v':
             hfuzz->useScreen = false;
+            break;
+        case 'V':
+            hfuzz->useVerifier = true;
             break;
         case 's':
             hfuzz->fuzzStdin = true;
@@ -401,6 +410,10 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     if (hfuzz->pid > 0) {
         LOG_I("PID=%d specified, lowering maximum number of concurrent threads to 1", hfuzz->pid);
         hfuzz->threadsMax = 1;
+    }
+
+    if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
+        LOG_I("Verifier enabled with 0.0flipRate, activating dry run mode");
     }
 
     LOG_I("inputFile '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, flipRate: %lf, "

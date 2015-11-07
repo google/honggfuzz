@@ -184,7 +184,6 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     /*
      * Signal is interesting
      */
-    char newname[PATH_MAX];
 
     /*
      * Get data from exception handler
@@ -194,23 +193,24 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     fuzzer->access = g_fuzzer_crash_information[fuzzer->pid].access;
     fuzzer->backtrace = g_fuzzer_crash_information[fuzzer->pid].backtrace;
 
-    if (hfuzz->saveUnique) {
-        snprintf(newname, sizeof(newname),
-                 "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s.%s",
+    /* If dry run mode, copy file with same name into workspace */
+    if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
+        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s", fuzzer->origFileName);
+    } else if (hfuzz->saveUnique) {
+        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
+                 "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s",
                  hfuzz->workDir, arch_sigs[termsig].descr,
                  exception_to_string(fuzzer->exception), fuzzer->pc,
-                 fuzzer->backtrace, fuzzer->access, fuzzer->origFileName, hfuzz->fileExtn);
+                 fuzzer->backtrace, fuzzer->access, hfuzz->fileExtn);
     } else {
-
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr), time(NULL));
 
-        snprintf(newname, sizeof(newname),
-                 "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s.%s",
+        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
+                 "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s",
                  hfuzz->workDir, arch_sigs[termsig].descr,
                  exception_to_string(fuzzer->exception), fuzzer->pc,
-                 fuzzer->backtrace, fuzzer->access, localtmstr, fuzzer->pid, fuzzer->origFileName,
-                 hfuzz->fileExtn);
+                 fuzzer->backtrace, fuzzer->access, localtmstr, fuzzer->pid, hfuzz->fileExtn);
     }
 
     /*
@@ -229,15 +229,19 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     }
 
     bool dstFileExists = false;
-    if (files_copyFile(fuzzer->fileName, newname, &dstFileExists)) {
-        LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, newname);
+    if (files_copyFile(fuzzer->fileName, fuzzer->crashFileName, &dstFileExists)) {
+        LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName,
+              fuzzer->crashFileName);
         // Unique crashes
         __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
     } else {
         if (dstFileExists) {
-            LOG_I("It seems that '%s' already exists, skipping", newname);
+            LOG_I("It seems that '%s' already exists, skipping", fuzzer->crashFileName);
+
+            // Clear filename so that verifier can understand we hit a duplicate
+            memset(fuzzer->crashFileName, 0, sizeof(fuzzer->crashFileName));
         } else {
-            LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, newname);
+            LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
         }
     }
 

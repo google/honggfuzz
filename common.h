@@ -50,6 +50,9 @@
 /* String buffer size for function names in stack traces produced from libunwind */
 #define _HF_FUNC_NAME_SZ    256 // Should be alright for mangled C++ procs too
 
+/* Number of crash verifier iterations before tag crash as stable */
+#define _HF_VERIFIER_ITER   5
+
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
     _HF_DYNFILE_INSTR_COUNT = 0x1,
@@ -74,6 +77,7 @@ typedef struct {
     bool fuzzStdin;
     bool saveUnique;
     bool useScreen;
+    bool useVerifier;
     char *fileExtn;
     char *workDir;
     double flipRate;
@@ -92,7 +96,8 @@ typedef struct {
     char *reportFile;
     uint64_t asLimit;
     char **files;
-    int fileCnt;
+    size_t fileCnt;
+    size_t lastCheckedFileIndex;
     pid_t pid;
     char *envs[128];
 
@@ -100,6 +105,7 @@ typedef struct {
     size_t mutationsCnt;
     size_t crashesCnt;
     size_t uniqueCrashesCnt;
+    size_t verifiedCrashesCnt;
     size_t blCrashesCnt;
     size_t timeoutedCnt;
 
@@ -120,11 +126,13 @@ typedef struct fuzzer_t {
     int64_t timeStartedMillis;
     char origFileName[PATH_MAX];
     char fileName[PATH_MAX];
+    char crashFileName[PATH_MAX];
     uint64_t pc;
     uint64_t backtrace;
     uint64_t access;
     int exception;
     char report[8192];
+    bool mainWorker;
 
     /* For linux/ code */
     uint8_t *dynamicFile;
