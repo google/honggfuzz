@@ -280,19 +280,21 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     char verFile[PATH_MAX] = { 0 };
     snprintf(verFile, sizeof(verFile), "%s.verified", crashedFuzzer->crashFileName);
 
-    int verFileFd = open(verFile, O_CREAT | O_EXCL | O_RDWR, 0644);
-    if (verFileFd == -1) {
-        LOG_E("Couldn't create verified file '%s' in the current directory", verFile);
-        goto bail;
+    /* Copy file with new suffix & remove original copy */
+    bool dstFileExists = false;
+    if (files_copyFile(crashedFuzzer->crashFileName, verFile, &dstFileExists)) {
+        LOG_I("Successfully verified, saving as (%s)", verFile);
+        __sync_fetch_and_add(&hfuzz->verifiedCrashesCnt, 1UL);
+        unlink(crashedFuzzer->crashFileName);
+    } else {
+        if (dstFileExists) {
+            LOG_I("It seems that '%s' already exists, skipping", verFile);
+        } else {
+            LOG_E("Couldn't copy '%s' to '%s'", crashedFuzzer->crashFileName, verFile);
+            goto bail;
+        }
     }
 
-    if (!files_writeToFd(verFileFd, crashBuf, crashFileSz)) {
-        close(verFileFd);
-        goto bail;
-    }
-
-    LOG_I("Successfully verified, saving as (%s)", verFile);
-    __sync_fetch_and_add(&hfuzz->verifiedCrashesCnt, 1UL);
     ret = true;
 
  bail:
