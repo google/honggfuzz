@@ -333,7 +333,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         LOG_F("malloc(%zu) failed", hfuzz->maxFileSz);
     }
 
-    int rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
+    size_t rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
 
     /* If dry run mode, pick the next file and not a random one */
     if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {

@@ -733,7 +733,6 @@ static void arch_ptraceAnalyzeData(pid_t pid, fuzzer_t * fuzzer)
 
 static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
-    __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
     REG_TYPE pc = 0;
 
     char instr[_HF_INSTR_SZ] = "\x00";
@@ -772,10 +771,36 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     size_t funcCnt = arch_unwindStack(pid, funcs);
 #endif
 
+    /* 
+     * Temp local copy of previous backtrace value in case worker hit crashes into multiple
+     * tids for same target master thread. Will be 0 for first crash against target.
+     */
+    uint64_t oldBacktrace = fuzzer->backtrace;
+
     /*
      * Calculate backtrace callstack hash signature
      */
     arch_hashCallstack(fuzzer, funcs, funcCnt);
+
+    /* 
+     * If worker crashFileName member is set, it means that a tid has already crashed
+     * from target master thread.
+     */
+    if (fuzzer->crashFileName) {
+        LOG_D("Multiple crashes detected from worker against attached tids group");
+        
+        /*
+         * If stackhashes match, don't re-analyze. This will avoid duplicates
+         * and prevent verifier from running multiple passes. Depth of check is
+         * always 1 (last backtrace saved only per target iteration).
+         */
+        if (oldBacktrace == fuzzer->backtrace) {
+            return;
+        }
+    }
+
+    /* Increase global crashes counter */
+    __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
 
     /* 
      * Check if stackhash is blacklisted
@@ -882,8 +907,6 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
     }
 
     if (WIFSTOPPED(status)) {
-        int curStatus = WSTOPSIG(status);
-
         /*
          * If it's an interesting signal, save the testcase
          */
@@ -897,18 +920,8 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
             } else {
                 arch_ptraceAnalyzeData(pid, fuzzer);
             }
-
-            /* 
-             * A kind of ugly (although necessary) hack due to custom signal handlers
-             * in Android from debuggerd. If we pass one of the monitored signals, 
-             * we'll end-up running the processing routine twice. A cost that we 
-             * don't want to pay.
-             */
-#if defined(__ANDROID__)
-            curStatus = SIGINT;
-#endif
         }
-        ptrace(PT_CONTINUE, pid, 0, curStatus);
+        ptrace(PT_CONTINUE, pid, 0, WSTOPSIG(status));
         return;
     }
 
