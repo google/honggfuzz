@@ -95,7 +95,7 @@ if [[ "$BL_FILE" == "" ]]; then
 fi
 
 # Hashes gather mode
-if [ $nArgs -gt 1 ]; then
+if [ $nArgs -gt 2 ]; then
   if [[ "$INPUT_DIR" == "" || ! -e "$INPUT_DIR" ]]; then
     echo "[-] Missing or invalid input directory"
     usage
