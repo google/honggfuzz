@@ -236,7 +236,8 @@ static ssize_t honggfuzz_process_vm_readv(pid_t pid,
                                           const struct iovec *rvec,
                                           unsigned long riovcnt, unsigned long flags)
 {
-    return syscall(__NR_process_vm_readv, (long)pid, lvec, liovcnt, rvec, riovcnt, flags);
+    return syscall(__NR_process_vm_readv, (uintptr_t) pid, lvec, (uintptr_t) liovcnt, rvec,
+                   (uintptr_t) riovcnt, (uintptr_t) flags);
 }
 
 #define process_vm_readv honggfuzz_process_vm_readv

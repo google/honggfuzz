@@ -61,7 +61,7 @@ pid_t arch_fork(honggfuzz_t * hfuzz)
     if (hfuzz->pid) {
         clone_flags = SIGCHLD;
     }
-    return syscall(__NR_clone, clone_flags, NULL, NULL, NULL, 0);
+    return syscall(__NR_clone, (uintptr_t) clone_flags, NULL, NULL, NULL, (uintptr_t) 0);
 }
 
 bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
@@ -182,7 +182,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     /*
      * Wait for the ptrace to attach
      */
-    syscall(__NR_tkill, syscall(__NR_gettid), SIGSTOP);
+    syscall(__NR_tkill, syscall(__NR_gettid), (uintptr_t) SIGSTOP);
     execvp(args[0], args);
 
     util_recoverStdio();
