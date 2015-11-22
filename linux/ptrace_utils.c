@@ -669,7 +669,7 @@ static void arch_hashCallstack(fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCn
      * masking shouldn't be enabled.
      */
     if (enableMasking && funcCnt == 1) {
-        uint16_t id = (uint16_t) util_rndGet(0, 0xFF);
+        uint8_t id = (uint8_t) util_rndGet(0, 0xFF);
         uint64_t mask = 0xBADBAD00 + id;
         mask <<= 32;
         hash |= mask;
