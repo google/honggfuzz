@@ -645,7 +645,8 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
     return;
 }
 
-static void arch_hashCallstack(fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCnt)
+static void arch_hashCallstack(fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCnt,
+                               bool enableMasking)
 {
     uint64_t hash = 0;
     for (size_t i = 0; i < funcCnt && i < NMAJORFRAMES; i++) {
@@ -659,6 +660,19 @@ static void arch_hashCallstack(fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCn
          * Hash the last three nibbles
          */
         hash ^= util_hash(&pcStr[strlen(pcStr) - 3], 3);
+    }
+
+    /*
+     * If only one frame, hash is not safe to be used for uniqueness.
+     * enableMasking is controlling whether we should enable masking. For
+     * example if saveUnique is false or fuzzer worker is from verifier,
+     * masking shouldn't be enabled.
+     */
+    if (enableMasking && funcCnt == 1) {
+        uint16_t id = (uint16_t) util_rndGet(0, 0xFF);
+        uint64_t mask = 0xBADBAD00 + id;
+        mask <<= 32;
+        hash |= mask;
     }
     fuzzer->backtrace = hash;
 }
@@ -729,7 +743,7 @@ static void arch_ptraceAnalyzeData(pid_t pid, fuzzer_t * fuzzer)
     /*
      * Calculate backtrace callstack hash signature
      */
-    arch_hashCallstack(fuzzer, funcs, funcCnt);
+    arch_hashCallstack(fuzzer, funcs, funcCnt, false);
 }
 
 static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
@@ -781,7 +795,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     /*
      * Calculate backtrace callstack hash signature
      */
-    arch_hashCallstack(fuzzer, funcs, funcCnt);
+    arch_hashCallstack(fuzzer, funcs, funcCnt, hfuzz->saveUnique);
 
     /* 
      * If worker crashFileName member is set, it means that a tid has already crashed
