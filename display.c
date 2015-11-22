@@ -100,6 +100,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put("Input Files: '" ESC_BOLD "%zu" ESC_RESET "'\n", hfuzz->fileCnt);
     }
 
+    display_put("Unique crashes enabled: '" ESC_BOLD "%s" ESC_RESET "'\n",
+                hfuzz->saveUnique ? "TRUE" : "FALSE");
     display_put("Crashes: " ESC_BOLD "%zu" ESC_RESET " (unique: " ESC_BOLD "%zu" ESC_RESET
                 ", blacklist: " ESC_BOLD "%zu" ESC_RESET ", verified: " ESC_BOLD "%zu" ESC_RESET
                 ") \n", __sync_fetch_and_add(&hfuzz->crashesCnt, 0UL),
