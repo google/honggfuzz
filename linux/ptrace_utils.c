@@ -670,7 +670,7 @@ static void arch_hashCallstack(fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCn
      */
     if (enableMasking && funcCnt == 1) {
         uint8_t id = (uint8_t) util_rndGet(0, 0xFF);
-        uint64_t mask = 0xBADBAD00 + id;
+        uint64_t mask = __HF_SF_MASK_CONST_BASE + id;
         mask <<= 32;
         hash |= mask;
     }
@@ -796,6 +796,21 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
      * Calculate backtrace callstack hash signature
      */
     arch_hashCallstack(fuzzer, funcs, funcCnt, hfuzz->saveUnique);
+
+    /* If unique flag is set and excessive amount of single frame crashes, disable it */
+    if (hfuzz->saveUnique && ((fuzzer->backtrace & __HF_SF_MASK_CONST) == __HF_SF_MASK_CONST)) {
+
+        /* Update global counter */
+        size_t curr_sfCrashes_cnt = __sync_fetch_and_add(&hfuzz->singleFrameCrashesCnt, 1UL);
+        size_t curr_crashes_cnt = __sync_fetch_and_add(&hfuzz->crashesCnt, 0UL);
+
+        /* If crashes pool big enough and max single frames percentage disable unique flag */
+        if (curr_crashes_cnt > __HF_SF_PROCESS_AFTER_N_CRASHES
+            && (curr_sfCrashes_cnt * 100) / curr_crashes_cnt > __HF_MAX_SF_PERCENTAGE) {
+            LOG_I("Disabling uniqueness flag due to excessive single frame crashes");
+            hfuzz->saveUnique = false;
+        }
+    }
 
     /* 
      * If worker crashFileName member is set, it means that a tid has already crashed

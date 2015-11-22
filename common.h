@@ -53,6 +53,22 @@
 /* Number of crash verifier iterations before tag crash as stable */
 #define _HF_VERIFIER_ITER   5
 
+/* Constant prefix used for single unwinded frames masking */
+#define __HF_SF_MASK_CONST      0xBADBAD0000000000
+#define __HF_SF_MASK_CONST_BASE 0xBADBAD00
+
+/*
+ * Percentage (against total crashes) after which uniqueness flag is disabled due
+ * to excessive number of single frame crashes
+ */
+#define __HF_MAX_SF_PERCENTAGE 50
+
+/*
+ * Start processing single frame max percentage after crashes pool has a
+ * representative size
+ */
+#define __HF_SF_PROCESS_AFTER_N_CRASHES 10
+
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
     _HF_DYNFILE_INSTR_COUNT = 0x1,
@@ -103,6 +119,7 @@ typedef struct {
 
     time_t timeStart;
     size_t mutationsCnt;
+    size_t singleFrameCrashesCnt;
     size_t crashesCnt;
     size_t uniqueCrashesCnt;
     size_t verifiedCrashesCnt;
