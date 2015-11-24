@@ -663,16 +663,13 @@ static void arch_hashCallstack(fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCn
     }
 
     /*
-     * If only one frame, hash is not safe to be used for uniqueness.
-     * enableMasking is controlling whether we should enable masking. For
-     * example if saveUnique is false or fuzzer worker is from verifier,
-     * masking shouldn't be enabled.
+     * If only one frame, hash is not safe to be used for uniqueness. We mask it
+     * here with a constant prefix, so analyzers can pick it up and create filenames
+     * accordingly. 'enableMasking' is controlling masking for cases where it should
+     * not be enabled (e.g. fuzzer worker is from verifier).
      */
     if (enableMasking && funcCnt == 1) {
-        uint8_t id = (uint8_t) util_rndGet(0, 0xFF);
-        uint64_t mask = __HF_SF_MASK_CONST_BASE + id;
-        mask <<= 32;
-        hash |= mask;
+        hash |= __HF_SINGLE_FRAME_MASK;
     }
     fuzzer->backtrace = hash;
 }
@@ -749,6 +746,7 @@ static void arch_ptraceAnalyzeData(pid_t pid, fuzzer_t * fuzzer)
 static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
     REG_TYPE pc = 0;
+    bool saveUnique = hfuzz->saveUnique;
 
     char instr[_HF_INSTR_SZ] = "\x00";
     siginfo_t si;
@@ -797,19 +795,12 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
      */
     arch_hashCallstack(fuzzer, funcs, funcCnt, hfuzz->saveUnique);
 
-    /* If unique flag is set and excessive amount of single frame crashes, disable it */
-    if (hfuzz->saveUnique && ((fuzzer->backtrace & __HF_SF_MASK_CONST) == __HF_SF_MASK_CONST)) {
-
-        /* Update global counter */
-        size_t curr_sfCrashes_cnt = __sync_fetch_and_add(&hfuzz->singleFrameCrashesCnt, 1UL);
-        size_t curr_crashes_cnt = __sync_fetch_and_add(&hfuzz->crashesCnt, 0UL);
-
-        /* If crashes pool big enough and max single frames percentage disable unique flag */
-        if (curr_crashes_cnt > __HF_SF_PROCESS_AFTER_N_CRASHES
-            && (curr_sfCrashes_cnt * 100) / curr_crashes_cnt > __HF_MAX_SF_PERCENTAGE) {
-            LOG_I("Disabling uniqueness flag due to excessive single frame crashes");
-            hfuzz->saveUnique = false;
-        }
+    /* 
+     * If unique flag is set and single frame crash, disable uniqueness for this crash 
+     * to always save (timestamp will be added to the filename)
+     */
+    if (saveUnique && ((fuzzer->backtrace & __HF_SINGLE_FRAME_MASK) == __HF_SINGLE_FRAME_MASK)) {
+        saveUnique = false;
     }
 
     /* 
@@ -857,7 +848,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s",
                  hfuzz->workDir, fuzzer->origFileName);
-    } else if (hfuzz->saveUnique) {
+    } else if (saveUnique) {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
                  "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
                  hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, fuzzer->backtrace,

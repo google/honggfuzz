@@ -174,7 +174,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 
         .timeStart = time(NULL),
         .mutationsCnt = 0,
-        .singleFrameCrashesCnt = 0,
         .crashesCnt = 0,
         .uniqueCrashesCnt = 0,
         .verifiedCrashesCnt = 0,
