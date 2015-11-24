@@ -56,18 +56,6 @@
 /* Constant prefix used for single frame crashes stackhash masking */
 #define __HF_SINGLE_FRAME_MASK  0xBADBAD0000000000
 
-/*
- * Percentage (against total crashes) after which uniqueness flag is disabled due
- * to excessive number of single frame crashes
- */
-#define __HF_MAX_SF_PERCENTAGE 50
-
-/*
- * Start processing single frame max percentage after crashes pool has a
- * representative size
- */
-#define __HF_SF_PROCESS_AFTER_N_CRASHES 10
-
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
     _HF_DYNFILE_INSTR_COUNT = 0x1,
