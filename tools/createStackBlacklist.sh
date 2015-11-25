@@ -142,7 +142,7 @@ if $gatherMode; then
     stackHash=$(echo $fileName | cut -d '.' -f$STACKHASH_FIELD)
 
     # We don't want to lose crashes where unwinder failed
-    if [[ "$stackHash" != "0" ]]; then
+    if [[ "$stackHash" != "0" && ! "$stackHash" =~ ^badbad.* ]]; then
       echo $stackHash >> $tmpFile
     fi
   done

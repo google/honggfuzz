@@ -645,7 +645,8 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
     return;
 }
 
-static void arch_hashCallstack(fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCnt)
+static void arch_hashCallstack(fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCnt,
+                               bool enableMasking)
 {
     uint64_t hash = 0;
     for (size_t i = 0; i < funcCnt && i < NMAJORFRAMES; i++) {
@@ -659,6 +660,16 @@ static void arch_hashCallstack(fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCn
          * Hash the last three nibbles
          */
         hash ^= util_hash(&pcStr[strlen(pcStr) - 3], 3);
+    }
+
+    /*
+     * If only one frame, hash is not safe to be used for uniqueness. We mask it
+     * here with a constant prefix, so analyzers can pick it up and create filenames
+     * accordingly. 'enableMasking' is controlling masking for cases where it should
+     * not be enabled (e.g. fuzzer worker is from verifier).
+     */
+    if (enableMasking && funcCnt == 1) {
+        hash |= __HF_SINGLE_FRAME_MASK;
     }
     fuzzer->backtrace = hash;
 }
@@ -729,12 +740,15 @@ static void arch_ptraceAnalyzeData(pid_t pid, fuzzer_t * fuzzer)
     /*
      * Calculate backtrace callstack hash signature
      */
-    arch_hashCallstack(fuzzer, funcs, funcCnt);
+    arch_hashCallstack(fuzzer, funcs, funcCnt, false);
 }
 
 static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
     REG_TYPE pc = 0;
+
+    /* Local copy since flag is overridden for some crashes */
+    bool saveUnique = hfuzz->saveUnique;
 
     char instr[_HF_INSTR_SZ] = "\x00";
     siginfo_t si;
@@ -781,7 +795,15 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     /*
      * Calculate backtrace callstack hash signature
      */
-    arch_hashCallstack(fuzzer, funcs, funcCnt);
+    arch_hashCallstack(fuzzer, funcs, funcCnt, saveUnique);
+
+    /* 
+     * If unique flag is set and single frame crash, disable uniqueness for this crash 
+     * to always save (timestamp will be added to the filename)
+     */
+    if (saveUnique && (funcCnt == 1)) {
+        saveUnique = false;
+    }
 
     /* 
      * If worker crashFileName member is set, it means that a tid has already crashed
@@ -828,7 +850,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s",
                  hfuzz->workDir, fuzzer->origFileName);
-    } else if (hfuzz->saveUnique) {
+    } else if (saveUnique) {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
                  "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
                  hfuzz->workDir, arch_sigs[si.si_signo].descr, pc, fuzzer->backtrace,
