@@ -35,8 +35,8 @@
 #include "log.h"
 #include "util.h"
 
-static void mangle_Overwrite(uint8_t * dst, const uint8_t * src, size_t dstSz, size_t off,
-                             size_t sz)
+static inline void mangle_Overwrite(uint8_t * dst, const uint8_t * src, size_t dstSz, size_t off,
+                                    size_t sz)
 {
     size_t maxToCopy = dstSz - off;
     if (sz > maxToCopy) {
@@ -324,7 +324,7 @@ static void mangle_DecByte(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz, siz
 void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
 {
     /*  *INDENT-OFF* */
-    void (*const mangleFuncs[]) (honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz, size_t off) = {
+    static void (*const mangleFuncs[]) (honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz, size_t off) = {
         mangle_Byte,
         mangle_Byte,
         mangle_Byte,
