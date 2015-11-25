@@ -746,6 +746,8 @@ static void arch_ptraceAnalyzeData(pid_t pid, fuzzer_t * fuzzer)
 static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
     REG_TYPE pc = 0;
+
+    /* Local copy since flag is overridden for some crashes */
     bool saveUnique = hfuzz->saveUnique;
 
     char instr[_HF_INSTR_SZ] = "\x00";
@@ -793,13 +795,13 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     /*
      * Calculate backtrace callstack hash signature
      */
-    arch_hashCallstack(fuzzer, funcs, funcCnt, hfuzz->saveUnique);
+    arch_hashCallstack(fuzzer, funcs, funcCnt, saveUnique);
 
     /* 
      * If unique flag is set and single frame crash, disable uniqueness for this crash 
      * to always save (timestamp will be added to the filename)
      */
-    if (saveUnique && ((fuzzer->backtrace & __HF_SINGLE_FRAME_MASK) == __HF_SINGLE_FRAME_MASK)) {
+    if (saveUnique && (funcCnt == 1)) {
         saveUnique = false;
     }
 
