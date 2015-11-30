@@ -439,7 +439,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         MX_UNLOCK(&hfuzz->dynamicFile_mutex);
     }
 
-    if (hfuzz->useVerifier && (fuzzer.crashFileName[0] != 0)) {
+    if (hfuzz->useVerifier && (fuzzer.crashFileName[0] != 0) && fuzzer.backtrace) {
         if (!fuzz_runVerifier(hfuzz, &fuzzer)) {
             LOG_I("Failed to verify %s", fuzzer.crashFileName);
         }
