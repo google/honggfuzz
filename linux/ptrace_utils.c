@@ -720,6 +720,13 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
 
 static void arch_ptraceAnalyzeData(pid_t pid, fuzzer_t * fuzzer)
 {
+    REG_TYPE pc = 0, status_reg = 0;
+    size_t pcRegSz = arch_getPC(pid, &pc, &status_reg);
+    if (!pcRegSz) {
+        LOG_W("ptrace arch_getPC failed");
+        return;
+    }
+
     /*
      * Unwind and resolve symbols
      */
@@ -736,6 +743,20 @@ static void arch_ptraceAnalyzeData(pid_t pid, fuzzer_t * fuzzer)
 #else
     size_t funcCnt = arch_unwindStack(pid, funcs);
 #endif
+
+    /* 
+     * If unwinder failed (zero frames), use PC from ptrace GETREGS if not zero. 
+     * If PC reg zero return and callers should handle zero hash case.
+     */
+    if (funcCnt == 0) {
+        if (pc) {
+            /* Manually update major frame PC & frames counter */
+            funcs[0].pc = (void *)pc;
+            funcCnt = 1;
+        } else {
+            return;
+        }
+    }
 
     /*
      * Calculate backtrace callstack hash signature
@@ -785,6 +806,21 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 #else
     size_t funcCnt = arch_unwindStack(pid, funcs);
 #endif
+
+    /* 
+     * If unwinder failed (zero frames), use PC from ptrace GETREGS if not zero. 
+     * If PC reg zero, temporarily disable uniqueness flag since callstack
+     * hash will be also zero, thus not safe for unique decisions.
+     */
+    if (funcCnt == 0) {
+        if (pc) {
+            /* Manually update major frame PC & frames counter */
+            funcs[0].pc = (void *)pc;
+            funcCnt = 1;
+        } else {
+            saveUnique = false;
+        }
+    }
 
     /* 
      * Temp local copy of previous backtrace value in case worker hit crashes into multiple
