@@ -784,7 +784,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %"
           REG_PM ", instr: '%s'", pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
 
-    if (!SI_FROMUSER(&si) && si.si_addr < hfuzz->ignoreAddr) {
+    if (!SI_FROMUSER(&si) && pc && si.si_addr < hfuzz->ignoreAddr) {
         LOG_I("'%s' is interesting (%s), but the si.si_addr is %p (below %p), skipping",
               fuzzer->fileName, arch_sigs[si.si_signo].descr, si.si_addr, hfuzz->ignoreAddr);
         return;
