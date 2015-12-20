@@ -94,8 +94,6 @@ void util_rndBuf(uint8_t * buf, size_t sz)
         x = (a * x + c);
         buf[i] = (uint8_t) (x & 0xFF);
     }
-
-    return;
 }
 
 int util_vssnprintf(char *str, size_t size, const char *format, va_list ap)
@@ -150,8 +148,6 @@ void util_nullifyStdio(void)
     if (fd > 2) {
         close(fd);
     }
-
-    return;
 }
 
 bool util_redirectStdin(char *inputFile)
@@ -191,7 +187,6 @@ void util_recoverStdio(void)
     if (fd > 2) {
         close(fd);
     }
-    return;
 }
 
 /*
