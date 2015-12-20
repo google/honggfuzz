@@ -81,9 +81,9 @@ static void mangle_Magic(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz
 {
     /*  *INDENT-OFF* */
     static const struct {
-        const uint8_t const val[8];
+        const uint8_t val[8];
         const size_t size;
-    } const mangleMagicVals[] = {
+    } mangleMagicVals[] = {
         /* 1B - No endianness */
         { "\x00\x00\x00\x00\x00\x00\x00\x00", 1},
         { "\x01\x00\x00\x00\x00\x00\x00\x00", 1},
