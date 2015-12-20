@@ -249,12 +249,9 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     return true;
 }
 
-pid_t arch_fork(honggfuzz_t * hfuzz)
+pid_t arch_fork(honggfuzz_t * hfuzz UNUSED)
 {
     return fork();
-    if (hfuzz == NULL) {
-        return -1;
-    }
 }
 
 bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)

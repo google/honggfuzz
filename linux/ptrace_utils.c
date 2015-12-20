@@ -405,10 +405,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
     return memsz;
 }
 
-// Non i386 / x86_64 ISA fail build due to unused pid argument
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt)
+void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid UNUSED, uint64_t * cnt UNUSED)
 {
     if ((hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) == 0) {
         return;
@@ -456,8 +453,6 @@ void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt)
     LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
 #endif                          /* defined(__i386__) || defined(__x86_64__) */
 }
-
-#pragma GCC diagnostic pop      /* ignored "-Wunused-parameter" */
 
 static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
 {
@@ -954,7 +949,6 @@ static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status,
     }
 
     ptrace(PT_CONTINUE, pid, 0, 0);
-    return;
 }
 
 void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer)
@@ -1004,7 +998,6 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
     }
 
     abort();                    /* NOTREACHED */
-    return;
 }
 
 static bool arch_listThreads(int tasks[], size_t thrSz, int pid)

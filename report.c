@@ -120,6 +120,4 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
 
     dprintf(reportFD,
             "%s" "=====================================================================\n", s);
-
-    return;
 }

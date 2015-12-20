@@ -436,6 +436,4 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
     fuzzer->hwCnts.cpuBranchCnt = branchCount;
     fuzzer->hwCnts.pcCnt = pathCount;
     fuzzer->hwCnts.pathCnt = edgeCount;
-
-    return;
 }

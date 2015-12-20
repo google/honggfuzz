@@ -75,8 +75,6 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
     snprintf(fileName, PATH_MAX, "%s/.honggfuzz.%d.%lu.%llx.%s", hfuzz->workDir, (int)getpid(),
              (unsigned long int)tv.tv_sec, (unsigned long long int)util_rndGet(0, 1ULL << 62),
              hfuzz->fileExtn);
-
-    return;
 }
 
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
@@ -447,7 +445,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
 
     report_Report(hfuzz, fuzzer.report);
     free(fuzzer.dynamicFile);
-
 }
 
 static void *fuzz_threadNew(void *arg)

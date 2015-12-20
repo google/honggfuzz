@@ -190,17 +190,10 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     return false;
 }
 
-static void arch_sigFunc(int signo, siginfo_t * si, void *dummy)
+static void arch_sigFunc(int signo, siginfo_t * si UNUSED, void *dummy UNUSED)
 {
     if (signo != SIGALRM) {
         LOG_E("Signal != SIGALRM (%d)", signo);
-    }
-    return;
-    if (si == NULL) {
-        return;
-    }
-    if (dummy == NULL) {
-        return;
     }
 }
 
@@ -335,7 +328,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     arch_removeTimer(&timerid);
     arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
-    return;
 }
 
 bool arch_archInit(honggfuzz_t * hfuzz)

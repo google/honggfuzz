@@ -90,7 +90,6 @@ static void arch_bfdDestroy(bfd_t * bfdParams)
     if (bfdParams->bfdh) {
         bfd_close_all_done(bfdParams->bfdh);
     }
-    return;
 }
 
 void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
@@ -133,7 +132,6 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
     arch_bfdDestroy(&bfdParams);
 
     while (pthread_mutex_unlock(&arch_bfd_mutex)) ;
-    return;
 }
 
 static int arch_bfdFPrintF(void *buf, const char *fmt, ...)
@@ -190,5 +188,4 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
     bfdh ? bfd_close_all_done(bfdh) : 0;
 
     while (pthread_mutex_unlock(&arch_bfd_mutex)) ;
-    return;
 }
