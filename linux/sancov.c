@@ -78,10 +78,12 @@ void arch_sanCovAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             goto bail;
         }
         pos += 8;
-    }else {
+    } else {
         /* TODO: Add PC length detection, for now assume 32bit only */
+        snprintf(covFile, sizeof(covFile), "%d.sancov.map", fuzzer->pid);
+        unlink(covFile);
         snprintf(covFile, sizeof(covFile), "%d.sancov.raw", fuzzer->pid);
-        
+
         dataBuf = files_mapFile(covFile, &dataFileSz, &dataFd, false);
         if (dataBuf == NULL) {
             LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
@@ -95,15 +97,17 @@ void arch_sanCovAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (is32bit) {
             uint32_t pc = util_getUINT32(dataBuf + pos);
             pos += 4;
-            if (pc == 0x0) continue;
+            if (pc == 0x0)
+                continue;
         } else {
             uint64_t pc = util_getUINT64(dataBuf + pos);
             pos += 8;
-            if (pc == 0x0) continue;
+            if (pc == 0x0)
+                continue;
         }
         nPCs++;
     }
-    fuzzer->sanCovCnts.pcCnt = nPCs;    
+    fuzzer->sanCovCnts.pcCnt = nPCs;
 
  bail:
     unlink(covFile);
