@@ -406,6 +406,13 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         LOG_E("The file extension contains the '/' character: '%s'", hfuzz->fileExtn);
         return false;
     }
+    
+    if (hfuzz->workDir[0] != '.') {
+        if (!files_exists(hfuzz->workDir)) {
+            LOG_E("Provided workspace directory '%s' doesn't exist", hfuzz->workDir);
+            return false;
+        }
+    }
 
     if (hfuzz->pid > 0) {
         LOG_I("PID=%d specified, lowering maximum number of concurrent threads to 1", hfuzz->pid);
@@ -413,7 +420,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     }
 
     if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
-        LOG_I("Verifier enabled with 0.0flipRate, activating dry run mode");
+        LOG_I("Verifier enabled with 0.0 flipRate, activating dry run mode");
     }
 
     LOG_I("inputFile '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, flipRate: %lf, "
