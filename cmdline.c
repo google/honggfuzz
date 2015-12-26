@@ -416,6 +416,12 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         return false;
     }
 
+    /* Adjust timeout due to sancov perf overhead */
+    if (hfuzz->useSanCov && hfuzz->tmOut < 20) {
+        LOG_E("Timeout value (%ld) too small for sanitizer coverage feedback", hfuzz->tmOut);
+        return false;
+    }
+
     if (strchr(hfuzz->fileExtn, '/')) {
         LOG_E("The file extension contains the '/' character: '%s'", hfuzz->fileExtn);
         return false;
