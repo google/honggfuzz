@@ -232,7 +232,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
 
 #if defined(_HF_ARCH_LINUX)
-        {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback (default: disabled)"},
+        {{"sancov", no_argument, NULL, 'C'}, "EXPERIMENTAL: Enable sanitizer coverage feedback (default: disabled)"},
         {{"linux_pid", required_argument, NULL, 'p'}, "[Linux] Attach to a pid (and its thread group)"},
         {{"linux_addr_low_limit", required_argument, NULL, 0x500}, "Address limit (from si.si_addr) below which crashes are not reported, (default: '0')"},
         {{"linux_keep_aslr", no_argument, NULL, 0x501}, "Don't disable ASLR randomization, might be useful with MSAN"},
