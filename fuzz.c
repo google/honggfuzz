@@ -57,6 +57,50 @@ static int fuzz_sigReceived = 0;
 
 static pthread_t fuzz_mainThread;
 
+static inline bool fuzz_isPerfCntsZero(honggfuzz_t * hfuzz)
+{
+    if (hfuzz->hwCnts.cpuInstrCnt == 0ULL && 
+        hfuzz->hwCnts.cpuBranchCnt == 0ULL && 
+        hfuzz->hwCnts.pcCnt == 0ULL && 
+        hfuzz->hwCnts.pathCnt == 0ULL && 
+        hfuzz->hwCnts.customCnt == 0ULL) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static inline bool fuzz_isPerfCntsSet(honggfuzz_t * hfuzz)
+{
+    if (hfuzz->hwCnts.cpuInstrCnt > 0ULL ||
+        hfuzz->hwCnts.cpuBranchCnt > 0ULL ||
+        hfuzz->hwCnts.pcCnt > 0ULL ||
+        hfuzz->hwCnts.pathCnt > 0ULL ||
+        hfuzz->hwCnts.customCnt > 0ULL) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static inline bool fuzz_isSanCovCntsZero(honggfuzz_t * hfuzz)
+{
+    if (hfuzz->sanCovCnts.pcCnt == 0ULL) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static inline bool fuzz_isSanCovCntsSet(honggfuzz_t * hfuzz)
+{
+    if (hfuzz->sanCovCnts.pcCnt > 0ULL) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 static void fuzz_sigHandler(int sig)
 {
     /* We should not terminate upon SIGALRM delivery */
@@ -82,11 +126,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     MX_LOCK(&hfuzz->dynamicFile_mutex);
 
     /* If first run (zero feedback counters), init dynamicFileBestSz */
-    if (hfuzz->inputFile &&
-        ((hfuzz->hwCnts.cpuInstrCnt == 0ULL && hfuzz->hwCnts.cpuBranchCnt == 0ULL
-          && hfuzz->hwCnts.pcCnt == 0ULL && hfuzz->hwCnts.pathCnt == 0ULL
-          && hfuzz->hwCnts.customCnt == 0ULL)
-         || (hfuzz->sanCovCnts.pcCnt == 0ULL))) {
+    if (hfuzz->inputFile && (fuzz_isPerfCntsZero(hfuzz) || fuzz_isSanCovCntsZero(hfuzz))) {
         size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
                                                hfuzz->maxFileSz);
         if (fileSz == 0) {
@@ -115,9 +155,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         goto skipMangling;
     }
     /* The first pass should be on an empty/initial file */
-    if (hfuzz->hwCnts.cpuInstrCnt > 0 || hfuzz->hwCnts.cpuBranchCnt > 0 || hfuzz->hwCnts.pcCnt > 0
-        || hfuzz->hwCnts.pathCnt > 0 || hfuzz->hwCnts.customCnt > 0
-        || hfuzz->sanCovCnts.pcCnt > 0) {
+    if (fuzz_isSanCovCntsZero(hfuzz) || fuzz_isSanCovCntsSet(hfuzz)) {
         mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz);
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
