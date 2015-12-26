@@ -101,7 +101,7 @@ void util_rndBuf(uint8_t * buf, size_t sz)
  * with relatively small sizes (max is _HF_REPORT_SIZE), thus safe to silent warning.
  */
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstack-usage="
+#pragma GCC diagnostic ignored "-Wframe-larger-than="
 int util_vssnprintf(char *str, size_t size, const char *format, va_list ap)
 {
     char buf1[size];

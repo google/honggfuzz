@@ -840,7 +840,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
      * If worker crashFileName member is set, it means that a tid has already crashed
      * from target master thread.
      */
-    if (fuzzer->crashFileName) {
+    if (fuzzer->crashFileName[0] != '\0') {
         LOG_D("Multiple crashes detected from worker against attached tids group");
 
         /*
