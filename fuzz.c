@@ -59,10 +59,9 @@ static pthread_t fuzz_mainThread;
 
 static inline bool fuzz_isPerfCntsZero(honggfuzz_t * hfuzz)
 {
-    if (hfuzz->hwCnts.cpuInstrCnt == 0ULL &&
-        hfuzz->hwCnts.cpuBranchCnt == 0ULL &&
-        hfuzz->hwCnts.pcCnt == 0ULL &&
-        hfuzz->hwCnts.pathCnt == 0ULL && hfuzz->hwCnts.customCnt == 0ULL) {
+    if (hfuzz->hwCnts.cpuInstrCnt == 0ULL && hfuzz->hwCnts.cpuBranchCnt == 0ULL
+        && hfuzz->hwCnts.pcCnt == 0ULL && hfuzz->hwCnts.pathCnt == 0ULL
+        && hfuzz->hwCnts.customCnt == 0ULL) {
         return true;
     } else {
         return false;
@@ -71,10 +70,9 @@ static inline bool fuzz_isPerfCntsZero(honggfuzz_t * hfuzz)
 
 static inline bool fuzz_isPerfCntsSet(honggfuzz_t * hfuzz)
 {
-    if (hfuzz->hwCnts.cpuInstrCnt > 0ULL ||
-        hfuzz->hwCnts.cpuBranchCnt > 0ULL ||
-        hfuzz->hwCnts.pcCnt > 0ULL ||
-        hfuzz->hwCnts.pathCnt > 0ULL || hfuzz->hwCnts.customCnt > 0ULL) {
+    if (hfuzz->hwCnts.cpuInstrCnt > 0ULL || hfuzz->hwCnts.cpuBranchCnt > 0ULL
+        || hfuzz->hwCnts.pcCnt > 0ULL || hfuzz->hwCnts.pathCnt > 0ULL
+        || hfuzz->hwCnts.customCnt > 0ULL) {
         return true;
     } else {
         return false;

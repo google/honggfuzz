@@ -79,8 +79,33 @@ void arch_sanCovAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
         pos += 8;
     } else {
-        /* TODO: Add PC length detection, for now assume 32bit only */
+        /* TODO: Fully parse .map file and target only interesting PCs */
         snprintf(covFile, sizeof(covFile), "%d.sancov.map", fuzzer->pid);
+        FILE *fCovMap = fopen(covFile, "rb");
+        if (fCovMap == NULL) {
+            PLOG_E("Couldn't open '%s' - R/O mode", covFile);
+            goto bail;
+        }
+
+        /* First line contains PC length (32/64-bit) */
+        char *lineptr = NULL;
+        size_t n = 0;
+        if (getline(&lineptr, &n, fCovMap) == -1) {
+            LOG_E("Invalid map file '%s'", covFile);
+            fclose(fCovMap);
+            goto bail;
+        }
+
+        int pcLen = atoi(lineptr);
+        if (pcLen == 32) {
+            is32bit = true;
+        } else if (pcLen == 64) {
+            is32bit = false;
+        } else {
+            LOG_E("Invalid PC length (%d) in map file '%s'", pcLen, covFile);
+        }
+
+        fclose(fCovMap);
         unlink(covFile);
         snprintf(covFile, sizeof(covFile), "%d.sancov.raw", fuzzer->pid);
 
@@ -89,7 +114,6 @@ void arch_sanCovAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
             return;
         }
-        /* TODO: Parse .map file and target only interesting PCs */
     }
 
     uint64_t nPCs = 0;

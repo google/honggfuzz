@@ -299,13 +299,13 @@ extern uint64_t util_getUINT64(const uint8_t * buf)
         b4 = buf[4], b5 = buf[5], b6 = buf[6], b7 = buf[7];
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-    return ((uint64_t) b0 << 56) | ((uint64_t) b1 << 48) | ((uint64_t) b2 << 40) | ((uint64_t) b3 <<
-                                                                                    32) |
-        ((uint64_t) b4 << 24) | ((uint64_t) b5 << 16) | ((uint64_t) b6 << 8) | (uint64_t) b7;
+    return ((uint64_t) b0 << 56) | ((uint64_t) b1 << 48) | ((uint64_t) b2 << 40) |
+        ((uint64_t) b3 << 32) | ((uint64_t) b4 << 24) | ((uint64_t) b5 << 16) |
+        ((uint64_t) b6 << 8) | (uint64_t) b7;
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
-    return ((uint64_t) b7 << 56) | ((uint64_t) b6 << 48) | ((uint64_t) b5 << 40) | ((uint64_t) b4 <<
-                                                                                    32) |
-        ((uint64_t) b3 << 24) | ((uint64_t) b2 << 16) | ((uint64_t) b1 << 8) | (uint64_t) b0;
+    return ((uint64_t) b7 << 56) | ((uint64_t) b6 << 48) | ((uint64_t) b5 << 40) |
+        ((uint64_t) b4 << 32) | ((uint64_t) b3 << 24) | ((uint64_t) b2 << 16) |
+        ((uint64_t) b1 << 8) | (uint64_t) b0;
 #else
 #error "Unknown ENDIANNESS"
 #endif
