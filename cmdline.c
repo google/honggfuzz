@@ -416,8 +416,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         return false;
     }
 
-    /* Adjust timeout due to sancov perf overhead */
-    if (hfuzz->useSanCov && hfuzz->tmOut < 20) {
+    /* Sanity checks for timeout. Optimal ranges highly depend on target */
+    if (hfuzz->useSanCov && hfuzz->tmOut < 15) {
         LOG_E("Timeout value (%ld) too small for sanitizer coverage feedback", hfuzz->tmOut);
         return false;
     }
