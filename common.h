@@ -81,6 +81,10 @@ typedef struct {
 } hwcnt_t;
 
 typedef struct {
+    uint64_t pcCnt;
+} sancovcnt_t;
+
+typedef struct {
     char **cmdline;
     char *inputFile;
     bool nullifyStdio;
@@ -124,11 +128,13 @@ typedef struct {
     size_t dynamicFileBestSz;
     dynFileMethod_t dynFileMethod;
     hwcnt_t hwCnts;
+    sancovcnt_t sanCovCnts;
     uint64_t dynamicCutOffAddr;
     pthread_mutex_t dynamicFile_mutex;
     bool disableRandomization;
     bool msanReportUMRS;
     void *ignoreAddr;
+    bool useSanCov;
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
@@ -147,6 +153,7 @@ typedef struct fuzzer_t {
     /* For linux/ code */
     uint8_t *dynamicFile;
     hwcnt_t hwCnts;
+    sancovcnt_t sanCovCnts;
     size_t dynamicFileSz;
 } fuzzer_t;
 

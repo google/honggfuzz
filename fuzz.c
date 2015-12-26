@@ -81,9 +81,12 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 {
     MX_LOCK(&hfuzz->dynamicFile_mutex);
 
-    if (hfuzz->inputFile && hfuzz->hwCnts.cpuInstrCnt == 0ULL && hfuzz->hwCnts.cpuBranchCnt == 0ULL
-        && hfuzz->hwCnts.pcCnt == 0ULL && hfuzz->hwCnts.pathCnt == 0ULL
-        && hfuzz->hwCnts.customCnt == 0ULL) {
+    /* If first run (zero feedback counters), init dynamicFileBestSz */
+    if (hfuzz->inputFile &&
+        ((hfuzz->hwCnts.cpuInstrCnt == 0ULL && hfuzz->hwCnts.cpuBranchCnt == 0ULL
+          && hfuzz->hwCnts.pcCnt == 0ULL && hfuzz->hwCnts.pathCnt == 0ULL
+          && hfuzz->hwCnts.customCnt == 0ULL)
+         || (hfuzz->sanCovCnts.pcCnt == 0ULL))) {
         size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
                                                hfuzz->maxFileSz);
         if (fileSz == 0) {
@@ -251,6 +254,9 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                        .pathCnt = 0ULL,
                        .customCnt = 0ULL,
                        },
+            .sanCovCnts = {
+                           .pcCnt = 0ULL,
+                           },
             .report = {'\0'},
             .mainWorker = false
         };
@@ -316,6 +322,90 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     return ret;
 }
 
+static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    LOG_D
+        ("File size (New/Best): %zu/%zu, Perf feedback (instr/branch/block/block-edge/custom): Best: [%"
+         PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64
+         ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "]", fuzzer->dynamicFileSz,
+         hfuzz->dynamicFileBestSz, hfuzz->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuBranchCnt,
+         hfuzz->hwCnts.pcCnt, hfuzz->hwCnts.pathCnt, hfuzz->hwCnts.customCnt,
+         fuzzer->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt, fuzzer->hwCnts.pcCnt,
+         fuzzer->hwCnts.pathCnt, fuzzer->hwCnts.customCnt);
+
+    MX_LOCK(&hfuzz->dynamicFile_mutex);
+
+    int64_t diff0 = hfuzz->hwCnts.cpuInstrCnt - fuzzer->hwCnts.cpuInstrCnt;
+    int64_t diff1 = hfuzz->hwCnts.cpuBranchCnt - fuzzer->hwCnts.cpuBranchCnt;
+    int64_t diff2 = hfuzz->hwCnts.pcCnt - fuzzer->hwCnts.pcCnt;
+    int64_t diff3 = hfuzz->hwCnts.pathCnt - fuzzer->hwCnts.pathCnt;
+    int64_t diff4 = hfuzz->hwCnts.customCnt - fuzzer->hwCnts.customCnt;
+
+    if (diff0 <= 0 && diff1 <= 0 && diff2 <= 0 && diff3 <= 0 && diff4 <= 0) {
+
+        LOG_I("New: (Size New,Old): %zu,%zu, Perf (Cur,New): %"
+              PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 ",%" PRId64 "/%" PRId64
+              "/%" PRId64 "/%" PRId64 "/%" PRId64, fuzzer->dynamicFileSz,
+              hfuzz->dynamicFileBestSz, hfuzz->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuBranchCnt,
+              hfuzz->hwCnts.pcCnt, hfuzz->hwCnts.pathCnt, hfuzz->hwCnts.customCnt,
+              fuzzer->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt, fuzzer->hwCnts.pcCnt,
+              fuzzer->hwCnts.pathCnt, fuzzer->hwCnts.customCnt);
+
+        memcpy(hfuzz->dynamicFileBest, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
+
+        hfuzz->dynamicFileBestSz = fuzzer->dynamicFileSz;
+        hfuzz->hwCnts.cpuInstrCnt = fuzzer->hwCnts.cpuInstrCnt;
+        hfuzz->hwCnts.cpuBranchCnt = fuzzer->hwCnts.cpuBranchCnt;
+        hfuzz->hwCnts.pcCnt = fuzzer->hwCnts.pcCnt;
+        hfuzz->hwCnts.pathCnt = fuzzer->hwCnts.pathCnt;
+        hfuzz->hwCnts.customCnt = fuzzer->hwCnts.customCnt;
+
+        char currentBest[PATH_MAX], currentBestTmp[PATH_MAX];
+        snprintf(currentBest, PATH_MAX, "%s/CURRENT_BEST", hfuzz->workDir);
+        snprintf(currentBestTmp, PATH_MAX, "%s/.tmp.CURRENT_BEST", hfuzz->workDir);
+
+        if (files_writeBufToFile
+            (currentBestTmp, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+             O_WRONLY | O_CREAT | O_TRUNC)) {
+            rename(currentBestTmp, currentBest);
+        }
+    }
+    MX_UNLOCK(&hfuzz->dynamicFile_mutex);
+}
+
+static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    LOG_D
+        ("File size (Best/New): %zu/%zu, SanCov feedback (pc): Best: [%" PRIu64
+         "] / New: [%" PRIu64 "]", hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz,
+         hfuzz->sanCovCnts.pcCnt, fuzzer->sanCovCnts.pcCnt);
+
+    MX_LOCK(&hfuzz->dynamicFile_mutex);
+
+    int64_t diff0 = hfuzz->sanCovCnts.pcCnt - fuzzer->sanCovCnts.pcCnt;
+
+    if (diff0 < 0) {
+        LOG_I("SanCov Update: file size (Cur,New): %zu,%zu, counters (Cur/New): %"
+              PRId64 "/%" PRId64, hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz,
+              hfuzz->sanCovCnts.pcCnt, fuzzer->sanCovCnts.pcCnt);
+
+        memcpy(hfuzz->dynamicFileBest, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
+
+        hfuzz->sanCovCnts.pcCnt = fuzzer->sanCovCnts.pcCnt;
+
+        char currentBest[PATH_MAX], currentBestTmp[PATH_MAX];
+        snprintf(currentBest, PATH_MAX, "%s/CURRENT_BEST", hfuzz->workDir);
+        snprintf(currentBestTmp, PATH_MAX, "%s/.tmp.CURRENT_BEST", hfuzz->workDir);
+
+        if (files_writeBufToFile
+            (currentBestTmp, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+             O_WRONLY | O_CREAT | O_TRUNC)) {
+            rename(currentBestTmp, currentBest);
+        }
+    }
+    MX_UNLOCK(&hfuzz->dynamicFile_mutex);
+}
+
 static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
 {
     fuzzer_t fuzzer = {
@@ -335,6 +425,9 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
                    .pathCnt = 0ULL,
                    .customCnt = 0ULL,
                    },
+        .sanCovCnts = {
+                       .pcCnt = 0ULL,
+                       },
         .report = {'\0'},
         .mainWorker = true
     };
@@ -352,7 +445,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
     fuzz_getFileName(hfuzz, fuzzer.fileName);
 
-    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
         if (!fuzz_prepareFileDynamically(hfuzz, &fuzzer, rnd_index)) {
             exit(EXIT_FAILURE);
         }
@@ -388,53 +481,9 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     unlink(fuzzer.fileName);
 
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
-        LOG_D
-            ("File size (New/Best): %zu/%zu, Perf feedback (instr/branch/block/block-edge/custom): Best: [%"
-             PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64
-             ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "]", fuzzer.dynamicFileSz,
-             hfuzz->dynamicFileBestSz, hfuzz->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuBranchCnt,
-             hfuzz->hwCnts.pcCnt, hfuzz->hwCnts.pathCnt, hfuzz->hwCnts.customCnt,
-             fuzzer.hwCnts.cpuInstrCnt, fuzzer.hwCnts.cpuBranchCnt, fuzzer.hwCnts.pcCnt,
-             fuzzer.hwCnts.pathCnt, fuzzer.hwCnts.customCnt);
-
-        MX_LOCK(&hfuzz->dynamicFile_mutex);
-
-        int64_t diff0 = hfuzz->hwCnts.cpuInstrCnt - fuzzer.hwCnts.cpuInstrCnt;
-        int64_t diff1 = hfuzz->hwCnts.cpuBranchCnt - fuzzer.hwCnts.cpuBranchCnt;
-        int64_t diff2 = hfuzz->hwCnts.pcCnt - fuzzer.hwCnts.pcCnt;
-        int64_t diff3 = hfuzz->hwCnts.pathCnt - fuzzer.hwCnts.pathCnt;
-        int64_t diff4 = hfuzz->hwCnts.customCnt - fuzzer.hwCnts.customCnt;
-
-        if (diff0 <= 0 && diff1 <= 0 && diff2 <= 0 && diff3 <= 0 && diff4 <= 0) {
-
-            LOG_I("New: (Size New,Old): %zu,%zu, Perf (Cur,New): %"
-                  PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 ",%" PRId64 "/%" PRId64
-                  "/%" PRId64 "/%" PRId64 "/%" PRId64, fuzzer.dynamicFileSz,
-                  hfuzz->dynamicFileBestSz, hfuzz->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuBranchCnt,
-                  hfuzz->hwCnts.pcCnt, hfuzz->hwCnts.pathCnt, hfuzz->hwCnts.customCnt,
-                  fuzzer.hwCnts.cpuInstrCnt, fuzzer.hwCnts.cpuBranchCnt, fuzzer.hwCnts.pcCnt,
-                  fuzzer.hwCnts.pathCnt, fuzzer.hwCnts.customCnt);
-
-            memcpy(hfuzz->dynamicFileBest, fuzzer.dynamicFile, fuzzer.dynamicFileSz);
-
-            hfuzz->dynamicFileBestSz = fuzzer.dynamicFileSz;
-            hfuzz->hwCnts.cpuInstrCnt = fuzzer.hwCnts.cpuInstrCnt;
-            hfuzz->hwCnts.cpuBranchCnt = fuzzer.hwCnts.cpuBranchCnt;
-            hfuzz->hwCnts.pcCnt = fuzzer.hwCnts.pcCnt;
-            hfuzz->hwCnts.pathCnt = fuzzer.hwCnts.pathCnt;
-            hfuzz->hwCnts.customCnt = fuzzer.hwCnts.customCnt;
-
-            char currentBest[PATH_MAX], currentBestTmp[PATH_MAX];
-            snprintf(currentBest, PATH_MAX, "%s/CURRENT_BEST", hfuzz->workDir);
-            snprintf(currentBestTmp, PATH_MAX, "%s/.tmp.CURRENT_BEST", hfuzz->workDir);
-
-            if (files_writeBufToFile
-                (currentBestTmp, fuzzer.dynamicFile, fuzzer.dynamicFileSz,
-                 O_WRONLY | O_CREAT | O_TRUNC)) {
-                rename(currentBestTmp, currentBest);
-            }
-        }
-        MX_UNLOCK(&hfuzz->dynamicFile_mutex);
+        fuzz_perfFeedback(hfuzz, &fuzzer);
+    } else if (hfuzz->useSanCov) {
+        fuzz_sanCovFeedback(hfuzz, &fuzzer);
     }
 
     if (hfuzz->useVerifier && (fuzzer.crashFileName[0] != 0) && fuzzer.backtrace) {
