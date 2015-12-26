@@ -99,7 +99,8 @@ LOCAL_SRC_FILES := honggfuzz.c cmdline.c display.c log.c files.c fuzz.c report.c
 LOCAL_CFLAGS := -std=c11 -I. \
     -D_GNU_SOURCE \
     -Wall -Wextra -Wno-initializer-overrides -Wno-override-init \
-    -Wno-unknown-warning-option -Werror -funroll-loops -O2
+    -Wno-unknown-warning-option -Werror -funroll-loops -O2 \
+    -Wframe-larger-than=51200
 LOCAL_LDFLAGS := -lm
 
 ifeq ($(ANDROID_WITH_PTRACE),true)

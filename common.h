@@ -58,7 +58,10 @@
 #define _HF_VERIFIER_ITER   5
 
 /* Constant prefix used for single frame crashes stackhash masking */
-#define __HF_SINGLE_FRAME_MASK  0xBADBAD0000000000
+#define _HF_SINGLE_FRAME_MASK  0xBADBAD0000000000
+
+/* Size (in bytes) for report data to be stored in stack before written to file */
+#define _HF_REPORT_SIZE 8192
 
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
@@ -138,7 +141,7 @@ typedef struct fuzzer_t {
     uint64_t backtrace;
     uint64_t access;
     int exception;
-    char report[8192];
+    char report[_HF_REPORT_SIZE];
     bool mainWorker;
 
     /* For linux/ code */

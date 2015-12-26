@@ -41,7 +41,7 @@
 
 static void display_put(const char *fmt, ...)
 {
-    char buf[1024 * 512];
+    char buf[1024 * 4];
 
     va_list args;
     va_start(args, fmt);

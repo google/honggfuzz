@@ -664,7 +664,7 @@ static void arch_hashCallstack(fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCn
      * not be enabled (e.g. fuzzer worker is from verifier).
      */
     if (enableMasking && funcCnt == 1) {
-        hash |= __HF_SINGLE_FRAME_MASK;
+        hash |= _HF_SINGLE_FRAME_MASK;
     }
     fuzzer->backtrace = hash;
 }

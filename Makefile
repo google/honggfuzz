@@ -20,7 +20,7 @@
 
 # Common for all architectures
 BIN := honggfuzz
-COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror
+COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=51200
 COMMON_LDFLAGS := -lm
 COMMON_SRCS := honggfuzz.c cmdline.c display.c log.c files.c fuzz.c report.c mangle.c util.c
 INTERCEPTOR_SRCS := $(wildcard interceptor/*.c)
