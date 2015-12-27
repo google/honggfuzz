@@ -57,8 +57,7 @@ static int fuzz_sigReceived = 0;
 
 static pthread_t fuzz_mainThread;
 
-static inline UNUSED
-bool fuzz_isPerfCntsZero(honggfuzz_t * hfuzz)
+static inline UNUSED bool fuzz_isPerfCntsZero(honggfuzz_t * hfuzz)
 {
     if (hfuzz->hwCnts.cpuInstrCnt == 0ULL && hfuzz->hwCnts.cpuBranchCnt == 0ULL
         && hfuzz->hwCnts.pcCnt == 0ULL && hfuzz->hwCnts.pathCnt == 0ULL
@@ -69,8 +68,7 @@ bool fuzz_isPerfCntsZero(honggfuzz_t * hfuzz)
     }
 }
 
-static inline UNUSED
-bool fuzz_isPerfCntsSet(honggfuzz_t * hfuzz)
+static inline UNUSED bool fuzz_isPerfCntsSet(honggfuzz_t * hfuzz)
 {
     if (hfuzz->hwCnts.cpuInstrCnt > 0ULL || hfuzz->hwCnts.cpuBranchCnt > 0ULL
         || hfuzz->hwCnts.pcCnt > 0ULL || hfuzz->hwCnts.pathCnt > 0ULL
@@ -123,8 +121,9 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 {
     MX_LOCK(&hfuzz->dynamicFile_mutex);
 
-    /* If first run (zero feedback counters), init dynamicFileBestSz */
-    if (hfuzz->inputFile && (fuzz_isPerfCntsZero(hfuzz) || fuzz_isSanCovCntsZero(hfuzz))) {
+    /* If max dynamicFile iterations counter, pick new seed file */
+    if (hfuzz->inputFile &&
+        __sync_fetch_and_add(&hfuzz->dynFileIterExpire, 0UL) >= _HF_MAX_DYNFILE_ITER) {
         size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
                                                hfuzz->maxFileSz);
         if (fileSz == 0) {
@@ -133,6 +132,9 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
             return false;
         }
         hfuzz->dynamicFileBestSz = fileSz;
+
+        /* Reset counter since new seed pick */
+        __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
     }
 
     if (hfuzz->dynamicFileBestSz > hfuzz->maxFileSz) {
@@ -538,6 +540,9 @@ static void *fuzz_threadNew(void *arg)
 {
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
     for (;;) {
+        /* Dynamic file iteration counter for same seed */
+        __sync_fetch_and_add(&hfuzz->dynFileIterExpire, 1UL);
+
         /* Check if dry run mode with verifier enabled */
         if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
             if (__sync_fetch_and_add(&hfuzz->mutationsCnt, 1UL) >= hfuzz->fileCnt) {

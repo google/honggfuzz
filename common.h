@@ -63,6 +63,14 @@
 /* Size (in bytes) for report data to be stored in stack before written to file */
 #define _HF_REPORT_SIZE 8192
 
+/* 
+ * Maximum number of iterations to keep same base seed file for dynamic preparation.
+ * Maintained iterations counters is set to zero if unique crash is detected or
+ * zero-set two MSB using following mask if crash is detected (might not be unique).
+ */
+#define _HF_MAX_DYNFILE_ITER 0x2000UL
+#define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
+
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
     _HF_DYNFILE_INSTR_COUNT = 0x1,
@@ -135,6 +143,7 @@ typedef struct {
     bool msanReportUMRS;
     void *ignoreAddr;
     bool useSanCov;
+    size_t dynFileIterExpire;
 } honggfuzz_t;
 
 typedef struct fuzzer_t {

@@ -110,11 +110,17 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put("Timeouts: " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->timeoutedCnt, 0UL));
 
-    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+    /* Feedback data sources are enabled. Start with common headers. */
+    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
         display_put("Dynamic file size: " ESC_BOLD "%zu" ESC_RESET " (max: " ESC_BOLD "%zu"
                     ESC_RESET ")\n", hfuzz->dynamicFileBestSz, hfuzz->maxFileSz);
+        display_put("Dynamic file max iterations keep for chosen seed (" ESC_BOLD "%zu" ESC_RESET
+                    "/" ESC_BOLD "%zu" ESC_RESET ")\n",
+                    __sync_fetch_and_add(&hfuzz->dynFileIterExpire, 0UL), _HF_MAX_DYNFILE_ITER);
         display_put("Coverage (max):\n");
     }
+
+    /* HW perf specific counters */
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
         display_put("  - cpu instructions:      " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     __sync_fetch_and_add(&hfuzz->hwCnts.cpuInstrCnt, 0UL));
@@ -135,11 +141,10 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put("  - custom counter:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     __sync_fetch_and_add(&hfuzz->hwCnts.customCnt, 0UL));
     }
+
+    /* Sanitizer coverage specific counters */
     if (hfuzz->useSanCov) {
-        display_put("Dynamic file size: " ESC_BOLD "%zu" ESC_RESET " (max: " ESC_BOLD "%zu"
-                    ESC_RESET ")\n", hfuzz->dynamicFileBestSz, hfuzz->maxFileSz);
-        display_put("Coverage (max):\n");
-        display_put("  - unique pc: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - total #pc: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     __sync_fetch_and_add(&hfuzz->sanCovCnts.pcCnt, 0UL));
     }
     display_put("============================== LOGS ==============================\n");

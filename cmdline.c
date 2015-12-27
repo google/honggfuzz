@@ -201,6 +201,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .msanReportUMRS = false,
         .ignoreAddr = NULL,
         .useSanCov = false,
+        .dynFileIterExpire = _HF_MAX_DYNFILE_ITER,
     };
     /*  *INDENT-ON* */
 
