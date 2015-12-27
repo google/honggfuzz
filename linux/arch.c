@@ -57,7 +57,9 @@
                         "abort_on_error=1:"\
                         "allocator_may_return_null=1"
 #define kMSAN_OPTS      "exit_code=" HF_MSAN_EXIT_CODE_STR ":"\
-                        "wrap_signals=0:print_stats=1"
+                        "wrap_signals=0:print_stats=1:report_umrs=0"
+#define kMSAN_OPTS_UMRS "exit_code=" HF_MSAN_EXIT_CODE_STR ":"\
+                        "wrap_signals=0:print_stats=1:report_umrs=1"
 
 /* 'coverage_dir' output directory for coverage data files is set dynamically */
 #define kSANCOVDIR      "coverage_dir="
@@ -122,13 +124,16 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     }
 
     /* MemorySanitizer (MSan) */
-    snprintf(sancov_opts, sizeof(sancov_opts), "%s:report_umrs=%d", kMSAN_OPTS,
-             hfuzz->msanReportUMRS ? 1 : 0);
-    if (hfuzz->useSanCov) {
-        snprintf(sancov_opts, sizeof(sancov_opts), "%s:%s:%s%s", sancov_opts, kSAN_COV_OPTS,
-                 kSANCOVDIR, hfuzz->workDir);
+    const char *msan_options = kMSAN_OPTS;
+    if (hfuzz->msanReportUMRS) {
+        msan_options = kMSAN_OPTS_UMRS;
     }
-    if (setenv("MSAN_OPTIONS", sancov_opts, 1) == -1) {
+    if (hfuzz->useSanCov) {
+        snprintf(sancov_opts, sizeof(sancov_opts), "%s:%s:%s%s", msan_options, kSAN_COV_OPTS,
+                 kSANCOVDIR, hfuzz->workDir);
+        msan_options = sancov_opts;
+    }
+    if (setenv("MSAN_OPTIONS", msan_options, 1) == -1) {
         PLOG_E("setenv(MSAN_OPTIONS) failed");
         return false;
     }
