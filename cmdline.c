@@ -428,7 +428,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         return false;
     }
 
-    if (hfuzz->workDir[0] != '.') {
+    if (hfuzz->workDir[0] != '.' || strlen(hfuzz->workDir) > 2) {
         if (!files_exists(hfuzz->workDir)) {
             LOG_E("Provided workspace directory '%s' doesn't exist", hfuzz->workDir);
             return false;
