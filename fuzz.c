@@ -379,6 +379,9 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         hfuzz->hwCnts.pathCnt = fuzzer->hwCnts.pathCnt;
         hfuzz->hwCnts.customCnt = fuzzer->hwCnts.customCnt;
 
+        /* Reset counter if better coverage achieved */
+        __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
+
         char currentBest[PATH_MAX], currentBestTmp[PATH_MAX];
         snprintf(currentBest, PATH_MAX, "%s/CURRENT_BEST", hfuzz->workDir);
         snprintf(currentBestTmp, PATH_MAX, "%s/.tmp.CURRENT_BEST", hfuzz->workDir);
@@ -412,6 +415,9 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         hfuzz->dynamicFileBestSz = fuzzer->dynamicFileSz;
         hfuzz->sanCovCnts.pcCnt = fuzzer->sanCovCnts.pcCnt;
+
+        /* Reset counter if better coverage achieved */
+        __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
 
         char currentBest[PATH_MAX], currentBestTmp[PATH_MAX];
         snprintf(currentBest, PATH_MAX, "%s/CURRENT_BEST", hfuzz->workDir);
