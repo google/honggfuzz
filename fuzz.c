@@ -57,31 +57,11 @@ static int fuzz_sigReceived = 0;
 
 static pthread_t fuzz_mainThread;
 
-static inline UNUSED bool fuzz_isPerfCntsZero(honggfuzz_t * hfuzz)
-{
-    if (hfuzz->hwCnts.cpuInstrCnt == 0ULL && hfuzz->hwCnts.cpuBranchCnt == 0ULL
-        && hfuzz->hwCnts.pcCnt == 0ULL && hfuzz->hwCnts.pathCnt == 0ULL
-        && hfuzz->hwCnts.customCnt == 0ULL) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 static inline UNUSED bool fuzz_isPerfCntsSet(honggfuzz_t * hfuzz)
 {
     if (hfuzz->hwCnts.cpuInstrCnt > 0ULL || hfuzz->hwCnts.cpuBranchCnt > 0ULL
         || hfuzz->hwCnts.pcCnt > 0ULL || hfuzz->hwCnts.pathCnt > 0ULL
         || hfuzz->hwCnts.customCnt > 0ULL) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-static inline bool fuzz_isSanCovCntsZero(honggfuzz_t * hfuzz)
-{
-    if (hfuzz->sanCovCnts.pcCnt == 0ULL) {
         return true;
     } else {
         return false;
@@ -155,7 +135,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         goto skipMangling;
     }
     /* The first pass should be on an empty/initial file */
-    if (fuzz_isSanCovCntsZero(hfuzz) || fuzz_isSanCovCntsSet(hfuzz)) {
+    if (fuzz_isPerfCntsSet(hfuzz) || fuzz_isSanCovCntsSet(hfuzz)) {
         mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz);
         mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
