@@ -108,7 +108,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
      * if flip rate is 0.0, early abort file mangling. This will leave perf counters
      * with values equal to dry runs against input corpus.
      */
-    if (hfuzz->flipRate != 0.0L) {
+    if (hfuzz->flipRate == 0.0L) {
         goto skipMangling;
     }
     /* The first pass should be on an empty/initial file */
