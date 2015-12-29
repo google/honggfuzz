@@ -30,6 +30,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include "log.h"
 #include "util.h"
@@ -41,7 +42,7 @@
 
 static void display_put(const char *fmt, ...)
 {
-    char buf[1024 * 512];
+    char buf[1024 * 4];
 
     va_list args;
     va_start(args, fmt);
@@ -109,30 +110,42 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put("Timeouts: " ESC_BOLD "%zu" ESC_RESET "\n",
                 __sync_fetch_and_add(&hfuzz->timeoutedCnt, 0UL));
 
-    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+    /* Feedback data sources are enabled. Start with common headers. */
+    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
         display_put("Dynamic file size: " ESC_BOLD "%zu" ESC_RESET " (max: " ESC_BOLD "%zu"
                     ESC_RESET ")\n", hfuzz->dynamicFileBestSz, hfuzz->maxFileSz);
+        display_put("Dynamic file max iterations keep for chosen seed (" ESC_BOLD "%zu" ESC_RESET
+                    "/" ESC_BOLD "%zu" ESC_RESET ")\n",
+                    __sync_fetch_and_add(&hfuzz->dynFileIterExpire, 0UL), _HF_MAX_DYNFILE_ITER);
         display_put("Coverage (max):\n");
     }
+
+    /* HW perf specific counters */
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        display_put("  - cpu instructions:      " ESC_BOLD "%zu" ESC_RESET "\n",
+        display_put("  - cpu instructions:      " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     __sync_fetch_and_add(&hfuzz->hwCnts.cpuInstrCnt, 0UL));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        display_put("  - cpu branches:          " ESC_BOLD "%zu" ESC_RESET "\n",
+        display_put("  - cpu branches:          " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     __sync_fetch_and_add(&hfuzz->hwCnts.cpuBranchCnt, 0UL));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
-        display_put("  - unique branch targets: " ESC_BOLD "%zu" ESC_RESET "\n",
+        display_put("  - unique branch targets: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     __sync_fetch_and_add(&hfuzz->hwCnts.pcCnt, 0UL));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
-        display_put("  - unique branch pairs:   " ESC_BOLD "%zu" ESC_RESET "\n",
+        display_put("  - unique branch pairs:   " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     __sync_fetch_and_add(&hfuzz->hwCnts.pathCnt, 0UL));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) {
-        display_put("  - custom counter:        " ESC_BOLD "%zu" ESC_RESET "\n",
+        display_put("  - custom counter:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     __sync_fetch_and_add(&hfuzz->hwCnts.customCnt, 0UL));
+    }
+
+    /* Sanitizer coverage specific counters */
+    if (hfuzz->useSanCov) {
+        display_put("  - total #pc: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+                    __sync_fetch_and_add(&hfuzz->sanCovCnts.pcCnt, 0UL));
     }
     display_put("============================== LOGS ==============================\n");
 }

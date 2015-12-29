@@ -34,6 +34,7 @@
 
 #include "common.h"
 #include "log.h"
+#include "files.h"
 
 #define AB ANSI_BOLD
 #define AC ANSI_CLEAR
@@ -190,12 +191,17 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
                    .pathCnt = 0ULL,
                    .customCnt = 0ULL,
                    },
+        .sanCovCnts = {
+                       .pcCnt = 0ULL,  
+                      },
         .dynamicCutOffAddr = ~(0ULL),
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
 
         .disableRandomization = true,
         .msanReportUMRS = false,
         .ignoreAddr = NULL,
+        .useSanCov = false,
+        .dynFileIterExpire = _HF_MAX_DYNFILE_ITER,
     };
     /*  *INDENT-ON* */
 
@@ -227,6 +233,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
 
 #if defined(_HF_ARCH_LINUX)
+        {{"sancov", no_argument, NULL, 'C'}, "EXPERIMENTAL: Enable sanitizer coverage feedback (default: disabled)"},
         {{"linux_pid", required_argument, NULL, 'p'}, "[Linux] Attach to a pid (and its thread group)"},
         {{"linux_addr_low_limit", required_argument, NULL, 0x500}, "Address limit (from si.si_addr) below which crashes are not reported, (default: '0')"},
         {{"linux_keep_aslr", no_argument, NULL, 0x501}, "Don't disable ASLR randomization, might be useful with MSAN"},
@@ -251,7 +258,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     const char *logfile = NULL;
     int opt_index = 0;
     for (;;) {
-        int c = getopt_long(argc, argv, "-?hqvVsuf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:", opts,
+        int c = getopt_long(argc, argv, "-?hqvVsuf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:C", opts,
                             &opt_index);
         if (c < 0)
             break;
@@ -296,6 +303,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 'c':
             hfuzz->externalCommand = optarg;
+            break;
+        case 'C':
+            hfuzz->useSanCov = true;
             break;
         case 'F':
             hfuzz->maxFileSz = strtoul(optarg, NULL, 0);
@@ -402,9 +412,27 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         return false;
     }
 
+    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE && hfuzz->useSanCov) {
+        LOG_E("You cannot enable sanitizer coverage & perf feedback at the same time");
+        return false;
+    }
+
+    /* Sanity checks for timeout. Optimal ranges highly depend on target */
+    if (hfuzz->useSanCov && hfuzz->tmOut < 15) {
+        LOG_E("Timeout value (%ld) too small for sanitizer coverage feedback", hfuzz->tmOut);
+        return false;
+    }
+
     if (strchr(hfuzz->fileExtn, '/')) {
         LOG_E("The file extension contains the '/' character: '%s'", hfuzz->fileExtn);
         return false;
+    }
+
+    if (hfuzz->workDir[0] != '.' || strlen(hfuzz->workDir) > 2) {
+        if (!files_exists(hfuzz->workDir)) {
+            LOG_E("Provided workspace directory '%s' doesn't exist", hfuzz->workDir);
+            return false;
+        }
     }
 
     if (hfuzz->pid > 0) {
@@ -413,7 +441,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     }
 
     if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
-        LOG_I("Verifier enabled with 0.0flipRate, activating dry run mode");
+        LOG_I("Verifier enabled with 0.0 flipRate, activating dry run mode");
     }
 
     LOG_I("inputFile '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, flipRate: %lf, "

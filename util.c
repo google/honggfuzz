@@ -96,6 +96,12 @@ void util_rndBuf(uint8_t * buf, size_t sz)
     }
 }
 
+/* 
+ * Function has variable length stack size, although already we know it's invoked
+ * with relatively small sizes (max is _HF_REPORT_SIZE), thus safe to silent warning.
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wframe-larger-than="
 int util_vssnprintf(char *str, size_t size, const char *format, va_list ap)
 {
     char buf1[size];
@@ -122,6 +128,8 @@ int util_ssnprintf(char *str, size_t size, const char *format, ...)
 
     return snprintf(str, size, "%s%s", buf1, buf2);
 }
+
+#pragma GCC diagnostic pop      /* EOF diagnostic ignored "-Wstack-usage=" */
 
 void util_getLocalTime(const char *fmt, char *buf, size_t len, time_t tm)
 {
@@ -222,7 +230,7 @@ extern uint16_t util_ToFromBE16(uint16_t val)
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
     return SWAP16(val);
 #else
-#error "Unknown ENDIANESS"
+#error "Unknown ENDIANNESS"
 #endif
 }
 
@@ -233,7 +241,7 @@ extern uint16_t util_ToFromLE16(uint16_t val)
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
     return val;
 #else
-#error "Unknown ENDIANESS"
+#error "Unknown ENDIANNESS"
 #endif
 }
 
@@ -244,7 +252,7 @@ extern uint32_t util_ToFromBE32(uint32_t val)
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
     return SWAP32(val);
 #else
-#error "Unknown ENDIANESS"
+#error "Unknown ENDIANNESS"
 #endif
 }
 
@@ -255,7 +263,51 @@ extern uint32_t util_ToFromLE32(uint32_t val)
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
     return val;
 #else
-#error "Unknown ENDIANESS"
+#error "Unknown ENDIANNESS"
+#endif
+}
+
+extern uint16_t util_getUINT16(const uint8_t * buf)
+{
+    const uint8_t b0 = buf[0], b1 = buf[1];
+
+#if __BYTE_ORDER == __BIG_ENDIAN
+    return (b0 << 8) | b1;
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+    return (b1 << 8) | b0;
+#else
+#error "Unknown ENDIANNESS"
+#endif
+}
+
+extern uint32_t util_getUINT32(const uint8_t * buf)
+{
+    const uint8_t b0 = buf[0], b1 = buf[1], b2 = buf[2], b3 = buf[3];
+
+#if __BYTE_ORDER == __BIG_ENDIAN
+    return ((uint32_t) b0 << 24) | ((uint32_t) b1 << 16) | ((uint32_t) b2 << 8) | (uint32_t) b3;
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+    return ((uint32_t) b3 << 24) | ((uint32_t) b2 << 16) | ((uint32_t) b1 << 8) | (uint32_t) b0;
+#else
+#error "Unknown ENDIANNESS"
+#endif
+}
+
+extern uint64_t util_getUINT64(const uint8_t * buf)
+{
+    const uint8_t b0 = buf[0], b1 = buf[1], b2 = buf[2], b3 = buf[3],
+        b4 = buf[4], b5 = buf[5], b6 = buf[6], b7 = buf[7];
+
+#if __BYTE_ORDER == __BIG_ENDIAN
+    return ((uint64_t) b0 << 56) | ((uint64_t) b1 << 48) | ((uint64_t) b2 << 40) |
+        ((uint64_t) b3 << 32) | ((uint64_t) b4 << 24) | ((uint64_t) b5 << 16) |
+        ((uint64_t) b6 << 8) | (uint64_t) b7;
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+    return ((uint64_t) b7 << 56) | ((uint64_t) b6 << 48) | ((uint64_t) b5 << 40) |
+        ((uint64_t) b4 << 32) | ((uint64_t) b3 << 24) | ((uint64_t) b2 << 16) |
+        ((uint64_t) b1 << 8) | (uint64_t) b0;
+#else
+#error "Unknown ENDIANNESS"
 #endif
 }
 

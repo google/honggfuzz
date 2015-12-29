@@ -58,7 +58,18 @@
 #define _HF_VERIFIER_ITER   5
 
 /* Constant prefix used for single frame crashes stackhash masking */
-#define __HF_SINGLE_FRAME_MASK  0xBADBAD0000000000
+#define _HF_SINGLE_FRAME_MASK  0xBADBAD0000000000
+
+/* Size (in bytes) for report data to be stored in stack before written to file */
+#define _HF_REPORT_SIZE 8192
+
+/* 
+ * Maximum number of iterations to keep same base seed file for dynamic preparation.
+ * Maintained iterations counters is set to zero if unique crash is detected or
+ * zero-set two MSB using following mask if crash is detected (might not be unique).
+ */
+#define _HF_MAX_DYNFILE_ITER 0x2000UL
+#define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
 
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
@@ -76,6 +87,10 @@ typedef struct {
     uint64_t pathCnt;
     uint64_t customCnt;
 } hwcnt_t;
+
+typedef struct {
+    uint64_t pcCnt;
+} sancovcnt_t;
 
 typedef struct {
     char **cmdline;
@@ -121,11 +136,14 @@ typedef struct {
     size_t dynamicFileBestSz;
     dynFileMethod_t dynFileMethod;
     hwcnt_t hwCnts;
+    sancovcnt_t sanCovCnts;
     uint64_t dynamicCutOffAddr;
     pthread_mutex_t dynamicFile_mutex;
     bool disableRandomization;
     bool msanReportUMRS;
     void *ignoreAddr;
+    bool useSanCov;
+    size_t dynFileIterExpire;
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
@@ -138,12 +156,13 @@ typedef struct fuzzer_t {
     uint64_t backtrace;
     uint64_t access;
     int exception;
-    char report[8192];
+    char report[_HF_REPORT_SIZE];
     bool mainWorker;
 
     /* For linux/ code */
     uint8_t *dynamicFile;
     hwcnt_t hwCnts;
+    sancovcnt_t sanCovCnts;
     size_t dynamicFileSz;
 } fuzzer_t;
 

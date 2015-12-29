@@ -20,7 +20,7 @@
 
 # Common for all architectures
 BIN := honggfuzz
-COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror
+COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=51200
 COMMON_LDFLAGS := -lm
 COMMON_SRCS := honggfuzz.c cmdline.c display.c log.c files.c fuzz.c report.c mangle.c util.c
 INTERCEPTOR_SRCS := $(wildcard interceptor/*.c)
@@ -133,6 +133,7 @@ endif
 ANDROID_DEBUG_ENABLED ?= false
 ANDROID_APP_ABI       ?= armeabi-v7a
 ANDROID_API           ?= android-21
+ANDROID_NDK_TOOLCHAIN ?=
 NDK_BUILD_ARGS :=
 ifeq ($(ANDROID_DEBUG_ENABLED),true)
     NDK_BUILD_ARGS += V=1 NDK_DEBUG=1 APP_OPTIM=debug
@@ -174,7 +175,8 @@ depend:
 .PHONY: android
 android:
 	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
-                  APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) $(NDK_BUILD_ARGS)
+                  APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) \
+                  NDK_TOOLCHAIN=$(ANDROID_NDK_TOOLCHAIN) $(NDK_BUILD_ARGS)
 
 
 # DO NOT DELETE

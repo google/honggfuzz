@@ -48,8 +48,34 @@
 
 #include "linux/perf.h"
 #include "linux/ptrace_utils.h"
+#include "linux/sancov.h"
 #include "log.h"
 #include "util.h"
+
+#define kASAN_OPTS      "allow_user_segv_handler=1:"\
+                        "handle_segv=0:"\
+                        "abort_on_error=1:"\
+                        "allocator_may_return_null=1"
+#define kMSAN_OPTS      "exit_code=" HF_MSAN_EXIT_CODE_STR ":"\
+                        "wrap_signals=0:print_stats=1:report_umrs=0"
+#define kMSAN_OPTS_UMRS "exit_code=" HF_MSAN_EXIT_CODE_STR ":"\
+                        "wrap_signals=0:print_stats=1:report_umrs=1"
+
+/* 'coverage_dir' output directory for coverage data files is set dynamically */
+#define kSANCOVDIR      "coverage_dir="
+
+/*
+ * If the program ends with a signal that ASan does not handle (or can not 
+ * handle at all, like SIGKILL), coverage data will be lost. This is a big
+ * problem on Android, where SIGKILL is a normal way of evicting applications 
+ * from memory. With 'coverage_direct=1' coverage data is written to a 
+ * memory-mapped file as soon as it collected. 
+ */
+#if defined(__ANDROID__)
+#define kSAN_COV_OPTS  "coverage=1:coverage_direct=1"
+#else
+#define kSAN_COV_OPTS  "coverage=1:coverage_direct=1"
+#endif
 
 pid_t arch_fork(honggfuzz_t * hfuzz)
 {
@@ -82,22 +108,30 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         return false;
     }
 
-    /*
-     * Tell asan to ignore SEGVs
-     */
-    if (setenv
-        ("ASAN_OPTIONS",
-         "allow_user_segv_handler=1:handle_segv=0:abort_on_error=1:allocator_may_return_null=1",
-         1) == -1) {
+    /* Help buffer to set sanitizer flags */
+    char sancov_opts[sizeof(kASAN_OPTS) + PATH_MAX] = { 0 };
+
+    /* AddressSanitizer (ASan) */
+    const char *asan_options = kASAN_OPTS;
+    if (hfuzz->useSanCov) {
+        snprintf(sancov_opts, sizeof(sancov_opts), "%s:%s:%s%s", kASAN_OPTS, kSAN_COV_OPTS,
+                 kSANCOVDIR, hfuzz->workDir);
+        asan_options = sancov_opts;
+    }
+    if (setenv("ASAN_OPTIONS", asan_options, 1) == -1) {
         PLOG_E("setenv(ASAN_OPTIONS) failed");
         return false;
     }
 
-    const char *msan_options =
-        "exit_code=" HF_MSAN_EXIT_CODE_STR ":report_umrs=0:wrap_signals=0:print_stats=1";
-    if (hfuzz->msanReportUMRS == true) {
-        msan_options =
-            "exit_code=" HF_MSAN_EXIT_CODE_STR ":report_umrs=1:wrap_signals=0:print_stats=1";
+    /* MemorySanitizer (MSan) */
+    const char *msan_options = kMSAN_OPTS;
+    if (hfuzz->msanReportUMRS) {
+        msan_options = kMSAN_OPTS_UMRS;
+    }
+    if (hfuzz->useSanCov) {
+        snprintf(sancov_opts, sizeof(sancov_opts), "%s:%s:%s%s", msan_options, kSAN_COV_OPTS,
+                 kSANCOVDIR, hfuzz->workDir);
+        msan_options = sancov_opts;
     }
     if (setenv("MSAN_OPTIONS", msan_options, 1) == -1) {
         PLOG_E("setenv(MSAN_OPTIONS) failed");
@@ -328,6 +362,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     arch_removeTimer(&timerid);
     arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
+    arch_sanCovAnalyze(hfuzz, fuzzer);
 }
 
 bool arch_archInit(honggfuzz_t * hfuzz)

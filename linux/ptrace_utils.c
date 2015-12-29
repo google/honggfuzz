@@ -664,7 +664,7 @@ static void arch_hashCallstack(fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCn
      * not be enabled (e.g. fuzzer worker is from verifier).
      */
     if (enableMasking && funcCnt == 1) {
-        hash |= __HF_SINGLE_FRAME_MASK;
+        hash |= _HF_SINGLE_FRAME_MASK;
     }
     fuzzer->backtrace = hash;
 }
@@ -840,7 +840,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
      * If worker crashFileName member is set, it means that a tid has already crashed
      * from target master thread.
      */
-    if (fuzzer->crashFileName) {
+    if (fuzzer->crashFileName[0] != '\0') {
         LOG_D("Multiple crashes detected from worker against attached tids group");
 
         /*
@@ -855,6 +855,9 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 
     /* Increase global crashes counter */
     __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
+
+    /* If crash detected, zero set two MSB */
+    __sync_fetch_and_and(&hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
     /* 
      * Check if stackhash is blacklisted
@@ -900,6 +903,9 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
         LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName,
               fuzzer->crashFileName);
         __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
+
+        /* If unique crash found, reset dynFile counter */
+        __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
     } else {
         if (dstFileExists) {
             LOG_I("It seems that '%s' already exists, skipping", fuzzer->crashFileName);
