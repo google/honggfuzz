@@ -49,7 +49,7 @@ void arch_sanCovAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     /* 
      * Firstly check case where target exited normally 
      * or with sanitizer handled signal. Otherwise proceed
-     * with rawunpack method
+     * with rawunpack method.
      */
     snprintf(covFile, sizeof(covFile), "%s.%d.sancov", files_basename(hfuzz->cmdline[0]),
              fuzzer->pid);
@@ -67,11 +67,9 @@ void arch_sanCovAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         /* Check magic values & derive PC length */
         uint64_t magic = util_getUINT64(dataBuf);
-        LOG_E("Magic: %" PRIx64 "", magic);
         if (magic == kMagic32) {
-            LOG_D("32bit target");
+            is32bit = true;
         } else if (magic == kMagic64) {
-            LOG_D("64bit target");
             is32bit = false;
         } else {
             LOG_E("Invalid coverage data file");

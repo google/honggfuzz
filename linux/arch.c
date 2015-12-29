@@ -74,7 +74,7 @@
 #if defined(__ANDROID__)
 #define kSAN_COV_OPTS  "coverage=1:coverage_direct=1"
 #else
-#define kSAN_COV_OPTS  "coverage=1"
+#define kSAN_COV_OPTS  "coverage=1:coverage_direct=1"
 #endif
 
 pid_t arch_fork(honggfuzz_t * hfuzz)
