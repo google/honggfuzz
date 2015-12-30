@@ -377,8 +377,8 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (diff0 <= 0 && diff1 <= 0 && diff2 <= 0 && diff3 <= 0 && diff4 <= 0) {
 
         LOG_I("New: (Size New,Old): %zu,%zu, Perf (Cur,New): %"
-              PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 ",%" PRId64 "/%" PRId64
-              "/%" PRId64 "/%" PRId64 "/%" PRId64, fuzzer->dynamicFileSz,
+              PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ",%" PRIu64 "/%" PRIu64
+              "/%" PRIu64 "/%" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
               hfuzz->dynamicFileBestSz, hfuzz->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuBranchCnt,
               hfuzz->hwCnts.pcCnt, hfuzz->hwCnts.pathCnt, hfuzz->hwCnts.customCnt,
               fuzzer->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt, fuzzer->hwCnts.pcCnt,
@@ -422,7 +422,7 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (diff0 < 0) {
         LOG_I("SanCov Update: file size (Cur,New): %zu,%zu, counters (Cur/New): %"
-              PRId64 "/%" PRId64, hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz,
+              PRIu64 "/%" PRIu64, hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz,
               hfuzz->sanCovCnts.pcCnt, fuzzer->sanCovCnts.pcCnt);
 
         memcpy(hfuzz->dynamicFileBest, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
