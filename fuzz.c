@@ -57,7 +57,7 @@ static int fuzz_sigReceived = 0;
 
 static pthread_t fuzz_mainThread;
 
-static inline UNUSED bool fuzz_isPerfCntsSet(honggfuzz_t * hfuzz)
+static inline bool fuzz_isPerfCntsSet(honggfuzz_t * hfuzz)
 {
     if (hfuzz->hwCnts.cpuInstrCnt > 0ULL || hfuzz->hwCnts.cpuBranchCnt > 0ULL
         || hfuzz->hwCnts.pcCnt > 0ULL || hfuzz->hwCnts.pathCnt > 0ULL
@@ -75,6 +75,19 @@ static inline bool fuzz_isSanCovCntsSet(honggfuzz_t * hfuzz)
     } else {
         return false;
     }
+}
+
+static inline void fuzz_resetFeedbackCnts(honggfuzz_t * hfuzz)
+{
+    /* HW perf counters */
+    __sync_fetch_and_and(&hfuzz->hwCnts.cpuInstrCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->hwCnts.cpuBranchCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->hwCnts.pcCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->hwCnts.pathCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->hwCnts.customCnt, 0UL);
+
+    /* Sanitizer coverage counter */
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.pcCnt, 0UL);
 }
 
 static void fuzz_sigHandler(int sig)
@@ -115,6 +128,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
         /* Reset counter since new seed pick */
         __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
+        fuzz_resetFeedbackCnts(hfuzz);
     }
 
     if (hfuzz->dynamicFileBestSz > hfuzz->maxFileSz) {
