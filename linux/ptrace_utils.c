@@ -832,6 +832,14 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
      */
     arch_hashCallstack(fuzzer, funcs, funcCnt, saveUnique);
 
+    /*
+     * If fuzzing with sanitizer coverage feedback increase crashes counter used
+     * as metric for dynFile evolution
+     */
+    if (hfuzz->useSanCov) {
+        fuzzer->sanCovCnts.crashesCnt++;
+    }
+
     /* 
      * If unique flag is set and single frame crash, disable uniqueness for this crash 
      * to always save (timestamp will be added to the filename)

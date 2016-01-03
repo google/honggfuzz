@@ -267,27 +267,16 @@ extern uint32_t util_ToFromLE32(uint32_t val)
 #endif
 }
 
-extern uint16_t util_getUINT16(const uint8_t * buf)
-{
-    const uint8_t b0 = buf[0], b1 = buf[1];
-
-#if __BYTE_ORDER == __BIG_ENDIAN
-    return (b0 << 8) | b1;
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-    return (b1 << 8) | b0;
-#else
-#error "Unknown ENDIANNESS"
-#endif
-}
-
-extern uint32_t util_getUINT32(const uint8_t * buf)
+extern uint64_t util_getUINT32(const uint8_t * buf)
 {
     const uint8_t b0 = buf[0], b1 = buf[1], b2 = buf[2], b3 = buf[3];
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-    return ((uint32_t) b0 << 24) | ((uint32_t) b1 << 16) | ((uint32_t) b2 << 8) | (uint32_t) b3;
+    return (uint64_t) ((uint32_t) b0 << 24) | ((uint32_t) b1 << 16) | ((uint32_t) b2 << 8) |
+        (uint32_t) b3;
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
-    return ((uint32_t) b3 << 24) | ((uint32_t) b2 << 16) | ((uint32_t) b1 << 8) | (uint32_t) b0;
+    return (uint64_t) ((uint32_t) b3 << 24) | ((uint32_t) b2 << 16) | ((uint32_t) b1 << 8) |
+        (uint32_t) b0;
 #else
 #error "Unknown ENDIANNESS"
 #endif

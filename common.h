@@ -71,6 +71,15 @@
 #define _HF_MAX_DYNFILE_ITER 0x2000UL
 #define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
 
+/* Bitmap size */
+#define _HF_BITMAP_SIZE 0xAFFFFF
+
+/* Directory in workspace to store sanitizer coverage data */
+#define _HF_SANCOV_DIR "HF_SANCOV"
+
+/* Uncomment/Comment to enable/disable debug */
+#define _HF_DEBUG   1
+
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
     _HF_DYNFILE_INSTR_COUNT = 0x1,
@@ -88,9 +97,48 @@ typedef struct {
     uint64_t customCnt;
 } hwcnt_t;
 
+/* Sanitizer coverage specific data structures */
 typedef struct {
-    uint64_t pcCnt;
+    uint64_t hitPcCnt;
+    uint64_t totalPcCnt;
+    uint64_t dsoCnt;
+    uint64_t iDsoCnt;
+    uint64_t newPcCnt;
+    uint64_t crashesCnt;
 } sancovcnt_t;
+
+typedef struct {
+    uint32_t capacity;
+    uint32_t *pChunks;
+    uint32_t nChunks;
+} bitmap_t;
+
+/* Memory map struct */
+typedef struct __attribute__ ((packed)) {
+    uint64_t start;             // region start addr
+    uint64_t end;               // region end addr
+    uint64_t base;              // region base addr
+    char mapName[NAME_MAX];     // bin/DSO name
+    uint64_t pcCnt;
+    uint64_t newPcCnt;
+} memMap_t;
+
+/* Trie node data struct */
+typedef struct __attribute__ ((packed)) {
+    uint64_t totalPcCnt;
+    bitmap_t *pBM;
+} trieData_t;
+
+/* Trie node struct */
+typedef struct __attribute__ ((packed)) node {
+    char key;
+    trieData_t data;
+    struct node *next;
+    struct node *prev;
+    struct node *children;
+    struct node *parent;
+} node_t;
+/* EOF Sanitizer coverage specific data structures */
 
 typedef struct {
     char **cmdline;
@@ -143,7 +191,12 @@ typedef struct {
     bool msanReportUMRS;
     void *ignoreAddr;
     bool useSanCov;
+    node_t *covMetadata;
     size_t dynFileIterExpire;
+    pthread_mutex_t sanCov_mutex;
+#ifdef _HF_DEBUG
+    long maxSpentInSanCov;
+#endif
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
@@ -174,5 +227,48 @@ typedef struct {
 } funcs_t;
 
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
+
+#ifdef _HF_DEBUG
+#include <time.h>
+#if defined(_HF_ARCH_DARWIN)
+#include <mach/clock.h>
+#include <mach/mach.h>
+#endif
+
+static inline void currentUtcTime(struct timespec *ts)
+{
+#if defined(_HF_ARCH_DARWIN)
+    clock_serv_t cclock;
+    mach_timespec_t mts;
+    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+    clock_get_time(cclock, &mts);
+    mach_port_deallocate(mach_task_self(), cclock);
+    ts->tv_sec = mts.tv_sec;
+    ts->tv_nsec = mts.tv_nsec;
+#else
+    clock_gettime(CLOCK_REALTIME, ts);
+#endif
+}
+
+static inline struct timespec startTimer()
+{
+    struct timespec startTime;
+    currentUtcTime(&startTime);
+    return startTime;
+}
+
+static inline long endTimer(struct timespec startTime)
+{
+    struct timespec endTime;
+    currentUtcTime(&endTime);
+    long diffNs = endTime.tv_nsec - startTime.tv_nsec;
+    return diffNs;
+}
+
+#define _HF_START_TIMER struct timespec t = startTimer();
+#define _HF_END_TIMER   long diff = endTimer(t);
+#define _HF_PRINT_TIMER LOG_I("Time taken: %ld ns", diff);
+#define _HF_GET_TIME    diff
+#endif
 
 #endif

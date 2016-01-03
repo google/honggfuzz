@@ -51,6 +51,7 @@
 #include "linux/sancov.h"
 #include "log.h"
 #include "util.h"
+#include "files.h"
 
 #define kASAN_OPTS      "allow_user_segv_handler=1:"\
                         "handle_segv=0:"\
@@ -114,8 +115,8 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     /* AddressSanitizer (ASan) */
     const char *asan_options = kASAN_OPTS;
     if (hfuzz->useSanCov) {
-        snprintf(sancov_opts, sizeof(sancov_opts), "%s:%s:%s%s", kASAN_OPTS, kSAN_COV_OPTS,
-                 kSANCOVDIR, hfuzz->workDir);
+        snprintf(sancov_opts, sizeof(sancov_opts), "%s:%s:%s%s/%s", kASAN_OPTS, kSAN_COV_OPTS,
+                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR);
         asan_options = sancov_opts;
     }
     if (setenv("ASAN_OPTIONS", asan_options, 1) == -1) {
@@ -362,7 +363,15 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     arch_removeTimer(&timerid);
     arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
+#ifdef _HF_DEBUG
+    _HF_START_TIMER
+#endif
     arch_sanCovAnalyze(hfuzz, fuzzer);
+#ifdef _HF_DEBUG
+    _HF_END_TIMER if (_HF_GET_TIME > hfuzz->maxSpentInSanCov) {
+        hfuzz->maxSpentInSanCov = _HF_GET_TIME;
+    }
+#endif
 }
 
 bool arch_archInit(honggfuzz_t * hfuzz)
@@ -415,6 +424,17 @@ bool arch_archInit(honggfuzz_t * hfuzz)
         return false;
     }
 #endif
+
+    /* If sanitizer coverage enabled init workspace subdir */
+    if (hfuzz->useSanCov) {
+        char sanCovOutDir[PATH_MAX] = { 0 };
+        snprintf(sanCovOutDir, sizeof(sanCovOutDir), "%s/%s", hfuzz->workDir, _HF_SANCOV_DIR);
+        if (!files_exists(sanCovOutDir)) {
+            if (mkdir(sanCovOutDir, S_IRWXU | S_IXGRP | S_IXOTH) != 0) {
+                PLOG_E("mkdir() '%s' failed", sanCovOutDir);
+            }
+        }
+    }
 
     return true;
 }

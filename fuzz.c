@@ -70,7 +70,7 @@ static inline bool fuzz_isPerfCntsSet(honggfuzz_t * hfuzz)
 
 static inline bool fuzz_isSanCovCntsSet(honggfuzz_t * hfuzz)
 {
-    if (hfuzz->sanCovCnts.pcCnt > 0ULL) {
+    if (hfuzz->sanCovCnts.hitPcCnt > 0ULL || hfuzz->sanCovCnts.iDsoCnt > 0ULL) {
         return true;
     } else {
         return false;
@@ -87,7 +87,12 @@ static inline void fuzz_resetFeedbackCnts(honggfuzz_t * hfuzz)
     __sync_fetch_and_and(&hfuzz->hwCnts.customCnt, 0UL);
 
     /* Sanitizer coverage counter */
-    __sync_fetch_and_and(&hfuzz->sanCovCnts.pcCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.hitPcCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.totalPcCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.dsoCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.iDsoCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.newPcCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.crashesCnt, 0UL);
 }
 
 static void fuzz_sigHandler(int sig)
@@ -288,7 +293,12 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                        .customCnt = 0ULL,
                        },
             .sanCovCnts = {
-                           .pcCnt = 0ULL,
+                           .hitPcCnt = 0ULL,
+                           .totalPcCnt = 0ULL,
+                           .dsoCnt = 0ULL,
+                           .iDsoCnt = 0ULL,
+                           .newPcCnt = 0ULL,
+                           .crashesCnt = 0ULL,
                            },
             .report = {'\0'},
             .mainWorker = false
@@ -358,7 +368,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
 static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     LOG_D
-        ("File size (New/Best): %zu/%zu, Perf feedback (instr/branch/block/block-edge/custom): Best: [%"
+        ("File size (New/Best): %zu/%zu, Perf feedback (instr,branch,block,block-edge,custom): Best: [%"
          PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64
          ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "]", fuzzer->dynamicFileSz,
          hfuzz->dynamicFileBestSz, hfuzz->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuBranchCnt,
@@ -412,23 +422,58 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     LOG_D
-        ("File size (Best/New): %zu/%zu, SanCov feedback (pc): Best: [%" PRIu64
-         "] / New: [%" PRIu64 "]", hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz,
-         hfuzz->sanCovCnts.pcCnt, fuzzer->sanCovCnts.pcCnt);
+        ("File size (Best/New): %zu/%zu, SanCov feedback (pc,dso): Best: [%" PRIu64
+         ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64 "], newPCs:%" PRIu64,
+         hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz, hfuzz->sanCovCnts.hitPcCnt,
+         hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitPcCnt, fuzzer->sanCovCnts.iDsoCnt,
+         fuzzer->sanCovCnts.newPcCnt);
 
     MX_LOCK(&hfuzz->dynamicFile_mutex);
 
-    int64_t diff0 = hfuzz->sanCovCnts.pcCnt - fuzzer->sanCovCnts.pcCnt;
+    /* abs diff of total PCs between global counter for chosen seed & current run */
+    uint64_t totalPcsDiff;
+    if (hfuzz->sanCovCnts.hitPcCnt > fuzzer->sanCovCnts.hitPcCnt) {
+        totalPcsDiff = hfuzz->sanCovCnts.hitPcCnt - fuzzer->sanCovCnts.hitPcCnt;
+    } else {
+        totalPcsDiff = fuzzer->sanCovCnts.hitPcCnt - hfuzz->sanCovCnts.hitPcCnt;
+    }
 
-    if (diff0 < 0) {
-        LOG_I("SanCov Update: file size (Cur,New): %zu,%zu, counters (Cur/New): %"
-              PRIu64 "/%" PRIu64, hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz,
-              hfuzz->sanCovCnts.pcCnt, fuzzer->sanCovCnts.pcCnt);
+    /*
+     * Keep mutated seed if:
+     *  a) Newly discovered (not met before) PCs && total PCs not significantly dropped
+     *  b) More instrumented code accessed (PC hit counter bigger)
+     *  c) More instrumented DSOs loaded
+     * 
+     * TODO: a) method can significantly assist to further improvements in interesting areas
+     * discovery if combined with seeds pool/queue support. If a runtime queue is maintained
+     * more interesting seeds can be saved between runs instead of instantly discarded
+     * based on current absolute elitism (only one mutated seed is promoted).
+     */
+    if ((fuzzer->sanCovCnts.newPcCnt > 0 && fuzzer->sanCovCnts.newPcCnt >= totalPcsDiff) ||
+        hfuzz->sanCovCnts.hitPcCnt < fuzzer->sanCovCnts.hitPcCnt ||
+        hfuzz->sanCovCnts.iDsoCnt < fuzzer->sanCovCnts.iDsoCnt) {
+        LOG_I("SanCov Update: file size (Cur,New): %zu,%zu, newPCs:%" PRIu64
+              ", counters (Cur,New): %" PRIu64 "/%" PRIu64 ",%" PRIu64 "/%" PRIu64,
+              hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz, fuzzer->sanCovCnts.newPcCnt,
+              hfuzz->sanCovCnts.hitPcCnt, hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitPcCnt,
+              fuzzer->sanCovCnts.iDsoCnt);
 
         memcpy(hfuzz->dynamicFileBest, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
+        if (hfuzz->sanCovCnts.hitPcCnt > 0) {
+            /* Don't update counter for first run of new seed */
+            hfuzz->sanCovCnts.newPcCnt += fuzzer->sanCovCnts.newPcCnt;
+        }
         hfuzz->dynamicFileBestSz = fuzzer->dynamicFileSz;
-        hfuzz->sanCovCnts.pcCnt = fuzzer->sanCovCnts.pcCnt;
+        hfuzz->sanCovCnts.hitPcCnt = fuzzer->sanCovCnts.hitPcCnt;
+        hfuzz->sanCovCnts.dsoCnt = fuzzer->sanCovCnts.dsoCnt;
+        hfuzz->sanCovCnts.iDsoCnt = fuzzer->sanCovCnts.iDsoCnt;
+        hfuzz->sanCovCnts.crashesCnt += fuzzer->sanCovCnts.crashesCnt;
+        
+        if (hfuzz->sanCovCnts.totalPcCnt < fuzzer->sanCovCnts.totalPcCnt) {
+            /* Keep only the max value (for dlopen cases) to measure total target coverage */
+            hfuzz->sanCovCnts.totalPcCnt = fuzzer->sanCovCnts.totalPcCnt;
+        }
 
         /* Reset counter if better coverage achieved */
         __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
@@ -466,7 +511,12 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
                    .customCnt = 0ULL,
                    },
         .sanCovCnts = {
-                       .pcCnt = 0ULL,
+                       .hitPcCnt = 0ULL,
+                       .totalPcCnt = 0ULL,
+                       .dsoCnt = 0ULL,
+                       .iDsoCnt = 0ULL,
+                       .newPcCnt = 0ULL,
+                       .crashesCnt = 0ULL,
                        },
         .report = {'\0'},
         .mainWorker = true

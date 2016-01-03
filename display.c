@@ -144,8 +144,21 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     /* Sanitizer coverage specific counters */
     if (hfuzz->useSanCov) {
-        display_put("  - total #pc: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->sanCovCnts.pcCnt, 0UL));
+        uint64_t hitPC = __sync_fetch_and_add(&hfuzz->sanCovCnts.hitPcCnt, 0UL);
+        uint64_t totalPC = __sync_fetch_and_add(&hfuzz->sanCovCnts.totalPcCnt, 0UL);
+        uint8_t covPer = totalPC ? ((hitPC * 100) / totalPC) : 0;
+        display_put("  - total hit #pc:  " ESC_BOLD "%" PRIu64 ESC_RESET " (coverage %d%%)\n",
+                    hitPC, covPer);
+        display_put("  - total #dso:     " ESC_BOLD "%" PRIu64 ESC_RESET " (instrumented only)\n",
+                    __sync_fetch_and_add(&hfuzz->sanCovCnts.iDsoCnt, 0UL));
+        display_put("  - discovered #pc: " ESC_BOLD "%" PRIu64 ESC_RESET " (new from input seed)\n",
+                    __sync_fetch_and_add(&hfuzz->sanCovCnts.newPcCnt, 0UL));
+        display_put("  - crashes:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+                    __sync_fetch_and_add(&hfuzz->sanCovCnts.crashesCnt, 0UL));
+#ifdef _HF_DEBUG
+        display_put("Max time spent parsing sancov data: " ESC_BOLD "%ld ns" ESC_RESET "\n",
+                    hfuzz->maxSpentInSanCov);
+#endif
     }
     display_put("============================== LOGS ==============================\n");
 }
