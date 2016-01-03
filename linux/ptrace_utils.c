@@ -355,7 +355,11 @@ struct {
     [SIGBUS].important = true,
     [SIGBUS].descr = "SIGBUS",
 
+#if defined(__ANDROID__)
+    [SIGABRT].important = false,
+#else
     [SIGABRT].important = true,
+#endif
     [SIGABRT].descr = "SIGABRT"
 };
 /*  *INDENT-ON* */
