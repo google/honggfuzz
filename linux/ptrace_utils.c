@@ -868,9 +868,6 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     /* Increase global crashes counter */
     __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
 
-    /* If crash detected, zero set two MSB */
-    __sync_fetch_and_and(&hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
-
     /* 
      * Check if stackhash is blacklisted
      */
@@ -880,6 +877,9 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
         __sync_fetch_and_add(&hfuzz->blCrashesCnt, 1UL);
         return;
     }
+
+    /* If non-blacklisted crash detected, zero set two MSB */
+    __sync_fetch_and_and(&hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
     void *sig_addr = si.si_addr;
     if (hfuzz->disableRandomization == false) {
