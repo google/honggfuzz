@@ -429,7 +429,7 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
         }
 
         hfuzz->blacklist[hfuzz->blacklistCnt] = strtoull(lineptr, 0, 16);
-        LOG_D("Blacklist: loaded %'" PRId64 "'", hfuzz->blacklist[hfuzz->blacklistCnt]);
+        LOG_D("Blacklist: loaded %'" PRIu64 "'", hfuzz->blacklist[hfuzz->blacklistCnt]);
 
         // Verify entries are sorted so we can use interpolation search
         if (hfuzz->blacklistCnt > 1) {

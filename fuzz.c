@@ -57,7 +57,7 @@ static int fuzz_sigReceived = 0;
 
 static pthread_t fuzz_mainThread;
 
-static inline UNUSED bool fuzz_isPerfCntsSet(honggfuzz_t * hfuzz)
+static inline bool fuzz_isPerfCntsSet(honggfuzz_t * hfuzz)
 {
     if (hfuzz->hwCnts.cpuInstrCnt > 0ULL || hfuzz->hwCnts.cpuBranchCnt > 0ULL
         || hfuzz->hwCnts.pcCnt > 0ULL || hfuzz->hwCnts.pathCnt > 0ULL
@@ -75,6 +75,19 @@ static inline bool fuzz_isSanCovCntsSet(honggfuzz_t * hfuzz)
     } else {
         return false;
     }
+}
+
+static inline void fuzz_resetFeedbackCnts(honggfuzz_t * hfuzz)
+{
+    /* HW perf counters */
+    __sync_fetch_and_and(&hfuzz->hwCnts.cpuInstrCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->hwCnts.cpuBranchCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->hwCnts.pcCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->hwCnts.pathCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->hwCnts.customCnt, 0UL);
+
+    /* Sanitizer coverage counter */
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.pcCnt, 0UL);
 }
 
 static void fuzz_sigHandler(int sig)
@@ -115,6 +128,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
         /* Reset counter since new seed pick */
         __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
+        fuzz_resetFeedbackCnts(hfuzz);
     }
 
     if (hfuzz->dynamicFileBestSz > hfuzz->maxFileSz) {
@@ -363,8 +377,8 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (diff0 <= 0 && diff1 <= 0 && diff2 <= 0 && diff3 <= 0 && diff4 <= 0) {
 
         LOG_I("New: (Size New,Old): %zu,%zu, Perf (Cur,New): %"
-              PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 "/%" PRId64 ",%" PRId64 "/%" PRId64
-              "/%" PRId64 "/%" PRId64 "/%" PRId64, fuzzer->dynamicFileSz,
+              PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ",%" PRIu64 "/%" PRIu64
+              "/%" PRIu64 "/%" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
               hfuzz->dynamicFileBestSz, hfuzz->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuBranchCnt,
               hfuzz->hwCnts.pcCnt, hfuzz->hwCnts.pathCnt, hfuzz->hwCnts.customCnt,
               fuzzer->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt, fuzzer->hwCnts.pcCnt,
@@ -408,7 +422,7 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (diff0 < 0) {
         LOG_I("SanCov Update: file size (Cur,New): %zu,%zu, counters (Cur/New): %"
-              PRId64 "/%" PRId64, hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz,
+              PRIu64 "/%" PRIu64, hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz,
               hfuzz->sanCovCnts.pcCnt, fuzzer->sanCovCnts.pcCnt);
 
         memcpy(hfuzz->dynamicFileBest, fuzzer->dynamicFile, fuzzer->dynamicFileSz);

@@ -58,7 +58,7 @@ static __thread uint64_t rndIni = false;
 uint64_t util_rndGet(uint64_t min, uint64_t max)
 {
     if (min > max) {
-        LOG_F("min:%" PRId64 " > max:%" PRId64, min, max);
+        LOG_F("min:%" PRIu64 " > max:%" PRIu64, min, max);
     }
 
     if (util_urandomFd == -1) {

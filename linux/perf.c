@@ -405,7 +405,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         pathCount = arch_perfCountBranches();
 
         if (perfRecordsLost > 0UL) {
-            LOG_W("%" PRId64
+            LOG_W("%" PRIu64
                   " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
                   perfRecordsLost);
         }
@@ -419,7 +419,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         edgeCount = arch_perfCountBranches();
 
         if (perfRecordsLost > 0UL) {
-            LOG_W("%" PRId64
+            LOG_W("%" PRIu64
                   " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
                   perfRecordsLost);
         }

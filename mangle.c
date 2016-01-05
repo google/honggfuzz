@@ -252,7 +252,7 @@ static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufS
         }
     default:
         {
-            LOG_F("Unknown variable length size: %" PRId64, varLen);
+            LOG_F("Unknown variable length size: %" PRIu64, varLen);
             break;
         }
     }
