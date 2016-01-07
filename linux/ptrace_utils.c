@@ -361,14 +361,6 @@ struct {
     [SIGABRT].important = true,
 #endif
     [SIGABRT].descr = "SIGABRT",
-    
-#if defined(__ANDROID__)
-    [_HF_ANDROID_ASAN_EXIT_SIG].important = true,
-    [_HF_ANDROID_ASAN_EXIT_SIG].descr = "SIGASAN"
-#else
-    [_HF_ANDROID_ASAN_EXIT_SIG].important = false,
-    [_HF_ANDROID_ASAN_EXIT_SIG].descr = ""
-#endif
 };
 /*  *INDENT-ON* */
 
@@ -943,6 +935,62 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     arch_ptraceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr);
 }
 
+/*
+ * Special book keeping for cases where crashes are detected based on exitcode and not
+ * a raised signal. Such case is the ASan fuzzing for Android. Crash file name is keeping
+ * the same format for compatibility with post campaign tools. The 0x0 stack trace hash
+ * will also ensure the post crash components (such as verifier), are picking-up this
+ * special case.
+ */
+static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer, int exitCode)
+{
+    /* Save only the first hit for each worker */
+    if (fuzzer->crashFileName[0] != '\0') {
+        return;
+    }
+    
+    /* Increase global crashes counter */
+    __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
+    __sync_fetch_and_and(&hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
+
+    /* If dry run mode, copy file with same name into workspace */
+    if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
+        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s",
+                 hfuzz->workDir, fuzzer->origFileName);
+    } else {
+        /* Keep the format identical */
+        char localtmstr[PATH_MAX];
+        util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
+        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
+                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
+                 hfuzz->workDir, "ASAN", 0x0, fuzzer->backtrace,
+                 0, (void*)0x0, "[UNKNOWN]", localtmstr, pid, hfuzz->fileExtn);
+    }
+
+    bool dstFileExists = false;
+    if (files_copyFile(fuzzer->fileName, fuzzer->crashFileName, &dstFileExists)) {
+        LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName,
+              fuzzer->crashFileName);
+
+        /* Increase unique crashes counters */
+        __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
+        __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
+    } else {
+        /* If file exists or error, let the next children for same target try again */
+        LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
+        memset(fuzzer->crashFileName, 0, sizeof(fuzzer->crashFileName));
+        return;
+    }
+
+    fuzzer->report[0] = '\0';
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n",
+                   fuzzer->origFileName);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n",
+                   fuzzer->crashFileName);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "PID: %d\n", pid);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "EXIT CODE: %d\n", exitCode);
+}
+
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)
 static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status, pid_t pid)
 {
@@ -1009,6 +1057,14 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
      * Resumed by delivery of SIGCONT
      */
     if (WIFCONTINUED(status)) {
+        return;
+    }
+
+    /*
+     * Target exited with ASan defined exitcode (used when SIGABRT is not monitored)
+     */
+    if (WSTOPSIG(status) == _HF_ANDROID_ASAN_EXIT_SIG) {
+        arch_ptraceExitSaveData(hfuzz, pid, fuzzer, WSTOPSIG(status));
         return;
     }
 

@@ -56,13 +56,13 @@
 #if defined(__ANDROID__)
 #define XSTR(x)         #x
 #define STR(x)          XSTR(x)
-#define kASAN_ABORT     ":abort_on_error=0:exitcode=" STR(_HF_ANDROID_ASAN_EXIT_SIG)
+#define kASAN_ARCH     ":abort_on_error=0:exitcode=" STR(_HF_ANDROID_ASAN_EXIT_SIG)
 #else
-#define kASAN_ABORT     ":abort_on_error=1"
+#define kASAN_ARCH     ":abort_on_error=1"
 #endif
 #define kASAN_OPTS      "allow_user_segv_handler=1:"\
                         "handle_segv=0:"\
-                        "allocator_may_return_null=1"kASAN_ABORT
+                        "allocator_may_return_null=1"kASAN_ARCH
 #define kMSAN_OPTS      "exit_code=" HF_MSAN_EXIT_CODE_STR ":"\
                         "wrap_signals=0:print_stats=1:report_umrs=0"
 #define kMSAN_OPTS_UMRS "exit_code=" HF_MSAN_EXIT_CODE_STR ":"\
