@@ -146,6 +146,7 @@ typedef struct __attribute__ ((packed)) node {
     struct node *children;
     struct node *parent;
 } node_t;
+
 /* EOF Sanitizer coverage specific data structures */
 
 typedef struct {

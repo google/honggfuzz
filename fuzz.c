@@ -93,7 +93,7 @@ static inline void fuzz_resetFeedbackCnts(honggfuzz_t * hfuzz)
     __sync_fetch_and_and(&hfuzz->sanCovCnts.iDsoCnt, 0UL);
     __sync_fetch_and_and(&hfuzz->sanCovCnts.newPcCnt, 0UL);
     __sync_fetch_and_and(&hfuzz->sanCovCnts.crashesCnt, 0UL);
-    
+
     /* 
      * For performance reasons Trie & Bitmap methods are not exposed in arch.h
      * Thus maintain a status flag to destroy runtime data internally at sancov.c
@@ -451,10 +451,14 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      *  b) More instrumented code accessed (PC hit counter bigger)
      *  c) More instrumented DSOs loaded
      * 
-     * TODO: a) method can significantly assist to further improvements in interesting areas
+     * TODO: (a) method can significantly assist to further improvements in interesting areas
      * discovery if combined with seeds pool/queue support. If a runtime queue is maintained
      * more interesting seeds can be saved between runs instead of instantly discarded
      * based on current absolute elitism (only one mutated seed is promoted).
+     * 
+     * TODO: For each new seed pick-up run an initial iteration to gather original coverage data
+     * with mangling disabled. This run should block other threads until finished. Otherwise,
+     * workers are racing to update coverage bitmap at first executions with the new seed.
      */
     if ((fuzzer->sanCovCnts.newPcCnt > 0 && fuzzer->sanCovCnts.newPcCnt >= totalPcsDiff) ||
         hfuzz->sanCovCnts.hitPcCnt < fuzzer->sanCovCnts.hitPcCnt ||
@@ -476,7 +480,7 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         hfuzz->sanCovCnts.dsoCnt = fuzzer->sanCovCnts.dsoCnt;
         hfuzz->sanCovCnts.iDsoCnt = fuzzer->sanCovCnts.iDsoCnt;
         hfuzz->sanCovCnts.crashesCnt += fuzzer->sanCovCnts.crashesCnt;
-        
+
         if (hfuzz->sanCovCnts.totalPcCnt < fuzzer->sanCovCnts.totalPcCnt) {
             /* Keep only the max value (for dlopen cases) to measure total target coverage */
             hfuzz->sanCovCnts.totalPcCnt = fuzzer->sanCovCnts.totalPcCnt;
