@@ -360,7 +360,15 @@ struct {
 #else
     [SIGABRT].important = true,
 #endif
-    [SIGABRT].descr = "SIGABRT"
+    [SIGABRT].descr = "SIGABRT",
+    
+#if defined(__ANDROID__)
+    [_HF_ANDROID_ASAN_EXIT_SIG].important = true,
+    [_HF_ANDROID_ASAN_EXIT_SIG].descr = "SIGASAN"
+#else
+    [_HF_ANDROID_ASAN_EXIT_SIG].important = false,
+    [_HF_ANDROID_ASAN_EXIT_SIG].descr = ""
+#endif
 };
 /*  *INDENT-ON* */
 

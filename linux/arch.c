@@ -53,14 +53,12 @@
 #include "util.h"
 #include "files.h"
 
-/* 
- * SIGABRT is not a monitored signal for Android OS since it produces lots of useless data
- * due to way Android specific kill & cleanup hacks.
- */
 #if defined(__ANDROID__)
-#define kASAN_ABORT     ":abort_on_error=1"
+#define XSTR(x)         #x
+#define STR(x)          XSTR(x)
+#define kASAN_ABORT     ":abort_on_error=0:exitcode=" STR(_HF_ANDROID_ASAN_EXIT_SIG)
 #else
-#define kASAN_ABORT     ":abort_on_error=0"
+#define kASAN_ABORT     ":abort_on_error=1"
 #endif
 #define kASAN_OPTS      "allow_user_segv_handler=1:"\
                         "handle_segv=0:"\
