@@ -303,9 +303,8 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int dataFd = -1;
     uint8_t *dataBuf = NULL;
     off_t dataFileSz = 0, pos = 0;
-    bool is32bit = true;
+    bool is32bit = true, ret = false, isSeedFirstRun = false;
     char covFile[PATH_MAX] = { 0 };
-    bool ret = false;
 
     /* Fuzzer local runtime data structs - need free() before exit */
     uint64_t *startMapsIndex = NULL;
@@ -358,6 +357,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             }
             arch_trieCreate(&hfuzz->covMetadata);
             hfuzz->clearCovMetadata = false;
+            isSeedFirstRun = true;
         }
     }
     MX_UNLOCK(&hfuzz->sanCov_mutex);
@@ -532,7 +532,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                     }
                     MX_UNLOCK(&hfuzz->sanCov_mutex);
 
-                    /* Also Increase new PCs counter at worker's thread runtime data */
+                    /* Also increase new PCs counter at worker's thread runtime data */
                     mapsBuf[bestFit].newPcCnt++;
                 }
             } else {
@@ -548,7 +548,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     /* Finally iterate over all instrumented maps to sum-up the number of newly met PC addresses */
     for (uint64_t i = 0; i < mapsNum; i++) {
-        if (mapsBuf[i].pcCnt > 0) {
+        if (mapsBuf[i].pcCnt > 0 && !isSeedFirstRun) {
             fuzzer->sanCovCnts.newPcCnt += mapsBuf[i].newPcCnt;
         } else {
             noCovMapsNum++;

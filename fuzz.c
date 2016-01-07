@@ -471,15 +471,13 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         memcpy(hfuzz->dynamicFileBest, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
-        if (fuzzer->sanCovCnts.hitPcCnt != fuzzer->sanCovCnts.newPcCnt) {
-            /* Don't update counter for first run of new seed */
-            hfuzz->sanCovCnts.newPcCnt += fuzzer->sanCovCnts.newPcCnt;
-        }
+
         hfuzz->dynamicFileBestSz = fuzzer->dynamicFileSz;
         hfuzz->sanCovCnts.hitPcCnt = fuzzer->sanCovCnts.hitPcCnt;
         hfuzz->sanCovCnts.dsoCnt = fuzzer->sanCovCnts.dsoCnt;
         hfuzz->sanCovCnts.iDsoCnt = fuzzer->sanCovCnts.iDsoCnt;
         hfuzz->sanCovCnts.crashesCnt += fuzzer->sanCovCnts.crashesCnt;
+        hfuzz->sanCovCnts.newPcCnt += fuzzer->sanCovCnts.newPcCnt;
 
         if (hfuzz->sanCovCnts.totalPcCnt < fuzzer->sanCovCnts.totalPcCnt) {
             /* Keep only the max value (for dlopen cases) to measure total target coverage */
