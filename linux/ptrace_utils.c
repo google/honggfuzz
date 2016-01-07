@@ -948,7 +948,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     if (fuzzer->crashFileName[0] != '\0') {
         return;
     }
-    
+
     /* Increase global crashes counter */
     __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
     __sync_fetch_and_and(&hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
@@ -964,7 +964,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
                  "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
                  hfuzz->workDir, "ASAN", 0x0, fuzzer->backtrace,
-                 0, (void*)0x0, "[UNKNOWN]", localtmstr, pid, hfuzz->fileExtn);
+                 0, (void *)0x0, "[UNKNOWN]", localtmstr, pid, hfuzz->fileExtn);
     }
 
     bool dstFileExists = false;

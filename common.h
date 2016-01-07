@@ -204,6 +204,7 @@ typedef struct {
     bool clearCovMetadata;
     size_t dynFileIterExpire;
     pthread_mutex_t sanCov_mutex;
+    pthread_mutex_t workersBlock_mutex;
 #ifdef _HF_DEBUG
     long maxSpentInSanCov;
 #endif
@@ -227,6 +228,7 @@ typedef struct fuzzer_t {
     hwcnt_t hwCnts;
     sancovcnt_t sanCovCnts;
     size_t dynamicFileSz;
+    bool isDynFileLocked;
 } fuzzer_t;
 
 #define _HF_MAX_FUNCS 80
