@@ -168,11 +168,6 @@ static void arch_trieAdd(node_t ** root, const char *key)
         return;
     }
 
-    /* Check if node with provided key already exists */
-    if (arch_trieSearch(pTravNode, key)) {
-        return;
-    }
-
     while (*key != '\0') {
         if (*key == pTravNode->key) {
             key++;
@@ -352,13 +347,20 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_E("Invalid PC length (%d) in map file '%s'", pcLen, covFile);
     }
 
-    /* If zero counters, new seed has been picked so destroy old & create new Trie */
-    if (__sync_fetch_and_add(&hfuzz->sanCovCnts.hitPcCnt, 0UL) == 0) {
-        if (hfuzz->covMetadata) {
-            arch_trieDestroy(hfuzz->covMetadata);
+    /* Interaction with global Trie should mutex wrap to avoid threads races */
+    MX_LOCK(&hfuzz->sanCov_mutex);
+    {
+        /* If runtime data destroy flag, new seed has been picked so destroy old & create new Trie */
+        if (hfuzz->clearCovMetadata == true) {
+            /* Since this path is invoked on first run too, destroy old Trie only if exists */
+            if (hfuzz->covMetadata != NULL) {
+                arch_trieDestroy(hfuzz->covMetadata);
+            }
+            arch_trieCreate(&hfuzz->covMetadata);
+            hfuzz->clearCovMetadata = false;
         }
-        arch_trieCreate(&hfuzz->covMetadata);
     }
+    MX_UNLOCK(&hfuzz->sanCov_mutex);
 
     /* See if #maps is available from previous run to avoid realloc inside loop */
     uint64_t prevMapsNum = __sync_fetch_and_add(&hfuzz->sanCovCnts.dsoCnt, 0UL);
@@ -401,8 +403,10 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         /* Interaction with global Trie should mutex wrap to avoid threads races */
         MX_LOCK(&hfuzz->sanCov_mutex);
         {
-            /* Add entry to Trie with zero data - existing keys will early abort */
-            arch_trieAdd(&hfuzz->covMetadata, mapName);
+            /* Add entry to Trie with zero data if not already */
+            if (!arch_trieSearch(hfuzz->covMetadata->children, mapName)) {
+                arch_trieAdd(&hfuzz->covMetadata, mapName);
+            }
         }
         MX_UNLOCK(&hfuzz->sanCov_mutex);
 
@@ -413,7 +417,8 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 goto bail;
             }
         }
-        /* Add entry to maps array */
+
+        /* Add entry to local maps metadata array */
         memcpy(&mapsBuf[mapsNum], &mapData, sizeof(memMap_t));
 
         /* Increase loaded maps counter (includes non-instrumented DSOs too) */
@@ -491,14 +496,15 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                     {
                         curMap =
                             arch_trieSearch(hfuzz->covMetadata->children, mapsBuf[bestFit].mapName);
-                        if (!curMap) {
-                            LOG_E("Corrupted Trie");
+                        if (curMap == NULL) {
+                            LOG_E("Corrupted Trie - '%s' not found", mapsBuf[bestFit].mapName);
                             MX_UNLOCK(&hfuzz->sanCov_mutex);
                             continue;
                         }
 
                         /* Maintain bitmaps only for exec/DSOs with coverage enabled - allocate on first use */
                         if (curMap->data.pBM == NULL) {
+                            LOG_D("Allocating bitmap for map '%s'", mapsBuf[bestFit].mapName);
                             curMap->data.pBM = arch_newBitmap(_HF_BITMAP_SIZE);
 
                             /* 
@@ -507,6 +513,8 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                              */
                             if (curMap->data.pBM == NULL) {
                                 curMap = NULL;
+                                MX_UNLOCK(&hfuzz->sanCov_mutex);
+                                continue;
                             }
                         }
                     }
@@ -532,7 +540,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                  * Normally this should never get executed. If hit, sanitizer
                  * coverage data collection come across some kind of bug.
                  */
-                LOG_E("Invalid PC (%" PRIx64 ")", pc);
+                LOG_E("Invalid PC (%" PRIx64 ") at offset %ld", pc, pos);
             }
         }
         nPCs++;

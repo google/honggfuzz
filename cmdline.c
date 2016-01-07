@@ -207,6 +207,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .ignoreAddr = NULL,
         .useSanCov = false,
         .covMetadata = NULL,
+        .clearCovMetadata = false,
         .dynFileIterExpire = _HF_MAX_DYNFILE_ITER,
         .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER,
 #ifdef _HF_DEBUG

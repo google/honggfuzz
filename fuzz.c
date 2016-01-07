@@ -93,6 +93,13 @@ static inline void fuzz_resetFeedbackCnts(honggfuzz_t * hfuzz)
     __sync_fetch_and_and(&hfuzz->sanCovCnts.iDsoCnt, 0UL);
     __sync_fetch_and_and(&hfuzz->sanCovCnts.newPcCnt, 0UL);
     __sync_fetch_and_and(&hfuzz->sanCovCnts.crashesCnt, 0UL);
+    
+    /* 
+     * For performance reasons Trie & Bitmap methods are not exposed in arch.h
+     * Thus maintain a status flag to destroy runtime data internally at sancov.c
+     * when dynFile input seed is replaced.
+     */
+    hfuzz->clearCovMetadata = true;
 }
 
 static void fuzz_sigHandler(int sig)
@@ -460,7 +467,7 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         memcpy(hfuzz->dynamicFileBest, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
-        if (hfuzz->sanCovCnts.hitPcCnt > 0) {
+        if (fuzzer->sanCovCnts.hitPcCnt != fuzzer->sanCovCnts.newPcCnt) {
             /* Don't update counter for first run of new seed */
             hfuzz->sanCovCnts.newPcCnt += fuzzer->sanCovCnts.newPcCnt;
         }

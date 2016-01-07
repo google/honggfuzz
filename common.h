@@ -134,7 +134,6 @@ typedef struct __attribute__ ((packed)) {
 
 /* Trie node data struct */
 typedef struct __attribute__ ((packed)) {
-    uint64_t totalPcCnt;
     bitmap_t *pBM;
 } trieData_t;
 
@@ -201,6 +200,7 @@ typedef struct {
     void *ignoreAddr;
     bool useSanCov;
     node_t *covMetadata;
+    bool clearCovMetadata;
     size_t dynFileIterExpire;
     pthread_mutex_t sanCov_mutex;
 #ifdef _HF_DEBUG
