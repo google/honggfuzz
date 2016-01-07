@@ -471,10 +471,6 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      * discovery if combined with seeds pool/queue support. If a runtime queue is maintained
      * more interesting seeds can be saved between runs instead of instantly discarded
      * based on current absolute elitism (only one mutated seed is promoted).
-     * 
-     * TODO: For each new seed pick-up run an initial iteration to gather original coverage data
-     * with mangling disabled. This run should block other threads until finished. Otherwise,
-     * workers are racing to update coverage bitmap at first executions with the new seed.
      */
     if ((fuzzer->sanCovCnts.newPcCnt > 0 && fuzzer->sanCovCnts.newPcCnt >= totalPcsDiff) ||
         hfuzz->sanCovCnts.hitPcCnt < fuzzer->sanCovCnts.hitPcCnt ||
