@@ -662,11 +662,11 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
     return;
 }
 
-static void arch_hashCallstack(fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCnt,
-                               bool enableMasking)
+static void arch_hashCallstack(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, funcs_t * funcs,
+                               size_t funcCnt, bool enableMasking)
 {
     uint64_t hash = 0;
-    for (size_t i = 0; i < funcCnt && i < NMAJORFRAMES; i++) {
+    for (size_t i = 0; i < funcCnt && i < hfuzz->numMajorFrames; i++) {
         /*
          * Convert PC to char array to be compatible with hash function
          */
@@ -735,7 +735,7 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
     return;
 }
 
-static void arch_ptraceAnalyzeData(pid_t pid, fuzzer_t * fuzzer)
+static void arch_ptraceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
     REG_TYPE pc = 0, status_reg = 0;
     size_t pcRegSz = arch_getPC(pid, &pc, &status_reg);
@@ -778,7 +778,7 @@ static void arch_ptraceAnalyzeData(pid_t pid, fuzzer_t * fuzzer)
     /*
      * Calculate backtrace callstack hash signature
      */
-    arch_hashCallstack(fuzzer, funcs, funcCnt, false);
+    arch_hashCallstack(hfuzz, fuzzer, funcs, funcCnt, false);
 }
 
 static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
@@ -848,7 +848,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     /*
      * Calculate backtrace callstack hash signature
      */
-    arch_hashCallstack(fuzzer, funcs, funcCnt, saveUnique);
+    arch_hashCallstack(hfuzz, fuzzer, funcs, funcCnt, saveUnique);
 
     /*
      * If fuzzing with sanitizer coverage feedback increase crashes counter used
@@ -984,7 +984,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
                  "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
-                 hfuzz->workDir, sanStr, 0x0, fuzzer->backtrace,
+                 hfuzz->workDir, sanStr, (uintptr_t) 0x0, fuzzer->backtrace,
                  0, (void *)0x0, "[UNKNOWN]", localtmstr, pid, hfuzz->fileExtn);
     }
 
@@ -1069,7 +1069,7 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
             if (fuzzer->mainWorker) {
                 arch_ptraceSaveData(hfuzz, pid, fuzzer);
             } else {
-                arch_ptraceAnalyzeData(pid, fuzzer);
+                arch_ptraceAnalyzeData(hfuzz, pid, fuzzer);
             }
         }
         ptrace(PT_CONTINUE, pid, 0, WSTOPSIG(status));
