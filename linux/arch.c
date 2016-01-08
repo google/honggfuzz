@@ -53,19 +53,28 @@
 #include "util.h"
 #include "files.h"
 
-#if defined(__ANDROID__)
+/* Stringify */
 #define XSTR(x)         #x
 #define STR(x)          XSTR(x)
-#define kASAN_ARCH     ":abort_on_error=0:exitcode=" STR(_HF_ANDROID_ASAN_EXIT_SIG)
+
+/* Common sanitizer flags */
+#if defined(__ANDROID__)
+#define kSAN_COMMON_ARCH     "abort_on_error=0"
 #else
-#define kASAN_ARCH     ":abort_on_error=1"
+#define kSAN_COMMON_ARCH     "abort_on_error=1"
 #endif
+
+/* Sanitizer specific flags (set 'abort_on_error has priority over exitcode') */
 #define kASAN_OPTS      "allow_user_segv_handler=1:"\
                         "handle_segv=0:"\
-                        "allocator_may_return_null=1"kASAN_ARCH
-#define kMSAN_OPTS      "exit_code=" HF_MSAN_EXIT_CODE_STR ":"\
+                        "allocator_may_return_null=1:"\
+                        kSAN_COMMON_ARCH":exitcode=" STR(HF_ASAN_EXIT_CODE)
+
+#define kUBSAN_OPTS     kSAN_COMMON_ARCH":exitcode=" STR(HF_UBSAN_EXIT_CODE)
+
+#define kMSAN_OPTS      "exit_code=" STR(HF_MSAN_EXIT_CODE) ":"\
                         "wrap_signals=0:print_stats=1:report_umrs=0"
-#define kMSAN_OPTS_UMRS "exit_code=" HF_MSAN_EXIT_CODE_STR ":"\
+#define kMSAN_OPTS_UMRS "exit_code=" STR(HF_MSAN_EXIT_CODE) ":"\
                         "wrap_signals=0:print_stats=1:report_umrs=1"
 
 /* 'coverage_dir' output directory for coverage data files is set dynamically */
@@ -76,7 +85,8 @@
  * handle at all, like SIGKILL), coverage data will be lost. This is a big
  * problem on Android, where SIGKILL is a normal way of evicting applications 
  * from memory. With 'coverage_direct=1' coverage data is written to a 
- * memory-mapped file as soon as it collected. 
+ * memory-mapped file as soon as it collected. Non-Android targets can disable
+ * coverage direct when more coverage data collection methods are implemented.
  */
 #if defined(__ANDROID__)
 #define kSAN_COV_OPTS  "coverage=1:coverage_direct=1"
@@ -115,7 +125,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         return false;
     }
 
-    /* Help buffer to set sanitizer flags */
+    /* Shared help buffer to set sanitizer flags */
     char sancov_opts[sizeof(kASAN_OPTS) + PATH_MAX] = { 0 };
 
     /* AddressSanitizer (ASan) */
@@ -136,12 +146,24 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         msan_options = kMSAN_OPTS_UMRS;
     }
     if (hfuzz->useSanCov) {
-        snprintf(sancov_opts, sizeof(sancov_opts), "%s:%s:%s%s", msan_options, kSAN_COV_OPTS,
-                 kSANCOVDIR, hfuzz->workDir);
+        snprintf(sancov_opts, sizeof(sancov_opts), "%s:%s:%s%s/%s", msan_options, kSAN_COV_OPTS,
+                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR);
         msan_options = sancov_opts;
     }
     if (setenv("MSAN_OPTIONS", msan_options, 1) == -1) {
         PLOG_E("setenv(MSAN_OPTIONS) failed");
+        return false;
+    }
+
+    /* Undefined Behavior (UBSan) */
+    const char *ubsan_options = kUBSAN_OPTS;
+    if (hfuzz->useSanCov) {
+        snprintf(sancov_opts, sizeof(sancov_opts), "%s:%s:%s%s/%s", kUBSAN_OPTS, kSAN_COV_OPTS,
+                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR);
+        ubsan_options = sancov_opts;
+    }
+    if (setenv("UBSAN_OPTIONS", ubsan_options, 1) == -1) {
+        PLOG_E("setenv(UBSAN_OPTIONS) failed");
         return false;
     }
 

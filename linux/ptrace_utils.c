@@ -360,13 +360,31 @@ struct {
 #else
     [SIGABRT].important = true,
 #endif
-    [SIGABRT].descr = "SIGABRT",
+    [SIGABRT].descr = "SIGABRT"
 };
 /*  *INDENT-ON* */
 
 #ifndef SI_FROMUSER
 #define SI_FROMUSER(siptr)      ((siptr)->si_code <= 0)
 #endif                          /* SI_FROMUSER */
+
+static inline char *arch_sanCodeToStr(int exitCode)
+{
+    switch (exitCode) {
+    case HF_MSAN_EXIT_CODE:
+        return "MSAN";
+        break;
+    case HF_ASAN_EXIT_CODE:
+        return "ASAN";
+        break;
+    case HF_UBSAN_EXIT_CODE:
+        return "UBSAN";
+        break;
+    default:
+        return "UNKNW_SAN";
+        break;
+    }
+}
 
 static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
 {
@@ -953,6 +971,9 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
     __sync_fetch_and_and(&hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
+    /* Get sanitizer string tag based on exitcode */
+    const char *sanStr = arch_sanCodeToStr(exitCode);
+
     /* If dry run mode, copy file with same name into workspace */
     if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s",
@@ -963,7 +984,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
                  "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
-                 hfuzz->workDir, "ASAN", 0x0, fuzzer->backtrace,
+                 hfuzz->workDir, sanStr, 0x0, fuzzer->backtrace,
                  0, (void *)0x0, "[UNKNOWN]", localtmstr, pid, hfuzz->fileExtn);
     }
 
@@ -1007,8 +1028,10 @@ static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status,
             if (WIFEXITED(event_msg)) {
                 LOG_D("PID: %d exited with exit_code: %lu", pid,
                       (unsigned long)WEXITSTATUS(event_msg));
-                if (WEXITSTATUS(event_msg) == (unsigned long)HF_MSAN_EXIT_CODE) {
-                    arch_ptraceSaveData(hfuzz, pid, fuzzer);
+                if ((WEXITSTATUS(event_msg) == (unsigned long)HF_MSAN_EXIT_CODE) ||
+                    (WEXITSTATUS(event_msg) == (unsigned long)HF_ASAN_EXIT_CODE) ||
+                    (WEXITSTATUS(event_msg) == (unsigned long)HF_UBSAN_EXIT_CODE)) {
+                    arch_ptraceExitSaveData(hfuzz, pid, fuzzer, WEXITSTATUS(event_msg));
                 }
             } else if (WIFSIGNALED(event_msg)) {
                 LOG_D("PID: %d terminated with signal: %lu", pid,
@@ -1061,17 +1084,17 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
     }
 
     /*
-     * Target exited with ASan defined exitcode (used when SIGABRT is not monitored)
-     */
-    if (WSTOPSIG(status) == _HF_ANDROID_ASAN_EXIT_SIG) {
-        arch_ptraceExitSaveData(hfuzz, pid, fuzzer, WSTOPSIG(status));
-        return;
-    }
-
-    /*
      * Process exited
      */
     if (WIFEXITED(status)) {
+        /*
+         * Target exited with sanitizer defined exitcode (used when SIGABRT is not monitored)
+         */
+        if ((WEXITSTATUS(status) == HF_MSAN_EXIT_CODE) ||
+            (WEXITSTATUS(status) == HF_ASAN_EXIT_CODE) ||
+            (WEXITSTATUS(status) == HF_UBSAN_EXIT_CODE)) {
+            arch_ptraceExitSaveData(hfuzz, pid, fuzzer, WEXITSTATUS(status));
+        }
         return;
     }
 

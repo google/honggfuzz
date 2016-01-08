@@ -71,15 +71,6 @@
 #define _HF_MAX_DYNFILE_ITER 0x2000UL
 #define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
 
-/* 
- * SIGABRT is not a monitored signal (thus 'abort_on_error' is missing crashes when set)
- * for Android OS since it produces lots of useless crashes due to way Android process 
- * termination hacks work. Safest option is to register & monitor one of user signals. 
- * SIGUSR2 is used for sanitizer fuzzing in Android, although might need to be changed
- * if target uses it for other purposes.
- */
-#define _HF_ANDROID_ASAN_EXIT_SIG   SIGUSR2
-
 /* Bitmap size */
 #define _HF_BITMAP_SIZE 0xAFFFFF
 

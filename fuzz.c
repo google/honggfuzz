@@ -483,7 +483,6 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         memcpy(hfuzz->dynamicFileBest, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
-
         hfuzz->dynamicFileBestSz = fuzzer->dynamicFileSz;
         hfuzz->sanCovCnts.hitPcCnt = fuzzer->sanCovCnts.hitPcCnt;
         hfuzz->sanCovCnts.dsoCnt = fuzzer->sanCovCnts.dsoCnt;

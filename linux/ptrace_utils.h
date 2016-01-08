@@ -24,8 +24,17 @@
 #ifndef _LINUX_PTRACE_UTILS_H_
 #define _LINUX_PTRACE_UTILS_H_
 
-#define HF_MSAN_EXIT_CODE 103
-#define HF_MSAN_EXIT_CODE_STR "103"
+/* 
+ * SIGABRT is not a monitored signal for Android OS, since it produces lots of useless 
+ * crashes due to way Android process termination hacks work. As a result the sanitizer's
+ * 'abort_on_error' flag cannot be utilized since it invokes abort() internally. In order
+ * to not lose crashes a custom exitcode is registered and monitored. Since exitcode is a
+ * global flag, it's assumed that target is compiled with only one sanitizer enabled at a
+ * time.
+ */
+#define HF_MSAN_EXIT_CODE   103
+#define HF_ASAN_EXIT_CODE   104
+#define HF_UBSAN_EXIT_CODE  105
 
 extern bool arch_ptraceWaitForPidStop(pid_t pid);
 extern bool arch_ptraceEnable(honggfuzz_t * hfuzz);
