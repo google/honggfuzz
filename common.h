@@ -141,6 +141,12 @@ typedef struct __attribute__ ((packed)) node {
 /* EOF Sanitizer coverage specific data structures */
 
 typedef struct {
+    char *asanOpts;
+    char *msanOpts;
+    char *ubsanOpts;
+} sanOpts_t;
+
+typedef struct {
     char **cmdline;
     char *inputFile;
     bool nullifyStdio;
@@ -196,6 +202,7 @@ typedef struct {
     size_t dynFileIterExpire;
     pthread_mutex_t sanCov_mutex;
     pthread_mutex_t workersBlock_mutex;
+    sanOpts_t sanOpts;
 #ifdef _HF_DEBUG
     long maxSpentInSanCov;
 #endif
