@@ -203,6 +203,7 @@ typedef struct {
     pthread_mutex_t sanCov_mutex;
     pthread_mutex_t workersBlock_mutex;
     sanOpts_t sanOpts;
+    size_t numMajorFrames;
 #ifdef _HF_DEBUG
     long maxSpentInSanCov;
 #endif
