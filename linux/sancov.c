@@ -158,7 +158,7 @@ static void arch_trieAdd(node_t ** root, const char *key)
     node_t *pTravNode = (*root)->children;
     if (pTravNode == NULL) {
         /* First node */
-        for (pTravNode = *root; *key; pTravNode = pTravNode->children) {
+        for (pTravNode = *root; *key != '\0'; pTravNode = pTravNode->children) {
             pTravNode->children = arch_trieCreateNode(*key);
             pTravNode->children->parent = pTravNode;
             key++;
@@ -316,6 +316,10 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     uint64_t mapsNum = 0;       /* Total number of entries in map file */
     uint64_t noCovMapsNum = 0;  /* Loaded DSOs not compiled with coverage */
 
+    /* File line-by-line read help buffers */
+    char *pLine = NULL;
+    size_t lineSz = 0;
+
     /* Coverage data analysis starts by parsing map file listing */
     snprintf(covFile, sizeof(covFile), "%s/%s/%d.sancov.map", hfuzz->workDir, _HF_SANCOV_DIR,
              fuzzer->pid);
@@ -330,14 +334,12 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     /* First line contains PC length (32/64-bit) */
-    char *lineptr = NULL;
-    size_t n = 0;
-    if (getline(&lineptr, &n, fCovMap) == -1) {
+    if (getline(&pLine, &lineSz, fCovMap) == -1) {
         LOG_E("Invalid map file '%s'", covFile);
         fclose(fCovMap);
         goto bail;
     }
-    int pcLen = atoi(lineptr);
+    int pcLen = atoi(pLine);
     if (pcLen == 32) {
         is32bit = true;
     } else if (pcLen == 64) {
@@ -374,15 +376,13 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     /* Iterate map entries */
     for (;;) {
-        lineptr = NULL;
-        n = 0;
-        if (getline(&lineptr, &n, fCovMap) == -1) {
+        if (getline(&pLine, &lineSz, fCovMap) == -1) {
             break;
         }
 
         /* Trim trailing whitespaces, not sure if needed copied from upstream sancov.py */
-        char *lineEnd = lineptr + strlen(lineptr) - 1;
-        while (lineEnd > lineptr && isspace(*lineEnd)) {
+        char *lineEnd = pLine + strlen(pLine) - 1;
+        while (lineEnd > pLine && isspace(*lineEnd)) {
             lineEnd--;
         }
         *(lineEnd + 1) = 0;
@@ -394,7 +394,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
          */
         memMap_t mapData = { 0 };
         char *savePtr = NULL;
-        mapData.start = strtoull(strtok_r(lineptr, " ", &savePtr), NULL, 16);
+        mapData.start = strtoull(strtok_r(pLine, " ", &savePtr), NULL, 16);
         mapData.end = strtoull(strtok_r(NULL, " ", &savePtr), NULL, 16);
         mapData.base = strtoull(strtok_r(NULL, " ", &savePtr), NULL, 16);
         char *mapName = strtok_r(NULL, " ", &savePtr);
@@ -404,8 +404,8 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         MX_LOCK(&hfuzz->sanCov_mutex);
         {
             /* Add entry to Trie with zero data if not already */
-            if (!arch_trieSearch(hfuzz->covMetadata->children, mapName)) {
-                arch_trieAdd(&hfuzz->covMetadata, mapName);
+            if (!arch_trieSearch(hfuzz->covMetadata->children, mapData.mapName)) {
+                arch_trieAdd(&hfuzz->covMetadata, mapData.mapName);
             }
         }
         MX_UNLOCK(&hfuzz->sanCov_mutex);
@@ -575,6 +575,9 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     if (startMapsIndex) {
         free(startMapsIndex);
+    }
+    if (pLine) {
+        free(pLine);
     }
     return ret;
 }
