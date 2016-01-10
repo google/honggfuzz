@@ -1040,7 +1040,7 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
                  #0 0xaa860177  (/system/lib/libc.so+0x196177)
                  */
                 char *savePtr = NULL;
-                strtok_r(lineptr, " ", &savePtr);
+                strtok_r(pLineLC, " ", &savePtr);
                 funcs[frameIdx].pc =
                     (void *)((size_t) strtoull(strtok_r(NULL, " ", &savePtr), NULL, 16));
 
@@ -1051,7 +1051,7 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
                 char *endOff = strrchr(targetStr, ')');
                 targetStr[endOff - startOff] = '\0';
                 if ((startOff == NULL) || (endOff == NULL) || (plusOff == NULL)) {
-                    LOG_D("Invalid ASan report entry (%s)", pLineLC);
+                    LOG_D("Invalid ASan report entry (%s)", lineptr);
                 } else {
                     size_t dsoSz = MIN(sizeof(funcs[frameIdx].func), (size_t) (plusOff - startOff));
                     memcpy(funcs[frameIdx].func, startOff, dsoSz);
@@ -1090,6 +1090,14 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     /* Increase global crashes counter */
     __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
     __sync_fetch_and_and(&hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
+    
+    /*
+     * If fuzzing with sanitizer coverage feedback increase crashes counter used
+     * as metric for dynFile evolution
+     */
+    if (hfuzz->useSanCov) {
+        fuzzer->sanCovCnts.crashesCnt++;
+    }
 
     /* Get sanitizer string tag based on exitcode */
     const char *sanStr = arch_sanCodeToStr(exitCode);
