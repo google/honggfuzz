@@ -965,7 +965,7 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
 
     FILE *fReport = fopen(crashReport, "rb");
     if (fReport == NULL) {
-        PLOG_E("Couldn't open '%s' - R/O mode", crashReport);
+        PLOG_D("Couldn't open '%s' - R/O mode", crashReport);
         return -1;
     }
 
@@ -1120,9 +1120,25 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
             return;
         }
 
+        /* Since crash address is available, apply ignoreAddr filters */
+        if (crashAddr < hfuzz->ignoreAddr) {
+            LOG_I("'%s' is interesting, but the crash addr is %p (below %p), skipping",
+                  fuzzer->fileName, crashAddr, hfuzz->ignoreAddr);
+            return;
+        }
+
         /* If frames successfully recovered, calculate stack hash & populate crash PC */
         arch_hashCallstack(hfuzz, fuzzer, funcs, funcCnt, false);
         pc = (uintptr_t) funcs[0].pc;
+
+        /* Since stack hash is available apply blacklist filters */
+        if (hfuzz->blacklist
+            && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) !=
+                -1)) {
+            LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
+            __sync_fetch_and_add(&hfuzz->blCrashesCnt, 1UL);
+            return;
+        }
     }
 
     /* If dry run mode, copy file with same name into workspace */
