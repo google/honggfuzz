@@ -1003,32 +1003,33 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
             }
             continue;
         } else {
+            char *pLineLC = lineptr;
             /* Trim leading spaces */
-            while (*lineptr != '\0' && isspace(*lineptr)) {
-                ++lineptr;
+            while (*pLineLC != '\0' && isspace(*pLineLC)) {
+                ++pLineLC;
             }
 
-            /* Separator for crash thread stack trace is an empty line */
-            if ((*lineptr == '\0') && (frameIdx != 0)) {
+            /* Separator for crash thread stack trace is an empty line (after trmming \n */
+            if ((*pLineLC == '\0') && (frameIdx != 0)) {
                 break;
             }
 
             /* Basic length checks */
-            if (strlen(lineptr) < 10) {
+            if (strlen(pLineLC) < 10) {
                 continue;
             }
 
             /* If available parse the type of error (READ/WRITE) */
-            if (cAddr && strstr(lineptr, cAddr)) {
-                if (strncmp(lineptr, "READ", 4)) {
+            if (cAddr && strstr(pLineLC, cAddr)) {
+                if (strncmp(pLineLC, "READ", 4)) {
                     *op = "READ";
-                } else if (strncmp(lineptr, "WRITE", 5)) {
+                } else if (strncmp(pLineLC, "WRITE", 5)) {
                     *op = "WRITE";
                 }
             }
 
             /* Check for crash thread frames */
-            if (strncmp(lineptr, framePrefix, strlen(framePrefix)) == 0) {
+            if (strncmp(pLineLC, framePrefix, strlen(framePrefix)) == 0) {
                 /* Abort if max depth */
                 if (frameIdx >= _HF_MAX_FUNCS) {
                     break;
@@ -1050,7 +1051,7 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
                 char *endOff = strrchr(targetStr, ')');
                 targetStr[endOff - startOff] = '\0';
                 if ((startOff == NULL) || (endOff == NULL) || (plusOff == NULL)) {
-                    LOG_D("Invalid ASan report entry (%s)", lineptr);
+                    LOG_D("Invalid ASan report entry (%s)", pLineLC);
                 } else {
                     size_t dsoSz = MIN(sizeof(funcs[frameIdx].func), (size_t) (plusOff - startOff));
                     memcpy(funcs[frameIdx].func, startOff, dsoSz);
