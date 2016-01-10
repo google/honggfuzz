@@ -467,9 +467,15 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     /* AddressSanitizer (ASan) */
     memset(san_opts, 0, bufSz);
     if (hfuzz->useSanCov) {
+#if defined(__ANDROID__)
+        /* Write reports in FS only if abort_on_error is disabled */
         snprintf(san_opts, bufSz, "%s:%s:%s%s/%s:%s%s/%s", kASAN_OPTS, kSAN_COV_OPTS,
                  kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
                  kLOGPREFIX);
+#else
+        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kASAN_OPTS, kSAN_COV_OPTS,
+                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR);
+#endif
     } else {
         snprintf(san_opts, bufSz, "%s:%s%s/%s", kASAN_OPTS, kSANLOGDIR, hfuzz->workDir, kLOGPREFIX);
     }
@@ -488,9 +494,15 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     /* Undefined Behavior (UBSan) */
     memset(san_opts, 0, bufSz);
     if (hfuzz->useSanCov) {
+#if defined(__ANDROID__)
+        /* Write reports in FS only if abort_on_error is disabled */
         snprintf(san_opts, bufSz, "%s:%s:%s%s/%s:%s%s/%s", kUBSAN_OPTS, kSAN_COV_OPTS,
                  kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
                  kLOGPREFIX);
+#else
+        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kUBSAN_OPTS, kSAN_COV_OPTS,
+                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR);
+#endif
     } else {
         snprintf(san_opts, bufSz, "%s:%s%s/%s", kUBSAN_OPTS, kSANLOGDIR, hfuzz->workDir,
                  kLOGPREFIX);
@@ -515,11 +527,17 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     }
 
     if (hfuzz->useSanCov) {
-        snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s:%s%s/%s", kUBSAN_OPTS, msan_reports_flag,
+#if defined(__ANDROID__)
+        /* Write reports in FS only if abort_on_error is disabled */
+        snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s:%s%s/%s", kMSAN_OPTS, msan_reports_flag,
                  kSAN_COV_OPTS, kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR,
                  hfuzz->workDir, kLOGPREFIX);
+#else
+        snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s", kMSAN_OPTS, msan_reports_flag,
+                 kSAN_COV_OPTS, kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR); 
+#endif
     } else {
-        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kUBSAN_OPTS, msan_reports_flag, kSANLOGDIR,
+        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kMSAN_OPTS, msan_reports_flag, kSANLOGDIR,
                  hfuzz->workDir, kLOGPREFIX);
     }
 
