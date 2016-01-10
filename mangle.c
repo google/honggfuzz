@@ -340,6 +340,8 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t * buf, size_t * bufSz)
     ssize_t newSz = *bufSz;
     int delta = 0;
     unsigned int val = (unsigned int)util_rndGet(1, 64);
+
+    /*  *INDENT-OFF* */
     switch (val) {
     case 1 ... 16:
         delta = -val;
@@ -357,6 +359,7 @@ bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t * buf, size_t * bufSz)
         LOG_F("Random value out of scope %u", val);
         break;
     }
+    /*  *INDENT-ON* */
 
     newSz += delta;
 

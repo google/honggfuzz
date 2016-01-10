@@ -747,12 +747,14 @@ static void arch_ptraceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fu
     /*
      * Unwind and resolve symbols
      */
+    /*  *INDENT-OFF* */
     funcs_t funcs[_HF_MAX_FUNCS] = {
         [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
         [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
         [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
         ,
     };
+    /*  *INDENT-ON* */
 
 #if !defined(__ANDROID__)
     size_t funcCnt = arch_unwindStack(pid, funcs);
@@ -810,12 +812,14 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     /*
      * Unwind and resolve symbols
      */
+    /*  *INDENT-OFF* */
     funcs_t funcs[_HF_MAX_FUNCS] = {
         [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
         [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
         [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
         ,
     };
+    /*  *INDENT-ON* */
 
 #if !defined(__ANDROID__)
     size_t funcCnt = arch_unwindStack(pid, funcs);
