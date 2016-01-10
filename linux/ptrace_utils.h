@@ -36,6 +36,9 @@
 #define HF_ASAN_EXIT_CODE   104
 #define HF_UBSAN_EXIT_CODE  105
 
+/* Prefix for sanitizer report files */
+#define kLOGPREFIX          ".hf.san"
+
 extern bool arch_ptraceWaitForPidStop(pid_t pid);
 extern bool arch_ptraceEnable(honggfuzz_t * hfuzz);
 extern void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer);

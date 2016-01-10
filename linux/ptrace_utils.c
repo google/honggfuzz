@@ -381,7 +381,7 @@ static inline char *arch_sanCodeToStr(int exitCode)
         return "UBSAN";
         break;
     default:
-        return "UNKNW_SAN";
+        return "UNKNW";
         break;
     }
 }
@@ -627,7 +627,7 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
     arch = CS_ARCH_X86;
     mode = (pcRegSz == sizeof(struct user_regs_struct_64)) ? CS_MODE_64 : CS_MODE_32;
 #else
-    LOG_E("Unknown/unsupported Android CPU architecture");
+    LOG_E("Unknown/Unsupported Android CPU architecture");
 #endif
 
     csh handle;
@@ -650,7 +650,7 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
     snprintf(instr, _HF_INSTR_SZ, "%s %s", insn[0].mnemonic, insn[0].op_str);
     cs_free(insn, count);
     cs_close(&handle);
-#endif
+#endif                          /* defined(__ANDROID__) */
 
     for (int x = 0; instr[x] && x < _HF_INSTR_SZ; x++) {
         if (instr[x] == '/' || instr[x] == '\\' || isspace(instr[x])
@@ -724,7 +724,7 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
 #endif
     }
 
-// libunwind is not working for 32bit targets in 64bit systems
+    // libunwind is not working for 32bit targets in 64bit systems
 #if defined(__aarch64__)
     if (funcCnt == 0) {
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " !ERROR: If 32bit fuzz target"
@@ -946,26 +946,141 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 
             // Clear filename so that verifier can understand we hit a duplicate
             memset(fuzzer->crashFileName, 0, sizeof(fuzzer->crashFileName));
-
-            // Don't bother unwinding & generating reports for duplicate crashes
-            return;
         } else {
             LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
         }
+
+        /* Don't bother generating reports for duplicate or non-saved crashes */
+        return;
     }
 
     arch_ptraceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr);
 }
 
+static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs, void **crashAddr,
+                                char **op)
+{
+    char crashReport[PATH_MAX] = { 0 };
+    snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX, pid);
+
+    FILE *fReport = fopen(crashReport, "rb");
+    if (fReport == NULL) {
+        PLOG_E("Couldn't open '%s' - R/O mode", crashReport);
+        return -1;
+    }
+
+    char header[35] = { 0 };
+    snprintf(header, sizeof(header), "==%d==ERROR: AddressSanitizer:", pid);
+    size_t headerSz = strlen(header);
+    bool headerFound = false;
+
+    uint8_t frameIdx = 0;
+    char framePrefix[5] = { 0 };
+    snprintf(framePrefix, sizeof(framePrefix), "#%" PRIu8, frameIdx);
+
+    char *lineptr = NULL, *cAddr = NULL;
+    size_t n = 0;
+    for (;;) {
+        if (getline(&lineptr, &n, fReport) == -1) {
+            break;
+        }
+
+        /* First step is to identify header */
+        if (headerFound == false) {
+            if ((strlen(lineptr) > headerSz) && (strncmp(header, lineptr, headerSz) == 0)) {
+                headerFound = true;
+
+                /* Parse crash address */
+                cAddr = strstr(lineptr, "address 0x");
+                if (cAddr) {
+                    cAddr = cAddr + strlen("address ");
+                    char *endOff = strchr(cAddr, ' ');
+                    cAddr[endOff - cAddr] = '\0';
+                    *crashAddr = (void *)((size_t) strtoull(cAddr, NULL, 16));
+                } else {
+                    *crashAddr = 0x0;
+                }
+            }
+            continue;
+        } else {
+            /* Trim leading spaces */
+            while (*lineptr != '\0' && isspace(*lineptr)) {
+                ++lineptr;
+            }
+
+            /* Separator for crash thread stack trace is an empty line */
+            if ((*lineptr == '\0') && (frameIdx != 0)) {
+                break;
+            }
+
+            /* Basic length checks */
+            if (strlen(lineptr) < 10) {
+                continue;
+            }
+
+            /* If available parse the type of error (READ/WRITE) */
+            if (cAddr && strstr(lineptr, cAddr)) {
+                if (strncmp(lineptr, "READ", 4)) {
+                    *op = "READ";
+                } else if (strncmp(lineptr, "WRITE", 5)) {
+                    *op = "WRITE";
+                }
+            }
+
+            /* Check for crash thread frames */
+            if (strncmp(lineptr, framePrefix, strlen(framePrefix)) == 0) {
+                /* Abort if max depth */
+                if (frameIdx >= _HF_MAX_FUNCS) {
+                    break;
+                }
+
+                /* 
+                 * Frames have following format:
+                 #0 0xaa860177  (/system/lib/libc.so+0x196177)
+                 */
+                char *savePtr = NULL;
+                strtok_r(lineptr, " ", &savePtr);
+                funcs[frameIdx].pc =
+                    (void *)((size_t) strtoull(strtok_r(NULL, " ", &savePtr), NULL, 16));
+
+                /* DSO & code offset parsing */
+                char *targetStr = strtok_r(NULL, " ", &savePtr);
+                char *startOff = strchr(targetStr, '(') + 1;
+                char *plusOff = strchr(targetStr, '+');
+                char *endOff = strrchr(targetStr, ')');
+                targetStr[endOff - startOff] = '\0';
+                if ((startOff == NULL) || (endOff == NULL) || (plusOff == NULL)) {
+                    LOG_D("Invalid ASan report entry (%s)", lineptr);
+                } else {
+                    size_t dsoSz = MIN(sizeof(funcs[frameIdx].func), (size_t) (plusOff - startOff));
+                    memcpy(funcs[frameIdx].func, startOff, dsoSz);
+                    char *codeOff = targetStr + (plusOff - startOff) + 1;
+                    funcs[frameIdx].line = strtoull(codeOff, NULL, 16);
+                }
+
+                frameIdx++;
+                snprintf(framePrefix, sizeof(framePrefix), "#%" PRIu8, frameIdx);
+            }
+        }
+    }
+
+    fclose(fReport);
+    free(lineptr);
+    unlink(crashReport);
+    return frameIdx;
+}
+
 /*
  * Special book keeping for cases where crashes are detected based on exitcode and not
- * a raised signal. Such case is the ASan fuzzing for Android. Crash file name is keeping
- * the same format for compatibility with post campaign tools. The 0x0 stack trace hash
- * will also ensure the post crash components (such as verifier), are picking-up this
- * special case.
+ * a raised signal. Such case is the ASan fuzzing for Android. Crash file name maintains
+ * the same format for compatibility with post campaign tools.
  */
 static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer, int exitCode)
 {
+    REG_TYPE pc = 0;
+    void *crashAddr = 0;
+    char *op = "UNKNOWN";
+
     /* Save only the first hit for each worker */
     if (fuzzer->crashFileName[0] != '\0') {
         return;
@@ -978,18 +1093,57 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     /* Get sanitizer string tag based on exitcode */
     const char *sanStr = arch_sanCodeToStr(exitCode);
 
+    /* If sanitizer produces reports with stack traces (e.g. ASan), they're parsed manually */
+    int funcCnt = 0;
+
+    /*  *INDENT-OFF* */
+    funcs_t funcs[_HF_MAX_FUNCS] = {
+        [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
+        [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
+        [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
+        ,
+    };
+    /*  *INDENT-ON* */
+
+    /* If ASan crash, parse report */
+    if (exitCode == HF_ASAN_EXIT_CODE) {
+        funcCnt = arch_parseAsanReport(hfuzz, pid, funcs, &crashAddr, &op);
+
+        /* 
+         * -1 error indicates a file not found for report. This is expected to happen often since
+         * ASan report is generated once for crashing TID. Ptrace arch is not guaranteed to parse
+         * that TID first. Not setting the 'crashFileName' variable will ensure that this branch
+         * is executed again for all TIDs until the matching report is found
+         */
+        if (funcCnt == -1) {
+            return;
+        }
+
+        /* If frames successfully recovered, calculate stack hash & populate crash PC */
+        arch_hashCallstack(hfuzz, fuzzer, funcs, funcCnt, false);
+        pc = (uintptr_t) funcs[0].pc;
+    }
+
     /* If dry run mode, copy file with same name into workspace */
     if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s",
                  hfuzz->workDir, fuzzer->origFileName);
     } else {
-        /* Keep the format identical */
-        char localtmstr[PATH_MAX];
-        util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
-        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
-                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
-                 hfuzz->workDir, sanStr, (uintptr_t) 0x0, fuzzer->backtrace,
-                 0, (void *)0x0, "[UNKNOWN]", localtmstr, pid, hfuzz->fileExtn);
+        /* Keep the crashes file name format identical */
+        if (fuzzer->backtrace != 0ULL && hfuzz->saveUnique) {
+            snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
+                     "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s",
+                     hfuzz->workDir, sanStr, pc, fuzzer->backtrace,
+                     op, crashAddr, "[UNKNOWN]", hfuzz->fileExtn);
+        } else {
+            /* If no stack hash available, all crashes treated as unique */
+            char localtmstr[PATH_MAX];
+            util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
+            snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
+                     "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s.%s",
+                     hfuzz->workDir, sanStr, pc, fuzzer->backtrace,
+                     op, crashAddr, "[UNKNOWN]", localtmstr, hfuzz->fileExtn);
+        }
     }
 
     bool dstFileExists = false;
@@ -1001,19 +1155,48 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
         __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
         __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
     } else {
-        /* If file exists or error, let the next children for same target try again */
-        LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
-        memset(fuzzer->crashFileName, 0, sizeof(fuzzer->crashFileName));
+        if (dstFileExists) {
+            LOG_I("It seems that '%s' already exists, skipping", fuzzer->crashFileName);
+
+            /* Clear stack hash so that verifier can understand we hit a duplicate */
+            fuzzer->backtrace = 0ULL;
+        } else {
+            LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
+
+            /* In case of write error, clear crashFileName to so that other monitored TIDs can retry */
+            memset(fuzzer->crashFileName, 0, sizeof(fuzzer->crashFileName));
+        }
+
+        /* Don't bother generating reports for duplicate or non-saved crashes */
         return;
     }
 
+    /* Generate report */
     fuzzer->report[0] = '\0';
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n",
                    fuzzer->origFileName);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n",
                    fuzzer->crashFileName);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "PID: %d\n", pid);
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "EXIT CODE: %d\n", exitCode);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "EXIT CODE: %d (%s)\n", exitCode,
+                   sanStr);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "OPERATION: %s\n", op);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FAULT ADDRESS: %p\n", crashAddr);
+    if (funcCnt > 0) {
+        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK HASH: %016llx\n",
+                       fuzzer->backtrace);
+        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK:\n");
+        for (int i = 0; i < funcCnt; i++) {
+            util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <" REG_PD REG_PM "> ",
+                           (REG_TYPE) (long)funcs[i].pc, funcs[i].func, funcs[i].line);
+            if (funcs[i].func[0] != '\0') {
+                util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[%s + 0x%x]\n",
+                               funcs[i].func, funcs[i].line);
+            } else {
+                util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[]\n");
+            }
+        }
+    }
 }
 
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)
