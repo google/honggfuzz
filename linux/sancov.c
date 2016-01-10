@@ -80,6 +80,10 @@ static bitmap_t *arch_newBitmap(uint32_t capacity)
 
 static inline bool arch_queryBitmap(bitmap_t * pBM, uint32_t index)
 {
+    if (index > pBM->capacity) {
+        LOG_E("bitmap overflow (%u)", index);
+        return false;
+    }
     if (pBM->pChunks[index / 32] & (1 << (index % 32))) {
         return true;
     }
