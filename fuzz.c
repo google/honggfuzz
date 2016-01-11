@@ -70,7 +70,7 @@ static inline bool fuzz_isPerfCntsSet(honggfuzz_t * hfuzz)
 
 static inline bool fuzz_isSanCovCntsSet(honggfuzz_t * hfuzz)
 {
-    if (hfuzz->sanCovCnts.hitPcCnt > 0ULL || hfuzz->sanCovCnts.iDsoCnt > 0ULL) {
+    if (hfuzz->sanCovCnts.hitBBCnt > 0ULL || hfuzz->sanCovCnts.iDsoCnt > 0ULL) {
         return true;
     } else {
         return false;
@@ -87,11 +87,11 @@ static inline void fuzz_resetFeedbackCnts(honggfuzz_t * hfuzz)
     __sync_fetch_and_and(&hfuzz->hwCnts.customCnt, 0UL);
 
     /* Sanitizer coverage counter */
-    __sync_fetch_and_and(&hfuzz->sanCovCnts.hitPcCnt, 0UL);
-    __sync_fetch_and_and(&hfuzz->sanCovCnts.totalPcCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.hitBBCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.totalBBCnt, 0UL);
     __sync_fetch_and_and(&hfuzz->sanCovCnts.dsoCnt, 0UL);
     __sync_fetch_and_and(&hfuzz->sanCovCnts.iDsoCnt, 0UL);
-    __sync_fetch_and_and(&hfuzz->sanCovCnts.newPcCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.newBBCnt, 0UL);
     __sync_fetch_and_and(&hfuzz->sanCovCnts.crashesCnt, 0UL);
 
     /* 
@@ -316,11 +316,11 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                        .customCnt = 0ULL,
                        },
             .sanCovCnts = {
-                           .hitPcCnt = 0ULL,
-                           .totalPcCnt = 0ULL,
+                           .hitBBCnt = 0ULL,
+                           .totalBBCnt = 0ULL,
                            .dsoCnt = 0ULL,
                            .iDsoCnt = 0ULL,
-                           .newPcCnt = 0ULL,
+                           .newBBCnt = 0ULL,
                            .crashesCnt = 0ULL,
                            },
             .report = {'\0'},
@@ -445,26 +445,26 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     LOG_D
-        ("File size (Best/New): %zu/%zu, SanCov feedback (pc,dso): Best: [%" PRIu64
-         ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64 "], newPCs:%" PRIu64,
-         hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz, hfuzz->sanCovCnts.hitPcCnt,
-         hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitPcCnt, fuzzer->sanCovCnts.iDsoCnt,
-         fuzzer->sanCovCnts.newPcCnt);
+        ("File size (Best/New): %zu/%zu, SanCov feedback (bb,dso): Best: [%" PRIu64
+         ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64 "], newBBs:%" PRIu64,
+         hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz, hfuzz->sanCovCnts.hitBBCnt,
+         hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitBBCnt, fuzzer->sanCovCnts.iDsoCnt,
+         fuzzer->sanCovCnts.newBBCnt);
 
     MX_LOCK(&hfuzz->dynamicFile_mutex);
 
-    /* abs diff of total PCs between global counter for chosen seed & current run */
-    uint64_t totalPcsDiff;
-    if (hfuzz->sanCovCnts.hitPcCnt > fuzzer->sanCovCnts.hitPcCnt) {
-        totalPcsDiff = hfuzz->sanCovCnts.hitPcCnt - fuzzer->sanCovCnts.hitPcCnt;
+    /* abs diff of total BBs between global counter for chosen seed & current run */
+    uint64_t totalBBsDiff;
+    if (hfuzz->sanCovCnts.hitBBCnt > fuzzer->sanCovCnts.hitBBCnt) {
+        totalBBsDiff = hfuzz->sanCovCnts.hitBBCnt - fuzzer->sanCovCnts.hitBBCnt;
     } else {
-        totalPcsDiff = fuzzer->sanCovCnts.hitPcCnt - hfuzz->sanCovCnts.hitPcCnt;
+        totalBBsDiff = fuzzer->sanCovCnts.hitBBCnt - hfuzz->sanCovCnts.hitBBCnt;
     }
 
     /*
      * Keep mutated seed if:
-     *  a) Newly discovered (not met before) PCs && total PCs not significantly dropped
-     *  b) More instrumented code accessed (PC hit counter bigger)
+     *  a) Newly discovered (not met before) BBs && total hit BBs not significantly dropped
+     *  b) More instrumented code accessed (BB hit counter bigger)
      *  c) More instrumented DSOs loaded
      * 
      * TODO: (a) method can significantly assist to further improvements in interesting areas
@@ -472,27 +472,27 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      * more interesting seeds can be saved between runs instead of instantly discarded
      * based on current absolute elitism (only one mutated seed is promoted).
      */
-    if ((fuzzer->sanCovCnts.newPcCnt > 0 && fuzzer->sanCovCnts.newPcCnt >= totalPcsDiff) ||
-        hfuzz->sanCovCnts.hitPcCnt < fuzzer->sanCovCnts.hitPcCnt ||
+    if ((fuzzer->sanCovCnts.newBBCnt > 0 && fuzzer->sanCovCnts.newBBCnt >= totalBBsDiff) ||
+        hfuzz->sanCovCnts.hitBBCnt < fuzzer->sanCovCnts.hitBBCnt ||
         hfuzz->sanCovCnts.iDsoCnt < fuzzer->sanCovCnts.iDsoCnt) {
-        LOG_I("SanCov Update: file size (Cur,New): %zu,%zu, newPCs:%" PRIu64
+        LOG_I("SanCov Update: file size (Cur,New): %zu,%zu, newBBs:%" PRIu64
               ", counters (Cur,New): %" PRIu64 "/%" PRIu64 ",%" PRIu64 "/%" PRIu64,
-              hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz, fuzzer->sanCovCnts.newPcCnt,
-              hfuzz->sanCovCnts.hitPcCnt, hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitPcCnt,
+              hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz, fuzzer->sanCovCnts.newBBCnt,
+              hfuzz->sanCovCnts.hitBBCnt, hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitBBCnt,
               fuzzer->sanCovCnts.iDsoCnt);
 
         memcpy(hfuzz->dynamicFileBest, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
         hfuzz->dynamicFileBestSz = fuzzer->dynamicFileSz;
-        hfuzz->sanCovCnts.hitPcCnt = fuzzer->sanCovCnts.hitPcCnt;
+        hfuzz->sanCovCnts.hitBBCnt = fuzzer->sanCovCnts.hitBBCnt;
         hfuzz->sanCovCnts.dsoCnt = fuzzer->sanCovCnts.dsoCnt;
         hfuzz->sanCovCnts.iDsoCnt = fuzzer->sanCovCnts.iDsoCnt;
         hfuzz->sanCovCnts.crashesCnt += fuzzer->sanCovCnts.crashesCnt;
-        hfuzz->sanCovCnts.newPcCnt += fuzzer->sanCovCnts.newPcCnt;
+        hfuzz->sanCovCnts.newBBCnt += fuzzer->sanCovCnts.newBBCnt;
 
-        if (hfuzz->sanCovCnts.totalPcCnt < fuzzer->sanCovCnts.totalPcCnt) {
+        if (hfuzz->sanCovCnts.totalBBCnt < fuzzer->sanCovCnts.totalBBCnt) {
             /* Keep only the max value (for dlopen cases) to measure total target coverage */
-            hfuzz->sanCovCnts.totalPcCnt = fuzzer->sanCovCnts.totalPcCnt;
+            hfuzz->sanCovCnts.totalBBCnt = fuzzer->sanCovCnts.totalBBCnt;
         }
 
         /* Reset counter if better coverage achieved */
@@ -531,11 +531,11 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
                    .customCnt = 0ULL,
                    },
         .sanCovCnts = {
-                       .hitPcCnt = 0ULL,
-                       .totalPcCnt = 0ULL,
+                       .hitBBCnt = 0ULL,
+                       .totalBBCnt = 0ULL,
                        .dsoCnt = 0ULL,
                        .iDsoCnt = 0ULL,
-                       .newPcCnt = 0ULL,
+                       .newBBCnt = 0ULL,
                        .crashesCnt = 0ULL,
                        },
         .report = {'\0'},

@@ -27,7 +27,7 @@
  * initial seed and maintained until seed is replaced. Trie nodes store the loaded (as exposed
  * from *.sancov.map file) execs/DSOs from target application using the map name as key. Trie node
  * data struct (trieData_t) maintains information for each instrumented map including a bitmap with
- * all hit relative PC addresses (realPC - baseAddr to circumvent ASLR). Map's bitmap is updated while
+ * all hit relative BB addresses (realBBAddr - baseAddr to circumvent ASLR). Map's bitmap is updated while
  * new areas on target application are discovered based on absolute elitism implemented at
  * fuzz_sanCovFeedback().
  * 
@@ -315,8 +315,8 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     memMap_t *mapsBuf = NULL;
 
     /* Local counters */
-    uint64_t nPCs = 0;          /* Total PCs found in raw file */
-    uint64_t nZeroPCs = 0;      /* Number of non-hit instrumented blocks */
+    uint64_t nBBs = 0;          /* Total BB hits found in raw file */
+    uint64_t nZeroBBs = 0;      /* Number of non-hit instrumented BBs */
     uint64_t mapsNum = 0;       /* Total number of entries in map file */
     uint64_t noCovMapsNum = 0;  /* Loaded DSOs not compiled with coverage */
 
@@ -459,37 +459,37 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      * Avoid cost of size checks inside raw data read loop by defining the read function
      * & pivot size based on PC length.
      */
-    uint64_t(*pReadRawPCFunc) (const uint8_t *) = NULL;
+    uint64_t(*pReadRawBBAddrFunc) (const uint8_t *) = NULL;
     uint8_t pivot = 0;
     if (is32bit) {
-        pReadRawPCFunc = &util_getUINT32;
+        pReadRawBBAddrFunc = &util_getUINT32;
         pivot = 4;
     } else {
-        pReadRawPCFunc = &util_getUINT64;
+        pReadRawBBAddrFunc = &util_getUINT64;
         pivot = 8;
     }
 
     /* 
-     * Take advantage of data locality (next processed PC is very likely to belong
+     * Take advantage of data locality (next processed addr is very likely to belong
      * to same map) to avoid Trie node search for each read entry.
      */
     node_t *curMap = NULL;
     uint64_t prevIndex = 0;
 
-    /* Iterate over data buffer containing list of hit PC addresses */
+    /* Iterate over data buffer containing list of hit BB addresses */
     while (pos < dataFileSz) {
-        uint64_t pc = pReadRawPCFunc(dataBuf + pos);
+        uint64_t bbAddr = pReadRawBBAddrFunc(dataBuf + pos);
         pos += pivot;
-        /* Don't bother for zero PC (inserted checks without hit) */
-        if (pc == 0x0) {
-            nZeroPCs++;
+        /* Don't bother for zero BB addr (inserted checks without hit) */
+        if (bbAddr == 0x0) {
+            nZeroBBs++;
             continue;
         } else {
             /* Find best hit based on start addr & verify range for errors */
-            uint64_t bestFit = arch_interpSearch(startMapsIndex, mapsNum, pc);
-            if (pc >= mapsBuf[bestFit].start && pc < mapsBuf[bestFit].end) {
-                /* Increase exe/DSO total PC counter */
-                mapsBuf[bestFit].pcCnt++;
+            uint64_t bestFit = arch_interpSearch(startMapsIndex, mapsNum, bbAddr);
+            if (bbAddr >= mapsBuf[bestFit].start && bbAddr < mapsBuf[bestFit].end) {
+                /* Increase exe/DSO total BB counter */
+                mapsBuf[bestFit].bbCnt++;
 
                 /* Update current Trie node if map changed */
                 if (curMap == NULL || (prevIndex != bestFit)) {
@@ -525,43 +525,43 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                     MX_UNLOCK(&hfuzz->sanCov_mutex);
                 }
 
-                /* If new relative PC update DSO's bitmap */
-                uint32_t relPC = (uint32_t) (pc - mapsBuf[bestFit].base);
-                if (!arch_queryBitmap(curMap->data.pBM, relPC)) {
+                /* If new relative BB addr update DSO's bitmap */
+                uint32_t relAddr = (uint32_t) (bbAddr - mapsBuf[bestFit].base);
+                if (!arch_queryBitmap(curMap->data.pBM, relAddr)) {
 
                     /* Interaction with global Trie should mutex wrap to avoid threads races */
                     MX_LOCK(&hfuzz->sanCov_mutex);
                     {
-                        arch_setBitmap(curMap->data.pBM, relPC);
+                        arch_setBitmap(curMap->data.pBM, relAddr);
                     }
                     MX_UNLOCK(&hfuzz->sanCov_mutex);
 
-                    /* Also increase new PCs counter at worker's thread runtime data */
-                    mapsBuf[bestFit].newPcCnt++;
+                    /* Also increase new BBs counter at worker's thread runtime data */
+                    mapsBuf[bestFit].newBBCnt++;
                 }
             } else {
                 /* 
                  * Normally this should never get executed. If hit, sanitizer
                  * coverage data collection come across some kind of bug.
                  */
-                LOG_E("Invalid PC (%" PRIx64 ") at offset %ld", pc, pos);
+                LOG_E("Invalid BB addr (%" PRIx64 ") at offset %ld", bbAddr, pos);
             }
         }
-        nPCs++;
+        nBBs++;
     }
 
-    /* Finally iterate over all instrumented maps to sum-up the number of newly met PC addresses */
+    /* Finally iterate over all instrumented maps to sum-up the number of newly met BB addresses */
     for (uint64_t i = 0; i < mapsNum; i++) {
-        if (mapsBuf[i].pcCnt > 0 && !isSeedFirstRun) {
-            fuzzer->sanCovCnts.newPcCnt += mapsBuf[i].newPcCnt;
+        if (mapsBuf[i].bbCnt > 0 && !isSeedFirstRun) {
+            fuzzer->sanCovCnts.newBBCnt += mapsBuf[i].newBBCnt;
         } else {
             noCovMapsNum++;
         }
     }
 
     /* Successful parsing - update fuzzer worker's counters */
-    fuzzer->sanCovCnts.hitPcCnt = nPCs;
-    fuzzer->sanCovCnts.totalPcCnt = nPCs + nZeroPCs;
+    fuzzer->sanCovCnts.hitBBCnt = nBBs;
+    fuzzer->sanCovCnts.totalBBCnt = nBBs + nZeroBBs;
     fuzzer->sanCovCnts.dsoCnt = mapsNum;
     fuzzer->sanCovCnts.iDsoCnt = mapsNum - noCovMapsNum;        /* Instrumented DSOs */
     ret = true;
@@ -607,8 +607,8 @@ static bool arch_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     char pidFSuffix[13] = { 0 };
     snprintf(pidFSuffix, sizeof(pidFSuffix), "%d.sancov", fuzzer->pid);
 
-    /* Total PCs counter summarizes all DSOs */
-    uint64_t nPCs = 0;
+    /* Total BBs counter summarizes all DSOs */
+    uint64_t nBBs = 0;
 
     /* Iterate sancov dir for files generated against fuzzer pid */
     snprintf(covFile, sizeof(covFile), "%s/%s", hfuzz->workDir, _HF_SANCOV_DIR);
@@ -642,30 +642,33 @@ static bool arch_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             }
             pos += 8;
 
-            /* Avoid size checks inside loop by registering the read function & pivot based on PC size */
-            uint64_t(*readPC) (const uint8_t *) = NULL;
+            /* 
+             * Avoid cost of size checks inside raw data read loop by defining the read function
+             * & pivot size based on PC length.
+             */
+            uint64_t(*pReadRawBBAddrFunc) (const uint8_t *) = NULL;
             uint8_t pivot = 0;
             if (is32bit) {
-                readPC = &util_getUINT32;
+                pReadRawBBAddrFunc = &util_getUINT32;
                 pivot = 4;
             } else {
-                readPC = &util_getUINT64;
+                pReadRawBBAddrFunc = &util_getUINT64;
                 pivot = 8;
             }
 
             while (pos < dataFileSz) {
-                uint32_t pc = readPC(dataBuf + pos);
+                uint32_t bbAddr = pReadRawBBAddrFunc(dataBuf + pos);
                 pos += pivot;
-                if (pc == 0x0) {
+                if (bbAddr == 0x0) {
                     continue;
                 }
-                nPCs++;
+                nBBs++;
             }
         }
     }
 
     /* Successful parsing - update fuzzer worker counters */
-    fuzzer->sanCovCnts.hitPcCnt = nPCs;
+    fuzzer->sanCovCnts.hitBBCnt = nBBs;
     ret = true;
 
  bail:

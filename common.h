@@ -99,11 +99,11 @@ typedef struct {
 
 /* Sanitizer coverage specific data structures */
 typedef struct {
-    uint64_t hitPcCnt;
-    uint64_t totalPcCnt;
+    uint64_t hitBBCnt;
+    uint64_t totalBBCnt;
     uint64_t dsoCnt;
     uint64_t iDsoCnt;
-    uint64_t newPcCnt;
+    uint64_t newBBCnt;
     uint64_t crashesCnt;
 } sancovcnt_t;
 
@@ -119,8 +119,8 @@ typedef struct __attribute__ ((packed)) {
     uint64_t end;               // region end addr
     uint64_t base;              // region base addr
     char mapName[NAME_MAX];     // bin/DSO name
-    uint64_t pcCnt;
-    uint64_t newPcCnt;
+    uint64_t bbCnt;
+    uint64_t newBBCnt;
 } memMap_t;
 
 /* Trie node data struct */
