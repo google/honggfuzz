@@ -78,11 +78,6 @@
  */
 #define REGSIZEINCHAR   (2 * sizeof(REG_TYPE) + 3)
 
-/*
- * Number of frames to include in backtrace callstack signature
- */
-#define NMAJORFRAMES    7
-
 #if defined(__i386__) || defined(__x86_64__)
 #define MAX_INSTR_SZ 16
 #elif defined(__arm__) || defined(__powerpc__) || defined(__powerpc64__)
