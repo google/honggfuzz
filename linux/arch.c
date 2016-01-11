@@ -374,15 +374,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     arch_removeTimer(&timerid);
     arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
-#ifdef _HF_DEBUG
-    _HF_START_TIMER
-#endif
     arch_sanCovAnalyze(hfuzz, fuzzer);
-#ifdef _HF_DEBUG
-    _HF_END_TIMER if (_HF_GET_TIME > hfuzz->maxSpentInSanCov) {
-        hfuzz->maxSpentInSanCov = _HF_GET_TIME;
-    }
-#endif
 }
 
 bool arch_archInit(honggfuzz_t * hfuzz)

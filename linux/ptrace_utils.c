@@ -1085,7 +1085,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     /* Increase global crashes counter */
     __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
     __sync_fetch_and_and(&hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
-    
+
     /*
      * If fuzzing with sanitizer coverage feedback increase crashes counter used
      * as metric for dynFile evolution

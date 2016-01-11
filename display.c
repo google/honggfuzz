@@ -155,10 +155,6 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                     __sync_fetch_and_add(&hfuzz->sanCovCnts.newBBCnt, 0UL));
         display_put("  - crashes:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     __sync_fetch_and_add(&hfuzz->sanCovCnts.crashesCnt, 0UL));
-#ifdef _HF_DEBUG
-        display_put("Max time spent parsing sancov data: " ESC_BOLD "%ld ns" ESC_RESET "\n",
-                    hfuzz->maxSpentInSanCov);
-#endif
     }
     display_put("============================== LOGS ==============================\n");
 }
