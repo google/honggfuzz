@@ -1016,11 +1016,12 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
 
             /* If available parse the type of error (READ/WRITE) */
             if (cAddr && strstr(pLineLC, cAddr)) {
-                if (strncmp(pLineLC, "READ", 4)) {
+                if (strncmp(pLineLC, "READ", 4) == 0) {
                     *op = "READ";
-                } else if (strncmp(pLineLC, "WRITE", 5)) {
+                } else if (strncmp(pLineLC, "WRITE", 5) == 0) {
                     *op = "WRITE";
                 }
+                cAddr = NULL;
             }
 
             /* Check for crash thread frames */
