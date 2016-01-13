@@ -68,15 +68,6 @@ static inline bool fuzz_isPerfCntsSet(honggfuzz_t * hfuzz)
     }
 }
 
-static inline bool fuzz_isSanCovCntsSet(honggfuzz_t * hfuzz)
-{
-    if (hfuzz->sanCovCnts.hitBBCnt > 0ULL || hfuzz->sanCovCnts.iDsoCnt > 0ULL) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 static inline void fuzz_resetFeedbackCnts(honggfuzz_t * hfuzz)
 {
     /* HW perf counters */
@@ -126,7 +117,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 {
     MX_LOCK(&hfuzz->dynamicFile_mutex);
 
-    /* If max dynamicFile iterations counter, pick new seed file */
+    /* If max dynamicFile iterations counter, pick new seed file when working with input file corpus */
     if (hfuzz->inputFile &&
         __sync_fetch_and_add(&hfuzz->dynFileIterExpire, 0UL) >= _HF_MAX_DYNFILE_ITER) {
         size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
@@ -149,6 +140,13 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
          * work against the same coverage data vs. original seed.
          */
         fuzzer->isDynFileLocked = true;
+    } else if (hfuzz->inputFile == NULL && (fuzz_isPerfCntsSet(hfuzz) == false)) {
+        /* 
+         * When working with an empty input file corpus (allowed if perf feedback enabled for Linux archs),
+         * first iteration is executed without mangling. First iteration need to be executed by one thread
+         * blocking other workers from continuing until finished.
+         */
+        fuzzer->isDynFileLocked = true;
     }
 
     if (hfuzz->dynamicFileBestSz > hfuzz->maxFileSz) {
@@ -161,7 +159,10 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
     MX_UNLOCK(&hfuzz->dynamicFile_mutex);
 
-    /* true isDynFileLocked indicates first run for a new seed, so skip mangling & lock mutex */
+    /* 
+     * true isDynFileLocked indicates first run for a new seed, so skip mangling 
+     * without unlocking threads block mutex.
+     */
     MX_LOCK(&hfuzz->workersBlock_mutex);
     if (fuzzer->isDynFileLocked) {
         goto skipMangling;
@@ -176,11 +177,8 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         goto skipMangling;
     }
 
-    /* The first pass should be on an empty/initial file */
-    if (fuzz_isPerfCntsSet(hfuzz) || fuzz_isSanCovCntsSet(hfuzz)) {
-        mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz);
-        mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
-    }
+    mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz);
+    mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
  skipMangling:
     if (files_writeBufToFile
