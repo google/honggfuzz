@@ -701,7 +701,7 @@ void arch_sanCovAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     /* 
-     * For now supported methods are implemented in as a fail-over. This will
+     * For now supported methods are implemented in fail-over nature. This will
      * change in the future when best method is concluded.
      */
     if (arch_sanCovParseRaw(hfuzz, fuzzer) == false) {

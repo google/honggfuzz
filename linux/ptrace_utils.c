@@ -1220,6 +1220,53 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     }
 }
 
+static void arch_ptraceExitAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer, int exitCode)
+{
+    /* Stack traces from reports available only with Address Sanitizer */
+    if (exitCode != HF_ASAN_EXIT_CODE) {
+        return;
+    }
+
+    void *crashAddr = 0;
+    char *op = "UNKNOWN";
+    int funcCnt = 0;
+
+    /*  *INDENT-OFF* */
+    funcs_t funcs[_HF_MAX_FUNCS] = {
+        [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
+        [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
+        [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
+        ,
+    };
+    /*  *INDENT-ON* */
+
+    funcCnt = arch_parseAsanReport(hfuzz, pid, funcs, &crashAddr, &op);
+
+    /* 
+     * -1 error indicates a file not found for report. This is expected to happen often since
+     * ASan report is generated once for crashing TID. Ptrace arch is not guaranteed to parse
+     * that TID first. Not setting the 'crashFileName' variable will ensure that this branch
+     * is executed again for all TIDs until the matching report is found
+     */
+    if (funcCnt == -1) {
+        return;
+    }
+
+    /* If frames successfully recovered, calculate stack hash & populate crash PC */
+    arch_hashCallstack(hfuzz, fuzzer, funcs, funcCnt, false);
+}
+
+static inline void arch_ptraceExitAnalyze(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer, int exitCode)
+{
+    if (fuzzer->mainWorker) {
+        /* Main fuzzing threads */
+        arch_ptraceExitSaveData(hfuzz, pid, fuzzer, exitCode);
+    } else {
+        /* Post crash analysis (e.g. crashes verifier) */
+        arch_ptraceExitAnalyzeData(hfuzz, pid, fuzzer, exitCode);
+    }
+}
+
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)
 static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status, pid_t pid)
 {
@@ -1239,7 +1286,7 @@ static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status,
                 if ((WEXITSTATUS(event_msg) == (unsigned long)HF_MSAN_EXIT_CODE) ||
                     (WEXITSTATUS(event_msg) == (unsigned long)HF_ASAN_EXIT_CODE) ||
                     (WEXITSTATUS(event_msg) == (unsigned long)HF_UBSAN_EXIT_CODE)) {
-                    arch_ptraceExitSaveData(hfuzz, pid, fuzzer, WEXITSTATUS(event_msg));
+                    arch_ptraceExitAnalyze(hfuzz, pid, fuzzer, WEXITSTATUS(event_msg));
                 }
             } else if (WIFSIGNALED(event_msg)) {
                 LOG_D("PID: %d terminated with signal: %lu", pid,
@@ -1301,7 +1348,7 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
         if ((WEXITSTATUS(status) == HF_MSAN_EXIT_CODE) ||
             (WEXITSTATUS(status) == HF_ASAN_EXIT_CODE) ||
             (WEXITSTATUS(status) == HF_UBSAN_EXIT_CODE)) {
-            arch_ptraceExitSaveData(hfuzz, pid, fuzzer, WEXITSTATUS(status));
+            arch_ptraceExitAnalyze(hfuzz, pid, fuzzer, WEXITSTATUS(status));
         }
         return;
     }
