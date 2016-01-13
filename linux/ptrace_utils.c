@@ -350,10 +350,10 @@ struct {
     [SIGBUS].important = true,
     [SIGBUS].descr = "SIGBUS",
 
-#if defined(__ANDROID__)
-    [SIGABRT].important = false,
-#else
+#if _HF_MONITOR_SIGABRT
     [SIGABRT].important = true,
+#else
+    [SIGABRT].important = false,
 #endif
     [SIGABRT].descr = "SIGABRT"
 };

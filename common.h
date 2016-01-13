@@ -77,6 +77,12 @@
 /* Directory in workspace to store sanitizer coverage data */
 #define _HF_SANCOV_DIR "HF_SANCOV"
 
+#if defined(__ANDROID__)
+#define _HF_MONITOR_SIGABRT 0
+#else
+#define _HF_MONITOR_SIGABRT 1
+#endif
+
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
     _HF_DYNFILE_INSTR_COUNT = 0x1,
