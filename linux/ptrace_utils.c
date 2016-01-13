@@ -1220,7 +1220,8 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     }
 }
 
-static void arch_ptraceExitAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer, int exitCode)
+static void arch_ptraceExitAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer,
+                                       int exitCode)
 {
     /* Stack traces from reports available only with Address Sanitizer */
     if (exitCode != HF_ASAN_EXIT_CODE) {
@@ -1256,7 +1257,8 @@ static void arch_ptraceExitAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t 
     arch_hashCallstack(hfuzz, fuzzer, funcs, funcCnt, false);
 }
 
-static inline void arch_ptraceExitAnalyze(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer, int exitCode)
+static inline void arch_ptraceExitAnalyze(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer,
+                                          int exitCode)
 {
     if (fuzzer->mainWorker) {
         /* Main fuzzing threads */
