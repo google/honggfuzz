@@ -435,12 +435,12 @@ bool arch_archInit(honggfuzz_t * hfuzz)
 #endif
 
     /* 
-     * If sanitizer coverage enabled increase number of major frames, since top 7-9 frames
+     * If sanitizer fuzzing enabled increase number of major frames, since top 7-9 frames
      * will be occupied with sanitizer symbols if 'abort_on_error' flag is set
      */
-    if (hfuzz->useSanCov) {
-        hfuzz->numMajorFrames = 14;
-    }
+#if _HF_MONITOR_SIGABRT
+    hfuzz->numMajorFrames = 14;
+#endif
 
     /* If sanitizer coverage enabled init workspace subdir */
     if (hfuzz->useSanCov) {
