@@ -192,7 +192,12 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
                    .customCnt = 0ULL,
                    },
         .sanCovCnts = {
-                       .pcCnt = 0ULL,  
+                       .hitBBCnt = 0ULL,
+                       .totalBBCnt = 0ULL,
+                       .dsoCnt = 0ULL,
+                       .iDsoCnt = 0ULL,
+                       .newBBCnt = 0ULL,
+                       .crashesCnt = 0ULL,
                       },
         .dynamicCutOffAddr = ~(0ULL),
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
@@ -201,7 +206,17 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .msanReportUMRS = false,
         .ignoreAddr = NULL,
         .useSanCov = false,
+        .covMetadata = NULL,
+        .clearCovMetadata = false,
         .dynFileIterExpire = _HF_MAX_DYNFILE_ITER,
+        .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER,
+        .workersBlock_mutex = PTHREAD_MUTEX_INITIALIZER,
+        .sanOpts = { 
+                    .asanOpts = NULL,
+                    .msanOpts = NULL,
+                    .ubsanOpts = NULL,
+        },
+        .numMajorFrames = 7,
     };
     /*  *INDENT-ON* */
 

@@ -71,6 +71,18 @@
 #define _HF_MAX_DYNFILE_ITER 0x2000UL
 #define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
 
+/* Bitmap size */
+#define _HF_BITMAP_SIZE 0xAFFFFF
+
+/* Directory in workspace to store sanitizer coverage data */
+#define _HF_SANCOV_DIR "HF_SANCOV"
+
+#if defined(__ANDROID__)
+#define _HF_MONITOR_SIGABRT 0
+#else
+#define _HF_MONITOR_SIGABRT 1
+#endif
+
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
     _HF_DYNFILE_INSTR_COUNT = 0x1,
@@ -88,9 +100,54 @@ typedef struct {
     uint64_t customCnt;
 } hwcnt_t;
 
+/* Sanitizer coverage specific data structures */
 typedef struct {
-    uint64_t pcCnt;
+    uint64_t hitBBCnt;
+    uint64_t totalBBCnt;
+    uint64_t dsoCnt;
+    uint64_t iDsoCnt;
+    uint64_t newBBCnt;
+    uint64_t crashesCnt;
 } sancovcnt_t;
+
+typedef struct {
+    uint32_t capacity;
+    uint32_t *pChunks;
+    uint32_t nChunks;
+} bitmap_t;
+
+/* Memory map struct */
+typedef struct __attribute__ ((packed)) {
+    uint64_t start;             // region start addr
+    uint64_t end;               // region end addr
+    uint64_t base;              // region base addr
+    char mapName[NAME_MAX];     // bin/DSO name
+    uint64_t bbCnt;
+    uint64_t newBBCnt;
+} memMap_t;
+
+/* Trie node data struct */
+typedef struct __attribute__ ((packed)) {
+    bitmap_t *pBM;
+} trieData_t;
+
+/* Trie node struct */
+typedef struct __attribute__ ((packed)) node {
+    char key;
+    trieData_t data;
+    struct node *next;
+    struct node *prev;
+    struct node *children;
+    struct node *parent;
+} node_t;
+
+/* EOF Sanitizer coverage specific data structures */
+
+typedef struct {
+    char *asanOpts;
+    char *msanOpts;
+    char *ubsanOpts;
+} sanOpts_t;
 
 typedef struct {
     char **cmdline;
@@ -105,7 +162,7 @@ typedef struct {
     double flipRate;
     char *externalCommand;
     const char *dictionaryFile;
-    const char **dictionary;
+    char **dictionary;
     const char *blacklistFile;
     uint64_t *blacklist;
     size_t blacklistCnt;
@@ -143,7 +200,13 @@ typedef struct {
     bool msanReportUMRS;
     void *ignoreAddr;
     bool useSanCov;
+    node_t *covMetadata;
+    bool clearCovMetadata;
     size_t dynFileIterExpire;
+    pthread_mutex_t sanCov_mutex;
+    pthread_mutex_t workersBlock_mutex;
+    sanOpts_t sanOpts;
+    size_t numMajorFrames;
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
@@ -164,6 +227,7 @@ typedef struct fuzzer_t {
     hwcnt_t hwCnts;
     sancovcnt_t sanCovCnts;
     size_t dynamicFileSz;
+    bool isDynFileLocked;
 } fuzzer_t;
 
 #define _HF_MAX_FUNCS 80

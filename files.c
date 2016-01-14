@@ -290,9 +290,9 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         return false;
     }
 
+    char *lineptr = NULL;
+    size_t n = 0;
     for (;;) {
-        char *lineptr = NULL;
-        size_t n = 0;
         if (getdelim(&lineptr, &n, '\0', fDict) == -1) {
             break;
         }
@@ -302,9 +302,17 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
             PLOG_E("Realloc failed (sz=%zu)",
                    (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]));
             fclose(fDict);
+            free(lineptr);
             return false;
         }
-        hfuzz->dictionary[hfuzz->dictionaryCnt] = lineptr;
+        hfuzz->dictionary[hfuzz->dictionaryCnt] = malloc(strlen(lineptr));
+        if (!hfuzz->dictionary[hfuzz->dictionaryCnt]) {
+            PLOG_E("malloc(%zu) failed", strlen(lineptr));
+            fclose(fDict);
+            free(lineptr);
+            return false;
+        }
+        strncpy(hfuzz->dictionary[hfuzz->dictionaryCnt], lineptr, strlen(lineptr));;
         LOG_D("Dictionary: loaded word: '%s' (len=%zu)",
               hfuzz->dictionary[hfuzz->dictionaryCnt],
               strlen(hfuzz->dictionary[hfuzz->dictionaryCnt]));
@@ -312,6 +320,7 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
     }
     LOG_I("Loaded %zu words from the dictionary", hfuzz->dictionaryCnt);
     fclose(fDict);
+    free(lineptr);
     return true;
 }
 
@@ -412,9 +421,9 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
         return false;
     }
 
+    char *lineptr = NULL;
+    size_t n = 0;
     for (;;) {
-        char *lineptr = NULL;
-        size_t n = 0;
         if (getline(&lineptr, &n, fBl) == -1) {
             break;
         }
@@ -425,6 +434,7 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
             PLOG_E("realloc failed (sz=%zu)",
                    (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]));
             fclose(fBl);
+            free(lineptr);
             return false;
         }
 
@@ -437,6 +447,7 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
                 LOG_F
                     ("Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort records");
                 fclose(fBl);
+                free(lineptr);
                 return false;
             }
         }
@@ -449,6 +460,7 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
         LOG_F("Empty stack hashes blacklist file '%s'", hfuzz->blacklistFile);
     }
     fclose(fBl);
+    free(lineptr);
     return true;
 }
 

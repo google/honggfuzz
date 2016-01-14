@@ -68,15 +68,6 @@ static inline bool fuzz_isPerfCntsSet(honggfuzz_t * hfuzz)
     }
 }
 
-static inline bool fuzz_isSanCovCntsSet(honggfuzz_t * hfuzz)
-{
-    if (hfuzz->sanCovCnts.pcCnt > 0ULL) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 static inline void fuzz_resetFeedbackCnts(honggfuzz_t * hfuzz)
 {
     /* HW perf counters */
@@ -87,7 +78,19 @@ static inline void fuzz_resetFeedbackCnts(honggfuzz_t * hfuzz)
     __sync_fetch_and_and(&hfuzz->hwCnts.customCnt, 0UL);
 
     /* Sanitizer coverage counter */
-    __sync_fetch_and_and(&hfuzz->sanCovCnts.pcCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.hitBBCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.totalBBCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.dsoCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.iDsoCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.newBBCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->sanCovCnts.crashesCnt, 0UL);
+
+    /* 
+     * For performance reasons Trie & Bitmap methods are not exposed in arch.h
+     * Thus maintain a status flag to destroy runtime data internally at sancov.c
+     * when dynFile input seed is replaced.
+     */
+    hfuzz->clearCovMetadata = true;
 }
 
 static void fuzz_sigHandler(int sig)
@@ -114,7 +117,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 {
     MX_LOCK(&hfuzz->dynamicFile_mutex);
 
-    /* If max dynamicFile iterations counter, pick new seed file */
+    /* If max dynamicFile iterations counter, pick new seed file when working with input file corpus */
     if (hfuzz->inputFile &&
         __sync_fetch_and_add(&hfuzz->dynFileIterExpire, 0UL) >= _HF_MAX_DYNFILE_ITER) {
         size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
@@ -129,6 +132,21 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         /* Reset counter since new seed pick */
         __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
         fuzz_resetFeedbackCnts(hfuzz);
+
+        /* 
+         * In order to have accurate comparison base for coverage, first iteration
+         * of a new seed is executed without mangling. Also workersBlock_mutex mutex
+         * is maintain until execution is finished to ensure that other threads will
+         * work against the same coverage data vs. original seed.
+         */
+        fuzzer->isDynFileLocked = true;
+    } else if (hfuzz->inputFile == NULL && (fuzz_isPerfCntsSet(hfuzz) == false)) {
+        /* 
+         * When working with an empty input file corpus (allowed if perf feedback enabled for Linux archs),
+         * first iteration is executed without mangling. First iteration need to be executed by one thread
+         * blocking other workers from continuing until finished.
+         */
+        fuzzer->isDynFileLocked = true;
     }
 
     if (hfuzz->dynamicFileBestSz > hfuzz->maxFileSz) {
@@ -142,17 +160,25 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     MX_UNLOCK(&hfuzz->dynamicFile_mutex);
 
     /* 
+     * true isDynFileLocked indicates first run for a new seed, so skip mangling 
+     * without unlocking threads block mutex.
+     */
+    MX_LOCK(&hfuzz->workersBlock_mutex);
+    if (fuzzer->isDynFileLocked) {
+        goto skipMangling;
+    }
+    MX_UNLOCK(&hfuzz->workersBlock_mutex);
+
+    /* 
      * if flip rate is 0.0, early abort file mangling. This will leave perf counters
      * with values equal to dry runs against input corpus.
      */
     if (hfuzz->flipRate == 0.0L) {
         goto skipMangling;
     }
-    /* The first pass should be on an empty/initial file */
-    if (fuzz_isPerfCntsSet(hfuzz) || fuzz_isSanCovCntsSet(hfuzz)) {
-        mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz);
-        mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
-    }
+
+    mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz);
+    mangle_mangleContent(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
  skipMangling:
     if (files_writeBufToFile
@@ -288,7 +314,12 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                        .customCnt = 0ULL,
                        },
             .sanCovCnts = {
-                           .pcCnt = 0ULL,
+                           .hitBBCnt = 0ULL,
+                           .totalBBCnt = 0ULL,
+                           .dsoCnt = 0ULL,
+                           .iDsoCnt = 0ULL,
+                           .newBBCnt = 0ULL,
+                           .crashesCnt = 0ULL,
                            },
             .report = {'\0'},
             .mainWorker = false
@@ -358,7 +389,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
 static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     LOG_D
-        ("File size (New/Best): %zu/%zu, Perf feedback (instr/branch/block/block-edge/custom): Best: [%"
+        ("File size (New/Best): %zu/%zu, Perf feedback (instr,branch,block,block-edge,custom): Best: [%"
          PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64
          ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "]", fuzzer->dynamicFileSz,
          hfuzz->dynamicFileBestSz, hfuzz->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuBranchCnt,
@@ -412,23 +443,55 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     LOG_D
-        ("File size (Best/New): %zu/%zu, SanCov feedback (pc): Best: [%" PRIu64
-         "] / New: [%" PRIu64 "]", hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz,
-         hfuzz->sanCovCnts.pcCnt, fuzzer->sanCovCnts.pcCnt);
+        ("File size (Best/New): %zu/%zu, SanCov feedback (bb,dso): Best: [%" PRIu64
+         ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64 "], newBBs:%" PRIu64,
+         hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz, hfuzz->sanCovCnts.hitBBCnt,
+         hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitBBCnt, fuzzer->sanCovCnts.iDsoCnt,
+         fuzzer->sanCovCnts.newBBCnt);
 
     MX_LOCK(&hfuzz->dynamicFile_mutex);
 
-    int64_t diff0 = hfuzz->sanCovCnts.pcCnt - fuzzer->sanCovCnts.pcCnt;
+    /* abs diff of total BBs between global counter for chosen seed & current run */
+    uint64_t totalBBsDiff;
+    if (hfuzz->sanCovCnts.hitBBCnt > fuzzer->sanCovCnts.hitBBCnt) {
+        totalBBsDiff = hfuzz->sanCovCnts.hitBBCnt - fuzzer->sanCovCnts.hitBBCnt;
+    } else {
+        totalBBsDiff = fuzzer->sanCovCnts.hitBBCnt - hfuzz->sanCovCnts.hitBBCnt;
+    }
 
-    if (diff0 < 0) {
-        LOG_I("SanCov Update: file size (Cur,New): %zu,%zu, counters (Cur/New): %"
-              PRIu64 "/%" PRIu64, hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz,
-              hfuzz->sanCovCnts.pcCnt, fuzzer->sanCovCnts.pcCnt);
+    /*
+     * Keep mutated seed if:
+     *  a) Newly discovered (not met before) BBs && total hit BBs not significantly dropped
+     *  b) More instrumented code accessed (BB hit counter bigger)
+     *  c) More instrumented DSOs loaded
+     * 
+     * TODO: (a) method can significantly assist to further improvements in interesting areas
+     * discovery if combined with seeds pool/queue support. If a runtime queue is maintained
+     * more interesting seeds can be saved between runs instead of instantly discarded
+     * based on current absolute elitism (only one mutated seed is promoted).
+     */
+    if ((fuzzer->sanCovCnts.newBBCnt > 0 && fuzzer->sanCovCnts.newBBCnt >= totalBBsDiff) ||
+        hfuzz->sanCovCnts.hitBBCnt < fuzzer->sanCovCnts.hitBBCnt ||
+        hfuzz->sanCovCnts.iDsoCnt < fuzzer->sanCovCnts.iDsoCnt) {
+        LOG_I("SanCov Update: file size (Cur,New): %zu,%zu, newBBs:%" PRIu64
+              ", counters (Cur,New): %" PRIu64 "/%" PRIu64 ",%" PRIu64 "/%" PRIu64,
+              hfuzz->dynamicFileBestSz, fuzzer->dynamicFileSz, fuzzer->sanCovCnts.newBBCnt,
+              hfuzz->sanCovCnts.hitBBCnt, hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitBBCnt,
+              fuzzer->sanCovCnts.iDsoCnt);
 
         memcpy(hfuzz->dynamicFileBest, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
         hfuzz->dynamicFileBestSz = fuzzer->dynamicFileSz;
-        hfuzz->sanCovCnts.pcCnt = fuzzer->sanCovCnts.pcCnt;
+        hfuzz->sanCovCnts.hitBBCnt = fuzzer->sanCovCnts.hitBBCnt;
+        hfuzz->sanCovCnts.dsoCnt = fuzzer->sanCovCnts.dsoCnt;
+        hfuzz->sanCovCnts.iDsoCnt = fuzzer->sanCovCnts.iDsoCnt;
+        hfuzz->sanCovCnts.crashesCnt += fuzzer->sanCovCnts.crashesCnt;
+        hfuzz->sanCovCnts.newBBCnt += fuzzer->sanCovCnts.newBBCnt;
+
+        if (hfuzz->sanCovCnts.totalBBCnt < fuzzer->sanCovCnts.totalBBCnt) {
+            /* Keep only the max value (for dlopen cases) to measure total target coverage */
+            hfuzz->sanCovCnts.totalBBCnt = fuzzer->sanCovCnts.totalBBCnt;
+        }
 
         /* Reset counter if better coverage achieved */
         __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
@@ -466,10 +529,16 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
                    .customCnt = 0ULL,
                    },
         .sanCovCnts = {
-                       .pcCnt = 0ULL,
+                       .hitBBCnt = 0ULL,
+                       .totalBBCnt = 0ULL,
+                       .dsoCnt = 0ULL,
+                       .iDsoCnt = 0ULL,
+                       .newBBCnt = 0ULL,
+                       .crashesCnt = 0ULL,
                        },
         .report = {'\0'},
-        .mainWorker = true
+        .mainWorker = true,
+        .isDynFileLocked = false
     };
     if (fuzzer.dynamicFile == NULL) {
         LOG_F("malloc(%zu) failed", hfuzz->maxFileSz);
@@ -524,6 +593,14 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         fuzz_perfFeedback(hfuzz, &fuzzer);
     } else if (hfuzz->useSanCov) {
         fuzz_sanCovFeedback(hfuzz, &fuzzer);
+    }
+
+    /* 
+     * If worker picked first iteration of new seed for dynFile, unlock the mutex
+     * so other threads can continue.
+     */
+    if (fuzzer.isDynFileLocked) {
+        MX_UNLOCK(&hfuzz->workersBlock_mutex);
     }
 
     if (hfuzz->useVerifier && (fuzzer.crashFileName[0] != 0) && fuzzer.backtrace) {
@@ -646,13 +723,26 @@ void fuzz_main(honggfuzz_t * hfuzz)
               strsignal(fuzz_sigReceived));
     }
 
+    /* Clean-up global buffers */
     free(hfuzz->files);
     free(hfuzz->dynamicFileBest);
     if (hfuzz->dictionary) {
+        for (size_t i = 0; i < hfuzz->dictionaryCnt; i++) {
+            free(hfuzz->dictionary[i]);
+        }
         free(hfuzz->dictionary);
     }
     if (hfuzz->blacklist) {
         free(hfuzz->blacklist);
+    }
+    if (hfuzz->sanOpts.asanOpts) {
+        free(hfuzz->sanOpts.asanOpts);
+    }
+    if (hfuzz->sanOpts.ubsanOpts) {
+        free(hfuzz->sanOpts.ubsanOpts);
+    }
+    if (hfuzz->sanOpts.msanOpts) {
+        free(hfuzz->sanOpts.msanOpts);
     }
 
     _exit(EXIT_SUCCESS);

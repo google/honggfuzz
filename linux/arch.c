@@ -51,25 +51,55 @@
 #include "linux/sancov.h"
 #include "log.h"
 #include "util.h"
+#include "files.h"
 
-#define kASAN_OPTS      "allow_user_segv_handler=1:"\
-                        "handle_segv=0:"\
-                        "abort_on_error=1:"\
-                        "allocator_may_return_null=1"
-#define kMSAN_OPTS      "exit_code=" HF_MSAN_EXIT_CODE_STR ":"\
-                        "wrap_signals=0:print_stats=1:report_umrs=0"
-#define kMSAN_OPTS_UMRS "exit_code=" HF_MSAN_EXIT_CODE_STR ":"\
-                        "wrap_signals=0:print_stats=1:report_umrs=1"
+/* Stringify */
+#define XSTR(x)         #x
+#define STR(x)          XSTR(x)
+
+/* Common sanitizer flags */
+#if _HF_MONITOR_SIGABRT
+#define ABORT_FLAG        "abort_on_error=1"
+#else
+#define ABORT_FLAG        "abort_on_error=0"
+#endif
+
+#if defined(__ANDROID__)
+/*
+ * symbolize: Disable symbolication since it changes logs (which are parsed) format
+ * start_deactivated: Enable on Android to reduce memory usage (useful when not all
+ *                    target's DSOs are compiled with sanitizer enabled
+ * abort_on_error: Disable for platforms where SIGABRT is not monitored
+ */
+#define kSAN_COMMON_ARCH    "symbolize=0:"ABORT_FLAG":start_deactivated=1"
+#else
+#define kSAN_COMMON_ARCH    "symbolize=0:"ABORT_FLAG
+#endif
+
+/* Sanitizer specific flags (set 'abort_on_error has priority over exitcode') */
+#define kASAN_OPTS          "allow_user_segv_handler=1:"\
+                            "handle_segv=0:"\
+                            "allocator_may_return_null=1:"\
+                            kSAN_COMMON_ARCH":exitcode=" STR(HF_ASAN_EXIT_CODE)
+
+#define kUBSAN_OPTS         kSAN_COMMON_ARCH":exitcode=" STR(HF_UBSAN_EXIT_CODE)
+
+#define kMSAN_OPTS          "exit_code=" STR(HF_MSAN_EXIT_CODE) ":"\
+                            "wrap_signals=0:print_stats=1"
+
+/* 'log_path' ouput directory for sanitizer reports */
+#define kSANLOGDIR          "log_path="
 
 /* 'coverage_dir' output directory for coverage data files is set dynamically */
-#define kSANCOVDIR      "coverage_dir="
+#define kSANCOVDIR          "coverage_dir="
 
 /*
  * If the program ends with a signal that ASan does not handle (or can not 
  * handle at all, like SIGKILL), coverage data will be lost. This is a big
  * problem on Android, where SIGKILL is a normal way of evicting applications 
  * from memory. With 'coverage_direct=1' coverage data is written to a 
- * memory-mapped file as soon as it collected. 
+ * memory-mapped file as soon as it collected. Non-Android targets can disable
+ * coverage direct when more coverage data collection methods are implemented.
  */
 #if defined(__ANDROID__)
 #define kSAN_COV_OPTS  "coverage=1:coverage_direct=1"
@@ -108,33 +138,21 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         return false;
     }
 
-    /* Help buffer to set sanitizer flags */
-    char sancov_opts[sizeof(kASAN_OPTS) + PATH_MAX] = { 0 };
-
-    /* AddressSanitizer (ASan) */
-    const char *asan_options = kASAN_OPTS;
-    if (hfuzz->useSanCov) {
-        snprintf(sancov_opts, sizeof(sancov_opts), "%s:%s:%s%s", kASAN_OPTS, kSAN_COV_OPTS,
-                 kSANCOVDIR, hfuzz->workDir);
-        asan_options = sancov_opts;
-    }
-    if (setenv("ASAN_OPTIONS", asan_options, 1) == -1) {
+    /* Address Sanitizer (ASan) */
+    if (setenv("ASAN_OPTIONS", hfuzz->sanOpts.asanOpts, 1) == -1) {
         PLOG_E("setenv(ASAN_OPTIONS) failed");
         return false;
     }
 
-    /* MemorySanitizer (MSan) */
-    const char *msan_options = kMSAN_OPTS;
-    if (hfuzz->msanReportUMRS) {
-        msan_options = kMSAN_OPTS_UMRS;
-    }
-    if (hfuzz->useSanCov) {
-        snprintf(sancov_opts, sizeof(sancov_opts), "%s:%s:%s%s", msan_options, kSAN_COV_OPTS,
-                 kSANCOVDIR, hfuzz->workDir);
-        msan_options = sancov_opts;
-    }
-    if (setenv("MSAN_OPTIONS", msan_options, 1) == -1) {
+    /* Memory Sanitizer (MSan) */
+    if (setenv("MSAN_OPTIONS", hfuzz->sanOpts.msanOpts, 1) == -1) {
         PLOG_E("setenv(MSAN_OPTIONS) failed");
+        return false;
+    }
+
+    /* Undefined Behavior Sanitizer (UBSan) */
+    if (setenv("UBSAN_OPTIONS", hfuzz->sanOpts.ubsanOpts, 1) == -1) {
+        PLOG_E("setenv(UBSAN_OPTIONS) failed");
         return false;
     }
 
@@ -416,5 +434,122 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     }
 #endif
 
+    /* 
+     * If sanitizer fuzzing enabled increase number of major frames, since top 7-9 frames
+     * will be occupied with sanitizer symbols if 'abort_on_error' flag is set
+     */
+#if _HF_MONITOR_SIGABRT
+    hfuzz->numMajorFrames = 14;
+#endif
+
+    /* If sanitizer coverage enabled init workspace subdir */
+    if (hfuzz->useSanCov) {
+        char sanCovOutDir[PATH_MAX] = { 0 };
+        snprintf(sanCovOutDir, sizeof(sanCovOutDir), "%s/%s", hfuzz->workDir, _HF_SANCOV_DIR);
+        if (!files_exists(sanCovOutDir)) {
+            if (mkdir(sanCovOutDir, S_IRWXU | S_IXGRP | S_IXOTH) != 0) {
+                PLOG_E("mkdir() '%s' failed", sanCovOutDir);
+            }
+        }
+    }
+
+    /* Set sanitizer flags once to avoid performance overhead per worker spawn */
+    size_t flagsSz = 0;
+    size_t bufSz = sizeof(kASAN_OPTS) + (2 * PATH_MAX); // Larger constant + 2 dynamic paths
+    char *san_opts = malloc(bufSz);
+    if (san_opts == NULL) {
+        PLOG_E("malloc(%zu) failed", bufSz);
+        return false;
+    }
+
+    /* AddressSanitizer (ASan) */
+    memset(san_opts, 0, bufSz);
+    if (hfuzz->useSanCov) {
+#if !_HF_MONITOR_SIGABRT
+        /* Write reports in FS only if abort_on_error is disabled */
+        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s:%s%s/%s", kASAN_OPTS, kSAN_COV_OPTS,
+                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
+                 kLOGPREFIX);
+#else
+        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kASAN_OPTS, kSAN_COV_OPTS,
+                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR);
+#endif
+    } else {
+        snprintf(san_opts, bufSz, "%s:%s%s/%s", kASAN_OPTS, kSANLOGDIR, hfuzz->workDir, kLOGPREFIX);
+    }
+
+    flagsSz = strlen(san_opts) + 1;
+    hfuzz->sanOpts.asanOpts = malloc(flagsSz);
+    if (hfuzz->sanOpts.asanOpts == NULL) {
+        PLOG_E("malloc(%zu) failed", flagsSz);
+        free(san_opts);
+        return false;
+    }
+    memset(hfuzz->sanOpts.asanOpts, 0, flagsSz);
+    memcpy(hfuzz->sanOpts.asanOpts, san_opts, flagsSz);
+    LOG_D("ASAN_OPTIONS=%s", hfuzz->sanOpts.asanOpts);
+
+    /* Undefined Behavior (UBSan) */
+    memset(san_opts, 0, bufSz);
+    if (hfuzz->useSanCov) {
+#if !_HF_MONITOR_SIGABRT
+        /* Write reports in FS only if abort_on_error is disabled */
+        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s:%s%s/%s", kUBSAN_OPTS, kSAN_COV_OPTS,
+                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
+                 kLOGPREFIX);
+#else
+        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kUBSAN_OPTS, kSAN_COV_OPTS,
+                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR);
+#endif
+    } else {
+        snprintf(san_opts, bufSz, "%s:%s%s/%s", kUBSAN_OPTS, kSANLOGDIR, hfuzz->workDir,
+                 kLOGPREFIX);
+    }
+
+    flagsSz = strlen(san_opts) + 1;
+    hfuzz->sanOpts.ubsanOpts = malloc(flagsSz);
+    if (hfuzz->sanOpts.ubsanOpts == NULL) {
+        PLOG_E("malloc(%zu) failed", flagsSz);
+        free(san_opts);
+        return false;
+    }
+    memset(hfuzz->sanOpts.ubsanOpts, 0, flagsSz);
+    memcpy(hfuzz->sanOpts.ubsanOpts, san_opts, flagsSz);
+    LOG_D("UBSAN_OPTIONS=%s", hfuzz->sanOpts.ubsanOpts);
+
+    /* MemorySanitizer (MSan) */
+    memset(san_opts, 0, bufSz);
+    const char *msan_reports_flag = "report_umrs=0";
+    if (hfuzz->msanReportUMRS) {
+        msan_reports_flag = "report_umrs=1";
+    }
+
+    if (hfuzz->useSanCov) {
+#if !_HF_MONITOR_SIGABRT
+        /* Write reports in FS only if abort_on_error is disabled */
+        snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s:%s%s/%s", kMSAN_OPTS, msan_reports_flag,
+                 kSAN_COV_OPTS, kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR,
+                 hfuzz->workDir, kLOGPREFIX);
+#else
+        snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s", kMSAN_OPTS, msan_reports_flag,
+                 kSAN_COV_OPTS, kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR);
+#endif
+    } else {
+        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kMSAN_OPTS, msan_reports_flag, kSANLOGDIR,
+                 hfuzz->workDir, kLOGPREFIX);
+    }
+
+    flagsSz = strlen(san_opts) + 1;
+    hfuzz->sanOpts.msanOpts = malloc(flagsSz);
+    if (hfuzz->sanOpts.msanOpts == NULL) {
+        PLOG_E("malloc(%zu) failed", flagsSz);
+        free(san_opts);
+        return false;
+    }
+    memset(hfuzz->sanOpts.msanOpts, 0, flagsSz);
+    memcpy(hfuzz->sanOpts.msanOpts, san_opts, flagsSz);
+    LOG_D("MSAN_OPTIONS=%s", hfuzz->sanOpts.msanOpts);
+
+    free(san_opts);
     return true;
 }

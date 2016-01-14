@@ -51,8 +51,7 @@ extern uint16_t util_ToFromBE16(uint16_t val);
 extern uint16_t util_ToFromLE16(uint16_t val);
 extern uint32_t util_ToFromBE32(uint32_t val);
 extern uint32_t util_ToFromLE32(uint32_t val);
-extern uint16_t util_getUINT16(const uint8_t * buf);
-extern uint32_t util_getUINT32(const uint8_t * buf);
+extern uint64_t util_getUINT32(const uint8_t * buf);
 extern uint64_t util_getUINT64(const uint8_t * buf);
 
 extern void MX_LOCK(pthread_mutex_t * mutex);

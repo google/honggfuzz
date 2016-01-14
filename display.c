@@ -144,8 +144,17 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     /* Sanitizer coverage specific counters */
     if (hfuzz->useSanCov) {
-        display_put("  - total #pc: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->sanCovCnts.pcCnt, 0UL));
+        uint64_t hitBB = __sync_fetch_and_add(&hfuzz->sanCovCnts.hitBBCnt, 0UL);
+        uint64_t totalBB = __sync_fetch_and_add(&hfuzz->sanCovCnts.totalBBCnt, 0UL);
+        uint8_t covPer = totalBB ? ((hitBB * 100) / totalBB) : 0;
+        display_put("  - total hit #bb:  " ESC_BOLD "%" PRIu64 ESC_RESET " (coverage %d%%)\n",
+                    hitBB, covPer);
+        display_put("  - total #dso:     " ESC_BOLD "%" PRIu64 ESC_RESET " (instrumented only)\n",
+                    __sync_fetch_and_add(&hfuzz->sanCovCnts.iDsoCnt, 0UL));
+        display_put("  - discovered #bb: " ESC_BOLD "%" PRIu64 ESC_RESET " (new from input seed)\n",
+                    __sync_fetch_and_add(&hfuzz->sanCovCnts.newBBCnt, 0UL));
+        display_put("  - crashes:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+                    __sync_fetch_and_add(&hfuzz->sanCovCnts.crashesCnt, 0UL));
     }
     display_put("============================== LOGS ==============================\n");
 }
