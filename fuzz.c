@@ -139,14 +139,14 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
          * is maintain until execution is finished to ensure that other threads will
          * work against the same coverage data vs. original seed.
          */
-        fuzzer->isDynFileLocked = true;
+        hfuzz->isDynFileLocked = true;
     } else if (hfuzz->inputFile == NULL && (fuzz_isPerfCntsSet(hfuzz) == false)) {
         /* 
          * When working with an empty input file corpus (allowed if perf feedback enabled for Linux archs),
          * first iteration is executed without mangling. First iteration need to be executed by one thread
          * blocking other workers from continuing until finished.
          */
-        fuzzer->isDynFileLocked = true;
+        hfuzz->isDynFileLocked = true;
     }
 
     if (hfuzz->dynamicFileBestSz > hfuzz->maxFileSz) {
@@ -164,7 +164,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
      * without unlocking threads block mutex.
      */
     MX_LOCK(&hfuzz->workersBlock_mutex);
-    if (fuzzer->isDynFileLocked) {
+    if (hfuzz->isDynFileLocked) {
         goto skipMangling;
     }
     MX_UNLOCK(&hfuzz->workersBlock_mutex);
@@ -537,8 +537,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
                        .crashesCnt = 0ULL,
                        },
         .report = {'\0'},
-        .mainWorker = true,
-        .isDynFileLocked = false
+        .mainWorker = true
     };
     if (fuzzer.dynamicFile == NULL) {
         LOG_F("malloc(%zu) failed", hfuzz->maxFileSz);
@@ -599,7 +598,8 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
      * If worker picked first iteration of new seed for dynFile, unlock the mutex
      * so other threads can continue.
      */
-    if (fuzzer.isDynFileLocked) {
+    if (hfuzz->isDynFileLocked) {
+        hfuzz->isDynFileLocked = false;
         MX_UNLOCK(&hfuzz->workersBlock_mutex);
     }
 
