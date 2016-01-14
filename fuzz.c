@@ -727,6 +727,9 @@ void fuzz_main(honggfuzz_t * hfuzz)
     free(hfuzz->files);
     free(hfuzz->dynamicFileBest);
     if (hfuzz->dictionary) {
+        for (size_t i = 0; i < hfuzz->dictionaryCnt; i++) {
+            free(hfuzz->dictionary[i]);
+        }
         free(hfuzz->dictionary);
     }
     if (hfuzz->blacklist) {

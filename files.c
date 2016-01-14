@@ -305,7 +305,14 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
             free(lineptr);
             return false;
         }
-        hfuzz->dictionary[hfuzz->dictionaryCnt] = lineptr;
+        hfuzz->dictionary[hfuzz->dictionaryCnt] = malloc(strlen(lineptr));
+        if (!hfuzz->dictionary[hfuzz->dictionaryCnt]) {
+            PLOG_E("malloc(%zu) failed", strlen(lineptr));
+            fclose(fDict);
+            free(lineptr);
+            return false;
+        }
+        strncpy(hfuzz->dictionary[hfuzz->dictionaryCnt], lineptr, strlen(lineptr));;
         LOG_D("Dictionary: loaded word: '%s' (len=%zu)",
               hfuzz->dictionary[hfuzz->dictionaryCnt],
               strlen(hfuzz->dictionary[hfuzz->dictionaryCnt]));

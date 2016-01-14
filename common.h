@@ -162,7 +162,7 @@ typedef struct {
     double flipRate;
     char *externalCommand;
     const char *dictionaryFile;
-    const char **dictionary;
+    char **dictionary;
     const char *blacklistFile;
     uint64_t *blacklist;
     size_t blacklistCnt;
