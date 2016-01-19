@@ -22,15 +22,15 @@
  * - raw unified data (preferred method)
  * - individual data per executable/DSO (not preferred since lots of data lost if instrumented
  *   code exits abnormally or with sanitizer unhandled signal (common in Android OS)
- * 
- * For raw-unpack method a global (shared across workers) Trie is created for the chosen 
+ *
+ * For raw-unpack method a global (shared across workers) Trie is created for the chosen
  * initial seed and maintained until seed is replaced. Trie nodes store the loaded (as exposed
  * from *.sancov.map file) execs/DSOs from target application using the map name as key. Trie node
  * data struct (trieData_t) maintains information for each instrumented map including a bitmap with
  * all hit relative BB addresses (realBBAddr - baseAddr to circumvent ASLR). Map's bitmap is updated while
  * new areas on target application are discovered based on absolute elitism implemented at
  * fuzz_sanCovFeedback().
- * 
+ *
  * For individual data files a PID (fuzzer's thread) based filename search is performed to identify
  * all files belonging to examined execution. This method doesn't implement yet bitmap runtime data
  * to detect newly discovered areas. It's mainly used so far as a comparison metric for raw-unpack method
@@ -57,7 +57,7 @@
 #define kMagic32 0xC0BFFFFFFFFFFF32
 #define kMagic64 0xC0BFFFFFFFFFFF64
 
-/* 
+/*
  * bitmap implementation
  */
 static bitmap_t *arch_newBitmap(uint32_t capacity)
@@ -105,7 +105,7 @@ static inline void arch_destroyBitmap(bitmap_t * pBM)
     free(pBM);
 }
 
-/* 
+/*
  * Trie implementation
  */
 static node_t *arch_trieCreateNode(char key)
@@ -391,7 +391,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
         *(lineEnd + 1) = 0;
 
-        /* 
+        /*
          * Each line has following format:
          * Start    End      Base     bin/DSO name
          * b5843000 b584e6ac b5843000 liblog.so
@@ -455,7 +455,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         goto bail;
     }
 
-    /* 
+    /*
      * Avoid cost of size checks inside raw data read loop by defining the read function
      * & pivot size based on PC length.
      */
@@ -469,7 +469,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         pivot = 8;
     }
 
-    /* 
+    /*
      * Take advantage of data locality (next processed addr is very likely to belong
      * to same map) to avoid Trie node search for each read entry.
      */
@@ -511,7 +511,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                             LOG_D("Allocating bitmap for map '%s'", mapsBuf[bestFit].mapName);
                             curMap->data.pBM = arch_newBitmap(_HF_BITMAP_SIZE);
 
-                            /* 
+                            /*
                              * If bitmap allocation failed, unset cached Trie node ptr
                              * to execute this selection branch again.
                              */
@@ -540,7 +540,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                     mapsBuf[bestFit].newBBCnt++;
                 }
             } else {
-                /* 
+                /*
                  * Normally this should never get executed. If hit, sanitizer
                  * coverage data collection come across some kind of bug.
                  */
@@ -642,7 +642,7 @@ static bool arch_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             }
             pos += 8;
 
-            /* 
+            /*
              * Avoid cost of size checks inside raw data read loop by defining the read function
              * & pivot size based on PC length.
              */
@@ -685,13 +685,13 @@ static bool arch_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     return ret;
 }
 
-/* 
+/*
  * Sanitizer coverage data are stored in FS can be parsed via two methods:
- * raw unpack & separate bin/DSO sancov file. Separate bin/DSO sancov file 
- * method is usually avoided since coverage data are lost if sanitizer unhandled 
- * signal. Additionally, the FS I/O overhead is bigger compared to raw unpack 
+ * raw unpack & separate bin/DSO sancov file. Separate bin/DSO sancov file
+ * method is usually avoided since coverage data are lost if sanitizer unhandled
+ * signal. Additionally, the FS I/O overhead is bigger compared to raw unpack
  * method which uses runtime data structures.
- * 
+ *
  * Enabled methods are controlled from sanitizer flags in arch.c
  */
 void arch_sanCovAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
@@ -700,7 +700,7 @@ void arch_sanCovAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         return;
     }
 
-    /* 
+    /*
      * For now supported methods are implemented in fail-over nature. This will
      * change in the future when best method is concluded.
      */

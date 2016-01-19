@@ -63,7 +63,7 @@
 /* Size (in bytes) for report data to be stored in stack before written to file */
 #define _HF_REPORT_SIZE 8192
 
-/* 
+/*
  * Maximum number of iterations to keep same base seed file for dynamic preparation.
  * Maintained iterations counters is set to zero if unique crash is detected or
  * zero-set two MSB using following mask if crash is detected (might not be unique).
@@ -151,6 +151,7 @@ typedef struct {
 
 typedef struct {
     char **cmdline;
+    char cmdline_txt[PATH_MAX];
     char *inputFile;
     bool nullifyStdio;
     bool fuzzStdin;

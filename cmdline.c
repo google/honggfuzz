@@ -35,11 +35,7 @@
 #include "common.h"
 #include "log.h"
 #include "files.h"
-
-#define AB ANSI_BOLD
-#define AC ANSI_CLEAR
-#define ANSI_BOLD "\033[1m"
-#define ANSI_CLEAR "\033[0m"
+#include "util.h"
 
 struct custom_option {
     struct option opt;
@@ -79,7 +75,7 @@ static void cmdlineHelp(const char *pname, struct custom_option *opts)
     LOG_HELP(" Run the binary over a mutated file chosen from the directory");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" As above, provide input over STDIN:");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -s -- /usr/bin/djpeg" AC);
+    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -s -- /usr/bin/djpeg");
 #if defined(_HF_ARCH_LINUX)
     LOG_HELP(" Run the binary over a dynamic file, maximize total no. of instructions:");
     LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_instr -- /usr/bin/tiffinfo -D "
@@ -144,6 +140,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     /*  *INDENT-OFF* */
     (*hfuzz) = (honggfuzz_t) {
         .cmdline = NULL,
+        .cmdline_txt[0] = '\0',
         .inputFile = NULL,
         .nullifyStdio = false,
         .useScreen = true,
@@ -469,6 +466,11 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
           hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, hfuzz->tmOut,
           hfuzz->mutationsMax, hfuzz->threadsMax, hfuzz->fileExtn, hfuzz->ignoreAddr,
           hfuzz->asLimit, hfuzz->cmdline[0], hfuzz->pid);
+
+    util_ssnprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->cmdline[0]);
+    for (size_t i = 1; hfuzz->cmdline[i]; i++) {
+        util_ssnprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), " %s", hfuzz->cmdline[i]);
+    }
 
     return true;
 }
