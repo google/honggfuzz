@@ -467,7 +467,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
           hfuzz->mutationsMax, hfuzz->threadsMax, hfuzz->fileExtn, hfuzz->ignoreAddr,
           hfuzz->asLimit, hfuzz->cmdline[0], hfuzz->pid);
 
-    util_ssnprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->cmdline[0]);
+    snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->cmdline[0]);
     for (size_t i = 1; hfuzz->cmdline[i]; i++) {
         util_ssnprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), " %s", hfuzz->cmdline[i]);
     }
