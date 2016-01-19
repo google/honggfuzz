@@ -94,10 +94,10 @@
 #define kSANCOVDIR          "coverage_dir="
 
 /*
- * If the program ends with a signal that ASan does not handle (or can not 
+ * If the program ends with a signal that ASan does not handle (or can not
  * handle at all, like SIGKILL), coverage data will be lost. This is a big
- * problem on Android, where SIGKILL is a normal way of evicting applications 
- * from memory. With 'coverage_direct=1' coverage data is written to a 
+ * problem on Android, where SIGKILL is a normal way of evicting applications
+ * from memory. With 'coverage_direct=1' coverage data is written to a
  * memory-mapped file as soon as it collected. Non-Android targets can disable
  * coverage direct when more coverage data collection methods are implemented.
  */
@@ -189,7 +189,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
      * Set timeout (prof), real timeout (2*prof), and rlimit_cpu (2*prof)
      */
     if (hfuzz->tmOut) {
-        /* 
+        /*
          * Set the CPU rlimit to twice the value of the time-out
          */
         struct rlimit rl = {
@@ -266,7 +266,7 @@ static bool arch_setTimer(timer_t * timerid)
         PLOG_E("timer_create(CLOCK_REALTIME) failed");
         return false;
     }
-    /* 
+    /*
      * Kick in every 200ms, starting with the next second
      */
     const struct itimerspec ts = {
@@ -399,7 +399,7 @@ bool arch_archInit(honggfuzz_t * hfuzz)
          *  2) If 'PERF_TYPE_HARDWARE' is not supported by kernel, ENOENT
          *     is returned from perf_event_open(). Unfortunately, no reliable
          *     way to detect it here. libperf exports some list functions,
-         *     although small guarantees it's installed. Maybe a more targeted 
+         *     although small guarantees it's installed. Maybe a more targeted
          *     message at perf_event_open() error handling will help.
          */
         struct utsname uts;
@@ -422,8 +422,8 @@ bool arch_archInit(honggfuzz_t * hfuzz)
         }
     }
 #if defined(__ANDROID__) && defined(__arm__)
-    /* 
-     * For ARM kernels running Android API <= 21, if fuzzing target links to 
+    /*
+     * For ARM kernels running Android API <= 21, if fuzzing target links to
      * libcrypto (OpenSSL), OPENSSL_cpuid_setup initialization is triggering a
      * SIGILL/ILLOPC at armv7_tick() due to  "mrrc p15, #1, r0, r1, c14)" instruction.
      * Setups using BoringSSL (API >= 22) are not affected.
@@ -434,7 +434,7 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     }
 #endif
 
-    /* 
+    /*
      * If sanitizer fuzzing enabled increase number of major frames, since top 7-9 frames
      * will be occupied with sanitizer symbols if 'abort_on_error' flag is set
      */

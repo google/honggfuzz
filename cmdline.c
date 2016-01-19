@@ -208,7 +208,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .dynFileIterExpire = _HF_MAX_DYNFILE_ITER,
         .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER,
         .workersBlock_mutex = PTHREAD_MUTEX_INITIALIZER,
-        .sanOpts = { 
+        .sanOpts = {
                     .asanOpts = NULL,
                     .msanOpts = NULL,
                     .ubsanOpts = NULL,

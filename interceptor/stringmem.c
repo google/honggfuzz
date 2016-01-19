@@ -21,8 +21,8 @@
  *
  */
 
-/* 
- * size_t 
+/*
+ * size_t
  */
 #include <stdlib.h>
 

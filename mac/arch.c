@@ -219,7 +219,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      */
     __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
 
-    /* 
+    /*
      * Check if stackhash is blacklisted
      */
     if (hfuzz->blacklist

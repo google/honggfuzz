@@ -96,7 +96,7 @@ void util_rndBuf(uint8_t * buf, size_t sz)
     }
 }
 
-/* 
+/*
  * Function has variable length stack size, although already we know it's invoked
  * with relatively small sizes (max is _HF_REPORT_SIZE), thus safe to silent warning.
  */

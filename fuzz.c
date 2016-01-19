@@ -85,7 +85,7 @@ static inline void fuzz_resetFeedbackCnts(honggfuzz_t * hfuzz)
     __sync_fetch_and_and(&hfuzz->sanCovCnts.newBBCnt, 0UL);
     __sync_fetch_and_and(&hfuzz->sanCovCnts.crashesCnt, 0UL);
 
-    /* 
+    /*
      * For performance reasons Trie & Bitmap methods are not exposed in arch.h
      * Thus maintain a status flag to destroy runtime data internally at sancov.c
      * when dynFile input seed is replaced.
@@ -133,7 +133,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
         __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
         fuzz_resetFeedbackCnts(hfuzz);
 
-        /* 
+        /*
          * In order to have accurate comparison base for coverage, first iteration
          * of a new seed is executed without mangling. Also workersBlock_mutex mutex
          * is maintain until execution is finished to ensure that other threads will
@@ -141,7 +141,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
          */
         hfuzz->isDynFileLocked = true;
     } else if (hfuzz->inputFile == NULL && (fuzz_isPerfCntsSet(hfuzz) == false)) {
-        /* 
+        /*
          * When working with an empty input file corpus (allowed if perf feedback enabled for Linux archs),
          * first iteration is executed without mangling. First iteration need to be executed by one thread
          * blocking other workers from continuing until finished.
@@ -159,8 +159,8 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 
     MX_UNLOCK(&hfuzz->dynamicFile_mutex);
 
-    /* 
-     * true isDynFileLocked indicates first run for a new seed, so skip mangling 
+    /*
+     * true isDynFileLocked indicates first run for a new seed, so skip mangling
      * without unlocking threads block mutex.
      */
     MX_LOCK(&hfuzz->workersBlock_mutex);
@@ -169,7 +169,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
     }
     MX_UNLOCK(&hfuzz->workersBlock_mutex);
 
-    /* 
+    /*
      * if flip rate is 0.0, early abort file mangling. This will leave perf counters
      * with values equal to dry runs against input corpus.
      */
@@ -464,7 +464,7 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      *  a) Newly discovered (not met before) BBs && total hit BBs not significantly dropped
      *  b) More instrumented code accessed (BB hit counter bigger)
      *  c) More instrumented DSOs loaded
-     * 
+     *
      * TODO: (a) method can significantly assist to further improvements in interesting areas
      * discovery if combined with seeds pool/queue support. If a runtime queue is maintained
      * more interesting seeds can be saved between runs instead of instantly discarded
@@ -594,7 +594,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         fuzz_sanCovFeedback(hfuzz, &fuzzer);
     }
 
-    /* 
+    /*
      * If worker picked first iteration of new seed for dynFile, unlock the mutex
      * so other threads can continue.
      */

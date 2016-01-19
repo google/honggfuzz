@@ -317,7 +317,7 @@ static ssize_t honggfuzz_process_vm_readv(pid_t pid,
 #define PT_SETSIGINFO PTRACE_SETSIGINFO
 #endif
 
-/* 
+/*
  * Some Android ABIs don't implement PTRACE_GETREGS (e.g. aarch64)
  */
 #if defined(PTRACE_GETREGS)
@@ -473,7 +473,7 @@ void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid UNUSED, uint64_t * 
 
 static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
 {
-    /* 
+    /*
      * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
      * the correct register values if struct size is bigger than expected. As such the
      * 32/64-bit multiplexing trick is not working for them in case PTRACE_GETREGSET
@@ -758,8 +758,8 @@ static void arch_ptraceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fu
     size_t funcCnt = arch_unwindStack(pid, funcs);
 #endif
 
-    /* 
-     * If unwinder failed (zero frames), use PC from ptrace GETREGS if not zero. 
+    /*
+     * If unwinder failed (zero frames), use PC from ptrace GETREGS if not zero.
      * If PC reg zero return and callers should handle zero hash case.
      */
     if (funcCnt == 0) {
@@ -823,8 +823,8 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     size_t funcCnt = arch_unwindStack(pid, funcs);
 #endif
 
-    /* 
-     * If unwinder failed (zero frames), use PC from ptrace GETREGS if not zero. 
+    /*
+     * If unwinder failed (zero frames), use PC from ptrace GETREGS if not zero.
      * If PC reg zero, temporarily disable uniqueness flag since callstack
      * hash will be also zero, thus not safe for unique decisions.
      */
@@ -838,7 +838,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
         }
     }
 
-    /* 
+    /*
      * Temp local copy of previous backtrace value in case worker hit crashes into multiple
      * tids for same target master thread. Will be 0 for first crash against target.
      */
@@ -857,15 +857,15 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
         fuzzer->sanCovCnts.crashesCnt++;
     }
 
-    /* 
-     * If unique flag is set and single frame crash, disable uniqueness for this crash 
+    /*
+     * If unique flag is set and single frame crash, disable uniqueness for this crash
      * to always save (timestamp will be added to the filename)
      */
     if (saveUnique && (funcCnt == 1)) {
         saveUnique = false;
     }
 
-    /* 
+    /*
      * If worker crashFileName member is set, it means that a tid has already crashed
      * from target master thread.
      */
@@ -885,7 +885,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     /* Increase global crashes counter */
     __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
 
-    /* 
+    /*
      * Check if stackhash is blacklisted
      */
     if (hfuzz->blacklist
@@ -1031,7 +1031,7 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
                     break;
                 }
 
-                /* 
+                /*
                  * Frames have following format:
                  #0 0xaa860177  (/system/lib/libc.so+0x196177)
                  */
@@ -1114,7 +1114,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     if (exitCode == HF_ASAN_EXIT_CODE) {
         funcCnt = arch_parseAsanReport(hfuzz, pid, funcs, &crashAddr, &op);
 
-        /* 
+        /*
          * -1 error indicates a file not found for report. This is expected to happen often since
          * ASan report is generated once for crashing TID. Ptrace arch is not guaranteed to parse
          * that TID first. Not setting the 'crashFileName' variable will ensure that this branch
@@ -1243,7 +1243,7 @@ static void arch_ptraceExitAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t 
 
     funcCnt = arch_parseAsanReport(hfuzz, pid, funcs, &crashAddr, &op);
 
-    /* 
+    /*
      * -1 error indicates a file not found for report. This is expected to happen often since
      * ASan report is generated once for crashing TID. Ptrace arch is not guaranteed to parse
      * that TID first. Not setting the 'crashFileName' variable will ensure that this branch
