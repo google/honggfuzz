@@ -41,6 +41,7 @@
 #include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/uio.h>
@@ -58,7 +59,6 @@
 #if defined(__ANDROID__)
 #include <linux/ptrace.h>
 #include <asm/ptrace.h>         /* For pt_regs structs */
-#include <sys/syscall.h>
 #include "capstone.h"
 #endif
 
@@ -1465,7 +1465,7 @@ bool arch_ptraceAttach(pid_t pid)
 
 void arch_ptraceDetach(pid_t pid)
 {
-    if (kill(pid, 0) == -1 && errno == ESRCH) {
+    if (syscall(__NR_kill, pid, 0) == -1 && errno == ESRCH) {
         LOG_D("PID: %d no longer exists", pid);
         return;
     }
