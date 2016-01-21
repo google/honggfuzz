@@ -1112,6 +1112,11 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
 
     /* If ASan crash, parse report */
     if (exitCode == HF_ASAN_EXIT_CODE) {
+
+        /* ASan is saving reports against parent PID */
+        if (fuzzer->pid != pid) {
+            return;
+        }
         funcCnt = arch_parseAsanReport(hfuzz, pid, funcs, &crashAddr, &op);
 
         /*
@@ -1257,8 +1262,7 @@ static void arch_ptraceExitAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t 
     arch_hashCallstack(hfuzz, fuzzer, funcs, funcCnt, false);
 }
 
-static inline void arch_ptraceExitAnalyze(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer,
-                                          int exitCode)
+void arch_ptraceExitAnalyze(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer, int exitCode)
 {
     if (fuzzer->mainWorker) {
         /* Main fuzzing threads */
