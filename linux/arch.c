@@ -378,6 +378,28 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
     }
+
+#if !_HF_MONITOR_SIGABRT
+    /*
+     * There might be cases where ASan instrumented targets crash while generating
+     * reports for detected errors (inside __asan_report_error() proc). Under such
+     * scenarios target fails to exit or SIGABRT (AsanDie() proc) as defined in
+     * ASAN_OPTIONS flags, leaving garbage logs. An attempt is made to parse such
+     * logs for cases where enough data are written to identify potentially missed
+     * crashes. If ASan internal error results into a SIGSEGV being raised, it
+     * will get caught from ptrace API, handling the discovered ASan internal crash.
+     */
+    char crashReport[PATH_MAX] = { 0 };
+    snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX, fuzzer->pid);
+    if (files_exists(crashReport)) {
+        LOG_W("Un-handled ASan report due to compiler-rt internal error - retry with '%s' (%s)",
+              crashReport, fuzzer->fileName);
+
+        /* Manually set the exitcode to ASan to trigger report parsing */
+        arch_ptraceExitAnalyze(hfuzz, fuzzer->pid, fuzzer, HF_ASAN_EXIT_CODE);
+    }
+#endif
+
     arch_removeTimer(&timerid);
     arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
     arch_sanCovAnalyze(hfuzz, fuzzer);
