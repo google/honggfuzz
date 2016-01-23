@@ -239,16 +239,16 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
-        pe.watermark = 0;
-        pe.wakeup_events = 0;
+        pe.watermark = 1;
+        pe.wakeup_watermark = perfMmapSz / 2;
         break;
     case _HF_DYNFILE_UNIQUE_EDGE_COUNT:
         LOG_D("Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d", pid);
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
-        pe.watermark = 0;
-        pe.wakeup_events = 0;
+        pe.watermark = 1;
+        pe.wakeup_watermark = perfMmapSz / 2;
         break;
     default:
         LOG_E("Unknown perf mode: '%d' for PID: %d", method, pid);
