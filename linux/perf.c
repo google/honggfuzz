@@ -96,75 +96,73 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
     }
 
     size_t byteOff = pos / 8;
-    size_t bitOff = pos % 8;
+    uint8_t bitSet = (uint8_t) (1 << (pos % 8));
 
-    register uint8_t prev = __sync_fetch_and_or(&perfBloom[byteOff], ((uint8_t) 1 << bitOff));
-    if ((prev & ((uint8_t) 1 << bitOff)) == 0) {
+    register uint8_t prev = __sync_fetch_and_or(&perfBloom[byteOff], bitSet);
+    if (prev & bitSet) {
         perfBranchesCnt++;
     }
+}
+
+static inline uint64_t arch_perfGetMmap64(uint64_t off)
+{
+    return *(uint64_t *) (perfMmapBuf + perfPageSz + off);
 }
 
 /* Memory Barriers */
 #define rmb()	__asm__ __volatile__("":::"memory")
 #define wmb()	__sync_synchronize()
-static inline uint64_t arch_perfGetMmap64(bool fatal)
+static inline void arch_perfMmapParse(void)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
 
     /* Memory barrier - needed as per perf_event_open(2) */
-    register uint64_t dataHeadOff = __sync_add_and_fetch(&pem->data_head, 0) % perfMmapSz;
-    register uint64_t dataTailOff = __sync_add_and_fetch(&pem->data_tail, 0) % perfMmapSz;
+    register uint64_t dataHeadOff = pem->data_head % perfMmapSz;
     rmb();
+    register uint64_t dataTailOff = pem->data_tail % perfMmapSz;
 
-    if (__builtin_expect(dataHeadOff == dataTailOff, false)) {
-        if (fatal) {
-            LOG_F("No data in the mmap buffer");
-        }
-        return ~(0ULL);
-    }
-
-    register uint64_t ret = *(uint64_t *) (perfMmapBuf + perfPageSz + dataTailOff);
-    rmb();
-    __sync_fetch_and_add(&pem->data_tail, sizeof(uint64_t));
-    wmb();
-
-    return ret;
-}
-
-static inline void arch_perfMmapParse(void)
-{
     for (;;) {
-        uint64_t tmp;
-        if ((tmp = arch_perfGetMmap64(false /* fatal */ )) == ~(0ULL)) {
+        dataTailOff %= perfMmapSz;
+        if (dataHeadOff == dataTailOff) {
             break;
         }
+
+        uint64_t tmp;
+        tmp = arch_perfGetMmap64(dataTailOff);
+        dataTailOff += sizeof(uint64_t);
 
         struct perf_event_header *peh = (struct perf_event_header *)&tmp;
         if (__builtin_expect(peh->type == PERF_RECORD_LOST, false)) {
             /* It's id an we can ignore it */
-            arch_perfGetMmap64(true /* fatal */ );
-            register uint64_t lost = arch_perfGetMmap64(true /* fatal */ );
+            arch_perfGetMmap64(dataTailOff);
+            register uint64_t lost = arch_perfGetMmap64(dataTailOff);
             perfRecordsLost += lost;
+            dataTailOff += sizeof(uint64_t);
             continue;
         }
         if (__builtin_expect(peh->type != PERF_RECORD_SAMPLE, false)) {
             LOG_F("(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16 ")",
                   peh->type);
         }
+#if 0
         if (__builtin_expect
             (peh->misc != PERF_RECORD_MISC_USER && peh->misc != PERF_RECORD_MISC_KERNEL, false)) {
             LOG_F("(struct perf_event_header)->type != PERF_RECORD_MISC_USER (%" PRIu16 ")",
                   peh->misc);
         }
+#endif
 
-        register uint64_t from = arch_perfGetMmap64(true /* fatal */ );
+        register uint64_t from = arch_perfGetMmap64(dataTailOff);
+        dataTailOff += sizeof(uint64_t);
         register uint64_t to = 0ULL;
         if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
-            to = arch_perfGetMmap64(true /* fatal */ );
+            to = arch_perfGetMmap64(dataTailOff);
+            dataTailOff += sizeof(uint64_t);
         }
-
         arch_perfAddBranch(from, to);
     }
+
+    pem->data_tail = dataTailOff;
 }
 
 static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu, int group_fd,
