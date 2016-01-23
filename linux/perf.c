@@ -118,51 +118,55 @@ static inline void arch_perfMmapParse(void)
 
     /* Memory barrier - needed as per perf_event_open(2) */
     register uint64_t dataHeadOff = pem->data_head % perfMmapSz;
-    rmb();
     register uint64_t dataTailOff = pem->data_tail % perfMmapSz;
+    rmb();
 
     for (;;) {
-        dataTailOff %= perfMmapSz;
-        if (dataHeadOff == dataTailOff) {
+        size_t perfSz = 0;
+        if (dataHeadOff >= dataTailOff) {
+            perfSz = dataHeadOff - dataTailOff;
+        } else {
+            perfSz = (perfMmapSz - dataTailOff) + dataHeadOff;
+        }
+        if (perfSz < sizeof(struct perf_event_header)) {
             break;
         }
 
-        uint64_t tmp;
-        tmp = arch_perfGetMmap64(dataTailOff);
-        dataTailOff += sizeof(uint64_t);
-
+        uint64_t tmp = arch_perfGetMmap64(dataTailOff);
         struct perf_event_header *peh = (struct perf_event_header *)&tmp;
+
+        if (perfSz < (peh->size + sizeof(struct perf_event_header))) {
+            break;
+        }
+        dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
+
         if (__builtin_expect(peh->type == PERF_RECORD_LOST, false)) {
             /* It's id an we can ignore it */
             arch_perfGetMmap64(dataTailOff);
             register uint64_t lost = arch_perfGetMmap64(dataTailOff);
             perfRecordsLost += lost;
-            dataTailOff += sizeof(uint64_t);
+            dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
             continue;
         }
         if (__builtin_expect(peh->type != PERF_RECORD_SAMPLE, false)) {
-            LOG_F("(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16 ")",
-                  peh->type);
+            LOG_W("(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16 "), size: %"
+                  PRIu16, peh->type, peh->size);
+            dataTailOff = (dataTailOff + peh->size) % perfMmapSz;
+            break;
         }
-#if 0
-        if (__builtin_expect
-            (peh->misc != PERF_RECORD_MISC_USER && peh->misc != PERF_RECORD_MISC_KERNEL, false)) {
-            LOG_F("(struct perf_event_header)->type != PERF_RECORD_MISC_USER (%" PRIu16 ")",
-                  peh->misc);
-        }
-#endif
 
         register uint64_t from = arch_perfGetMmap64(dataTailOff);
-        dataTailOff += sizeof(uint64_t);
+        dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
         register uint64_t to = 0ULL;
         if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
             to = arch_perfGetMmap64(dataTailOff);
-            dataTailOff += sizeof(uint64_t);
+            dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
         }
         arch_perfAddBranch(from, to);
     }
 
     pem->data_tail = dataTailOff;
+    wmb();
 }
 
 static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu, int group_fd,
