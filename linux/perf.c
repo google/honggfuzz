@@ -99,7 +99,7 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
     uint8_t bitSet = (uint8_t) (1 << (pos % 8));
 
     register uint8_t prev = __sync_fetch_and_or(&perfBloom[byteOff], bitSet);
-    if (prev & bitSet) {
+    if (!(prev & bitSet)) {
         perfBranchesCnt++;
     }
 }
