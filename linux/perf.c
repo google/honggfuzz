@@ -111,6 +111,17 @@ static inline uint64_t arch_perfGetMmap64(uint64_t off)
     return *(uint64_t *) (perfMmapBuf + perfPageSz + off);
 }
 
+static inline size_t arch_perfMmapBufferSize(size_t dataHeadOff, size_t dataTailOff)
+{
+    size_t perfSz = 0;
+    if (dataHeadOff >= dataTailOff) {
+        perfSz = dataHeadOff - dataTailOff;
+    } else {
+        perfSz = (perfMmapSz - dataTailOff) + dataHeadOff;
+    }
+    return perfSz;
+}
+
 /* Memory Barriers */
 #define rmb()	__asm__ __volatile__("":::"memory")
 #define wmb()	__sync_synchronize()
@@ -119,17 +130,12 @@ static inline void arch_perfMmapParse(void)
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
 
     /* Memory barrier - needed as per perf_event_open(2) */
-    register uint64_t dataHeadOff = pem->data_head % perfMmapSz;
-    register uint64_t dataTailOff = pem->data_tail % perfMmapSz;
+    register size_t dataHeadOff = pem->data_head % perfMmapSz;
+    register size_t dataTailOff = pem->data_tail % perfMmapSz;
     rmb();
 
     for (;;) {
-        size_t perfSz = 0;
-        if (dataHeadOff >= dataTailOff) {
-            perfSz = dataHeadOff - dataTailOff;
-        } else {
-            perfSz = (perfMmapSz - dataTailOff) + dataHeadOff;
-        }
+        size_t perfSz = arch_perfMmapBufferSize(dataHeadOff, dataTailOff);
         if (perfSz < sizeof(struct perf_event_header)) {
             break;
         }
@@ -142,19 +148,20 @@ static inline void arch_perfMmapParse(void)
         }
         dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
 
-        if (__builtin_expect(peh->type == PERF_RECORD_LOST, false)) {
-            /* It's id an we can ignore it */
-            arch_perfGetMmap64(dataTailOff);
-            register uint64_t lost = arch_perfGetMmap64(dataTailOff);
-            perfRecordsLost += lost;
-            dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
-            continue;
-        }
         if (__builtin_expect(peh->type != PERF_RECORD_SAMPLE, false)) {
-            LOG_W("(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16 "), size: %"
-                  PRIu16, peh->type, peh->size);
-            dataTailOff = (dataTailOff + peh->size) % perfMmapSz;
-            break;
+            if (__builtin_expect(peh->type == PERF_RECORD_LOST, false)) {
+                /* It's id an we can ignore it */
+                arch_perfGetMmap64(dataTailOff);
+                register uint64_t lost = arch_perfGetMmap64(dataTailOff);
+                perfRecordsLost += lost;
+                dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
+                continue;
+            } else {
+                LOG_W("(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16
+                      "), size: %" PRIu16, peh->type, peh->size);
+                dataTailOff = (dataTailOff + peh->size) % perfMmapSz;
+            }
+            continue;
         }
 
         register uint64_t from = arch_perfGetMmap64(dataTailOff);
