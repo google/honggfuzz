@@ -60,6 +60,15 @@ size_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
         return 0UL;
     }
 
+    if (st.st_size == (off_t) 0ULL) {
+        size_t sz = read(fd, buf, fileMaxSz);
+	close(fd);
+        if (sz <= 0U) {
+            return 0U;
+        }
+        return sz;
+    }
+
     if (files_readFromFd(fd, buf, (size_t) st.st_size) == false) {
         LOG_E("Couldn't read '%s' to a buf", fileName);
         close(fd);

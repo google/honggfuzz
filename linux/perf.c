@@ -28,6 +28,7 @@
 #include <inttypes.h>
 #include <linux/hw_breakpoint.h>
 #include <linux/perf_event.h>
+#include <linux/sysctl.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,6 +39,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
+#include "files.h"
 #include "linux/perf.h"
 #include "log.h"
 #include "util.h"
@@ -187,22 +189,26 @@ static void arch_perfSigHandler(int signum)
 
 static size_t arch_perfGetMmapBufSz(honggfuzz_t * hfuzz)
 {
-    /*
-     * mmap buffer's size must divisible by a power of 2.
-     * The maximal, cumulative size for all threads is 2MiB.
-     */
-    size_t ret = (1024 * 1024 * 2);
-    if (hfuzz->threadsMax > 1) {
-        for (size_t i = 0; i < 31; i++) {
-            if ((hfuzz->threadsMax - 1) >> i) {
-                ret >>= 1;
-            }
-            if (ret < (size_t) getpagesize()) {
-                LOG_F("Too many fuzzing threads for hardware support (%td)", hfuzz->threadsMax);
-            }
+    char mlock_len[128];
+    size_t sz =
+        files_readFileToBufMax("/proc/sys/kernel/perf_event_mlock_kb", (uint8_t *) mlock_len,
+                               sizeof(mlock_len) - 1);
+    if (sz == 0U) {
+        LOG_F("Couldn't read '/proc/sys/kernel/perf_event_mlock_kb'");
+    }
+    mlock_len[sz] = '\0';
+    size_t ret = (strtoul(mlock_len, NULL, 10) * 1024) / hfuzz->threadsMax;
+
+    for (size_t i = 1; i < 31; i++) {
+        size_t mask = (1U << i);
+        size_t maskret = (ret & ~(mask - 1));
+        if (maskret == mask) {
+            LOG_D("perf_mmap_buf_size = %zu", maskret);
+            return maskret;
         }
     }
-    return ret;
+    LOG_F("Couldn't find the proper size of the perf mmap buffer");
+    return false;
 }
 
 static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
@@ -240,7 +246,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.sample_type = PERF_SAMPLE_IP;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.watermark = 1;
-        pe.wakeup_watermark = perfMmapSz / 2;
+        pe.wakeup_events = perfMmapSz / 2;
         break;
     case _HF_DYNFILE_UNIQUE_EDGE_COUNT:
         LOG_D("Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d", pid);
@@ -248,7 +254,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
         pe.watermark = 1;
-        pe.wakeup_watermark = perfMmapSz / 2;
+        pe.wakeup_events = perfMmapSz / 2;
         break;
     default:
         LOG_E("Unknown perf mode: '%d' for PID: %d", method, pid);
@@ -296,7 +302,6 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         PLOG_E("sigaction() failed");
         return false;
     }
-
     if (fcntl(*perfFd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC) == -1) {
         PLOG_E("fnctl(F_SETFL)");
         close(*perfFd);
