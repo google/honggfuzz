@@ -76,7 +76,7 @@
 #define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
 
 /* Bitmap size */
-#define _HF_BITMAP_SIZE 0xAFFFFF
+#define _HF_BITMAP_SIZE 0x2AFFFFF
 
 /* Directory in workspace to store sanitizer coverage data */
 #define _HF_SANCOV_DIR "HF_SANCOV"
