@@ -46,11 +46,6 @@ static bool log_fd_isatty = true;
 enum llevel_t log_level = INFO;
 pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-enum llevel_t logGetLogLevel(void)
-{
-    return log_level;
-}
-
 /*
  * Log to stderr by default. Use a dup()d fd, because in the future we'll associate the
  * connection socket with fd (0, 1, 2).
