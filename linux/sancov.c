@@ -396,7 +396,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
          * Start    End      Base     bin/DSO name
          * b5843000 b584e6ac b5843000 liblog.so
          */
-        memMap_t mapData = { .start = 0 };
+        memMap_t mapData = {.start = 0 };
         char *savePtr = NULL;
         mapData.start = strtoull(strtok_r(pLine, " ", &savePtr), NULL, 16);
         mapData.end = strtoull(strtok_r(NULL, " ", &savePtr), NULL, 16);

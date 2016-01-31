@@ -194,7 +194,7 @@ util.o: common.h files.h log.h
 linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h linux/bfd.h
 linux/ptrace_utils.o: linux/unwind.h log.h util.h
 linux/sancov.o: common.h linux/sancov.h util.h files.h log.h
-linux/perf.o: common.h linux/perf.h log.h util.h
+linux/perf.o: common.h files.h linux/perf.h log.h util.h
 linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
 linux/unwind.o: common.h linux/unwind.h log.h
 linux/arch.o: common.h arch.h linux/perf.h linux/ptrace_utils.h
