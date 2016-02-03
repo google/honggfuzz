@@ -91,9 +91,9 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
     }
 
     register size_t pos = 0ULL;
-    if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
+    if (perfDynamicMethod == _HF_DYNFILE_BTS_BLOCK) {
         pos = from % (_HF_PERF_BLOOM_SZ * 8);
-    } else if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
+    } else if (perfDynamicMethod == _HF_DYNFILE_BTS_EDGE) {
         pos = (from * to) % (_HF_PERF_BLOOM_SZ * 8);
     }
 
@@ -167,7 +167,7 @@ static inline void arch_perfMmapParse(void)
         register uint64_t from = arch_perfGetMmap64(dataTailOff);
         dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
         register uint64_t to = 0ULL;
-        if (perfDynamicMethod == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
+        if (perfDynamicMethod == _HF_DYNFILE_BTS_EDGE) {
             to = arch_perfGetMmap64(dataTailOff);
             dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
         }
@@ -247,7 +247,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.inherit = 1;
         break;
-    case _HF_DYNFILE_UNIQUE_BLOCK_COUNT:
+    case _HF_DYNFILE_BTS_BLOCK:
         LOG_D("Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP for PID: %d", pid);
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP;
@@ -255,7 +255,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.watermark = 1;
         pe.wakeup_events = perfMmapSz / 2;
         break;
-    case _HF_DYNFILE_UNIQUE_EDGE_COUNT:
+    case _HF_DYNFILE_BTS_EDGE:
         LOG_D("Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d", pid);
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
@@ -271,7 +271,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
 
     *perfFd = perf_event_open(&pe, pid, -1, -1, 0);
     if (*perfFd == -1) {
-        if (method == _HF_DYNFILE_UNIQUE_BLOCK_COUNT || method == _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
+        if (method == _HF_DYNFILE_BTS_BLOCK || method == _HF_DYNFILE_BTS_EDGE) {
             LOG_E
                 ("'-LDp'/'-LDe' mode (sample IP/jump) requires LBR/BTS, which present in Intel Haswell "
                  "and newer CPUs (i.e. not in AMD CPUs)");
@@ -280,7 +280,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         return false;
     }
 
-    if (method != _HF_DYNFILE_UNIQUE_BLOCK_COUNT && method != _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
+    if (method != _HF_DYNFILE_BTS_BLOCK && method != _HF_DYNFILE_BTS_EDGE) {
         return true;
     }
 
@@ -336,10 +336,9 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return true;
     }
-    if ((hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT)
-        && (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT)) {
-        LOG_F
-            ("_HF_DYNFILE_UNIQUE_BLOCK_COUNT and _HF_DYNFILE_UNIQUE_EDGE_COUNT cannot be specified together");
+    if ((hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK)
+        && (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE)) {
+        LOG_F("_HF_DYNFILE_BTS_BLOCK and _HF_DYNFILE_BTS_EDGE cannot be specified together");
     }
 
     perfBloom = NULL;
@@ -365,15 +364,15 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
             goto out;
         }
     }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_UNIQUE_BLOCK_COUNT, &perfFds->uniquePcFd) == false) {
-            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_UNIQUE_BLOCK_COUNT)", pid);
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
+        if (arch_perfOpen(pid, _HF_DYNFILE_BTS_BLOCK, &perfFds->uniquePcFd) == false) {
+            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BTS_BLOCK)", pid);
             goto out;
         }
     }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_UNIQUE_EDGE_COUNT, &perfFds->uniqueEdgeFd) == false) {
-            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_UNIQUE_EDGE_COUNT)", pid);
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
+        if (arch_perfOpen(pid, _HF_DYNFILE_BTS_EDGE, &perfFds->uniqueEdgeFd) == false) {
+            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BTS_EDGE)", pid);
             goto out;
         }
     }
@@ -412,7 +411,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
     }
 
     uint64_t pathCount = 0;
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT) {
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
         ioctl(perfFds->uniquePcFd, PERF_EVENT_IOC_DISABLE, 0);
         close(perfFds->uniquePcFd);
         arch_perfMmapParse();
@@ -426,7 +425,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
     }
 
     uint64_t edgeCount = 0;
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT) {
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         ioctl(perfFds->uniqueEdgeFd, PERF_EVENT_IOC_DISABLE, 0);
         close(perfFds->uniqueEdgeFd);
         arch_perfMmapParse();

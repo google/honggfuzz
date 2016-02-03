@@ -382,10 +382,10 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             hfuzz->dynFileMethod |= _HF_DYNFILE_BRANCH_COUNT;
             break;
         case 0x512:
-            hfuzz->dynFileMethod |= _HF_DYNFILE_UNIQUE_BLOCK_COUNT;
+            hfuzz->dynFileMethod |= _HF_DYNFILE_BTS_BLOCK;
             break;
         case 0x513:
-            hfuzz->dynFileMethod |= _HF_DYNFILE_UNIQUE_EDGE_COUNT;
+            hfuzz->dynFileMethod |= _HF_DYNFILE_BTS_EDGE;
             break;
         case 0x514:
             hfuzz->dynFileMethod |= _HF_DYNFILE_CUSTOM;

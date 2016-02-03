@@ -46,9 +46,9 @@ static void report_printdynFileMethod(honggfuzz_t * hfuzz)
             dprintf(reportFD, "INSTR_COUNT ");
         if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT)
             dprintf(reportFD, "BRANCH_COUNT ");
-        if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_BLOCK_COUNT)
+        if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK)
             dprintf(reportFD, "BLOCK_COUNT ");
-        if (hfuzz->dynFileMethod & _HF_DYNFILE_UNIQUE_EDGE_COUNT)
+        if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE)
             dprintf(reportFD, "EDGE_COUNT ");
         if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM)
             dprintf(reportFD, "CUSTOM ");
