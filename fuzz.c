@@ -405,7 +405,7 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int64_t diff3 = hfuzz->hwCnts.pathCnt - fuzzer->hwCnts.pathCnt;
     int64_t diff4 = hfuzz->hwCnts.customCnt - fuzzer->hwCnts.customCnt;
 
-    if (diff0 <= 0 && diff1 <= 0 && diff2 <= 0 && diff3 <= 0 && diff4 <= 0) {
+    if (diff0 < 0 || diff1 < 0 || diff2 < 0 || diff3 < 0 || diff4 < 0) {
 
         LOG_I("New: (Size New,Old): %zu,%zu, Perf (Cur,New): %"
               PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ",%" PRIu64 "/%" PRIu64
