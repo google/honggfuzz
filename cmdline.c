@@ -184,8 +184,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .hwCnts = {
                    .cpuInstrCnt = 0ULL,
                    .cpuBranchCnt = 0ULL,
-                   .pcCnt = 0ULL,
-                   .pathCnt = 0ULL,
+                   .cpuBtsBlockCnt = 0ULL,
+                   .cpuBtsEdgeCnt = 0ULL,
                    .customCnt = 0ULL,
                    },
         .sanCovCnts = {
@@ -254,9 +254,11 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"linux_perf_ignore_above", required_argument, NULL, 0x503}, "Ignore perf events which report IPs above this address"},
         {{"linux_perf_instr", no_argument, NULL, 0x510}, "Use PERF_COUNT_HW_INSTRUCTIONS perf"},
         {{"linux_perf_branch", no_argument, NULL, 0x511}, "Use PERF_COUNT_HW_BRANCH_INSTRUCTIONS perf"},
-        {{"linux_perf_ip", no_argument, NULL, 0x512}, "Use PERF_SAMPLE_IP perf (newer Intel CPUs only)"},
-        {{"linux_perf_ip_addr", no_argument, NULL, 0x513}, "Use PERF_SAMPLE_IP/PERF_SAMPLE_ADDR perf (newer Intel CPUs only)"},
-        {{"linux_perf_custom", no_argument, NULL, 0x514}, "Custom counter (see the interceptor/ directory for examples)"},
+        {{"linux_perf_bts_block", no_argument, NULL, 0x512}, "Use Intel BTS to count unique blocks"},
+        {{"linux_perf_bts_edge", no_argument, NULL, 0x513}, "Use Intel BTS to count unique edges"},
+        {{"linux_perf_ipt_block", no_argument, NULL, 0x514}, "Use Intel Processor Trace to count unique blocks"},
+        {{"linux_perf_ipt_edge", no_argument, NULL, 0x515}, "Use Intel Processor Trace to count unique edges"},
+        {{"linux_perf_custom", no_argument, NULL, 0x520}, "Custom counter (see the interceptor/ directory for examples)"},
 #endif  // defined(_HF_ARCH_LINUX)
         {{0, 0, 0, 0}, NULL},
     };
@@ -388,6 +390,12 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             hfuzz->dynFileMethod |= _HF_DYNFILE_BTS_EDGE;
             break;
         case 0x514:
+            hfuzz->dynFileMethod |= _HF_DYNFILE_IPT_BLOCK;
+            break;
+        case 0x515:
+            hfuzz->dynFileMethod |= _HF_DYNFILE_IPT_EDGE;
+            break;
+        case 0x520:
             hfuzz->dynFileMethod |= _HF_DYNFILE_CUSTOM;
             break;
         default:

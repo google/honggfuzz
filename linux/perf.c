@@ -340,6 +340,10 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
         && (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE)) {
         LOG_F("_HF_DYNFILE_BTS_BLOCK and _HF_DYNFILE_BTS_EDGE cannot be specified together");
     }
+    if ((hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK)
+        && (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_EDGE)) {
+        LOG_F("_HF_DYNFILE_IPT_BLOCK and _HF_DYNFILE_IPT_EDGE cannot be specified together");
+    }
 
     perfBloom = NULL;
     perfPageSz = getpagesize();
@@ -349,8 +353,10 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
 
     perfFds->cpuInstrFd = -1;
     perfFds->cpuBranchFd = -1;
-    perfFds->uniquePcFd = -1;
-    perfFds->uniqueEdgeFd = -1;
+    perfFds->cpuBtsBlockFd = -1;
+    perfFds->cpuBtsEdgeFd = -1;
+    perfFds->cpuIptBlockFd = -1;
+    perfFds->cpuIptEdgeFd = -1;
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
         if (arch_perfOpen(pid, _HF_DYNFILE_INSTR_COUNT, &perfFds->cpuInstrFd) == false) {
@@ -365,14 +371,26 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_BTS_BLOCK, &perfFds->uniquePcFd) == false) {
+        if (arch_perfOpen(pid, _HF_DYNFILE_BTS_BLOCK, &perfFds->cpuBtsBlockFd) == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BTS_BLOCK)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_BTS_EDGE, &perfFds->uniqueEdgeFd) == false) {
+        if (arch_perfOpen(pid, _HF_DYNFILE_BTS_EDGE, &perfFds->cpuBtsEdgeFd) == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BTS_EDGE)", pid);
+            goto out;
+        }
+    }
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
+        if (arch_perfOpen(pid, _HF_DYNFILE_IPT_BLOCK, &perfFds->cpuIptBlockFd) == false) {
+            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_IPT_BLOCK)", pid);
+            goto out;
+        }
+    }
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_EDGE) {
+        if (arch_perfOpen(pid, _HF_DYNFILE_IPT_EDGE, &perfFds->cpuIptEdgeFd) == false) {
+            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_IPT_EDGE)", pid);
             goto out;
         }
     }
@@ -381,8 +399,8 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
  out:
     close(perfFds->cpuInstrFd);
     close(perfFds->cpuBranchFd);
-    close(perfFds->uniquePcFd);
-    close(perfFds->uniqueEdgeFd);
+    close(perfFds->cpuBtsBlockFd);
+    close(perfFds->cpuBtsEdgeFd);
     return false;
 }
 
@@ -410,12 +428,12 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         close(perfFds->cpuBranchFd);
     }
 
-    uint64_t pathCount = 0;
+    uint64_t btsBlockCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        ioctl(perfFds->uniquePcFd, PERF_EVENT_IOC_DISABLE, 0);
-        close(perfFds->uniquePcFd);
+        ioctl(perfFds->cpuBtsBlockFd, PERF_EVENT_IOC_DISABLE, 0);
+        close(perfFds->cpuBtsBlockFd);
         arch_perfMmapParse();
-        pathCount = arch_perfCountBranches();
+        btsBlockCount = arch_perfCountBranches();
 
         if (perfRecordsLost > 0UL) {
             LOG_W("%" PRIu64
@@ -424,12 +442,40 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         }
     }
 
-    uint64_t edgeCount = 0;
+    uint64_t btsEdgeCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        ioctl(perfFds->uniqueEdgeFd, PERF_EVENT_IOC_DISABLE, 0);
-        close(perfFds->uniqueEdgeFd);
+        ioctl(perfFds->cpuBtsEdgeFd, PERF_EVENT_IOC_DISABLE, 0);
+        close(perfFds->cpuBtsEdgeFd);
         arch_perfMmapParse();
-        edgeCount = arch_perfCountBranches();
+        btsEdgeCount = arch_perfCountBranches();
+
+        if (perfRecordsLost > 0UL) {
+            LOG_W("%" PRIu64
+                  " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
+                  perfRecordsLost);
+        }
+    }
+
+    uint64_t iptBlockCount = 0;
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
+        ioctl(perfFds->cpuIptBlockFd, PERF_EVENT_IOC_DISABLE, 0);
+        close(perfFds->cpuIptBlockFd);
+        arch_perfMmapParse();
+        iptBlockCount = arch_perfCountBranches();
+
+        if (perfRecordsLost > 0UL) {
+            LOG_W("%" PRIu64
+                  " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
+                  perfRecordsLost);
+        }
+    }
+
+    uint64_t iptEdgeCount = 0;
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_EDGE) {
+        ioctl(perfFds->cpuIptEdgeFd, PERF_EVENT_IOC_DISABLE, 0);
+        close(perfFds->cpuIptEdgeFd);
+        arch_perfMmapParse();
+        iptEdgeCount = arch_perfCountBranches();
 
         if (perfRecordsLost > 0UL) {
             LOG_W("%" PRIu64
@@ -447,6 +493,8 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
 
     fuzzer->hwCnts.cpuInstrCnt = instrCount;
     fuzzer->hwCnts.cpuBranchCnt = branchCount;
-    fuzzer->hwCnts.pcCnt = pathCount;
-    fuzzer->hwCnts.pathCnt = edgeCount;
+    fuzzer->hwCnts.cpuBtsBlockCnt = btsBlockCount;
+    fuzzer->hwCnts.cpuBtsEdgeCnt = btsEdgeCount;
+    fuzzer->hwCnts.cpuIptBlockCnt = iptBlockCount;
+    fuzzer->hwCnts.cpuIptEdgeCnt = iptEdgeCount;
 }

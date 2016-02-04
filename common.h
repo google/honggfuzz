@@ -93,14 +93,18 @@ typedef enum {
     _HF_DYNFILE_BRANCH_COUNT = 0x2,
     _HF_DYNFILE_BTS_BLOCK = 0x8,
     _HF_DYNFILE_BTS_EDGE = 0x10,
-    _HF_DYNFILE_CUSTOM = 0x20,
+    _HF_DYNFILE_IPT_BLOCK = 0x20,
+    _HF_DYNFILE_IPT_EDGE = 0x40,
+    _HF_DYNFILE_CUSTOM = 0x80,
 } dynFileMethod_t;
 
 typedef struct {
     uint64_t cpuInstrCnt;
     uint64_t cpuBranchCnt;
-    uint64_t pcCnt;
-    uint64_t pathCnt;
+    uint64_t cpuBtsBlockCnt;
+    uint64_t cpuBtsEdgeCnt;
+    uint64_t cpuIptBlockCnt;
+    uint64_t cpuIptEdgeCnt;
     uint64_t customCnt;
 } hwcnt_t;
 

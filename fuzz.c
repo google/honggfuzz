@@ -60,7 +60,7 @@ static pthread_t fuzz_mainThread;
 static inline bool fuzz_isPerfCntsSet(honggfuzz_t * hfuzz)
 {
     if (hfuzz->hwCnts.cpuInstrCnt > 0ULL || hfuzz->hwCnts.cpuBranchCnt > 0ULL
-        || hfuzz->hwCnts.pcCnt > 0ULL || hfuzz->hwCnts.pathCnt > 0ULL
+        || hfuzz->hwCnts.cpuBtsBlockCnt > 0ULL || hfuzz->hwCnts.cpuBtsEdgeCnt > 0ULL
         || hfuzz->hwCnts.customCnt > 0ULL) {
         return true;
     } else {
@@ -73,8 +73,8 @@ static inline void fuzz_resetFeedbackCnts(honggfuzz_t * hfuzz)
     /* HW perf counters */
     __sync_fetch_and_and(&hfuzz->hwCnts.cpuInstrCnt, 0UL);
     __sync_fetch_and_and(&hfuzz->hwCnts.cpuBranchCnt, 0UL);
-    __sync_fetch_and_and(&hfuzz->hwCnts.pcCnt, 0UL);
-    __sync_fetch_and_and(&hfuzz->hwCnts.pathCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->hwCnts.cpuBtsBlockCnt, 0UL);
+    __sync_fetch_and_and(&hfuzz->hwCnts.cpuBtsEdgeCnt, 0UL);
     __sync_fetch_and_and(&hfuzz->hwCnts.customCnt, 0UL);
 
     /* Sanitizer coverage counter */
@@ -309,8 +309,8 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             .hwCnts = {
                        .cpuInstrCnt = 0ULL,
                        .cpuBranchCnt = 0ULL,
-                       .pcCnt = 0ULL,
-                       .pathCnt = 0ULL,
+                       .cpuBtsBlockCnt = 0ULL,
+                       .cpuBtsEdgeCnt = 0ULL,
                        .customCnt = 0ULL,
                        },
             .sanCovCnts = {
@@ -393,35 +393,41 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
          PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64
          ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "]", fuzzer->dynamicFileSz,
          hfuzz->dynamicFileBestSz, hfuzz->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuBranchCnt,
-         hfuzz->hwCnts.pcCnt, hfuzz->hwCnts.pathCnt, hfuzz->hwCnts.customCnt,
-         fuzzer->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt, fuzzer->hwCnts.pcCnt,
-         fuzzer->hwCnts.pathCnt, fuzzer->hwCnts.customCnt);
+         hfuzz->hwCnts.cpuBtsBlockCnt, hfuzz->hwCnts.cpuBtsEdgeCnt, hfuzz->hwCnts.customCnt,
+         fuzzer->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt, fuzzer->hwCnts.cpuBtsBlockCnt,
+         fuzzer->hwCnts.cpuBtsEdgeCnt, fuzzer->hwCnts.customCnt);
 
     MX_LOCK(&hfuzz->dynamicFile_mutex);
 
     int64_t diff0 = hfuzz->hwCnts.cpuInstrCnt - fuzzer->hwCnts.cpuInstrCnt;
     int64_t diff1 = hfuzz->hwCnts.cpuBranchCnt - fuzzer->hwCnts.cpuBranchCnt;
-    int64_t diff2 = hfuzz->hwCnts.pcCnt - fuzzer->hwCnts.pcCnt;
-    int64_t diff3 = hfuzz->hwCnts.pathCnt - fuzzer->hwCnts.pathCnt;
-    int64_t diff4 = hfuzz->hwCnts.customCnt - fuzzer->hwCnts.customCnt;
+    int64_t diff2 = hfuzz->hwCnts.cpuBtsBlockCnt - fuzzer->hwCnts.cpuBtsBlockCnt;
+    int64_t diff3 = hfuzz->hwCnts.cpuBtsEdgeCnt - fuzzer->hwCnts.cpuBtsEdgeCnt;
+    int64_t diff4 = hfuzz->hwCnts.cpuBtsBlockCnt - fuzzer->hwCnts.cpuBtsBlockCnt;
+    int64_t diff5 = hfuzz->hwCnts.cpuBtsEdgeCnt - fuzzer->hwCnts.cpuBtsEdgeCnt;
+    int64_t diff6 = hfuzz->hwCnts.customCnt - fuzzer->hwCnts.customCnt;
 
-    if (diff0 < 0 || diff1 < 0 || diff2 < 0 || diff3 < 0 || diff4 < 0) {
+    if (diff0 < 0 || diff1 < 0 || diff2 < 0 || diff3 < 0 || diff4 < 0 || diff5 < 0 || diff6 < 0) {
 
-        LOG_I("New: (Size New,Old): %zu,%zu, Perf (Cur,New): %"
-              PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ",%" PRIu64 "/%" PRIu64
-              "/%" PRIu64 "/%" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
-              hfuzz->dynamicFileBestSz, hfuzz->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuBranchCnt,
-              hfuzz->hwCnts.pcCnt, hfuzz->hwCnts.pathCnt, hfuzz->hwCnts.customCnt,
-              fuzzer->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt, fuzzer->hwCnts.pcCnt,
-              fuzzer->hwCnts.pathCnt, fuzzer->hwCnts.customCnt);
+        LOG_I("New: (Size New,Old): %zu,%zu, Perf (Cur,New): "
+              "%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
+              ",%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
+              fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz,
+              hfuzz->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuBranchCnt,
+              hfuzz->hwCnts.cpuBtsBlockCnt, hfuzz->hwCnts.cpuBtsEdgeCnt,
+              hfuzz->hwCnts.cpuIptBlockCnt, hfuzz->hwCnts.cpuIptEdgeCnt, hfuzz->hwCnts.customCnt,
+              fuzzer->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt,
+              fuzzer->hwCnts.cpuBtsBlockCnt, fuzzer->hwCnts.cpuBtsEdgeCnt,
+              fuzzer->hwCnts.cpuIptBlockCnt, fuzzer->hwCnts.cpuIptEdgeCnt,
+              fuzzer->hwCnts.customCnt);
 
         memcpy(hfuzz->dynamicFileBest, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
         hfuzz->dynamicFileBestSz = fuzzer->dynamicFileSz;
         hfuzz->hwCnts.cpuInstrCnt = fuzzer->hwCnts.cpuInstrCnt;
         hfuzz->hwCnts.cpuBranchCnt = fuzzer->hwCnts.cpuBranchCnt;
-        hfuzz->hwCnts.pcCnt = fuzzer->hwCnts.pcCnt;
-        hfuzz->hwCnts.pathCnt = fuzzer->hwCnts.pathCnt;
+        hfuzz->hwCnts.cpuBtsBlockCnt = fuzzer->hwCnts.cpuBtsBlockCnt;
+        hfuzz->hwCnts.cpuBtsEdgeCnt = fuzzer->hwCnts.cpuBtsEdgeCnt;
         hfuzz->hwCnts.customCnt = fuzzer->hwCnts.customCnt;
 
         /* Reset counter if better coverage achieved */
@@ -524,8 +530,8 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         .hwCnts = {
                    .cpuInstrCnt = 0ULL,
                    .cpuBranchCnt = 0ULL,
-                   .pcCnt = 0ULL,
-                   .pathCnt = 0ULL,
+                   .cpuBtsBlockCnt = 0ULL,
+                   .cpuBtsEdgeCnt = 0ULL,
                    .customCnt = 0ULL,
                    },
         .sanCovCnts = {

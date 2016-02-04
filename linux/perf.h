@@ -27,8 +27,10 @@
 typedef struct {
     int cpuInstrFd;
     int cpuBranchFd;
-    int uniquePcFd;
-    int uniqueEdgeFd;
+    int cpuBtsBlockFd;
+    int cpuBtsEdgeFd;
+    int cpuIptBlockFd;
+    int cpuIptEdgeFd;
 } perfFd_t;
 
 extern bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds);
