@@ -221,7 +221,7 @@ static size_t arch_perfGetMmapBufSz(honggfuzz_t * hfuzz)
     return false;
 }
 
-static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
+static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method, int *perfFd)
 {
     LOG_D("Enabling PERF for PID=%d (mmapBufSz=%zu), method=%x", pid, perfMmapSz, method);
 
@@ -232,11 +232,16 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(struct perf_event_attr));
     pe.size = sizeof(struct perf_event_attr);
-    pe.disabled = 1;
     pe.exclude_kernel = 1;
     pe.exclude_hv = 1;
     pe.exclude_callchain_kernel = 1;
-    pe.enable_on_exec = 1;
+    if (hfuzz->pid > 0) {
+        pe.disabled = 0;
+        pe.enable_on_exec = 0;
+    } else {
+        pe.disabled = 1;
+        pe.enable_on_exec = 1;
+    }
     pe.type = PERF_TYPE_HARDWARE;
 
     switch (method) {
@@ -370,37 +375,37 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
     perfFds->cpuIptEdgeFd = -1;
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_INSTR_COUNT, &perfFds->cpuInstrFd) == false) {
+        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_INSTR_COUNT, &perfFds->cpuInstrFd) == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_INSTR_COUNT)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_BRANCH_COUNT, &perfFds->cpuBranchFd) == false) {
+        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_BRANCH_COUNT, &perfFds->cpuBranchFd) == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BRANCH_COUNT)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_BTS_BLOCK, &perfFds->cpuBtsBlockFd) == false) {
+        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_BTS_BLOCK, &perfFds->cpuBtsBlockFd) == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BTS_BLOCK)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_BTS_EDGE, &perfFds->cpuBtsEdgeFd) == false) {
+        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_BTS_EDGE, &perfFds->cpuBtsEdgeFd) == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BTS_EDGE)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_IPT_BLOCK, &perfFds->cpuIptBlockFd) == false) {
+        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_IPT_BLOCK, &perfFds->cpuIptBlockFd) == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_IPT_BLOCK)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_EDGE) {
-        if (arch_perfOpen(pid, _HF_DYNFILE_IPT_EDGE, &perfFds->cpuIptEdgeFd) == false) {
+        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_IPT_EDGE, &perfFds->cpuIptEdgeFd) == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_IPT_EDGE)", pid);
             goto out;
         }
