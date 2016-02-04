@@ -36,5 +36,6 @@ typedef struct {
 extern bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds);
 extern void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds);
 extern void arch_perfPoll(int perfFd);
+extern bool arch_perfInit(honggfuzz_t * hfuzz);
 
 #endif

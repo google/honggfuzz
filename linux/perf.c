@@ -54,12 +54,15 @@ static __thread size_t perfMmapSz = 0UL;
 static __thread uint64_t perfBranchesCnt = 0;
 /* Have we seen PERF_RECRORD_LOST events */
 static __thread uint64_t perfRecordsLost = 0;
-/* Don't record branches using address above this parameter */
-static __thread uint64_t perfCutOffAddr = ~(0ULL);
 /* Perf method - to be used in signal handlers */
-static __thread dynFileMethod_t perfDynamicMethod = _HF_DYNFILE_NONE;
+static dynFileMethod_t perfDynamicMethod = _HF_DYNFILE_NONE;
+/* Don't record branches using address above this parameter */
+static uint64_t perfCutOffAddr = ~(0ULL);
 /* Page Size for the current arch */
-static __thread size_t perfPageSz = 0x0;
+static size_t perfPageSz = 0x0;
+/* PERF_TYPE for Intel_PR, -1 if none */
+static uint32_t perfIntelPtPerfType = -1;
+static uint32_t perfIntelPtTscShift = 0;
 
 #if __BITS_PER_LONG == 64
 #define _HF_PERF_BLOOM_SZ (size_t)(1024ULL * 1024ULL * 1024ULL)
@@ -229,7 +232,7 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(struct perf_event_attr));
     pe.size = sizeof(struct perf_event_attr);
-    pe.disabled = 0;
+    pe.disabled = 1;
     pe.exclude_kernel = 1;
     pe.exclude_hv = 1;
     pe.exclude_callchain_kernel = 1;
@@ -260,6 +263,16 @@ static bool arch_perfOpen(pid_t pid, dynFileMethod_t method, int *perfFd)
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
+        pe.watermark = 1;
+        pe.wakeup_events = perfMmapSz / 2;
+        break;
+    case _HF_DYNFILE_IPT_BLOCK:
+        LOG_D("Using: (Intel PR) PERF_COUNT_HW_BRANCH_INSTRUCTIONS/PERF_SAMPLE_ADDR for PID: %d",
+              pid);
+        pe.type = perfIntelPtPerfType;
+        pe.config = 1U << perfIntelPtTscShift;
+        pe.sample_type = PERF_SAMPLE_IP;
+        pe.sample_period = 1;   /* It's IPT based, so must be equal to 1 */
         pe.watermark = 1;
         pe.wakeup_events = perfMmapSz / 2;
         break;
@@ -346,10 +359,8 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
     }
 
     perfBloom = NULL;
-    perfPageSz = getpagesize();
 
     perfMmapSz = arch_perfGetMmapBufSz(hfuzz);
-    perfCutOffAddr = hfuzz->dynamicCutOffAddr;
 
     perfFds->cpuInstrFd = -1;
     perfFds->cpuBranchFd = -1;
@@ -497,4 +508,29 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
     fuzzer->hwCnts.cpuBtsEdgeCnt = btsEdgeCount;
     fuzzer->hwCnts.cpuIptBlockCnt = iptBlockCount;
     fuzzer->hwCnts.cpuIptEdgeCnt = iptEdgeCount;
+}
+
+bool arch_perfInit(honggfuzz_t * hfuzz)
+{
+    perfPageSz = getpagesize();
+    perfCutOffAddr = hfuzz->dynamicCutOffAddr;
+
+    uint8_t buf[PATH_MAX + 1];
+    size_t sz =
+        files_readFileToBufMax("/sys/bus/event_source/devices/intel_pt/type", buf, sizeof(buf) - 1);
+    if (sz > 0) {
+        buf[sz] = '\0';
+        perfIntelPtPerfType = (uint32_t) strtoul((char *)buf, NULL, 10);
+        LOG_D("perfIntelPtPerfType = %" PRIu32, perfIntelPtPerfType);
+    }
+
+    sz = files_readFileToBufMax("/sys/bus/event_source/devices/intel_pt/format/tsc", buf,
+                                sizeof(buf) - 1);
+    if (sz > 7) {
+        buf[sz] = '\0';
+        perfIntelPtTscShift = (uint32_t) strtoul((char *)&buf[7], NULL, 10);
+        LOG_D("perfIntelPtTscShift = %" PRIu32, perfIntelPtTscShift);
+    }
+
+    return true;
 }

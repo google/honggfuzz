@@ -46,39 +46,17 @@ size_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
         PLOG_E("Couldn't open '%s' for R/O", fileName);
         return 0UL;
     }
-
-    struct stat st;
-    if (fstat(fd, &st) == -1) {
-        PLOG_E("Couldn't fstat(fd='%d' fileName='%s')", fd, fileName);
-        close(fd);
-        return 0UL;
-    }
-
-    if (st.st_size > (off_t) fileMaxSz) {
-        LOG_E("File '%s' size to big (%zu > %zu)", fileName, (size_t) st.st_size, fileMaxSz);
-        close(fd);
-        return 0UL;
-    }
-
-    if (st.st_size == (off_t) 0ULL) {
-        size_t sz = read(fd, buf, fileMaxSz);
-        close(fd);
-        if (sz <= 0U) {
-            return 0U;
-        }
-        return sz;
-    }
-
-    if (files_readFromFd(fd, buf, (size_t) st.st_size) == false) {
+    size_t readSz = files_readFromFd(fd, buf, fileMaxSz);
+    if (readSz == 0) {
         LOG_E("Couldn't read '%s' to a buf", fileName);
         close(fd);
         return 0UL;
     }
     close(fd);
 
-    LOG_D("Read '%zu' bytes (max: '%zu') from '%s'", (size_t) st.st_size, fileMaxSz, fileName);
+    LOG_D("Read '%zu' bytes from '%s'", readSz, fileName);
 
-    return (size_t) st.st_size;
+    return readSz;
 }
 
 bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flags)
@@ -123,7 +101,7 @@ bool files_writeStrToFd(int fd, char *str)
     return files_writeToFd(fd, (uint8_t *) str, strlen(str));
 }
 
-bool files_readFromFd(int fd, uint8_t * buf, size_t fileSz)
+size_t files_readFromFd(int fd, uint8_t * buf, size_t fileSz)
 {
     size_t readSz = 0;
     while (readSz < fileSz) {
@@ -132,11 +110,14 @@ bool files_readFromFd(int fd, uint8_t * buf, size_t fileSz)
             continue;
 
         if (sz < 0)
-            return false;
+            break;
+
+        if (sz == 0)
+            break;
 
         readSz += sz;
     }
-    return true;
+    return readSz;
 }
 
 bool files_exists(char *fileName)
@@ -398,7 +379,8 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
         return false;
     }
 
-    if (files_readFromFd(inFD, inFileBuf, (size_t) inSt.st_size) == false) {
+    size_t readSz = files_readFromFd(inFD, inFileBuf, (size_t) inSt.st_size);
+    if (readSz == 0) {
         PLOG_E("Couldn't read '%s' to a buf", source);
         free(inFileBuf);
         close(inFD);
@@ -406,8 +388,8 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
         return false;
     }
 
-    if (files_writeToFd(outFD, inFileBuf, inSt.st_size) == false) {
-        PLOG_E("Couldn't write '%zu' bytes to file '%s' (fd='%d')", (size_t) inSt.st_size,
+    if (files_writeToFd(outFD, inFileBuf, readSz) == false) {
+        PLOG_E("Couldn't write '%zu' bytes to file '%s' (fd='%d')", (size_t) readSz,
                destination, outFD);
         free(inFileBuf);
         close(inFD);

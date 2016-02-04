@@ -68,7 +68,7 @@ uint64_t util_rndGet(uint64_t min, uint64_t max)
     }
 
     if (rndIni == false) {
-        if (files_readFromFd(util_urandomFd, (uint8_t *) & rndX, sizeof(rndX)) == false) {
+        if (files_readFromFd(util_urandomFd, (uint8_t *) & rndX, sizeof(rndX)) != sizeof(rndX)) {
             PLOG_F("Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndX));
         }
         rndIni = true;

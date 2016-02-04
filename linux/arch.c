@@ -407,6 +407,10 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 bool arch_archInit(honggfuzz_t * hfuzz)
 {
+    if (arch_perfInit(hfuzz) == false) {
+        return false;
+    }
+
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         unsigned long major = 0, minor = 0;
         char *p = NULL;
