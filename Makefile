@@ -47,6 +47,15 @@ ifeq ($(OS),Linux)
     ifeq ("$(wildcard /usr/include/libunwind-ptrace.h)","")
         WARN_LIBRARY += libunwind-devel/libunwind8-devel
     endif
+    ifeq ("$(wildcard /usr/local/include/intel-pt.h)","/usr/local/include/intel-pt.h")
+        ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
+        ARCH_CFLAGS += -I/usr/local/include
+	ARCH_LDFLAGS += -L/usr/local/lib -lipt
+    endif
+    ifeq ("$(wildcard /usr/include/intel-pt.h)","/usr/include/intel-pt.h")
+        ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
+	ARCH_LDFLAGS += -lipt
+    endif
     ifdef WARN_LIBRARY
         $(info ***************************************************************)
         $(info Development libraries which are most likely missing on your OS:)
@@ -194,8 +203,9 @@ util.o: common.h files.h log.h
 linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h linux/bfd.h
 linux/ptrace_utils.o: linux/unwind.h log.h util.h
 linux/sancov.o: common.h linux/sancov.h util.h files.h log.h
-linux/perf.o: common.h files.h linux/perf.h log.h util.h
+linux/perf.o: common.h linux/perf.h files.h linux/pt.h log.h util.h
 linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
+linux/pt.o: common.h linux/pt.h log.h
 linux/unwind.o: common.h linux/unwind.h log.h
 linux/arch.o: common.h arch.h linux/perf.h linux/ptrace_utils.h
 linux/arch.o: linux/sancov.h log.h util.h files.h

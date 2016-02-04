@@ -22,6 +22,7 @@
  */
 
 #include "common.h"
+#include "linux/perf.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -40,7 +41,7 @@
 #include <unistd.h>
 
 #include "files.h"
-#include "linux/perf.h"
+#include "linux/pt.h"
 #include "log.h"
 #include "util.h"
 
@@ -143,17 +144,17 @@ static inline void arch_perfMmapParse(void)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
 
+    if (perfDynamicMethod == _HF_DYNFILE_IPT_BLOCK || perfDynamicMethod == _HF_DYNFILE_IPT_EDGE) {
+#ifdef _HF_ENABLE_INTEL_PT
+        arch_ptAnalyze(pem, perfMmapAux);
+#endif
+        return;
+    }
+
     /* Memory barrier - needed as per perf_event_open(2) */
     register size_t dataHeadOff = pem->data_head % perfMmapSz;
     register size_t dataTailOff = pem->data_tail % perfMmapSz;
     rmb();
-
-#ifdef _HF_ENABLE_INTEL_PT
-    if (perfDynamicMethod == _HF_DYNFILE_IPT_BLOCK || perfDynamicMethod == _HF_DYNFILE_IPT_EDGE) {
-        LOG_E("H: %llu T: %llu", pem->aux_head, pem->aux_tail);
-        return;
-    }
-#endif
 
     for (;;) {
         size_t perfSz = arch_perfMmapBufferSize(dataHeadOff, dataTailOff);
@@ -252,6 +253,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
     pe.size = sizeof(struct perf_event_attr);
     pe.exclude_kernel = 1;
     pe.exclude_hv = 1;
+    pe.exclude_guest = 1;
     pe.exclude_callchain_kernel = 1;
     if (hfuzz->pid > 0) {
         pe.disabled = 0;
@@ -341,11 +343,11 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         close(*perfFd);
         return false;
     }
-#ifdef _HF_ENABLE_INTEL_PT
     if (method == _HF_DYNFILE_IPT_BLOCK || method == _HF_DYNFILE_IPT_EDGE) {
+#ifdef _HF_ENABLE_INTEL_PT
         struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
         pem->aux_offset = pem->data_offset + pem->data_size;
-        pem->aux_size = pem->data_size;
+        pem->aux_size = (1024 * 1024 * 10);
 
         perfMmapAux =
             mmap(NULL, pem->aux_size, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, pem->aux_offset);
@@ -356,8 +358,10 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
             close(*perfFd);
             return false;
         }
+#else                           /* _HF_ENABLE_INTEL_PT */
+        LOG_F("Your <linux/perf_event.h> includes are too old to support Intel PT");
+#endif                          /* _HF_ENABLE_INTEL_PT */
     }
-#endif
 
     struct sigaction sa = {
         .sa_handler = arch_perfSigHandler,
