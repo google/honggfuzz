@@ -48,6 +48,8 @@
 
 /* Buffer used with BTS (branch recording) */
 static __thread uint8_t *perfMmapBuf = NULL;
+/* Buffer used with BTS (branch recording) */
+static __thread uint8_t *perfMmapAux = NULL;
 /* Unique path counter */
 static __thread uint64_t perfBranchesCnt = 0;
 /* Have we seen PERF_RECRORD_LOST events */
@@ -137,7 +139,10 @@ static inline void arch_perfMmapParse(void)
     register size_t dataTailOff = pem->data_tail % perfMmapSz;
     rmb();
 
-    LOG_E("H: %zu T: %zu", dataHeadOff, dataTailOff);
+    if (perfDynamicMethod == _HF_DYNFILE_IPT_BLOCK || perfDynamicMethod == _HF_DYNFILE_IPT_EDGE) {
+        LOG_E("H: %llu T: %llu", pem->aux_head, pem->aux_tail);
+        return;
+    }
 
     for (;;) {
         size_t perfSz = arch_perfMmapBufferSize(dataHeadOff, dataTailOff);
@@ -274,11 +279,10 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         pe.wakeup_events = perfMmapSz / 2;
         break;
     case _HF_DYNFILE_IPT_BLOCK:
-        LOG_D("Using: (Intel PR) PERF_COUNT_HW_BRANCH_INSTRUCTIONS/PERF_SAMPLE_ADDR for PID: %d",
+        LOG_D("Using: (Intel PT) PERF_COUNT_HW_BRANCH_INSTRUCTIONS/PERF_SAMPLE_ADDR for PID: %d",
               pid);
         pe.type = perfIntelPtPerfType;
-//        pe.config = 1U << perfIntelPtTscShift;
-        pe.config = 0x300c600;
+        pe.config = 1U << perfIntelPtTscShift;
         pe.sample_type = PERF_SAMPLE_IP;
         pe.sample_period = 1;   /* It's IPT based, so must be equal to 1 */
         pe.watermark = 1;
@@ -312,9 +316,25 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         mmap(NULL, perfMmapSz + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
     if (perfMmapBuf == MAP_FAILED) {
         perfMmapBuf = NULL;
-        PLOG_E("mmap() failed");
+        PLOG_E("mmap(mmapBuf) failed");
         close(*perfFd);
         return false;
+    }
+
+    if (method == _HF_DYNFILE_IPT_BLOCK || method == _HF_DYNFILE_IPT_EDGE) {
+        struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
+        pem->aux_offset = pem->data_offset + pem->data_size;
+        pem->aux_size = pem->data_size;
+
+        perfMmapAux =
+            mmap(NULL, pem->aux_size, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, pem->aux_offset);
+        if (perfMmapAux == MAP_FAILED) {
+            munmap(perfMmapBuf, perfMmapSz + getpagesize());
+            perfMmapBuf = NULL;
+            PLOG_E("mmap(mmapAuxBuf) failed");
+            close(*perfFd);
+            return false;
+        }
     }
 
     struct sigaction sa = {
@@ -497,11 +517,17 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         }
     }
 
+    if (perfMmapAux != NULL) {
+        munmap(perfMmapAux, perfMmapSz);
+        perfMmapAux = NULL;
+    }
     if (perfMmapBuf != NULL) {
         munmap(perfMmapBuf, perfMmapSz + getpagesize());
+        perfMmapBuf = NULL;
     }
     if (perfBloom != NULL) {
         munmap(perfBloom, _HF_PERF_BLOOM_SZ);
+        perfBloom = NULL;
     }
 
     fuzzer->hwCnts.cpuInstrCnt = instrCount;
