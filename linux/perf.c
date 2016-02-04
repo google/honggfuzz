@@ -48,8 +48,6 @@
 
 /* Buffer used with BTS (branch recording) */
 static __thread uint8_t *perfMmapBuf = NULL;
-/* By default it's 1MB which allows to run 1 fuzzing thread */
-static __thread size_t perfMmapSz = 0UL;
 /* Unique path counter */
 static __thread uint64_t perfBranchesCnt = 0;
 /* Have we seen PERF_RECRORD_LOST events */
@@ -60,6 +58,8 @@ static dynFileMethod_t perfDynamicMethod = _HF_DYNFILE_NONE;
 static uint64_t perfCutOffAddr = ~(0ULL);
 /* Page Size for the current arch */
 static size_t perfPageSz = 0x0;
+/* By default it's 1MB which allows to run 1 fuzzing thread */
+static size_t perfMmapSz = 0UL;
 /* PERF_TYPE for Intel_PR, -1 if none */
 static uint32_t perfIntelPtPerfType = -1;
 static uint32_t perfIntelPtTscShift = 0;
@@ -365,8 +365,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
 
     perfBloom = NULL;
 
-    perfMmapSz = arch_perfGetMmapBufSz(hfuzz);
-
     perfFds->cpuInstrFd = -1;
     perfFds->cpuBranchFd = -1;
     perfFds->cpuBtsBlockFd = -1;
@@ -519,6 +517,7 @@ bool arch_perfInit(honggfuzz_t * hfuzz)
 {
     perfPageSz = getpagesize();
     perfCutOffAddr = hfuzz->dynamicCutOffAddr;
+    perfMmapSz = arch_perfGetMmapBufSz(hfuzz);
 
     uint8_t buf[PATH_MAX + 1];
     size_t sz =
