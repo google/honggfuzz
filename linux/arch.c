@@ -407,10 +407,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 bool arch_archInit(honggfuzz_t * hfuzz)
 {
-    if (arch_perfInit(hfuzz) == false) {
-        return false;
-    }
-
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         unsigned long major = 0, minor = 0;
         char *p = NULL;
@@ -427,7 +423,15 @@ bool arch_archInit(honggfuzz_t * hfuzz)
          *     way to detect it here. libperf exports some list functions,
          *     although small guarantees it's installed. Maybe a more targeted
          *     message at perf_event_open() error handling will help.
+         *  3) Intel's PT requires kernel >= 4.1
          */
+        unsigned long checkMajor = 3, checkMinor = 7;
+        if ((hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK)
+            || (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_EDGE)) {
+            checkMajor = 4;
+            checkMinor = 1;
+        }
+
         struct utsname uts;
         if (uname(&uts) == -1) {
             PLOG_F("uname() failed");
@@ -442,10 +446,14 @@ bool arch_archInit(honggfuzz_t * hfuzz)
         }
 
         minor = strtoul(p, &p, 10);
-        if ((major < 3) || ((major == 3) && (minor < 7))) {
-            LOG_E("Unsupported kernel version (%s)", uts.release);
+        if ((major < checkMajor) || ((major == checkMajor) && (minor < checkMinor))) {
+            LOG_E("Kernel version '%s' not supporting chosen perf method", uts.release);
             return false;
         }
+    }
+
+    if (arch_perfInit(hfuzz) == false) {
+        return false;
     }
 #if defined(__ANDROID__) && defined(__arm__)
     /*

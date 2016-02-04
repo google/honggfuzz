@@ -44,6 +44,15 @@
 #include "log.h"
 #include "util.h"
 
+/*
+ * Check Intel's PT perf compatibility. The runtime kernel version check is addressed 
+ * at arch_archInit() - deal with compilation compatibilities here. Perf struct 
+ * version strings are exposed from 'uapi/linux/perf_event.h'
+ */
+#ifdef PERF_ATTR_SIZE_VER5
+#define _HF_ENABLE_INTEL_PT
+#endif
+
 #define _HF_RT_SIG (SIGRTMIN + 10)
 
 /* Buffer used with BTS (branch recording) */
@@ -139,10 +148,12 @@ static inline void arch_perfMmapParse(void)
     register size_t dataTailOff = pem->data_tail % perfMmapSz;
     rmb();
 
+#ifdef _HF_ENABLE_INTEL_PT
     if (perfDynamicMethod == _HF_DYNFILE_IPT_BLOCK || perfDynamicMethod == _HF_DYNFILE_IPT_EDGE) {
         LOG_E("H: %llu T: %llu", pem->aux_head, pem->aux_tail);
         return;
     }
+#endif
 
     for (;;) {
         size_t perfSz = arch_perfMmapBufferSize(dataHeadOff, dataTailOff);
@@ -330,7 +341,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         close(*perfFd);
         return false;
     }
-
+#ifdef _HF_ENABLE_INTEL_PT
     if (method == _HF_DYNFILE_IPT_BLOCK || method == _HF_DYNFILE_IPT_EDGE) {
         struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
         pem->aux_offset = pem->data_offset + pem->data_size;
@@ -346,6 +357,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
             return false;
         }
     }
+#endif
 
     struct sigaction sa = {
         .sa_handler = arch_perfSigHandler,
