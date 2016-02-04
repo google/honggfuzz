@@ -137,6 +137,8 @@ static inline void arch_perfMmapParse(void)
     register size_t dataTailOff = pem->data_tail % perfMmapSz;
     rmb();
 
+    LOG_E("H: %zu T: %zu", dataHeadOff, dataTailOff);
+
     for (;;) {
         size_t perfSz = arch_perfMmapBufferSize(dataHeadOff, dataTailOff);
         if (perfSz < sizeof(struct perf_event_header)) {
@@ -275,7 +277,8 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         LOG_D("Using: (Intel PR) PERF_COUNT_HW_BRANCH_INSTRUCTIONS/PERF_SAMPLE_ADDR for PID: %d",
               pid);
         pe.type = perfIntelPtPerfType;
-        pe.config = 1U << perfIntelPtTscShift;
+//        pe.config = 1U << perfIntelPtTscShift;
+        pe.config = 0x300c600;
         pe.sample_type = PERF_SAMPLE_IP;
         pe.sample_period = 1;   /* It's IPT based, so must be equal to 1 */
         pe.watermark = 1;
@@ -289,16 +292,12 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
 
     *perfFd = perf_event_open(&pe, pid, -1, -1, 0);
     if (*perfFd == -1) {
-        if (method == _HF_DYNFILE_BTS_BLOCK || method == _HF_DYNFILE_BTS_EDGE) {
-            LOG_E
-                ("'-LDp'/'-LDe' mode (sample IP/jump) requires LBR/BTS, which present in Intel Haswell "
-                 "and newer CPUs (i.e. not in AMD CPUs)");
-        }
         PLOG_F("perf_event_open() failed");
         return false;
     }
 
-    if (method != _HF_DYNFILE_BTS_BLOCK && method != _HF_DYNFILE_BTS_EDGE) {
+    if (method != _HF_DYNFILE_BTS_BLOCK && method != _HF_DYNFILE_BTS_EDGE
+        && method != _HF_DYNFILE_IPT_BLOCK && method != _HF_DYNFILE_IPT_EDGE) {
         return true;
     }
 
