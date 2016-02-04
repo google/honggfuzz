@@ -263,7 +263,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         pe.inherit = 1;
         break;
     case _HF_DYNFILE_BTS_BLOCK:
-        LOG_D("Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP for PID: %d", pid);
+        LOG_D("Using: (BTS) PERF_SAMPLE_IP for PID: %d", pid);
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
@@ -271,7 +271,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         pe.wakeup_events = perfMmapSz / 2;
         break;
     case _HF_DYNFILE_BTS_EDGE:
-        LOG_D("Using: PERF_SAMPLE_BRANCH_STACK/PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d", pid);
+        LOG_D("Using: (BTS) PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d", pid);
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
@@ -279,11 +279,21 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         pe.wakeup_events = perfMmapSz / 2;
         break;
     case _HF_DYNFILE_IPT_BLOCK:
-        LOG_D("Using: (Intel PT) PERF_COUNT_HW_BRANCH_INSTRUCTIONS/PERF_SAMPLE_ADDR for PID: %d",
+        LOG_D("Using: (Intel PT) type=%" PRIu32 " PERF_SAMPLE_IP for PID: %d", perfIntelPtPerfType,
               pid);
         pe.type = perfIntelPtPerfType;
         pe.config = 1U << perfIntelPtTscShift;
         pe.sample_type = PERF_SAMPLE_IP;
+        pe.sample_period = 1;   /* It's IPT based, so must be equal to 1 */
+        pe.watermark = 1;
+        pe.wakeup_events = perfMmapSz / 2;
+        break;
+    case _HF_DYNFILE_IPT_EDGE:
+        LOG_D("Using: (Intel PT) type=%" PRIu32 " PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d",
+              perfIntelPtPerfType, pid);
+        pe.type = perfIntelPtPerfType;
+        pe.config = 1U << perfIntelPtTscShift;
+        pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's IPT based, so must be equal to 1 */
         pe.watermark = 1;
         pe.wakeup_events = perfMmapSz / 2;
