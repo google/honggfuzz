@@ -80,7 +80,7 @@ static uint32_t perfIntelPtConfigShift = 0;
 #if __BITS_PER_LONG == 64
 const size_t perfBloomSz = (1024ULL * 1024ULL * 1024ULL);
 #elif __BITS_PER_LONG == 32
-const size_t perfBloomSz = (1024ULL * 1024ULL * 128ULL)
+const size_t perfBloomSz = (1024ULL * 1024ULL * 128ULL);
 #else
 #error "__BITS_PER_LONG not defined"
 #endif
