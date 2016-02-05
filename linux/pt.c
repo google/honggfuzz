@@ -210,11 +210,12 @@ inline static void perf_ptAnalyzePkt(struct pt_packet *packet, struct pt_config 
 
 void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf)
 {
-	if (pem->aux_tail == pem->aux_head) {
-		return;
-	}
+    if (pem->aux_tail == pem->aux_head) {
+        return;
+    }
     if (pem->aux_tail >= pem->aux_head) {
-	LOG_F("pem->aux_tail: %llu >= pem->aux_head: %llu", (unsigned long long)pem->aux_tail, (unsigned long long)pem->aux_head);
+        LOG_F("pem->aux_tail: %llu >= pem->aux_head: %llu", (unsigned long long)pem->aux_tail,
+              (unsigned long long)pem->aux_head);
     }
 
     struct pt_config ptc;
