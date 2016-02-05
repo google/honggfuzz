@@ -259,7 +259,8 @@ void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf)
 
 void arch_ptAnalyze(struct perf_event_mmap_page *pem UNUSED, uint8_t * auxBuf UNUSED)
 {
-    LOG_F("No process-trace library found yet");
+    LOG_F
+        ("The program has not been linked against the Intel's Processor Trace Library (libipt.so)");
 }
 
 #endif                          /* _HF_LINUX_INTEL_PT_LIB */
