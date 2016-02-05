@@ -1368,9 +1368,20 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
 
 static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
 {
-    size_t count = 0;
     char path[512];
     snprintf(path, sizeof(path), "/proc/%d/task", pid);
+
+    /* An optimization, the number of threads is st.st_nlink - 2 (. and ..) */
+    struct stat st;
+    if (stat(path, &st) != -1) {
+        if (st.st_nlink == 3) {
+            tasks[0] = pid;
+            tasks[1] = 0;
+            return true;
+        }
+    }
+
+    size_t count = 0;
     DIR *dir = opendir(path);
     if (!dir) {
         PLOG_E("Couldn't open dir '%s'", path);
