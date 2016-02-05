@@ -403,8 +403,8 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int64_t diff1 = hfuzz->hwCnts.cpuBranchCnt - fuzzer->hwCnts.cpuBranchCnt;
     int64_t diff2 = hfuzz->hwCnts.cpuBtsBlockCnt - fuzzer->hwCnts.cpuBtsBlockCnt;
     int64_t diff3 = hfuzz->hwCnts.cpuBtsEdgeCnt - fuzzer->hwCnts.cpuBtsEdgeCnt;
-    int64_t diff4 = hfuzz->hwCnts.cpuBtsBlockCnt - fuzzer->hwCnts.cpuBtsBlockCnt;
-    int64_t diff5 = hfuzz->hwCnts.cpuBtsEdgeCnt - fuzzer->hwCnts.cpuBtsEdgeCnt;
+    int64_t diff4 = hfuzz->hwCnts.cpuIptBlockCnt - fuzzer->hwCnts.cpuIptBlockCnt;
+    int64_t diff5 = hfuzz->hwCnts.cpuIptEdgeCnt - fuzzer->hwCnts.cpuIptEdgeCnt;
     int64_t diff6 = hfuzz->hwCnts.customCnt - fuzzer->hwCnts.customCnt;
 
     if (diff0 < 0 || diff1 < 0 || diff2 < 0 || diff3 < 0 || diff4 < 0 || diff5 < 0 || diff6 < 0) {
@@ -428,6 +428,8 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         hfuzz->hwCnts.cpuBranchCnt = fuzzer->hwCnts.cpuBranchCnt;
         hfuzz->hwCnts.cpuBtsBlockCnt = fuzzer->hwCnts.cpuBtsBlockCnt;
         hfuzz->hwCnts.cpuBtsEdgeCnt = fuzzer->hwCnts.cpuBtsEdgeCnt;
+        hfuzz->hwCnts.cpuIptBlockCnt = fuzzer->hwCnts.cpuIptBlockCnt;
+        hfuzz->hwCnts.cpuIptEdgeCnt = fuzzer->hwCnts.cpuIptEdgeCnt;
         hfuzz->hwCnts.customCnt = fuzzer->hwCnts.customCnt;
 
         /* Reset counter if better coverage achieved */

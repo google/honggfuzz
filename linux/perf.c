@@ -60,8 +60,9 @@
 static __thread uint8_t *perfMmapBuf = NULL;
 /* Buffer used with BTS (branch recording) */
 static __thread uint8_t *perfMmapAux = NULL;
+#define _HF_PERF_AUX_SZ (1024 * 1024 * 4)
 /* Unique path counter */
-static __thread uint64_t perfBranchesCnt = 0;
+__thread uint64_t perfBranchesCnt = 0;
 /* Have we seen PERF_RECRORD_LOST events */
 static __thread uint64_t perfRecordsLost = 0;
 /* Perf method - to be used in signal handlers */
@@ -74,16 +75,16 @@ static size_t perfPageSz = 0x0;
 static size_t perfMmapSz = 0UL;
 /* PERF_TYPE for Intel_PR, -1 if none */
 static uint32_t perfIntelPtPerfType = -1;
-static uint32_t perfIntelPtTscShift = 0;
+static uint32_t perfIntelPtConfigShift = 0;
 
 #if __BITS_PER_LONG == 64
-#define _HF_PERF_BLOOM_SZ (size_t)(1024ULL * 1024ULL * 1024ULL)
+const size_t perfBloomSz = (1024ULL * 1024ULL * 1024ULL);
 #elif __BITS_PER_LONG == 32
-#define _HF_PERF_BLOOM_SZ (1024ULL * 1024ULL * 128ULL)
+const size_t perfBloomSz = (1024ULL * 1024ULL * 128ULL)
 #else
 #error "__BITS_PER_LONG not defined"
 #endif
-static __thread uint8_t *perfBloom = NULL;
+__thread uint8_t *perfBloom = NULL;
 
 static size_t arch_perfCountBranches(void)
 {
@@ -107,9 +108,9 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
 
     register size_t pos = 0ULL;
     if (perfDynamicMethod == _HF_DYNFILE_BTS_BLOCK) {
-        pos = from % (_HF_PERF_BLOOM_SZ * 8);
+        pos = from % (perfBloomSz * 8);
     } else if (perfDynamicMethod == _HF_DYNFILE_BTS_EDGE) {
-        pos = (from * to) % (_HF_PERF_BLOOM_SZ * 8);
+        pos = (from * to) % (perfBloomSz * 8);
     }
 
     size_t byteOff = pos / 8;
@@ -295,7 +296,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         LOG_D("Using: (Intel PT) type=%" PRIu32 " PERF_SAMPLE_IP for PID: %d", perfIntelPtPerfType,
               pid);
         pe.type = perfIntelPtPerfType;
-        pe.config = 1U << perfIntelPtTscShift;
+        pe.config = 1U << perfIntelPtConfigShift;
         pe.sample_type = PERF_SAMPLE_IP;
         pe.sample_period = 1;   /* It's IPT based, so must be equal to 1 */
         pe.watermark = 1;
@@ -305,7 +306,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         LOG_D("Using: (Intel PT) type=%" PRIu32 " PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d",
               perfIntelPtPerfType, pid);
         pe.type = perfIntelPtPerfType;
-        pe.config = 1U << perfIntelPtTscShift;
+        pe.config = 1U << perfIntelPtConfigShift;
         pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
         pe.sample_period = 1;   /* It's IPT based, so must be equal to 1 */
         pe.watermark = 1;
@@ -328,11 +329,11 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         return true;
     }
 
-    perfBloom = mmap(NULL, _HF_PERF_BLOOM_SZ, PROT_READ | PROT_WRITE,
+    perfBloom = mmap(NULL, perfBloomSz, PROT_READ | PROT_WRITE,
                      MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
     if (perfBloom == MAP_FAILED) {
         perfBloom = NULL;
-        PLOG_E("mmap(size=%zu) failed", (size_t) _HF_PERF_BLOOM_SZ);
+        PLOG_E("mmap(size=%zu) failed", perfBloomSz);
     }
 
     perfMmapBuf =
@@ -347,10 +348,9 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
 #ifdef _HF_ENABLE_INTEL_PT
         struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
         pem->aux_offset = pem->data_offset + pem->data_size;
-        pem->aux_size = (1024 * 1024 * 10);
+        pem->aux_size = _HF_PERF_AUX_SZ;
 
-        perfMmapAux =
-            mmap(NULL, pem->aux_size, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, pem->aux_offset);
+        perfMmapAux = mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
         if (perfMmapAux == MAP_FAILED) {
             munmap(perfMmapBuf, perfMmapSz + getpagesize());
             perfMmapBuf = NULL;
@@ -544,7 +544,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
     }
 
     if (perfMmapAux != NULL) {
-        munmap(perfMmapAux, perfMmapSz);
+        munmap(perfMmapAux, _HF_PERF_AUX_SZ);
         perfMmapAux = NULL;
     }
     if (perfMmapBuf != NULL) {
@@ -552,7 +552,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         perfMmapBuf = NULL;
     }
     if (perfBloom != NULL) {
-        munmap(perfBloom, _HF_PERF_BLOOM_SZ);
+        munmap(perfBloom, perfBloomSz);
         perfBloom = NULL;
     }
 
@@ -579,12 +579,12 @@ bool arch_perfInit(honggfuzz_t * hfuzz)
         LOG_D("perfIntelPtPerfType = %" PRIu32, perfIntelPtPerfType);
     }
 
-    sz = files_readFileToBufMax("/sys/bus/event_source/devices/intel_pt/format/tsc", buf,
+    sz = files_readFileToBufMax("/sys/bus/event_source/devices/intel_pt/format/noretcomp", buf,
                                 sizeof(buf) - 1);
     if (sz > 7) {
         buf[sz] = '\0';
-        perfIntelPtTscShift = (uint32_t) strtoul((char *)&buf[7], NULL, 10);
-        LOG_D("perfIntelPtTscShift = %" PRIu32, perfIntelPtTscShift);
+        perfIntelPtConfigShift = (uint32_t) strtoul((char *)&buf[7], NULL, 10);
+        LOG_D("perfIntelPtConfigShift = %" PRIu32, perfIntelPtConfigShift);
     }
 
     return true;
