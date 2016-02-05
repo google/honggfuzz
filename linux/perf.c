@@ -430,6 +430,9 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
     close(perfFds->cpuBranchFd);
     close(perfFds->cpuBtsBlockFd);
     close(perfFds->cpuBtsEdgeFd);
+    close(perfFds->cpuIptBlockFd);
+    close(perfFds->cpuIptEdgeFd);
+
     return false;
 }
 
