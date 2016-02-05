@@ -210,8 +210,11 @@ inline static void perf_ptAnalyzePkt(struct pt_packet *packet, struct pt_config 
 
 void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf)
 {
+	if (pem->aux_tail == pem->aux_head) {
+		return;
+	}
     if (pem->aux_tail >= pem->aux_head) {
-        return;
+	LOG_F("pem->aux_tail: %llu >= pem->aux_head: %llu", (unsigned long long)pem->aux_tail, (unsigned long long)pem->aux_head);
     }
 
     struct pt_config ptc;
@@ -237,7 +240,6 @@ void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf)
     struct pt_last_ip last_ip;
     pt_last_ip_init(&last_ip);
     for (;;) {
-
         struct pt_packet packet;
         errcode = pt_pkt_next(ptd, &packet, sizeof(packet));
         if (errcode == -pte_eos) {
@@ -246,7 +248,6 @@ void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf)
         if (errcode < 0) {
             LOG_F("pt_pkt_next() failed: %s", pt_errstr(errcode));
         }
-
         perf_ptAnalyzePkt(&packet, &ptc, &last_ip);
     }
 
