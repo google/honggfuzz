@@ -297,20 +297,12 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
               pid);
         pe.type = perfIntelPtPerfType;
         pe.config = 1U << perfIntelPtConfigShift;
-        pe.sample_type = PERF_SAMPLE_IP;
-        pe.sample_period = 1;   /* It's IPT based, so must be equal to 1 */
-        pe.watermark = 1;
-        pe.wakeup_events = perfMmapSz / 2;
         break;
     case _HF_DYNFILE_IPT_EDGE:
         LOG_D("Using: (Intel PT) type=%" PRIu32 " PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d",
               perfIntelPtPerfType, pid);
         pe.type = perfIntelPtPerfType;
         pe.config = 1U << perfIntelPtConfigShift;
-        pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
-        pe.sample_period = 1;   /* It's IPT based, so must be equal to 1 */
-        pe.watermark = 1;
-        pe.wakeup_events = perfMmapSz / 2;
         break;
     default:
         LOG_E("Unknown perf mode: '%d' for PID: %d", method, pid);
