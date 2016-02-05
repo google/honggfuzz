@@ -46,8 +46,8 @@
 #include "util.h"
 
 /*
- * Check Intel's PT perf compatibility. The runtime kernel version check is addressed 
- * at arch_archInit() - deal with compilation compatibilities here. Perf struct 
+ * Check Intel's PT perf compatibility. The runtime kernel version check is addressed
+ * at arch_archInit() - deal with compilation compatibilities here. Perf struct
  * version strings are exposed from 'uapi/linux/perf_event.h'
  */
 #ifdef PERF_ATTR_SIZE_VER5
@@ -215,30 +215,6 @@ static void arch_perfSigHandler(int signum)
     }
     arch_perfMmapParse();
     return;
-}
-
-static size_t arch_perfGetMmapBufSz(honggfuzz_t * hfuzz)
-{
-    char mlock_len[128];
-    size_t sz =
-        files_readFileToBufMax("/proc/sys/kernel/perf_event_mlock_kb", (uint8_t *) mlock_len,
-                               sizeof(mlock_len) - 1);
-    if (sz == 0U) {
-        LOG_F("Couldn't read '/proc/sys/kernel/perf_event_mlock_kb'");
-    }
-    mlock_len[sz] = '\0';
-    size_t ret = (strtoul(mlock_len, NULL, 10) * 1024) / hfuzz->threadsMax;
-
-    for (size_t i = 1; i < 31; i++) {
-        size_t mask = (1U << i);
-        size_t maskret = (ret & ~(mask - 1));
-        if (maskret == mask) {
-            LOG_D("perf_mmap_buf_size = %zu", maskret);
-            return maskret;
-        }
-    }
-    LOG_F("Couldn't find the proper size of the perf mmap buffer");
-    return false;
 }
 
 static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method, int *perfFd)
@@ -448,6 +424,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
     }
 
     return true;
+
  out:
     close(perfFds->cpuInstrFd);
     close(perfFds->cpuBranchFd);
@@ -460,6 +437,12 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
 {
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return;
+    }
+
+    if (perfRecordsLost > 0UL) {
+        LOG_W("%" PRIu64
+              " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
+              perfRecordsLost);
     }
 
     uint64_t instrCount = 0;
@@ -486,12 +469,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         close(perfFds->cpuBtsBlockFd);
         arch_perfMmapParse();
         btsBlockCount = arch_perfCountBranches();
-
-        if (perfRecordsLost > 0UL) {
-            LOG_W("%" PRIu64
-                  " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
-                  perfRecordsLost);
-        }
     }
 
     uint64_t btsEdgeCount = 0;
@@ -500,12 +477,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         close(perfFds->cpuBtsEdgeFd);
         arch_perfMmapParse();
         btsEdgeCount = arch_perfCountBranches();
-
-        if (perfRecordsLost > 0UL) {
-            LOG_W("%" PRIu64
-                  " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
-                  perfRecordsLost);
-        }
     }
 
     uint64_t iptBlockCount = 0;
@@ -514,12 +485,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         close(perfFds->cpuIptBlockFd);
         arch_perfMmapParse();
         iptBlockCount = arch_perfCountBranches();
-
-        if (perfRecordsLost > 0UL) {
-            LOG_W("%" PRIu64
-                  " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
-                  perfRecordsLost);
-        }
     }
 
     uint64_t iptEdgeCount = 0;
@@ -528,12 +493,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         close(perfFds->cpuIptEdgeFd);
         arch_perfMmapParse();
         iptEdgeCount = arch_perfCountBranches();
-
-        if (perfRecordsLost > 0UL) {
-            LOG_W("%" PRIu64
-                  " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
-                  perfRecordsLost);
-        }
     }
 
     if (perfMmapAux != NULL) {
@@ -555,6 +514,35 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
     fuzzer->hwCnts.cpuBtsEdgeCnt = btsEdgeCount;
     fuzzer->hwCnts.cpuIptBlockCnt = iptBlockCount;
     fuzzer->hwCnts.cpuIptEdgeCnt = iptEdgeCount;
+}
+
+/*
+ * The magic below makes sure that:
+ * a). (number of bytes per buffer) * (number of threads) < perf_event_mlock_kb
+ * b). (number of bytes per buffer) is power of 2
+ */
+static size_t arch_perfGetMmapBufSz(honggfuzz_t * hfuzz)
+{
+    char mlock_len[128];
+    size_t sz =
+        files_readFileToBufMax("/proc/sys/kernel/perf_event_mlock_kb", (uint8_t *) mlock_len,
+                               sizeof(mlock_len) - 1);
+    if (sz == 0U) {
+        LOG_F("Couldn't read '/proc/sys/kernel/perf_event_mlock_kb'");
+    }
+    mlock_len[sz] = '\0';
+    size_t ret = (strtoul(mlock_len, NULL, 10) * 1024) / hfuzz->threadsMax;
+
+    for (size_t i = 1; i < 31; i++) {
+        size_t mask = (1U << i);
+        size_t maskret = (ret & ~(mask - 1));
+        if (maskret == mask) {
+            LOG_D("perf_mmap_buf_size = %zu", maskret);
+            return maskret;
+        }
+    }
+    LOG_F("Couldn't find the proper size of the perf mmap buffer");
+    return false;
 }
 
 bool arch_perfInit(honggfuzz_t * hfuzz)
