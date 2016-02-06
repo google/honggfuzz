@@ -138,9 +138,6 @@ static inline size_t arch_perfMmapBufferSize(size_t dataHeadOff, size_t dataTail
     return perfSz;
 }
 
-/* Memory Barriers */
-#define rmb()	__asm__ __volatile__("":::"memory")
-#define wmb()	__sync_synchronize()
 static inline void arch_perfMmapParse(void)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
@@ -155,6 +152,7 @@ static inline void arch_perfMmapParse(void)
     /* Memory barrier - needed as per perf_event_open(2) */
     register size_t dataHeadOff = pem->data_head % perfMmapSz;
     register size_t dataTailOff = pem->data_tail % perfMmapSz;
+/* Memory Barrier - as required by perf_event_open() */
     rmb();
 
     for (;;) {

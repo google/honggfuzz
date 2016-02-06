@@ -217,6 +217,7 @@ void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf)
         LOG_F("pem->aux_tail: %llu >= pem->aux_head: %llu", (unsigned long long)pem->aux_tail,
               (unsigned long long)pem->aux_head);
     }
+    rmb();
 
     struct pt_config ptc;
     pt_config_init(&ptc);

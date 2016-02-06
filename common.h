@@ -248,4 +248,7 @@ typedef struct {
 
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
 
+#define rmb()	__asm__ __volatile__("":::"memory")
+#define wmb()	__sync_synchronize()
+
 #endif
