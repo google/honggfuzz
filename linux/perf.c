@@ -24,6 +24,7 @@
 #include "common.h"
 #include "linux/perf.h"
 
+#include <asm/mman.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -75,7 +76,6 @@ static size_t perfPageSz = 0x0;
 static size_t perfMmapSz = 0UL;
 /* PERF_TYPE for Intel_PR, -1 if none */
 static uint32_t perfIntelPtPerfType = -1;
-static uint32_t perfIntelPtConfigShift = 0;
 
 #if __BITS_PER_LONG == 64
 const size_t perfBloomSz = (1024ULL * 1024ULL * 1024ULL);
@@ -231,7 +231,9 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
     pe.exclude_kernel = 1;
     pe.exclude_hv = 1;
     pe.exclude_guest = 1;
+    pe.exclude_idle = 1;
     pe.exclude_callchain_kernel = 1;
+    pe.exclude_callchain_user = 1;
     if (hfuzz->pid > 0) {
         pe.disabled = 0;
         pe.enable_on_exec = 0;
@@ -240,6 +242,8 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         pe.enable_on_exec = 1;
     }
     pe.type = PERF_TYPE_HARDWARE;
+    pe.pinned = 1;
+    pe.precise_ip = 1;
 
     switch (method) {
     case _HF_DYNFILE_INSTR_COUNT:
@@ -269,16 +273,14 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         pe.wakeup_events = perfMmapSz / 2;
         break;
     case _HF_DYNFILE_IPT_BLOCK:
-        LOG_D("Using: (Intel PT) type=%" PRIu32 " PERF_SAMPLE_IP for PID: %d", perfIntelPtPerfType,
-              pid);
+        LOG_D("Using: (Intel PT) type=%" PRIu32 " for PID: %d", perfIntelPtPerfType, pid);
         pe.type = perfIntelPtPerfType;
-        pe.config = 1U << perfIntelPtConfigShift;
+        pe.config = (1U << 11); /* Disable RETCompression */
         break;
     case _HF_DYNFILE_IPT_EDGE:
-        LOG_D("Using: (Intel PT) type=%" PRIu32 " PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d",
-              perfIntelPtPerfType, pid);
+        LOG_D("Using: (Intel PT) type=%" PRIu32 " for PID: %d", perfIntelPtPerfType, pid);
         pe.type = perfIntelPtPerfType;
-        pe.config = 1U << perfIntelPtConfigShift;
+        pe.config = (1U << 11); /* Disable RETCompression */
         break;
     default:
         LOG_E("Unknown perf mode: '%d' for PID: %d", method, pid);
@@ -562,14 +564,5 @@ bool arch_perfInit(honggfuzz_t * hfuzz)
         perfIntelPtPerfType = (uint32_t) strtoul((char *)buf, NULL, 10);
         LOG_D("perfIntelPtPerfType = %" PRIu32, perfIntelPtPerfType);
     }
-
-    sz = files_readFileToBufMax("/sys/bus/event_source/devices/intel_pt/format/noretcomp", buf,
-                                sizeof(buf) - 1);
-    if (sz > 7) {
-        buf[sz] = '\0';
-        perfIntelPtConfigShift = (uint32_t) strtoul((char *)&buf[7], NULL, 10);
-        LOG_D("perfIntelPtConfigShift = %" PRIu32, perfIntelPtConfigShift);
-    }
-
     return true;
 }
