@@ -1077,6 +1077,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     REG_TYPE pc = 0;
     void *crashAddr = 0;
     char *op = "UNKNOWN";
+    pid_t targetPid = (hfuzz->pid > 0) ? hfuzz->pid : fuzzer->pid;
 
     /* Save only the first hit for each worker */
     if (fuzzer->crashFileName[0] != '\0') {
@@ -1114,7 +1115,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     if (exitCode == HF_ASAN_EXIT_CODE) {
 
         /* ASan is saving reports against parent PID */
-        if (fuzzer->pid != pid) {
+        if (targetPid != pid) {
             return;
         }
         funcCnt = arch_parseAsanReport(hfuzz, pid, funcs, &crashAddr, &op);

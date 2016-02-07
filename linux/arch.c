@@ -139,21 +139,27 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     }
 
     /* Address Sanitizer (ASan) */
-    if (setenv("ASAN_OPTIONS", hfuzz->sanOpts.asanOpts, 1) == -1) {
-        PLOG_E("setenv(ASAN_OPTIONS) failed");
-        return false;
+    if (hfuzz->sanOpts.asanOpts) {
+        if (setenv("ASAN_OPTIONS", hfuzz->sanOpts.asanOpts, 1) == -1) {
+            PLOG_E("setenv(ASAN_OPTIONS) failed");
+            return false;
+        }
     }
 
     /* Memory Sanitizer (MSan) */
-    if (setenv("MSAN_OPTIONS", hfuzz->sanOpts.msanOpts, 1) == -1) {
-        PLOG_E("setenv(MSAN_OPTIONS) failed");
-        return false;
+    if (hfuzz->sanOpts.msanOpts) {
+        if (setenv("MSAN_OPTIONS", hfuzz->sanOpts.msanOpts, 1) == -1) {
+            PLOG_E("setenv(MSAN_OPTIONS) failed");
+            return false;
+        }
     }
 
     /* Undefined Behavior Sanitizer (UBSan) */
-    if (setenv("UBSAN_OPTIONS", hfuzz->sanOpts.ubsanOpts, 1) == -1) {
-        PLOG_E("setenv(UBSAN_OPTIONS) failed");
-        return false;
+    if (hfuzz->sanOpts.ubsanOpts) {
+        if (setenv("UBSAN_OPTIONS", hfuzz->sanOpts.ubsanOpts, 1) == -1) {
+            PLOG_E("setenv(UBSAN_OPTIONS) failed");
+            return false;
+        }
     }
 
     /*
@@ -390,13 +396,13 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      * will get caught from ptrace API, handling the discovered ASan internal crash.
      */
     char crashReport[PATH_MAX] = { 0 };
-    snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX, fuzzer->pid);
+    snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX, ptracePid);
     if (files_exists(crashReport)) {
         LOG_W("Un-handled ASan report due to compiler-rt internal error - retry with '%s' (%s)",
               crashReport, fuzzer->fileName);
 
         /* Manually set the exitcode to ASan to trigger report parsing */
-        arch_ptraceExitAnalyze(hfuzz, fuzzer->pid, fuzzer, HF_ASAN_EXIT_CODE);
+        arch_ptraceExitAnalyze(hfuzz, ptracePid, fuzzer, HF_ASAN_EXIT_CODE);
     }
 #endif
 
@@ -475,6 +481,15 @@ bool arch_archInit(honggfuzz_t * hfuzz)
 #if _HF_MONITOR_SIGABRT
     hfuzz->numMajorFrames = 14;
 #endif
+
+    /* 
+     * If monitoring remote process don't adjust sanitizer flags for spawned workers. It
+     * is user's responsibility to spawn remote process with correct flags & path for data
+     * files aligned with workspace expected dir.
+     */
+    if (hfuzz->pid > 0) {
+        return true;
+    }
 
     /* If sanitizer coverage enabled init workspace subdir */
     if (hfuzz->useSanCov) {
