@@ -169,12 +169,9 @@ int pt_last_ip_update_ip(struct pt_last_ip *last_ip,
     return -pte_bad_packet;
 }
 
-extern __thread uint64_t perfBranchesCnt;
-extern __thread uint8_t *perfBloom;
-extern size_t perfBloomSz;
-
 inline static void perf_ptAnalyzePkt(struct pt_packet *packet, struct pt_config *ptc,
-                                     struct pt_last_ip *last_ip)
+                                     struct pt_last_ip *last_ip, void (*add_branch) (uint64_t from,
+                                                                                     uint64_t to))
 {
     switch (packet->type) {
     case ppt_tip:
@@ -197,27 +194,38 @@ inline static void perf_ptAnalyzePkt(struct pt_packet *packet, struct pt_config 
         return;
     }
 
-    register size_t pos = ip % (perfBloomSz * 8);
-
-    size_t byteOff = pos / 8;
-    uint8_t bitSet = (uint8_t) (1 << (pos % 8));
-
-    register uint8_t prev = __sync_fetch_and_or(&perfBloom[byteOff], bitSet);
-    if (!(prev & bitSet)) {
-        perfBranchesCnt++;
-    }
+    add_branch(ip, 0UL);
 }
 
-void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf)
+void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf, dynFileMethod_t method,
+                    void (*add_branch) (uint64_t from, uint64_t to))
 {
-    if (pem->aux_tail == pem->aux_head) {
+    if (pem->aux_head == pem->aux_tail) {
         return;
     }
-    if (pem->aux_tail >= pem->aux_head) {
-        LOG_F("pem->aux_tail: %llu >= pem->aux_head: %llu", (unsigned long long)pem->aux_tail,
-              (unsigned long long)pem->aux_head);
+    if (pem->aux_head < pem->aux_tail) {
+        LOG_F("The PERF AUX data has been overwritten. The AUX buffer is too small");
     }
-    rmb();
+
+    struct bts_branch {
+        uint64_t from;
+        uint64_t to;
+        uint64_t misc;
+    };
+    if (method == _HF_DYNFILE_BTS_BLOCK) {
+        struct bts_branch *br = (struct bts_branch *)auxBuf;
+        for (; br < ((struct bts_branch *)(auxBuf + pem->aux_head)); br++) {
+            add_branch(br->from, 0UL);
+        }
+        return;
+    }
+    if (method == _HF_DYNFILE_BTS_EDGE) {
+        struct bts_branch *br = (struct bts_branch *)auxBuf;
+        for (; br < ((struct bts_branch *)(auxBuf + pem->aux_head)); br++) {
+            add_branch(br->from, br->to);
+        }
+        return;
+    }
 
     struct pt_config ptc;
     pt_config_init(&ptc);
@@ -250,7 +258,7 @@ void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf)
         if (errcode < 0) {
             LOG_F("pt_pkt_next() failed: %s", pt_errstr(errcode));
         }
-        perf_ptAnalyzePkt(&packet, &ptc, &last_ip);
+        perf_ptAnalyzePkt(&packet, &ptc, &last_ip, add_branch);
     }
 
     pt_pkt_free_decoder(ptd);
@@ -258,7 +266,8 @@ void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf)
 
 #else                           /* _HF_LINUX_INTEL_PT_LIB */
 
-void arch_ptAnalyze(struct perf_event_mmap_page *pem UNUSED, uint8_t * auxBuf UNUSED)
+void arch_ptAnalyze(struct perf_event_mmap_page *pem UNUSED, uint8_t * auxBuf UNUSED,
+                    void (*add_branch) (uint64_t from, uint64_t to) UNUSED)
 {
     LOG_F
         ("The program has not been linked against the Intel's Processor Trace Library (libipt.so)");

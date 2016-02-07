@@ -106,10 +106,11 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
         return;
     }
 
-    register size_t pos = 0ULL;
-    if (perfDynamicMethod == _HF_DYNFILE_BTS_BLOCK) {
+    register size_t pos = 0UL;
+    if (perfDynamicMethod == _HF_DYNFILE_BTS_BLOCK || perfDynamicMethod == _HF_DYNFILE_IPT_BLOCK) {
         pos = from % (perfBloomSz * 8);
-    } else if (perfDynamicMethod == _HF_DYNFILE_BTS_EDGE) {
+    } else if (perfDynamicMethod == _HF_DYNFILE_BTS_EDGE
+               || perfDynamicMethod == _HF_DYNFILE_IPT_EDGE) {
         pos = (from * to) % (perfBloomSz * 8);
     }
 
@@ -130,36 +131,7 @@ static inline uint64_t arch_perfGetMmap64(uint64_t off)
 static inline void arch_perfMmapParse(void)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
-    if (pem->aux_tail == pem->aux_head) {
-        return;
-    }
-    if (pem->aux_tail > pem->aux_head) {
-        LOG_F("pem->aux_tail > pem->aux_head: most likely the aux buffer is too small");
-    }
-
-    if (perfDynamicMethod == _HF_DYNFILE_IPT_BLOCK || perfDynamicMethod == _HF_DYNFILE_IPT_EDGE) {
-#ifdef _HF_ENABLE_INTEL_PT
-        arch_ptAnalyze(pem, perfMmapAux);
-#endif
-        return;
-    }
-
-    struct branch {
-        uint64_t from;
-        uint64_t to;
-        uint64_t misc;
-    };
-
-    struct branch *br = (struct branch *)perfMmapAux;
-    struct branch *be = (struct branch *)(perfMmapAux + pem->aux_head);
-
-    for (; br < be; br++) {
-        if (perfDynamicMethod == _HF_DYNFILE_BTS_BLOCK) {
-            arch_perfAddBranch(br->from, 0UL);
-        } else {
-            arch_perfAddBranch(br->from, br->to);
-        }
-    }
+    arch_ptAnalyze(pem, perfMmapAux, perfDynamicMethod, arch_perfAddBranch);
 }
 
 static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu, int group_fd,

@@ -24,8 +24,12 @@
 #ifndef _LINUX_PT_H_
 #define _LINUX_PT_H_
 
-#include <linux/perf_event.h>
+#include "common.h"
 
-extern void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf);
+#include <linux/perf_event.h>
+#include <stdint.h>
+
+extern void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf,
+                           dynFileMethod_t method, void (*add_branch) (uint64_t from, uint64_t to));
 
 #endif                          /* _HF_LINUX_INTEL_PT_LIB */
