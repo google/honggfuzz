@@ -31,9 +31,9 @@
  * new areas on target application are discovered based on absolute elitism implemented at
  * fuzz_sanCovFeedback().
  *
- * For individual data files a PID (fuzzer's thread) based filename search is performed to identify
- * all files belonging to examined execution. This method doesn't implement yet bitmap runtime data
- * to detect newly discovered areas. It's mainly used so far as a comparison metric for raw-unpack method
+ * For individual data files a pid (fuzzer's thread or remote process) based filename search is performed
+ * to identify all files belonging to examined execution. This method doesn't implement yet bitmap runtime
+ * data to detect newly discovered areas. It's mainly used so far as a comparison metric for raw-unpack method
  * and stability check for sancov experimental features such as coverage counters:
  * http://clang.llvm.org/docs/SanitizerCoverage.html
  */
@@ -309,6 +309,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     off_t dataFileSz = 0, pos = 0;
     bool is32bit = true, ret = false, isSeedFirstRun = false;
     char covFile[PATH_MAX] = { 0 };
+    pid_t targetPid = (hfuzz->pid > 0) ? hfuzz->pid : fuzzer->pid;
 
     /* Fuzzer local runtime data structs - need free() before exit */
     uint64_t *startMapsIndex = NULL;
@@ -326,7 +327,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     /* Coverage data analysis starts by parsing map file listing */
     snprintf(covFile, sizeof(covFile), "%s/%s/%d.sancov.map", hfuzz->workDir, _HF_SANCOV_DIR,
-             fuzzer->pid);
+             targetPid);
     if (!files_exists(covFile)) {
         LOG_D("sancov map file not found");
         return false;
@@ -448,7 +449,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     /* mmap() .sancov.raw file */
     snprintf(covFile, sizeof(covFile), "%s/%s/%d.sancov.raw", hfuzz->workDir, _HF_SANCOV_DIR,
-             fuzzer->pid);
+             targetPid);
     dataBuf = files_mapFile(covFile, &dataFileSz, &dataFd, false);
     if (dataBuf == NULL) {
         LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
@@ -595,27 +596,28 @@ static bool arch_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     char covFile[PATH_MAX] = { 0 };
     DIR *pSanCovDir = NULL;
     bool ret = false;
+    pid_t targetPid = (hfuzz->pid > 0) ? hfuzz->pid : fuzzer->pid;
 
     snprintf(covFile, sizeof(covFile), "%s/%s/%s.%d.sancov", hfuzz->workDir, _HF_SANCOV_DIR,
-             files_basename(hfuzz->cmdline[0]), fuzzer->pid);
+             files_basename(hfuzz->cmdline[0]), targetPid);
     if (!files_exists(covFile)) {
         LOG_D("Target sancov file not found");
         return false;
     }
 
-    /* Local cache file suffix to use for file search of worker pid data */
+    /* Local cache file suffix to use for file search of target pid data */
     char pidFSuffix[13] = { 0 };
-    snprintf(pidFSuffix, sizeof(pidFSuffix), "%d.sancov", fuzzer->pid);
+    snprintf(pidFSuffix, sizeof(pidFSuffix), "%d.sancov", targetPid);
 
     /* Total BBs counter summarizes all DSOs */
     uint64_t nBBs = 0;
 
-    /* Iterate sancov dir for files generated against fuzzer pid */
+    /* Iterate sancov dir for files generated against target pid */
     snprintf(covFile, sizeof(covFile), "%s/%s", hfuzz->workDir, _HF_SANCOV_DIR);
     pSanCovDir = opendir(covFile);
     struct dirent *pDir = NULL;
     while ((pDir = readdir(pSanCovDir)) != NULL) {
-        /* Parse files with worker's PID */
+        /* Parse files with target's pid */
         if (strstr(pDir->d_name, pidFSuffix)) {
             snprintf(covFile, sizeof(covFile), "%s/%s/%s", hfuzz->workDir, _HF_SANCOV_DIR,
                      pDir->d_name);

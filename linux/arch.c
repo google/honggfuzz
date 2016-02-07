@@ -139,21 +139,27 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     }
 
     /* Address Sanitizer (ASan) */
-    if (setenv("ASAN_OPTIONS", hfuzz->sanOpts.asanOpts, 1) == -1) {
-        PLOG_E("setenv(ASAN_OPTIONS) failed");
-        return false;
+    if (hfuzz->sanOpts.asanOpts) {
+        if (setenv("ASAN_OPTIONS", hfuzz->sanOpts.asanOpts, 1) == -1) {
+            PLOG_E("setenv(ASAN_OPTIONS) failed");
+            return false;
+        }
     }
 
     /* Memory Sanitizer (MSan) */
-    if (setenv("MSAN_OPTIONS", hfuzz->sanOpts.msanOpts, 1) == -1) {
-        PLOG_E("setenv(MSAN_OPTIONS) failed");
-        return false;
+    if (hfuzz->sanOpts.msanOpts) {
+        if (setenv("MSAN_OPTIONS", hfuzz->sanOpts.msanOpts, 1) == -1) {
+            PLOG_E("setenv(MSAN_OPTIONS) failed");
+            return false;
+        }
     }
 
     /* Undefined Behavior Sanitizer (UBSan) */
-    if (setenv("UBSAN_OPTIONS", hfuzz->sanOpts.ubsanOpts, 1) == -1) {
-        PLOG_E("setenv(UBSAN_OPTIONS) failed");
-        return false;
+    if (hfuzz->sanOpts.ubsanOpts) {
+        if (setenv("UBSAN_OPTIONS", hfuzz->sanOpts.ubsanOpts, 1) == -1) {
+            PLOG_E("setenv(UBSAN_OPTIONS) failed");
+            return false;
+        }
     }
 
     /*
@@ -334,7 +340,25 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     /* A long-lived processed could have already exited, and we wouldn't know */
     if (kill(ptracePid, 0) == -1) {
-        PLOG_F("Liveness of %d questioned", ptracePid);
+        if (hfuzz->pidFile) {
+            /* If pid from file, check again for cases of auto-restart daemons that update it */
+            /* 
+             * TODO: Investigate if we need to delay here, so that target process has
+             * enough time to restart. Tricky to answer since is target dependant.
+             */
+            if (files_readPidFromFile(hfuzz->pidFile, &hfuzz->pid) == false) {
+                LOG_F("Failed to read new PID from file - abort");
+            } else {
+                if (kill(hfuzz->pid, 0) == -1) {
+                    PLOG_F("Liveness of PID %d read from file questioned - abort", hfuzz->pid);
+                } else {
+                    LOG_D("Monitor PID has been updated (pid=%d)", hfuzz->pid);
+                    ptracePid = hfuzz->pid;
+                }
+            }
+        } else {
+            PLOG_F("Liveness of %d questioned - abort", ptracePid);
+        }
     }
 
     perfFd_t perfFds;
@@ -390,13 +414,13 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      * will get caught from ptrace API, handling the discovered ASan internal crash.
      */
     char crashReport[PATH_MAX] = { 0 };
-    snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX, fuzzer->pid);
+    snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX, ptracePid);
     if (files_exists(crashReport)) {
         LOG_W("Un-handled ASan report due to compiler-rt internal error - retry with '%s' (%s)",
               crashReport, fuzzer->fileName);
 
         /* Manually set the exitcode to ASan to trigger report parsing */
-        arch_ptraceExitAnalyze(hfuzz, fuzzer->pid, fuzzer, HF_ASAN_EXIT_CODE);
+        arch_ptraceExitAnalyze(hfuzz, ptracePid, fuzzer, HF_ASAN_EXIT_CODE);
     }
 #endif
 
@@ -450,10 +474,10 @@ bool arch_archInit(honggfuzz_t * hfuzz)
             LOG_E("Kernel version '%s' not supporting chosen perf method", uts.release);
             return false;
         }
-    }
 
-    if (arch_perfInit(hfuzz) == false) {
-        return false;
+        if (arch_perfInit(hfuzz) == false) {
+            return false;
+        }
     }
 #if defined(__ANDROID__) && defined(__arm__)
     /*
@@ -468,6 +492,14 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     }
 #endif
 
+    /* If read PID from file enable - read current value */
+    if (hfuzz->pidFile) {
+        if (files_readPidFromFile(hfuzz->pidFile, &hfuzz->pid) == false) {
+            LOG_E("Failed to read PID from file");
+            return false;
+        }
+    }
+
     /*
      * If sanitizer fuzzing enabled increase number of major frames, since top 7-9 frames
      * will be occupied with sanitizer symbols if 'abort_on_error' flag is set
@@ -475,6 +507,15 @@ bool arch_archInit(honggfuzz_t * hfuzz)
 #if _HF_MONITOR_SIGABRT
     hfuzz->numMajorFrames = 14;
 #endif
+
+    /* 
+     * If monitoring remote process don't adjust sanitizer flags for spawned workers. It
+     * is user's responsibility to spawn remote process with correct flags & path for data
+     * files aligned with workspace expected dir.
+     */
+    if (hfuzz->pid > 0) {
+        return true;
+    }
 
     /* If sanitizer coverage enabled init workspace subdir */
     if (hfuzz->useSanCov) {

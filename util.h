@@ -59,4 +59,6 @@ extern void MX_UNLOCK(pthread_mutex_t * mutex);
 
 extern int64_t fastArray64Search(uint64_t * array, size_t arraySz, uint64_t key);
 
+extern bool util_isANumber(const char *s);
+
 #endif

@@ -100,19 +100,6 @@ static void cmdlineUsage(const char *pname, struct custom_option *opts)
     exit(0);
 }
 
-static bool cmdlineIsANumber(const char *s)
-{
-    if (!isdigit(s[0])) {
-        return false;
-    }
-    for (int i = 0; s[i]; s++) {
-        if (!isdigit(s[i]) && s[i] != 'x') {
-            return false;
-        }
-    }
-    return true;
-}
-
 rlim_t cmdlineParseRLimit(int res, const char *optarg, unsigned long mul)
 {
     struct rlimit cur;
@@ -125,7 +112,7 @@ rlim_t cmdlineParseRLimit(int res, const char *optarg, unsigned long mul)
     if (strcasecmp(optarg, "def") == 0) {
         return cur.rlim_cur;
     }
-    if (cmdlineIsANumber(optarg) == false) {
+    if (util_isANumber(optarg) == false) {
         LOG_F("RLIMIT %d needs a numeric or 'max'/'def' value ('%s' provided)", res, optarg);
     }
     rlim_t val = strtoul(optarg, NULL, 0) * mul;
@@ -215,6 +202,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         },
         .numMajorFrames = 7,
         .isDynFileLocked = false,
+        .pidFile = NULL,
     };
     /*  *INDENT-ON* */
 
@@ -247,7 +235,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 
 #if defined(_HF_ARCH_LINUX)
         {{"sancov", no_argument, NULL, 'C'}, "EXPERIMENTAL: Enable sanitizer coverage feedback (default: disabled)"},
-        {{"linux_pid", required_argument, NULL, 'p'}, "[Linux] Attach to a pid (and its thread group)"},
+        {{"linux_pid", required_argument, NULL, 'p'}, "Attach to a pid (and its thread group)"},
+        {{"linux_file_pid", required_argument, NULL, 'P'}, "Attach to pid (and its thread group) read from file"},
         {{"linux_addr_low_limit", required_argument, NULL, 0x500}, "Address limit (from si.si_addr) below which crashes are not reported, (default: '0')"},
         {{"linux_keep_aslr", no_argument, NULL, 0x501}, "Don't disable ASLR randomization, might be useful with MSAN"},
         {{"linux_report_msan_umrs", no_argument, NULL, 0x502}, "Report MSAN's UMRS (uninitialized memory access)"},
@@ -273,7 +262,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     const char *logfile = NULL;
     int opt_index = 0;
     for (;;) {
-        int c = getopt_long(argc, argv, "-?hqvVsuf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:C", opts,
+        int c = getopt_long(argc, argv, "-?hqvVsuf:d:e:W:r:c:F:t:R:n:N:l:p:P:g:E:w:B:C", opts,
                             &opt_index);
         if (c < 0)
             break;
@@ -341,7 +330,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             hfuzz->asLimit = strtoull(optarg, NULL, 0);
             break;
         case 'p':
-            if (cmdlineIsANumber(optarg) == false) {
+            if (util_isANumber(optarg) == false) {
                 LOG_E("-p '%s' is not a number", optarg);
                 return false;
             }
@@ -350,6 +339,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
                 LOG_E("-p '%d' is invalid", hfuzz->pid);
                 return false;
             }
+            break;
+        case 'P':
+            hfuzz->pidFile = optarg;
             break;
         case 'E':
             for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs); i++) {
@@ -456,7 +448,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         }
     }
 
-    if (hfuzz->pid > 0) {
+    if (hfuzz->pid > 0 || hfuzz->pidFile) {
         LOG_I("PID=%d specified, lowering maximum number of concurrent threads to 1", hfuzz->pid);
         hfuzz->threadsMax = 1;
     }
