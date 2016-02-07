@@ -109,10 +109,7 @@ size_t files_readFromFd(int fd, uint8_t * buf, size_t fileSz)
         if (sz < 0 && errno == EINTR)
             continue;
 
-        if (sz < 0)
-            break;
-
-        if (sz == 0)
+        if (sz <= 0)
             break;
 
         readSz += sz;

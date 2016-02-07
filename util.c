@@ -200,7 +200,7 @@ void util_recoverStdio(void)
 /*
  * This is not a cryptographically secure hash
  */
-extern uint64_t util_hash(const char *buf, size_t len)
+uint64_t util_hash(const char *buf, size_t len)
 {
     uint64_t ret = 0;
 
@@ -213,7 +213,7 @@ extern uint64_t util_hash(const char *buf, size_t len)
     return ret;
 }
 
-extern int64_t util_timeNowMillis(void)
+int64_t util_timeNowMillis(void)
 {
     struct timeval tv;
     if (gettimeofday(&tv, NULL) == -1) {
@@ -223,7 +223,7 @@ extern int64_t util_timeNowMillis(void)
     return (((int64_t) tv.tv_sec * 1000LL) + ((int64_t) tv.tv_usec / 1000LL));
 }
 
-extern uint16_t util_ToFromBE16(uint16_t val)
+uint16_t util_ToFromBE16(uint16_t val)
 {
 #if __BYTE_ORDER == __BIG_ENDIAN
     return val;
@@ -234,7 +234,7 @@ extern uint16_t util_ToFromBE16(uint16_t val)
 #endif
 }
 
-extern uint16_t util_ToFromLE16(uint16_t val)
+uint16_t util_ToFromLE16(uint16_t val)
 {
 #if __BYTE_ORDER == __BIG_ENDIAN
     return SWAP16(val);
@@ -245,7 +245,7 @@ extern uint16_t util_ToFromLE16(uint16_t val)
 #endif
 }
 
-extern uint32_t util_ToFromBE32(uint32_t val)
+uint32_t util_ToFromBE32(uint32_t val)
 {
 #if __BYTE_ORDER == __BIG_ENDIAN
     return val;
@@ -256,7 +256,7 @@ extern uint32_t util_ToFromBE32(uint32_t val)
 #endif
 }
 
-extern uint32_t util_ToFromLE32(uint32_t val)
+uint32_t util_ToFromLE32(uint32_t val)
 {
 #if __BYTE_ORDER == __BIG_ENDIAN
     return SWAP32(val);
@@ -267,7 +267,7 @@ extern uint32_t util_ToFromLE32(uint32_t val)
 #endif
 }
 
-extern uint64_t util_getUINT32(const uint8_t * buf)
+uint64_t util_getUINT32(const uint8_t * buf)
 {
     const uint8_t b0 = buf[0], b1 = buf[1], b2 = buf[2], b3 = buf[3];
 
@@ -282,7 +282,7 @@ extern uint64_t util_getUINT32(const uint8_t * buf)
 #endif
 }
 
-extern uint64_t util_getUINT64(const uint8_t * buf)
+uint64_t util_getUINT64(const uint8_t * buf)
 {
     const uint8_t b0 = buf[0], b1 = buf[1], b2 = buf[2], b3 = buf[3],
         b4 = buf[4], b5 = buf[5], b6 = buf[6], b7 = buf[7];
@@ -300,21 +300,21 @@ extern uint64_t util_getUINT64(const uint8_t * buf)
 #endif
 }
 
-extern void MX_LOCK(pthread_mutex_t * mutex)
+void MX_LOCK(pthread_mutex_t * mutex)
 {
     if (pthread_mutex_lock(mutex)) {
         PLOG_F("pthread_mutex_lock(%p)", mutex);
     }
 }
 
-extern void MX_UNLOCK(pthread_mutex_t * mutex)
+void MX_UNLOCK(pthread_mutex_t * mutex)
 {
     if (pthread_mutex_unlock(mutex)) {
         PLOG_F("pthread_mutex_unlock(%p)", mutex);
     }
 }
 
-extern int64_t fastArray64Search(uint64_t * array, size_t arraySz, uint64_t key)
+int64_t fastArray64Search(uint64_t * array, size_t arraySz, uint64_t key)
 {
     size_t low = 0;
     size_t high = arraySz - 1;

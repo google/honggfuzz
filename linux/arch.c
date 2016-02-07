@@ -456,10 +456,10 @@ bool arch_archInit(honggfuzz_t * hfuzz)
             LOG_E("Kernel version '%s' not supporting chosen perf method", uts.release);
             return false;
         }
-    }
 
-    if (arch_perfInit(hfuzz) == false) {
-        return false;
+        if (arch_perfInit(hfuzz) == false) {
+            return false;
+        }
     }
 #if defined(__ANDROID__) && defined(__arm__)
     /*
