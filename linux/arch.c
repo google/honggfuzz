@@ -26,6 +26,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,6 +45,8 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/utsname.h>
 
 #include "linux/perf.h"
@@ -241,6 +244,10 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
      * Wait for the ptrace to attach
      */
     syscall(__NR_tkill, syscall(__NR_gettid), (uintptr_t) SIGSTOP);
+
+#ifdef __NR_execveat
+    syscall(__NR_execveat, hfuzz->exeFd, "", args, environ, AT_EMPTY_PATH);
+#endif
     execvp(args[0], args);
 
     util_recoverStdio();
@@ -431,6 +438,10 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 bool arch_archInit(honggfuzz_t * hfuzz)
 {
+    if ((hfuzz->exeFd = open(hfuzz->cmdline[0], O_RDONLY | O_CLOEXEC)) == -1) {
+        LOG_F("Cannot open the executable file '%s'", hfuzz->cmdline[0]);
+    }
+
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         unsigned long major = 0, minor = 0;
         char *p = NULL;

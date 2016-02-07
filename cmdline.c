@@ -155,6 +155,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .fileCnt = 0,
         .lastCheckedFileIndex = 0,
         .pid = 0,
+        .exeFd = -1,
         .envs = {[0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,},
 
         .timeStart = time(NULL),

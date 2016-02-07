@@ -186,6 +186,7 @@ typedef struct {
     char **files;
     size_t fileCnt;
     size_t lastCheckedFileIndex;
+    int exeFd;
     char *envs[128];
 
     time_t timeStart;
