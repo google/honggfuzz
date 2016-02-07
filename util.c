@@ -34,6 +34,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include "common.h"
 #include "files.h"
@@ -337,4 +338,17 @@ int64_t fastArray64Search(uint64_t * array, size_t arraySz, uint64_t key)
     } else {
         return -1;
     }
+}
+
+bool util_isANumber(const char *s)
+{
+    if (!isdigit(s[0])) {
+        return false;
+    }
+    for (int i = 0; s[i]; s++) {
+        if (!isdigit(s[i]) && s[i] != 'x') {
+            return false;
+        }
+    }
+    return true;
 }

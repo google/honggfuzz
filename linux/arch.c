@@ -340,7 +340,25 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     /* A long-lived processed could have already exited, and we wouldn't know */
     if (kill(ptracePid, 0) == -1) {
-        PLOG_F("Liveness of %d questioned", ptracePid);
+        if (hfuzz->pidFile) {
+            /* If pid from file, check again for cases of auto-restart daemons that update it */
+            /* 
+             * TODO: Investigate if we need to delay here, so that target process has
+             * enough time to restart. Tricky to answer since is target dependant.
+             */
+            if (files_readPidFromFile(hfuzz->pidFile, &hfuzz->pid) == false) {
+                LOG_F("Failed to read new PID from file - abort");
+            } else {
+                if (kill(hfuzz->pid, 0) == -1) {
+                    PLOG_F("Liveness of PID %d read from file questioned - abort", hfuzz->pid);
+                } else {
+                    LOG_D("Monitor PID has been updated (pid=%d)", hfuzz->pid);
+                    ptracePid = hfuzz->pid;
+                }
+            }
+        } else {
+            PLOG_F("Liveness of %d questioned - abort", ptracePid);
+        }
     }
 
     perfFd_t perfFds;
@@ -473,6 +491,14 @@ bool arch_archInit(honggfuzz_t * hfuzz)
         return false;
     }
 #endif
+
+    /* If read PID from file enable - read current value */
+    if (hfuzz->pidFile) {
+        if (files_readPidFromFile(hfuzz->pidFile, &hfuzz->pid) == false) {
+            LOG_E("Failed to read PID from file");
+            return false;
+        }
+    }
 
     /*
      * If sanitizer fuzzing enabled increase number of major frames, since top 7-9 frames

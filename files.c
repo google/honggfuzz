@@ -481,3 +481,36 @@ uint8_t *files_mapFile(char *fileName, off_t * fileSz, int *fd, bool isWritable)
     *fileSz = st.st_size;
     return buf;
 }
+
+bool files_readPidFromFile(const char *fileName, pid_t * pidPtr)
+{
+    bool ret = false;
+
+    FILE *fPID = fopen(fileName, "rb");
+    if (fPID == NULL) {
+        PLOG_E("Couldn't open '%s' - R/O mode", fileName);
+        return false;
+    }
+
+    char *lineptr = NULL;
+    size_t lineSz = 0;
+    if (getline(&lineptr, &lineSz, fPID) == -1) {
+        if (lineSz == 0) {
+            LOG_E("Empty PID file (%s)", fileName);
+            fclose(fPID);
+            goto bail;
+        }
+    }
+
+    *pidPtr = atoi(lineptr);
+    if (*pidPtr < 1) {
+        LOG_E("Invalid PID read from '%s' file", fileName);
+        goto bail;
+    }
+    ret = true;
+
+ bail:
+    free(lineptr);
+    fclose(fPID);
+    return ret;
+}
