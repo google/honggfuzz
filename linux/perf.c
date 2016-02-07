@@ -61,7 +61,8 @@
 static __thread uint8_t *perfMmapBuf = NULL;
 /* Buffer used with BTS (branch recording) */
 static __thread uint8_t *perfMmapAux = NULL;
-#define _HF_PERF_AUX_SZ (1024 * 1024 * 4)
+#define _HF_PERF_MAP_SZ (1024 * 128)
+#define _HF_PERF_AUX_SZ (1024 * 1024)
 /* Unique path counter */
 __thread uint64_t perfBranchesCnt = 0;
 /* Have we seen PERF_RECRORD_LOST events */
@@ -72,10 +73,9 @@ static dynFileMethod_t perfDynamicMethod = _HF_DYNFILE_NONE;
 static uint64_t perfCutOffAddr = ~(0ULL);
 /* Page Size for the current arch */
 static size_t perfPageSz = 0x0;
-/* By default it's 1MB which allows to run 1 fuzzing thread */
-static size_t perfMmapSz = 0UL;
-/* PERF_TYPE for Intel_PR, -1 if none */
-static uint32_t perfIntelPtPerfType = -1;
+/* PERF_TYPE for Intel_PT/BTS -1 if none */
+static int32_t perfIntelPtPerfType = -1;
+static int32_t perfIntelBtsPerfType = -1;
 
 #if __BITS_PER_LONG == 64
 const size_t perfBloomSz = (1024ULL * 1024ULL * 1024ULL);
@@ -127,20 +127,15 @@ static inline uint64_t arch_perfGetMmap64(uint64_t off)
     return *(uint64_t *) (perfMmapBuf + perfPageSz + off);
 }
 
-static inline size_t arch_perfMmapBufferSize(size_t dataHeadOff, size_t dataTailOff)
-{
-    size_t perfSz = 0;
-    if (dataHeadOff >= dataTailOff) {
-        perfSz = dataHeadOff - dataTailOff;
-    } else {
-        perfSz = (perfMmapSz - dataTailOff) + dataHeadOff;
-    }
-    return perfSz;
-}
-
 static inline void arch_perfMmapParse(void)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
+    if (pem->aux_tail == pem->aux_head) {
+        return;
+    }
+    if (pem->aux_tail > pem->aux_head) {
+        LOG_F("pem->aux_tail > pem->aux_head: most likely the aux buffer is too small");
+    }
 
     if (perfDynamicMethod == _HF_DYNFILE_IPT_BLOCK || perfDynamicMethod == _HF_DYNFILE_IPT_EDGE) {
 #ifdef _HF_ENABLE_INTEL_PT
@@ -149,54 +144,22 @@ static inline void arch_perfMmapParse(void)
         return;
     }
 
-    /* Memory barrier - needed as per perf_event_open(2) */
-    register size_t dataHeadOff = pem->data_head % perfMmapSz;
-    register size_t dataTailOff = pem->data_tail % perfMmapSz;
-/* Memory Barrier - as required by perf_event_open() */
-    rmb();
+    struct branch {
+        uint64_t from;
+        uint64_t to;
+        uint64_t misc;
+    };
 
-    for (;;) {
-        size_t perfSz = arch_perfMmapBufferSize(dataHeadOff, dataTailOff);
-        if (perfSz < sizeof(struct perf_event_header)) {
-            break;
+    struct branch *br = (struct branch *)perfMmapAux;
+    struct branch *be = (struct branch *)(perfMmapAux + pem->aux_head);
+
+    for (; br < be; br++) {
+        if (perfDynamicMethod == _HF_DYNFILE_BTS_BLOCK) {
+            arch_perfAddBranch(br->from, 0UL);
+        } else {
+            arch_perfAddBranch(br->from, br->to);
         }
-
-        uint64_t tmp = arch_perfGetMmap64(dataTailOff);
-        struct perf_event_header *peh = (struct perf_event_header *)&tmp;
-
-        if (perfSz < (peh->size + sizeof(struct perf_event_header))) {
-            break;
-        }
-        dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
-
-        if (__builtin_expect(peh->type != PERF_RECORD_SAMPLE, false)) {
-            if (__builtin_expect(peh->type == PERF_RECORD_LOST, false)) {
-                /* It's id an we can ignore it */
-                arch_perfGetMmap64(dataTailOff);
-                register uint64_t lost = arch_perfGetMmap64(dataTailOff);
-                perfRecordsLost += lost;
-                dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
-                continue;
-            } else {
-                LOG_W("(struct perf_event_header)->type != PERF_RECORD_SAMPLE (%" PRIu16
-                      "), size: %" PRIu16, peh->type, peh->size);
-                dataTailOff = (dataTailOff + peh->size) % perfMmapSz;
-            }
-            continue;
-        }
-
-        register uint64_t from = arch_perfGetMmap64(dataTailOff);
-        dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
-        register uint64_t to = 0ULL;
-        if (perfDynamicMethod == _HF_DYNFILE_BTS_EDGE) {
-            to = arch_perfGetMmap64(dataTailOff);
-            dataTailOff = (dataTailOff + sizeof(uint64_t)) % perfMmapSz;
-        }
-        arch_perfAddBranch(from, to);
     }
-
-    pem->data_tail = dataTailOff;
-    wmb();
 }
 
 static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu, int group_fd,
@@ -217,11 +180,24 @@ static void arch_perfSigHandler(int signum)
 
 static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method, int *perfFd)
 {
-    LOG_D("Enabling PERF for PID=%d (mmapBufSz=%zu), method=%x", pid, perfMmapSz, method);
+    LOG_D("Enabling PERF for PID=%d method=%x", pid, method);
 
     perfDynamicMethod = method;
     perfBranchesCnt = 0;
     perfRecordsLost = 0;
+
+    if (*perfFd != -1) {
+        LOG_F("The PERF FD is already initialized, possibly conflicting perf types enabled");
+    }
+
+    if (((method & _HF_DYNFILE_BTS_BLOCK) || method & _HF_DYNFILE_BTS_EDGE)
+        && perfIntelBtsPerfType == -1) {
+        LOG_F("Intel BTS events (new type) are not supported on this platform");
+    }
+    if (((method & _HF_DYNFILE_IPT_BLOCK) || method & _HF_DYNFILE_IPT_EDGE)
+        && perfIntelPtPerfType == -1) {
+        LOG_F("Intel PT events are not supported on this platform");
+    }
 
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(struct perf_event_attr));
@@ -255,20 +231,12 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         pe.inherit = 1;
         break;
     case _HF_DYNFILE_BTS_BLOCK:
-        LOG_D("Using: (BTS) PERF_SAMPLE_IP for PID: %d", pid);
-        pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
-        pe.sample_type = PERF_SAMPLE_IP;
-        pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
-        pe.watermark = 1;
-        pe.wakeup_events = perfMmapSz / 2;
+        LOG_D("Using: (Intel BTS) type=%" PRIu32 " for PID: %d", perfIntelBtsPerfType, pid);
+        pe.type = perfIntelBtsPerfType;
         break;
     case _HF_DYNFILE_BTS_EDGE:
-        LOG_D("Using: (BTS) PERF_SAMPLE_IP|PERF_SAMPLE_ADDR for PID: %d", pid);
-        pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
-        pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR;
-        pe.sample_period = 1;   /* It's BTS based, so must be equal to 1 */
-        pe.watermark = 1;
-        pe.wakeup_events = perfMmapSz / 2;
+        LOG_D("Using: (Intel BTS) type=%" PRIu32 " for PID: %d", perfIntelBtsPerfType, pid);
+        pe.type = perfIntelBtsPerfType;
         break;
     case _HF_DYNFILE_IPT_BLOCK:
         LOG_D("Using: (Intel PT) type=%" PRIu32 " for PID: %d", perfIntelPtPerfType, pid);
@@ -296,7 +264,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         && method != _HF_DYNFILE_IPT_BLOCK && method != _HF_DYNFILE_IPT_EDGE) {
         return true;
     }
-
+#ifdef _HF_ENABLE_INTEL_PT
     perfBloom = mmap(NULL, perfBloomSz, PROT_READ | PROT_WRITE,
                      MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
     if (perfBloom == MAP_FAILED) {
@@ -305,62 +273,63 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
     }
 
     perfMmapBuf =
-        mmap(NULL, perfMmapSz + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
+        mmap(NULL, _HF_PERF_MAP_SZ + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
     if (perfMmapBuf == MAP_FAILED) {
         perfMmapBuf = NULL;
-        PLOG_E("mmap(mmapBuf) failed");
+        PLOG_E("mmap(mmapBuf) failed, sz=%zu", (size_t) _HF_PERF_MAP_SZ + getpagesize());
         close(*perfFd);
         return false;
     }
-    if (method == _HF_DYNFILE_IPT_BLOCK || method == _HF_DYNFILE_IPT_EDGE) {
-#ifdef _HF_ENABLE_INTEL_PT
+    if (method == _HF_DYNFILE_BTS_BLOCK || method == _HF_DYNFILE_BTS_EDGE
+        || method == _HF_DYNFILE_IPT_BLOCK || method == _HF_DYNFILE_IPT_EDGE) {
         struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
         pem->aux_offset = pem->data_offset + pem->data_size;
         pem->aux_size = _HF_PERF_AUX_SZ;
 
-        perfMmapAux =
-            mmap(NULL, pem->aux_size, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, pem->aux_offset);
+        perfMmapAux = mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
         if (perfMmapAux == MAP_FAILED) {
-            munmap(perfMmapBuf, perfMmapSz + getpagesize());
+            munmap(perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
             perfMmapBuf = NULL;
             PLOG_E("mmap(mmapAuxBuf) failed");
             close(*perfFd);
             return false;
         }
 #else                           /* _HF_ENABLE_INTEL_PT */
-        LOG_F("Your <linux/perf_event.h> includes are too old to support Intel PT");
+    LOG_F("Your <linux/perf_event.h> includes are too old to support Intel PT/BTS");
 #endif                          /* _HF_ENABLE_INTEL_PT */
-    }
+}
 
-    struct sigaction sa = {
-        .sa_handler = arch_perfSigHandler,
-        .sa_flags = SA_RESTART,
-    };
-    sigemptyset(&sa.sa_mask);
-    if (sigaction(_HF_RT_SIG, &sa, NULL) == -1) {
-        PLOG_E("sigaction() failed");
-        return false;
-    }
-    if (fcntl(*perfFd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC) == -1) {
-        PLOG_E("fnctl(F_SETFL)");
-        close(*perfFd);
-        return false;
-    }
-    if (fcntl(*perfFd, F_SETSIG, _HF_RT_SIG) == -1) {
-        PLOG_E("fnctl(F_SETSIG)");
-        close(*perfFd);
-        return false;
-    }
-    struct f_owner_ex foe = {
-        .type = F_OWNER_TID,
-        .pid = syscall(__NR_gettid)
-    };
-    if (fcntl(*perfFd, F_SETOWN_EX, &foe) == -1) {
-        PLOG_E("fnctl(F_SETOWN_EX)");
-        close(*perfFd);
-        return false;
-    }
-    return true;
+struct sigaction sa = {
+    .sa_handler = arch_perfSigHandler,
+    .sa_flags = SA_RESTART,
+};
+
+sigemptyset(&sa.sa_mask);
+if (sigaction(_HF_RT_SIG, &sa, NULL) == -1) {
+    PLOG_E("sigaction() failed");
+    return false;
+}
+if (fcntl(*perfFd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC) == -1) {
+    PLOG_E("fnctl(F_SETFL)");
+    close(*perfFd);
+    return false;
+}
+if (fcntl(*perfFd, F_SETSIG, _HF_RT_SIG) == -1) {
+    PLOG_E("fnctl(F_SETSIG)");
+    close(*perfFd);
+    return false;
+}
+struct f_owner_ex foe = {
+    .type = F_OWNER_TID,
+    .pid = syscall(__NR_gettid)
+};
+
+if (fcntl(*perfFd, F_SETOWN_EX, &foe) == -1) {
+    PLOG_E("fnctl(F_SETOWN_EX)");
+    close(*perfFd);
+    return false;
+}
+return true;
 }
 
 bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
@@ -381,10 +350,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
 
     perfFds->cpuInstrFd = -1;
     perfFds->cpuBranchFd = -1;
-    perfFds->cpuBtsBlockFd = -1;
-    perfFds->cpuBtsEdgeFd = -1;
-    perfFds->cpuIptBlockFd = -1;
-    perfFds->cpuIptEdgeFd = -1;
+    perfFds->cpuIptBtsFd = -1;
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
         if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_INSTR_COUNT, &perfFds->cpuInstrFd) == false) {
@@ -399,25 +365,25 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_BTS_BLOCK, &perfFds->cpuBtsBlockFd) == false) {
+        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_BTS_BLOCK, &perfFds->cpuIptBtsFd) == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BTS_BLOCK)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_BTS_EDGE, &perfFds->cpuBtsEdgeFd) == false) {
+        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_BTS_EDGE, &perfFds->cpuIptBtsFd) == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BTS_EDGE)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_IPT_BLOCK, &perfFds->cpuIptBlockFd) == false) {
+        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_IPT_BLOCK, &perfFds->cpuIptBtsFd) == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_IPT_BLOCK)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_EDGE) {
-        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_IPT_EDGE, &perfFds->cpuIptEdgeFd) == false) {
+        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_IPT_EDGE, &perfFds->cpuIptBtsFd) == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_IPT_EDGE)", pid);
             goto out;
         }
@@ -428,10 +394,7 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
  out:
     close(perfFds->cpuInstrFd);
     close(perfFds->cpuBranchFd);
-    close(perfFds->cpuBtsBlockFd);
-    close(perfFds->cpuBtsEdgeFd);
-    close(perfFds->cpuIptBlockFd);
-    close(perfFds->cpuIptEdgeFd);
+    close(perfFds->cpuIptBtsFd);
 
     return false;
 }
@@ -468,32 +431,32 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
 
     uint64_t btsBlockCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        ioctl(perfFds->cpuBtsBlockFd, PERF_EVENT_IOC_DISABLE, 0);
-        close(perfFds->cpuBtsBlockFd);
+        ioctl(perfFds->cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
+        close(perfFds->cpuIptBtsFd);
         arch_perfMmapParse();
         btsBlockCount = arch_perfCountBranches();
     }
 
     uint64_t btsEdgeCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        ioctl(perfFds->cpuBtsEdgeFd, PERF_EVENT_IOC_DISABLE, 0);
-        close(perfFds->cpuBtsEdgeFd);
+        ioctl(perfFds->cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
+        close(perfFds->cpuIptBtsFd);
         arch_perfMmapParse();
         btsEdgeCount = arch_perfCountBranches();
     }
 
     uint64_t iptBlockCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        ioctl(perfFds->cpuIptBlockFd, PERF_EVENT_IOC_DISABLE, 0);
-        close(perfFds->cpuIptBlockFd);
+        ioctl(perfFds->cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
+        close(perfFds->cpuIptBtsFd);
         arch_perfMmapParse();
         iptBlockCount = arch_perfCountBranches();
     }
 
     uint64_t iptEdgeCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_EDGE) {
-        ioctl(perfFds->cpuIptEdgeFd, PERF_EVENT_IOC_DISABLE, 0);
-        close(perfFds->cpuIptEdgeFd);
+        ioctl(perfFds->cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
+        close(perfFds->cpuIptBtsFd);
         arch_perfMmapParse();
         iptEdgeCount = arch_perfCountBranches();
     }
@@ -503,7 +466,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         perfMmapAux = NULL;
     }
     if (perfMmapBuf != NULL) {
-        munmap(perfMmapBuf, perfMmapSz + getpagesize());
+        munmap(perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
         perfMmapBuf = NULL;
     }
     if (perfBloom != NULL) {
@@ -519,48 +482,25 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
     fuzzer->hwCnts.cpuIptEdgeCnt = iptEdgeCount;
 }
 
-/*
- * The magic below makes sure that:
- * a). (number of bytes per buffer) * (number of threads) < perf_event_mlock_kb
- * b). (number of bytes per buffer) is power of 2
- */
-static size_t arch_perfGetMmapBufSz(honggfuzz_t * hfuzz)
-{
-    char mlock_len[128];
-    size_t sz =
-        files_readFileToBufMax("/proc/sys/kernel/perf_event_mlock_kb", (uint8_t *) mlock_len,
-                               sizeof(mlock_len) - 1);
-    if (sz == 0U) {
-        LOG_F("Couldn't read '/proc/sys/kernel/perf_event_mlock_kb'");
-    }
-    mlock_len[sz] = '\0';
-    size_t ret = (strtoul(mlock_len, NULL, 10) * 1024) / hfuzz->threadsMax;
-
-    for (size_t i = 1; i < 31; i++) {
-        size_t mask = (1U << i);
-        size_t maskret = (ret & ~(mask - 1));
-        if (maskret == mask) {
-            LOG_D("perf_mmap_buf_size = %zu", maskret);
-            return maskret;
-        }
-    }
-    LOG_F("Couldn't find the proper size of the perf mmap buffer");
-    return false;
-}
-
 bool arch_perfInit(honggfuzz_t * hfuzz)
 {
     perfPageSz = getpagesize();
     perfCutOffAddr = hfuzz->dynamicCutOffAddr;
-    perfMmapSz = arch_perfGetMmapBufSz(hfuzz);
 
     uint8_t buf[PATH_MAX + 1];
     size_t sz =
         files_readFileToBufMax("/sys/bus/event_source/devices/intel_pt/type", buf, sizeof(buf) - 1);
     if (sz > 0) {
         buf[sz] = '\0';
-        perfIntelPtPerfType = (uint32_t) strtoul((char *)buf, NULL, 10);
+        perfIntelPtPerfType = (int32_t) strtoul((char *)buf, NULL, 10);
         LOG_D("perfIntelPtPerfType = %" PRIu32, perfIntelPtPerfType);
+    }
+    sz = files_readFileToBufMax("/sys/bus/event_source/devices/intel_bts/type", buf,
+                                sizeof(buf) - 1);
+    if (sz > 0) {
+        buf[sz] = '\0';
+        perfIntelBtsPerfType = (int32_t) strtoul((char *)buf, NULL, 10);
+        LOG_D("perfIntelBtsPerfType = %" PRIu32, perfIntelBtsPerfType);
     }
     return true;
 }

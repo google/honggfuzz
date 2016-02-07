@@ -447,11 +447,13 @@ bool arch_archInit(honggfuzz_t * hfuzz)
          *     way to detect it here. libperf exports some list functions,
          *     although small guarantees it's installed. Maybe a more targeted
          *     message at perf_event_open() error handling will help.
-         *  3) Intel's PT requires kernel >= 4.1
+         *  3) Intel's PT and new Intel BTS format require kernel >= 4.1
          */
         unsigned long checkMajor = 3, checkMinor = 7;
-        if ((hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK)
-            || (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_EDGE)) {
+        if ((hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) ||
+            (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) ||
+            (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) ||
+            (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_EDGE)) {
             checkMajor = 4;
             checkMinor = 1;
         }
