@@ -252,56 +252,53 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         close(*perfFd);
         return false;
     }
-    if (method == _HF_DYNFILE_BTS_BLOCK || method == _HF_DYNFILE_BTS_EDGE
-        || method == _HF_DYNFILE_IPT_BLOCK || method == _HF_DYNFILE_IPT_EDGE) {
-        struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
-        pem->aux_offset = pem->data_offset + pem->data_size;
-        pem->aux_size = _HF_PERF_AUX_SZ;
+    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
+    pem->aux_offset = pem->data_offset + pem->data_size;
+    pem->aux_size = _HF_PERF_AUX_SZ;
 
-        perfMmapAux = mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
-        if (perfMmapAux == MAP_FAILED) {
-            munmap(perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
-            perfMmapBuf = NULL;
-            PLOG_E("mmap(mmapAuxBuf) failed");
-            close(*perfFd);
-            return false;
-        }
+    perfMmapAux = mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
+    if (perfMmapAux == MAP_FAILED) {
+        munmap(perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
+        perfMmapBuf = NULL;
+        PLOG_E("mmap(mmapAuxBuf) failed");
+        close(*perfFd);
+        return false;
+    }
 #else                           /* _HF_ENABLE_INTEL_PT */
     LOG_F("Your <linux/perf_event.h> includes are too old to support Intel PT/BTS");
 #endif                          /* _HF_ENABLE_INTEL_PT */
-}
 
-struct sigaction sa = {
-    .sa_handler = arch_perfSigHandler,
-    .sa_flags = SA_RESTART,
-};
+    struct sigaction sa = {
+        .sa_handler = arch_perfSigHandler,
+        .sa_flags = SA_RESTART,
+    };
 
-sigemptyset(&sa.sa_mask);
-if (sigaction(_HF_RT_SIG, &sa, NULL) == -1) {
-    PLOG_E("sigaction() failed");
-    return false;
-}
-if (fcntl(*perfFd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC) == -1) {
-    PLOG_E("fnctl(F_SETFL)");
-    close(*perfFd);
-    return false;
-}
-if (fcntl(*perfFd, F_SETSIG, _HF_RT_SIG) == -1) {
-    PLOG_E("fnctl(F_SETSIG)");
-    close(*perfFd);
-    return false;
-}
-struct f_owner_ex foe = {
-    .type = F_OWNER_TID,
-    .pid = syscall(__NR_gettid)
-};
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(_HF_RT_SIG, &sa, NULL) == -1) {
+        PLOG_E("sigaction() failed");
+        return false;
+    }
+    if (fcntl(*perfFd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC) == -1) {
+        PLOG_E("fnctl(F_SETFL)");
+        close(*perfFd);
+        return false;
+    }
+    if (fcntl(*perfFd, F_SETSIG, _HF_RT_SIG) == -1) {
+        PLOG_E("fnctl(F_SETSIG)");
+        close(*perfFd);
+        return false;
+    }
+    struct f_owner_ex foe = {
+        .type = F_OWNER_TID,
+        .pid = syscall(__NR_gettid)
+    };
 
-if (fcntl(*perfFd, F_SETOWN_EX, &foe) == -1) {
-    PLOG_E("fnctl(F_SETOWN_EX)");
-    close(*perfFd);
-    return false;
-}
-return true;
+    if (fcntl(*perfFd, F_SETOWN_EX, &foe) == -1) {
+        PLOG_E("fnctl(F_SETOWN_EX)");
+        close(*perfFd);
+        return false;
+    }
+    return true;
 }
 
 bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
