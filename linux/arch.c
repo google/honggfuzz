@@ -438,9 +438,8 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 bool arch_archInit(honggfuzz_t * hfuzz)
 {
-    if ((hfuzz->exeFd = open(hfuzz->cmdline[0], O_RDONLY | O_CLOEXEC)) == -1) {
-        LOG_F("Cannot open the executable file '%s'", hfuzz->cmdline[0]);
-    }
+    /* We use execvp() as a fall-back mechanism (using PATH), so it might legitimately fail */
+    hfuzz->exeFd = open(hfuzz->cmdline[0], O_RDONLY | O_CLOEXEC);
 
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         unsigned long major = 0, minor = 0;
