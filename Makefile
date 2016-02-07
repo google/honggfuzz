@@ -54,7 +54,7 @@ ifeq ($(OS),Linux)
     endif
     ifeq ("$(wildcard /usr/include/intel-pt.h)","/usr/include/intel-pt.h")
         ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
-	ARCH_LDFLAGS += -lipt
+        ARCH_LDFLAGS += -lipt
     endif
     ifdef WARN_LIBRARY
         $(info ***************************************************************)

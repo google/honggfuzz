@@ -267,7 +267,8 @@ void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf, dynFileM
 #else                           /* _HF_LINUX_INTEL_PT_LIB */
 
 void arch_ptAnalyze(struct perf_event_mmap_page *pem UNUSED, uint8_t * auxBuf UNUSED,
-                    dynFileMethod_t method UNUSED, void (*add_branch) (uint64_t from, uint64_t to) UNUSED)
+                    dynFileMethod_t method UNUSED, void (*add_branch) (uint64_t from,
+                                                                       uint64_t to) UNUSED)
 {
     LOG_F
         ("The program has not been linked against the Intel's Processor Trace Library (libipt.so)");
