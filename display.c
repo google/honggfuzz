@@ -141,10 +141,6 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put("  - PT unique blocks: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     __sync_fetch_and_add(&hfuzz->hwCnts.cpuIptBlockCnt, 0UL));
     }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_EDGE) {
-        display_put("  - PT unique edges:   " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->hwCnts.cpuIptEdgeCnt, 0UL));
-    }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) {
         display_put("  - custom counter:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     __sync_fetch_and_add(&hfuzz->hwCnts.customCnt, 0UL));

@@ -109,8 +109,7 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
     register size_t pos = 0UL;
     if (perfDynamicMethod == _HF_DYNFILE_BTS_BLOCK || perfDynamicMethod == _HF_DYNFILE_IPT_BLOCK) {
         pos = from % (perfBloomSz * 8);
-    } else if (perfDynamicMethod == _HF_DYNFILE_BTS_EDGE
-               || perfDynamicMethod == _HF_DYNFILE_IPT_EDGE) {
+    } else if (perfDynamicMethod == _HF_DYNFILE_BTS_EDGE) {
         pos = (from * to) % (perfBloomSz * 8);
     }
 
@@ -166,7 +165,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         && perfIntelBtsPerfType == -1) {
         LOG_F("Intel BTS events (new type) are not supported on this platform");
     }
-    if (((method & _HF_DYNFILE_IPT_BLOCK) || method & _HF_DYNFILE_IPT_EDGE)
+    if ((method & _HF_DYNFILE_IPT_BLOCK)
         && perfIntelPtPerfType == -1) {
         LOG_F("Intel PT events are not supported on this platform");
     }
@@ -215,11 +214,6 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         pe.type = perfIntelPtPerfType;
         pe.config = (1U << 11); /* Disable RETCompression */
         break;
-    case _HF_DYNFILE_IPT_EDGE:
-        LOG_D("Using: (Intel PT) type=%" PRIu32 " for PID: %d", perfIntelPtPerfType, pid);
-        pe.type = perfIntelPtPerfType;
-        pe.config = (1U << 11); /* Disable RETCompression */
-        break;
     default:
         LOG_E("Unknown perf mode: '%d' for PID: %d", method, pid);
         return false;
@@ -233,7 +227,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
     }
 
     if (method != _HF_DYNFILE_BTS_BLOCK && method != _HF_DYNFILE_BTS_EDGE
-        && method != _HF_DYNFILE_IPT_BLOCK && method != _HF_DYNFILE_IPT_EDGE) {
+        && method != _HF_DYNFILE_IPT_BLOCK) {
         return true;
     }
 #ifdef _HF_ENABLE_INTEL_PT
@@ -306,14 +300,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return true;
     }
-    if ((hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK)
-        && (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE)) {
-        LOG_F("_HF_DYNFILE_BTS_BLOCK and _HF_DYNFILE_BTS_EDGE cannot be specified together");
-    }
-    if ((hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK)
-        && (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_EDGE)) {
-        LOG_F("_HF_DYNFILE_IPT_BLOCK and _HF_DYNFILE_IPT_EDGE cannot be specified together");
-    }
 
     perfBloom = NULL;
 
@@ -348,12 +334,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
         if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_IPT_BLOCK, &perfFds->cpuIptBtsFd) == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_IPT_BLOCK)", pid);
-            goto out;
-        }
-    }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_EDGE) {
-        if (arch_perfOpen(hfuzz, pid, _HF_DYNFILE_IPT_EDGE, &perfFds->cpuIptBtsFd) == false) {
-            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_IPT_EDGE)", pid);
             goto out;
         }
     }
@@ -422,14 +402,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         iptBlockCount = arch_perfCountBranches();
     }
 
-    uint64_t iptEdgeCount = 0;
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_EDGE) {
-        ioctl(perfFds->cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
-        close(perfFds->cpuIptBtsFd);
-        arch_perfMmapParse();
-        iptEdgeCount = arch_perfCountBranches();
-    }
-
     if (perfMmapAux != NULL) {
         munmap(perfMmapAux, _HF_PERF_AUX_SZ);
         perfMmapAux = NULL;
@@ -448,7 +420,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
     fuzzer->hwCnts.cpuBtsBlockCnt = btsBlockCount;
     fuzzer->hwCnts.cpuBtsEdgeCnt = btsEdgeCount;
     fuzzer->hwCnts.cpuIptBlockCnt = iptBlockCount;
-    fuzzer->hwCnts.cpuIptEdgeCnt = iptEdgeCount;
 }
 
 bool arch_perfInit(honggfuzz_t * hfuzz)

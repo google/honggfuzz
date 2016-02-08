@@ -462,8 +462,7 @@ bool arch_archInit(honggfuzz_t * hfuzz)
         unsigned long checkMajor = 3, checkMinor = 7;
         if ((hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) ||
             (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) ||
-            (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) ||
-            (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_EDGE)) {
+            (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK)) {
             checkMajor = 4;
             checkMinor = 1;
         }

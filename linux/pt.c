@@ -75,7 +75,7 @@ struct pt_last_ip {
     uint32_t suppressed:1;
 };
 
-void pt_last_ip_init(struct pt_last_ip *last_ip)
+inline static void pt_last_ip_init(struct pt_last_ip *last_ip)
 {
     if (!last_ip)
         return;
@@ -85,7 +85,7 @@ void pt_last_ip_init(struct pt_last_ip *last_ip)
     last_ip->suppressed = 0;
 }
 
-int pt_last_ip_query(uint64_t * ip, const struct pt_last_ip *last_ip)
+inline static int pt_last_ip_query(uint64_t * ip, const struct pt_last_ip *last_ip)
 {
     if (!last_ip)
         return -pte_invalid;
@@ -109,7 +109,7 @@ int pt_last_ip_query(uint64_t * ip, const struct pt_last_ip *last_ip)
 }
 
 /* Sign-extend a uint64_t value. */
-static uint64_t sext(uint64_t val, uint8_t sign)
+inline static uint64_t sext(uint64_t val, uint8_t sign)
 {
     uint64_t signbit, mask;
 
@@ -119,8 +119,9 @@ static uint64_t sext(uint64_t val, uint8_t sign)
     return val & signbit ? val | mask : val & ~mask;
 }
 
-int pt_last_ip_update_ip(struct pt_last_ip *last_ip,
-                         const struct pt_packet_ip *packet, const struct pt_config *config)
+inline static int pt_last_ip_update_ip(struct pt_last_ip *last_ip,
+                                       const struct pt_packet_ip *packet,
+                                       const struct pt_config *config)
 {
     (void)config;
 

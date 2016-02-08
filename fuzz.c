@@ -404,22 +404,20 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int64_t diff2 = hfuzz->hwCnts.cpuBtsBlockCnt - fuzzer->hwCnts.cpuBtsBlockCnt;
     int64_t diff3 = hfuzz->hwCnts.cpuBtsEdgeCnt - fuzzer->hwCnts.cpuBtsEdgeCnt;
     int64_t diff4 = hfuzz->hwCnts.cpuIptBlockCnt - fuzzer->hwCnts.cpuIptBlockCnt;
-    int64_t diff5 = hfuzz->hwCnts.cpuIptEdgeCnt - fuzzer->hwCnts.cpuIptEdgeCnt;
-    int64_t diff6 = hfuzz->hwCnts.customCnt - fuzzer->hwCnts.customCnt;
+    int64_t diff5 = hfuzz->hwCnts.customCnt - fuzzer->hwCnts.customCnt;
 
-    if (diff0 < 0 || diff1 < 0 || diff2 < 0 || diff3 < 0 || diff4 < 0 || diff5 < 0 || diff6 < 0) {
+    if (diff0 < 0 || diff1 < 0 || diff2 < 0 || diff3 < 0 || diff4 < 0 || diff5 < 0) {
 
         LOG_I("New: (Size New,Old): %zu,%zu, Perf (Cur,New): "
-              "%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
-              ",%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
+              "%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
+              ",%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
               fuzzer->dynamicFileSz, hfuzz->dynamicFileBestSz,
               hfuzz->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuBranchCnt,
               hfuzz->hwCnts.cpuBtsBlockCnt, hfuzz->hwCnts.cpuBtsEdgeCnt,
-              hfuzz->hwCnts.cpuIptBlockCnt, hfuzz->hwCnts.cpuIptEdgeCnt, hfuzz->hwCnts.customCnt,
+              hfuzz->hwCnts.cpuIptBlockCnt, hfuzz->hwCnts.customCnt,
               fuzzer->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt,
               fuzzer->hwCnts.cpuBtsBlockCnt, fuzzer->hwCnts.cpuBtsEdgeCnt,
-              fuzzer->hwCnts.cpuIptBlockCnt, fuzzer->hwCnts.cpuIptEdgeCnt,
-              fuzzer->hwCnts.customCnt);
+              fuzzer->hwCnts.cpuIptBlockCnt, fuzzer->hwCnts.customCnt);
 
         memcpy(hfuzz->dynamicFileBest, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
@@ -429,7 +427,6 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         hfuzz->hwCnts.cpuBtsBlockCnt = fuzzer->hwCnts.cpuBtsBlockCnt;
         hfuzz->hwCnts.cpuBtsEdgeCnt = fuzzer->hwCnts.cpuBtsEdgeCnt;
         hfuzz->hwCnts.cpuIptBlockCnt = fuzzer->hwCnts.cpuIptBlockCnt;
-        hfuzz->hwCnts.cpuIptEdgeCnt = fuzzer->hwCnts.cpuIptEdgeCnt;
         hfuzz->hwCnts.customCnt = fuzzer->hwCnts.customCnt;
 
         /* Reset counter if better coverage achieved */

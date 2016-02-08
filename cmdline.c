@@ -247,7 +247,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"linux_perf_bts_block", no_argument, NULL, 0x512}, "Use Intel BTS to count unique blocks"},
         {{"linux_perf_bts_edge", no_argument, NULL, 0x513}, "Use Intel BTS to count unique edges"},
         {{"linux_perf_ipt_block", no_argument, NULL, 0x514}, "Use Intel Processor Trace to count unique blocks"},
-        {{"linux_perf_ipt_edge", no_argument, NULL, 0x515}, "Use Intel Processor Trace to count unique edges"},
         {{"linux_perf_custom", no_argument, NULL, 0x520}, "Custom counter (see the interceptor/ directory for examples)"},
 #endif  // defined(_HF_ARCH_LINUX)
         {{0, 0, 0, 0}, NULL},
@@ -384,9 +383,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x514:
             hfuzz->dynFileMethod |= _HF_DYNFILE_IPT_BLOCK;
-            break;
-        case 0x515:
-            hfuzz->dynFileMethod |= _HF_DYNFILE_IPT_EDGE;
             break;
         case 0x520:
             hfuzz->dynFileMethod |= _HF_DYNFILE_CUSTOM;
