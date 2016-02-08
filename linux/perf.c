@@ -331,7 +331,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
 
     uint64_t btsBlockCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        ioctl(perfFds->cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         close(perfFds->cpuIptBtsFd);
         arch_perfMmapParse();
         btsBlockCount = arch_perfCountBranches();
@@ -339,7 +338,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
 
     uint64_t btsEdgeCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        ioctl(perfFds->cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         close(perfFds->cpuIptBtsFd);
         arch_perfMmapParse();
         btsEdgeCount = arch_perfCountBranches();
@@ -347,7 +345,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
 
     uint64_t iptBlockCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        ioctl(perfFds->cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         close(perfFds->cpuIptBtsFd);
         arch_perfMmapParse();
         iptBlockCount = arch_perfCountBranches();
