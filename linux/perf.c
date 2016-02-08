@@ -55,8 +55,6 @@
 #define _HF_ENABLE_INTEL_PT
 #endif
 
-#define _HF_RT_SIG (SIGRTMIN + 10)
-
 /* Buffer used with BTS (branch recording) */
 static __thread uint8_t *perfMmapBuf = NULL;
 /* Buffer used with BTS (branch recording) */
@@ -65,8 +63,6 @@ static __thread uint8_t *perfMmapAux = NULL;
 #define _HF_PERF_AUX_SZ (1024 * 1024)
 /* Unique path counter */
 __thread uint64_t perfBranchesCnt = 0;
-/* Have we seen PERF_RECRORD_LOST events */
-static __thread uint64_t perfRecordsLost = 0;
 /* Perf method - to be used in signal handlers */
 static dynFileMethod_t perfDynamicMethod = _HF_DYNFILE_NONE;
 /* Don't record branches using address above this parameter */
@@ -140,22 +136,12 @@ static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu
                    (uintptr_t) group_fd, (uintptr_t) flags);
 }
 
-static void arch_perfSigHandler(int signum)
-{
-    if (__builtin_expect(signum != _HF_RT_SIG, false)) {
-        return;
-    }
-    arch_perfMmapParse();
-    return;
-}
-
 static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method, int *perfFd)
 {
     LOG_D("Enabling PERF for PID=%d method=%x", pid, method);
 
     perfDynamicMethod = method;
     perfBranchesCnt = 0;
-    perfRecordsLost = 0;
 
     if (*perfFd != -1) {
         LOG_F("The PERF FD is already initialized, possibly conflicting perf types enabled");
@@ -242,19 +228,20 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         mmap(NULL, _HF_PERF_MAP_SZ + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
     if (perfMmapBuf == MAP_FAILED) {
         perfMmapBuf = NULL;
-        PLOG_E("mmap(mmapBuf) failed, sz=%zu", (size_t) _HF_PERF_MAP_SZ + getpagesize());
+        PLOG_E("mmap(mmapBuf) failed, sz=%zu, try increasing kernel.perf_event_mlock_kb",
+               (size_t) _HF_PERF_MAP_SZ + getpagesize());
         close(*perfFd);
         return false;
     }
+
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
     pem->aux_offset = pem->data_offset + pem->data_size;
     pem->aux_size = _HF_PERF_AUX_SZ;
-
     perfMmapAux = mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
     if (perfMmapAux == MAP_FAILED) {
         munmap(perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
         perfMmapBuf = NULL;
-        PLOG_E("mmap(mmapAuxBuf) failed");
+        PLOG_E("mmap(mmapAuxBuf) failed, try increasing kernel.perf_event_mlock_kb");
         close(*perfFd);
         return false;
     }
@@ -262,36 +249,6 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
     LOG_F("Your <linux/perf_event.h> includes are too old to support Intel PT/BTS");
 #endif                          /* _HF_ENABLE_INTEL_PT */
 
-    struct sigaction sa = {
-        .sa_handler = arch_perfSigHandler,
-        .sa_flags = SA_RESTART,
-    };
-
-    sigemptyset(&sa.sa_mask);
-    if (sigaction(_HF_RT_SIG, &sa, NULL) == -1) {
-        PLOG_E("sigaction() failed");
-        return false;
-    }
-    if (fcntl(*perfFd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC) == -1) {
-        PLOG_E("fnctl(F_SETFL)");
-        close(*perfFd);
-        return false;
-    }
-    if (fcntl(*perfFd, F_SETSIG, _HF_RT_SIG) == -1) {
-        PLOG_E("fnctl(F_SETSIG)");
-        close(*perfFd);
-        return false;
-    }
-    struct f_owner_ex foe = {
-        .type = F_OWNER_TID,
-        .pid = syscall(__NR_gettid)
-    };
-
-    if (fcntl(*perfFd, F_SETOWN_EX, &foe) == -1) {
-        PLOG_E("fnctl(F_SETOWN_EX)");
-        close(*perfFd);
-        return false;
-    }
     return true;
 }
 
@@ -352,12 +309,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
 {
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return;
-    }
-
-    if (perfRecordsLost > 0UL) {
-        LOG_W("%" PRIu64
-              " PERF_RECORD_LOST events received, possibly too many concurrent fuzzing threads in progress",
-              perfRecordsLost);
     }
 
     uint64_t instrCount = 0;

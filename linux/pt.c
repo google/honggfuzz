@@ -245,7 +245,8 @@ void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf, dynFileM
 
     errcode = pt_pkt_sync_forward(ptd);
     if (errcode < 0) {
-        LOG_F("pt_pkt_sync_forward() failed: %s", pt_errstr(errcode));
+        LOG_W("pt_pkt_sync_forward() failed: %s", pt_errstr(errcode));
+        return;
     }
 
     struct pt_last_ip last_ip;
@@ -257,7 +258,8 @@ void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf, dynFileM
             break;
         }
         if (errcode < 0) {
-            LOG_F("pt_pkt_next() failed: %s", pt_errstr(errcode));
+            LOG_W("pt_pkt_next() failed: %s", pt_errstr(errcode));
+            return;
         }
         perf_ptAnalyzePkt(&packet, &ptc, &last_ip, add_branch);
     }
