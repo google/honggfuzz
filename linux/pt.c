@@ -176,9 +176,9 @@ inline static void perf_ptAnalyzePkt(struct pt_packet *packet, struct pt_config 
 {
     switch (packet->type) {
     case ppt_tip:
+    case ppt_fup:
     case ppt_tip_pge:
     case ppt_tip_pgd:
-    case ppt_fup:
         break;
     default:
         return;
@@ -195,7 +195,10 @@ inline static void perf_ptAnalyzePkt(struct pt_packet *packet, struct pt_config 
         return;
     }
 
-    add_branch(ip, 0UL);
+/* Update only on TIP, other packets don't indicate a branch */
+    if (packet->type == ppt_tip) {
+        add_branch(ip, 0UL);
+    }
 }
 
 void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf, dynFileMethod_t method,
