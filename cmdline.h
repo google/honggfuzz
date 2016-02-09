@@ -19,8 +19,8 @@
 
 */
 
-#ifndef _CMDLINE_H
-#define _CMDLINE_H
+#ifndef _HF_CMDLINE_H_
+#define _HF_CMDLINE_H_
 
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -30,4 +30,4 @@
 rlim_t cmdlineParseRLimit(int res, const char *optarg, unsigned long mul);
 bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz);
 
-#endif                          /* _CMDLINE_H */
+#endif                          /* _HF_CMDLINE_H_ */

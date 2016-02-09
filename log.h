@@ -19,8 +19,8 @@
 
 */
 
-#ifndef _LOG_H
-#define _LOG_H
+#ifndef _HF_LOG_H_
+#define _HF_LOG_H_
 
 #include <getopt.h>
 #include <stdbool.h>
@@ -59,4 +59,4 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
     __attribute__ ((format(printf, 5, 6)));
 void logStop(int sig);
 
-#endif                          /* _LOG_H */
+#endif                          /* _HF_LOG_H_ */
