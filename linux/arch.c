@@ -110,6 +110,18 @@
 #define kSAN_COV_OPTS  "coverage=1:coverage_direct=1"
 #endif
 
+/* Last known pid of remote long-lived process to be monitored */
+static pid_t lastRemotePid = -1;
+
+static inline bool arch_shouldAttach(honggfuzz_t * hfuzz)
+{
+    if (hfuzz->pid > 0 && lastRemotePid != hfuzz->pid) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 pid_t arch_fork(honggfuzz_t * hfuzz)
 {
     /*
@@ -335,14 +347,13 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     LOG_D("PID: %d is in a stopped state now", childPid);
 
-    static bool ptraceAttached = false;
-    if (ptraceAttached == false) {
+    if (arch_shouldAttach(hfuzz) == true) {
         if (arch_ptraceAttach(ptracePid) == false) {
             LOG_F("arch_ptraceAttach(pid=%d) failed", ptracePid);
         }
-        /* In case we fuzz a long-lived process (-p pid) we attach to it once only */
+        /* In case we fuzz a long-lived process attach to it once only */
         if (ptracePid != childPid) {
-            ptraceAttached = true;
+            lastRemotePid = ptracePid;
         }
     }
     /* A long-lived processed could have already exited, and we wouldn't know */
@@ -509,6 +520,34 @@ bool arch_archInit(honggfuzz_t * hfuzz)
             LOG_E("Failed to read PID from file");
             return false;
         }
+    }
+
+    /* If remote pid, resolve command using procfs */
+    if (hfuzz->pid > 0) {
+        char procCmd[PATH_MAX] = { 0 };
+        snprintf(procCmd, sizeof(procCmd), "/proc/%d/cmdline", hfuzz->pid);
+
+        hfuzz->pidCmd = malloc(_HF_PROC_CMDLINE_SZ * sizeof(char));
+        if (!hfuzz->pidCmd) {
+            PLOG_E("malloc(%zu) failed", (size_t) _HF_PROC_CMDLINE_SZ);
+            return false;
+        }
+
+        size_t sz =
+            files_readFileToBufMax(procCmd, (uint8_t *) hfuzz->pidCmd, _HF_PROC_CMDLINE_SZ - 1);
+        if (sz == 0) {
+            LOG_E("Couldn't read '%s'", procCmd);
+            free(hfuzz->pidCmd);
+            return false;
+        }
+
+        /* Make human readable */
+        for (size_t i = 0; i < (sz - 1); i++) {
+            if (hfuzz->pidCmd[i] == '\0') {
+                hfuzz->pidCmd[i] = ' ';
+            }
+        }
+        hfuzz->pidCmd[sz] = '\0';
     }
 
     /*

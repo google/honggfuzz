@@ -749,6 +749,9 @@ void fuzz_main(honggfuzz_t * hfuzz)
     if (hfuzz->sanOpts.msanOpts) {
         free(hfuzz->sanOpts.msanOpts);
     }
+    if (hfuzz->pidCmd) {
+        free(hfuzz->pidCmd);
+    }
 
     _exit(EXIT_SUCCESS);
 }
