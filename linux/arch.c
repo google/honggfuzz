@@ -115,11 +115,13 @@ static pid_t lastRemotePid = -1;
 
 static inline bool arch_shouldAttach(honggfuzz_t * hfuzz)
 {
+    if (hfuzz->pid == 0) {
+        return true;
+    }
     if (hfuzz->pid > 0 && lastRemotePid != hfuzz->pid) {
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 pid_t arch_fork(honggfuzz_t * hfuzz)
