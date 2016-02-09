@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _LINUX_BFD_H_
-#define _LINUX_BFD_H_
+#ifndef _HF_LINUX_BFD_H_
+#define _HF_LINUX_BFD_H_
 
 #define _HF_INSTR_SZ 64
 

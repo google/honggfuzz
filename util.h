@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _UTIL_H_
-#define _UTIL_H_
+#ifndef _HF_UTIL_H_
+#define _HF_UTIL_H_
 
 #include <stdarg.h>
 #include <stdint.h>

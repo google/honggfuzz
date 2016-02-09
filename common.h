@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#ifndef _HF_COMMON_H_
+#define _HF_COMMON_H_
 
 #include <limits.h>
 #include <pthread.h>

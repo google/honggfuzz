@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _LINUX_PTRACE_UTILS_H_
-#define _LINUX_PTRACE_UTILS_H_
+#ifndef _HF_LINUX_PTRACE_UTILS_H_
+#define _HF_LINUX_PTRACE_UTILS_H_
 
 /*
  * SIGABRT is not a monitored signal for Android OS, since it produces lots of useless

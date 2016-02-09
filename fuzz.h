@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _FUZZ_H_
-#define _FUZZ_H_
+#ifndef _HF_FUZZ_H_
+#define _HF_FUZZ_H_
 
 extern void fuzz_main(honggfuzz_t * fuzz);
 

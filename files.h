@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _FILES_H_
-#define _FILES_H_
+#ifndef _HF_FILES_H_
+#define _HF_FILES_H_
 
 #include <stdint.h>
 #include <unistd.h>

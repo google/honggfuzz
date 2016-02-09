@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _MANGLE_H_
-#define _MANGLE_H_
+#ifndef _HF_MANGLE_H_
+#define _HF_MANGLE_H_
 
 #include <stdint.h>
 

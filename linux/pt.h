@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _LINUX_PT_H_
-#define _LINUX_PT_H_
+#ifndef _HF_LINUX_PT_H_
+#define _HF_LINUX_PT_H_
 
 #include "common.h"
 

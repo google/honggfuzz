@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _LINUX_PERF_H_
-#define _LINUX_PERF_H_
+#ifndef _HF_LINUX_PERF_H_
+#define _HF_LINUX_PERF_H_
 
 typedef struct {
     int cpuInstrFd;

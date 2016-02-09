@@ -17,9 +17,9 @@
  *
  */
 
-#ifndef _SANCOV_H_
-#define _SANCOV_H_
+#ifndef _HF_LINUX_SANCOV_H_
+#define _HF_LINUX_SANCOV_H_
 
 extern void arch_sanCovAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
 
-#endif
+#endif                          /* _HF_LINUX_SANCOV_H_ */
