@@ -204,6 +204,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .numMajorFrames = 7,
         .isDynFileLocked = false,
         .pidFile = NULL,
+        .pidCmd = NULL,
     };
     /*  *INDENT-ON* */
 

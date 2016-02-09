@@ -522,6 +522,34 @@ bool arch_archInit(honggfuzz_t * hfuzz)
         }
     }
 
+    /* If remote pid, resolve command using procfs */
+    if (hfuzz->pid > 0) {
+        char procCmd[PATH_MAX] = { 0 };
+        snprintf(procCmd, sizeof(procCmd), "/proc/%d/cmdline", hfuzz->pid);
+
+        hfuzz->pidCmd = malloc(_HF_PROC_CMDLINE_SZ * sizeof(char));
+        if (!hfuzz->pidCmd) {
+            PLOG_E("malloc(%zu) failed", (size_t) _HF_PROC_CMDLINE_SZ);
+            return false;
+        }
+
+        size_t sz =
+            files_readFileToBufMax(procCmd, (uint8_t *) hfuzz->pidCmd, _HF_PROC_CMDLINE_SZ - 1);
+        if (sz == 0) {
+            LOG_E("Couldn't read '%s'", procCmd);
+            free(hfuzz->pidCmd);
+            return false;
+        }
+
+        /* Make human readable */
+        for (size_t i = 0; i < (sz - 1); i++) {
+            if (hfuzz->pidCmd[i] == '\0') {
+                hfuzz->pidCmd[i] = ' ';
+            }
+        }
+        hfuzz->pidCmd[sz] = '\0';
+    }
+
     /*
      * If sanitizer fuzzing enabled increase number of major frames, since top 7-9 frames
      * will be occupied with sanitizer symbols if 'abort_on_error' flag is set

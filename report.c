@@ -102,6 +102,7 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
             " ignoreAddr   : %p\n"
             " memoryLimit  : %" PRIu64 " (MiB)\n"
             " targetPid    : %d\n"
+            " targetCmd    : %s\n"
             " wordlistFile : %s\n",
             localtmstr,
             hfuzz->flipRate,
@@ -110,7 +111,8 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
             hfuzz->tmOut,
             hfuzz->ignoreAddr,
             hfuzz->asLimit,
-            hfuzz->pid, hfuzz->dictionaryFile == NULL ? "NULL" : hfuzz->dictionaryFile);
+            hfuzz->pid, hfuzz->pidCmd,
+            hfuzz->dictionaryFile == NULL ? "NULL" : hfuzz->dictionaryFile);
 
 #if defined(_HF_ARCH_LINUX)
     report_printdynFileMethod(hfuzz);

@@ -87,6 +87,9 @@
 #define _HF_MONITOR_SIGABRT 1
 #endif
 
+/* Size of remote pid cmdline char buffer */
+#define _HF_PROC_CMDLINE_SZ 8192
+
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
     _HF_DYNFILE_INSTR_COUNT = 0x1,
@@ -217,6 +220,7 @@ typedef struct {
     bool isDynFileLocked;
     pid_t pid;
     const char *pidFile;
+    char *pidCmd;
 } honggfuzz_t;
 
 typedef struct fuzzer_t {
