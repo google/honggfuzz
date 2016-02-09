@@ -218,7 +218,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"logfile", required_argument, NULL, 'l'}, "Log file"},
         {{"verbose", no_argument, NULL, 'v'}, "Disable ANSI console; use simple log output"},
 #if defined(_HF_ARCH_LINUX) || defined(_HF_ARCH_DARWIN)
-        {{"verifier", no_argument, NULL, 'V'}, "Enable crashes verifier (default: disabled)"},
+        {{"verifier", no_argument, NULL, 'V'}, "Enable crashes verifier"},
 #endif
         {{"debug_level", required_argument, NULL, 'd'}, "Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])"},
         {{"extension", required_argument, NULL, 'e'}, "Input file extension (e.g. 'swf'), (default: 'fuzz')"},
@@ -236,7 +236,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
 
 #if defined(_HF_ARCH_LINUX)
-        {{"sancov", no_argument, NULL, 'C'}, "EXPERIMENTAL: Enable sanitizer coverage feedback (default: disabled)"},
+        {{"sancov", no_argument, NULL, 'C'}, "EXPERIMENTAL: Enable sanitizer coverage feedback"},
         {{"linux_pid", required_argument, NULL, 'p'}, "Attach to a pid (and its thread group)"},
         {{"linux_file_pid", required_argument, NULL, 'P'}, "Attach to pid (and its thread group) read from file"},
         {{"linux_addr_low_limit", required_argument, NULL, 0x500}, "Address limit (from si.si_addr) below which crashes are not reported, (default: '0')"},
