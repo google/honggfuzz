@@ -118,11 +118,6 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
     }
 }
 
-static inline uint64_t arch_perfGetMmap64(uint64_t off)
-{
-    return *(uint64_t *) (perfMmapBuf + perfPageSz + off);
-}
-
 static inline void arch_perfMmapParse(void)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
