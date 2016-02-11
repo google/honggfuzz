@@ -37,8 +37,9 @@ ifeq ($(OS),Linux)
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -funroll-loops -O2 \
                    -D_FILE_OFFSET_BITS=64
-    ARCH_LDFLAGS := -lpthread -L/usr/local/include -L/usr/include \
-                    -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt -Bdynamic
+    ARCH_LDFLAGS := -L/usr/local/include -L/usr/include \
+                    -Bdynamic \
+                    -lpthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt
     ARCH_SRCS := $(wildcard linux/*.c)
 
     ifeq ("$(wildcard /usr/include/bfd.h)","")
