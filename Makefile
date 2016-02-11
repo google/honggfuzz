@@ -74,7 +74,7 @@ else ifeq ($(OS),Darwin)
     CRASHWRANGLER := third_party/mac
     OS_VERSION := $(shell sw_vers -productVersion)
     ifneq (,$(findstring 10.11,$(OS_VERSION)))
-        # El Capitan didn't break compatibility 
+        # El Capitan didn't break compatibility
         SDK_NAME := "macosx10.11"
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
     else ifneq (,$(findstring 10.10,$(OS_VERSION)))
@@ -169,11 +169,11 @@ all: $(BIN) $(INTERCEPTOR_LIBS)
 $(BIN): $(OBJS)
 	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
 
-.PHONY: clean 
+.PHONY: clean
 clean:
 	$(RM) -r core $(OBJS) $(BIN) $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
 
-.PHONY: indent 
+.PHONY: indent
 indent:
 	indent -linux -l100 -lc100 -nut -i4 *.c *.h */*.c */*.h; rm -f *~ */*~
 
