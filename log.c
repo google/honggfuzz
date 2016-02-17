@@ -41,10 +41,18 @@
 #define __hf_pid()      getpid()
 #endif                          /* defined(_HF_ARCH_LINUX) */
 
-static int log_fd = STDERR_FILENO;
-static bool log_fd_isatty = true;
-enum llevel_t log_level = INFO;
+static int log_fd;
+static bool log_fd_isatty;
+enum llevel_t log_level;
 pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+__attribute__ ((constructor))
+static void log_init(void)
+{
+    log_level = INFO;
+    log_fd = STDERR_FILENO;
+    log_fd_isatty = isatty(log_fd);
+}
 
 /*
  * Log to stderr by default. Use a dup()d fd, because in the future we'll associate the
@@ -52,7 +60,6 @@ pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
  */
 bool logInitLogFile(const char *logfile, enum llevel_t ll)
 {
-    log_fd_isatty = (isatty(log_fd) == 1 ? true : false);
     log_level = ll;
 
     if (logfile == NULL) {

@@ -64,10 +64,10 @@ static void cmdlineHelp(const char *pname, struct custom_option *opts)
         if (isprint(opts[i].opt.val)) {
             LOG_HELP_BOLD(" --%s%s%c %s", opts[i].opt.name,
                           "|-", opts[i].opt.val,
-                          opts[i].opt.has_arg == required_argument ? "[val]" : "");
+                          opts[i].opt.has_arg == required_argument ? "VALUE" : "");
         } else {
             LOG_HELP_BOLD(" --%s %s", opts[i].opt.name,
-                          opts[i].opt.has_arg == required_argument ? "[val]" : "");
+                          opts[i].opt.has_arg == required_argument ? "VALUE" : "");
         }
         LOG_HELP("\t%s", opts[i].descr);
     }
