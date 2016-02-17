@@ -121,7 +121,36 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
 static inline void arch_perfMmapParse(void)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
-    arch_ptAnalyze(pem, perfMmapAux, perfDynamicMethod, arch_perfAddBranch);
+#ifdef _HF_ENABLE_INTEL_PT
+    if (pem->aux_head == pem->aux_tail) {
+        return;
+    }
+    if (pem->aux_head < pem->aux_tail) {
+        LOG_F("The PERF AUX data has been overwritten. The AUX buffer is too small");
+    }
+
+    struct bts_branch {
+        uint64_t from;
+        uint64_t to;
+        uint64_t misc;
+    };
+    if (perfDynamicMethod == _HF_DYNFILE_BTS_BLOCK) {
+        struct bts_branch *br = (struct bts_branch *)perfMmapAux;
+        for (; br < ((struct bts_branch *)(perfMmapAux + pem->aux_head)); br++) {
+            arch_perfAddBranch(br->from, 0UL);
+        }
+        return;
+    }
+    if (perfDynamicMethod == _HF_DYNFILE_BTS_EDGE) {
+        struct bts_branch *br = (struct bts_branch *)perfMmapAux;
+        for (; br < ((struct bts_branch *)(perfMmapAux + pem->aux_head)); br++) {
+            arch_perfAddBranch(br->from, br->to);
+        }
+        return;
+    }
+#endif
+
+    arch_ptAnalyze(pem, perfMmapAux, arch_perfAddBranch);
 }
 
 static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu, int group_fd,

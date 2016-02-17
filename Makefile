@@ -38,7 +38,6 @@ ifeq ($(OS),Linux)
                    -Wno-unknown-warning-option -funroll-loops -O2 \
                    -D_FILE_OFFSET_BITS=64
     ARCH_LDFLAGS := -L/usr/local/include -L/usr/include \
-                    -Bdynamic \
                     -lpthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt
     ARCH_SRCS := $(wildcard linux/*.c)
 

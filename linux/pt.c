@@ -201,36 +201,9 @@ inline static void perf_ptAnalyzePkt(struct pt_packet *packet, struct pt_config 
     }
 }
 
-void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf, dynFileMethod_t method,
+void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf,
                     void (*add_branch) (uint64_t from, uint64_t to))
 {
-    if (pem->aux_head == pem->aux_tail) {
-        return;
-    }
-    if (pem->aux_head < pem->aux_tail) {
-        LOG_F("The PERF AUX data has been overwritten. The AUX buffer is too small");
-    }
-
-    struct bts_branch {
-        uint64_t from;
-        uint64_t to;
-        uint64_t misc;
-    };
-    if (method == _HF_DYNFILE_BTS_BLOCK) {
-        struct bts_branch *br = (struct bts_branch *)auxBuf;
-        for (; br < ((struct bts_branch *)(auxBuf + pem->aux_head)); br++) {
-            add_branch(br->from, 0UL);
-        }
-        return;
-    }
-    if (method == _HF_DYNFILE_BTS_EDGE) {
-        struct bts_branch *br = (struct bts_branch *)auxBuf;
-        for (; br < ((struct bts_branch *)(auxBuf + pem->aux_head)); br++) {
-            add_branch(br->from, br->to);
-        }
-        return;
-    }
-
     struct pt_config ptc;
     pt_config_init(&ptc);
     ptc.begin = &auxBuf[pem->aux_tail];
@@ -273,8 +246,7 @@ void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf, dynFileM
 #else                           /* _HF_LINUX_INTEL_PT_LIB */
 
 void arch_ptAnalyze(struct perf_event_mmap_page *pem UNUSED, uint8_t * auxBuf UNUSED,
-                    dynFileMethod_t method UNUSED, void (*add_branch) (uint64_t from,
-                                                                       uint64_t to) UNUSED)
+                    void (*add_branch) (uint64_t from, uint64_t to) UNUSED)
 {
     LOG_F
         ("The program has not been linked against the Intel's Processor Trace Library (libipt.so)");
