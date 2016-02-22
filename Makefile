@@ -23,7 +23,6 @@ BIN := honggfuzz
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=51200
 COMMON_LDFLAGS := -lm
 COMMON_SRCS := honggfuzz.c cmdline.c display.c log.c files.c fuzz.c report.c mangle.c util.c
-INTERCEPTOR_SRCS := $(wildcard interceptor/*.c)
 
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
@@ -31,6 +30,7 @@ MARCH ?= $(shell uname -m)
 ifeq ($(OS),Linux)
     ARCH := LINUX
     ARCH_DSUFFIX := .so
+
     CC ?= gcc
     LD = $(CC)
     ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
@@ -40,6 +40,7 @@ ifeq ($(OS),Linux)
     ARCH_LDFLAGS := -L/usr/local/include -L/usr/include \
                     -lpthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt
     ARCH_SRCS := $(wildcard linux/*.c)
+    INTERCEPTOR_SRCS := $(wildcard interceptor/*.c)
 
     ifeq ("$(wildcard /usr/include/bfd.h)","")
         WARN_LIBRARY += binutils-devel
@@ -121,7 +122,8 @@ else
     ARCH_SRCS := $(wildcard posix/*.c)
     ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
-                   -Wno-unknown-warning-option -funroll-loops -O2
+                   -Wno-unknown-warning-option -Wno-unknown-pragmas \
+				   -funroll-loops -O2
     ARCH_LDFLAGS := -lpthread -L/usr/local/include -L/usr/include
     # OS Posix
 endif
