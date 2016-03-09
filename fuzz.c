@@ -218,31 +218,32 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_ind
 
 static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
 {
-    int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
-    if (dstfd == -1) {
-        PLOG_E("Couldn't create a temporary file '%s'", fuzzer->fileName);
-        return false;
-    }
-
-    LOG_D("Created '%s' as an input file", fuzzer->fileName);
-
-    if (hfuzz->inputFile) {
-        size_t fileSz =
-            files_readFileToBufMax(hfuzz->files[rnd_index], fuzzer->dynamicFile, hfuzz->maxFileSz);
-        if (fileSz == 0UL) {
-            LOG_E("Couldn't read '%s'", hfuzz->files[rnd_index]);
-            unlink(fuzzer->fileName);
+    {
+        int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
+        if (dstfd == -1) {
+            PLOG_E("Couldn't create a temporary file '%s'", fuzzer->fileName);
             return false;
         }
+        defer(close(dstfd));
 
-        if (files_writeToFd(dstfd, fuzzer->dynamicFile, fileSz) == false) {
-            close(dstfd);
-            unlink(fuzzer->fileName);
-            return false;
+        LOG_D("Created '%s' as an input file", fuzzer->fileName);
+
+        if (hfuzz->inputFile) {
+            size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], fuzzer->dynamicFile,
+                                                   hfuzz->maxFileSz);
+            if (fileSz == 0UL) {
+                LOG_E("Couldn't read '%s'", hfuzz->files[rnd_index]);
+                unlink(fuzzer->fileName);
+                return false;
+            }
+
+            if (files_writeToFd(dstfd, fuzzer->dynamicFile, fileSz) == false) {
+                unlink(fuzzer->fileName);
+                return false;
+            }
         }
-    }
 
-    close(dstfd);
+    }
 
     pid_t pid = arch_fork(hfuzz);
     if (pid == -1) {
@@ -284,7 +285,6 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, i
 
 static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
 {
-    bool ret = false;
     int crashFd = -1;
     uint8_t *crashBuf = NULL;
     off_t crashFileSz = 0;
@@ -292,8 +292,10 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     crashBuf = files_mapFile(crashedFuzzer->crashFileName, &crashFileSz, &crashFd, false);
     if (crashBuf == NULL) {
         LOG_E("Couldn't open and map '%s' in R/O mode", crashedFuzzer->crashFileName);
-        goto bail;
+        return false;
     }
+    defer(munmap(crashBuf, crashFileSz));
+    defer(close(crashFd));
 
     LOG_I("Launching verifier for %" PRIx64 " hash", crashedFuzzer->backtrace);
     for (int i = 0; i < _HF_VERIFIER_ITER; i++) {
@@ -330,7 +332,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         if (files_writeBufToFile
             (vFuzzer.fileName, crashBuf, crashFileSz, O_WRONLY | O_CREAT | O_EXCL) == false) {
             LOG_E("Couldn't write buffer to file '%s'", vFuzzer.fileName);
-            goto bail;
+            return false;
         }
 
         vFuzzer.pid = arch_fork(hfuzz);
@@ -342,7 +344,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         if (!vFuzzer.pid) {
             if (!arch_launchChild(hfuzz, crashedFuzzer->crashFileName)) {
                 LOG_E("Error launching verifier child process");
-                goto bail;
+                return false;
             }
         }
 
@@ -352,7 +354,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         /* If stack hash doesn't match skip name tag and exit */
         if (crashedFuzzer->backtrace != vFuzzer.backtrace) {
             LOG_D("Verifier stack hash mismatch");
-            goto bail;
+            return false;
         }
     }
 
@@ -371,20 +373,11 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             LOG_I("It seems that '%s' already exists, skipping", verFile);
         } else {
             LOG_E("Couldn't copy '%s' to '%s'", crashedFuzzer->crashFileName, verFile);
-            goto bail;
+            return false;
         }
     }
 
-    ret = true;
-
- bail:
-    if (crashBuf) {
-        munmap(crashBuf, crashFileSz);
-    }
-    if (crashFd != -1) {
-        close(crashFd);
-    }
-    return ret;
+    return true;
 }
 
 static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
@@ -753,6 +746,4 @@ void fuzz_main(honggfuzz_t * hfuzz)
     if (hfuzz->pidCmd) {
         free(hfuzz->pidCmd);
     }
-
-    _exit(EXIT_SUCCESS);
 }

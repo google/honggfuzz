@@ -90,6 +90,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
  out:
     ui ? _UPT_destroy(ui) : 0;
     as ? unw_destroy_addr_space(as) : 0;
+
     return num_frames;
 }
 
