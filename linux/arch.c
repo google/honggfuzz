@@ -560,7 +560,7 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     hfuzz->numMajorFrames = 14;
 #endif
 
-    /* 
+    /*
      * If monitoring remote process don't adjust sanitizer flags for spawned workers. It
      * is user's responsibility to spawn remote process with correct flags & path for data
      * files aligned with workspace expected dir.

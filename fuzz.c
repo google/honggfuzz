@@ -548,6 +548,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     if (fuzzer.dynamicFile == NULL) {
         LOG_F("malloc(%zu) failed", hfuzz->maxFileSz);
     }
+    defer(free(fuzzer.dynamicFile));
 
     size_t rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
 
@@ -616,7 +617,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     }
 
     report_Report(hfuzz, fuzzer.report);
-    free(fuzzer.dynamicFile);
 }
 
 static void *fuzz_threadNew(void *arg)

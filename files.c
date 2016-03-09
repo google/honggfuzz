@@ -126,10 +126,10 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
         PLOG_W("Couldn't allocate memory");
         return false;
     }
+    defer(free(buf));
 
     memset(buf, p, (size_t) size);
     int ret = files_writeToFd(fd, buf, size);
-    free(buf);
 
     return ret;
 }
@@ -277,18 +277,17 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         if (getdelim(&lineptr, &n, '\0', fDict) == -1) {
             break;
         }
+        defer(free(lineptr));
         if ((hfuzz->dictionary =
              realloc(hfuzz->dictionary,
                      (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]))) == NULL) {
             PLOG_E("Realloc failed (sz=%zu)",
                    (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]));
-            free(lineptr);
             return false;
         }
         hfuzz->dictionary[hfuzz->dictionaryCnt] = malloc(strlen(lineptr));
         if (!hfuzz->dictionary[hfuzz->dictionaryCnt]) {
             PLOG_E("malloc(%zu) failed", strlen(lineptr));
-            free(lineptr);
             return false;
         }
         strncpy(hfuzz->dictionary[hfuzz->dictionaryCnt], lineptr, strlen(lineptr));;
@@ -298,7 +297,6 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         hfuzz->dictionaryCnt += 1;
     }
     LOG_I("Loaded %zu words from the dictionary", hfuzz->dictionaryCnt);
-    free(lineptr);
     return true;
 }
 
