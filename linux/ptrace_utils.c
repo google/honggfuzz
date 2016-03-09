@@ -956,6 +956,7 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
                                 char **op)
 {
     char crashReport[PATH_MAX] = { 0 };
+    const char *const crashReportCpy = crashReport;
     snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX, pid);
 
     FILE *fReport = fopen(crashReport, "rb");
@@ -963,6 +964,8 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
         PLOG_D("Couldn't open '%s' - R/O mode", crashReport);
         return -1;
     }
+    defer(fclose(fReport));
+    defer(unlink(crashReportCpy));
 
     char header[35] = { 0 };
     snprintf(header, sizeof(header), "==%d==ERROR: AddressSanitizer:", pid);
@@ -979,6 +982,7 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
         if (getline(&lineptr, &n, fReport) == -1) {
             break;
         }
+        defer(free(lineptr));
 
         /* First step is to identify header */
         if (headerFound == false) {
@@ -1061,9 +1065,6 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
         }
     }
 
-    fclose(fReport);
-    free(lineptr);
-    unlink(crashReport);
     return frameIdx;
 }
 
@@ -1388,12 +1389,12 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
         PLOG_E("Couldn't open dir '%s'", path);
         return false;
     }
+    defer(closedir(dir));
 
     for (;;) {
         struct dirent de, *res;
         if (readdir_r(dir, &de, &res) > 0) {
             PLOG_E("Couldn't read contents of '%s'", path);
-            closedir(dir);
             return false;
         }
 
@@ -1414,7 +1415,6 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
             break;
         }
     }
-    closedir(dir);
     PLOG_D("Total number of threads in pid '%d': '%zd'", pid, count);
     tasks[count + 1] = 0;
     if (count < 1) {
