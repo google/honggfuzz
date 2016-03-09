@@ -354,8 +354,10 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     /* Interaction with global Trie should mutex wrap to avoid threads races */
-    MX_LOCK(&hfuzz->sanCov_mutex);
     {
+        MX_LOCK(&hfuzz->sanCov_mutex);
+        defer(MX_UNLOCK(&hfuzz->sanCov_mutex));
+
         /* If runtime data destroy flag, new seed has been picked so destroy old & create new Trie */
         if (hfuzz->clearCovMetadata == true) {
             /* Since this path is invoked on first run too, destroy old Trie only if exists */
@@ -367,7 +369,6 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             isSeedFirstRun = true;
         }
     }
-    MX_UNLOCK(&hfuzz->sanCov_mutex);
 
     /* See if #maps is available from previous run to avoid realloc inside loop */
     uint64_t prevMapsNum = __sync_fetch_and_add(&hfuzz->sanCovCnts.dsoCnt, 0UL);
@@ -406,14 +407,14 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         memcpy(mapData.mapName, mapName, strlen(mapName));
 
         /* Interaction with global Trie should mutex wrap to avoid threads races */
-        MX_LOCK(&hfuzz->sanCov_mutex);
         {
+            MX_LOCK(&hfuzz->sanCov_mutex);
+            defer(MX_UNLOCK(&hfuzz->sanCov_mutex));
             /* Add entry to Trie with zero data if not already */
             if (!arch_trieSearch(hfuzz->covMetadata->children, mapData.mapName)) {
                 arch_trieAdd(&hfuzz->covMetadata, mapData.mapName);
             }
         }
-        MX_UNLOCK(&hfuzz->sanCov_mutex);
 
         /* If not DSO number history (first run) or new DSO loaded, realloc local maps metadata buf */
         if (prevMapsNum == 0 || prevMapsNum < mapsNum) {
@@ -497,8 +498,9 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                     prevIndex = bestFit;
 
                     /* Interaction with global Trie should mutex wrap to avoid threads races */
-                    MX_LOCK(&hfuzz->sanCov_mutex);
                     {
+                        MX_LOCK(&hfuzz->sanCov_mutex);
+                        defer(MX_UNLOCK(&hfuzz->sanCov_mutex));
                         curMap =
                             arch_trieSearch(hfuzz->covMetadata->children, mapsBuf[bestFit].mapName);
                         if (curMap == NULL) {
@@ -523,7 +525,6 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                             }
                         }
                     }
-                    MX_UNLOCK(&hfuzz->sanCov_mutex);
                 }
 
                 /* If new relative BB addr update DSO's bitmap */
@@ -531,11 +532,11 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 if (!arch_queryBitmap(curMap->data.pBM, relAddr)) {
 
                     /* Interaction with global Trie should mutex wrap to avoid threads races */
-                    MX_LOCK(&hfuzz->sanCov_mutex);
                     {
+                        MX_LOCK(&hfuzz->sanCov_mutex);
+                        defer(MX_UNLOCK(&hfuzz->sanCov_mutex));
                         arch_setBitmap(curMap->data.pBM, relAddr);
                     }
-                    MX_UNLOCK(&hfuzz->sanCov_mutex);
 
                     /* Also increase new BBs counter at worker's thread runtime data */
                     mapsBuf[bestFit].newBBCnt++;

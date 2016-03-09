@@ -115,49 +115,50 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
 
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
 {
-    MX_LOCK(&hfuzz->dynamicFile_mutex);
+    {
+        MX_LOCK(&hfuzz->dynamicFile_mutex);
+        defer(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
 
-    /* If max dynamicFile iterations counter, pick new seed file when working with input file corpus */
-    if (hfuzz->inputFile &&
-        __sync_fetch_and_add(&hfuzz->dynFileIterExpire, 0UL) >= _HF_MAX_DYNFILE_ITER) {
-        size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
-                                               hfuzz->maxFileSz);
-        if (fileSz == 0) {
-            MX_UNLOCK(&hfuzz->dynamicFile_mutex);
-            LOG_E("Couldn't read '%s'", hfuzz->files[rnd_index]);
-            return false;
+        /* If max dynamicFile iterations counter, pick new seed file when working with input file corpus */
+        if (hfuzz->inputFile &&
+            __sync_fetch_and_add(&hfuzz->dynFileIterExpire, 0UL) >= _HF_MAX_DYNFILE_ITER) {
+            size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
+                                                   hfuzz->maxFileSz);
+            if (fileSz == 0) {
+                MX_UNLOCK(&hfuzz->dynamicFile_mutex);
+                LOG_E("Couldn't read '%s'", hfuzz->files[rnd_index]);
+                return false;
+            }
+            hfuzz->dynamicFileBestSz = fileSz;
+
+            /* Reset counter since new seed pick */
+            __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
+            fuzz_resetFeedbackCnts(hfuzz);
+
+            /*
+             * In order to have accurate comparison base for coverage, first iteration
+             * of a new seed is executed without mangling. Also workersBlock_mutex mutex
+             * is maintain until execution is finished to ensure that other threads will
+             * work against the same coverage data vs. original seed.
+             */
+            hfuzz->isDynFileLocked = true;
+        } else if (hfuzz->inputFile == NULL && (fuzz_isPerfCntsSet(hfuzz) == false)) {
+            /*
+             * When working with an empty input file corpus (allowed if perf feedback enabled for Linux archs),
+             * first iteration is executed without mangling. First iteration need to be executed by one thread
+             * blocking other workers from continuing until finished.
+             */
+            hfuzz->isDynFileLocked = true;
         }
-        hfuzz->dynamicFileBestSz = fileSz;
 
-        /* Reset counter since new seed pick */
-        __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
-        fuzz_resetFeedbackCnts(hfuzz);
+        if (hfuzz->dynamicFileBestSz > hfuzz->maxFileSz) {
+            LOG_F("Current BEST file Sz > maxFileSz (%zu > %zu)", hfuzz->dynamicFileBestSz,
+                  hfuzz->maxFileSz);
+        }
 
-        /*
-         * In order to have accurate comparison base for coverage, first iteration
-         * of a new seed is executed without mangling. Also workersBlock_mutex mutex
-         * is maintain until execution is finished to ensure that other threads will
-         * work against the same coverage data vs. original seed.
-         */
-        hfuzz->isDynFileLocked = true;
-    } else if (hfuzz->inputFile == NULL && (fuzz_isPerfCntsSet(hfuzz) == false)) {
-        /*
-         * When working with an empty input file corpus (allowed if perf feedback enabled for Linux archs),
-         * first iteration is executed without mangling. First iteration need to be executed by one thread
-         * blocking other workers from continuing until finished.
-         */
-        hfuzz->isDynFileLocked = true;
+        fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
+        memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
     }
-
-    if (hfuzz->dynamicFileBestSz > hfuzz->maxFileSz) {
-        LOG_F("Current BEST file Sz > maxFileSz (%zu > %zu)", hfuzz->dynamicFileBestSz,
-              hfuzz->maxFileSz);
-    }
-
-    fuzzer->dynamicFileSz = hfuzz->dynamicFileBestSz;
-    memcpy(fuzzer->dynamicFile, hfuzz->dynamicFileBest, hfuzz->dynamicFileBestSz);
-
-    MX_UNLOCK(&hfuzz->dynamicFile_mutex);
 
     /*
      * true isDynFileLocked indicates first run for a new seed, so skip mangling
@@ -398,6 +399,7 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
          fuzzer->hwCnts.cpuBtsEdgeCnt, fuzzer->hwCnts.customCnt);
 
     MX_LOCK(&hfuzz->dynamicFile_mutex);
+    defer(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
 
     int64_t diff0 = hfuzz->hwCnts.cpuInstrCnt - fuzzer->hwCnts.cpuInstrCnt;
     int64_t diff1 = hfuzz->hwCnts.cpuBranchCnt - fuzzer->hwCnts.cpuBranchCnt;
@@ -442,7 +444,6 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             rename(currentBestTmp, currentBest);
         }
     }
-    MX_UNLOCK(&hfuzz->dynamicFile_mutex);
 }
 
 static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
@@ -455,6 +456,7 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
          fuzzer->sanCovCnts.newBBCnt);
 
     MX_LOCK(&hfuzz->dynamicFile_mutex);
+    defer(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
 
     /* abs diff of total BBs between global counter for chosen seed & current run */
     uint64_t totalBBsDiff;
@@ -511,7 +513,6 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             rename(currentBestTmp, currentBest);
         }
     }
-    MX_UNLOCK(&hfuzz->dynamicFile_mutex);
 }
 
 static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)

@@ -106,27 +106,31 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
     }
 
     /* Start printing logs */
-    pthread_mutex_lock(&log_mutex);
-    if (log_fd_isatty) {
-        dprintf(log_fd, "%s", logLevels[ll].prefix);
-    }
-    if (logLevels[ll].print_funcline) {
-        dprintf(log_fd, "[%s][%s][%d] %s():%d ", timestr, logLevels[ll].descr, __hf_pid(), fn, ln);
-    }
+    {
+        pthread_mutex_lock(&log_mutex);
+        defer(pthread_mutex_unlock(&log_mutex));
 
-    va_list args;
-    va_start(args, fmt);
-    vdprintf(log_fd, fmt, args);
-    va_end(args);
+        if (log_fd_isatty) {
+            dprintf(log_fd, "%s", logLevels[ll].prefix);
+        }
+        if (logLevels[ll].print_funcline) {
+            dprintf(log_fd, "[%s][%s][%d] %s():%d ", timestr, logLevels[ll].descr, __hf_pid(), fn,
+                    ln);
+        }
 
-    if (perr == true) {
-        dprintf(log_fd, ": %s", strerr);
+        va_list args;
+        va_start(args, fmt);
+        vdprintf(log_fd, fmt, args);
+        va_end(args);
+
+        if (perr == true) {
+            dprintf(log_fd, ": %s", strerr);
+        }
+        if (log_fd_isatty) {
+            dprintf(log_fd, "\033[0m");
+        }
+        dprintf(log_fd, "\n");
     }
-    if (log_fd_isatty) {
-        dprintf(log_fd, "\033[0m");
-    }
-    dprintf(log_fd, "\n");
-    pthread_mutex_unlock(&log_mutex);
     /* End printing logs */
 
     if (ll == FATAL) {

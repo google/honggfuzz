@@ -95,19 +95,21 @@ static void arch_bfdDestroy(bfd_t * bfdParams)
 void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
 {
     /* Guess what? libbfd is not multi-threading safe */
-    while (pthread_mutex_lock(&arch_bfd_mutex)) ;
+    MX_LOCK(&arch_bfd_mutex);
+    defer(MX_UNLOCK(&arch_bfd_mutex));
 
     bfd_init();
 
-    bfd_t bfdParams = {
+    __block bfd_t bfdParams = {
         .bfdh = NULL,
         .section = NULL,
         .syms = NULL,
     };
 
     if (arch_bfdInit(pid, &bfdParams) == false) {
-        goto out;
+        return;
     }
+    defer(arch_bfdDestroy(&bfdParams));
 
     const char *func;
     const char *file;
@@ -127,11 +129,6 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
             funcs[i].line = line;
         }
     }
-
- out:
-    arch_bfdDestroy(&bfdParams);
-
-    while (pthread_mutex_unlock(&arch_bfd_mutex)) ;
 }
 
 static int arch_bfdFPrintF(void *buf, const char *fmt, ...)
@@ -146,7 +143,8 @@ static int arch_bfdFPrintF(void *buf, const char *fmt, ...)
 
 void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
 {
-    while (pthread_mutex_lock(&arch_bfd_mutex)) ;
+    MX_LOCK(&arch_bfd_mutex);
+    defer(MX_UNLOCK(&arch_bfd_mutex));
 
     bfd_init();
 
@@ -155,18 +153,19 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
     bfd *bfdh = bfd_openr(fname, NULL);
     if (bfdh == NULL) {
         LOG_W("bfd_openr('/proc/%d/exe') failed", pid);
-        goto out;
+        return;
     }
+    defer(bfd_close_all_done(bfdh));
 
     if (!bfd_check_format(bfdh, bfd_object)) {
         LOG_W("bfd_check_format() failed");
-        goto out;
+        return;
     }
 
     disassembler_ftype disassemble = disassembler(bfdh);
     if (disassemble == NULL) {
         LOG_W("disassembler() failed");
-        goto out;
+        return;
     }
 
     struct disassemble_info info;
@@ -183,9 +182,4 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
     if (disassemble(0, &info) <= 0) {
         snprintf(instr, _HF_INSTR_SZ, "[DIS-ASM_FAILURE]");
     }
-
- out:
-    bfdh ? bfd_close_all_done(bfdh) : 0;
-
-    while (pthread_mutex_unlock(&arch_bfd_mutex)) ;
 }

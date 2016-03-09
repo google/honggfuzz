@@ -19,6 +19,8 @@
 
 
 # Common for all architectures
+CC ?= gcc
+LD = $(CC)
 BIN := honggfuzz
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=51200
 COMMON_LDFLAGS := -lm
@@ -31,11 +33,9 @@ ifeq ($(OS),Linux)
     ARCH := LINUX
     ARCH_DSUFFIX := .so
 
-    CC ?= gcc
-    LD = $(CC)
     ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
-                   -Wno-unknown-warning-option -funroll-loops -O2 \
+                   -Wno-unknown-warning-option -funroll-loops -O3 \
                    -D_FILE_OFFSET_BITS=64
     ARCH_LDFLAGS := -L/usr/local/include -L/usr/include \
                     -lpthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt
@@ -68,6 +68,12 @@ ifeq ($(OS),Linux)
         # Support for popcnt (used in linux/perf.c)
         ARCH_CFLAGS += -msse4.2
     endif       # MARCH
+
+    COMPILER = $(shell $(CC) -v 2>&1 | grep -E '(gcc|clang) version' | grep -oE '(clang|gcc)')
+    ifeq ($(COMPILER),clang)
+		ARCH_CFLAGS += -fblocks
+		ARCH_LDFLAGS += -lBlocksRuntime
+    endif
     # OS Linux
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
@@ -98,7 +104,7 @@ else ifeq ($(OS),Darwin)
     CC := $(shell xcrun --sdk $(SDK_NAME) --find cc)
     LD := $(shell xcrun --sdk $(SDK_NAME) --find cc)
     ARCH_CFLAGS := -arch x86_64 -O3 -std=c99 -isysroot $(SDK) -I. \
-                   -x objective-c -pedantic \
+                   -x objective-c -pedantic -fblocks \
                    -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
                    -Wreturn-type -Wpointer-arith -Wno-gnu-case-range -Wno-gnu-designator \
                    -Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-attributes
@@ -117,14 +123,16 @@ else ifeq ($(OS),Darwin)
 else
     ARCH := POSIX
     ARCH_DSUFFIX := .so
-    CC ?= gcc
-    LD = $(CC)
     ARCH_SRCS := $(wildcard posix/*.c)
     ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
 				   -funroll-loops -O2
     ARCH_LDFLAGS := -lpthread -L/usr/local/include -L/usr/include
+    COMPILER = $(shell $(CC) -v 2>&1 | grep -E '(gcc|clang) version' | grep -oE '(clang|gcc)')
+    ifeq ($(COMPILER),clang)
+		ARCH_CFLAGS += -fblocks
+    endif
     # OS Posix
 endif
 
@@ -202,12 +210,12 @@ fuzz.o: util.h
 report.o: common.h report.h log.h util.h
 mangle.o: common.h mangle.h log.h util.h
 util.o: common.h files.h log.h
+linux/arch.o: common.h arch.h linux/perf.h linux/ptrace_utils.h
+linux/arch.o: linux/sancov.h log.h util.h files.h
+linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
+linux/perf.o: common.h linux/perf.h files.h linux/pt.h log.h util.h
+linux/pt.o: common.h linux/pt.h log.h
 linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h linux/bfd.h
 linux/ptrace_utils.o: linux/unwind.h log.h util.h
 linux/sancov.o: common.h linux/sancov.h util.h files.h log.h
-linux/perf.o: common.h linux/perf.h files.h linux/pt.h log.h util.h
-linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
-linux/pt.o: common.h linux/pt.h log.h
 linux/unwind.o: common.h linux/unwind.h log.h
-linux/arch.o: common.h arch.h linux/perf.h linux/ptrace_utils.h
-linux/arch.o: linux/sancov.h log.h util.h files.h

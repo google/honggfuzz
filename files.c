@@ -46,16 +46,15 @@ size_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
         PLOG_E("Couldn't open '%s' for R/O", fileName);
         return 0UL;
     }
+    defer(close(fd));
+
     size_t readSz = files_readFromFd(fd, buf, fileMaxSz);
     if (readSz == 0) {
         LOG_E("Couldn't read '%s' to a buf", fileName);
-        close(fd);
         return 0UL;
     }
-    close(fd);
 
     LOG_D("Read '%zu' bytes from '%s'", readSz, fileName);
-
     return readSz;
 }
 
@@ -66,17 +65,15 @@ bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flag
         PLOG_E("Couldn't open '%s' for R/O", fileName);
         return false;
     }
+    defer(close(fd));
 
     if (files_writeToFd(fd, buf, fileSz) == false) {
         PLOG_E("Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName, fd);
-        close(fd);
         unlink(fileName);
         return false;
     }
-    close(fd);
 
     LOG_D("Written '%zu' bytes to '%s'", fileSz, fileName);
-
     return true;
 }
 
@@ -144,25 +141,23 @@ static bool files_readdir(honggfuzz_t * hfuzz)
         PLOG_E("Couldn't open dir '%s'", hfuzz->inputFile);
         return false;
     }
+    defer(closedir(dir));
 
     int count = 0;
     for (;;) {
         struct dirent de, *res;
         if (readdir_r(dir, &de, &res) > 0) {
             PLOG_E("Couldn't read the '%s' dir", hfuzz->inputFile);
-            closedir(dir);
             return false;
         }
 
         if (res == NULL && count > 0) {
             LOG_I("%zu input files have been added to the list", hfuzz->fileCnt);
-            closedir(dir);
             return true;
         }
 
         if (res == NULL && count == 0) {
             LOG_E("Directory '%s' doesn't contain any regular files", hfuzz->inputFile);
-            closedir(dir);
             return false;
         }
 
@@ -192,14 +187,12 @@ static bool files_readdir(honggfuzz_t * hfuzz)
 
         if (!(hfuzz->files = realloc(hfuzz->files, sizeof(char *) * (count + 1)))) {
             PLOG_E("Couldn't allocate memory");
-            closedir(dir);
             return false;
         }
 
         hfuzz->files[count] = strdup(path);
         if (!hfuzz->files[count]) {
             PLOG_E("Couldn't allocate memory");
-            closedir(dir);
             return false;
         }
         hfuzz->fileCnt = ++count;
@@ -349,11 +342,11 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
         PLOG_D("Couldn't open '%s' source", source);
         return false;
     }
+    defer(close(inFD));
 
     struct stat inSt;
     if (fstat(inFD, &inSt) == -1) {
         PLOG_E("Couldn't fstat(fd='%d' fileName='%s')", inFD, source);
-        close(inFD);
         return false;
     }
 
@@ -364,40 +357,30 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
                 *dstExists = true;
         }
         PLOG_D("Couldn't open '%s' destination", destination);
-        close(inFD);
         return false;
     }
+    defer(close(outFD));
 
     uint8_t *inFileBuf = malloc(inSt.st_size);
     if (!inFileBuf) {
         PLOG_E("malloc(%zu) failed", (size_t) inSt.st_size);
-        close(inFD);
-        close(outFD);
         return false;
     }
+    defer(free(inFileBuf));
 
     size_t readSz = files_readFromFd(inFD, inFileBuf, (size_t) inSt.st_size);
     if (readSz == 0) {
         PLOG_E("Couldn't read '%s' to a buf", source);
-        free(inFileBuf);
-        close(inFD);
-        close(outFD);
         return false;
     }
 
     if (files_writeToFd(outFD, inFileBuf, readSz) == false) {
         PLOG_E("Couldn't write '%zu' bytes to file '%s' (fd='%d')", (size_t) readSz,
                destination, outFD);
-        free(inFileBuf);
-        close(inFD);
-        close(outFD);
         unlink(destination);
         return false;
     }
 
-    free(inFileBuf);
-    close(inFD);
-    close(outFD);
     return true;
 }
 
@@ -484,33 +467,28 @@ uint8_t *files_mapFile(char *fileName, off_t * fileSz, int *fd, bool isWritable)
 
 bool files_readPidFromFile(const char *fileName, pid_t * pidPtr)
 {
-    bool ret = false;
-
     FILE *fPID = fopen(fileName, "rb");
     if (fPID == NULL) {
         PLOG_E("Couldn't open '%s' - R/O mode", fileName);
         return false;
     }
+    defer(fclose(fPID));
 
     char *lineptr = NULL;
     size_t lineSz = 0;
     if (getline(&lineptr, &lineSz, fPID) == -1) {
         if (lineSz == 0) {
             LOG_E("Empty PID file (%s)", fileName);
-            fclose(fPID);
-            goto bail;
+            return false;
         }
     }
+    defer(free(lineptr));
 
     *pidPtr = atoi(lineptr);
     if (*pidPtr < 1) {
         LOG_E("Invalid PID read from '%s' file", fileName);
-        goto bail;
+        return false;
     }
-    ret = true;
 
- bail:
-    free(lineptr);
-    fclose(fPID);
-    return ret;
+    return true;
 }
