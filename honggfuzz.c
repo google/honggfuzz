@@ -63,5 +63,5 @@ int main(int argc, char **argv)
      */
     fuzz_main(&hfuzz);
 
-    return EXIT_SUCCESS;
+    _exit(EXIT_SUCCESS);
 }
