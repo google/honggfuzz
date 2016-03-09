@@ -395,13 +395,13 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
         if (getline(&lineptr, &n, fBl) == -1) {
             break;
         }
+        defer(free(lineptr));
 
         if ((hfuzz->blacklist =
              realloc(hfuzz->blacklist,
                      (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]))) == NULL) {
             PLOG_E("realloc failed (sz=%zu)",
                    (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]));
-            free(lineptr);
             return false;
         }
 
@@ -413,7 +413,6 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
             if (hfuzz->blacklist[hfuzz->blacklistCnt - 1] > hfuzz->blacklist[hfuzz->blacklistCnt]) {
                 LOG_F
                     ("Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort records");
-                free(lineptr);
                 return false;
             }
         }
@@ -425,7 +424,6 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
     } else {
         LOG_F("Empty stack hashes blacklist file '%s'", hfuzz->blacklistFile);
     }
-    free(lineptr);
     return true;
 }
 
