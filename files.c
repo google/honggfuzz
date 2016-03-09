@@ -269,6 +269,7 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         PLOG_E("Couldn't open '%s' - R/O mode", hfuzz->dictionaryFile);
         return false;
     }
+    defer(fclose(fDict));
 
     char *lineptr = NULL;
     size_t n = 0;
@@ -281,14 +282,12 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
                      (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]))) == NULL) {
             PLOG_E("Realloc failed (sz=%zu)",
                    (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]));
-            fclose(fDict);
             free(lineptr);
             return false;
         }
         hfuzz->dictionary[hfuzz->dictionaryCnt] = malloc(strlen(lineptr));
         if (!hfuzz->dictionary[hfuzz->dictionaryCnt]) {
             PLOG_E("malloc(%zu) failed", strlen(lineptr));
-            fclose(fDict);
             free(lineptr);
             return false;
         }
@@ -299,7 +298,6 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         hfuzz->dictionaryCnt += 1;
     }
     LOG_I("Loaded %zu words from the dictionary", hfuzz->dictionaryCnt);
-    fclose(fDict);
     free(lineptr);
     return true;
 }
@@ -391,6 +389,7 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
         PLOG_E("Couldn't open '%s' - R/O mode", hfuzz->blacklistFile);
         return false;
     }
+    defer(fclose(fBl));
 
     char *lineptr = NULL;
     size_t n = 0;
@@ -404,7 +403,6 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
                      (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]))) == NULL) {
             PLOG_E("realloc failed (sz=%zu)",
                    (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]));
-            fclose(fBl);
             free(lineptr);
             return false;
         }
@@ -417,7 +415,6 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
             if (hfuzz->blacklist[hfuzz->blacklistCnt - 1] > hfuzz->blacklist[hfuzz->blacklistCnt]) {
                 LOG_F
                     ("Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort records");
-                fclose(fBl);
                 free(lineptr);
                 return false;
             }
@@ -430,7 +427,6 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
     } else {
         LOG_F("Empty stack hashes blacklist file '%s'", hfuzz->blacklistFile);
     }
-    fclose(fBl);
     free(lineptr);
     return true;
 }
