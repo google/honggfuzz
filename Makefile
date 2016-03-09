@@ -68,12 +68,6 @@ ifeq ($(OS),Linux)
         # Support for popcnt (used in linux/perf.c)
         ARCH_CFLAGS += -msse4.2
     endif       # MARCH
-
-    COMPILER = $(shell $(CC) -v 2>&1 | grep -E '(gcc|clang) version' | grep -oE '(clang|gcc)')
-    ifeq ($(COMPILER),clang)
-		ARCH_CFLAGS += -fblocks
-		ARCH_LDFLAGS += -lBlocksRuntime
-    endif
     # OS Linux
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
@@ -129,11 +123,13 @@ else
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
 				   -funroll-loops -O2
     ARCH_LDFLAGS := -lpthread -L/usr/local/include -L/usr/include
-    COMPILER = $(shell $(CC) -v 2>&1 | grep -E '(gcc|clang) version' | grep -oE '(clang|gcc)')
-    ifeq ($(COMPILER),clang)
-		ARCH_CFLAGS += -fblocks
-    endif
     # OS Posix
+endif
+
+COMPILER = $(shell $(CC) -v 2>&1 | grep -E '(gcc|clang) version' | grep -oE '(clang|gcc)')
+ifeq ($(COMPILER),clang)
+    ARCH_CFLAGS += -fblocks
+    ARCH_LDFLAGS += -lBlocksRuntime
 endif
 
 SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
