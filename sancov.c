@@ -412,7 +412,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     /* Interaction with global Trie should mutex wrap to avoid threads races */
     {
         MX_LOCK(&hfuzz->sanCov_mutex);
-        defer(MX_UNLOCK(&hfuzz->sanCov_mutex));
+        DEFER(MX_UNLOCK(&hfuzz->sanCov_mutex));
 
         /* If runtime data destroy flag, new seed has been picked so destroy old & create new Trie */
         if (hfuzz->clearCovMetadata == true) {
@@ -465,7 +465,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         /* Interaction with global Trie should mutex wrap to avoid threads races */
         {
             MX_LOCK(&hfuzz->sanCov_mutex);
-            defer(MX_UNLOCK(&hfuzz->sanCov_mutex));
+            DEFER(MX_UNLOCK(&hfuzz->sanCov_mutex));
             /* Add entry to Trie with zero data if not already */
             if (!sancov_trieSearch(hfuzz->covMetadata->children, mapData.mapName)) {
                 sancov_trieAdd(&hfuzz->covMetadata, mapData.mapName);
@@ -556,7 +556,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                     /* Interaction with global Trie should mutex wrap to avoid threads races */
                     {
                         MX_LOCK(&hfuzz->sanCov_mutex);
-                        defer(MX_UNLOCK(&hfuzz->sanCov_mutex));
+                        DEFER(MX_UNLOCK(&hfuzz->sanCov_mutex));
                         curMap =
                             sancov_trieSearch(hfuzz->covMetadata->children,
                                               mapsBuf[bestFit].mapName);
@@ -589,7 +589,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                     /* Interaction with global Trie should mutex wrap to avoid threads races */
                     {
                         MX_LOCK(&hfuzz->sanCov_mutex);
-                        defer(MX_UNLOCK(&hfuzz->sanCov_mutex));
+                        DEFER(MX_UNLOCK(&hfuzz->sanCov_mutex));
                         sancov_setBitmap(curMap->data.pBM, relAddr);
                     }
 
@@ -793,7 +793,7 @@ bool sancov_Init(honggfuzz_t * hfuzz)
         PLOG_E("malloc(%zu) failed", bufSz);
         return false;
     }
-    defer(free(san_opts));
+    DEFER(free(san_opts));
 
     /* AddressSanitizer (ASan) */
     memset(san_opts, 0, bufSz);

@@ -108,7 +108,7 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
     /* Start printing logs */
     {
         pthread_mutex_lock(&log_mutex);
-        defer(pthread_mutex_unlock(&log_mutex));
+        DEFER(pthread_mutex_unlock(&log_mutex));
 
         if (log_fd_isatty) {
             dprintf(log_fd, "%s", logLevels[ll].prefix);

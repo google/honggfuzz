@@ -96,7 +96,7 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
 {
     /* Guess what? libbfd is not multi-threading safe */
     MX_LOCK(&arch_bfd_mutex);
-    defer(MX_UNLOCK(&arch_bfd_mutex));
+    DEFER(MX_UNLOCK(&arch_bfd_mutex));
 
     bfd_init();
 
@@ -109,7 +109,7 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
     if (arch_bfdInit(pid, &bfdParams) == false) {
         return;
     }
-    defer(arch_bfdDestroy(&bfdParams));
+    DEFER(arch_bfdDestroy(&bfdParams));
 
     const char *func;
     const char *file;
@@ -144,7 +144,7 @@ static int arch_bfdFPrintF(void *buf, const char *fmt, ...)
 void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
 {
     MX_LOCK(&arch_bfd_mutex);
-    defer(MX_UNLOCK(&arch_bfd_mutex));
+    DEFER(MX_UNLOCK(&arch_bfd_mutex));
 
     bfd_init();
 
@@ -155,7 +155,7 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
         LOG_W("bfd_openr('/proc/%d/exe') failed", pid);
         return;
     }
-    defer(bfd_close_all_done(bfdh));
+    DEFER(bfd_close_all_done(bfdh));
 
     if (!bfd_check_format(bfdh, bfd_object)) {
         LOG_W("bfd_check_format() failed");

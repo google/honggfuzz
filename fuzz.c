@@ -211,7 +211,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
 {
     {
         MX_LOCK(&hfuzz->dynamicFile_mutex);
-        defer(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
+        DEFER(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
 
         /* If max dynamicFile iterations counter, pick new seed file when working with input file corpus */
         if (hfuzz->inputFile &&
@@ -317,7 +317,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, i
             PLOG_E("Couldn't create a temporary file '%s'", fuzzer->fileName);
             return false;
         }
-        defer(close(dstfd));
+        DEFER(close(dstfd));
 
         LOG_D("Created '%s' as an input file", fuzzer->fileName);
 
@@ -385,8 +385,8 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         LOG_E("Couldn't open and map '%s' in R/O mode", crashedFuzzer->crashFileName);
         return false;
     }
-    defer(munmap(crashBuf, crashFileSz));
-    defer(close(crashFd));
+    DEFER(munmap(crashBuf, crashFileSz));
+    DEFER(close(crashFd));
 
     LOG_I("Launching verifier for %" PRIx64 " hash", crashedFuzzer->backtrace);
     for (int i = 0; i < _HF_VERIFIER_ITER; i++) {
@@ -488,7 +488,7 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
          fuzzer->hwCnts.cpuBtsEdgeCnt, fuzzer->hwCnts.customCnt);
 
     MX_LOCK(&hfuzz->dynamicFile_mutex);
-    defer(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
+    DEFER(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
 
     int64_t diff0 = hfuzz->hwCnts.cpuInstrCnt - fuzzer->hwCnts.cpuInstrCnt;
     int64_t diff1 = hfuzz->hwCnts.cpuBranchCnt - fuzzer->hwCnts.cpuBranchCnt;
@@ -545,7 +545,7 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
          fuzzer->sanCovCnts.newBBCnt);
 
     MX_LOCK(&hfuzz->dynamicFile_mutex);
-    defer(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
+    DEFER(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
 
     /* abs diff of total BBs between global counter for chosen seed & current run */
     uint64_t totalBBsDiff;
@@ -637,7 +637,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     if (fuzzer.dynamicFile == NULL) {
         LOG_F("malloc(%zu) failed", hfuzz->maxFileSz);
     }
-    defer(free(fuzzer.dynamicFile));
+    DEFER(free(fuzzer.dynamicFile));
 
     size_t rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
 
