@@ -271,13 +271,12 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
     }
     defer(fclose(fDict));
 
-    char *lineptr = NULL;
-    size_t n = 0;
     for (;;) {
+        char *lineptr = NULL;
+        size_t n = 0;
         if (getdelim(&lineptr, &n, '\0', fDict) == -1) {
             break;
         }
-        defer(free(lineptr));
         if ((hfuzz->dictionary =
              realloc(hfuzz->dictionary,
                      (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]))) == NULL) {
@@ -285,12 +284,7 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
                    (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]));
             return false;
         }
-        hfuzz->dictionary[hfuzz->dictionaryCnt] = malloc(strlen(lineptr));
-        if (!hfuzz->dictionary[hfuzz->dictionaryCnt]) {
-            PLOG_E("malloc(%zu) failed", strlen(lineptr));
-            return false;
-        }
-        strncpy(hfuzz->dictionary[hfuzz->dictionaryCnt], lineptr, strlen(lineptr));;
+        hfuzz->dictionary[hfuzz->dictionaryCnt] = lineptr;
         LOG_D("Dictionary: loaded word: '%s' (len=%zu)",
               hfuzz->dictionary[hfuzz->dictionaryCnt],
               strlen(hfuzz->dictionary[hfuzz->dictionaryCnt]));

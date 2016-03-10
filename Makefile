@@ -142,6 +142,7 @@ LDFLAGS += $(COMMON_LDFLAGS) $(ARCH_LDFLAGS)
 
 ifeq ($(DEBUG),true)
     CFLAGS += -g -ggdb
+    LDFLAGS += -g -ggdb
 endif
 
 # Control Android builds
