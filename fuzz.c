@@ -94,7 +94,7 @@ static inline void fuzz_resetFeedbackCnts(honggfuzz_t * hfuzz)
     hfuzz->clearCovMetadata = true;
 }
 
-static void fuzz_sigHandler(int sig)
+static void fuzz_sigHandler(int sig, UNUSED siginfo_t *si, UNUSED void *context)
 {
     /* We should not terminate upon SIGALRM delivery */
     if (sig == SIGALRM) {
@@ -677,8 +677,8 @@ void fuzz_main(honggfuzz_t * hfuzz)
     fuzz_mainThread = pthread_self();
 
     struct sigaction sa = {
-        .sa_handler = fuzz_sigHandler,
-        .sa_flags = 0,
+        .sa_sigaction = fuzz_sigHandler,
+        .sa_flags = SA_SIGINFO,
     };
     sigemptyset(&sa.sa_mask);
     if (sigaction(SIGTERM, &sa, NULL) == -1) {
