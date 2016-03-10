@@ -156,6 +156,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .lastCheckedFileIndex = 0,
         .pid = 0,
         .exeFd = -1,
+        .clearEnv = false,
         .envs = {[0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,},
 
         .timeStart = time(NULL),
@@ -233,6 +234,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"rlimit_as", required_argument, NULL, 0x100}, "Per process memory limit in MiB (default: '0' [no limit])"},
         {{"report", required_argument, NULL, 'R'}, "Write report to this file (default: '" _HF_REPORT_FILE "')"},
         {{"max_file_size", required_argument, NULL, 'F'}, "Maximal size of files processed by the fuzzer in bytes (default: '1048576')"},
+        {{"clear_env", no_argument, NULL, 0x101}, "Clear all environment variables before executing the binary"},
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
         {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
 
@@ -329,6 +331,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x100:
             hfuzz->asLimit = strtoull(optarg, NULL, 0);
+            break;
+        case 0x101:
+            hfuzz->clearEnv = true;
             break;
         case 'p':
             if (util_isANumber(optarg) == false) {

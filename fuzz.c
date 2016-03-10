@@ -190,6 +190,9 @@ static bool fuzz_prepareExecve(honggfuzz_t * hfuzz, const char *fileName)
         }
     }
 
+    if (hfuzz->clearEnv) {
+	environ = NULL;
+    }
     if (sancov_prepareExecve(hfuzz) == false) {
         LOG_E("sancov_prepareExecve() failed");
         return false;

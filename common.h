@@ -206,6 +206,7 @@ typedef struct {
     size_t fileCnt;
     size_t lastCheckedFileIndex;
     int exeFd;
+    bool clearEnv;
     char *envs[128];
 
     time_t timeStart;
