@@ -582,6 +582,10 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         /*
          * Ok, kill the parent if this fails
          */
+        if (sancov_prepareExecve(hfuzz) == false) {
+            LOG_E("sancov_prepareExecve() failed");
+            exit(EXIT_FAILURE);
+        }
         if (!arch_launchChild(hfuzz, fuzzer.fileName)) {
             LOG_E("Error launching child process, killing parent");
             exit(EXIT_FAILURE);
