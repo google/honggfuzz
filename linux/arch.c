@@ -145,6 +145,9 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     syscall(__NR_execveat, hfuzz->exeFd, "", args, environ, AT_EMPTY_PATH);
 #endif
     execvp(args[0], args);
+
+    PLOG_E("execvp('%s')", args[0]);
+
     return false;
 }
 

@@ -176,28 +176,6 @@ bool util_redirectStdin(const char *inputFile)
     return true;
 }
 
-void util_recoverStdio(void)
-{
-    int fd = open("/dev/tty", O_RDWR);
-
-    if (fd == -1) {
-        PLOG_E("Couldn't open '/dev/tty'");
-        return;
-    }
-
-    dup2(fd, 0);
-    dup2(fd, 1);
-    dup2(fd, 2);
-
-    if (tcsetpgrp(fd, getpid()) == -1) {
-        PLOG_W("tcsetpgrp(%d) failed", getpid());
-    }
-
-    if (fd > 2) {
-        close(fd);
-    }
-}
-
 /*
  * This is not a cryptographically secure hash
  */

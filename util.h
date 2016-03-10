@@ -44,8 +44,6 @@ extern void util_nullifyStdio(void);
 
 extern bool util_redirectStdin(const char *inputFile);
 
-extern void util_recoverStdio(void);
-
 extern uint64_t util_hash(const char *buf, size_t len);
 
 extern int64_t util_timeNowMillis(void);

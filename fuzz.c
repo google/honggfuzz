@@ -438,7 +438,6 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                 return false;
             }
             if (!arch_launchChild(hfuzz, crashedFuzzer->crashFileName)) {
-                util_recoverStdio();
                 LOG_E("Error launching verifier child process");
                 return false;
             }
@@ -675,8 +674,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
             exit(EXIT_FAILURE);
         }
         if (!arch_launchChild(hfuzz, fuzzer.fileName)) {
-            util_recoverStdio();
-            LOG_E("Error launching child process, killing parent");
+            LOG_E("Error launching child process");
             exit(EXIT_FAILURE);
         }
     }
