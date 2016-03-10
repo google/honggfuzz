@@ -94,7 +94,7 @@ static inline void fuzz_resetFeedbackCnts(honggfuzz_t * hfuzz)
     hfuzz->clearCovMetadata = true;
 }
 
-static void fuzz_sigHandler(int sig, UNUSED siginfo_t *si, UNUSED void *context)
+static void fuzz_sigHandler(int sig, UNUSED siginfo_t * si, UNUSED void *context)
 {
     /* We should not terminate upon SIGALRM delivery */
     if (sig == SIGALRM) {
@@ -615,6 +615,17 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
 
 static void *fuzz_threadNew(void *arg)
 {
+    /* Block signals which should be handled by the main thread */
+    sigset_t ss;
+    sigemptyset(&ss);
+    sigaddset(&ss, SIGTERM);
+    sigaddset(&ss, SIGINT);
+    sigaddset(&ss, SIGQUIT);
+    sigaddset(&ss, SIGALRM);
+    if (pthread_sigmask(SIG_BLOCK, &ss, NULL) != 0) {
+        PLOG_F("pthread_sigmask(SIG_BLOCK)");
+    }
+
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
     for (;;) {
         /* Dynamic file iteration counter for same seed */
