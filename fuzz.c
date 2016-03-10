@@ -343,6 +343,10 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         }
 
         if (!vFuzzer.pid) {
+            if (sancov_prepareExecve(hfuzz) == false) {
+                LOG_E("sancov_prepareExecve() failed");
+                return false;
+            }
             if (!arch_launchChild(hfuzz, crashedFuzzer->crashFileName)) {
                 LOG_E("Error launching verifier child process");
                 return false;

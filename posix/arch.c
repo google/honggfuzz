@@ -243,30 +243,6 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         putenv(hfuzz->envs[i]);
     }
 
-    /* Address Sanitizer (ASan) */
-    if (hfuzz->sanOpts.asanOpts) {
-        if (setenv("ASAN_OPTIONS", hfuzz->sanOpts.asanOpts, 1) == -1) {
-            PLOG_E("setenv(ASAN_OPTIONS) failed");
-            return false;
-        }
-    }
-
-    /* Memory Sanitizer (MSan) */
-    if (hfuzz->sanOpts.msanOpts) {
-        if (setenv("MSAN_OPTIONS", hfuzz->sanOpts.msanOpts, 1) == -1) {
-            PLOG_E("setenv(MSAN_OPTIONS) failed");
-            return false;
-        }
-    }
-
-    /* Undefined Behavior Sanitizer (UBSan) */
-    if (hfuzz->sanOpts.ubsanOpts) {
-        if (setenv("UBSAN_OPTIONS", hfuzz->sanOpts.ubsanOpts, 1) == -1) {
-            PLOG_E("setenv(UBSAN_OPTIONS) failed");
-            return false;
-        }
-    }
-
     execvp(args[0], args);
 
     util_recoverStdio();

@@ -37,5 +37,6 @@
 
 extern void sancov_Analyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
 extern bool sancov_Init(honggfuzz_t * hfuzz);
+extern bool sancov_prepareExecve(honggfuzz_t * hfuzz);
 
 #endif                          /* _HF_SANCOV_H_ */
