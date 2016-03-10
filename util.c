@@ -301,17 +301,17 @@ uint64_t util_getUINT64(const uint8_t * buf)
 #endif
 }
 
-void MX_LOCK(pthread_mutex_t * mutex)
+void util_mutexLock(pthread_mutex_t * mutex, const char *func, int line)
 {
     if (pthread_mutex_lock(mutex)) {
-        PLOG_F("pthread_mutex_lock(%p)", mutex);
+        PLOG_F("%s():%d pthread_mutex_lock(%p)", func, line, mutex);
     }
 }
 
-void MX_UNLOCK(pthread_mutex_t * mutex)
+void util_mutexUnlock(pthread_mutex_t * mutex, const char *func, int line)
 {
     if (pthread_mutex_unlock(mutex)) {
-        PLOG_F("pthread_mutex_unlock(%p)", mutex);
+        PLOG_F("%s():%d pthread_mutex_unlock(%p)", func, line, mutex);
     }
 }
 
