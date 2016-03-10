@@ -279,8 +279,6 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, i
     }
     LOG_F("External command terminated abnormally, status: %d", childStatus);
     return false;
-
-    abort();                    /* NOTREACHED */
 }
 
 static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
@@ -578,9 +576,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     }
 
     if (!fuzzer.pid) {
-        /*
-         * Ok, kill the parent if this fails
-         */
         if (sancov_prepareExecve(hfuzz) == false) {
             LOG_E("sancov_prepareExecve() failed");
             exit(EXIT_FAILURE);
