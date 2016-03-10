@@ -60,7 +60,7 @@
 /*
  * bitmap implementation
  */
-static bitmap_t *arch_newBitmap(uint32_t capacity)
+static bitmap_t *sancov_newBitmap(uint32_t capacity)
 {
     bitmap_t *pBM = malloc(sizeof(bitmap_t));
     if (pBM == NULL) {
@@ -78,7 +78,7 @@ static bitmap_t *arch_newBitmap(uint32_t capacity)
     return pBM;
 }
 
-static inline bool arch_queryBitmap(bitmap_t * pBM, uint32_t index)
+static inline bool sancov_queryBitmap(bitmap_t * pBM, uint32_t index)
 {
     if (index > pBM->capacity) {
         LOG_E("bitmap overflow (%u)", index);
@@ -90,7 +90,7 @@ static inline bool arch_queryBitmap(bitmap_t * pBM, uint32_t index)
     return false;
 }
 
-static inline void arch_setBitmap(bitmap_t * pBM, uint32_t index)
+static inline void sancov_setBitmap(bitmap_t * pBM, uint32_t index)
 {
     /* This will be removed. So far checks only to verify accepted ranges. */
     if (index >= pBM->capacity) {
@@ -99,7 +99,7 @@ static inline void arch_setBitmap(bitmap_t * pBM, uint32_t index)
     pBM->pChunks[index / 32] |= (1 << (index % 32));
 }
 
-static inline void arch_destroyBitmap(bitmap_t * pBM)
+static inline void sancov_destroyBitmap(bitmap_t * pBM)
 {
     free(pBM->pChunks);
     free(pBM);
@@ -108,7 +108,7 @@ static inline void arch_destroyBitmap(bitmap_t * pBM)
 /*
  * Trie implementation
  */
-static node_t *arch_trieCreateNode(char key)
+static node_t *sancov_trieCreateNode(char key)
 {
     node_t *node = (node_t *) malloc(sizeof(node_t));
     if (node == NULL) {
@@ -126,7 +126,7 @@ static node_t *arch_trieCreateNode(char key)
     return node;
 }
 
-static node_t *arch_trieSearch(node_t * root, const char *key)
+static node_t *sancov_trieSearch(node_t * root, const char *key)
 {
     node_t *pNodeLevel = root, *pNodePtr = NULL;
     int nodeLevelId = 0;
@@ -163,11 +163,11 @@ static void arch_trieAdd(node_t ** root, const char *key)
     if (pTravNode == NULL) {
         /* First node */
         for (pTravNode = *root; *key != '\0'; pTravNode = pTravNode->children) {
-            pTravNode->children = arch_trieCreateNode(*key);
+            pTravNode->children = sancov_trieCreateNode(*key);
             pTravNode->children->parent = pTravNode;
             key++;
         }
-        pTravNode->children = arch_trieCreateNode('\0');
+        pTravNode->children = sancov_trieCreateNode('\0');
         pTravNode->children->parent = pTravNode;
         return;
     }
@@ -189,9 +189,9 @@ static void arch_trieAdd(node_t ** root, const char *key)
         pTravNode = pTravNode->next;
     }
     if (*key) {
-        pTravNode->next = arch_trieCreateNode(*key);
+        pTravNode->next = sancov_trieCreateNode(*key);
     } else {
-        pTravNode->next = arch_trieCreateNode(*key);
+        pTravNode->next = sancov_trieCreateNode(*key);
     }
     pTravNode->next->parent = pTravNode->parent;
     pTravNode->next->prev = pTravNode;
@@ -200,29 +200,29 @@ static void arch_trieAdd(node_t ** root, const char *key)
     }
     key++;
     for (pTravNode = pTravNode->next; *key; pTravNode = pTravNode->children) {
-        pTravNode->children = arch_trieCreateNode(*key);
+        pTravNode->children = sancov_trieCreateNode(*key);
         pTravNode->children->parent = pTravNode;
         key++;
     }
-    pTravNode->children = arch_trieCreateNode('\0');
+    pTravNode->children = sancov_trieCreateNode('\0');
     pTravNode->children->parent = pTravNode;
 
     return;
 }
 
-static inline void arch_trieFreeNode(node_t * node)
+static inline void sancov_trieFreeNode(node_t * node)
 {
     /* First destroy bitmap heap buffers allocated for instrumented maps */
     if (node->data.pBM) {
-        arch_destroyBitmap(node->data.pBM);
+        sancov_destroyBitmap(node->data.pBM);
     }
     free(node);
 }
 
-static inline void arch_trieCreate(node_t ** root)
+static inline void sancov_trieCreate(node_t ** root)
 {
     /* Create root node if new Trie */
-    *root = arch_trieCreateNode('\0');
+    *root = sancov_trieCreateNode('\0');
 }
 
 /* Destroy Trie - iterate nodes and free memory */
@@ -239,33 +239,33 @@ static void arch_trieDestroy(node_t * root)
             pNodeTmp = pNode;
             pNode->next->prev = pNode->prev;
             pNode->prev->next = pNode->next;
-            arch_trieFreeNode(pNodeTmp);
+            sancov_trieFreeNode(pNodeTmp);
         } else if (pNode->prev && !pNode->next) {
             pNodeTmp = pNode;
             pNode->prev->next = NULL;
-            arch_trieFreeNode(pNodeTmp);
+            sancov_trieFreeNode(pNodeTmp);
         } else if (!pNode->prev && pNode->next) {
             pNodeTmp = pNode;
             pNode->parent->children = pNode->next;
             pNode->next->prev = NULL;
             pNode = pNode->next;
-            arch_trieFreeNode(pNodeTmp);
+            sancov_trieFreeNode(pNodeTmp);
         } else {
             pNodeTmp = pNode;
             if (pNode->parent == NULL) {
                 /* Root */
-                arch_trieFreeNode(pNodeTmp);
+                sancov_trieFreeNode(pNodeTmp);
                 return;
             }
             pNode = pNode->parent;
             pNode->children = NULL;
-            arch_trieFreeNode(pNodeTmp);
+            sancov_trieFreeNode(pNodeTmp);
         }
     }
 }
 
 /* Modified interpolation search algorithm to search for nearest address fit */
-static inline uint64_t arch_interpSearch(uint64_t * buf, uint64_t size, uint64_t key)
+static inline uint64_t sancov_interpSearch(uint64_t * buf, uint64_t size, uint64_t key)
 {
     /* Avoid extra checks assuming caller always provides non-zero array size */
     uint64_t low = 0;
@@ -286,7 +286,7 @@ static inline uint64_t arch_interpSearch(uint64_t * buf, uint64_t size, uint64_t
 }
 
 /* qsort struct comparison function (memMap_t struct start addr field) */
-static int arch_qsortCmp(const void *a, const void *b)
+static int sancov_qsortCmp(const void *a, const void *b)
 {
     memMap_t *pA = (memMap_t *) a;
     memMap_t *pB = (memMap_t *) b;
@@ -302,7 +302,7 @@ static int arch_qsortCmp(const void *a, const void *b)
 
 }
 
-static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     int dataFd = -1;
     uint8_t *dataBuf = NULL;
@@ -364,7 +364,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             if (hfuzz->covMetadata != NULL) {
                 arch_trieDestroy(hfuzz->covMetadata);
             }
-            arch_trieCreate(&hfuzz->covMetadata);
+            sancov_trieCreate(&hfuzz->covMetadata);
             hfuzz->clearCovMetadata = false;
             isSeedFirstRun = true;
         }
@@ -411,7 +411,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             MX_LOCK(&hfuzz->sanCov_mutex);
             defer(MX_UNLOCK(&hfuzz->sanCov_mutex));
             /* Add entry to Trie with zero data if not already */
-            if (!arch_trieSearch(hfuzz->covMetadata->children, mapData.mapName)) {
+            if (!sancov_trieSearch(hfuzz->covMetadata->children, mapData.mapName)) {
                 arch_trieAdd(&hfuzz->covMetadata, mapData.mapName);
             }
         }
@@ -443,7 +443,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     /* Sort quick maps index */
-    qsort(mapsBuf, mapsNum, sizeof(memMap_t), arch_qsortCmp);
+    qsort(mapsBuf, mapsNum, sizeof(memMap_t), sancov_qsortCmp);
     for (size_t i = 0; i < mapsNum; i++) {
         startMapsIndex[i] = mapsBuf[i].start;
     }
@@ -488,7 +488,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             continue;
         } else {
             /* Find best hit based on start addr & verify range for errors */
-            uint64_t bestFit = arch_interpSearch(startMapsIndex, mapsNum, bbAddr);
+            uint64_t bestFit = sancov_interpSearch(startMapsIndex, mapsNum, bbAddr);
             if (bbAddr >= mapsBuf[bestFit].start && bbAddr < mapsBuf[bestFit].end) {
                 /* Increase exe/DSO total BB counter */
                 mapsBuf[bestFit].bbCnt++;
@@ -502,7 +502,8 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                         MX_LOCK(&hfuzz->sanCov_mutex);
                         defer(MX_UNLOCK(&hfuzz->sanCov_mutex));
                         curMap =
-                            arch_trieSearch(hfuzz->covMetadata->children, mapsBuf[bestFit].mapName);
+                            sancov_trieSearch(hfuzz->covMetadata->children,
+                                              mapsBuf[bestFit].mapName);
                         if (curMap == NULL) {
                             LOG_E("Corrupted Trie - '%s' not found", mapsBuf[bestFit].mapName);
                             MX_UNLOCK(&hfuzz->sanCov_mutex);
@@ -512,7 +513,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                         /* Maintain bitmaps only for exec/DSOs with coverage enabled - allocate on first use */
                         if (curMap->data.pBM == NULL) {
                             LOG_D("Allocating bitmap for map '%s'", mapsBuf[bestFit].mapName);
-                            curMap->data.pBM = arch_newBitmap(_HF_BITMAP_SIZE);
+                            curMap->data.pBM = sancov_newBitmap(_HF_BITMAP_SIZE);
 
                             /*
                              * If bitmap allocation failed, unset cached Trie node ptr
@@ -529,13 +530,13 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
                 /* If new relative BB addr update DSO's bitmap */
                 uint32_t relAddr = (uint32_t) (bbAddr - mapsBuf[bestFit].base);
-                if (!arch_queryBitmap(curMap->data.pBM, relAddr)) {
+                if (!sancov_queryBitmap(curMap->data.pBM, relAddr)) {
 
                     /* Interaction with global Trie should mutex wrap to avoid threads races */
                     {
                         MX_LOCK(&hfuzz->sanCov_mutex);
                         defer(MX_UNLOCK(&hfuzz->sanCov_mutex));
-                        arch_setBitmap(curMap->data.pBM, relAddr);
+                        sancov_setBitmap(curMap->data.pBM, relAddr);
                     }
 
                     /* Also increase new BBs counter at worker's thread runtime data */
@@ -588,7 +589,7 @@ static bool arch_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     return ret;
 }
 
-static bool arch_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     int dataFd = -1;
     uint8_t *dataBuf = NULL;
@@ -697,7 +698,7 @@ static bool arch_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
  *
  * Enabled methods are controlled from sanitizer flags in arch.c
  */
-void arch_sanCovAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+void sancov_Analyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     if (!hfuzz->useSanCov) {
         return;
@@ -707,7 +708,7 @@ void arch_sanCovAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      * For now supported methods are implemented in fail-over nature. This will
      * change in the future when best method is concluded.
      */
-    if (arch_sanCovParseRaw(hfuzz, fuzzer) == false) {
-        arch_sanCovParse(hfuzz, fuzzer);
+    if (sancov_sanCovParseRaw(hfuzz, fuzzer) == false) {
+        sancov_sanCovParse(hfuzz, fuzzer);
     }
 }

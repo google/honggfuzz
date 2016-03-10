@@ -24,7 +24,7 @@ LD = $(CC)
 BIN := honggfuzz
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=131072
 COMMON_LDFLAGS := -lm
-COMMON_SRCS := honggfuzz.c cmdline.c display.c log.c files.c fuzz.c report.c mangle.c util.c
+COMMON_SRCS := honggfuzz.c cmdline.c display.c files.c fuzz.c log.c mangle.c report.c sancov.c util.c
 
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
@@ -199,19 +199,19 @@ android:
 honggfuzz.o: common.h cmdline.h log.h files.h fuzz.h util.h
 cmdline.o: cmdline.h common.h log.h files.h util.h
 display.o: common.h display.h log.h util.h
-log.o: log.h common.h
 files.o: common.h files.h log.h
 fuzz.o: common.h fuzz.h arch.h display.h files.h log.h mangle.h report.h
 fuzz.o: util.h
-report.o: common.h report.h log.h util.h
+log.o: log.h common.h
 mangle.o: common.h mangle.h log.h util.h
+report.o: common.h report.h log.h util.h
+sancov.o: common.h sancov.h util.h files.h log.h
 util.o: common.h files.h log.h
-linux/arch.o: common.h arch.h linux/perf.h linux/ptrace_utils.h
-linux/arch.o: linux/sancov.h log.h util.h files.h
-linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
-linux/perf.o: common.h linux/perf.h files.h linux/pt.h log.h util.h
-linux/pt.o: common.h linux/pt.h log.h
 linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h linux/bfd.h
 linux/ptrace_utils.o: linux/unwind.h log.h util.h
-linux/sancov.o: common.h linux/sancov.h util.h files.h log.h
+linux/perf.o: common.h linux/perf.h files.h linux/pt.h log.h util.h
+linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
+linux/pt.o: common.h linux/pt.h log.h
 linux/unwind.o: common.h linux/unwind.h log.h
+linux/arch.o: common.h arch.h linux/perf.h linux/ptrace_utils.h log.h
+linux/arch.o: sancov.h util.h files.h

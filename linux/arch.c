@@ -51,8 +51,8 @@
 
 #include "linux/perf.h"
 #include "linux/ptrace_utils.h"
-#include "linux/sancov.h"
 #include "log.h"
+#include "sancov.h"
 #include "util.h"
 #include "files.h"
 
@@ -446,7 +446,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     arch_removeTimer(&timerid);
     arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
-    arch_sanCovAnalyze(hfuzz, fuzzer);
+    sancov_Analyze(hfuzz, fuzzer);
 }
 
 bool arch_archInit(honggfuzz_t * hfuzz)

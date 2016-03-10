@@ -234,9 +234,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"report", required_argument, NULL, 'R'}, "Write report to this file (default: '" _HF_REPORT_FILE "')"},
         {{"max_file_size", required_argument, NULL, 'F'}, "Maximal size of files processed by the fuzzer in bytes (default: '1048576')"},
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
+        {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
 
 #if defined(_HF_ARCH_LINUX)
-        {{"sancov", no_argument, NULL, 'C'}, "EXPERIMENTAL: Enable sanitizer coverage feedback"},
         {{"linux_pid", required_argument, NULL, 'p'}, "Attach to a pid (and its thread group)"},
         {{"linux_file_pid", required_argument, NULL, 'P'}, "Attach to pid (and its thread group) read from file"},
         {{"linux_addr_low_limit", required_argument, NULL, 0x500}, "Address limit (from si.si_addr) below which crashes are not reported, (default: '0')"},

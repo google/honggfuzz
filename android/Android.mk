@@ -95,7 +95,7 @@ endif
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := honggfuzz
-LOCAL_SRC_FILES := honggfuzz.c cmdline.c display.c log.c files.c fuzz.c report.c mangle.c util.c
+LOCAL_SRC_FILES := honggfuzz.c cmdline.c display.c log.c files.c fuzz.c report.c mangle.c util.c sancov.c
 LOCAL_CFLAGS := -std=c11 -I. \
     -D_GNU_SOURCE \
     -Wall -Wextra -Wno-initializer-overrides -Wno-override-init \
@@ -107,7 +107,7 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   LOCAL_C_INCLUDES := third_party/android/libunwind/include third_party/android/capstone/include
   LOCAL_STATIC_LIBRARIES := libunwind-arch libunwind libunwind-ptrace libunwind-dwarf-generic libcapstone
   LOCAL_CFLAGS += -D__HF_USE_CAPSTONE__
-  ARCH_SRCS := linux/arch.c linux/ptrace_utils.c linux/perf.c linux/unwind.c linux/sancov.c linux/pt.c
+  ARCH_SRCS := linux/arch.c linux/ptrace_utils.c linux/perf.c linux/unwind.c linux/pt.c
   ARCH := LINUX
   ifeq ($(ARCH_ABI),arm)
     LOCAL_CFLAGS += -DOPENSSL_ARMCAP_ABI='$(OPENSSL_ARMCAP_ABI)'

@@ -39,8 +39,9 @@
 #include <unistd.h>
 
 #include "log.h"
-#include "util.h"
 #include "files.h"
+#include "util.h"
+#include "sancov.h"
 
 #ifdef __ANDROID__
 #ifndef WIFCONTINUED
@@ -80,6 +81,10 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      */
     if (WIFCONTINUED(status)) {
         return false;
+    }
+
+    if (WIFEXITED(status) || WIFSIGNALED(status)) {
+        sancov_Analyze(hfuzz, fuzzer);
     }
 
     /*
