@@ -38,6 +38,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/param.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -112,6 +113,93 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
     snprintf(fileName, PATH_MAX, "%s/.honggfuzz.%d.%lu.%llx.%s", hfuzz->workDir, (int)getpid(),
              (unsigned long int)tv.tv_sec, (unsigned long long int)util_rndGet(0, 1ULL << 62),
              hfuzz->fileExtn);
+}
+
+static bool fuzz_prepareExecve(honggfuzz_t * hfuzz, const char *fileName)
+{
+    /*
+     * Set timeout (prof), real timeout (2*prof), and rlimit_cpu (2*prof)
+     */
+    if (hfuzz->tmOut) {
+        struct itimerval it;
+
+        /*
+         * The hfuzz->tmOut is real CPU usage time...
+         */
+        it.it_value.tv_sec = hfuzz->tmOut;
+        it.it_value.tv_usec = 0;
+        it.it_interval.tv_sec = 0;
+        it.it_interval.tv_usec = 0;
+        if (setitimer(ITIMER_PROF, &it, NULL) == -1) {
+            PLOG_E("Couldn't set the ITIMER_PROF timer");
+            return false;
+        }
+
+        /*
+         * ...so, if a process sleeps, this one should
+         * trigger a signal...
+         */
+        it.it_value.tv_sec = hfuzz->tmOut;
+        it.it_value.tv_usec = 0;
+        it.it_interval.tv_sec = 0;
+        it.it_interval.tv_usec = 0;
+        if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
+            PLOG_E("Couldn't set the ITIMER_REAL timer");
+            return false;
+        }
+
+        /*
+         * ..if a process sleeps and catches SIGPROF/SIGALRM
+         * rlimits won't help either. However, arch_checkTimeLimit
+         * will send a SIGKILL at tmOut + 2 seconds. That should
+         * do it :)
+         */
+        struct rlimit rl;
+
+        rl.rlim_cur = hfuzz->tmOut + 1;
+        rl.rlim_max = hfuzz->tmOut + 1;
+        if (setrlimit(RLIMIT_CPU, &rl) == -1) {
+            PLOG_E("Couldn't enforce the RLIMIT_CPU resource limit");
+            return false;
+        }
+    }
+
+    /*
+     * The address space limit. If big enough - roughly the size of RAM used
+     */
+    if (hfuzz->asLimit) {
+        struct rlimit64 rl = {
+            .rlim_cur = hfuzz->asLimit * 1024ULL * 1024ULL,
+            .rlim_max = hfuzz->asLimit * 1024ULL * 1024ULL,
+        };
+        if (prlimit64(0, RLIMIT_AS, &rl, NULL) == -1) {
+            PLOG_D("Couldn't enforce the RLIMIT_AS resource limit, ignoring");
+        }
+    }
+
+    if (hfuzz->nullifyStdio) {
+        util_nullifyStdio();
+    }
+
+    if (hfuzz->fuzzStdin) {
+        /*
+         * Uglyyyyyy ;)
+         */
+        if (!util_redirectStdin(fileName)) {
+            return false;
+        }
+    }
+
+    if (sancov_prepareExecve(hfuzz) == false) {
+        LOG_E("sancov_prepareExecve() failed");
+        return false;
+    }
+    for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs) && hfuzz->envs[i]; i++) {
+        putenv(hfuzz->envs[i]);
+    }
+    setsid();
+
+    return true;
 }
 
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
@@ -340,11 +428,12 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         }
 
         if (!vFuzzer.pid) {
-            if (sancov_prepareExecve(hfuzz) == false) {
-                LOG_E("sancov_prepareExecve() failed");
+            if (fuzz_prepareExecve(hfuzz, crashedFuzzer->crashFileName) == false) {
+                LOG_E("fuzz_prepareExecve() failed");
                 return false;
             }
             if (!arch_launchChild(hfuzz, crashedFuzzer->crashFileName)) {
+                util_recoverStdio();
                 LOG_E("Error launching verifier child process");
                 return false;
             }
@@ -576,11 +665,12 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     }
 
     if (!fuzzer.pid) {
-        if (sancov_prepareExecve(hfuzz) == false) {
-            LOG_E("sancov_prepareExecve() failed");
+        if (!fuzz_prepareExecve(hfuzz, fuzzer.fileName)) {
+            LOG_E("fuzz_prepareExecve() failed");
             exit(EXIT_FAILURE);
         }
         if (!arch_launchChild(hfuzz, fuzzer.fileName)) {
+            util_recoverStdio();
             LOG_E("Error launching child process, killing parent");
             exit(EXIT_FAILURE);
         }

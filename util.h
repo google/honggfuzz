@@ -39,7 +39,7 @@ extern void util_getLocalTime(const char *fmt, char *buf, size_t len, time_t tm)
 
 extern void util_nullifyStdio(void);
 
-extern bool util_redirectStdin(char *inputFile);
+extern bool util_redirectStdin(const char *inputFile);
 
 extern void util_recoverStdio(void);
 

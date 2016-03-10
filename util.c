@@ -159,7 +159,7 @@ void util_nullifyStdio(void)
     }
 }
 
-bool util_redirectStdin(char *inputFile)
+bool util_redirectStdin(const char *inputFile)
 {
     int fd = open(inputFile, O_RDONLY);
 

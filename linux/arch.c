@@ -36,7 +36,6 @@
 #include <sys/personality.h>
 #include <sys/ptrace.h>
 #include <sys/prctl.h>
-#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
@@ -138,52 +137,6 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     LOG_D("Launching '%s' on file '%s'", args[0], fileName);
 
     /*
-     * Set timeout (prof), real timeout (2*prof), and rlimit_cpu (2*prof)
-     */
-    if (hfuzz->tmOut) {
-        /*
-         * Set the CPU rlimit to twice the value of the time-out
-         */
-        struct rlimit rl = {
-            .rlim_cur = hfuzz->tmOut * 2,
-            .rlim_max = hfuzz->tmOut * 2,
-        };
-        if (setrlimit(RLIMIT_CPU, &rl) == -1) {
-            PLOG_E("Couldn't enforce the RLIMIT_CPU resource limit");
-            return false;
-        }
-    }
-
-    /*
-     * The address space limit. If big enough - roughly the size of RAM used
-     */
-    if (hfuzz->asLimit) {
-        struct rlimit64 rl = {
-            .rlim_cur = hfuzz->asLimit * 1024ULL * 1024ULL,
-            .rlim_max = hfuzz->asLimit * 1024ULL * 1024ULL,
-        };
-        if (prlimit64(0, RLIMIT_AS, &rl, NULL) == -1) {
-            PLOG_D("Couldn't enforce the RLIMIT_AS resource limit, ignoring");
-        }
-    }
-
-    for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs) && hfuzz->envs[i]; i++) {
-        putenv(hfuzz->envs[i]);
-    }
-
-    if (hfuzz->nullifyStdio) {
-        util_nullifyStdio();
-    }
-
-    if (hfuzz->fuzzStdin) {
-        /*
-         * Uglyyyyyy ;)
-         */
-        if (!util_redirectStdin(fileName)) {
-            return false;
-        }
-    }
-    /*
      * Wait for the ptrace to attach
      */
     syscall(__NR_tkill, syscall(__NR_gettid), (uintptr_t) SIGSTOP);
@@ -192,9 +145,6 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     syscall(__NR_execveat, hfuzz->exeFd, "", args, environ, AT_EMPTY_PATH);
 #endif
     execvp(args[0], args);
-
-    util_recoverStdio();
-    LOG_F("Failed to create new '%s' process", args[0]);
     return false;
 }
 
