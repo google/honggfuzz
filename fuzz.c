@@ -55,6 +55,8 @@
 #include "sancov.h"
 #include "util.h"
 
+extern char **environ;
+
 static int fuzz_sigReceived = 0;
 
 static pthread_t fuzz_mainThread;
@@ -191,7 +193,7 @@ static bool fuzz_prepareExecve(honggfuzz_t * hfuzz, const char *fileName)
     }
 
     if (hfuzz->clearEnv) {
-	environ = NULL;
+        environ = NULL;
     }
     if (sancov_prepareExecve(hfuzz) == false) {
         LOG_E("sancov_prepareExecve() failed");
