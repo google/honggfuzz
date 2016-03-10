@@ -54,6 +54,7 @@
 #include "linux/bfd.h"
 #include "linux/unwind.h"
 #include "log.h"
+#include "sancov.h"
 #include "util.h"
 
 #if defined(__ANDROID__)

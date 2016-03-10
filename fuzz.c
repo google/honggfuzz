@@ -51,6 +51,7 @@
 #include "log.h"
 #include "mangle.h"
 #include "report.h"
+#include "sancov.h"
 #include "util.h"
 
 static int fuzz_sigReceived = 0;
@@ -698,6 +699,9 @@ void fuzz_main(honggfuzz_t * hfuzz)
 
     if (!arch_archInit(hfuzz)) {
         LOG_F("Couldn't prepare arch for fuzzing");
+    }
+    if (!sancov_Init(hfuzz)) {
+        LOG_F("Couldn't prepare sancov options");
     }
 
     for (size_t i = 0; i < hfuzz->threadsMax; i++) {
