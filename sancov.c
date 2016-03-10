@@ -562,7 +562,6 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                                               mapsBuf[bestFit].mapName);
                         if (curMap == NULL) {
                             LOG_E("Corrupted Trie - '%s' not found", mapsBuf[bestFit].mapName);
-                            MX_UNLOCK(&hfuzz->sanCov_mutex);
                             continue;
                         }
 
@@ -577,7 +576,6 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                              */
                             if (curMap->data.pBM == NULL) {
                                 curMap = NULL;
-                                MX_UNLOCK(&hfuzz->sanCov_mutex);
                                 continue;
                             }
                         }
