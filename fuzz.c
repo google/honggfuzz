@@ -126,7 +126,6 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, 
             size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], hfuzz->dynamicFileBest,
                                                    hfuzz->maxFileSz);
             if (fileSz == 0) {
-                MX_UNLOCK(&hfuzz->dynamicFile_mutex);
                 LOG_E("Couldn't read '%s'", hfuzz->files[rnd_index]);
                 return false;
             }

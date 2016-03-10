@@ -207,7 +207,7 @@ static node_t *sancov_trieSearch(node_t * root, const char *key)
     }
 }
 
-static void arch_trieAdd(node_t ** root, const char *key)
+static void sancov_trieAdd(node_t ** root, const char *key)
 {
     if (*root == NULL) {
         LOG_E("Invalid Trie (NULL root node)");
@@ -239,7 +239,7 @@ static void arch_trieAdd(node_t ** root, const char *key)
     while (pTravNode->next) {
         if (*key == pTravNode->next->key) {
             key++;
-            arch_trieAdd(&(pTravNode->next), key);
+            sancov_trieAdd(&(pTravNode->next), key);
             return;
         }
         pTravNode = pTravNode->next;
@@ -282,7 +282,7 @@ static inline void sancov_trieCreate(node_t ** root)
 }
 
 /* Destroy Trie - iterate nodes and free memory */
-static void arch_trieDestroy(node_t * root)
+static void sancov_trieDestroy(node_t * root)
 {
     node_t *pNode = root;
     node_t *pNodeTmp = root;
@@ -418,7 +418,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (hfuzz->clearCovMetadata == true) {
             /* Since this path is invoked on first run too, destroy old Trie only if exists */
             if (hfuzz->covMetadata != NULL) {
-                arch_trieDestroy(hfuzz->covMetadata);
+                sancov_trieDestroy(hfuzz->covMetadata);
             }
             sancov_trieCreate(&hfuzz->covMetadata);
             hfuzz->clearCovMetadata = false;
@@ -468,7 +468,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             defer(MX_UNLOCK(&hfuzz->sanCov_mutex));
             /* Add entry to Trie with zero data if not already */
             if (!sancov_trieSearch(hfuzz->covMetadata->children, mapData.mapName)) {
-                arch_trieAdd(&hfuzz->covMetadata, mapData.mapName);
+                sancov_trieAdd(&hfuzz->covMetadata, mapData.mapName);
             }
         }
 
