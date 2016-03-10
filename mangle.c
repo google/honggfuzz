@@ -62,7 +62,7 @@ static void mangle_Bytes(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz
 
 static void mangle_Bit(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz UNUSED, size_t off)
 {
-    buf[off] ^= ((uint8_t) 1 << util_rndGet(0, 7));
+    buf[off] ^= (uint8_t) (1U << util_rndGet(0, 7));
 }
 
 static void mangle_Dictionary(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz, size_t off)
@@ -94,6 +94,7 @@ static void mangle_Magic(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz
         { "\x7F\x00\x00\x00\x00\x00\x00\x00", 1},
         { "\x80\x00\x00\x00\x00\x00\x00\x00", 1},
         { "\x81\x00\x00\x00\x00\x00\x00\x00", 1},
+        { "\xFE\x00\x00\x00\x00\x00\x00\x00", 1},
         { "\xFF\x00\x00\x00\x00\x00\x00\x00", 1},
         /* 2B - NE */
         { "\x00\x00\x00\x00\x00\x00\x00\x00", 2},
@@ -109,6 +110,7 @@ static void mangle_Magic(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz
         { "\x7F\xFF\x00\x00\x00\x00\x00\x00", 2},
         { "\x80\x00\x00\x00\x00\x00\x00\x00", 2},
         { "\x80\x01\x00\x00\x00\x00\x00\x00", 2},
+        { "\xFF\xFE\x00\x00\x00\x00\x00\x00", 2},
         /* 2B - LE */
         { "\x01\x00\x00\x00\x00\x00\x00\x00", 2},
         { "\x02\x00\x00\x00\x00\x00\x00\x00", 2},
@@ -118,6 +120,7 @@ static void mangle_Magic(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz
         { "\xFF\x7F\x00\x00\x00\x00\x00\x00", 2},
         { "\x00\x80\x00\x00\x00\x00\x00\x00", 2},
         { "\x01\x80\x00\x00\x00\x00\x00\x00", 2},
+        { "\xFE\xFF\x00\x00\x00\x00\x00\x00", 2},
         /* 4B - NE */
         { "\x00\x00\x00\x00\x00\x00\x00\x00", 4},
         { "\x01\x01\x01\x01\x00\x00\x00\x00", 4},
@@ -132,6 +135,7 @@ static void mangle_Magic(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz
         { "\x7F\xFF\xFF\xFF\x00\x00\x00\x00", 4},
         { "\x80\x00\x00\x00\x00\x00\x00\x00", 4},
         { "\x80\x00\x00\x01\x00\x00\x00\x00", 4},
+        { "\xFF\xFF\xFF\xFE\x00\x00\x00\x00", 4},
         /* 4B - LE */
         { "\x01\x00\x00\x00\x00\x00\x00\x00", 4},
         { "\x02\x00\x00\x00\x00\x00\x00\x00", 4},
@@ -141,6 +145,7 @@ static void mangle_Magic(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz
         { "\xFF\xFF\xFF\x7F\x00\x00\x00\x00", 4},
         { "\x00\x00\x00\x80\x00\x00\x00\x00", 4},
         { "\x01\x00\x00\x80\x00\x00\x00\x00", 4},
+        { "\xFE\xFF\xFF\xFF\x00\x00\x00\x00", 4},
         /* 8B - NE */
         { "\x00\x00\x00\x00\x00\x00\x00\x00", 8},
         { "\x01\x01\x01\x01\x01\x01\x01\x01", 8},
@@ -155,6 +160,7 @@ static void mangle_Magic(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz
         { "\x7F\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 8},
         { "\x80\x00\x00\x00\x00\x00\x00\x00", 8},
         { "\x80\x00\x00\x00\x00\x00\x00\x01", 8},
+        { "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFE", 8},
         /* 8B - LE */
         { "\x01\x00\x00\x00\x00\x00\x00\x00", 8},
         { "\x02\x00\x00\x00\x00\x00\x00\x00", 8},
@@ -164,6 +170,7 @@ static void mangle_Magic(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz
         { "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x7F", 8},
         { "\x00\x00\x00\x00\x00\x00\x00\x80", 8},
         { "\x01\x00\x00\x00\x00\x00\x00\x80", 8},
+        { "\xFE\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 8},
     };
     /*  *INDENT-ON* */
 
@@ -278,16 +285,6 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
         mangle_Byte,
         mangle_Byte,
         mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Bit,
-        mangle_Bit,
-        mangle_Bit,
-        mangle_Bit,
-        mangle_Bit,
-        mangle_Bit,
         mangle_Bit,
         mangle_Bit,
         mangle_Bytes,
@@ -295,12 +292,8 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
         mangle_Magic,
         mangle_Magic,
         mangle_IncByte,
-        mangle_IncByte,
-        mangle_DecByte,
         mangle_DecByte,
         mangle_AddSub,
-        mangle_AddSub,
-        mangle_Dictionary,
         mangle_Dictionary,
         mangle_MemMove,
         mangle_MemSet,
