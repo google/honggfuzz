@@ -168,11 +168,11 @@ static bool fuzz_prepareExecve(honggfuzz_t * hfuzz, const char *fileName)
      * The address space limit. If big enough - roughly the size of RAM used
      */
     if (hfuzz->asLimit) {
-        struct rlimit64 rl = {
+        struct rlimit rl = {
             .rlim_cur = hfuzz->asLimit * 1024ULL * 1024ULL,
             .rlim_max = hfuzz->asLimit * 1024ULL * 1024ULL,
         };
-        if (prlimit64(0, RLIMIT_AS, &rl, NULL) == -1) {
+        if (setrlimit(RLIMIT_AS, &rl) == -1) {
             PLOG_D("Couldn't enforce the RLIMIT_AS resource limit, ignoring");
         }
     }
