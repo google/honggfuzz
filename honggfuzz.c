@@ -121,7 +121,7 @@ int main(int argc, char **argv)
      * Work around CygWin/MinGW
      */
     size_t i;
-    for (i = 0U; i < (ARRAYSIZE(myargs) - 1); i++) {
+    for (i = 0U; i < (ARRAYSIZE(myargs) - 1) && i < (size_t)argc; i++) {
         myargs[i] = argv[i];
     }
     myargs[i] = NULL;
