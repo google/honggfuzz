@@ -18,6 +18,8 @@
    limitations under the License.
 
 */
+
+#include "common.h"
 #include "log.h"
 
 #include <errno.h>

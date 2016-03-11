@@ -203,7 +203,7 @@ display.o: common.h display.h log.h util.h
 files.o: common.h files.h log.h
 fuzz.o: common.h fuzz.h arch.h files.h log.h mangle.h report.h sancov.h
 fuzz.o: util.h
-log.o: log.h common.h
+log.o: common.h log.h
 mangle.o: common.h mangle.h log.h util.h
 report.o: common.h report.h log.h util.h
 sancov.o: common.h sancov.h files.h log.h util.h
