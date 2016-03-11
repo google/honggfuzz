@@ -36,9 +36,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/resource.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -47,7 +47,6 @@
 #include <unistd.h>
 
 #include "arch.h"
-#include "display.h"
 #include "files.h"
 #include "log.h"
 #include "mangle.h"
@@ -56,8 +55,6 @@
 #include "util.h"
 
 extern char **environ;
-
-static int fuzz_sigReceived = 0;
 
 static pthread_t fuzz_mainThread;
 
@@ -95,16 +92,6 @@ static inline void fuzz_resetFeedbackCnts(honggfuzz_t * hfuzz)
      * when dynFile input seed is replaced.
      */
     hfuzz->clearCovMetadata = true;
-}
-
-static void fuzz_sigHandler(int sig, UNUSED siginfo_t * si, UNUSED void *context)
-{
-    /* We should not terminate upon SIGALRM delivery */
-    if (sig == SIGALRM) {
-        return;
-    }
-
-    fuzz_sigReceived = sig;
 }
 
 static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
@@ -710,17 +697,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
 
 static void *fuzz_threadNew(void *arg)
 {
-    /* Block signals which should be handled by the main thread */
-    sigset_t ss;
-    sigemptyset(&ss);
-    sigaddset(&ss, SIGTERM);
-    sigaddset(&ss, SIGINT);
-    sigaddset(&ss, SIGQUIT);
-    sigaddset(&ss, SIGALRM);
-    if (pthread_sigmask(SIG_BLOCK, &ss, NULL) != 0) {
-        PLOG_F("pthread_sigmask(SIG_BLOCK)");
-    }
-
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
     for (;;) {
         /* Dynamic file iteration counter for same seed */
@@ -765,43 +741,9 @@ static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
     return;
 }
 
-bool fuzz_setupTimer(void)
-{
-    struct itimerval it = {
-        .it_value = {.tv_sec = 0,.tv_usec = 1},
-        .it_interval = {.tv_sec = 1,.tv_usec = 0},
-    };
-    if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
-        PLOG_E("setitimer(ITIMER_REAL)");
-        return false;
-    }
-    return true;
-}
-
-void fuzz_main(honggfuzz_t * hfuzz)
+void fuzz_threads(honggfuzz_t * hfuzz)
 {
     fuzz_mainThread = pthread_self();
-
-    struct sigaction sa = {
-        .sa_sigaction = fuzz_sigHandler,
-        .sa_flags = SA_SIGINFO,
-    };
-    sigemptyset(&sa.sa_mask);
-    if (sigaction(SIGTERM, &sa, NULL) == -1) {
-        PLOG_F("sigaction(SIGTERM) failed");
-    }
-    if (sigaction(SIGINT, &sa, NULL) == -1) {
-        PLOG_F("sigaction(SIGINT) failed");
-    }
-    if (sigaction(SIGQUIT, &sa, NULL) == -1) {
-        PLOG_F("sigaction(SIGQUIT) failed");
-    }
-    if (sigaction(SIGALRM, &sa, NULL) == -1) {
-        PLOG_F("sigaction(SIGALRM) failed");
-    }
-    if (fuzz_setupTimer() == false) {
-        LOG_F("fuzz_setupTimer()");
-    }
 
     if (!arch_archInit(hfuzz)) {
         LOG_F("Couldn't prepare arch for fuzzing");
@@ -812,48 +754,5 @@ void fuzz_main(honggfuzz_t * hfuzz)
 
     for (size_t i = 0; i < hfuzz->threadsMax; i++) {
         fuzz_runThread(hfuzz, fuzz_threadNew);
-    }
-
-    for (;;) {
-        if (hfuzz->useScreen) {
-            display_display(hfuzz);
-        }
-        if (fuzz_sigReceived > 0) {
-            break;
-        }
-        if (__sync_fetch_and_add(&hfuzz->threadsFinished, 0UL) >= hfuzz->threadsMax) {
-            break;
-        }
-        pause();
-    }
-
-    if (fuzz_sigReceived > 0) {
-        LOG_I("Signal %d (%s) received, terminating", fuzz_sigReceived,
-              strsignal(fuzz_sigReceived));
-    }
-
-    /* Clean-up global buffers */
-    free(hfuzz->files);
-    free(hfuzz->dynamicFileBest);
-    if (hfuzz->dictionary) {
-        for (size_t i = 0; i < hfuzz->dictionaryCnt; i++) {
-            free(hfuzz->dictionary[i]);
-        }
-        free(hfuzz->dictionary);
-    }
-    if (hfuzz->blacklist) {
-        free(hfuzz->blacklist);
-    }
-    if (hfuzz->sanOpts.asanOpts) {
-        free(hfuzz->sanOpts.asanOpts);
-    }
-    if (hfuzz->sanOpts.ubsanOpts) {
-        free(hfuzz->sanOpts.ubsanOpts);
-    }
-    if (hfuzz->sanOpts.msanOpts) {
-        free(hfuzz->sanOpts.msanOpts);
-    }
-    if (hfuzz->pidCmd) {
-        free(hfuzz->pidCmd);
     }
 }

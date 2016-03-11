@@ -25,6 +25,7 @@
 
 #include <inttypes.h>
 #include <getopt.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,10 +34,80 @@
 
 #include "common.h"
 #include "cmdline.h"
+#include "display.h"
 #include "log.h"
 #include "files.h"
 #include "fuzz.h"
 #include "util.h"
+
+static int sigReceived = 0;
+
+void sigHandler(int sig)
+{
+    /* We should not terminate upon SIGALRM delivery */
+    if (sig == SIGALRM) {
+        return;
+    }
+
+    sigReceived = sig;
+}
+
+static void setupTimer(void)
+{
+    struct itimerval it = {
+        .it_value = {.tv_sec = 0,.tv_usec = 1},
+        .it_interval = {.tv_sec = 1,.tv_usec = 0},
+    };
+    if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
+        PLOG_F("setitimer(ITIMER_REAL)");
+    }
+}
+
+static void setupSignalsPreThr(void)
+{
+    /* Block signals which should be handled by the main thread */
+    sigset_t ss;
+    sigemptyset(&ss);
+    sigaddset(&ss, SIGTERM);
+    sigaddset(&ss, SIGINT);
+    sigaddset(&ss, SIGQUIT);
+    sigaddset(&ss, SIGALRM);
+    if (sigprocmask(SIG_BLOCK, &ss, NULL) != 0) {
+        PLOG_F("pthread_sigmask(SIG_BLOCK)");
+    }
+
+    struct sigaction sa = {
+        .sa_handler = sigHandler,
+        .sa_flags = 0,
+    };
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(SIGTERM, &sa, NULL) == -1) {
+        PLOG_F("sigaction(SIGTERM) failed");
+    }
+    if (sigaction(SIGINT, &sa, NULL) == -1) {
+        PLOG_F("sigaction(SIGINT) failed");
+    }
+    if (sigaction(SIGQUIT, &sa, NULL) == -1) {
+        PLOG_F("sigaction(SIGQUIT) failed");
+    }
+    if (sigaction(SIGALRM, &sa, NULL) == -1) {
+        PLOG_F("sigaction(SIGALRM) failed");
+    }
+}
+
+static void setupSignalsPostThr(void)
+{
+    /* Unblock signals which should be handled by the main thread */
+    sigset_t ss;
+    sigemptyset(&ss);
+    sigaddset(&ss, SIGTERM);
+    sigaddset(&ss, SIGINT);
+    sigaddset(&ss, SIGQUIT);
+    sigaddset(&ss, SIGALRM);
+    if (sigprocmask(SIG_UNBLOCK, &ss, NULL) != 0) {
+        PLOG_F("pthread_sigmask(SIG_BLOCK)");
+    }
+}
 
 int main(int argc, char **argv)
 {
@@ -58,10 +129,56 @@ int main(int argc, char **argv)
         LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.blacklistFile);
     }
 
+    setupSignalsPreThr();
+    setupTimer();
+
     /*
      * So far so good
      */
-    fuzz_main(&hfuzz);
+    fuzz_threads(&hfuzz);
+    setupSignalsPostThr();
 
-    _exit(EXIT_SUCCESS);
+    for (;;) {
+        if (hfuzz.useScreen) {
+            display_display(&hfuzz);
+        }
+        if (sigReceived > 0) {
+            break;
+        }
+        if (__sync_fetch_and_add(&hfuzz.threadsFinished, 0UL) >= hfuzz.threadsMax) {
+            break;
+        }
+        pause();
+    }
+
+    if (sigReceived > 0) {
+        LOG_I("Signal %d (%s) received, terminating", sigReceived, strsignal(sigReceived));
+    }
+
+    /* Clean-up global buffers */
+    free(hfuzz.files);
+    free(hfuzz.dynamicFileBest);
+    if (hfuzz.dictionary) {
+        for (size_t i = 0; i < hfuzz.dictionaryCnt; i++) {
+            free(hfuzz.dictionary[i]);
+        }
+        free(hfuzz.dictionary);
+    }
+    if (hfuzz.blacklist) {
+        free(hfuzz.blacklist);
+    }
+    if (hfuzz.sanOpts.asanOpts) {
+        free(hfuzz.sanOpts.asanOpts);
+    }
+    if (hfuzz.sanOpts.ubsanOpts) {
+        free(hfuzz.sanOpts.ubsanOpts);
+    }
+    if (hfuzz.sanOpts.msanOpts) {
+        free(hfuzz.sanOpts.msanOpts);
+    }
+    if (hfuzz.pidCmd) {
+        free(hfuzz.pidCmd);
+    }
+
+    exit(EXIT_SUCCESS);
 }

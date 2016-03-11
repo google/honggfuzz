@@ -197,12 +197,12 @@ android:
 
 # DO NOT DELETE
 
-honggfuzz.o: common.h cmdline.h log.h files.h fuzz.h util.h
+honggfuzz.o: common.h cmdline.h display.h log.h files.h fuzz.h util.h
 cmdline.o: cmdline.h common.h log.h files.h util.h
 display.o: common.h display.h log.h util.h
 files.o: common.h files.h log.h
-fuzz.o: common.h fuzz.h arch.h display.h files.h log.h mangle.h report.h
-fuzz.o: sancov.h util.h
+fuzz.o: common.h fuzz.h arch.h files.h log.h mangle.h report.h sancov.h
+fuzz.o: util.h
 log.o: log.h common.h
 mangle.o: common.h mangle.h log.h util.h
 report.o: common.h report.h log.h util.h
