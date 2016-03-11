@@ -42,6 +42,13 @@
 
 static int sigReceived = 0;
 
+/*
+ * CygWin/MinGW incorrectly copies stack during fork(), so we need to keep some
+ * structures in the data section
+ */
+honggfuzz_t hfuzz;
+char *myargs[1024];
+
 void sigHandler(int sig)
 {
     /* We should not terminate upon SIGALRM delivery */
@@ -110,8 +117,16 @@ static void setupSignalsPostThr(void)
 
 int main(int argc, char **argv)
 {
-    honggfuzz_t hfuzz;
-    if (cmdlineParse(argc, argv, &hfuzz) == false) {
+    /*
+     * Work around CygWin/MinGW
+     */
+    size_t i;
+    for (i = 0U; i < (ARRAYSIZE(myargs) - 1); i++) {
+        myargs[i] = argv[i];
+    }
+    myargs[i] = NULL;
+
+    if (cmdlineParse(argc, myargs, &hfuzz) == false) {
         LOG_F("Parsing of the cmd-line arguments failed");
     }
 

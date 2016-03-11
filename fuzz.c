@@ -120,8 +120,7 @@ static bool fuzz_prepareExecve(honggfuzz_t * hfuzz, const char *fileName)
         it.it_interval.tv_sec = 0;
         it.it_interval.tv_usec = 0;
         if (setitimer(ITIMER_PROF, &it, NULL) == -1) {
-            PLOG_E("Couldn't set the ITIMER_PROF timer");
-            return false;
+            PLOG_D("Couldn't set the ITIMER_PROF timer");
         }
 
         /*
@@ -148,8 +147,7 @@ static bool fuzz_prepareExecve(honggfuzz_t * hfuzz, const char *fileName)
         rl.rlim_cur = hfuzz->tmOut + 1;
         rl.rlim_max = hfuzz->tmOut + 1;
         if (setrlimit(RLIMIT_CPU, &rl) == -1) {
-            PLOG_E("Couldn't enforce the RLIMIT_CPU resource limit");
-            return false;
+            PLOG_D("Couldn't enforce the RLIMIT_CPU resource limit");
         }
     }
 
