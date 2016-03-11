@@ -444,7 +444,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         /* Trim trailing whitespaces, not sure if needed copied from upstream sancov.py */
         char *lineEnd = pLine + strlen(pLine) - 1;
-        while (lineEnd > pLine && isspace(*lineEnd)) {
+        while (lineEnd > pLine && isspace((int)*lineEnd)) {
             lineEnd--;
         }
         *(lineEnd + 1) = 0;
