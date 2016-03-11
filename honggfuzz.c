@@ -75,7 +75,10 @@ static void setupSignalsPreThr(void)
     if (sigprocmask(SIG_BLOCK, &ss, NULL) != 0) {
         PLOG_F("pthread_sigmask(SIG_BLOCK)");
     }
+}
 
+static void setupSignalsPostThr(void)
+{
     struct sigaction sa = {
         .sa_handler = sigHandler,
         .sa_flags = 0,
@@ -93,10 +96,6 @@ static void setupSignalsPreThr(void)
     if (sigaction(SIGALRM, &sa, NULL) == -1) {
         PLOG_F("sigaction(SIGALRM) failed");
     }
-}
-
-static void setupSignalsPostThr(void)
-{
     /* Unblock signals which should be handled by the main thread */
     sigset_t ss;
     sigemptyset(&ss);
