@@ -489,7 +489,9 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     /* Delete .sancov.map file */
     fclose(fCovMap);
-    unlink(covFile);
+    if (hfuzz->pid == 0) {
+        unlink(covFile);
+    }
 
     /* Create a quick index array with maps start addresses */
     startMapsIndex = malloc(mapsNum * sizeof(uint64_t));
@@ -624,7 +626,9 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     ret = true;
 
  bail:
-    unlink(covFile);
+    if (hfuzz->pid == 0) {
+        unlink(covFile);
+    }
     if (dataBuf) {
         munmap(dataBuf, dataFileSz);
     }
@@ -730,7 +734,9 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     ret = true;
 
  bail:
-    unlink(covFile);
+    if (hfuzz->pid == 0) {
+        unlink(covFile);
+    }
     if (dataBuf) {
         munmap(dataBuf, dataFileSz);
     }

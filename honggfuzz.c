@@ -47,7 +47,6 @@ static int sigReceived = 0;
  * structures in the data section
  */
 honggfuzz_t hfuzz;
-char *myargs[1024];
 
 void sigHandler(int sig)
 {
@@ -120,8 +119,13 @@ int main(int argc, char **argv)
     /*
      * Work around CygWin/MinGW
      */
-    size_t i;
-    for (i = 0U; i < (ARRAYSIZE(myargs) - 1) && i < (size_t)argc; i++) {
+    char **myargs = (char **)malloc(sizeof(char *) * (argc + 1));
+    if (myargs == NULL) {
+        PLOG_F("Couldn't allocate '%zu' bytes", sizeof(char *) * (argc + 1));
+    }
+
+    int i;
+    for (i = 0U; i < argc; i++) {
         myargs[i] = argv[i];
     }
     myargs[i] = NULL;
