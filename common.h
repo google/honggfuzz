@@ -176,6 +176,13 @@ typedef struct {
     char *ubsanOpts;
 } sanOpts_t;
 
+typedef enum {
+    _HF_STATE_UNSET = 0,
+    _HF_STATE_STATIC = 1,
+    _HF_STATE_DYNAMIC_PRE = 2,
+    _HF_STATE_DYNAMIC_MAIN = 3,
+} fuzzState_t;
+
 typedef struct {
     char **cmdline;
     char cmdline_txt[PATH_MAX];
@@ -185,6 +192,7 @@ typedef struct {
     bool saveUnique;
     bool useScreen;
     bool useVerifier;
+    time_t timeStart;
     char *fileExtn;
     char *workDir;
     double flipRate;
@@ -209,7 +217,8 @@ typedef struct {
     bool clearEnv;
     char *envs[128];
 
-    time_t timeStart;
+    fuzzState_t state;
+
     size_t mutationsCnt;
     size_t crashesCnt;
     size_t uniqueCrashesCnt;
@@ -217,26 +226,27 @@ typedef struct {
     size_t blCrashesCnt;
     size_t timeoutedCnt;
 
-    /* For the Linux code */
     uint8_t *dynamicFileBest;
     size_t dynamicFileBestSz;
     dynFileMethod_t dynFileMethod;
-    hwcnt_t hwCnts;
     sancovcnt_t sanCovCnts;
-    uint64_t dynamicCutOffAddr;
     pthread_mutex_t dynamicFile_mutex;
-    bool disableRandomization;
-    bool msanReportUMRS;
-    void *ignoreAddr;
-    bool useSanCov;
-    node_t *covMetadata;
-    bool clearCovMetadata;
-    size_t dynFileIterExpire;
     pthread_mutex_t sanCov_mutex;
     pthread_mutex_t workersBlock_mutex;
     sanOpts_t sanOpts;
-    size_t numMajorFrames;
     bool isDynFileLocked;
+    size_t dynFileIterExpire;
+    bool useSanCov;
+    node_t *covMetadata;
+    bool clearCovMetadata;
+
+    /* For the Linux code */
+    hwcnt_t hwCnts;
+    uint64_t dynamicCutOffAddr;
+    bool disableRandomization;
+    bool msanReportUMRS;
+    void *ignoreAddr;
+    size_t numMajorFrames;
     pid_t pid;
     const char *pidFile;
     char *pidCmd;
