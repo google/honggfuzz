@@ -199,7 +199,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     fuzzer->backtrace = g_fuzzer_crash_information[fuzzer->pid].backtrace;
 
     /* If dry run mode, copy file with same name into workspace */
-    if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
+    if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s",
                  hfuzz->workDir, fuzzer->origFileName);
     } else if (hfuzz->saveUnique) {

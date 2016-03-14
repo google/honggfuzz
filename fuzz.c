@@ -382,22 +382,16 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
 
 static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_t size)
 {
-    struct dynfile_t *dynfile = (struct dynfile_t *)malloc(sizeof(struct dynfile_t));
-    if (dynfile == NULL) {
-        LOG_F("malloc(size='%zu') failed)", sizeof(struct dynfile_t));
-    }
+    struct dynfile_t *dynfile = (struct dynfile_t *)util_Malloc(sizeof(struct dynfile_t));
     dynfile->size = size;
-    dynfile->data = (uint8_t *) malloc(size);
-    if (dynfile->data == NULL) {
-        LOG_F("malloc(size='%zu') failed)", size);
-    }
+    dynfile->data = (uint8_t *) util_Malloc(size);
     memcpy(dynfile->data, data, size);
     TAILQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
     hfuzz->dynfileqCnt++;
 
     char fname[PATH_MAX];
-    snprintf(fname, sizeof(fname), "COVERAGE_DATA.PID.%d.RND.%" PRIu64 ".%" PRIx64, getpid(),
-             (uint64_t) time(NULL), util_rndGet(0, 0xFFFFFFFFFFFF));
+    snprintf(fname, sizeof(fname), "%s/COVERAGE_DATA.PID.%d.RND.%" PRIu64 ".%" PRIx64,
+             hfuzz->workDir, getpid(), (uint64_t) time(NULL), util_rndGet(0, 0xFFFFFFFFFFFF));
     if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC) == false) {
         LOG_W("Couldn't write buffer to file '%s'", fname);
     }
@@ -500,7 +494,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
                        .crashesCnt = 0ULL,
                        },
         .dynamicFileSz = 0,
-        .dynamicFile = malloc(hfuzz->maxFileSz),
+        .dynamicFile = util_Malloc(hfuzz->maxFileSz),
 
         .hwCnts = {
                    .cpuInstrCnt = 0ULL,
@@ -510,9 +504,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
                    },
         .report = {'\0'},
     };
-    if (fuzzer.dynamicFile == NULL) {
-        LOG_F("malloc(%zu) failed", hfuzz->maxFileSz);
-    }
     DEFER(free(fuzzer.dynamicFile));
 
     size_t rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);

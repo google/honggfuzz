@@ -182,7 +182,7 @@ typedef enum {
 struct dynfile_t {
     uint8_t *data;
     size_t size;
-     TAILQ_ENTRY(files_t) pointers;
+     TAILQ_ENTRY(dynfile_t) pointers;
 };
 
 typedef struct {
