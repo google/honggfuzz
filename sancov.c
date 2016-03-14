@@ -363,7 +363,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int dataFd = -1;
     uint8_t *dataBuf = NULL;
     off_t dataFileSz = 0, pos = 0;
-    bool is32bit = true, ret = false, isSeedFirstRun = false;
+    bool is32bit = true, ret = false;
     char covFile[PATH_MAX] = { 0 };
     pid_t targetPid = (hfuzz->pid > 0) ? hfuzz->pid : fuzzer->pid;
 
@@ -594,7 +594,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     /* Finally iterate over all instrumented maps to sum-up the number of newly met BB addresses */
     for (uint64_t i = 0; i < mapsNum; i++) {
-        if (mapsBuf[i].bbCnt > 0 && !isSeedFirstRun) {
+        if (mapsBuf[i].bbCnt > 0) {
             fuzzer->sanCovCnts.newBBCnt += mapsBuf[i].newBBCnt;
         } else {
             noCovMapsNum++;

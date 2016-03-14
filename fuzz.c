@@ -397,7 +397,7 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
 
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "COVERAGE_DATA.PID.%d.RND.%" PRIu64 ".%" PRIx64, getpid(),
-             (uint64_t)time(NULL), util_rndGet(0, 0xFFFFFFFFFFFF));
+             (uint64_t) time(NULL), util_rndGet(0, 0xFFFFFFFFFFFF));
     if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC) == false) {
         LOG_W("Couldn't write buffer to file '%s'", fname);
     }
@@ -446,39 +446,28 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     MX_LOCK(&hfuzz->dynfileq_mutex);
     DEFER(MX_UNLOCK(&hfuzz->dynfileq_mutex));
 
-    /* abs diff of total BBs between global counter for chosen seed & current run */
-    uint64_t totalBBsDiff;
-    if (hfuzz->sanCovCnts.hitBBCnt > fuzzer->sanCovCnts.hitBBCnt) {
-        totalBBsDiff = hfuzz->sanCovCnts.hitBBCnt - fuzzer->sanCovCnts.hitBBCnt;
-    } else {
-        totalBBsDiff = fuzzer->sanCovCnts.hitBBCnt - hfuzz->sanCovCnts.hitBBCnt;
-    }
-
     /*
      * Keep mutated seed if:
-     *  a) Newly discovered (not met before) BBs && total hit BBs not significantly dropped
-     *  b) More instrumented code accessed (BB hit counter bigger)
-     *  c) More instrumented DSOs loaded
+     *  a) Newly discovered (not met before) BBs
+     *  b) More instrumented DSOs loaded
      *
      * TODO: (a) method can significantly assist to further improvements in interesting areas
      * discovery if combined with seeds pool/queue support. If a runtime queue is maintained
      * more interesting seeds can be saved between runs instead of instantly discarded
      * based on current absolute elitism (only one mutated seed is promoted).
      */
-    if ((fuzzer->sanCovCnts.newBBCnt > 0 && fuzzer->sanCovCnts.newBBCnt >= totalBBsDiff) ||
-        hfuzz->sanCovCnts.hitBBCnt < fuzzer->sanCovCnts.hitBBCnt ||
-        hfuzz->sanCovCnts.iDsoCnt < fuzzer->sanCovCnts.iDsoCnt) {
+    if (fuzzer->sanCovCnts.newBBCnt > 0 || hfuzz->sanCovCnts.iDsoCnt < fuzzer->sanCovCnts.iDsoCnt) {
         LOG_I("SanCov Update: file size (Cur): %zu, newBBs:%" PRIu64
               ", counters (Cur,New): %" PRIu64 "/%" PRIu64 ",%" PRIu64 "/%" PRIu64,
               fuzzer->dynamicFileSz, fuzzer->sanCovCnts.newBBCnt,
               hfuzz->sanCovCnts.hitBBCnt, hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitBBCnt,
               fuzzer->sanCovCnts.iDsoCnt);
 
-        hfuzz->sanCovCnts.hitBBCnt = fuzzer->sanCovCnts.hitBBCnt;
+        hfuzz->sanCovCnts.hitBBCnt += fuzzer->sanCovCnts.newBBCnt;
         hfuzz->sanCovCnts.dsoCnt = fuzzer->sanCovCnts.dsoCnt;
         hfuzz->sanCovCnts.iDsoCnt = fuzzer->sanCovCnts.iDsoCnt;
         hfuzz->sanCovCnts.crashesCnt += fuzzer->sanCovCnts.crashesCnt;
-        hfuzz->sanCovCnts.newBBCnt += fuzzer->sanCovCnts.newBBCnt;
+        hfuzz->sanCovCnts.newBBCnt = fuzzer->sanCovCnts.newBBCnt;
 
         if (hfuzz->sanCovCnts.totalBBCnt < fuzzer->sanCovCnts.totalBBCnt) {
             /* Keep only the max value (for dlopen cases) to measure total target coverage */
