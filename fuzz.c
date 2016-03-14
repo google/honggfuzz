@@ -396,8 +396,8 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
     hfuzz->dynfileqCnt++;
 
     char fname[PATH_MAX];
-    snprintf(fname, sizeof(fname), "COVERAGE_DATA.PID.%d.RND.%" PRIx64, getpid(),
-             util_rndGet(0, 0xFFFFFFFFFFFF));
+    snprintf(fname, sizeof(fname), "COVERAGE_DATA.PID.%d.RND.%" PRIu64 ".%" PRIx64, getpid(),
+             (uint64_t)time(NULL), util_rndGet(0, 0xFFFFFFFFFFFF));
     if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC) == false) {
         LOG_W("Couldn't write buffer to file '%s'", fname);
     }
