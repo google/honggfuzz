@@ -175,7 +175,6 @@ int main(int argc, char **argv)
 
     /* Clean-up global buffers */
     free(hfuzz.files);
-    free(hfuzz.dynamicFileBest);
     if (hfuzz.dictionary) {
         for (size_t i = 0; i < hfuzz.dictionaryCnt; i++) {
             free(hfuzz.dictionary[i]);

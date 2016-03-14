@@ -30,6 +30,8 @@
 #define MX_LOCK(m) util_mutexLock(m, __func__, __LINE__)
 #define MX_UNLOCK(m) util_mutexUnlock(m, __func__, __LINE__)
 
+extern void *util_Malloc(size_t sz);
+
 extern uint64_t util_rndGet(uint64_t min, uint64_t max);
 
 extern void util_rndBuf(uint8_t * buf, size_t sz);

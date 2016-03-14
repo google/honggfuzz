@@ -29,6 +29,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/param.h>
+#include <sys/queue.h>
 #include <sys/types.h>
 
 #ifdef __clang__
@@ -90,6 +91,9 @@ static void __attribute__ ((unused)) _clang_cleanup_func(void (^*dfunc) (void))
 /* Bitmap size */
 #define _HF_BITMAP_SIZE 0x2AFFFFF
 
+/* Perf bitmap size */
+#define _HF_PERF_BITMAP_SIZE (1024U * 1024U * 128)
+
 /* Directory in workspace to store sanitizer coverage data */
 #define _HF_SANCOV_DIR "HF_SANCOV"
 
@@ -115,10 +119,8 @@ typedef enum {
 typedef struct {
     uint64_t cpuInstrCnt;
     uint64_t cpuBranchCnt;
-    uint64_t cpuBtsBlockCnt;
-    uint64_t cpuBtsEdgeCnt;
-    uint64_t cpuIptBlockCnt;
     uint64_t customCnt;
+    uint64_t bbCnt;
 } hwcnt_t;
 
 /* Sanitizer coverage specific data structures */
@@ -177,6 +179,12 @@ typedef enum {
     _HF_STATE_DYNAMIC_MAIN = 3,
 } fuzzState_t;
 
+struct dynfile_t {
+    uint8_t *data;
+    size_t size;
+     TAILQ_ENTRY(files_t) pointers;
+};
+
 typedef struct {
     char **cmdline;
     char cmdline_txt[PATH_MAX];
@@ -212,6 +220,10 @@ typedef struct {
     char *envs[128];
 
     fuzzState_t state;
+    uint8_t *bbMap;
+    size_t bbMapSz;
+    size_t dynfileqCnt;
+     TAILQ_HEAD(dynfileq_t, dynfile_t) dynfileq;
 
     size_t mutationsCnt;
     size_t crashesCnt;
@@ -220,8 +232,6 @@ typedef struct {
     size_t blCrashesCnt;
     size_t timeoutedCnt;
 
-    uint8_t *dynamicFileBest;
-    size_t dynamicFileBestSz;
     dynFileMethod_t dynFileMethod;
     sancovcnt_t sanCovCnts;
     pthread_mutex_t dynamicFile_mutex;
@@ -230,7 +240,6 @@ typedef struct {
     size_t dynFileIterExpire;
     bool useSanCov;
     node_t *covMetadata;
-    bool clearCovMetadata;
 
     /* For the Linux code */
     hwcnt_t hwCnts;

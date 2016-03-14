@@ -73,13 +73,7 @@ static size_t perfPageSz = 0x0;
 static int32_t perfIntelPtPerfType = -1;
 static int32_t perfIntelBtsPerfType = -1;
 
-#if __BITS_PER_LONG == 64
-const size_t perfBloomSz = (1024ULL * 1024ULL * 1024ULL);
-#elif __BITS_PER_LONG == 32
-const size_t perfBloomSz = (1024ULL * 1024ULL * 128ULL);
-#else
-#error "__BITS_PER_LONG not defined"
-#endif
+__thread size_t perfBloomSz = 0U;
 __thread uint8_t *perfBloom = NULL;
 
 static size_t arch_perfCountBranches(void)
@@ -241,13 +235,6 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         return true;
     }
 #ifdef _HF_ENABLE_INTEL_PT
-    perfBloom = mmap(NULL, perfBloomSz, PROT_READ | PROT_WRITE,
-                     MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
-    if (perfBloom == MAP_FAILED) {
-        perfBloom = NULL;
-        PLOG_E("mmap(size=%zu) failed", perfBloomSz);
-    }
-
     perfMmapBuf =
         mmap(NULL, _HF_PERF_MAP_SZ + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
     if (perfMmapBuf == MAP_FAILED) {
@@ -282,7 +269,8 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, perfFd_t * perfFds)
         return true;
     }
 
-    perfBloom = NULL;
+    perfBloom = hfuzz->bbMap;
+    perfBloomSz = hfuzz->bbMapSz;
 
     perfFds->cpuInstrFd = -1;
     perfFds->cpuBranchFd = -1;
@@ -353,25 +341,23 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         close(perfFds->cpuBranchFd);
     }
 
-    uint64_t btsBlockCount = 0;
+    uint64_t newbbCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
         close(perfFds->cpuIptBtsFd);
         arch_perfMmapParse();
-        btsBlockCount = arch_perfCountBranches();
+        newbbCount = arch_perfCountBranches();
     }
 
-    uint64_t btsEdgeCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         close(perfFds->cpuIptBtsFd);
         arch_perfMmapParse();
-        btsEdgeCount = arch_perfCountBranches();
+        newbbCount = arch_perfCountBranches();
     }
 
-    uint64_t iptBlockCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
         close(perfFds->cpuIptBtsFd);
         arch_perfMmapParse();
-        iptBlockCount = arch_perfCountBranches();
+        newbbCount = arch_perfCountBranches();
     }
 
     if (perfMmapAux != NULL) {
@@ -382,16 +368,10 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         munmap(perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
         perfMmapBuf = NULL;
     }
-    if (perfBloom != NULL) {
-        munmap(perfBloom, perfBloomSz);
-        perfBloom = NULL;
-    }
 
     fuzzer->hwCnts.cpuInstrCnt = instrCount;
     fuzzer->hwCnts.cpuBranchCnt = branchCount;
-    fuzzer->hwCnts.cpuBtsBlockCnt = btsBlockCount;
-    fuzzer->hwCnts.cpuBtsEdgeCnt = btsEdgeCount;
-    fuzzer->hwCnts.cpuIptBlockCnt = iptBlockCount;
+    fuzzer->hwCnts.bbCnt = newbbCount;
 }
 
 bool arch_perfInit(honggfuzz_t * hfuzz)

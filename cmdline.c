@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/queue.h>
 #include <unistd.h>
 
 #include "common.h"
@@ -160,6 +161,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .envs = {[0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,},
 
         .state = _HF_STATE_UNSET,
+        .bbMapSz = _HF_PERF_BITMAP_SIZE,
+        .bbMap = util_Malloc(_HF_PERF_BITMAP_SIZE),
+        .dynfileqCnt = 0U,
 
         .mutationsCnt = 0,
         .crashesCnt = 0,
@@ -168,8 +172,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .blCrashesCnt = 0,
         .timeoutedCnt = 0,
 
-        .dynamicFileBest = NULL,
-        .dynamicFileBestSz = 1,
         .dynFileMethod = _HF_DYNFILE_NONE,
         .sanCovCnts = {
                        .hitBBCnt = 0ULL,
@@ -188,16 +190,14 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
                     .ubsanOpts = NULL,
         },
         .useSanCov = false,
-        .clearCovMetadata = false,
         .covMetadata = NULL,
 
         /* Linux code */
         .hwCnts = {
                    .cpuInstrCnt = 0ULL,
                    .cpuBranchCnt = 0ULL,
-                   .cpuBtsBlockCnt = 0ULL,
-                   .cpuBtsEdgeCnt = 0ULL,
                    .customCnt = 0ULL,
+                   .bbCnt = 0ULL,
                    },
         .dynamicCutOffAddr = ~(0ULL),
         .disableRandomization = true,
@@ -209,6 +209,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .pidCmd = NULL,
     };
     /*  *INDENT-ON* */
+
+    TAILQ_INIT(&hfuzz->dynfileq);
 
     /*  *INDENT-OFF* */
     struct custom_option custom_opts[] = {
@@ -409,17 +411,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     if (hfuzz->cmdline[0] == NULL) {
         LOG_E("No fuzz command provided");
         cmdlineUsage(argv[0], custom_opts);
-        return false;
-    }
-
-    if (hfuzz->dynamicFileBestSz > hfuzz->maxFileSz) {
-        LOG_E("Initial dynamic file size cannot be larger than maximum file size (%zu > %zu)",
-              hfuzz->dynamicFileBestSz, hfuzz->maxFileSz);
-        return false;
-    }
-
-    if ((hfuzz->dynamicFileBest = malloc(hfuzz->maxFileSz)) == NULL) {
-        LOG_E("malloc(%zu) failed", hfuzz->maxFileSz);
         return false;
     }
 

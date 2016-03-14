@@ -116,8 +116,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     /* Feedback data sources are enabled. Start with common headers. */
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
-        display_put("Dynamic file size: " ESC_BOLD "%zu" ESC_RESET " (max: " ESC_BOLD "%zu"
-                    ESC_RESET ")\n", hfuzz->dynamicFileBestSz, hfuzz->maxFileSz);
+        display_put("Number of dynamic files: " ESC_BOLD "%zu" ESC_RESET "\n", hfuzz->dynfileqCnt);
         display_put("Coverage (max):\n");
     }
 
@@ -132,15 +131,15 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
         display_put("  - BTS unique blocks: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->hwCnts.cpuBtsBlockCnt, 0UL));
+                    __sync_fetch_and_add(&hfuzz->hwCnts.bbCnt, 0UL));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         display_put("  - BTS unique edges:   " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->hwCnts.cpuBtsEdgeCnt, 0UL));
+                    __sync_fetch_and_add(&hfuzz->hwCnts.bbCnt, 0UL));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
         display_put("  - PT unique blocks: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->hwCnts.cpuIptBlockCnt, 0UL));
+                    __sync_fetch_and_add(&hfuzz->hwCnts.bbCnt, 0UL));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) {
         display_put("  - custom counter:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",

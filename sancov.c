@@ -282,7 +282,7 @@ static inline void sancov_trieCreate(node_t ** root)
 }
 
 /* Destroy Trie - iterate nodes and free memory */
-static void sancov_trieDestroy(node_t * root)
+UNUSED static void sancov_trieDestroy(node_t * root)
 {
     node_t *pNode = root;
     node_t *pNodeTmp = root;
@@ -407,23 +407,6 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         is32bit = false;
     } else {
         LOG_E("Invalid PC length (%d) in map file '%s'", pcLen, covFile);
-    }
-
-    /* Interaction with global Trie should mutex wrap to avoid threads races */
-    {
-        MX_LOCK(&hfuzz->sanCov_mutex);
-        DEFER(MX_UNLOCK(&hfuzz->sanCov_mutex));
-
-        /* If runtime data destroy flag, new seed has been picked so destroy old & create new Trie */
-        if (hfuzz->clearCovMetadata == true) {
-            /* Since this path is invoked on first run too, destroy old Trie only if exists */
-            if (hfuzz->covMetadata != NULL) {
-                sancov_trieDestroy(hfuzz->covMetadata);
-            }
-            sancov_trieCreate(&hfuzz->covMetadata);
-            hfuzz->clearCovMetadata = false;
-            isSeedFirstRun = true;
-        }
     }
 
     /* See if #maps is available from previous run to avoid realloc inside loop */
@@ -885,6 +868,8 @@ bool sancov_Init(honggfuzz_t * hfuzz)
     memset(hfuzz->sanOpts.msanOpts, 0, flagsSz);
     memcpy(hfuzz->sanOpts.msanOpts, san_opts, flagsSz);
     LOG_D("MSAN_OPTIONS=%s", hfuzz->sanOpts.msanOpts);
+
+    sancov_trieCreate(&hfuzz->covMetadata);
 
     return true;
 }
