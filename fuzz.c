@@ -380,6 +380,29 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     return true;
 }
 
+static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_t size)
+{
+    struct dynfile_t *dynfile = (struct dynfile_t *)malloc(sizeof(struct dynfile_t));
+    if (dynfile == NULL) {
+        LOG_F("malloc(size='%zu') failed)", sizeof(struct dynfile_t));
+    }
+    dynfile->size = size;
+    dynfile->data = (uint8_t *) malloc(size);
+    if (dynfile->data == NULL) {
+        LOG_F("malloc(size='%zu') failed)", size);
+    }
+    memcpy(dynfile->data, data, size);
+    TAILQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
+    hfuzz->dynfileqCnt++;
+
+    char fname[PATH_MAX];
+    snprintf(fname, sizeof(fname), "COVERAGE_DATA.PID.%d.RND.%" PRIx64, getpid(),
+             util_rndGet(0, 0xFFFFFFFFFFFF));
+    if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC) == false) {
+        LOG_W("Couldn't write buffer to file '%s'", fname);
+    }
+}
+
 static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     LOG_D
@@ -396,7 +419,7 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int64_t diff2 = hfuzz->hwCnts.customCnt - fuzzer->hwCnts.customCnt;
 
     if (diff0 < 0 || diff1 < 0 || diff2 < 0 || fuzzer->hwCnts.bbCnt > 0) {
-        LOG_D
+        LOG_I
             ("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 ",%"
              PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
              fuzzer->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt,
@@ -407,19 +430,7 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         hfuzz->hwCnts.customCnt = fuzzer->hwCnts.customCnt;
         hfuzz->hwCnts.bbCnt += fuzzer->hwCnts.bbCnt;
 
-        struct dynfile_t *dynfile = (struct dynfile_t *)malloc(sizeof(struct dynfile_t));
-        if (dynfile == NULL) {
-            LOG_F("malloc(size='%zu') failed)", sizeof(struct dynfile_t));
-        }
-        dynfile->size = fuzzer->dynamicFileSz;
-        dynfile->data = (uint8_t *) malloc(dynfile->size);
-        if (dynfile->data == NULL) {
-            LOG_F("malloc(size='%zu') failed)", fuzzer->dynamicFileSz);
-        }
-        memcpy(dynfile->data, fuzzer->dynamicFile, dynfile->size);
-        TAILQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
-        hfuzz->dynfileqCnt++;
-
+        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
 }
 
@@ -474,18 +485,7 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             hfuzz->sanCovCnts.totalBBCnt = fuzzer->sanCovCnts.totalBBCnt;
         }
 
-        struct dynfile_t *dynfile = (struct dynfile_t *)malloc(sizeof(struct dynfile_t));
-        if (dynfile == NULL) {
-            LOG_F("malloc(size='%zu') failed)", sizeof(struct dynfile_t));
-        }
-        dynfile->size = fuzzer->dynamicFileSz;
-        dynfile->data = (uint8_t *) malloc(dynfile->size);
-        if (dynfile->data == NULL) {
-            LOG_F("malloc(size='%zu') failed)", fuzzer->dynamicFileSz);
-        }
-        memcpy(dynfile->data, fuzzer->dynamicFile, dynfile->size);
-        TAILQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
-        hfuzz->dynfileqCnt++;
+        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
 }
 
