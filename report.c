@@ -105,7 +105,7 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
             " targetCmd    : %s\n"
             " wordlistFile : %s\n",
             localtmstr,
-            hfuzz->flipRate,
+            hfuzz->origFlipRate,
             hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand,
             hfuzz->fuzzStdin ? "TRUE" : "FALSE",
             hfuzz->tmOut,

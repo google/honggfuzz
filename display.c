@@ -101,7 +101,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                 ")\n", exec_per_sec, elapsed ? (curr_exec_cnt / elapsed) : 0);
 
     /* If dry run, print also the input file count */
-    if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
+    if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
         display_put("Input Files: '" ESC_BOLD "%zu" ESC_RESET "'\n", hfuzz->fileCnt);
     }
 
@@ -118,9 +118,6 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
         display_put("Dynamic file size: " ESC_BOLD "%zu" ESC_RESET " (max: " ESC_BOLD "%zu"
                     ESC_RESET ")\n", hfuzz->dynamicFileBestSz, hfuzz->maxFileSz);
-        display_put("Dynamic file max iterations keep for chosen seed (" ESC_BOLD "%zu" ESC_RESET
-                    "/" ESC_BOLD "%zu" ESC_RESET ")\n",
-                    __sync_fetch_and_add(&hfuzz->dynFileIterExpire, 0UL), _HF_MAX_DYNFILE_ITER);
         display_put("Coverage (max):\n");
     }
 

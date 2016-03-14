@@ -137,7 +137,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .timeStart = time(NULL),
         .fileExtn = "fuzz",
         .workDir = ".",
-        .flipRate = 0.001f,
+        .origFlipRate = 0.001f,
         .externalCommand = NULL,
         .dictionaryFile = NULL,
         .dictionary = NULL,
@@ -182,14 +182,11 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
 
         .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER,
-        .workersBlock_mutex = PTHREAD_MUTEX_INITIALIZER,
         .sanOpts = {
                     .asanOpts = NULL,
                     .msanOpts = NULL,
                     .ubsanOpts = NULL,
         },
-        .isDynFileLocked = false,
-        .dynFileIterExpire = _HF_MAX_DYNFILE_ITER,
         .useSanCov = false,
         .clearCovMetadata = false,
         .covMetadata = NULL,
@@ -310,7 +307,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             hfuzz->workDir = optarg;
             break;
         case 'r':
-            hfuzz->flipRate = strtod(optarg, NULL);
+            hfuzz->origFlipRate = strtod(optarg, NULL);
             break;
         case 'c':
             hfuzz->externalCommand = optarg;
@@ -460,7 +457,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         hfuzz->threadsMax = 1;
     }
 
-    if (hfuzz->flipRate == 0.0L && hfuzz->useVerifier) {
+    if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
         LOG_I("Verifier enabled with 0.0 flipRate, activating dry run mode");
     }
 
@@ -469,7 +466,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
           "memoryLimit: 0x%" PRIx64 "(MiB), fuzzExe: '%s', fuzzedPid: %d",
           hfuzz->inputFile,
           cmdlineYesNo(hfuzz->nullifyStdio), cmdlineYesNo(hfuzz->fuzzStdin),
-          cmdlineYesNo(hfuzz->saveUnique), hfuzz->flipRate,
+          cmdlineYesNo(hfuzz->saveUnique), hfuzz->origFlipRate,
           hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, hfuzz->tmOut,
           hfuzz->mutationsMax, hfuzz->threadsMax, hfuzz->fileExtn, hfuzz->ignoreAddr,
           hfuzz->asLimit, hfuzz->cmdline[0], hfuzz->pid);

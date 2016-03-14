@@ -85,12 +85,6 @@ static void __attribute__ ((unused)) _clang_cleanup_func(void (^*dfunc) (void))
 /* Size (in bytes) for report data to be stored in stack before written to file */
 #define _HF_REPORT_SIZE 8192
 
-/*
- * Maximum number of iterations to keep same base seed file for dynamic preparation.
- * Maintained iterations counters is set to zero if unique crash is detected or
- * zero-set two MSB using following mask if crash is detected (might not be unique).
- */
-#define _HF_MAX_DYNFILE_ITER 0x2000UL
 #define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
 
 /* Bitmap size */
@@ -195,7 +189,7 @@ typedef struct {
     time_t timeStart;
     char *fileExtn;
     char *workDir;
-    double flipRate;
+    double origFlipRate;
     char *externalCommand;
     const char *dictionaryFile;
     char **dictionary;
@@ -232,9 +226,7 @@ typedef struct {
     sancovcnt_t sanCovCnts;
     pthread_mutex_t dynamicFile_mutex;
     pthread_mutex_t sanCov_mutex;
-    pthread_mutex_t workersBlock_mutex;
     sanOpts_t sanOpts;
-    bool isDynFileLocked;
     size_t dynFileIterExpire;
     bool useSanCov;
     node_t *covMetadata;
@@ -264,12 +256,14 @@ typedef struct fuzzer_t {
     int exception;
     char report[_HF_REPORT_SIZE];
     bool mainWorker;
+    float flipRate;
+
+    sancovcnt_t sanCovCnts;
+    uint8_t *dynamicFile;
+    size_t dynamicFileSz;
 
     /* For Linux code */
-    uint8_t *dynamicFile;
     hwcnt_t hwCnts;
-    sancovcnt_t sanCovCnts;
-    size_t dynamicFileSz;
 } fuzzer_t;
 
 #define _HF_MAX_FUNCS 80

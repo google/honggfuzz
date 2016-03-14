@@ -277,7 +277,7 @@ static void mangle_DecByte(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t buf
     buf[off] -= (uint8_t) 1UL;
 }
 
-void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
+void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     /*  *INDENT-OFF* */
     static void (*const mangleFuncs[]) (honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz, size_t off) = {
@@ -304,16 +304,16 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz)
     /*
      * Minimal number of changes is 1
      */
-    uint64_t changesCnt = bufSz * hfuzz->flipRate;
+    uint64_t changesCnt = fuzzer->dynamicFileSz * fuzzer->flipRate;
     if (changesCnt == 0ULL) {
         changesCnt = 1;
     }
     changesCnt = util_rndGet(1, changesCnt);
 
     for (uint64_t x = 0; x < changesCnt; x++) {
-        size_t offset = util_rndGet(0, bufSz - 1);
+        size_t offset = util_rndGet(0, fuzzer->dynamicFileSz - 1);
         uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);
-        mangleFuncs[choice] (hfuzz, buf, bufSz, offset);
+        mangleFuncs[choice] (hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz, offset);
     }
 }
 
