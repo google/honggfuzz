@@ -758,11 +758,13 @@ void sancov_Analyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 bool sancov_Init(honggfuzz_t * hfuzz)
 {
-    if (hfuzz->pid > 0) {
+    if (hfuzz->useSanCov == false) {
         return true;
     }
 
-    if (hfuzz->useSanCov == false) {
+    sancov_trieCreate(&hfuzz->covMetadata);
+
+    if (hfuzz->pid > 0) {
         return true;
     }
 
@@ -868,8 +870,6 @@ bool sancov_Init(honggfuzz_t * hfuzz)
     memset(hfuzz->sanOpts.msanOpts, 0, flagsSz);
     memcpy(hfuzz->sanOpts.msanOpts, san_opts, flagsSz);
     LOG_D("MSAN_OPTIONS=%s", hfuzz->sanOpts.msanOpts);
-
-    sancov_trieCreate(&hfuzz->covMetadata);
 
     return true;
 }
