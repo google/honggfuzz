@@ -82,7 +82,7 @@ pid_t arch_fork(honggfuzz_t * hfuzz)
      * We need to wait for the child to finish with wait() in case we're fuzzing
      * an external process
      */
-    uintptr_t clone_flags = 0;
+    uintptr_t clone_flags = CLONE_UNTRACED;
     if (hfuzz->pid) {
         clone_flags = SIGCHLD;
     }

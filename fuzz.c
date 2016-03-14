@@ -158,19 +158,22 @@ static bool fuzz_prepareExecve(honggfuzz_t * hfuzz, const char *fileName)
 
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    MX_LOCK(&hfuzz->dynamicFile_mutex);
-    DEFER(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
-
-    size_t dynFilePos = util_rndGet(0, hfuzz->dynfileqCnt - 1);
     struct dynfile_t *dynfile;
     size_t i = 0U;
-    TAILQ_FOREACH(dynfile, &hfuzz->dynfileq, pointers) {
-        if (i++ == dynFilePos) {
-            break;
+
+    {
+        MX_LOCK(&hfuzz->dynamicFile_mutex);
+        DEFER(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
+        size_t dynFilePos = util_rndGet(0, hfuzz->dynfileqCnt - 1);
+        TAILQ_FOREACH(dynfile, &hfuzz->dynfileq, pointers) {
+            if (i++ == dynFilePos) {
+                break;
+            }
         }
     }
 
     memcpy(fuzzer->dynamicFile, dynfile->data, dynfile->size);
+    fuzzer->dynamicFileSz = dynfile->size;
 
     mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz);
     mangle_mangleContent(hfuzz, fuzzer);
@@ -537,7 +540,11 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         }
     }
 
-    strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
+    if (hfuzz->state == _HF_STATE_DYNAMIC_MAIN) {
+        strncpy(fuzzer.origFileName, "DYNAMIC", PATH_MAX);
+    } else {
+        strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
+    }
     fuzz_getFileName(hfuzz, fuzzer.fileName);
 
     if (hfuzz->state == _HF_STATE_DYNAMIC_MAIN) {
