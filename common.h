@@ -92,7 +92,7 @@ static void __attribute__ ((unused)) _clang_cleanup_func(void (^*dfunc) (void))
 #define _HF_BITMAP_SIZE 0x2AFFFFF
 
 /* Perf bitmap size */
-#define _HF_PERF_BITMAP_SIZE (1024U * 1024U * 128)
+#define _HF_PERF_BITMAP_SIZE (1024U * 1024U * 1024U)
 
 /* Directory in workspace to store sanitizer coverage data */
 #define _HF_SANCOV_DIR "HF_SANCOV"

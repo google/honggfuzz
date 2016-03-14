@@ -159,11 +159,12 @@ static bool fuzz_prepareExecve(honggfuzz_t * hfuzz, const char *fileName)
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     struct dynfile_t *dynfile;
-    size_t i = 0U;
 
     {
         MX_LOCK(&hfuzz->dynamicFile_mutex);
         DEFER(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
+
+        size_t i = 0U;
         size_t dynFilePos = util_rndGet(0, hfuzz->dynfileqCnt - 1);
         TAILQ_FOREACH(dynfile, &hfuzz->dynfileq, pointers) {
             if (i++ == dynFilePos) {
@@ -416,7 +417,7 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             LOG_F("malloc(size='%zu') failed)", fuzzer->dynamicFileSz);
         }
         memcpy(dynfile->data, fuzzer->dynamicFile, dynfile->size);
-        TAILQ_INSERT_HEAD(&hfuzz->dynfileq, dynfile, pointers);
+        TAILQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
         hfuzz->dynfileqCnt++;
 
     }
@@ -483,7 +484,7 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             LOG_F("malloc(size='%zu') failed)", fuzzer->dynamicFileSz);
         }
         memcpy(dynfile->data, fuzzer->dynamicFile, dynfile->size);
-        TAILQ_INSERT_HEAD(&hfuzz->dynfileq, dynfile, pointers);
+        TAILQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
         hfuzz->dynfileqCnt++;
     }
 }
