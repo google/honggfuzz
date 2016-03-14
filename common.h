@@ -223,6 +223,7 @@ typedef struct {
     uint8_t *bbMap;
     size_t bbMapSz;
     size_t dynfileqCnt;
+    pthread_mutex_t dynfileq_mutex;
      TAILQ_HEAD(dynfileq_t, dynfile_t) dynfileq;
 
     size_t mutationsCnt;
@@ -234,7 +235,6 @@ typedef struct {
 
     dynFileMethod_t dynFileMethod;
     sancovcnt_t sanCovCnts;
-    pthread_mutex_t dynamicFile_mutex;
     pthread_mutex_t sanCov_mutex;
     sanOpts_t sanOpts;
     size_t dynFileIterExpire;

@@ -163,6 +163,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .state = _HF_STATE_UNSET,
         .bbMapSz = _HF_PERF_BITMAP_SIZE,
         .bbMap = util_Malloc(_HF_PERF_BITMAP_SIZE),
+        .dynfileq_mutex = PTHREAD_MUTEX_INITIALIZER,
         .dynfileqCnt = 0U,
 
         .mutationsCnt = 0,
@@ -181,7 +182,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
                        .newBBCnt = 0ULL,
                        .crashesCnt = 0ULL,
                       },
-        .dynamicFile_mutex = PTHREAD_MUTEX_INITIALIZER,
 
         .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER,
         .sanOpts = {

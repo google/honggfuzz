@@ -161,8 +161,8 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     struct dynfile_t *dynfile;
 
     {
-        MX_LOCK(&hfuzz->dynamicFile_mutex);
-        DEFER(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
+        MX_LOCK(&hfuzz->dynfileq_mutex);
+        DEFER(MX_UNLOCK(&hfuzz->dynfileq_mutex));
 
         size_t i = 0U;
         size_t dynFilePos = util_rndGet(0, hfuzz->dynfileqCnt - 1);
@@ -388,8 +388,8 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
          fuzzer->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt,
          hfuzz->hwCnts.cpuBranchCnt, fuzzer->hwCnts.bbCnt, hfuzz->hwCnts.bbCnt);
 
-    MX_LOCK(&hfuzz->dynamicFile_mutex);
-    DEFER(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
+    MX_LOCK(&hfuzz->dynfileq_mutex);
+    DEFER(MX_UNLOCK(&hfuzz->dynfileq_mutex));
 
     int64_t diff0 = hfuzz->hwCnts.cpuInstrCnt - fuzzer->hwCnts.cpuInstrCnt;
     int64_t diff1 = hfuzz->hwCnts.cpuBranchCnt - fuzzer->hwCnts.cpuBranchCnt;
@@ -432,8 +432,8 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
          hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitBBCnt, fuzzer->sanCovCnts.iDsoCnt,
          fuzzer->sanCovCnts.newBBCnt);
 
-    MX_LOCK(&hfuzz->dynamicFile_mutex);
-    DEFER(MX_UNLOCK(&hfuzz->dynamicFile_mutex));
+    MX_LOCK(&hfuzz->dynfileq_mutex);
+    DEFER(MX_UNLOCK(&hfuzz->dynfileq_mutex));
 
     /* abs diff of total BBs between global counter for chosen seed & current run */
     uint64_t totalBBsDiff;
