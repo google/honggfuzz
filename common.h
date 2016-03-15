@@ -214,7 +214,8 @@ typedef struct {
     uint64_t asLimit;
     char **files;
     size_t fileCnt;
-    size_t lastCheckedFileIndex;
+    size_t lastFileIndex;
+    size_t doneFileIndex;
     int exeFd;
     bool clearEnv;
     char *envs[128];

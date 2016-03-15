@@ -515,14 +515,13 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
 
     /* If dry run mode, pick the next file and not a random one */
     if (fuzzer.flipRate == 0.0L && hfuzz->useVerifier) {
-        rnd_index = __sync_fetch_and_add(&hfuzz->lastCheckedFileIndex, 1UL);
+        rnd_index = __sync_fetch_and_add(&hfuzz->lastFileIndex, 1UL);
     }
     if (hfuzz->state == _HF_STATE_DYNAMIC_PRE) {
-        rnd_index = __sync_fetch_and_add(&hfuzz->lastCheckedFileIndex, 1UL);
+        fuzzer.flipRate = 0.0f;
+        rnd_index = __sync_fetch_and_add(&hfuzz->lastFileIndex, 1UL);
         if (rnd_index >= hfuzz->fileCnt) {
-            hfuzz->state = _HF_STATE_DYNAMIC_MAIN;
-        } else {
-            fuzzer.flipRate = 0.0f;
+            return;
         }
     }
 
@@ -586,6 +585,10 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     }
 
     report_Report(hfuzz, fuzzer.report);
+
+    if (__sync_add_and_fetch(&hfuzz->doneFileIndex, 1UL) >= hfuzz->fileCnt) {
+        hfuzz->state = _HF_STATE_DYNAMIC_MAIN;
+    }
 }
 
 static void *fuzz_threadNew(void *arg)
