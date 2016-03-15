@@ -531,19 +531,23 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     if (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_PRE) {
         rnd_index = __sync_fetch_and_add(&hfuzz->lastFileIndex, 1UL);
         if (rnd_index >= hfuzz->fileCnt) {
+            /*
+             * The waiting logic (for the DYNAMIC_PRE phase to finish) should be based on cond-waits
+             * or mutexes, but it'd complicate code too much
+             */
             while (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_PRE) {
                 sleep(1);
             }
         }
     }
 
-    if (hfuzz->state == _HF_STATE_DYNAMIC_MAIN) {
+    fuzzState_t state = fuzz_getState(hfuzz);
+    if (state == _HF_STATE_DYNAMIC_MAIN) {
         strncpy(fuzzer.origFileName, "DYNAMIC", PATH_MAX);
     } else {
         strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
     }
 
-    fuzzState_t state = fuzz_getState(hfuzz);
     fuzz_getFileName(hfuzz, fuzzer.fileName);
 
     if (state == _HF_STATE_DYNAMIC_MAIN) {
