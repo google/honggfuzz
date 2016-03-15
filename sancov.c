@@ -522,6 +522,15 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     /* Iterate over data buffer containing list of hit BB addresses */
     while (pos < dataFileSz) {
         uint64_t bbAddr = pReadRawBBAddrFunc(dataBuf + pos);
+
+        /*
+         * TODO: Try to figure out what the problem is. Seems on AMD64 FreeBSD,
+         * the data is written using different endianess than under Linux. For
+         * the time being, this is ugly hack must suffice
+         */
+#if defined(__FreeBSD__)
+        bbAddr = __builtin_bswap64(bbAddr);
+#endif
         pos += pivot;
         /* Don't bother for zero BB addr (inserted checks without hit) */
         if (bbAddr == 0x0) {
