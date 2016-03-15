@@ -477,6 +477,16 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 }
 
+static fuzzState_t fuzz_getState(honggfuzz_t * hfuzz)
+{
+    return __sync_fetch_and_add(&hfuzz->state, 0UL);
+}
+
+static void fuzz_setState(honggfuzz_t * hfuzz, fuzzState_t state)
+{
+    __sync_lock_test_and_set(&hfuzz->state, state);
+}
+
 static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
 {
     fuzzer_t fuzzer = {
@@ -518,11 +528,11 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         rnd_index = __sync_fetch_and_add(&hfuzz->lastFileIndex, 1UL);
     }
 
-    if (hfuzz->state == _HF_STATE_DYNAMIC_PRE) {
+    if (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_PRE) {
         rnd_index = __sync_fetch_and_add(&hfuzz->lastFileIndex, 1UL);
         if (rnd_index >= hfuzz->fileCnt) {
-            while(hfuzz->state == _HF_STATE_DYNAMIC_PRE) {
-              sleep(1);
+            while (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_PRE) {
+                sleep(1);
             }
         }
     }
@@ -532,13 +542,15 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     } else {
         strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
     }
+
+    fuzzState_t state = fuzz_getState(hfuzz);
     fuzz_getFileName(hfuzz, fuzzer.fileName);
 
-    if (hfuzz->state == _HF_STATE_DYNAMIC_MAIN) {
+    if (state == _HF_STATE_DYNAMIC_MAIN) {
         if (!fuzz_prepareFileDynamically(hfuzz, &fuzzer)) {
             exit(EXIT_FAILURE);
         }
-    } else if (hfuzz->state == _HF_STATE_DYNAMIC_PRE) {
+    } else if (state == _HF_STATE_DYNAMIC_PRE) {
         fuzzer.flipRate = 0.0f;
         if (!fuzz_prepareFile(hfuzz, &fuzzer, rnd_index)) {
             exit(EXIT_FAILURE);
@@ -589,8 +601,9 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
 
     report_Report(hfuzz, fuzzer.report);
 
-    if (hfuzz->state ==  _HF_STATE_DYNAMIC_PRE && __sync_add_and_fetch(&hfuzz->doneFileIndex, 1UL) >= hfuzz->fileCnt) {
-        hfuzz->state = _HF_STATE_DYNAMIC_MAIN;
+    if (state == _HF_STATE_DYNAMIC_PRE
+        && __sync_add_and_fetch(&hfuzz->doneFileIndex, 1UL) >= hfuzz->fileCnt) {
+        fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_MAIN);
     }
 }
 
