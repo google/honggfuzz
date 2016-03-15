@@ -61,7 +61,7 @@ void sigHandler(int sig)
 static void setupTimer(void)
 {
     struct itimerval it = {
-        .it_value = {.tv_sec = 0,.tv_usec = 1},
+        .it_value = {.tv_sec = 1,.tv_usec = 0},
         .it_interval = {.tv_sec = 1,.tv_usec = 0},
     };
     if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
@@ -119,10 +119,7 @@ int main(int argc, char **argv)
     /*
      * Work around CygWin/MinGW
      */
-    char **myargs = (char **)malloc(sizeof(char *) * (argc + 1));
-    if (myargs == NULL) {
-        PLOG_F("Couldn't allocate '%zu' bytes", sizeof(char *) * (argc + 1));
-    }
+    char **myargs = (char **)util_Malloc(sizeof(char *) * (argc + 1));
 
     int i;
     for (i = 0U; i < argc; i++) {
@@ -147,15 +144,14 @@ int main(int argc, char **argv)
         LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.blacklistFile);
     }
 
-    setupSignalsPreThr();
-    setupTimer();
-
     /*
      * So far so good
      */
+    setupSignalsPreThr();
     fuzz_threads(&hfuzz);
     setupSignalsPostThr();
 
+    setupTimer();
     for (;;) {
         if (hfuzz.useScreen) {
             display_display(&hfuzz);
@@ -197,5 +193,5 @@ int main(int argc, char **argv)
         free(hfuzz.pidCmd);
     }
 
-    exit(EXIT_SUCCESS);
+    return EXIT_SUCCESS;
 }
