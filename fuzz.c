@@ -517,11 +517,13 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     if (fuzzer.flipRate == 0.0L && hfuzz->useVerifier) {
         rnd_index = __sync_fetch_and_add(&hfuzz->lastFileIndex, 1UL);
     }
+
     if (hfuzz->state == _HF_STATE_DYNAMIC_PRE) {
-        fuzzer.flipRate = 0.0f;
         rnd_index = __sync_fetch_and_add(&hfuzz->lastFileIndex, 1UL);
         if (rnd_index >= hfuzz->fileCnt) {
-            return;
+            while(hfuzz->state == _HF_STATE_DYNAMIC_PRE) {
+              sleep(1);
+            }
         }
     }
 
@@ -537,6 +539,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
             exit(EXIT_FAILURE);
         }
     } else if (hfuzz->state == _HF_STATE_DYNAMIC_PRE) {
+        fuzzer.flipRate = 0.0f;
         if (!fuzz_prepareFile(hfuzz, &fuzzer, rnd_index)) {
             exit(EXIT_FAILURE);
         }
@@ -586,7 +589,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
 
     report_Report(hfuzz, fuzzer.report);
 
-    if (__sync_add_and_fetch(&hfuzz->doneFileIndex, 1UL) >= hfuzz->fileCnt) {
+    if (hfuzz->state ==  _HF_STATE_DYNAMIC_PRE && __sync_add_and_fetch(&hfuzz->doneFileIndex, 1UL) >= hfuzz->fileCnt) {
         hfuzz->state = _HF_STATE_DYNAMIC_MAIN;
     }
 }
