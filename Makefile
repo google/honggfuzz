@@ -200,7 +200,7 @@ android:
 honggfuzz.o: common.h cmdline.h display.h log.h files.h fuzz.h util.h
 cmdline.o: cmdline.h common.h log.h files.h util.h
 display.o: common.h display.h log.h util.h
-files.o: common.h files.h log.h
+files.o: common.h files.h log.h util.h
 fuzz.o: common.h fuzz.h arch.h files.h log.h mangle.h report.h sancov.h
 fuzz.o: util.h
 log.o: common.h log.h
@@ -208,11 +208,11 @@ mangle.o: common.h mangle.h log.h util.h
 report.o: common.h report.h log.h util.h
 sancov.o: common.h sancov.h files.h log.h util.h
 util.o: common.h files.h log.h
-linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h linux/bfd.h
-linux/ptrace_utils.o: linux/unwind.h log.h sancov.h util.h
-linux/perf.o: common.h linux/perf.h files.h linux/pt.h log.h util.h
-linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
-linux/pt.o: common.h linux/pt.h log.h
-linux/unwind.o: common.h linux/unwind.h log.h
 linux/arch.o: common.h arch.h linux/perf.h linux/ptrace_utils.h log.h
 linux/arch.o: sancov.h util.h files.h
+linux/bfd.o: common.h linux/bfd.h files.h log.h util.h
+linux/perf.o: common.h linux/perf.h files.h linux/pt.h log.h util.h
+linux/pt.o: common.h linux/pt.h log.h
+linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h linux/bfd.h
+linux/ptrace_utils.o: linux/unwind.h log.h sancov.h util.h
+linux/unwind.o: common.h linux/unwind.h log.h
