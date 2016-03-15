@@ -257,22 +257,12 @@ uint32_t util_ToFromLE32(uint32_t val)
 
 uint64_t util_getUINT32(const uint8_t * buf)
 {
-    const uint8_t b0 = buf[0], b1 = buf[1], b2 = buf[2], b3 = buf[3];
-
-#if __BYTE_ORDER == __BIG_ENDIAN
-    return (uint64_t) ((uint32_t) b0 << 24) | ((uint32_t) b1 << 16) | ((uint32_t) b2 << 8) |
-        (uint32_t) b3;
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-    return (uint64_t) ((uint32_t) b3 << 24) | ((uint32_t) b2 << 16) | ((uint32_t) b1 << 8) |
-        (uint32_t) b0;
-#else
-#error "Unknown ENDIANNESS"
-#endif
+    return (uint64_t) (*((uint32_t *) buf));
 }
 
 uint64_t util_getUINT64(const uint8_t * buf)
 {
-    return *((uint64_t*)buf);
+    return *((uint64_t *) buf);
 }
 
 void util_mutexLock(pthread_mutex_t * mutex, const char *func, int line)
