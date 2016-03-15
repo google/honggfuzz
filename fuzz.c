@@ -164,6 +164,11 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         MX_LOCK(&hfuzz->dynfileq_mutex);
         DEFER(MX_UNLOCK(&hfuzz->dynfileq_mutex));
 
+        if (hfuzz->dynfileqCnt == 0) {
+            LOG_F("No files in the dynamic queue. The initial phase did not "
+                  "result in positive counters/coverage");
+        }
+
         size_t i = 0U;
         size_t dynFilePos = util_rndGet(0, hfuzz->dynfileqCnt - 1);
         TAILQ_FOREACH(dynfile, &hfuzz->dynfileq, pointers) {
