@@ -38,6 +38,7 @@
 #include <unistd.h>
 
 #include "log.h"
+#include "util.h"
 
 size_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
 {
