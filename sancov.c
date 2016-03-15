@@ -586,7 +586,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                  * Normally this should never get executed. If hit, sanitizer
                  * coverage data collection come across some kind of bug.
                  */
-                LOG_E("Invalid BB addr (%#" PRIx64 ") at offset %ld", bbAddr, pos);
+                LOG_E("Invalid BB addr (%#" PRIx64 ") at offset %" PRId64, bbAddr, (uint64_t)pos);
             }
         }
         nBBs++;
