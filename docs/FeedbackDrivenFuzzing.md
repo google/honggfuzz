@@ -7,12 +7,15 @@ Developers provide the initial file corpus which will be gradually improved upon
 # Requirements for software-based coverage-guided fuzzing (ASAN code coverage) #
   * Clang 3.7/3.8/3.9/newer for compiling the fuzzed software (-fsanitize-coverage=bb -fsanitize=address)
 
-# Requirements for hardware-based coverage-guided fuzzing (counters, Intel BTS/PT) #
+# Requirements for hardware-based coverage-guided fuzzing #
   * GNU/Linux OS
-  * Relatively modern Linux kernel (v 3.2 should suffice)
+  * Relatively modern Linux kernel (v4.0 should suffice)
   * CPU which is supported by the [perf subsystem](https://perf.wiki.kernel.org/index.php/Main_Page) for hardware-assisted instruction and branch counting
   * CPU supporting [BTS (Branch Trace Store)](https://software.intel.com/en-us/forums/topic/277868?language=en) for hardware assisted unique edge (branch pairs) counting. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
   * CPU supporting [Intel PT (Processor Tracing)](https://software.intel.com/en-us/blogs/2013/09/18/processor-tracing) for hardware assisted unique edge (branch pairs) counting. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
+
+# Requirements for hardware-based counter-guided fuzzing (Intel/AMD and possibly other CPU architectures) #
+  * GNU/Linux OS with a supported CPU
 
 # Examples #
 The fuzzing strategy is trying to identify files which add new code coverage (or increased instruction/branch counters). Then it adds such input files to the (dynamic) input corpus.
@@ -69,10 +72,11 @@ Coverage (max):
 [2016-02-16T18:35:32+0100][I][14846] fuzz_perfFeedback():420 New: (Size New,Old): 257,257, Perf (Cur,New): 0/0/2030/0/0/0,0/0/2031/0/0/0
 ```
 
-## Unique branch pair (edges) counting (--linux_perf_bts_edge) with Intel BTS
+## Unique branch pair (edges) counting (--linux_perf_bts_edge)
 
 This mode will take into consideration pairs (tuples) of jumps, recording unique from-to jump pairs. The data is taken from the Intel BTS CPU registers.
 
+```
 $ honggfuzz --linux_perf_bts_edge -f IN/ -F 2500 -q -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 1
@@ -90,7 +94,9 @@ Coverage (max):
 [2016-02-16T18:37:09+0100][I][14944] fuzz_perfFeedback():420 New: (Size New,Old): 257,257, Perf (Cur,New): 0/0/0/0/0/0,0/0/0/2341/0/0
 ```
 
-## Unique branch points counting (--linux_perf_ipt_block) with Intel PT ##
+## Unique branch points counting (--linux_perf_ipt_block) ##
+
+This mode will utilize Interl's PT (Process Trace) subsystem, which should be way faster than BTS (Branch Trace Store), but will currently produce less precise results.
 
 ```
 $ honggfuzz --linux_perf_ipt_block -f IN/ -F 2500 -q -n1 -- /usr/bin/xmllint -format ___FILE___
@@ -111,7 +117,7 @@ Coverage (max):
 
 ## Instruction counting (--linux_perf_instr) ##
 
-This mode tries to maximize the number of instructions taken during each process iteration.
+This mode tries to maximize the number of instructions taken during each process iteration. The counters will be taken from the Linux perf subsystems. Intel, AMD and even other CPU architectures are supported for this mode.
 
 ```
 $ honggfuzz --linux_perf_instr -f IN/ -F 2500 -q -- /usr/bin/xmllint -format ___FILE___
@@ -136,7 +142,7 @@ Coverage (max):
 
 ## Branch counting (--linux_perf_branch) ##
 
-As above, it will try to maximize the number of branches taken by CPU on behalf of the fuzzed process (here: djpeg.static) while performing each fuzzing iteration
+As above, it will try to maximize the number of branches taken by CPU on behalf of the fuzzed process (here: djpeg.static) while performing each fuzzing iteration. Intel, AMD and even other CPU architectures are supported for this mode.
 
 ```
 $ honggfuzz --linux_perf_branch -f IN/ -F 2500 -q -- /usr/bin/xmllint -format ___FILE___
