@@ -884,7 +884,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     }
 
     /* Increase global crashes counter */
-    __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
+    ATOMIC_POST_INC(hfuzz->crashesCnt);
 
     /*
      * Check if stackhash is blacklisted
@@ -892,12 +892,12 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     if (hfuzz->blacklist
         && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) != -1)) {
         LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
-        __sync_fetch_and_add(&hfuzz->blCrashesCnt, 1UL);
+        ATOMIC_POST_INC(hfuzz->blCrashesCnt);
         return;
     }
 
     /* If non-blacklisted crash detected, zero set two MSB */
-    __sync_fetch_and_and(&hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
+    ATOMIC_POST_ADD(hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
     void *sig_addr = si.si_addr;
     if (hfuzz->disableRandomization == false) {
@@ -932,10 +932,10 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     if (files_copyFile(fuzzer->fileName, fuzzer->crashFileName, &dstFileExists)) {
         LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName,
               fuzzer->crashFileName);
-        __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
+        ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
 
         /* If unique crash found, reset dynFile counter */
-        __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
+        ATOMIC_CLEAR(hfuzz->dynFileIterExpire);
     } else {
         if (dstFileExists) {
             LOG_I("It seems that '%s' already exists, skipping", fuzzer->crashFileName);
@@ -1087,8 +1087,8 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     }
 
     /* Increase global crashes counter */
-    __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
-    __sync_fetch_and_and(&hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
+    ATOMIC_POST_INC(hfuzz->crashesCnt);
+    ATOMIC_POST_AND(hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
     /*
      * If fuzzing with sanitizer coverage feedback increase crashes counter used
@@ -1148,7 +1148,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
             && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) !=
                 -1)) {
             LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
-            __sync_fetch_and_add(&hfuzz->blCrashesCnt, 1UL);
+            ATOMIC_POST_INC(hfuzz->blCrashesCnt);
             return;
         }
     }
@@ -1181,8 +1181,8 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
               fuzzer->crashFileName);
 
         /* Increase unique crashes counters */
-        __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
-        __sync_fetch_and_and(&hfuzz->dynFileIterExpire, 0UL);
+        ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
+        ATOMIC_CLEAR(hfuzz->dynFileIterExpire);
     } else {
         if (dstFileExists) {
             LOG_I("It seems that '%s' already exists, skipping", fuzzer->crashFileName);

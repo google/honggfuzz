@@ -106,6 +106,35 @@ static void __attribute__ ((unused)) _clang_cleanup_func(void (^*dfunc) (void))
 /* Size of remote pid cmdline char buffer */
 #define _HF_PROC_CMDLINE_SZ 8192
 
+#define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
+
+/* Memory barriers */
+#define rmb()	__asm__ __volatile__("":::"memory")
+#define wmb()	__sync_synchronize()
+
+/* Atomics */
+#define ATOMIC_GET(x) __sync_fetch_and_add(&(x), 0)
+#define ATOMIC_SET(x, y) __sync_lock_test_and_set(&(x), y)
+#define ATOMIC_CLEAR(x) __sync_fetch_and_and(&(x), 0)
+
+#define ATOMIC_PRE_INC(x) __sync_add_and_fetch(&(x), 1)
+#define ATOMIC_POST_INC(x) __sync_fetch_and_add(&(x), 1)
+
+#define ATOMIC_PRE_DEC(x) __sync_sub_and_fetch(&(x), 1)
+#define ATOMIC_POST_DEC(x) __sync_fetch_and_sub(&(x), 1)
+
+#define ATOMIC_PRE_ADD(x, y) __sync_add_and_fetch(&(x), y)
+#define ATOMIC_POST_ADD(x, y) __sync_fetch_and_add(&(x), y)
+
+#define ATOMIC_PRE_SUB(x, y) __sync_sub_and_fetch(&(x), y)
+#define ATOMIC_POST_SUB(x, y) __sync_fetch_and_sub(&(x), y)
+
+#define ATOMIC_PRE_AND(x, y) __sync_and_and_fetch(&(x), y)
+#define ATOMIC_POST_AND(x, y) __sync_fetch_and_and(&(x), y)
+
+#define ATOMIC_PRE_OR(x, y) __sync_or_and_fetch(&(x), y)
+#define ATOMIC_POST_OR(x, y) __sync_fetch_and_or(&(x), y)
+
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
     _HF_DYNFILE_INSTR_COUNT = 0x1,
@@ -282,10 +311,5 @@ typedef struct {
     char func[_HF_FUNC_NAME_SZ];
     size_t line;
 } funcs_t;
-
-#define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
-
-#define rmb()	__asm__ __volatile__("":::"memory")
-#define wmb()	__sync_synchronize()
 
 #endif

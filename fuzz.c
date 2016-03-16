@@ -371,7 +371,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     bool dstFileExists = false;
     if (files_copyFile(crashedFuzzer->crashFileName, verFile, &dstFileExists)) {
         LOG_I("Successfully verified, saving as (%s)", verFile);
-        __sync_fetch_and_add(&hfuzz->verifiedCrashesCnt, 1UL);
+        ATOMIC_POST_INC(hfuzz->verifiedCrashesCnt);
         unlink(crashedFuzzer->crashFileName);
     } else {
         if (dstFileExists) {
@@ -479,12 +479,12 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 static fuzzState_t fuzz_getState(honggfuzz_t * hfuzz)
 {
-    return __sync_fetch_and_add(&hfuzz->state, 0UL);
+    return ATOMIC_GET(hfuzz->state);
 }
 
 static void fuzz_setState(honggfuzz_t * hfuzz, fuzzState_t state)
 {
-    __sync_lock_test_and_set(&hfuzz->state, state);
+    ATOMIC_SET(hfuzz->state, state);
 }
 
 static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
@@ -525,11 +525,11 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
 
     /* If dry run mode, pick the next file and not a random one */
     if (fuzzer.flipRate == 0.0L && hfuzz->useVerifier) {
-        rnd_index = __sync_fetch_and_add(&hfuzz->lastFileIndex, 1UL);
+        rnd_index = ATOMIC_POST_INC(hfuzz->lastFileIndex);
     }
 
     if (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_PRE) {
-        rnd_index = __sync_fetch_and_add(&hfuzz->lastFileIndex, 1UL);
+        rnd_index = ATOMIC_POST_INC(hfuzz->lastFileIndex);
         if (rnd_index >= hfuzz->fileCnt) {
             /*
              * The waiting logic (for the DYNAMIC_PRE phase to finish) should be based on cond-waits
@@ -605,8 +605,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
 
     report_Report(hfuzz, fuzzer.report);
 
-    if (state == _HF_STATE_DYNAMIC_PRE
-        && __sync_add_and_fetch(&hfuzz->doneFileIndex, 1UL) >= hfuzz->fileCnt) {
+    if (state == _HF_STATE_DYNAMIC_PRE && ATOMIC_PRE_INC(hfuzz->doneFileIndex) >= hfuzz->fileCnt) {
         fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_MAIN);
     }
 }
@@ -618,17 +617,17 @@ static void *fuzz_threadNew(void *arg)
     for (;;) {
         /* Check if dry run mode with verifier enabled */
         if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
-            if (__sync_fetch_and_add(&hfuzz->mutationsCnt, 1UL) >= hfuzz->fileCnt) {
-                __sync_fetch_and_add(&hfuzz->threadsFinished, 1UL);
+            if (ATOMIC_POST_INC(hfuzz->mutationsCnt) >= hfuzz->fileCnt) {
+                ATOMIC_POST_INC(hfuzz->threadsFinished);
                 // All files checked, weak-up the main process
                 pthread_kill(fuzz_mainThread, SIGALRM);
                 return NULL;
             }
         }
         /* Check for max iterations limit if set */
-        else if ((__sync_fetch_and_add(&hfuzz->mutationsCnt, 1UL) >= hfuzz->mutationsMax)
+        else if ((ATOMIC_POST_INC(hfuzz->mutationsCnt) >= hfuzz->mutationsMax)
                  && hfuzz->mutationsMax) {
-            __sync_fetch_and_add(&hfuzz->threadsFinished, 1UL);
+            ATOMIC_POST_INC(hfuzz->threadsFinished);
             // Wake-up the main process
             pthread_kill(fuzz_mainThread, SIGALRM);
             return NULL;

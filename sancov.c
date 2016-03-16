@@ -410,7 +410,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     /* See if #maps is available from previous run to avoid realloc inside loop */
-    uint64_t prevMapsNum = __sync_fetch_and_add(&hfuzz->sanCovCnts.dsoCnt, 0UL);
+    uint64_t prevMapsNum = ATOMIC_GET(hfuzz->sanCovCnts.dsoCnt);
     if (prevMapsNum > 0) {
         if ((mapsBuf = malloc(prevMapsNum * sizeof(memMap_t))) == NULL) {
             PLOG_E("malloc failed (sz=%" PRIu64 ")", prevMapsNum * sizeof(memMap_t));

@@ -130,8 +130,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     /*
      * All crashes are marked as unique due to lack of information in POSIX arch
      */
-    __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
-    __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
+    ATOMIC_POST_INC(hfuzz->crashesCnt);
+    ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
 
     if (files_copyFile(fuzzer->fileName, newname, NULL) == false) {
         LOG_E("Couldn't save '%s' as '%s'", fuzzer->fileName, newname);

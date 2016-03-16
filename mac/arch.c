@@ -222,7 +222,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     /*
      * Increase crashes counter presented by ASCII display
      */
-    __sync_fetch_and_add(&hfuzz->crashesCnt, 1UL);
+    ATOMIC_POST_INC(hfuzz->crashesCnt);
 
     /*
      * Check if stackhash is blacklisted
@@ -230,7 +230,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     if (hfuzz->blacklist
         && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) != -1)) {
         LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
-        __sync_fetch_and_add(&hfuzz->blCrashesCnt, 1UL);
+        ATOMIC_POST_INC(hfuzz->blCrashesCnt);
         return true;
     }
 
@@ -239,7 +239,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
         LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName,
               fuzzer->crashFileName);
         // Unique crashes
-        __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 1UL);
+        ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
     } else {
         if (dstFileExists) {
             LOG_I("It seems that '%s' already exists, skipping", fuzzer->crashFileName);

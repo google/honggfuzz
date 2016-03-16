@@ -159,7 +159,7 @@ int main(int argc, char **argv)
         if (sigReceived > 0) {
             break;
         }
-        if (__sync_fetch_and_add(&hfuzz.threadsFinished, 0UL) >= hfuzz.threadsMax) {
+        if (ATOMIC_GET(hfuzz.threadsFinished) >= hfuzz.threadsMax) {
             break;
         }
         pause();

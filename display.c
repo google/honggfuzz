@@ -61,7 +61,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 {
     unsigned long elapsed = (unsigned long)(time(NULL) - hfuzz->timeStart);
 
-    size_t curr_exec_cnt = __sync_fetch_and_add(&hfuzz->mutationsCnt, 0UL);
+    size_t curr_exec_cnt = ATOMIC_GET(hfuzz->mutationsCnt);
     /*
      * We increase the mutation counter unconditionally in threads, but if it's
      * above hfuzz->mutationsMax we don't really execute the fuzzing loop.
@@ -107,12 +107,10 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     display_put("Crashes: " ESC_BOLD "%zu" ESC_RESET " (unique: " ESC_BOLD "%zu" ESC_RESET
                 ", blacklist: " ESC_BOLD "%zu" ESC_RESET ", verified: " ESC_BOLD "%zu" ESC_RESET
-                ") \n", __sync_fetch_and_add(&hfuzz->crashesCnt, 0UL),
-                __sync_fetch_and_add(&hfuzz->uniqueCrashesCnt, 0UL),
-                __sync_fetch_and_add(&hfuzz->blCrashesCnt, 0UL),
-                __sync_fetch_and_add(&hfuzz->verifiedCrashesCnt, 0UL));
-    display_put("Timeouts: " ESC_BOLD "%zu" ESC_RESET "\n",
-                __sync_fetch_and_add(&hfuzz->timeoutedCnt, 0UL));
+                ") \n", ATOMIC_GET(hfuzz->crashesCnt),
+                ATOMIC_GET(hfuzz->uniqueCrashesCnt),
+                ATOMIC_GET(hfuzz->blCrashesCnt), ATOMIC_GET(hfuzz->verifiedCrashesCnt));
+    display_put("Timeouts: " ESC_BOLD "%zu" ESC_RESET "\n", ATOMIC_GET(hfuzz->timeoutedCnt));
 
     /* Feedback data sources are enabled. Start with common headers. */
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
@@ -123,42 +121,42 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     /* HW perf specific counters */
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
         display_put("  - cpu instructions:      " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->hwCnts.cpuInstrCnt, 0UL));
+                    ATOMIC_GET(hfuzz->hwCnts.cpuInstrCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
         display_put("  - cpu branches:          " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->hwCnts.cpuBranchCnt, 0UL));
+                    ATOMIC_GET(hfuzz->hwCnts.cpuBranchCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
         display_put("  - BTS unique blocks: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->hwCnts.bbCnt, 0UL));
+                    ATOMIC_GET(hfuzz->hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         display_put("  - BTS unique edges:   " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->hwCnts.bbCnt, 0UL));
+                    ATOMIC_GET(hfuzz->hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
         display_put("  - PT unique blocks: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->hwCnts.bbCnt, 0UL));
+                    ATOMIC_GET(hfuzz->hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) {
         display_put("  - custom counter:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->hwCnts.customCnt, 0UL));
+                    ATOMIC_GET(hfuzz->hwCnts.customCnt));
     }
 
     /* Sanitizer coverage specific counters */
     if (hfuzz->useSanCov) {
-        uint64_t hitBB = __sync_fetch_and_add(&hfuzz->sanCovCnts.hitBBCnt, 0UL);
-        uint64_t totalBB = __sync_fetch_and_add(&hfuzz->sanCovCnts.totalBBCnt, 0UL);
+        uint64_t hitBB = ATOMIC_GET(hfuzz->sanCovCnts.hitBBCnt);
+        uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
         uint8_t covPer = totalBB ? ((hitBB * 100) / totalBB) : 0;
         display_put("  - total hit #bb:  " ESC_BOLD "%" PRIu64 ESC_RESET " (coverage %d%%)\n",
                     hitBB, covPer);
         display_put("  - total #dso:     " ESC_BOLD "%" PRIu64 ESC_RESET " (instrumented only)\n",
-                    __sync_fetch_and_add(&hfuzz->sanCovCnts.iDsoCnt, 0UL));
+                    ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
         display_put("  - discovered #bb: " ESC_BOLD "%" PRIu64 ESC_RESET " (new from input seed)\n",
-                    __sync_fetch_and_add(&hfuzz->sanCovCnts.newBBCnt, 0UL));
+                    ATOMIC_GET(hfuzz->sanCovCnts.newBBCnt));
         display_put("  - crashes:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    __sync_fetch_and_add(&hfuzz->sanCovCnts.crashesCnt, 0UL));
+                    ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
     }
     display_put("============================== LOGS ==============================\n");
 }
