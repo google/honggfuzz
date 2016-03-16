@@ -664,9 +664,9 @@ void fuzz_threads(honggfuzz_t * hfuzz)
     }
 
     if (hfuzz->useSanCov || hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
-        hfuzz->state = _HF_STATE_DYNAMIC_PRE;
+        fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_PRE);
     } else {
-        hfuzz->state = _HF_STATE_STATIC;
+        fuzz_setState(hfuzz, _HF_STATE_STATIC);
     }
 
     for (size_t i = 0; i < hfuzz->threadsMax; i++) {
