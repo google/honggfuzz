@@ -165,8 +165,9 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         DEFER(MX_UNLOCK(&hfuzz->dynfileq_mutex));
 
         if (hfuzz->dynfileqCnt == 0) {
-            LOG_F("No files in the dynamic queue. The initial phase did not "
-                  "result in positive counters/coverage");
+            LOG_F("The dynamic file corpus is empty. Apparently, the initial fuzzing of the "
+                  "provided file corpus (-f) has not produced any follow-up files with positive "
+                  "coverage and/or CPU counters");
         }
 
         size_t i = 0U;
