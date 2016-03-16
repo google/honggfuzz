@@ -134,8 +134,8 @@ Examples:
   honggfuzz --linux_perf_custom -- /usr/bin/tiffinfo -D ___FILE___
 ```
 
-  [This document](ExternalFuzzerUsage.md) explains how to use an external command to create fuzzing input.
----
+ [This document](ExternalFuzzerUsage.md) explains how to use an external command to create fuzzing input.
+
 # OUTPUT FILES #
 
 | **Mode** | **Output file** |
