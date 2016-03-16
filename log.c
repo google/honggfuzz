@@ -52,8 +52,10 @@ __attribute__ ((constructor))
 static void log_init(void)
 {
     log_level = INFO;
-    log_fd = dup(STDERR_FILENO);
-    fcntl(log_fd, F_SETFD, O_CLOEXEC);
+    log_fd = fcntl(STDERR_FILENO, F_DUPFD_CLOEXEC, 0);
+    if (log_fd == -1) {
+        log_fd = STDERR_FILENO;
+    }
     log_fd_isatty = isatty(log_fd);
 }
 
