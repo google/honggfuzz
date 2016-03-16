@@ -11,7 +11,7 @@
   * **Easy setup**: No complicated configuration files or setup necessary -- honggfuzz can be run directly from the command line.
   * **Fast**: Multiple threads can run simultaneously for more efficient fuzzing.
   * **Powerful analysis capabilities**: honggfuzz will use the most powerful process state analysis (e.g. ptrace) interface under a given OS.
-  * **Powerful code coverage techniques** Uses hardware- and software- based code coverage assesment techniques to produce more interesting inputs to the fuzzed process
+  * **Powerful code coverage techniques** Uses [hardware- and software- based code coverage](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) techniques to produce more interesting inputs to the fuzzed process
 
 # REQUIREMENTS #
 
