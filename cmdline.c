@@ -77,6 +77,8 @@ static void cmdlineHelp(const char *pname, struct custom_option *opts)
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" As above, provide input over STDIN:");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -s -- /usr/bin/djpeg");
+    LOG_HELP(" Use SANCOV to maximize code coverage:");
+    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -C -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
 #if defined(_HF_ARCH_LINUX)
     LOG_HELP(" Run the binary over a dynamic file, maximize total no. of instructions:");
     LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_instr -- /usr/bin/tiffinfo -D "
@@ -147,7 +149,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .blacklistCnt = 0,
         .blacklist = NULL,
         .maxFileSz = (1024 * 1024),
-        .tmOut = 3,
+        .tmOut = 10,
         .mutationsMax = 0,
         .threadsFinished = 0,
         .threadsMax = 2,
@@ -232,7 +234,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"wordlist", required_argument, NULL, 'w'}, "Wordlist file (tokens delimited by NUL-bytes)"},
         {{"stackhash_bl", required_argument, NULL, 'B'}, "Stackhashes blacklist file (one entry per line)"},
         {{"mutate_cmd", required_argument, NULL, 'c'}, "External command modifying the input corpus of files, instead of -r/-m parameters"},
-        {{"timeout", required_argument, NULL, 't'}, "Timeout in seconds (default: '3')"},
+        {{"timeout", required_argument, NULL, 't'}, "Timeout in seconds (default: '10')"},
         {{"threads", required_argument, NULL, 'n'}, "Number of concurrent fuzzing threads (default: '2')"},
         {{"iterations", required_argument, NULL, 'N'}, "Number of fuzzing iterations (default: '0' [no limit])"},
         {{"rlimit_as", required_argument, NULL, 0x100}, "Per process memory limit in MiB (default: '0' [no limit])"},
@@ -427,8 +429,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     }
 
     /* Sanity checks for timeout. Optimal ranges highly depend on target */
-    if (hfuzz->useSanCov && hfuzz->tmOut < 15) {
-        LOG_E("Timeout value (%ld) too small for sanitizer coverage feedback", hfuzz->tmOut);
+    if (hfuzz->useSanCov && hfuzz->tmOut < 10) {
+        LOG_E("Timeout value (%ld) too small for sanitizer coverage feedback", (long)hfuzz->tmOut);
         return false;
     }
 
