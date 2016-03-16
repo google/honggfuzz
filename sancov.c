@@ -447,8 +447,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         /* Interaction with global Trie should mutex wrap to avoid threads races */
         {
-            MX_LOCK(&hfuzz->sanCov_mutex);
-            DEFER(MX_UNLOCK(&hfuzz->sanCov_mutex));
+            MX_SCOPED_LOCK(&hfuzz->sanCov_mutex);
             /* Add entry to Trie with zero data if not already */
             if (!sancov_trieSearch(hfuzz->covMetadata->children, mapData.mapName)) {
                 sancov_trieAdd(&hfuzz->covMetadata, mapData.mapName);
@@ -540,8 +539,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
                     /* Interaction with global Trie should mutex wrap to avoid threads races */
                     {
-                        MX_LOCK(&hfuzz->sanCov_mutex);
-                        DEFER(MX_UNLOCK(&hfuzz->sanCov_mutex));
+                        MX_SCOPED_LOCK(&hfuzz->sanCov_mutex);
                         curMap =
                             sancov_trieSearch(hfuzz->covMetadata->children,
                                               mapsBuf[bestFit].mapName);
@@ -573,8 +571,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
                     /* Interaction with global Trie should mutex wrap to avoid threads races */
                     {
-                        MX_LOCK(&hfuzz->sanCov_mutex);
-                        DEFER(MX_UNLOCK(&hfuzz->sanCov_mutex));
+                        MX_SCOPED_LOCK(&hfuzz->sanCov_mutex);
                         sancov_setBitmap(curMap->data.pBM, relAddr);
                     }
 

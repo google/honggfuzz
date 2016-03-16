@@ -95,8 +95,7 @@ static void arch_bfdDestroy(bfd_t * bfdParams)
 void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
 {
     /* Guess what? libbfd is not multi-threading safe */
-    MX_LOCK(&arch_bfd_mutex);
-    DEFER(MX_UNLOCK(&arch_bfd_mutex));
+    MX_SCOPED_LOCK(&arch_bfd_mutex);
 
     bfd_init();
 
@@ -143,8 +142,7 @@ static int arch_bfdFPrintF(void *buf, const char *fmt, ...)
 
 void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
 {
-    MX_LOCK(&arch_bfd_mutex);
-    DEFER(MX_UNLOCK(&arch_bfd_mutex));
+    MX_SCOPED_LOCK(&arch_bfd_mutex);
 
     bfd_init();
 
