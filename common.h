@@ -89,7 +89,7 @@ static void __attribute__ ((unused)) _clang_cleanup_func(void (^*dfunc) (void))
 #define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
 
 /* Bitmap size */
-#define _HF_BITMAP_SIZE 0x2AFFFFF
+#define _HF_BITMAP_SIZE 0x3FFFFFF
 
 /* Perf bitmap size */
 #define _HF_PERF_BITMAP_SIZE (1024U * 1024U * 1024U)
