@@ -1,37 +1,29 @@
-
----
-
-
-
----
-
 # INTRODUCTION #
 
 This document describes the **honggfuzz** project.
-
-
 ---
 
 # OBJECTIVE #
 
-Honggfuzz is a general-purpose fuzzing tool. Given a starting corpus of test files, honggfuzz supplies and modifies input to a test program and utilize the **ptrace() API**/**POSIX signal interface** to detect and log crashes.
-
-
+Honggfuzz is a general-purpose fuzzing tool. Given an input corpus files, honggfuzz modifies input to a test program and utilize the **ptrace() API**/**POSIX signal interface** to detect and log crashes. It can also use software or hardware-based code covberage techniques to produce more and more interesting inputs
 ---
 
 # FEATURES #
 
   * **Easy setup**: No complicated configuration files or setup necessary -- honggfuzz can be run directly from the command line.
-  * **Fast**: Multiple honggfuzz instances can be run simultaneously for more efficient fuzzing.
+  * **Fast**: Multiple threads can run simultaneously for more efficient fuzzing.
   * **Powerful analysis capabilities**: honggfuzz will use the most powerful process state analysis (e.g. ptrace) interface under a given OS.
+  * **Powerful code coverage techniques** Uses hardware- and software- based code coverage assesment techniques to produce more interesting inputs to the fuzzed process
 
 
 ---
 
 # REQUIREMENTS #
 
-  * A POSIX compliant operating system (See the compatibility list for more)
-  * The **[capstone](capstone.md)** library (with x86/amd64 Linux boxes)
+  * A POSIX compliant operating system (See the compatibility list for more) for
+    static and ASAN code-coverage (SANCOV) modes
+  * GNU/Linux with modern kernel (e.g. v4.0) for hardware-based code coveragfe guided fuzzing
+
   * A corpus of input files. Honggfuzz expects a set of files to use and modify as input to the application you're fuzzing. How you get or create these files is up to you, but you might be interested in the following sources:
     * Image formats: Tavis Ormandy's [Image Testuite](http://code.google.com/p/imagetestsuite/) has been effective at finding vulnerabilities in various graphics libraries.
     * PDF: Adobe provides some [test PDF files](http://acroeng.adobe.com/).
@@ -45,7 +37,7 @@ It should work under the following operating systems:
 | **GNU/Linux** | Works | ptrace() API (x86, x86-64 disassembly support)|
 | **FreeBSD** | Works | POSIX signal interface |
 | **Mac OS X** | Works | POSIX signal interface/Mac OS X crash reports (x86-64/x86 disassembly support) |
-| **MS Windows** | Doesn't work | The POSIX signal implementation provided by the Cygwin project is not sufficient |
+| **MS Windows** | Works | POSIX signal interface via CygWin |
 | **Other Unices** | Depends`*` | POSIX signal interface |
 
 _`*`) It might work provided that a given operating system implements **wait3()** call_
@@ -55,34 +47,102 @@ _`*`) It might work provided that a given operating system implements **wait3()*
 # USAGE #
 
 ```
-$ ./honggfuzz 
-honggfuzz version 0.3 Robert Swiecki <swiecki@google.com>, Copyright 2010 by Google Inc. All Rights Reserved.
- <-f val>: input file (or input dir)
- [-h]: this help
- [-q]: null-ify children's stdin, stdout, stderr; make them quiet
- [-s]: standard input fuzz, instead of providing a file argument
- [-u]: save unique test-cases only, otherwise (if not used) append
-       current timestamp to the output filenames
- [-d val]: debug level (0 - FATAL ... 4 - DEBUG), default: '3' (INFO)
- [-e val]: file extension (e.g swf), default: 'fuzz'
- [-r val]: flip rate, default: '0.001'
- [-m val]: flip mode (-mB - byte, -mb - bit), default: '-mB'
- [-c val]: command modifying input files externally (instead of -r/-m)
- [-t val]: timeout (in secs), default: '3' (0 - no timeout)
- [-a val]: address limit (from si.si_addr) below which crashes
-           are not reported, default: '0' (suggested: 65535)
- [-n val]: number of concurrent fuzzing processes, default: '5'
- [-l val]: per process memory limit in MiB, default: '0' (no limit)
- [-p val]: attach to a pid (a group thread), instead of monitoring
-           previously created process, default: '0' (none) (ptrace only)
-usage: honggfuzz -f input_dir -- /usr/bin/tiffinfo -D ___FILE___
+Usage: ./honggfuzz [options] -- path_to_command [args]
+Options:
+ --help|-h 
+	Help plz..
+ --input|-f VALUE
+	Path to the file corpus (file or a directory)
+ --nullify_stdio|-q 
+	Null-ify children's stdin, stdout, stderr; make them quiet
+ --stdin_input|-s 
+	Provide fuzzing input on STDIN, instead of ___FILE___
+ --save_all|-u 
+	Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames
+ --logfile|-l VALUE
+	Log file
+ --verbose|-v 
+	Disable ANSI console; use simple log output
+ --verifier|-V 
+	Enable crashes verifier
+ --debug_level|-d VALUE
+	Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])
+ --extension|-e VALUE
+	Input file extension (e.g. 'swf'), (default: 'fuzz')
+ --wokspace|-W VALUE
+	Workspace directory to save crashes & runtime files (default: '.')
+ --flip_rate|-r VALUE
+	Maximal flip rate, (default: '0.001')
+ --wordlist|-w VALUE
+	Wordlist file (tokens delimited by NUL-bytes)
+ --stackhash_bl|-B VALUE
+	Stackhashes blacklist file (one entry per line)
+ --mutate_cmd|-c VALUE
+	External command modifying the input corpus of files, instead of -r/-m parameters
+ --timeout|-t VALUE
+	Timeout in seconds (default: '10')
+ --threads|-n VALUE
+	Number of concurrent fuzzing threads (default: '2')
+ --iterations|-N VALUE
+	Number of fuzzing iterations (default: '0' [no limit])
+ --rlimit_as VALUE
+	Per process memory limit in MiB (default: '0' [no limit])
+ --report|-R VALUE
+	Write report to this file (default: 'HONGGFUZZ.REPORT.TXT')
+ --max_file_size|-F VALUE
+	Maximal size of files processed by the fuzzer in bytes (default: '1048576')
+ --clear_env 
+	Clear all environment variables before executing the binary
+ --env|-E VALUE
+	Pass this environment variable, can be used multiple times
+ --sancov|-C 
+	Enable sanitizer coverage feedback
+ --linux_pid|-p VALUE
+	Attach to a pid (and its thread group)
+ --linux_file_pid|-P VALUE
+	Attach to pid (and its thread group) read from file
+ --linux_addr_low_limit VALUE
+	Address limit (from si.si_addr) below which crashes are not reported, (default: '0')
+ --linux_keep_aslr 
+	Don't disable ASLR randomization, might be useful with MSAN
+ --linux_report_msan_umrs 
+	Report MSAN's UMRS (uninitialized memory access)
+ --linux_perf_ignore_above VALUE
+	Ignore perf events which report IPs above this address
+ --linux_perf_instr 
+	Use PERF_COUNT_HW_INSTRUCTIONS perf
+ --linux_perf_branch 
+	Use PERF_COUNT_HW_BRANCH_INSTRUCTIONS perf
+ --linux_perf_bts_block 
+	Use Intel BTS to count unique blocks
+ --linux_perf_bts_edge 
+	Use Intel BTS to count unique edges
+ --linux_perf_ipt_block 
+	Use Intel Processor Trace to count unique blocks
+ --linux_perf_custom 
+	Custom counter (see the interceptor/ directory for examples)
+
+Examples:
+ Run the binary over a mutated file chosen from the directory
+  honggfuzz -f input_dir -- /usr/bin/tiffinfo -D ___FILE___
+ As above, provide input over STDIN:
+  honggfuzz -f input_dir -s -- /usr/bin/djpeg
+ Use SANCOV to maximize code coverage:
+  honggfuzz -f input_dir -C -- /usr/bin/tiffinfo -D ___FILE___
+ Run the binary over a dynamic file, maximize total no. of instructions:
+  honggfuzz --linux_perf_instr -- /usr/bin/tiffinfo -D ___FILE___
+ Run the binary over a dynamic file, maximize total no. of branches:
+  honggfuzz --linux_perf_branch -- /usr/bin/tiffinfo -D ___FILE___
+ Run the binary over a dynamic file, maximize unique code blocks (coverage):
+  honggfuzz --linux_perf_ip -- /usr/bin/tiffinfo -D ___FILE___
+ Run the binary over a dynamic file, maximize unique branches (edges):
+  honggfuzz --linux_perf_ip_addr -- /usr/bin/tiffinfo -D ___FILE___
+ Run the binary over a dynamic file, maximize custom counters (experimental):
+  honggfuzz --linux_perf_custom -- /usr/bin/tiffinfo -D ___FILE___
 ```
 
-Honggfuzz offers simple file mutation algorithm only (bits/bytes). This [document](ExternalFuzzerUsage.md) explains how to use an external command to create fuzzing input.
-
-
+[This document](ExternalFuzzerUsage.md) explains how to use an external command to create fuzzing input.
 ---
-
 # OUTPUT FILES #
 
 | **Mode** | **Output file** |
@@ -100,8 +160,6 @@ Honggfuzz offers simple file mutation algorithm only (bits/bytes). This [documen
   * **INSTR.movsx\_eax,`_``[`eax`]`** - Disassembled instruction which was found under the last known PC (Program Counter) (x86, x86-64 architectures only, meaningless for SIGABRT)
   * **TIME.2010-06-07.02.25.04** - Local time when the signal was delivered
   * **PID.10097** - Fuzzing process' id (PID) (See [AttachingToPid](AttachingToPid.md) for more)
-
-
 ---
 
 # FAQ #
@@ -114,14 +172,11 @@ Honggfuzz offers simple file mutation algorithm only (bits/bytes). This [documen
 
   * Q: **Why isn't there any support for the ptrace() API when compiling under FreeBSD or Mac OS X operating systems**?
   * A: These operating systems lack some specific ptrace() operations, including **PT`_`GETREGS** (Mac OS X) and **PT`_`GETSIGINFO**, both of which honggfuzz depends on. If you have any ideas on how to get around this limitation, send us an email or patch.
-
-
 ---
 
 # LICENSE #
 
 This project is licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
-
 ---
 
 # CREDITS #
