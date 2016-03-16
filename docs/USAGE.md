@@ -1,12 +1,10 @@
 # INTRODUCTION #
 
-This document describes the **honggfuzz** project.
----
+  This document describes the **honggfuzz** project.
 
 # OBJECTIVE #
 
-Honggfuzz is a general-purpose fuzzing tool. Given an input corpus files, honggfuzz modifies input to a test program and utilize the **ptrace() API**/**POSIX signal interface** to detect and log crashes. It can also use software or hardware-based code covberage techniques to produce more and more interesting inputs
----
+  Honggfuzz is a general-purpose fuzzing tool. Given an input corpus files, honggfuzz modifies input to a test program and utilize the **ptrace() API**/**POSIX signal interface** to detect and log crashes. It can also use software or hardware-based code covberage techniques to produce more and more interesting inputs
 
 # FEATURES #
 
@@ -14,9 +12,6 @@ Honggfuzz is a general-purpose fuzzing tool. Given an input corpus files, honggf
   * **Fast**: Multiple threads can run simultaneously for more efficient fuzzing.
   * **Powerful analysis capabilities**: honggfuzz will use the most powerful process state analysis (e.g. ptrace) interface under a given OS.
   * **Powerful code coverage techniques** Uses hardware- and software- based code coverage assesment techniques to produce more interesting inputs to the fuzzed process
-
-
----
 
 # REQUIREMENTS #
 
@@ -40,9 +35,7 @@ It should work under the following operating systems:
 | **MS Windows** | Works | POSIX signal interface via CygWin |
 | **Other Unices** | Depends`*` | POSIX signal interface |
 
-_`*`) It might work provided that a given operating system implements **wait3()** call_
-
----
+ _`*`) It might work provided that a given operating system implements **wait3()** call_
 
 # USAGE #
 
@@ -141,7 +134,7 @@ Examples:
   honggfuzz --linux_perf_custom -- /usr/bin/tiffinfo -D ___FILE___
 ```
 
-[This document](ExternalFuzzerUsage.md) explains how to use an external command to create fuzzing input.
+  [This document](ExternalFuzzerUsage.md) explains how to use an external command to create fuzzing input.
 ---
 # OUTPUT FILES #
 
@@ -160,7 +153,6 @@ Examples:
   * **INSTR.movsx\_eax,`_``[`eax`]`** - Disassembled instruction which was found under the last known PC (Program Counter) (x86, x86-64 architectures only, meaningless for SIGABRT)
   * **TIME.2010-06-07.02.25.04** - Local time when the signal was delivered
   * **PID.10097** - Fuzzing process' id (PID) (See [AttachingToPid](AttachingToPid.md) for more)
----
 
 # FAQ #
 
@@ -172,12 +164,11 @@ Examples:
 
   * Q: **Why isn't there any support for the ptrace() API when compiling under FreeBSD or Mac OS X operating systems**?
   * A: These operating systems lack some specific ptrace() operations, including **PT`_`GETREGS** (Mac OS X) and **PT`_`GETSIGINFO**, both of which honggfuzz depends on. If you have any ideas on how to get around this limitation, send us an email or patch.
----
+
 
 # LICENSE #
 
-This project is licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
----
+ This project is licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 # CREDITS #
 
