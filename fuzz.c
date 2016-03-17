@@ -397,8 +397,9 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
 
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname),
-             "%s/COVERAGE.PID.%d.COVBB.%09" PRId64 ".TIME.%" PRIu64 ".RND.%" PRIx64, hfuzz->workDir,
-             getpid(), cov, (uint64_t) time(NULL), util_rndGet(0, 0xFFFFFFFFFFFF));
+             "%s/COV.RANK.%06" PRIu64 ".PID.%d.COVBB.%07" PRIu64 ".TIME.%" PRIu64 ".RND.%" PRIx64,
+             hfuzz->workDir, (uint64_t) 999999ULL - cov, getpid(), cov, (uint64_t) time(NULL),
+             util_rndGet(0, 0xFFFFFFFFFFFF));
     if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC) == false) {
         LOG_W("Couldn't write buffer to file '%s'", fname);
     }
