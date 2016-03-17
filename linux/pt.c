@@ -170,9 +170,9 @@ inline static int pt_last_ip_update_ip(struct pt_last_ip *last_ip,
     return -pte_bad_packet;
 }
 
-inline static void perf_ptAnalyzePkt(struct pt_packet *packet, struct pt_config *ptc,
-                                     struct pt_last_ip *last_ip, void (*add_branch) (uint64_t from,
-                                                                                     uint64_t to))
+inline static uint64_t perf_ptAnalyzePkt(struct pt_packet *packet, struct pt_config *ptc,
+                                         struct pt_last_ip *last_ip,
+                                         uint64_t(*add_branch) (uint64_t from, uint64_t to))
 {
     switch (packet->type) {
     case ppt_tip:
@@ -181,7 +181,7 @@ inline static void perf_ptAnalyzePkt(struct pt_packet *packet, struct pt_config 
     case ppt_tip_pgd:
         break;
     default:
-        return;
+        return 0ULL;
     }
 
     int errcode = pt_last_ip_update_ip(last_ip, &(packet->payload.ip), ptc);
@@ -192,18 +192,20 @@ inline static void perf_ptAnalyzePkt(struct pt_packet *packet, struct pt_config 
     uint64_t ip;
     errcode = pt_last_ip_query(&ip, last_ip);
     if (errcode < 0) {
-        return;
+        return 0ULL;
     }
 
 /* Update only on TIP, other packets don't indicate a branch */
     if (packet->type == ppt_tip) {
-        add_branch(ip, 0UL);
+        return add_branch(ip, 0ULL);
     }
+    return 0ULL;
 }
 
-void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf,
-                    void (*add_branch) (uint64_t from, uint64_t to))
+uint64_t arch_ptAnalyze(struct perf_event_mmap_page * pem, uint8_t * auxBuf,
+                        uint64_t(*add_branch) (uint64_t from, uint64_t to))
 {
+    uint64_t ret = 0ULL;
     struct pt_config ptc;
     pt_config_init(&ptc);
     ptc.begin = &auxBuf[pem->aux_tail];
@@ -218,11 +220,12 @@ void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf,
     if (ptd == NULL) {
         LOG_F("pt_pkt_alloc_decoder() failed");
     }
+    DEFER(pt_pkt_free_decoder(ptd));
 
     errcode = pt_pkt_sync_forward(ptd);
     if (errcode < 0) {
         LOG_W("pt_pkt_sync_forward() failed: %s", pt_errstr(errcode));
-        return;
+        return 0ULL;
     }
 
     struct pt_last_ip last_ip;
@@ -235,18 +238,18 @@ void arch_ptAnalyze(struct perf_event_mmap_page *pem, uint8_t * auxBuf,
         }
         if (errcode < 0) {
             LOG_W("pt_pkt_next() failed: %s", pt_errstr(errcode));
-            return;
+            break;
         }
-        perf_ptAnalyzePkt(&packet, &ptc, &last_ip, add_branch);
+        ret += perf_ptAnalyzePkt(&packet, &ptc, &last_ip, add_branch);
     }
 
-    pt_pkt_free_decoder(ptd);
+    return ret;
 }
 
 #else                           /* _HF_LINUX_INTEL_PT_LIB */
 
-void arch_ptAnalyze(struct perf_event_mmap_page *pem UNUSED, uint8_t * auxBuf UNUSED,
-                    void (*add_branch) (uint64_t from, uint64_t to) UNUSED)
+uint64_t arch_ptAnalyze(struct perf_event_mmap_page * pem UNUSED, uint8_t * auxBuf UNUSED,
+                        uint64_t(*add_branch) (uint64_t from, uint64_t to) UNUSED)
 {
     LOG_F
         ("The program has not been linked against the Intel's Processor Trace Library (libipt.so)");

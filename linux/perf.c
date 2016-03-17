@@ -46,29 +46,14 @@
 #include "log.h"
 #include "util.h"
 
-/*
- * Check Intel's PT perf compatibility. The runtime kernel version check is addressed
- * at arch_archInit() - deal with compilation compatibilities here. Perf struct
- * version strings are exposed from 'uapi/linux/perf_event.h'
- */
-#ifdef PERF_ATTR_SIZE_VER5
-#define _HF_ENABLE_INTEL_PT
-#endif
-
 /* Buffer used with BTS (branch recording) */
 static __thread uint8_t *perfMmapBuf = NULL;
 /* Buffer used with BTS (branch recording) */
 static __thread uint8_t *perfMmapAux = NULL;
 #define _HF_PERF_MAP_SZ (1024 * 128)
 #define _HF_PERF_AUX_SZ (1024 * 1024)
-/* Unique path counter */
-__thread uint64_t perfBranchesCnt = 0;
-/* Perf method - to be used in signal handlers */
-static dynFileMethod_t perfDynamicMethod = _HF_DYNFILE_NONE;
 /* Don't record branches using address above this parameter */
 static uint64_t perfCutOffAddr = ~(0ULL);
-/* Page Size for the current arch */
-static size_t perfPageSz = 0x0;
 /* PERF_TYPE for Intel_PT/BTS -1 if none */
 static int32_t perfIntelPtPerfType = -1;
 static int32_t perfIntelBtsPerfType = -1;
@@ -76,12 +61,7 @@ static int32_t perfIntelBtsPerfType = -1;
 __thread size_t perfBloomSz = 0U;
 __thread uint8_t *perfBloom = NULL;
 
-static size_t arch_perfCountBranches(void)
-{
-    return perfBranchesCnt;
-}
-
-static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
+static inline uint64_t arch_perfAddBranch(uint64_t from, uint64_t to)
 {
     /*
      * Kernel sometimes reports branches from the kernel (iret), we are not interested in that as it
@@ -90,16 +70,16 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
     if (__builtin_expect(from > 0xFFFFFFFF00000000, false)
         || __builtin_expect(to > 0xFFFFFFFF00000000, false)) {
         LOG_D("Adding branch %#018" PRIx64 " - %#018" PRIx64, from, to);
-        return;
+        return 0ULL;
     }
     if (from >= perfCutOffAddr || to >= perfCutOffAddr) {
-        return;
+        return 0ULL;
     }
 
     register size_t pos = 0UL;
-    if (perfDynamicMethod == _HF_DYNFILE_BTS_BLOCK || perfDynamicMethod == _HF_DYNFILE_IPT_BLOCK) {
+    if (to == 0ULL) {
         pos = from % (perfBloomSz * 8);
-    } else if (perfDynamicMethod == _HF_DYNFILE_BTS_EDGE) {
+    } else {
         pos = (from * to) % (perfBloomSz * 8);
     }
 
@@ -108,43 +88,45 @@ static inline void arch_perfAddBranch(uint64_t from, uint64_t to)
 
     register uint8_t prev = ATOMIC_POST_OR(perfBloom[byteOff], bitSet);
     if (!(prev & bitSet)) {
-        perfBranchesCnt++;
+        return 1ULL;
     }
+    return 0ULL;
 }
 
-static inline void arch_perfMmapParse(void)
+static inline uint64_t arch_perfMmapParse(honggfuzz_t * hfuzz)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
-#ifdef _HF_ENABLE_INTEL_PT
+#if defined(PERF_ATTR_SIZE_VER5)
     if (pem->aux_head == pem->aux_tail) {
-        return;
+        return 0ULL;
     }
     if (pem->aux_head < pem->aux_tail) {
         LOG_F("The PERF AUX data has been overwritten. The AUX buffer is too small");
     }
 
+    uint64_t cnt = 0ULL;
     struct bts_branch {
         uint64_t from;
         uint64_t to;
         uint64_t misc;
     };
-    if (perfDynamicMethod == _HF_DYNFILE_BTS_BLOCK) {
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
         struct bts_branch *br = (struct bts_branch *)perfMmapAux;
         for (; br < ((struct bts_branch *)(perfMmapAux + pem->aux_head)); br++) {
-            arch_perfAddBranch(br->from, 0UL);
+            cnt += arch_perfAddBranch(br->from, 0UL);
         }
-        return;
+        return cnt;
     }
-    if (perfDynamicMethod == _HF_DYNFILE_BTS_EDGE) {
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         struct bts_branch *br = (struct bts_branch *)perfMmapAux;
         for (; br < ((struct bts_branch *)(perfMmapAux + pem->aux_head)); br++) {
-            arch_perfAddBranch(br->from, br->to);
+            cnt += arch_perfAddBranch(br->from, br->to);
         }
-        return;
+        return cnt;
     }
-#endif
+#endif                          /* defined(PERF_ATTR_SIZE_VER5) */
 
-    arch_ptAnalyze(pem, perfMmapAux, arch_perfAddBranch);
+    return arch_ptAnalyze(pem, perfMmapAux, arch_perfAddBranch);
 }
 
 static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu, int group_fd,
@@ -157,9 +139,6 @@ static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu
 static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method, int *perfFd)
 {
     LOG_D("Enabling PERF for PID=%d method=%x", pid, method);
-
-    perfDynamicMethod = method;
-    perfBranchesCnt = 0;
 
     if (*perfFd != -1) {
         LOG_F("The PERF FD is already initialized, possibly conflicting perf types enabled");
@@ -234,7 +213,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         && method != _HF_DYNFILE_IPT_BLOCK) {
         return true;
     }
-#ifdef _HF_ENABLE_INTEL_PT
+#if defined(PERF_ATTR_SIZE_VER5)
     perfMmapBuf =
         mmap(NULL, _HF_PERF_MAP_SZ + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
     if (perfMmapBuf == MAP_FAILED) {
@@ -256,9 +235,9 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, pid_t pid, dynFileMethod_t method
         close(*perfFd);
         return false;
     }
-#else                           /* _HF_ENABLE_INTEL_PT */
+#else                           /* defined(PERF_ATTR_SIZE_VER5) */
     LOG_F("Your <linux/perf_event.h> includes are too old to support Intel PT/BTS");
-#endif                          /* _HF_ENABLE_INTEL_PT */
+#endif                          /* defined(PERF_ATTR_SIZE_VER5) */
 
     return true;
 }
@@ -344,20 +323,17 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
     uint64_t newbbCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
         close(perfFds->cpuIptBtsFd);
-        arch_perfMmapParse();
-        newbbCount = arch_perfCountBranches();
+        newbbCount = arch_perfMmapParse(hfuzz);
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         close(perfFds->cpuIptBtsFd);
-        arch_perfMmapParse();
-        newbbCount = arch_perfCountBranches();
+        newbbCount = arch_perfMmapParse(hfuzz);
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
         close(perfFds->cpuIptBtsFd);
-        arch_perfMmapParse();
-        newbbCount = arch_perfCountBranches();
+        newbbCount = arch_perfMmapParse(hfuzz);
     }
 
     if (perfMmapAux != NULL) {
@@ -376,7 +352,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
 
 bool arch_perfInit(honggfuzz_t * hfuzz)
 {
-    perfPageSz = getpagesize();
     perfCutOffAddr = hfuzz->dynamicCutOffAddr;
 
     uint8_t buf[PATH_MAX + 1];
