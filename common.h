@@ -304,6 +304,8 @@ typedef struct {
 
     /* For Linux code */
     hwcnt_t hwCnts;
+    uint8_t *perfMmapBuf;
+    uint8_t *perfMmapAux;
 } fuzzer_t;
 
 #define _HF_MAX_FUNCS 80

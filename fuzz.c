@@ -311,13 +311,6 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             .exception = 0,
             .dynamicFileSz = 0,
             .dynamicFile = NULL,
-            .hwCnts = {
-                       .cpuInstrCnt = 0ULL,
-                       .cpuBranchCnt = 0ULL,
-                       .customCnt = 0ULL,
-                       .bbCnt = 0ULL,
-                       .newBBCnt = 0ULL,
-                       },
             .sanCovCnts = {
                            .hitBBCnt = 0ULL,
                            .totalBBCnt = 0ULL,
@@ -327,7 +320,17 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                            .crashesCnt = 0ULL,
                            },
             .report = {'\0'},
-            .mainWorker = false
+            .mainWorker = false,
+
+            .hwCnts = {
+                       .cpuInstrCnt = 0ULL,
+                       .cpuBranchCnt = 0ULL,
+                       .customCnt = 0ULL,
+                       .bbCnt = 0ULL,
+                       .newBBCnt = 0ULL,
+                       },
+            .perfMmapBuf = NULL,
+            .perfMmapAux = NULL,
         };
 
         fuzz_getFileName(hfuzz, vFuzzer.fileName);

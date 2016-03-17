@@ -264,7 +264,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     perfFd_t perfFds;
-    if (arch_perfEnable(ptracePid, hfuzz, &perfFds) == false) {
+    if (arch_perfEnable(ptracePid, hfuzz, fuzzer, &perfFds) == false) {
         LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
     }
     if (kill(childPid, SIGCONT) == -1) {

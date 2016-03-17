@@ -170,9 +170,9 @@ inline static int pt_last_ip_update_ip(struct pt_last_ip *last_ip,
     return -pte_bad_packet;
 }
 
-inline static uint64_t perf_ptAnalyzePkt(honggfuzz_t * hfuzz, fuzzer_t * fuzzer,
-                                         struct pt_packet *packet, struct pt_config *ptc,
-                                         struct pt_last_ip *last_ip)
+inline static void perf_ptAnalyzePkt(honggfuzz_t * hfuzz, fuzzer_t * fuzzer,
+                                     struct pt_packet *packet, struct pt_config *ptc,
+                                     struct pt_last_ip *last_ip)
 {
     switch (packet->type) {
     case ppt_tip:
@@ -181,7 +181,7 @@ inline static uint64_t perf_ptAnalyzePkt(honggfuzz_t * hfuzz, fuzzer_t * fuzzer,
     case ppt_tip_pgd:
         break;
     default:
-        return 0ULL;
+        return;
     }
 
     int errcode = pt_last_ip_update_ip(last_ip, &(packet->payload.ip), ptc);
@@ -192,9 +192,9 @@ inline static uint64_t perf_ptAnalyzePkt(honggfuzz_t * hfuzz, fuzzer_t * fuzzer,
     uint64_t ip;
     errcode = pt_last_ip_query(&ip, last_ip);
     if (errcode < 0) {
-        return 0ULL;
+        return;
     }
-/* Update only on TIP, other packets don't indicate a branch */
+    /* Update only on TIP, other packets don't indicate a branch */
     if (packet->type == ppt_tip) {
         register size_t pos = ip % (hfuzz->bbMapSz * 8);
         size_t byteOff = pos / 8;
@@ -204,17 +204,17 @@ inline static uint64_t perf_ptAnalyzePkt(honggfuzz_t * hfuzz, fuzzer_t * fuzzer,
             fuzzer->hwCnts.bbCnt++;
         }
     }
-    return 0ULL;
+    return;
 }
 
-uint64_t arch_ptAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, struct perf_event_mmap_page * pem,
-                        uint8_t * auxBuf)
+void arch_ptAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    uint64_t ret = 0ULL;
+    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->perfMmapBuf;
+
     struct pt_config ptc;
     pt_config_init(&ptc);
-    ptc.begin = &auxBuf[pem->aux_tail];
-    ptc.end = &auxBuf[pem->aux_head - 1];
+    ptc.begin = &fuzzer->perfMmapAux[pem->aux_tail];
+    ptc.end = &fuzzer->perfMmapAux[pem->aux_head - 1];
 
     int errcode = pt_cpu_errata(&ptc.errata, &ptc.cpu);
     if (errcode < 0) {
@@ -230,7 +230,7 @@ uint64_t arch_ptAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, struct perf_even
     errcode = pt_pkt_sync_forward(ptd);
     if (errcode < 0) {
         LOG_W("pt_pkt_sync_forward() failed: %s", pt_errstr(errcode));
-        return 0ULL;
+        return;
     }
 
     struct pt_last_ip last_ip;
@@ -245,20 +245,16 @@ uint64_t arch_ptAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, struct perf_even
             LOG_W("pt_pkt_next() failed: %s", pt_errstr(errcode));
             break;
         }
-        ret += perf_ptAnalyzePkt(hfuzz, fuzzer, &packet, &ptc, &last_ip);
+        perf_ptAnalyzePkt(hfuzz, fuzzer, &packet, &ptc, &last_ip);
     }
-
-    return ret;
 }
 
 #else                           /* _HF_LINUX_INTEL_PT_LIB */
 
-uint64_t arch_ptAnalyze(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED,
-                        struct perf_event_mmap_page * pem UNUSED, uint8_t * auxBuf UNUSED)
+void arch_ptAnalyze(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
     LOG_F
         ("The program has not been linked against the Intel's Processor Trace Library (libipt.so)");
-    return 0ULL;
 }
 
 #endif                          /* _HF_LINUX_INTEL_PT_LIB */
