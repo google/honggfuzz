@@ -33,6 +33,10 @@
 
 extern void *util_Malloc(size_t sz);
 
+extern void *util_Calloc(size_t sz);
+
+extern void *util_MMap(size_t sz);
+
 extern uint64_t util_rndGet(uint64_t min, uint64_t max);
 
 extern void util_rndBuf(uint8_t * buf, size_t sz);

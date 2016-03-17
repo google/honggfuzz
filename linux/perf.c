@@ -69,6 +69,7 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         uint64_t to;
         uint64_t misc;
     };
+
     struct bts_branch *br = (struct bts_branch *)perfMmapAux;
     for (; br < ((struct bts_branch *)(perfMmapAux + pem->aux_head)); br++) {
         /*
@@ -96,7 +97,7 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         register uint8_t prev = ATOMIC_POST_OR(hfuzz->bbMap[byteOff], bitSet);
         if (!(prev & bitSet)) {
-            fuzzer->hwCnts.bbCnt++;
+            fuzzer->hwCnts.newBBCnt++;
         }
     }
 }

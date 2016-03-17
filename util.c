@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -57,6 +58,22 @@ void *util_Malloc(size_t sz)
     void *p = malloc(sz);
     if (p == NULL) {
         LOG_F("malloc(size='%zu')", sz);
+    }
+    return p;
+}
+
+void *util_Calloc(size_t sz)
+{
+    void *p = util_Malloc(sz);
+    memset(p, '\0', sz);
+    return p;
+}
+
+void *util_MMap(size_t sz)
+{
+    void *p = mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE | MAP_NORESERVE, -1, 0);
+    if (p == MAP_FAILED) {
+        LOG_F("mmap(size='%zu')", sz);
     }
     return p;
 }

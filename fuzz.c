@@ -316,6 +316,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                        .cpuBranchCnt = 0ULL,
                        .customCnt = 0ULL,
                        .bbCnt = 0ULL,
+                       .newBBCnt = 0ULL,
                        },
             .sanCovCnts = {
                            .hitBBCnt = 0ULL,
@@ -411,7 +412,7 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         ("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 ",%"
          PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
          fuzzer->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt,
-         hfuzz->hwCnts.cpuBranchCnt, fuzzer->hwCnts.bbCnt, hfuzz->hwCnts.bbCnt);
+         hfuzz->hwCnts.cpuBranchCnt, fuzzer->hwCnts.newBBCnt, hfuzz->hwCnts.bbCnt);
 
     MX_SCOPED_LOCK(&hfuzz->dynfileq_mutex);
 
@@ -419,20 +420,20 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int64_t diff1 = hfuzz->hwCnts.cpuBranchCnt - fuzzer->hwCnts.cpuBranchCnt;
     int64_t diff2 = hfuzz->hwCnts.customCnt - fuzzer->hwCnts.customCnt;
 
-    if (diff0 < 0 || diff1 < 0 || diff2 < 0 || fuzzer->hwCnts.bbCnt > 0) {
+    if (diff0 < 0 || diff1 < 0 || diff2 < 0 || fuzzer->hwCnts.newBBCnt > 0) {
         LOG_I
             ("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 ",%"
              PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
              fuzzer->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt,
-             hfuzz->hwCnts.cpuBranchCnt, fuzzer->hwCnts.bbCnt, hfuzz->hwCnts.bbCnt);
+             hfuzz->hwCnts.cpuBranchCnt, fuzzer->hwCnts.newBBCnt, hfuzz->hwCnts.bbCnt);
 
         hfuzz->hwCnts.cpuInstrCnt = fuzzer->hwCnts.cpuInstrCnt;
         hfuzz->hwCnts.cpuBranchCnt = fuzzer->hwCnts.cpuBranchCnt;
         hfuzz->hwCnts.customCnt = fuzzer->hwCnts.customCnt;
-        hfuzz->hwCnts.bbCnt += fuzzer->hwCnts.bbCnt;
+        hfuzz->hwCnts.bbCnt += fuzzer->hwCnts.newBBCnt;
 
         fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-                                  fuzzer->hwCnts.bbCnt);
+                                  fuzzer->hwCnts.newBBCnt);
     }
 }
 
@@ -519,6 +520,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
                    .cpuBranchCnt = 0ULL,
                    .customCnt = 0ULL,
                    .bbCnt = 0ULL,
+                   .newBBCnt = 0ULL,
                    },
         .report = {'\0'},
     };

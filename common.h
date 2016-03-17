@@ -150,6 +150,7 @@ typedef struct {
     uint64_t cpuBranchCnt;
     uint64_t customCnt;
     uint64_t bbCnt;
+    uint64_t newBBCnt;
 } hwcnt_t;
 
 /* Sanitizer coverage specific data structures */
