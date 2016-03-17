@@ -283,7 +283,7 @@ typedef struct {
     char *pidCmd;
 } honggfuzz_t;
 
-typedef struct fuzzer_t {
+typedef struct {
     pid_t pid;
     int64_t timeStartedMillis;
     char origFileName[PATH_MAX];
