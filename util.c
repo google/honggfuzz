@@ -257,12 +257,16 @@ uint32_t util_ToFromLE32(uint32_t val)
 
 uint64_t util_getUINT32(const uint8_t * buf)
 {
-    return (uint64_t) (*((uint32_t *) buf));
+    uint32_t r;
+    __builtin_memcpy(&r, buf, sizeof(r));
+    return (uint64_t) r;
 }
 
 uint64_t util_getUINT64(const uint8_t * buf)
 {
-    return *((uint64_t *) buf);
+    uint64_t r;
+    __builtin_memcpy(&r, buf, sizeof(r));
+    return r;
 }
 
 void util_mutexLock(pthread_mutex_t * mutex, const char *func, int line)
