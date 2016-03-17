@@ -119,7 +119,7 @@ void util_rndBuf(uint8_t * buf, size_t sz)
 
     for (size_t i = 0; i < sz; i++) {
         x = (a * x + c);
-        buf[i] = (uint8_t) (x & 0xFF);
+        buf[i] = (uint8_t) ((x & 0xFF0000) > 16);
     }
 }
 
