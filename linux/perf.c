@@ -61,72 +61,64 @@ static int32_t perfIntelBtsPerfType = -1;
 __thread size_t perfBloomSz = 0U;
 __thread uint8_t *perfBloom = NULL;
 
-static inline uint64_t arch_perfAddBranch(uint64_t from, uint64_t to)
-{
-    /*
-     * Kernel sometimes reports branches from the kernel (iret), we are not interested in that as it
-     * makes the whole concept of unique branch counting less predictable
-     */
-    if (__builtin_expect(from > 0xFFFFFFFF00000000, false)
-        || __builtin_expect(to > 0xFFFFFFFF00000000, false)) {
-        LOG_D("Adding branch %#018" PRIx64 " - %#018" PRIx64, from, to);
-        return 0ULL;
-    }
-    if (from >= perfCutOffAddr || to >= perfCutOffAddr) {
-        return 0ULL;
-    }
-
-    register size_t pos = 0UL;
-    if (to == 0ULL) {
-        pos = from % (perfBloomSz * 8);
-    } else {
-        pos = (from * to) % (perfBloomSz * 8);
-    }
-
-    size_t byteOff = pos / 8;
-    uint8_t bitSet = (uint8_t) (1 << (pos % 8));
-
-    register uint8_t prev = ATOMIC_POST_OR(perfBloom[byteOff], bitSet);
-    if (!(prev & bitSet)) {
-        return 1ULL;
-    }
-    return 0ULL;
-}
-
-static inline uint64_t arch_perfMmapParse(honggfuzz_t * hfuzz)
+static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
-#if defined(PERF_ATTR_SIZE_VER5)
-    if (pem->aux_head == pem->aux_tail) {
-        return 0ULL;
-    }
-    if (pem->aux_head < pem->aux_tail) {
-        LOG_F("The PERF AUX data has been overwritten. The AUX buffer is too small");
-    }
-
-    uint64_t cnt = 0ULL;
     struct bts_branch {
         uint64_t from;
         uint64_t to;
         uint64_t misc;
     };
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        struct bts_branch *br = (struct bts_branch *)perfMmapAux;
-        for (; br < ((struct bts_branch *)(perfMmapAux + pem->aux_head)); br++) {
-            cnt += arch_perfAddBranch(br->from, 0UL);
+    struct bts_branch *br = (struct bts_branch *)perfMmapAux;
+    for (; br < ((struct bts_branch *)(perfMmapAux + pem->aux_head)); br++) {
+        /*
+         * Kernel sometimes reports branches from the kernel (iret), we are not interested in that as it
+         * makes the whole concept of unique branch counting less predictable
+         */
+        if (__builtin_expect(br->from > 0xFFFFFFFF00000000, false)
+            || __builtin_expect(br->to > 0xFFFFFFFF00000000, false)) {
+            LOG_D("Adding branch %#018" PRIx64 " - %#018" PRIx64, br->from, br->to);
+            continue;
         }
-        return cnt;
+        if (br->from >= hfuzz->dynamicCutOffAddr || br->to >= hfuzz->dynamicCutOffAddr) {
+            continue;
+        }
+
+        register size_t pos = 0UL;
+        if (br->to == 0ULL) {
+            pos = br->from % (hfuzz->bbMapSz * 8);
+        } else {
+            pos = (br->from * br->to) % (hfuzz->bbMapSz * 8);
+        }
+
+        size_t byteOff = pos / 8;
+        uint8_t bitSet = (uint8_t) (1 << (pos % 8));
+
+        register uint8_t prev = ATOMIC_POST_OR(hfuzz->bbMap[byteOff], bitSet);
+        if (!(prev & bitSet)) {
+            fuzzer->hwCnts.bbCnt++;
+        }
     }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        struct bts_branch *br = (struct bts_branch *)perfMmapAux;
-        for (; br < ((struct bts_branch *)(perfMmapAux + pem->aux_head)); br++) {
-            cnt += arch_perfAddBranch(br->from, br->to);
-        }
-        return cnt;
+}
+
+static inline void arch_perfMmapParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)perfMmapBuf;
+#if defined(PERF_ATTR_SIZE_VER5)
+    if (pem->aux_head == pem->aux_tail) {
+        return;
+    }
+    if (pem->aux_head < pem->aux_tail) {
+        LOG_F("The PERF AUX data has been overwritten. The AUX buffer is too small");
+    }
+
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK || hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
+        arch_perfBtsCount(hfuzz, fuzzer);
+    }
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
+        arch_ptAnalyze(hfuzz, fuzzer, pem, perfMmapAux);
     }
 #endif                          /* defined(PERF_ATTR_SIZE_VER5) */
-
-    return arch_ptAnalyze(pem, perfMmapAux, arch_perfAddBranch);
 }
 
 static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu, int group_fd,
@@ -320,20 +312,19 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         close(perfFds->cpuBranchFd);
     }
 
-    uint64_t newbbCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
         close(perfFds->cpuIptBtsFd);
-        newbbCount = arch_perfMmapParse(hfuzz);
+        arch_perfMmapParse(hfuzz, fuzzer);
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         close(perfFds->cpuIptBtsFd);
-        newbbCount = arch_perfMmapParse(hfuzz);
+        arch_perfMmapParse(hfuzz, fuzzer);
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
         close(perfFds->cpuIptBtsFd);
-        newbbCount = arch_perfMmapParse(hfuzz);
+        arch_perfMmapParse(hfuzz, fuzzer);
     }
 
     if (perfMmapAux != NULL) {
@@ -347,7 +338,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
 
     fuzzer->hwCnts.cpuInstrCnt = instrCount;
     fuzzer->hwCnts.cpuBranchCnt = branchCount;
-    fuzzer->hwCnts.bbCnt = newbbCount;
 }
 
 bool arch_perfInit(honggfuzz_t * hfuzz)

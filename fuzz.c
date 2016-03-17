@@ -385,7 +385,8 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     return true;
 }
 
-static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_t size)
+static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_t size,
+                                      uint64_t cov)
 {
     struct dynfile_t *dynfile = (struct dynfile_t *)util_Malloc(sizeof(struct dynfile_t));
     dynfile->size = size;
@@ -395,8 +396,9 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
     hfuzz->dynfileqCnt++;
 
     char fname[PATH_MAX];
-    snprintf(fname, sizeof(fname), "%s/COVERAGE_DATA.PID.%d.RND.%" PRIu64 ".%" PRIx64,
-             hfuzz->workDir, getpid(), (uint64_t) time(NULL), util_rndGet(0, 0xFFFFFFFFFFFF));
+    snprintf(fname, sizeof(fname),
+             "%s/COVERAGE.PID.%d.COVBB.%09" PRId64 ".TIME.%" PRIu64 ".RND.%" PRIx64, hfuzz->workDir,
+             getpid(), cov, (uint64_t) time(NULL), util_rndGet(0, 0xFFFFFFFFFFFF));
     if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC) == false) {
         LOG_W("Couldn't write buffer to file '%s'", fname);
     }
@@ -428,7 +430,8 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         hfuzz->hwCnts.customCnt = fuzzer->hwCnts.customCnt;
         hfuzz->hwCnts.bbCnt += fuzzer->hwCnts.bbCnt;
 
-        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
+        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+                                  fuzzer->hwCnts.bbCnt);
     }
 }
 
@@ -471,7 +474,8 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             hfuzz->sanCovCnts.totalBBCnt = fuzzer->sanCovCnts.totalBBCnt;
         }
 
-        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
+        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+                                  fuzzer->sanCovCnts.hitBBCnt);
     }
 }
 

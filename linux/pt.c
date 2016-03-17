@@ -170,9 +170,9 @@ inline static int pt_last_ip_update_ip(struct pt_last_ip *last_ip,
     return -pte_bad_packet;
 }
 
-inline static uint64_t perf_ptAnalyzePkt(struct pt_packet *packet, struct pt_config *ptc,
-                                         struct pt_last_ip *last_ip,
-                                         uint64_t(*add_branch) (uint64_t from, uint64_t to))
+inline static uint64_t perf_ptAnalyzePkt(honggfuzz_t * hfuzz, fuzzer_t * fuzzer,
+                                         struct pt_packet *packet, struct pt_config *ptc,
+                                         struct pt_last_ip *last_ip)
 {
     switch (packet->type) {
     case ppt_tip:
@@ -194,16 +194,21 @@ inline static uint64_t perf_ptAnalyzePkt(struct pt_packet *packet, struct pt_con
     if (errcode < 0) {
         return 0ULL;
     }
-
 /* Update only on TIP, other packets don't indicate a branch */
     if (packet->type == ppt_tip) {
-        return add_branch(ip, 0ULL);
+        register size_t pos = ip % (hfuzz->bbMapSz * 8);
+        size_t byteOff = pos / 8;
+        uint8_t bitSet = (uint8_t) (1 << (pos % 8));
+        register uint8_t prev = ATOMIC_POST_OR(hfuzz->bbMap[byteOff], bitSet);
+        if (!(prev & bitSet)) {
+            fuzzer->hwCnts.bbCnt++;
+        }
     }
     return 0ULL;
 }
 
-uint64_t arch_ptAnalyze(struct perf_event_mmap_page * pem, uint8_t * auxBuf,
-                        uint64_t(*add_branch) (uint64_t from, uint64_t to))
+uint64_t arch_ptAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, struct perf_event_mmap_page * pem,
+                        uint8_t * auxBuf)
 {
     uint64_t ret = 0ULL;
     struct pt_config ptc;
@@ -240,7 +245,7 @@ uint64_t arch_ptAnalyze(struct perf_event_mmap_page * pem, uint8_t * auxBuf,
             LOG_W("pt_pkt_next() failed: %s", pt_errstr(errcode));
             break;
         }
-        ret += perf_ptAnalyzePkt(&packet, &ptc, &last_ip, add_branch);
+        ret += perf_ptAnalyzePkt(hfuzz, fuzzer, &packet, &ptc, &last_ip);
     }
 
     return ret;
@@ -248,8 +253,8 @@ uint64_t arch_ptAnalyze(struct perf_event_mmap_page * pem, uint8_t * auxBuf,
 
 #else                           /* _HF_LINUX_INTEL_PT_LIB */
 
-uint64_t arch_ptAnalyze(struct perf_event_mmap_page * pem UNUSED, uint8_t * auxBuf UNUSED,
-                        uint64_t(*add_branch) (uint64_t from, uint64_t to) UNUSED)
+uint64_t arch_ptAnalyze(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED,
+                        struct perf_event_mmap_page * pem UNUSED, uint8_t * auxBuf UNUSED)
 {
     LOG_F
         ("The program has not been linked against the Intel's Processor Trace Library (libipt.so)");
