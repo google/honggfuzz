@@ -121,8 +121,7 @@ static bitmap_t *sancov_newBitmap(uint32_t capacity)
     bitmap_t *pBM = util_Malloc(sizeof(bitmap_t));
     pBM->capacity = capacity;
     pBM->nChunks = (capacity + 31) / 32;
-    pBM->pChunks = util_Malloc(pBM->nChunks * sizeof(uint32_t));
-    memset(pBM->pChunks, 0, pBM->nChunks * sizeof(uint32_t));
+    pBM->pChunks = util_Calloc(pBM->nChunks * sizeof(uint32_t));
     return pBM;
 }
 
