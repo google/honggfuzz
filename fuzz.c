@@ -601,7 +601,8 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
 
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         fuzz_perfFeedback(hfuzz, &fuzzer);
-    } else if (hfuzz->useSanCov) {
+    }
+    if (hfuzz->useSanCov) {
         fuzz_sanCovFeedback(hfuzz, &fuzzer);
     }
 

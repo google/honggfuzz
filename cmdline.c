@@ -424,11 +424,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         return false;
     }
 
-    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE && hfuzz->useSanCov) {
-        LOG_E("You cannot enable sanitizer coverage & perf feedback at the same time");
-        return false;
-    }
-
     /* Sanity checks for timeout. Optimal ranges highly depend on target */
     if (hfuzz->useSanCov && hfuzz->tmOut < 10) {
         LOG_E("Timeout value (%ld) too small for sanitizer coverage feedback", (long)hfuzz->tmOut);
