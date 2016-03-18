@@ -118,18 +118,10 @@
  */
 static bitmap_t *sancov_newBitmap(uint32_t capacity)
 {
-    bitmap_t *pBM = malloc(sizeof(bitmap_t));
-    if (pBM == NULL) {
-        PLOG_E("malloc(%zu) failed", sizeof(bitmap_t));
-        return NULL;
-    }
+    bitmap_t *pBM = util_Malloc(sizeof(bitmap_t));
     pBM->capacity = capacity;
     pBM->nChunks = (capacity + 31) / 32;
-    pBM->pChunks = malloc(pBM->nChunks * sizeof(uint32_t));
-    if (pBM->pChunks == NULL) {
-        PLOG_E("malloc(%zu) failed", pBM->nChunks * sizeof(uint32_t));
-        return NULL;
-    }
+    pBM->pChunks = util_Malloc(pBM->nChunks * sizeof(uint32_t));
     memset(pBM->pChunks, 0, pBM->nChunks * sizeof(uint32_t));
     return pBM;
 }
@@ -166,11 +158,7 @@ static inline void sancov_destroyBitmap(bitmap_t * pBM)
  */
 static node_t *sancov_trieCreateNode(char key)
 {
-    node_t *node = (node_t *) malloc(sizeof(node_t));
-    if (node == NULL) {
-        PLOG_E("malloc(%zu) failed", sizeof(node_t));
-        return node;
-    }
+    node_t *node = (node_t *) util_Malloc(sizeof(node_t));
     node->key = key;
     node->next = NULL;
     node->children = NULL;
@@ -412,11 +400,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     /* See if #maps is available from previous run to avoid realloc inside loop */
     uint64_t prevMapsNum = ATOMIC_GET(hfuzz->sanCovCnts.dsoCnt);
     if (prevMapsNum > 0) {
-        if ((mapsBuf = malloc(prevMapsNum * sizeof(memMap_t))) == NULL) {
-            PLOG_E("malloc failed (sz=%" PRIu64 ")", prevMapsNum * sizeof(memMap_t));
-            /* This will be picked-up later from realloc branch */
-            prevMapsNum = 0;
-        }
+        mapsBuf = util_Malloc(prevMapsNum * sizeof(memMap_t));
     }
 
     /* Iterate map entries */
@@ -477,11 +461,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     /* Create a quick index array with maps start addresses */
-    startMapsIndex = malloc(mapsNum * sizeof(uint64_t));
-    if (startMapsIndex == NULL) {
-        PLOG_E("malloc failed (sz=%" PRIu64 ")", mapsNum * sizeof(uint64_t));
-        goto bail;
-    }
+    startMapsIndex = util_Malloc(mapsNum * sizeof(uint64_t));
 
     /* Sort quick maps index */
     qsort(mapsBuf, mapsNum, sizeof(memMap_t), sancov_qsortCmp);
@@ -779,15 +759,10 @@ bool sancov_Init(honggfuzz_t * hfuzz)
     /* Set sanitizer flags once to avoid performance overhead per worker spawn */
     size_t flagsSz = 0;
     size_t bufSz = sizeof(kASAN_OPTS) + (2 * PATH_MAX); // Larger constant + 2 dynamic paths
-    char *san_opts = malloc(bufSz);
-    if (san_opts == NULL) {
-        PLOG_E("malloc(%zu) failed", bufSz);
-        return false;
-    }
+    char *san_opts = util_Calloc(bufSz);
     DEFER(free(san_opts));
 
     /* AddressSanitizer (ASan) */
-    memset(san_opts, 0, bufSz);
     if (hfuzz->useSanCov) {
 #if !_HF_MONITOR_SIGABRT
         /* Write reports in FS only if abort_on_error is disabled */
@@ -803,12 +778,7 @@ bool sancov_Init(honggfuzz_t * hfuzz)
     }
 
     flagsSz = strlen(san_opts) + 1;
-    hfuzz->sanOpts.asanOpts = malloc(flagsSz);
-    if (hfuzz->sanOpts.asanOpts == NULL) {
-        PLOG_E("malloc(%zu) failed", flagsSz);
-        return false;
-    }
-    memset(hfuzz->sanOpts.asanOpts, 0, flagsSz);
+    hfuzz->sanOpts.asanOpts = util_Calloc(flagsSz);
     memcpy(hfuzz->sanOpts.asanOpts, san_opts, flagsSz);
     LOG_D("ASAN_OPTIONS=%s", hfuzz->sanOpts.asanOpts);
 
@@ -830,12 +800,7 @@ bool sancov_Init(honggfuzz_t * hfuzz)
     }
 
     flagsSz = strlen(san_opts) + 1;
-    hfuzz->sanOpts.ubsanOpts = malloc(flagsSz);
-    if (hfuzz->sanOpts.ubsanOpts == NULL) {
-        PLOG_E("malloc(%zu) failed", flagsSz);
-        return false;
-    }
-    memset(hfuzz->sanOpts.ubsanOpts, 0, flagsSz);
+    hfuzz->sanOpts.ubsanOpts = util_Calloc(flagsSz);
     memcpy(hfuzz->sanOpts.ubsanOpts, san_opts, flagsSz);
     LOG_D("UBSAN_OPTIONS=%s", hfuzz->sanOpts.ubsanOpts);
 
@@ -862,12 +827,7 @@ bool sancov_Init(honggfuzz_t * hfuzz)
     }
 
     flagsSz = strlen(san_opts) + 1;
-    hfuzz->sanOpts.msanOpts = malloc(flagsSz);
-    if (hfuzz->sanOpts.msanOpts == NULL) {
-        PLOG_E("malloc(%zu) failed", flagsSz);
-        return false;
-    }
-    memset(hfuzz->sanOpts.msanOpts, 0, flagsSz);
+    hfuzz->sanOpts.msanOpts = util_Calloc(flagsSz);
     memcpy(hfuzz->sanOpts.msanOpts, san_opts, flagsSz);
     LOG_D("MSAN_OPTIONS=%s", hfuzz->sanOpts.msanOpts);
 
