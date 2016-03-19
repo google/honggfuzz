@@ -365,7 +365,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     uint64_t noCovMapsNum = 0;  /* Loaded DSOs not compiled with coverage */
 
     /* File line-by-line read help buffers */
-    char *pLine = NULL;
+    __block char *pLine = NULL;
     size_t lineSz = 0;
 
     /* Coverage data analysis starts by parsing map file listing */
@@ -387,7 +387,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_E("Invalid map file '%s'", covFile);
         return false;
     }
-    DEFER(free(pLine));
+    DEFER(free(pLine); pLine = NULL);
 
     int pcLen = atoi(pLine);
     if (pcLen == 32) {
