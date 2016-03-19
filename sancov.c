@@ -642,6 +642,7 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
                 return false;
             }
+            DEFER(close(dataFd));
             DEFER(munmap(dataBuf, dataFileSz));
 
             if (dataFileSz < 8) {
