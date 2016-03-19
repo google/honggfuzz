@@ -165,7 +165,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 
         .state = _HF_STATE_UNSET,
         .bbMapSz = _HF_PERF_BITMAP_SIZE,
-        .bbMap = util_MMap(_HF_PERF_BITMAP_SIZE),
+        .bbMap = NULL,
         .dynfileq_mutex = PTHREAD_MUTEX_INITIALIZER,
         .dynfileqCnt = 0U,
 
@@ -429,6 +429,10 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         LOG_E("Timeout value (%ld) too small for sanitizer coverage feedback", (long)hfuzz->tmOut);
         return false;
     }
+
+	if (hfuzz->dynFileMethod & (_HF_DYNFILE_BTS_BLOCK | _HF_DYNFILE_BTS_EDGE | _HF_DYNFILE_IPT_BLOCK)) {
+		hfuzz->bbMap = util_MMap(_HF_PERF_BITMAP_SIZE);
+	}
 
     if (strchr(hfuzz->fileExtn, '/')) {
         LOG_E("The file extension contains the '/' character: '%s'", hfuzz->fileExtn);
