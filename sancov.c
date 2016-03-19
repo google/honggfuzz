@@ -350,7 +350,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int dataFd = -1;
     uint8_t *dataBuf = NULL;
     off_t dataFileSz = 0, pos = 0;
-    bool is32bit = true, ret = false;
+    bool is32bit = true;
     char covFile[PATH_MAX] = { 0 };
     pid_t targetPid = (hfuzz->pid > 0) ? hfuzz->pid : fuzzer->pid;
 
@@ -378,15 +378,17 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     FILE *fCovMap = fopen(covFile, "rb");
     if (fCovMap == NULL) {
         PLOG_E("Couldn't open '%s' - R/O mode", covFile);
-        goto bail;
+        return false;
     }
+    DEFER(fclose(fCovMap));
 
     /* First line contains PC length (32/64-bit) */
     if (getline(&pLine, &lineSz, fCovMap) == -1) {
         LOG_E("Invalid map file '%s'", covFile);
-        fclose(fCovMap);
-        goto bail;
+        return false;
     }
+    DEFER(free(pLine));
+
     int pcLen = atoi(pLine);
     if (pcLen == 32) {
         is32bit = true;
@@ -401,6 +403,8 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (prevMapsNum > 0) {
         mapsBuf = util_Malloc(prevMapsNum * sizeof(memMap_t));
     }
+    /* It's OK to free(NULL) */
+    DEFER(free(mapsBuf));
 
     /* Iterate map entries */
     for (;;) {
@@ -442,7 +446,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (prevMapsNum == 0 || prevMapsNum < mapsNum) {
             if ((mapsBuf = realloc(mapsBuf, (size_t) (mapsNum + 1) * sizeof(memMap_t))) == NULL) {
                 PLOG_E("realloc failed (sz=%" PRIu64 ")", (mapsNum + 1) * sizeof(memMap_t));
-                goto bail;
+                return false;
             }
         }
 
@@ -454,13 +458,13 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     /* Delete .sancov.map file */
-    fclose(fCovMap);
     if (hfuzz->pid == 0) {
         unlink(covFile);
     }
 
     /* Create a quick index array with maps start addresses */
     startMapsIndex = util_Malloc(mapsNum * sizeof(uint64_t));
+    DEFER(free(startMapsIndex));
 
     /* Sort quick maps index */
     qsort(mapsBuf, mapsNum, sizeof(memMap_t), sancov_qsortCmp);
@@ -474,8 +478,10 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     dataBuf = files_mapFile(covFile, &dataFileSz, &dataFd, false);
     if (dataBuf == NULL) {
         LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
-        goto bail;
+        return false;
     }
+    DEFER(close(dataFd));
+    DEFER(munmap(dataBuf, dataFileSz));
 
     /*
      * Avoid cost of size checks inside raw data read loop by defining the read function
@@ -585,28 +591,11 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzer->sanCovCnts.totalBBCnt = nBBs + nZeroBBs;
     fuzzer->sanCovCnts.dsoCnt = mapsNum;
     fuzzer->sanCovCnts.iDsoCnt = mapsNum - noCovMapsNum;        /* Instrumented DSOs */
-    ret = true;
 
- bail:
     if (hfuzz->pid == 0) {
         unlink(covFile);
     }
-    if (dataBuf) {
-        munmap(dataBuf, dataFileSz);
-    }
-    if (dataFd != -1) {
-        close(dataFd);
-    }
-    if (mapsBuf) {
-        free(mapsBuf);
-    }
-    if (startMapsIndex) {
-        free(startMapsIndex);
-    }
-    if (pLine) {
-        free(pLine);
-    }
-    return ret;
+    return true;
 }
 
 static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
@@ -617,7 +606,6 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     bool is32bit = true;
     char covFile[PATH_MAX] = { 0 };
     DIR *pSanCovDir = NULL;
-    bool ret = false;
     pid_t targetPid = (hfuzz->pid > 0) ? hfuzz->pid : fuzzer->pid;
 
     snprintf(covFile, sizeof(covFile), "%s/%s/%s.%d.sancov", hfuzz->workDir, _HF_SANCOV_DIR,
@@ -637,6 +625,12 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     /* Iterate sancov dir for files generated against target pid */
     snprintf(covFile, sizeof(covFile), "%s/%s", hfuzz->workDir, _HF_SANCOV_DIR);
     pSanCovDir = opendir(covFile);
+    if (pSanCovDir == NULL) {
+        PLOG_E("opendir('%s')", covFile);
+        return false;
+    }
+    DEFER(closedir(pSanCovDir));
+
     struct dirent *pDir = NULL;
     while ((pDir = readdir(pSanCovDir)) != NULL) {
         /* Parse files with target's pid */
@@ -646,12 +640,13 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             dataBuf = files_mapFile(covFile, &dataFileSz, &dataFd, false);
             if (dataBuf == NULL) {
                 LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
-                goto bail;
+                return false;
             }
+            DEFER(munmap(dataBuf, dataFileSz));
 
             if (dataFileSz < 8) {
                 LOG_E("Coverage data file too short");
-                goto bail;
+                return false;
             }
 
             /* Check magic values & derive PC length */
@@ -662,7 +657,7 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 is32bit = false;
             } else {
                 LOG_E("Invalid coverage data file");
-                goto bail;
+                return false;
             }
             pos += 8;
 
@@ -693,22 +688,11 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     /* Successful parsing - update fuzzer worker counters */
     fuzzer->sanCovCnts.hitBBCnt = nBBs;
-    ret = true;
 
- bail:
     if (hfuzz->pid == 0) {
         unlink(covFile);
     }
-    if (dataBuf) {
-        munmap(dataBuf, dataFileSz);
-    }
-    if (dataFd != -1) {
-        close(dataFd);
-    }
-    if (pSanCovDir) {
-        closedir(pSanCovDir);
-    }
-    return ret;
+    return true;
 }
 
 /*
