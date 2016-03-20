@@ -322,15 +322,17 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             .report = {'\0'},
             .mainWorker = false,
 
-            .hwCnts = {
-                       .cpuInstrCnt = 0ULL,
-                       .cpuBranchCnt = 0ULL,
-                       .customCnt = 0ULL,
-                       .bbCnt = 0ULL,
-                       .newBBCnt = 0ULL,
-                       },
-            .perfMmapBuf = NULL,
-            .perfMmapAux = NULL,
+            .linux = {
+                      .hwCnts = {
+                                 .cpuInstrCnt = 0ULL,
+                                 .cpuBranchCnt = 0ULL,
+                                 .customCnt = 0ULL,
+                                 .bbCnt = 0ULL,
+                                 .newBBCnt = 0ULL,
+                                 },
+                      .perfMmapBuf = NULL,
+                      .perfMmapAux = NULL,
+                      },
         };
 
         fuzz_getFileName(hfuzz, vFuzzer.fileName);
@@ -414,29 +416,31 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     LOG_D
         ("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 ",%"
          PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
-         fuzzer->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt,
-         hfuzz->hwCnts.cpuBranchCnt, fuzzer->hwCnts.newBBCnt, hfuzz->hwCnts.bbCnt);
+         fuzzer->linux.hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuInstrCnt,
+         fuzzer->linux.hwCnts.cpuBranchCnt, hfuzz->hwCnts.cpuBranchCnt,
+         fuzzer->linux.hwCnts.newBBCnt, hfuzz->hwCnts.bbCnt);
 
     MX_SCOPED_LOCK(&hfuzz->dynfileq_mutex);
 
-    int64_t diff0 = hfuzz->hwCnts.cpuInstrCnt - fuzzer->hwCnts.cpuInstrCnt;
-    int64_t diff1 = hfuzz->hwCnts.cpuBranchCnt - fuzzer->hwCnts.cpuBranchCnt;
-    int64_t diff2 = hfuzz->hwCnts.customCnt - fuzzer->hwCnts.customCnt;
+    int64_t diff0 = hfuzz->hwCnts.cpuInstrCnt - fuzzer->linux.hwCnts.cpuInstrCnt;
+    int64_t diff1 = hfuzz->hwCnts.cpuBranchCnt - fuzzer->linux.hwCnts.cpuBranchCnt;
+    int64_t diff2 = hfuzz->hwCnts.customCnt - fuzzer->linux.hwCnts.customCnt;
 
-    if (diff0 < 0 || diff1 < 0 || diff2 < 0 || fuzzer->hwCnts.newBBCnt > 0) {
+    if (diff0 < 0 || diff1 < 0 || diff2 < 0 || fuzzer->linux.hwCnts.newBBCnt > 0) {
         LOG_I
             ("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 ",%"
              PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
-             fuzzer->hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuInstrCnt, fuzzer->hwCnts.cpuBranchCnt,
-             hfuzz->hwCnts.cpuBranchCnt, fuzzer->hwCnts.newBBCnt, hfuzz->hwCnts.bbCnt);
+             fuzzer->linux.hwCnts.cpuInstrCnt, hfuzz->hwCnts.cpuInstrCnt,
+             fuzzer->linux.hwCnts.cpuBranchCnt, hfuzz->hwCnts.cpuBranchCnt,
+             fuzzer->linux.hwCnts.newBBCnt, hfuzz->hwCnts.bbCnt);
 
-        hfuzz->hwCnts.cpuInstrCnt = fuzzer->hwCnts.cpuInstrCnt;
-        hfuzz->hwCnts.cpuBranchCnt = fuzzer->hwCnts.cpuBranchCnt;
-        hfuzz->hwCnts.customCnt = fuzzer->hwCnts.customCnt;
-        hfuzz->hwCnts.bbCnt += fuzzer->hwCnts.newBBCnt;
+        hfuzz->hwCnts.cpuInstrCnt = fuzzer->linux.hwCnts.cpuInstrCnt;
+        hfuzz->hwCnts.cpuBranchCnt = fuzzer->linux.hwCnts.cpuBranchCnt;
+        hfuzz->hwCnts.customCnt = fuzzer->linux.hwCnts.customCnt;
+        hfuzz->hwCnts.bbCnt += fuzzer->linux.hwCnts.newBBCnt;
 
         fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-                                  fuzzer->hwCnts.newBBCnt);
+                                  fuzzer->linux.hwCnts.newBBCnt);
     }
 }
 
@@ -504,6 +508,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         .backtrace = 0ULL,
         .access = 0ULL,
         .exception = 0,
+        .report = {'\0'},
         .mainWorker = true,
         .flipRate = hfuzz->origFlipRate,
 
@@ -518,14 +523,15 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         .dynamicFileSz = 0,
         .dynamicFile = util_Malloc(hfuzz->maxFileSz),
 
-        .hwCnts = {
-                   .cpuInstrCnt = 0ULL,
-                   .cpuBranchCnt = 0ULL,
-                   .customCnt = 0ULL,
-                   .bbCnt = 0ULL,
-                   .newBBCnt = 0ULL,
-                   },
-        .report = {'\0'},
+        .linux = {
+                  .hwCnts = {
+                             .cpuInstrCnt = 0ULL,
+                             .cpuBranchCnt = 0ULL,
+                             .customCnt = 0ULL,
+                             .bbCnt = 0ULL,
+                             .newBBCnt = 0ULL,
+                             },
+                  }
     };
     DEFER(free(fuzzer.dynamicFile));
 

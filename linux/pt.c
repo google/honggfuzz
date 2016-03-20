@@ -201,7 +201,7 @@ inline static void perf_ptAnalyzePkt(honggfuzz_t * hfuzz, fuzzer_t * fuzzer,
         uint8_t bitSet = (uint8_t) (1 << (pos % 8));
         register uint8_t prev = ATOMIC_POST_OR(hfuzz->bbMap[byteOff], bitSet);
         if (!(prev & bitSet)) {
-            fuzzer->hwCnts.bbCnt++;
+            fuzzer->linux.hwCnts.bbCnt++;
         }
     }
     return;
@@ -209,12 +209,12 @@ inline static void perf_ptAnalyzePkt(honggfuzz_t * hfuzz, fuzzer_t * fuzzer,
 
 void arch_ptAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->perfMmapBuf;
+    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
 
     struct pt_config ptc;
     pt_config_init(&ptc);
-    ptc.begin = &fuzzer->perfMmapAux[pem->aux_tail];
-    ptc.end = &fuzzer->perfMmapAux[pem->aux_head - 1];
+    ptc.begin = &fuzzer->linux.perfMmapAux[pem->aux_tail];
+    ptc.end = &fuzzer->linux.perfMmapAux[pem->aux_head - 1];
 
     int errcode = pt_cpu_errata(&ptc.errata, &ptc.cpu);
     if (errcode < 0) {

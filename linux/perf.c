@@ -57,15 +57,15 @@ __thread uint8_t *perfBloom = NULL;
 
 static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->perfMmapBuf;
+    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
     struct bts_branch {
         uint64_t from;
         uint64_t to;
         uint64_t misc;
     };
 
-    struct bts_branch *br = (struct bts_branch *)fuzzer->perfMmapAux;
-    for (; br < ((struct bts_branch *)(fuzzer->perfMmapAux + pem->aux_head)); br++) {
+    struct bts_branch *br = (struct bts_branch *)fuzzer->linux.perfMmapAux;
+    for (; br < ((struct bts_branch *)(fuzzer->linux.perfMmapAux + pem->aux_head)); br++) {
         /*
          * Kernel sometimes reports branches from the kernel (iret), we are not interested in that as it
          * makes the whole concept of unique branch counting less predictable
@@ -91,14 +91,14 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         register uint8_t prev = ATOMIC_POST_OR(hfuzz->bbMap[byteOff], bitSet);
         if (!(prev & bitSet)) {
-            fuzzer->hwCnts.newBBCnt++;
+            fuzzer->linux.hwCnts.newBBCnt++;
         }
     }
 }
 
 static inline void arch_perfMmapParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->perfMmapBuf;
+    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
 #if defined(PERF_ATTR_SIZE_VER5)
     if (pem->aux_head == pem->aux_tail) {
         return;
@@ -202,24 +202,24 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, pid_t pid, dyn
         return true;
     }
 #if defined(PERF_ATTR_SIZE_VER5)
-    fuzzer->perfMmapBuf =
+    fuzzer->linux.perfMmapBuf =
         mmap(NULL, _HF_PERF_MAP_SZ + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
-    if (fuzzer->perfMmapBuf == MAP_FAILED) {
-        fuzzer->perfMmapBuf = NULL;
+    if (fuzzer->linux.perfMmapBuf == MAP_FAILED) {
+        fuzzer->linux.perfMmapBuf = NULL;
         PLOG_E("mmap(mmapBuf) failed, sz=%zu, try increasing kernel.perf_event_mlock_kb",
                (size_t) _HF_PERF_MAP_SZ + getpagesize());
         close(*perfFd);
         return false;
     }
 
-    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->perfMmapBuf;
+    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
     pem->aux_offset = pem->data_offset + pem->data_size;
     pem->aux_size = _HF_PERF_AUX_SZ;
-    fuzzer->perfMmapAux =
+    fuzzer->linux.perfMmapAux =
         mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
-    if (fuzzer->perfMmapAux == MAP_FAILED) {
-        munmap(fuzzer->perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
-        fuzzer->perfMmapBuf = NULL;
+    if (fuzzer->linux.perfMmapAux == MAP_FAILED) {
+        munmap(fuzzer->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
+        fuzzer->linux.perfMmapBuf = NULL;
         PLOG_E("mmap(mmapAuxBuf) failed, try increasing kernel.perf_event_mlock_kb");
         close(*perfFd);
         return false;
@@ -328,17 +328,17 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
         arch_perfMmapParse(hfuzz, fuzzer);
     }
 
-    if (fuzzer->perfMmapAux != NULL) {
-        munmap(fuzzer->perfMmapAux, _HF_PERF_AUX_SZ);
-        fuzzer->perfMmapAux = NULL;
+    if (fuzzer->linux.perfMmapAux != NULL) {
+        munmap(fuzzer->linux.perfMmapAux, _HF_PERF_AUX_SZ);
+        fuzzer->linux.perfMmapAux = NULL;
     }
-    if (fuzzer->perfMmapBuf != NULL) {
-        munmap(fuzzer->perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
-        fuzzer->perfMmapBuf = NULL;
+    if (fuzzer->linux.perfMmapBuf != NULL) {
+        munmap(fuzzer->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
+        fuzzer->linux.perfMmapBuf = NULL;
     }
 
-    fuzzer->hwCnts.cpuInstrCnt = instrCount;
-    fuzzer->hwCnts.cpuBranchCnt = branchCount;
+    fuzzer->linux.hwCnts.cpuInstrCnt = instrCount;
+    fuzzer->linux.hwCnts.cpuBranchCnt = branchCount;
 }
 
 bool arch_perfInit(honggfuzz_t * hfuzz UNUSED)

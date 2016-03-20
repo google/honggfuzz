@@ -302,10 +302,12 @@ typedef struct {
     uint8_t *dynamicFile;
     size_t dynamicFileSz;
 
-    /* For Linux code */
-    hwcnt_t hwCnts;
-    uint8_t *perfMmapBuf;
-    uint8_t *perfMmapAux;
+    struct {
+        /* For Linux code */
+        hwcnt_t hwCnts;
+        uint8_t *perfMmapBuf;
+        uint8_t *perfMmapAux;
+    } linux;
 } fuzzer_t;
 
 #define _HF_MAX_FUNCS 80

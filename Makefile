@@ -118,7 +118,7 @@ else
     ARCH := POSIX
     ARCH_DSUFFIX := .so
     ARCH_SRCS := $(wildcard posix/*.c)
-    ARCH_CFLAGS := -std=gnu11 -I. -I/usr/local/include -I/usr/include \
+    ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
 				   -funroll-loops -O2

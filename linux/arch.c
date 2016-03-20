@@ -289,7 +289,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
         LOG_D("PID '%d' returned with status '%d'", pid, status);
 
-        arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->hwCnts.customCnt);
+        arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->linux.hwCnts.customCnt);
 
         if (ptracePid == childPid) {
             arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
