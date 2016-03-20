@@ -333,6 +333,11 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 bool arch_archInit(honggfuzz_t * hfuzz)
 {
+    if (hfuzz->dynFileMethod &
+        (_HF_DYNFILE_BTS_BLOCK | _HF_DYNFILE_BTS_EDGE | _HF_DYNFILE_IPT_BLOCK)) {
+        hfuzz->bbMap = util_MMap(_HF_PERF_BITMAP_SIZE);
+    }
+
     /* We use execvp() as a fall-back mechanism (using PATH), so it might legitimately fail */
     hfuzz->exeFd = open(hfuzz->cmdline[0], O_RDONLY | O_CLOEXEC);
 

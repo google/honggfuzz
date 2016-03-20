@@ -430,11 +430,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         return false;
     }
 
-    if (hfuzz->dynFileMethod &
-        (_HF_DYNFILE_BTS_BLOCK | _HF_DYNFILE_BTS_EDGE | _HF_DYNFILE_IPT_BLOCK)) {
-        hfuzz->bbMap = util_MMap(_HF_PERF_BITMAP_SIZE);
-    }
-
     if (strchr(hfuzz->fileExtn, '/')) {
         LOG_E("The file extension contains the '/' character: '%s'", hfuzz->fileExtn);
         return false;
