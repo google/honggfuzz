@@ -480,8 +480,8 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
         return false;
     }
-    DEFER(close(dataFd));
-    DEFER(munmap(dataBuf, dataFileSz));
+    DEFER(munmap(dataBuf, dataFileSz);
+          close(dataFd));
 
     /*
      * Avoid cost of size checks inside raw data read loop by defining the read function
@@ -642,8 +642,8 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
                 return false;
             }
-            DEFER(close(dataFd));
-            DEFER(munmap(dataBuf, dataFileSz));
+            DEFER(munmap(dataBuf, dataFileSz);
+                  close(dataFd));
 
             if (dataFileSz < 8) {
                 LOG_E("Coverage data file too short");
