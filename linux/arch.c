@@ -423,9 +423,8 @@ bool arch_archInit(honggfuzz_t * hfuzz)
             return false;
         }
 
-        size_t sz =
-            files_readFileToBufMax(procCmd, (uint8_t *) hfuzz->linux.pidCmd,
-                                   _HF_PROC_CMDLINE_SZ - 1);
+        size_t sz = files_readFileToBufMax(procCmd, (uint8_t *) hfuzz->linux.pidCmd,
+                                           _HF_PROC_CMDLINE_SZ - 1);
         if (sz == 0) {
             LOG_E("Couldn't read '%s'", procCmd);
             free(hfuzz->linux.pidCmd);

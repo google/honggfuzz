@@ -121,7 +121,7 @@ else
     ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
-				   -funroll-loops -O2
+                   -U__STRICT_ANSI__ -funroll-loops -O2
     ARCH_LDFLAGS := -lpthread -L/usr/local/include -L/usr/include
     # OS Posix
 endif
