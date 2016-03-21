@@ -109,10 +109,10 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
             hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand,
             hfuzz->fuzzStdin ? "TRUE" : "FALSE",
             hfuzz->tmOut,
-            hfuzz->ignoreAddr,
+            hfuzz->linux.ignoreAddr,
             hfuzz->asLimit,
-            hfuzz->pid, hfuzz->pidCmd,
-            hfuzz->dictionaryFile == NULL ? "NULL" : hfuzz->dictionaryFile);
+            hfuzz->linux.pid,
+            hfuzz->linux.pidCmd, hfuzz->dictionaryFile == NULL ? "NULL" : hfuzz->dictionaryFile);
 
 #if defined(_HF_ARCH_LINUX)
     report_printdynFileMethod(hfuzz);

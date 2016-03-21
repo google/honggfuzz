@@ -271,17 +271,19 @@ typedef struct {
     size_t dynFileIterExpire;
     bool useSanCov;
     node_t *covMetadata;
+    bool msanReportUMRS;
 
     /* For the Linux code */
-    hwcnt_t hwCnts;
-    uint64_t dynamicCutOffAddr;
-    bool disableRandomization;
-    bool msanReportUMRS;
-    void *ignoreAddr;
-    size_t numMajorFrames;
-    pid_t pid;
-    const char *pidFile;
-    char *pidCmd;
+    struct {
+        hwcnt_t hwCnts;
+        uint64_t dynamicCutOffAddr;
+        bool disableRandomization;
+        void *ignoreAddr;
+        size_t numMajorFrames;
+        pid_t pid;
+        const char *pidFile;
+        char *pidCmd;
+    } linux;
 } honggfuzz_t;
 
 typedef struct {

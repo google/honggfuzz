@@ -662,7 +662,7 @@ static void arch_hashCallstack(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, funcs_t *
                                size_t funcCnt, bool enableMasking)
 {
     uint64_t hash = 0;
-    for (size_t i = 0; i < funcCnt && i < hfuzz->numMajorFrames; i++) {
+    for (size_t i = 0; i < funcCnt && i < hfuzz->linux.numMajorFrames; i++) {
         /*
          * Convert PC to char array to be compatible with hash function
          */
@@ -799,9 +799,9 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %"
           REG_PM ", instr: '%s'", pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
 
-    if (!SI_FROMUSER(&si) && pc && si.si_addr < hfuzz->ignoreAddr) {
+    if (!SI_FROMUSER(&si) && pc && si.si_addr < hfuzz->linux.ignoreAddr) {
         LOG_I("'%s' is interesting (%s), but the si.si_addr is %p (below %p), skipping",
-              fuzzer->fileName, arch_sigs[si.si_signo].descr, si.si_addr, hfuzz->ignoreAddr);
+              fuzzer->fileName, arch_sigs[si.si_signo].descr, si.si_addr, hfuzz->linux.ignoreAddr);
         return;
     }
 
@@ -900,7 +900,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     ATOMIC_POST_ADD(hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
     void *sig_addr = si.si_addr;
-    if (hfuzz->disableRandomization == false) {
+    if (hfuzz->linux.disableRandomization == false) {
         pc = 0UL;
         sig_addr = NULL;
     }
@@ -1079,7 +1079,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     REG_TYPE pc = 0;
     void *crashAddr = 0;
     char *op = "UNKNOWN";
-    pid_t targetPid = (hfuzz->pid > 0) ? hfuzz->pid : fuzzer->pid;
+    pid_t targetPid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
 
     /* Save only the first hit for each worker */
     if (fuzzer->crashFileName[0] != '\0') {
@@ -1133,9 +1133,9 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
         }
 
         /* Since crash address is available, apply ignoreAddr filters */
-        if (crashAddr < hfuzz->ignoreAddr) {
+        if (crashAddr < hfuzz->linux.ignoreAddr) {
             LOG_I("'%s' is interesting, but the crash addr is %p (below %p), skipping",
-                  fuzzer->fileName, crashAddr, hfuzz->ignoreAddr);
+                  fuzzer->fileName, crashAddr, hfuzz->linux.ignoreAddr);
             return;
         }
 

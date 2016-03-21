@@ -189,8 +189,8 @@ int main(int argc, char **argv)
     if (hfuzz.sanOpts.msanOpts) {
         free(hfuzz.sanOpts.msanOpts);
     }
-    if (hfuzz.pidCmd) {
-        free(hfuzz.pidCmd);
+    if (hfuzz.linux.pidCmd) {
+        free(hfuzz.linux.pidCmd);
     }
 
     return EXIT_SUCCESS;

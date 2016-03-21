@@ -352,7 +352,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     off_t dataFileSz = 0, pos = 0;
     bool is32bit = true;
     char covFile[PATH_MAX] = { 0 };
-    pid_t targetPid = (hfuzz->pid > 0) ? hfuzz->pid : fuzzer->pid;
+    pid_t targetPid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
 
     /* Fuzzer local runtime data structs - need free() before exit */
     uint64_t *startMapsIndex = NULL;
@@ -387,8 +387,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_E("Invalid map file '%s'", covFile);
         return false;
     }
-    DEFER(free(pLine);
-          pLine = NULL);
+    DEFER(free(pLine); pLine = NULL);
 
     int pcLen = atoi(pLine);
     if (pcLen == 32) {
@@ -459,7 +458,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     /* Delete .sancov.map file */
-    if (hfuzz->pid == 0) {
+    if (hfuzz->linux.pid == 0) {
         unlink(covFile);
     }
 
@@ -481,7 +480,8 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
         return false;
     }
-    DEFER(munmap(dataBuf, dataFileSz); close(dataFd));
+    DEFER(munmap(dataBuf, dataFileSz);
+          close(dataFd));
 
     /*
      * Avoid cost of size checks inside raw data read loop by defining the read function
@@ -592,7 +592,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzer->sanCovCnts.dsoCnt = mapsNum;
     fuzzer->sanCovCnts.iDsoCnt = mapsNum - noCovMapsNum;        /* Instrumented DSOs */
 
-    if (hfuzz->pid == 0) {
+    if (hfuzz->linux.pid == 0) {
         unlink(covFile);
     }
     return true;
@@ -606,7 +606,7 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     bool is32bit = true;
     char covFile[PATH_MAX] = { 0 };
     DIR *pSanCovDir = NULL;
-    pid_t targetPid = (hfuzz->pid > 0) ? hfuzz->pid : fuzzer->pid;
+    pid_t targetPid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
 
     snprintf(covFile, sizeof(covFile), "%s/%s/%s.%d.sancov", hfuzz->workDir, _HF_SANCOV_DIR,
              files_basename(hfuzz->cmdline[0]), targetPid);
@@ -642,7 +642,8 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
                 return false;
             }
-            DEFER(munmap(dataBuf, dataFileSz); close(dataFd));
+            DEFER(munmap(dataBuf, dataFileSz);
+                  close(dataFd));
 
             if (dataFileSz < 8) {
                 LOG_E("Coverage data file too short");
@@ -689,7 +690,7 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     /* Successful parsing - update fuzzer worker counters */
     fuzzer->sanCovCnts.hitBBCnt = nBBs;
 
-    if (hfuzz->pid == 0) {
+    if (hfuzz->linux.pid == 0) {
         unlink(covFile);
     }
     return true;
@@ -727,7 +728,7 @@ bool sancov_Init(honggfuzz_t * hfuzz)
 
     sancov_trieCreate(&hfuzz->covMetadata);
 
-    if (hfuzz->pid > 0) {
+    if (hfuzz->linux.pid > 0) {
         return true;
     }
 

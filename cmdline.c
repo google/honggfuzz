@@ -194,8 +194,10 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         },
         .useSanCov = false,
         .covMetadata = NULL,
+        .msanReportUMRS = false,
 
         /* Linux code */
+	.linux = {
         .hwCnts = {
                    .cpuInstrCnt = 0ULL,
                    .cpuBranchCnt = 0ULL,
@@ -205,12 +207,12 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
                    },
         .dynamicCutOffAddr = ~(0ULL),
         .disableRandomization = true,
-        .msanReportUMRS = false,
         .ignoreAddr = NULL,
         .numMajorFrames = 7,
         .pid = 0,
         .pidFile = NULL,
         .pidCmd = NULL,
+	},
     };
     /*  *INDENT-ON* */
 
@@ -347,14 +349,14 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
                 LOG_E("-p '%s' is not a number", optarg);
                 return false;
             }
-            hfuzz->pid = atoi(optarg);
-            if (hfuzz->pid < 1) {
-                LOG_E("-p '%d' is invalid", hfuzz->pid);
+            hfuzz->linux.pid = atoi(optarg);
+            if (hfuzz->linux.pid < 1) {
+                LOG_E("-p '%d' is invalid", hfuzz->linux.pid);
                 return false;
             }
             break;
         case 'P':
-            hfuzz->pidFile = optarg;
+            hfuzz->linux.pidFile = optarg;
             break;
         case 'E':
             for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs); i++) {
@@ -371,16 +373,16 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             hfuzz->blacklistFile = optarg;
             break;
         case 0x500:
-            hfuzz->ignoreAddr = (void *)strtoul(optarg, NULL, 0);
+            hfuzz->linux.ignoreAddr = (void *)strtoul(optarg, NULL, 0);
             break;
         case 0x501:
-            hfuzz->disableRandomization = false;
+            hfuzz->linux.disableRandomization = false;
             break;
         case 0x502:
             hfuzz->msanReportUMRS = true;
             break;
         case 0x503:
-            hfuzz->dynamicCutOffAddr = strtoull(optarg, NULL, 0);
+            hfuzz->linux.dynamicCutOffAddr = strtoull(optarg, NULL, 0);
             break;
         case 0x510:
             hfuzz->dynFileMethod |= _HF_DYNFILE_INSTR_COUNT;
@@ -442,8 +444,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         }
     }
 
-    if (hfuzz->pid > 0 || hfuzz->pidFile) {
-        LOG_I("PID=%d specified, lowering maximum number of concurrent threads to 1", hfuzz->pid);
+    if (hfuzz->linux.pid > 0 || hfuzz->linux.pidFile) {
+        LOG_I("PID=%d specified, lowering maximum number of concurrent threads to 1",
+              hfuzz->linux.pid);
         hfuzz->threadsMax = 1;
     }
 
@@ -452,14 +455,14 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     }
 
     LOG_I("inputFile '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, flipRate: %lf, "
-          "externalCommand: '%s', tmOut: %ld, mutationsMax: %zu, threadsMax: %zu, fileExtn '%s', ignoreAddr: %p, "
+          "externalCommand: '%s', tmOut: %ld, mutationsMax: %zu, threadsMax: %zu, fileExtn '%s', "
           "memoryLimit: 0x%" PRIx64 "(MiB), fuzzExe: '%s', fuzzedPid: %d",
           hfuzz->inputFile,
           cmdlineYesNo(hfuzz->nullifyStdio), cmdlineYesNo(hfuzz->fuzzStdin),
           cmdlineYesNo(hfuzz->saveUnique), hfuzz->origFlipRate,
           hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, hfuzz->tmOut,
-          hfuzz->mutationsMax, hfuzz->threadsMax, hfuzz->fileExtn, hfuzz->ignoreAddr,
-          hfuzz->asLimit, hfuzz->cmdline[0], hfuzz->pid);
+          hfuzz->mutationsMax, hfuzz->threadsMax, hfuzz->fileExtn,
+          hfuzz->asLimit, hfuzz->cmdline[0], hfuzz->linux.pid);
 
     snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->cmdline[0]);
     for (size_t i = 1; hfuzz->cmdline[i]; i++) {

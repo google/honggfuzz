@@ -91,9 +91,9 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     display_put("Input file/dir: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
     display_put("Fuzzed cmd: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
-    if (hfuzz->pid > 0) {
+    if (hfuzz->linux.pid > 0) {
         display_put("Remote cmd [" ESC_BOLD "%d" ESC_RESET "]: '" ESC_BOLD "%s" ESC_RESET "'\n",
-                    hfuzz->pid, hfuzz->pidCmd);
+                    hfuzz->linux.pid, hfuzz->linux.pidCmd);
     }
 
     display_put("Fuzzing threads: " ESC_BOLD "%zu" ESC_RESET "\n", hfuzz->threadsMax);
@@ -121,27 +121,27 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     /* HW perf specific counters */
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
         display_put("  - cpu instructions:      " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    ATOMIC_GET(hfuzz->hwCnts.cpuInstrCnt));
+                    ATOMIC_GET(hfuzz->linux.hwCnts.cpuInstrCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
         display_put("  - cpu branches:          " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    ATOMIC_GET(hfuzz->hwCnts.cpuBranchCnt));
+                    ATOMIC_GET(hfuzz->linux.hwCnts.cpuBranchCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
         display_put("  - BTS unique blocks: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    ATOMIC_GET(hfuzz->hwCnts.bbCnt));
+                    ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         display_put("  - BTS unique edges:   " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    ATOMIC_GET(hfuzz->hwCnts.bbCnt));
+                    ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
         display_put("  - PT unique blocks: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    ATOMIC_GET(hfuzz->hwCnts.bbCnt));
+                    ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) {
         display_put("  - custom counter:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                    ATOMIC_GET(hfuzz->hwCnts.customCnt));
+                    ATOMIC_GET(hfuzz->linux.hwCnts.customCnt));
     }
 
     /* Sanitizer coverage specific counters */

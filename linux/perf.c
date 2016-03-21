@@ -75,7 +75,7 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             LOG_D("Adding branch %#018" PRIx64 " - %#018" PRIx64, br->from, br->to);
             continue;
         }
-        if (br->from >= hfuzz->dynamicCutOffAddr || br->to >= hfuzz->dynamicCutOffAddr) {
+        if (br->from >= hfuzz->linux.dynamicCutOffAddr || br->to >= hfuzz->linux.dynamicCutOffAddr) {
             continue;
         }
 
@@ -150,7 +150,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, pid_t pid, dyn
     pe.exclude_idle = 1;
     pe.exclude_callchain_kernel = 1;
     pe.exclude_callchain_user = 1;
-    if (hfuzz->pid > 0) {
+    if (hfuzz->linux.pid > 0) {
         pe.disabled = 0;
         pe.enable_on_exec = 0;
     } else {

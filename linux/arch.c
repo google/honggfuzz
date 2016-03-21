@@ -67,10 +67,10 @@ static pid_t lastRemotePid = -1;
 
 static inline bool arch_shouldAttach(honggfuzz_t * hfuzz)
 {
-    if (hfuzz->pid == 0) {
+    if (hfuzz->linux.pid == 0) {
         return true;
     }
-    if (hfuzz->pid > 0 && lastRemotePid != hfuzz->pid) {
+    if (hfuzz->linux.pid > 0 && lastRemotePid != hfuzz->linux.pid) {
         return true;
     }
     return false;
@@ -83,7 +83,7 @@ pid_t arch_fork(honggfuzz_t * hfuzz)
      * an external process
      */
     uintptr_t clone_flags = CLONE_UNTRACED;
-    if (hfuzz->pid) {
+    if (hfuzz->linux.pid) {
         clone_flags = SIGCHLD;
     }
     return syscall(__NR_clone, (uintptr_t) clone_flags, NULL, NULL, NULL, (uintptr_t) 0);
@@ -110,7 +110,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     /*
      * Disable ASLR
      */
-    if (hfuzz->disableRandomization && personality(ADDR_NO_RANDOMIZE) == -1) {
+    if (hfuzz->linux.disableRandomization && personality(ADDR_NO_RANDOMIZE) == -1) {
         PLOG_E("personality(ADDR_NO_RANDOMIZE) failed");
         return false;
     }
@@ -218,7 +218,7 @@ static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    pid_t ptracePid = (hfuzz->pid > 0) ? hfuzz->pid : fuzzer->pid;
+    pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
 
     timer_t timerid;
@@ -242,20 +242,21 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     /* A long-lived processed could have already exited, and we wouldn't know */
     if (kill(ptracePid, 0) == -1) {
-        if (hfuzz->pidFile) {
+        if (hfuzz->linux.pidFile) {
             /* If pid from file, check again for cases of auto-restart daemons that update it */
             /* 
              * TODO: Investigate if we need to delay here, so that target process has
              * enough time to restart. Tricky to answer since is target dependant.
              */
-            if (files_readPidFromFile(hfuzz->pidFile, &hfuzz->pid) == false) {
+            if (files_readPidFromFile(hfuzz->linux.pidFile, &hfuzz->linux.pid) == false) {
                 LOG_F("Failed to read new PID from file - abort");
             } else {
-                if (kill(hfuzz->pid, 0) == -1) {
-                    PLOG_F("Liveness of PID %d read from file questioned - abort", hfuzz->pid);
+                if (kill(hfuzz->linux.pid, 0) == -1) {
+                    PLOG_F("Liveness of PID %d read from file questioned - abort",
+                           hfuzz->linux.pid);
                 } else {
-                    LOG_D("Monitor PID has been updated (pid=%d)", hfuzz->pid);
-                    ptracePid = hfuzz->pid;
+                    LOG_D("Monitor PID has been updated (pid=%d)", hfuzz->linux.pid);
+                    ptracePid = hfuzz->linux.pid;
                 }
             }
         } else {
@@ -404,39 +405,40 @@ bool arch_archInit(honggfuzz_t * hfuzz)
 #endif
 
     /* If read PID from file enable - read current value */
-    if (hfuzz->pidFile) {
-        if (files_readPidFromFile(hfuzz->pidFile, &hfuzz->pid) == false) {
+    if (hfuzz->linux.pidFile) {
+        if (files_readPidFromFile(hfuzz->linux.pidFile, &hfuzz->linux.pid) == false) {
             LOG_E("Failed to read PID from file");
             return false;
         }
     }
 
     /* If remote pid, resolve command using procfs */
-    if (hfuzz->pid > 0) {
+    if (hfuzz->linux.pid > 0) {
         char procCmd[PATH_MAX] = { 0 };
-        snprintf(procCmd, sizeof(procCmd), "/proc/%d/cmdline", hfuzz->pid);
+        snprintf(procCmd, sizeof(procCmd), "/proc/%d/cmdline", hfuzz->linux.pid);
 
-        hfuzz->pidCmd = malloc(_HF_PROC_CMDLINE_SZ * sizeof(char));
-        if (!hfuzz->pidCmd) {
+        hfuzz->linux.pidCmd = malloc(_HF_PROC_CMDLINE_SZ * sizeof(char));
+        if (!hfuzz->linux.pidCmd) {
             PLOG_E("malloc(%zu) failed", (size_t) _HF_PROC_CMDLINE_SZ);
             return false;
         }
 
         size_t sz =
-            files_readFileToBufMax(procCmd, (uint8_t *) hfuzz->pidCmd, _HF_PROC_CMDLINE_SZ - 1);
+            files_readFileToBufMax(procCmd, (uint8_t *) hfuzz->linux.pidCmd,
+                                   _HF_PROC_CMDLINE_SZ - 1);
         if (sz == 0) {
             LOG_E("Couldn't read '%s'", procCmd);
-            free(hfuzz->pidCmd);
+            free(hfuzz->linux.pidCmd);
             return false;
         }
 
         /* Make human readable */
         for (size_t i = 0; i < (sz - 1); i++) {
-            if (hfuzz->pidCmd[i] == '\0') {
-                hfuzz->pidCmd[i] = ' ';
+            if (hfuzz->linux.pidCmd[i] == '\0') {
+                hfuzz->linux.pidCmd[i] = ' ';
             }
         }
-        hfuzz->pidCmd[sz] = '\0';
+        hfuzz->linux.pidCmd[sz] = '\0';
     }
 
     /*
@@ -444,7 +446,7 @@ bool arch_archInit(honggfuzz_t * hfuzz)
      * will be occupied with sanitizer symbols if 'abort_on_error' flag is set
      */
 #if _HF_MONITOR_SIGABRT
-    hfuzz->numMajorFrames = 14;
+    hfuzz->linux.numMajorFrames = 14;
 #endif
 
     return true;
