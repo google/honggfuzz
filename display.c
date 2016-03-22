@@ -42,19 +42,10 @@
 
 static void display_put(const char *fmt, ...)
 {
-    char buf[1024 * 4];
-
     va_list args;
     va_start(args, fmt);
-    int ret = vsnprintf(buf, sizeof(buf), fmt, args);
+    vdprintf(STDOUT_FILENO, fmt, args);
     va_end(args);
-
-    if (ret <= 0) {
-        return;
-    }
-    if (write(STDOUT_FILENO, buf, ret) == -1) {
-        return;
-    }
 }
 
 static void display_displayLocked(honggfuzz_t * hfuzz)
