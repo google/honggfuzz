@@ -56,25 +56,26 @@ static const char *UNW_ER[] = {
 size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
 {
     size_t num_frames = 0;
-    void *ui = NULL;
 
     unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, __BYTE_ORDER);
     if (!as) {
         LOG_E("[pid='%d'] unw_create_addr_space failed", pid);
-        goto out;
+        return num_frames;
     }
+    DEFER(unw_destroy_addr_space(as));
 
-    ui = _UPT_create(pid);
+    void *ui = _UPT_create(pid);
     if (ui == NULL) {
         LOG_E("[pid='%d'] _UPT_create failed", pid);
-        goto out;
+        return num_frames;
     }
+    DEFER(_UPT_destroy(ui));
 
     unw_cursor_t c;
     int ret = unw_init_remote(&c, as, ui);
     if (ret < 0) {
         LOG_E("[pid='%d'] unw_init_remote failed (%s)", pid, UNW_ER[-ret]);
-        goto out;
+        return num_frames;
     }
 
     for (num_frames = 0; unw_step(&c) > 0 && num_frames < _HF_MAX_FUNCS; num_frames++) {
@@ -86,10 +87,6 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
         } else
             funcs[num_frames].pc = (void *)ip;
     }
-
- out:
-    ui ? _UPT_destroy(ui) : 0;
-    as ? unw_destroy_addr_space(as) : 0;
 
     return num_frames;
 }
