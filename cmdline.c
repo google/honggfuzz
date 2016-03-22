@@ -161,7 +161,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .doneFileIndex = 0,
         .exeFd = -1,
         .clearEnv = false,
-        .envs = {[0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,},
+        .envs = {
+            [0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,
+        },
 
         .state = _HF_STATE_UNSET,
         .bbMapSz = _HF_PERF_BITMAP_SIZE,
@@ -178,19 +180,19 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 
         .dynFileMethod = _HF_DYNFILE_NONE,
         .sanCovCnts = {
-                       .hitBBCnt = 0ULL,
-                       .totalBBCnt = 0ULL,
-                       .dsoCnt = 0ULL,
-                       .iDsoCnt = 0ULL,
-                       .newBBCnt = 0ULL,
-                       .crashesCnt = 0ULL,
-                      },
+            .hitBBCnt = 0ULL,
+            .totalBBCnt = 0ULL,
+            .dsoCnt = 0ULL,
+            .iDsoCnt = 0ULL,
+            .newBBCnt = 0ULL,
+            .crashesCnt = 0ULL,
+        },
 
         .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER,
         .sanOpts = {
-                    .asanOpts = NULL,
-                    .msanOpts = NULL,
-                    .ubsanOpts = NULL,
+            .asanOpts = NULL,
+            .msanOpts = NULL,
+            .ubsanOpts = NULL,
         },
         .useSanCov = false,
         .covMetadata = NULL,
@@ -198,21 +200,21 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 
         /* Linux code */
 	.linux = {
-        .hwCnts = {
-                   .cpuInstrCnt = 0ULL,
-                   .cpuBranchCnt = 0ULL,
-                   .customCnt = 0ULL,
-                   .bbCnt = 0ULL,
-                   .newBBCnt = 0ULL,
-                   },
-        .dynamicCutOffAddr = ~(0ULL),
-        .disableRandomization = true,
-        .ignoreAddr = NULL,
-        .numMajorFrames = 7,
-        .pid = 0,
-        .pidFile = NULL,
-        .pidCmd = NULL,
-	},
+            .hwCnts = {
+                .cpuInstrCnt = 0ULL,
+                .cpuBranchCnt = 0ULL,
+                .customCnt = 0ULL,
+                .bbCnt = 0ULL,
+                .newBBCnt = 0ULL,
+            },
+            .dynamicCutOffAddr = ~(0ULL),
+            .disableRandomization = true,
+            .ignoreAddr = NULL,
+            .numMajorFrames = 7,
+            .pid = 0,
+            .pidFile = NULL,
+            .pidCmd = NULL,
+        },
     };
     /*  *INDENT-ON* */
 

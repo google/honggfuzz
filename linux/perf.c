@@ -52,9 +52,6 @@
 static int32_t perfIntelPtPerfType = -1;
 static int32_t perfIntelBtsPerfType = -1;
 
-__thread size_t perfBloomSz = 0U;
-__thread uint8_t *perfBloom = NULL;
-
 static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
@@ -236,9 +233,6 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return true;
     }
-
-    perfBloom = hfuzz->bbMap;
-    perfBloomSz = hfuzz->bbMapSz;
 
     perfFds->cpuInstrFd = -1;
     perfFds->cpuBranchFd = -1;
