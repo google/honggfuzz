@@ -246,13 +246,13 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"clear_env", no_argument, NULL, 0x101}, "Clear all environment variables before executing the binary"},
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
         {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
+        {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
 
 #if defined(_HF_ARCH_LINUX)
         {{"linux_pid", required_argument, NULL, 'p'}, "Attach to a pid (and its thread group)"},
         {{"linux_file_pid", required_argument, NULL, 'P'}, "Attach to pid (and its thread group) read from file"},
         {{"linux_addr_low_limit", required_argument, NULL, 0x500}, "Address limit (from si.si_addr) below which crashes are not reported, (default: '0')"},
         {{"linux_keep_aslr", no_argument, NULL, 0x501}, "Don't disable ASLR randomization, might be useful with MSAN"},
-        {{"linux_report_msan_umrs", no_argument, NULL, 0x502}, "Report MSAN's UMRS (uninitialized memory access)"},
         {{"linux_perf_ignore_above", required_argument, NULL, 0x503}, "Ignore perf events which report IPs above this address"},
         {{"linux_perf_instr", no_argument, NULL, 0x510}, "Use PERF_COUNT_HW_INSTRUCTIONS perf"},
         {{"linux_perf_branch", no_argument, NULL, 0x511}, "Use PERF_COUNT_HW_BRANCH_INSTRUCTIONS perf"},
@@ -344,6 +344,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         case 0x101:
             hfuzz->clearEnv = true;
             break;
+        case 0x102:
+            hfuzz->msanReportUMRS = true;
+            break;
         case 'p':
             if (util_isANumber(optarg) == false) {
                 LOG_E("-p '%s' is not a number", optarg);
@@ -377,9 +380,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x501:
             hfuzz->linux.disableRandomization = false;
-            break;
-        case 0x502:
-            hfuzz->msanReportUMRS = true;
             break;
         case 0x503:
             hfuzz->linux.dynamicCutOffAddr = strtoull(optarg, NULL, 0);
