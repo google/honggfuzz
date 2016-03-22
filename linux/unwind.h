@@ -24,6 +24,13 @@
 #ifndef _HF_LINUX_UNWIND_H_
 #define _HF_LINUX_UNWIND_H_
 
+#define _HF_MAX_FUNCS 80
+typedef struct {
+    void *pc;
+    char func[_HF_FUNC_NAME_SZ];
+    size_t line;
+} funcs_t;
+
 extern size_t arch_unwindStack(pid_t pid, funcs_t * funcs);
 
 #endif

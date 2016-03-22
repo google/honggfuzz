@@ -312,11 +312,4 @@ typedef struct {
     } linux;
 } fuzzer_t;
 
-#define _HF_MAX_FUNCS 80
-typedef struct {
-    void *pc;
-    char func[_HF_FUNC_NAME_SZ];
-    size_t line;
-} funcs_t;
-
 #endif

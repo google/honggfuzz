@@ -24,6 +24,8 @@
 #ifndef _HF_LINUX_BFD_H_
 #define _HF_LINUX_BFD_H_
 
+#include "unwind.h"
+
 #define _HF_INSTR_SZ 64
 
 #define PACKAGE 1
