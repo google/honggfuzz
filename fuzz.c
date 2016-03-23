@@ -531,6 +531,8 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
                              .bbCnt = 0ULL,
                              .newBBCnt = 0ULL,
                              },
+                  .perfMmapBuf = NULL,
+                  .perfMmapAux = NULL,
                   }
     };
     DEFER(free(fuzzer.dynamicFile));
