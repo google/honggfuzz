@@ -52,6 +52,7 @@
 static int32_t perfIntelPtPerfType = -1;
 static int32_t perfIntelBtsPerfType = -1;
 
+#if defined(PERF_ATTR_SIZE_VER5)
 static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
@@ -92,11 +93,12 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
     }
 }
+#endif                          /* defined(PERF_ATTR_SIZE_VER5) */
 
-static inline void arch_perfMmapParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+static inline void arch_perfMmapParse(honggfuzz_t * hfuzzi UNUSED, fuzzer_t * fuzzer UNUSED)
 {
-    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
 #if defined(PERF_ATTR_SIZE_VER5)
+    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
     if (pem->aux_head == pem->aux_tail) {
         return;
     }
@@ -120,7 +122,7 @@ static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu
                    (uintptr_t) group_fd, (uintptr_t) flags);
 }
 
-static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, pid_t pid, dynFileMethod_t method,
+static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t pid, dynFileMethod_t method,
                           int *perfFd)
 {
     LOG_D("Enabling PERF for PID=%d method=%x", pid, method);
