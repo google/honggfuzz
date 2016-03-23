@@ -95,7 +95,7 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 }
 #endif                          /* defined(PERF_ATTR_SIZE_VER5) */
 
-static inline void arch_perfMmapParse(honggfuzz_t * hfuzzi UNUSED, fuzzer_t * fuzzer UNUSED)
+static inline void arch_perfMmapParse(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
 #if defined(PERF_ATTR_SIZE_VER5)
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
