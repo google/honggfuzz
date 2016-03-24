@@ -122,8 +122,8 @@ static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu
                    (uintptr_t) group_fd, (uintptr_t) flags);
 }
 
-static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t pid, dynFileMethod_t method,
-                          int *perfFd)
+static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t pid,
+                          dynFileMethod_t method, int *perfFd)
 {
     LOG_D("Enabling PERF for PID=%d method=%x", pid, method);
 
