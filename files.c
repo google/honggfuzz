@@ -375,7 +375,7 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
     DEFER(fclose(fBl));
 
     char *lineptr = NULL;
-    // lineptr can be NULL, bit it's fine for free()
+    /* lineptr can be NULL, but it's fine for free() */
     DEFER(free(lineptr));
     size_t n = 0;
     for (;;) {
