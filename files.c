@@ -375,12 +375,13 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
     DEFER(fclose(fBl));
 
     char *lineptr = NULL;
+    // lineptr can be NULL, bit it's fine for free()
+    DEFER(free(lineptr));
     size_t n = 0;
     for (;;) {
         if (getline(&lineptr, &n, fBl) == -1) {
             break;
         }
-        DEFER(free(lineptr));
 
         if ((hfuzz->blacklist =
              realloc(hfuzz->blacklist,
