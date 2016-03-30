@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #define HF_FUZZ_FD 1023
+#define HF_BUF_SIZE (1024 * 1024 * 16)
 
 static ssize_t readFromFd(int fd, uint8_t * buf, size_t len)
 {
@@ -50,33 +51,49 @@ static bool writeToFd(int fd, uint8_t * buf, size_t len)
     return (writtenSz == len);
 }
 
+static ssize_t readFileToBuf(const char *fname, uint8_t * buf, size_t len)
+{
+    int fd = open((char *)fname, O_RDONLY);
+    if (fd == -1) {
+        perror("open");
+        return -1;
+    }
+    ssize_t rsz = readFromFd(fd, buf, len);
+    if (rsz < 0) {
+        close(fd);
+        return -1;
+    }
+    close(fd);
+    return rsz;
+}
+
 int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len);
 
 int main(int argc, char **argv)
 {
+    uint8_t *buf = malloc(HF_BUF_SIZE);
+    if (buf == NULL) {
+        perror("malloc");
+        exit(1);
+    }
+
     for (;;) {
-        uint8_t fname[PATH_MAX];
-        if (readFromFdAll(HF_FUZZ_FD, fname, PATH_MAX) == false) {
+        char fname[PATH_MAX];
+        if (readFromFdAll(HF_FUZZ_FD, (uint8_t *) fname, PATH_MAX) == false) {
             perror("readFromFdAll");
             exit(1);
         }
 
-        int fd = open((char *)fname, O_RDONLY);
-        if (fd == -1) {
-            perror("open");
-            exit(1);
-        }
-
-        uint8_t f[1024 * 1024];
-        ssize_t rsz = readFromFd(fd, f, sizeof(f));
+        ssize_t rsz = readFileToBuf(fname, buf, HF_BUF_SIZE);
         if (rsz < 0) {
-            perror("readFromFd");
             exit(1);
         }
 
-        close(fd);
-
-        LLVMFuzzerTestOneInput(f, rsz);
+        int ret = LLVMFuzzerTestOneInput(buf, rsz);
+        if (ret != 0) {
+            printf("LLVMFuzzerTestOneInpu returned '%d'", ret);
+            exit(1);
+        }
 
         uint8_t z = 'A';
         if (writeToFd(HF_FUZZ_FD, &z, sizeof(z)) == false) {
