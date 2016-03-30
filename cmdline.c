@@ -234,7 +234,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"debug_level", required_argument, NULL, 'd'}, "Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])"},
         {{"extension", required_argument, NULL, 'e'}, "Input file extension (e.g. 'swf'), (default: 'fuzz')"},
         {{"wokspace", required_argument, NULL, 'W'}, "Workspace directory to save crashes & runtime files (default: '.')"},
-        {{"flip_rate", required_argument, NULL, 'r'}, "Maximal flip rate, (default: '0.001')"},
+        {{"mutation_rate", required_argument, NULL, 'r'}, "Maximal mutation rate in relation to file size, (default: '0.001')"},
         {{"wordlist", required_argument, NULL, 'w'}, "Wordlist file (tokens delimited by NUL-bytes)"},
         {{"stackhash_bl", required_argument, NULL, 'B'}, "Stackhashes blacklist file (one entry per line)"},
         {{"mutate_cmd", required_argument, NULL, 'c'}, "External command modifying the input corpus of files, instead of -r/-m parameters"},
