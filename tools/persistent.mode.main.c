@@ -74,31 +74,31 @@ int main(int argc, char **argv)
     uint8_t *buf = malloc(HF_BUF_SIZE);
     if (buf == NULL) {
         perror("malloc");
-        exit(1);
+        _exit(1);
     }
 
     for (;;) {
         char fname[PATH_MAX];
         if (readFromFdAll(HF_FUZZ_FD, (uint8_t *) fname, PATH_MAX) == false) {
             perror("readFromFdAll");
-            exit(1);
+            _exit(1);
         }
 
         ssize_t rsz = readFileToBuf(fname, buf, HF_BUF_SIZE);
         if (rsz < 0) {
-            exit(1);
+            _exit(1);
         }
 
         int ret = LLVMFuzzerTestOneInput(buf, rsz);
         if (ret != 0) {
             printf("LLVMFuzzerTestOneInpu returned '%d'", ret);
-            exit(1);
+            _exit(1);
         }
 
         uint8_t z = 'A';
         if (writeToFd(HF_FUZZ_FD, &z, sizeof(z)) == false) {
             perror("writeToFd");
-            exit(1);
+            _exit(1);
         }
         raise(SIGCONT);
     }
