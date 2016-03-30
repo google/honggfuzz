@@ -316,13 +316,13 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (arch_perfEnable(ptracePid, hfuzz, fuzzer, &perfFds) == false) {
         LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
     }
+    if (kill(childPid, SIGCONT) == -1) {
+        PLOG_F("Restarting PID: %d failed", childPid);
+    }
     if (hfuzz->persistent == true) {
         uint8_t fname[PATH_MAX] = { 0 };
         snprintf((char *)fname, sizeof(fname), "%s", fuzzer->fileName);
         files_writeToFd(persistentFd, fname, sizeof(fname));
-    }
-    if (kill(childPid, SIGCONT) == -1) {
-        PLOG_F("Restarting PID: %d failed", childPid);
     }
 
     for (;;) {
