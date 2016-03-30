@@ -459,7 +459,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     /* Delete .sancov.map file */
-    if (hfuzz->linux.pid == 0) {
+    if (hfuzz->linux.pid == 0 && hfuzz->persistent == false) {
         unlink(covFile);
     }
 
@@ -592,7 +592,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzer->sanCovCnts.dsoCnt = mapsNum;
     fuzzer->sanCovCnts.iDsoCnt = mapsNum - noCovMapsNum;        /* Instrumented DSOs */
 
-    if (hfuzz->linux.pid == 0) {
+    if (hfuzz->linux.pid == 0 && hfuzz->persistent == false) {
         unlink(covFile);
     }
     return true;
@@ -689,7 +689,7 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     /* Successful parsing - update fuzzer worker counters */
     fuzzer->sanCovCnts.hitBBCnt = nBBs;
 
-    if (hfuzz->linux.pid == 0) {
+    if (hfuzz->linux.pid == 0 && hfuzz->persistent == false) {
         unlink(covFile);
     }
     return true;

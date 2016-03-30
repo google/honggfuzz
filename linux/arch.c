@@ -168,7 +168,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 
     args[x++] = NULL;
 
-    LOG_D("Launching '%s' on file '%s'", args[0], fileName);
+    LOG_D("Launching '%s' on file '%s'", args[0], hfuzz->persistent ? "PERSISTENT_MODE" : fileName);
 
     /*
      * Wait for the ptrace to attach
