@@ -11,9 +11,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-bool readFromFd(int fd, uint8_t * buf, size_t len)
+#define HF_FUZZ_FD 1023
+
+static ssize_t readFromFd(int fd, uint8_t * buf, size_t len)
 {
-    size_t readSz = 0;
+    ssize_t readSz = 0;
     while (readSz < len) {
         ssize_t sz = read(fd, &buf[readSz], len - readSz);
         if (sz < 0 && errno == EINTR)
@@ -24,14 +26,19 @@ bool readFromFd(int fd, uint8_t * buf, size_t len)
 
         readSz += sz;
     }
-    return (readSz == len);
+    return len;
 }
 
-bool files_writeToFd(int fd, uint8_t * buf, size_t fileSz)
+static bool readFromFdAll(int fd, uint8_t * buf, size_t len)
 {
-    size_t writtenSz = 0;
-    while (writtenSz < fileSz) {
-        ssize_t sz = write(fd, &buf[writtenSz], fileSz - writtenSz);
+    return (readFromFd(fd, buf, len) == len);
+}
+
+static bool writeToFd(int fd, uint8_t * buf, size_t len)
+{
+    ssize_t writtenSz = 0;
+    while (writtenSz < len) {
+        ssize_t sz = write(fd, &buf[writtenSz], len - writtenSz);
         if (sz < 0 && errno == EINTR)
             continue;
 
@@ -40,7 +47,7 @@ bool files_writeToFd(int fd, uint8_t * buf, size_t fileSz)
 
         writtenSz += sz;
     }
-    return true;
+    return (writtenSz == len);
 }
 
 int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len);
@@ -48,22 +55,22 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len);
 int main(int argc, char **argv)
 {
     for (;;) {
-        char buf[PATH_MAX];
-        if (read(1023, buf, PATH_MAX) != PATH_MAX) {
-            perror("read");
+        uint8_t fname[PATH_MAX];
+        if (readFromFdAll(HF_FUZZ_FD, fname, PATH_MAX) == false) {
+            perror("readFromFdAll");
             exit(1);
         }
 
-        int fd = open(buf, O_RDONLY);
+        int fd = open((char *)fname, O_RDONLY);
         if (fd == -1) {
             perror("open");
             exit(1);
         }
 
         uint8_t f[1024 * 1024];
-        ssize_t rsz = read(fd, f, sizeof(f));
+        ssize_t rsz = readFromFd(fd, f, sizeof(f));
         if (rsz < 0) {
-            perror("read");
+            perror("readFromFd");
             exit(1);
         }
 
@@ -71,9 +78,9 @@ int main(int argc, char **argv)
 
         LLVMFuzzerTestOneInput(f, rsz);
 
-        char z = 'A';
-        if (write(1023, &z, sizeof(z)) != sizeof(z)) {
-            perror("write");
+        uint8_t z = 'A';
+        if (writeToFd(HF_FUZZ_FD, &z, sizeof(z)) == false) {
+            perror("writeToFd");
             exit(1);
         }
         raise(SIGCONT);
