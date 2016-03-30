@@ -320,9 +320,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         PLOG_F("Restarting PID: %d failed", childPid);
     }
     if (hfuzz->persistent == true) {
-        uint8_t fname[PATH_MAX] = { 0 };
-        snprintf((char *)fname, sizeof(fname), "%s", fuzzer->fileName);
-        files_writeToFd(persistentFd, fname, sizeof(fname));
+        files_writeToFd(persistentFd, (uint8_t*)fuzzer->fileName, PATH_MAX);
     }
 
     for (;;) {
