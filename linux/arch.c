@@ -273,8 +273,8 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     /* A long-lived processed could have already exited, and we wouldn't know */
     if (kill(ptracePid, 0) == -1) {
         if (hfuzz->persistent) {
-          fuzzer->pid = 0;
-          return;
+            fuzzer->pid = 0;
+            return;
         }
 
         if (hfuzz->linux.pidFile) {
