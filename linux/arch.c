@@ -250,6 +250,19 @@ static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 }
 
+static bool arch_persistentModeRoundDone(honggfuzz_t * hfuzz)
+{
+    if (hfuzz->persistent == false) {
+        return false;
+    }
+    char z;
+    if (recv(persistentFd, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
+        LOG_D("Persistent mode round finished");
+        return true;
+    }
+    return false;
+}
+
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
@@ -279,7 +292,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         if (hfuzz->linux.pidFile) {
             /* If pid from file, check again for cases of auto-restart daemons that update it */
-            /* 
+            /*
              * TODO: Investigate if we need to delay here, so that target process has
              * enough time to restart. Tricky to answer since is target dependant.
              */
@@ -313,12 +326,8 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     for (;;) {
-        if (hfuzz->persistent) {
-            char z;
-            if (recv(persistentFd, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
-                LOG_D("Fuzz round finished for PID=%d", fuzzer->pid);
-                break;
-            }
+        if (arch_persistentModeRoundDone(hfuzz)) {
+            break;
         }
 
         int status;
