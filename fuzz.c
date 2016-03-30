@@ -40,6 +40,7 @@
 #include <sys/resource.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -57,6 +58,7 @@
 extern char **environ;
 
 static pthread_t fuzz_mainThread;
+__thread pid_t fuzz_persistentPid = 0;
 
 static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
 {
@@ -523,6 +525,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         .dynamicFileSz = 0,
         .dynamicFile = util_Malloc(hfuzz->maxFileSz),
 
+#if defined(_HF_ARCH_LINUX)
         .linux = {
                   .hwCnts = {
                              .cpuInstrCnt = 0ULL,
@@ -534,6 +537,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
                   .perfMmapBuf = NULL,
                   .perfMmapAux = NULL,
                   }
+#endif                          // defined(_HF_ARCH_LINUX)
     };
     DEFER(free(fuzzer.dynamicFile));
 
@@ -585,20 +589,28 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
         }
     }
 
-    fuzzer.pid = arch_fork(hfuzz);
-    if (fuzzer.pid == -1) {
-        PLOG_F("Couldn't fork");
-        exit(EXIT_FAILURE);
+    if (hfuzz->persistent == true) {
+        fuzzer.pid = fuzz_persistentPid;
     }
-
-    if (!fuzzer.pid) {
-        if (!fuzz_prepareExecve(hfuzz, fuzzer.fileName)) {
-            LOG_E("fuzz_prepareExecve() failed");
-            exit(EXIT_FAILURE);
+    if (fuzzer.pid == 0) {
+        fuzzer.pid = arch_fork(hfuzz);
+        if (fuzzer.pid == -1) {
+            PLOG_F("Couldn't fork");
         }
-        if (!arch_launchChild(hfuzz, fuzzer.fileName)) {
-            LOG_E("Error launching child process");
-            exit(EXIT_FAILURE);
+
+        if (!fuzzer.pid) {
+            if (!fuzz_prepareExecve(hfuzz, fuzzer.fileName)) {
+                LOG_E("fuzz_prepareExecve() failed");
+                exit(EXIT_FAILURE);
+            }
+            if (!arch_launchChild(hfuzz, fuzzer.fileName)) {
+                LOG_E("Error launching child process");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        if (hfuzz->persistent == true) {
+            fuzz_persistentPid = fuzzer.pid;
         }
     }
 
@@ -612,6 +624,13 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     }
     if (hfuzz->useSanCov) {
         fuzz_sanCovFeedback(hfuzz, &fuzzer);
+    }
+    /*
+     * If it's persistent fuzzing and the process crashed/exited, make sure it's
+     * restarted
+     */
+    if (hfuzz->persistent) {
+        fuzz_persistentPid = fuzzer.pid;
     }
 
     if (hfuzz->useVerifier && (fuzzer.crashFileName[0] != 0) && fuzzer.backtrace) {
@@ -630,6 +649,10 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
 static void *fuzz_threadNew(void *arg)
 {
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
+
+    if (arch_archThreadInit(hfuzz) == false) {
+        LOG_F("Could not initialize the thread");
+    }
 
     for (;;) {
         /* Check if dry run mode with verifier enabled */

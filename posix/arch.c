@@ -193,3 +193,8 @@ bool arch_archInit(honggfuzz_t * hfuzz UNUSED)
 {
     return true;
 }
+
+bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED)
+{
+    return true;
+}

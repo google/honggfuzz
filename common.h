@@ -249,6 +249,7 @@ typedef struct {
     int exeFd;
     bool clearEnv;
     char *envs[128];
+    bool persistent;
 
     fuzzState_t state;
     uint8_t *bbMap;

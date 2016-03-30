@@ -717,3 +717,8 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     // not be forwarded to other crash
     // handlers
 }
+
+bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED)
+{
+    return true;
+}

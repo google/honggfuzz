@@ -164,6 +164,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .envs = {
             [0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,
         },
+        .persistent = false,
 
         .state = _HF_STATE_UNSET,
         .bbMapSz = _HF_PERF_BITMAP_SIZE,
@@ -247,6 +248,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
         {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
         {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
+        {{"persistent", no_argument, NULL, 0x103}, "Enable persistent fuzzing"},
 
 #if defined(_HF_ARCH_LINUX)
         {{"linux_pid", required_argument, NULL, 'p'}, "Attach to a pid (and its thread group)"},
@@ -347,6 +349,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         case 0x102:
             hfuzz->msanReportUMRS = true;
             break;
+        case 0x103:
+            hfuzz->persistent = true;
+            break;
         case 'p':
             if (util_isANumber(optarg) == false) {
                 LOG_E("-p '%s' is not a number", optarg);
@@ -420,9 +425,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         return false;
     }
 
-    if (!hfuzz->fuzzStdin && !checkFor_FILE_PLACEHOLDER(hfuzz->cmdline)) {
+    if (!hfuzz->fuzzStdin && !hfuzz->persistent && !checkFor_FILE_PLACEHOLDER(hfuzz->cmdline)) {
         LOG_E("You must specify '" _HF_FILE_PLACEHOLDER
-              "' when the -s (stdin fuzzing) option is not set");
+              "' when the -s (stdin fuzzing) or --persistent options are not set");
         return false;
     }
 

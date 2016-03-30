@@ -36,6 +36,7 @@
 #include <sys/personality.h>
 #include <sys/ptrace.h>
 #include <sys/prctl.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
@@ -63,21 +64,31 @@
 #endif
 
 /* Last known pid of remote long-lived process to be monitored */
-static pid_t lastRemotePid = -1;
+static __thread pid_t lastRemotePid = -1;
+static __thread int persistentFd = -1;
 
-static inline bool arch_shouldAttach(honggfuzz_t * hfuzz)
+static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    if (hfuzz->linux.pid == 0) {
-        return true;
+    if (hfuzz->persistent && lastRemotePid == fuzzer->pid) {
+        return false;
     }
-    if (hfuzz->linux.pid > 0 && lastRemotePid != hfuzz->linux.pid) {
-        return true;
+    if (hfuzz->linux.pid > 0 && lastRemotePid == hfuzz->linux.pid) {
+        return false;
     }
-    return false;
+    return true;
 }
 
 pid_t arch_fork(honggfuzz_t * hfuzz)
 {
+    int sv[2];
+    if (hfuzz->persistent == true) {
+        close(persistentFd);
+        if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1) {
+            LOG_F("socketpair(AF_UNIX, SOCK_STREAM)");
+            return -1;
+        }
+    }
+
     /*
      * We need to wait for the child to finish with wait() in case we're fuzzing
      * an external process
@@ -86,11 +97,32 @@ pid_t arch_fork(honggfuzz_t * hfuzz)
     if (hfuzz->linux.pid) {
         clone_flags = SIGCHLD;
     }
-    return syscall(__NR_clone, (uintptr_t) clone_flags, NULL, NULL, NULL, (uintptr_t) 0);
+
+    pid_t pid = syscall(__NR_clone, (uintptr_t) clone_flags, NULL, NULL, NULL, (uintptr_t) 0);
+
+    if (hfuzz->persistent == true) {
+        if (pid == -1) {
+            close(sv[0]);
+            close(sv[1]);
+        }
+        if (pid == 0) {
+            if (dup2(sv[1], 1023) == -1) {
+                LOG_F("dup2('%d', '%d')", sv[1], 1023);
+            }
+            close(sv[0]);
+            close(sv[1]);
+        }
+        if (pid > 0) {
+            persistentFd = sv[0];
+            close(sv[1]);
+        }
+    }
+    return pid;
 }
 
 bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 {
+
     /*
      * Kill the children when fuzzer dies (e.g. due to Ctrl+C)
      */
@@ -117,15 +149,17 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 #define ARGS_MAX 512
     char *args[ARGS_MAX + 2];
     char argData[PATH_MAX] = { 0 };
-    int x;
+    int x = 0;
 
     for (x = 0; x < ARGS_MAX && hfuzz->cmdline[x]; x++) {
-        if (!hfuzz->fuzzStdin && strcmp(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
-            args[x] = fileName;
-        } else if (!hfuzz->fuzzStdin && strstr(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER)) {
+        if (!hfuzz->fuzzStdin && !hfuzz->persistent
+            && strcmp(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
+            args[x] = (char *)fileName;
+        } else if (!hfuzz->fuzzStdin && !hfuzz->persistent
+                   && strstr(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER)) {
             const char *off = strstr(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER);
-            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - hfuzz->cmdline[x]), hfuzz->cmdline[x],
-                     fileName);
+            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - hfuzz->cmdline[x]),
+                     hfuzz->cmdline[x], fileName);
             args[x] = argData;
         } else {
             args[x] = hfuzz->cmdline[x];
@@ -226,22 +260,23 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_F("Couldn't set timer");
     }
 
-    if (arch_ptraceWaitForPidStop(childPid) == false) {
+    if (hfuzz->persistent == false && arch_ptraceWaitForPidStop(childPid) == false) {
         LOG_F("PID %d not in a stopped state", childPid);
     }
-    LOG_D("PID: %d is in a stopped state now", childPid);
 
-    if (arch_shouldAttach(hfuzz) == true) {
+    if (arch_shouldAttach(hfuzz, fuzzer) == true) {
         if (arch_ptraceAttach(ptracePid) == false) {
             LOG_F("arch_ptraceAttach(pid=%d) failed", ptracePid);
         }
-        /* In case we fuzz a long-lived process attach to it once only */
-        if (ptracePid != childPid) {
-            lastRemotePid = ptracePid;
-        }
+        lastRemotePid = ptracePid;
     }
     /* A long-lived processed could have already exited, and we wouldn't know */
     if (kill(ptracePid, 0) == -1) {
+        if (hfuzz->persistent) {
+          fuzzer->pid = 0;
+          return;
+        }
+
         if (hfuzz->linux.pidFile) {
             /* If pid from file, check again for cases of auto-restart daemons that update it */
             /* 
@@ -268,13 +303,26 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (arch_perfEnable(ptracePid, hfuzz, fuzzer, &perfFds) == false) {
         LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
     }
+    if (hfuzz->persistent == true) {
+        uint8_t fname[PATH_MAX] = { 0 };
+        snprintf((char *)fname, sizeof(fname), "%s", fuzzer->fileName);
+        files_writeToFd(persistentFd, fname, sizeof(fname));
+    }
     if (kill(childPid, SIGCONT) == -1) {
         PLOG_F("Restarting PID: %d failed", childPid);
     }
 
     for (;;) {
+        if (hfuzz->persistent) {
+            char z;
+            if (recv(persistentFd, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
+                LOG_D("Fuzz round finished for PID=%d", fuzzer->pid);
+                break;
+            }
+        }
+
         int status;
-        pid_t pid = wait4(-1, &status, __WALL | __WNOTHREAD, NULL);
+        pid_t pid = wait4(-1, &status, __WALL | __WNOTHREAD | WUNTRACED, NULL);
         if (pid == -1 && errno == EINTR) {
             if (hfuzz->tmOut) {
                 arch_checkTimeLimit(hfuzz, fuzzer);
@@ -330,6 +378,10 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     arch_removeTimer(&timerid);
     arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
     sancov_Analyze(hfuzz, fuzzer);
+
+    if (hfuzz->persistent && kill(fuzzer->pid, 0) == ESRCH) {
+        fuzzer->pid = 0;
+    }
 }
 
 bool arch_archInit(honggfuzz_t * hfuzz)
@@ -448,5 +500,10 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     hfuzz->linux.numMajorFrames = 14;
 #endif
 
+    return true;
+}
+
+bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED)
+{
     return true;
 }
