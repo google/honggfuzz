@@ -311,6 +311,8 @@ typedef struct {
         uint8_t *perfMmapBuf;
         uint8_t *perfMmapAux;
         hwcnt_t hwCnts;
+        pid_t attachedPid;
+        int persistentSock;
     } linux;
 } fuzzer_t;
 

@@ -254,7 +254,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     return true;
 }
 
-pid_t arch_fork(honggfuzz_t * hfuzz UNUSED)
+pid_t arch_fork(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
     return fork();
 }

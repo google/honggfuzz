@@ -249,7 +249,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, i
 
     }
 
-    pid_t pid = arch_fork(hfuzz);
+    pid_t pid = fork();
     if (pid == -1) {
         PLOG_E("Couldn't fork");
         return false;
@@ -342,7 +342,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             return false;
         }
 
-        vFuzzer.pid = arch_fork(hfuzz);
+        vFuzzer.pid = arch_fork(hfuzz, &vFuzzer);
         if (vFuzzer.pid == -1) {
             PLOG_F("Couldn't fork");
             return false;
@@ -575,7 +575,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     fuzzer->pid = fuzzer->persistentPid;
     if (fuzzer->pid == 0) {
-        fuzzer->pid = arch_fork(hfuzz);
+        fuzzer->pid = arch_fork(hfuzz, fuzzer);
         if (fuzzer->pid == -1) {
             PLOG_F("Couldn't fork");
         }
@@ -592,7 +592,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
 
         if (hfuzz->persistent) {
-          fuzzer->persistentPid = fuzzer->pid;
+            fuzzer->persistentPid = fuzzer->pid;
         }
     }
 
@@ -629,6 +629,9 @@ static void *fuzz_threadNew(void *arg)
         .pid = 0,
         .persistentPid = 0,
         .dynamicFile = util_Malloc(hfuzz->maxFileSz),
+
+        .linux.attachedPid = 0,
+        .linux.persistentSock = -1,
     };
     DEFER(free(fuzzer.dynamicFile));
 

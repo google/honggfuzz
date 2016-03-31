@@ -63,26 +63,22 @@
 #define ABORT_FLAG        "abort_on_error=0"
 #endif
 
-/* Last known pid of remote long-lived process to be monitored */
-static __thread pid_t lastRemotePid = -1;
-static __thread int persistentFd = -1;
-
 static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    if (hfuzz->persistent && lastRemotePid == fuzzer->pid) {
+    if (hfuzz->persistent && fuzzer->linux.attachedPid == fuzzer->pid) {
         return false;
     }
-    if (hfuzz->linux.pid > 0 && lastRemotePid == hfuzz->linux.pid) {
+    if (hfuzz->linux.pid > 0 && fuzzer->linux.attachedPid == hfuzz->linux.pid) {
         return false;
     }
     return true;
 }
 
-pid_t arch_fork(honggfuzz_t * hfuzz)
+pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     int sv[2];
     if (hfuzz->persistent == true) {
-        close(persistentFd);
+        close(fuzzer->linux.persistentSock);
         if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1) {
             LOG_F("socketpair(AF_UNIX, SOCK_STREAM)");
             return -1;
@@ -113,7 +109,7 @@ pid_t arch_fork(honggfuzz_t * hfuzz)
             close(sv[1]);
         }
         if (pid > 0) {
-            persistentFd = sv[0];
+            fuzzer->linux.persistentSock = sv[0];
             close(sv[1]);
         }
     }
@@ -250,13 +246,13 @@ static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 }
 
-static bool arch_persistentModeRoundDone(honggfuzz_t * hfuzz)
+static bool arch_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     if (hfuzz->persistent == false) {
         return false;
     }
     char z;
-    if (recv(persistentFd, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
+    if (recv(fuzzer->linux.persistentSock, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
         LOG_D("Persistent mode round finished");
         return true;
     }
@@ -281,15 +277,10 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (arch_ptraceAttach(ptracePid) == false) {
             LOG_F("arch_ptraceAttach(pid=%d) failed", ptracePid);
         }
-        lastRemotePid = ptracePid;
+        fuzzer->linux.attachedPid = ptracePid;
     }
     /* A long-lived processed could have already exited, and we wouldn't know */
     if (kill(ptracePid, 0) == -1) {
-        if (hfuzz->persistent) {
-            fuzzer->persistentPid = 0;
-            return;
-        }
-
         if (hfuzz->linux.pidFile) {
             /* If pid from file, check again for cases of auto-restart daemons that update it */
             /*
@@ -307,8 +298,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                     ptracePid = hfuzz->linux.pid;
                 }
             }
-        } else {
-            PLOG_F("Liveness of %d questioned - abort", ptracePid);
         }
     }
 
@@ -320,11 +309,11 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         PLOG_F("Restarting PID: %d failed", childPid);
     }
     if (hfuzz->persistent == true) {
-        files_writeToFd(persistentFd, (uint8_t *) fuzzer->fileName, PATH_MAX);
+        files_writeToFd(fuzzer->linux.persistentSock, (uint8_t *) fuzzer->fileName, PATH_MAX);
     }
 
     for (;;) {
-        if (arch_persistentModeRoundDone(hfuzz)) {
+        if (arch_persistentModeRoundDone(hfuzz, fuzzer)) {
             break;
         }
 
