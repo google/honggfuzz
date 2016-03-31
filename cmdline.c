@@ -200,7 +200,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .msanReportUMRS = false,
 
         /* Linux code */
-	.linux = {
+        .linux = {
             .hwCnts = {
                 .cpuInstrCnt = 0ULL,
                 .cpuBranchCnt = 0ULL,
@@ -248,11 +248,11 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"save_all", no_argument, NULL, 'u'}, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames"},
         {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
         {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
-        {{"persistent", no_argument, NULL, 0x103}, "Enable persistent fuzzing"},
+        {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with tools/persistent.mode.main.c)"},
 
 #if defined(_HF_ARCH_LINUX)
         {{"linux_pid", required_argument, NULL, 'p'}, "Attach to a pid (and its thread group)"},
-        {{"linux_file_pid", required_argument, NULL, 'P'}, "Attach to pid (and its thread group) read from file"},
+        {{"linux_file_pid", required_argument, NULL, 0x502}, "Attach to pid (and its thread group) read from file"},
         {{"linux_addr_low_limit", required_argument, NULL, 0x500}, "Address limit (from si.si_addr) below which crashes are not reported, (default: '0')"},
         {{"linux_keep_aslr", no_argument, NULL, 0x501}, "Don't disable ASLR randomization, might be useful with MSAN"},
         {{"linux_perf_ignore_above", required_argument, NULL, 0x503}, "Ignore perf events which report IPs above this address"},
@@ -276,7 +276,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     const char *logfile = NULL;
     int opt_index = 0;
     for (;;) {
-        int c = getopt_long(argc, argv, "-?hqvVsuf:d:e:W:r:c:F:t:R:n:N:l:p:P:g:E:w:B:C", opts,
+        int c = getopt_long(argc, argv, "-?hqvVsuPf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:C", opts,
                             &opt_index);
         if (c < 0)
             break;
@@ -349,7 +349,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         case 0x102:
             hfuzz->msanReportUMRS = true;
             break;
-        case 0x103:
+        case 'P':
             hfuzz->persistent = true;
             break;
         case 'p':
@@ -363,7 +363,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
                 return false;
             }
             break;
-        case 'P':
+        case 0x502:
             hfuzz->linux.pidFile = optarg;
             break;
         case 'E':
