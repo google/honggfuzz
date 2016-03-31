@@ -73,7 +73,7 @@ static bool fuzz_prepareExecve(honggfuzz_t * hfuzz, const char *fileName)
     /*
      * Set timeout (prof), real timeout (2*prof), and rlimit_cpu (2*prof)
      */
-    if (hfuzz->tmOut) {
+    if (hfuzz->persistent == false && hfuzz->tmOut) {
         struct itimerval it;
 
         /*
