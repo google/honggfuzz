@@ -192,7 +192,7 @@ static void arch_removeTimer(timer_t * timerid)
 {
     const struct itimerspec ts = {
         .it_value = {.tv_sec = 0,.tv_nsec = 0},
-        .it_interval = {.tv_sec = 0,.tv_nsec = 000000000,},
+        .it_interval = {.tv_sec = 0,.tv_nsec = 0,},
     };
     if (timer_settime(*timerid, 0, &ts, NULL) == -1) {
         PLOG_E("timer_settime(disarm)");

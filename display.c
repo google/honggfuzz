@@ -88,8 +88,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
 
     display_put("Fuzzing threads: " ESC_BOLD "%zu" ESC_RESET "\n", hfuzz->threadsMax);
-    display_put("Execs per second: " ESC_BOLD "%zu" ESC_RESET " (avg: " ESC_BOLD "%zu" ESC_RESET
-                ")\n", exec_per_sec, elapsed ? (curr_exec_cnt / elapsed) : 0);
+    display_put("Execs (iterations) per second: " ESC_BOLD "%zu" ESC_RESET " (avg: " ESC_BOLD "%zu"
+                ESC_RESET ")\n", exec_per_sec, elapsed ? (curr_exec_cnt / elapsed) : 0);
 
     /* If dry run, print also the input file count */
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
