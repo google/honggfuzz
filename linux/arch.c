@@ -49,12 +49,13 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 
+#include "files.h"
 #include "linux/perf.h"
 #include "linux/ptrace_utils.h"
 #include "log.h"
 #include "sancov.h"
+#include "subproc.h"
 #include "util.h"
-#include "files.h"
 
 /* Common sanitizer flags */
 #if _HF_MONITOR_SIGABRT
@@ -334,6 +335,9 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (hfuzz->persistent && pid == fuzzer->persistentPid
             && (WIFEXITED(status) || WIFSIGNALED(status))) {
             fuzzer->persistentPid = 0;
+            char statusStr[4096];
+            LOG_W("Persistent mode: PID %d exited with status: %s", pid,
+                  subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
             break;
         }
         if (ptracePid == childPid) {

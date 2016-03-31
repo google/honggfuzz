@@ -592,6 +592,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
 
         if (hfuzz->persistent) {
+            LOG_I("Persistent mode: Launched new persistent PID: %d", (int)fuzzer->pid);
             fuzzer->persistentPid = fuzzer->pid;
         }
     }
@@ -623,6 +624,8 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 static void *fuzz_threadNew(void *arg)
 {
+    LOG_I("Launched new fuzzing thread");
+
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
 
     fuzzer_t fuzzer = {
