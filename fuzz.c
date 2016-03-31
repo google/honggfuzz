@@ -590,6 +590,10 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 exit(EXIT_FAILURE);
             }
         }
+
+        if (hfuzz->persistent) {
+          fuzzer->persistentPid = fuzzer->pid;
+        }
     }
 
     LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
