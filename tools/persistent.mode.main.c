@@ -37,7 +37,7 @@ NO_SAN static inline bool readFromFdAll(int fd, uint8_t * buf, size_t len)
     return (readFromFd(fd, buf, len) == len);
 }
 
-static bool writeToFd(int fd, uint8_t * buf, size_t len)
+NO_SAN static bool writeToFd(int fd, uint8_t * buf, size_t len)
 {
     ssize_t writtenSz = 0;
     while (writtenSz < len) {
@@ -80,9 +80,10 @@ NO_SAN int main(int argc, char **argv)
     }
 
     for (;;) {
+        /* Receive file-name from the parent (len == PATH_MAX) */
         char fname[PATH_MAX];
         if (readFromFdAll(HF_FUZZ_FD, (uint8_t *) fname, PATH_MAX) == false) {
-            perror("readFromFdAll");
+            fprintf(stderr, "readFromFdAll()");
             _exit(1);
         }
 
@@ -97,11 +98,17 @@ NO_SAN int main(int argc, char **argv)
             _exit(1);
         }
 
+        /*
+         * Send the 'done' marker to the parent */
         uint8_t z = 'A';
         if (writeToFd(HF_FUZZ_FD, &z, sizeof(z)) == false) {
-            perror("writeToFd");
+            fprintf(stderr, "readFromFdAll()");
             _exit(1);
         }
+        /*
+         * Inform the parent that we're done, so it can break out of its wait()
+         * sleep
+         * */
         raise(SIGCONT);
     }
 }
