@@ -38,10 +38,11 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "log.h"
 #include "files.h"
-#include "util.h"
+#include "log.h"
 #include "sancov.h"
+#include "subproc.h"
+#include "util.h"
 
 #ifdef __ANDROID__
 #ifndef WIFCONTINUED
@@ -181,7 +182,10 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 #define __WALL 0
 #endif
         while (wait4(fuzzer->pid, &status, __WALL, NULL) != fuzzer->pid) ;
-        LOG_D("Process (pid %d) came back with status %d", fuzzer->pid, status);
+
+        char strStatus[4096];
+        LOG_D("Process (pid %d) came back with status: %s", fuzzer->pid,
+              subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
 
         if (arch_analyzeSignal(hfuzz, status, fuzzer)) {
             return;
