@@ -630,7 +630,7 @@ static void *fuzz_threadNew(void *arg)
         .persistentPid = 0,
         .dynamicFile = util_Malloc(hfuzz->maxFileSz),
 
-        .linux.timerId = 0,
+        .linux.timerId = (timer_t) 0,
         .linux.attachedPid = 0,
         .linux.persistentSock = -1,
     };
