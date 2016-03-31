@@ -67,7 +67,35 @@ const char *subproc_StatusToStr(int status, char *str, size_t len)
     if (WSTOPSIG(status) == SIGTRAP && __LINUX_WPTRACEEVENT(status) != 0) {
         switch (__LINUX_WPTRACEEVENT(status)) {
         case 1:                /* PTRACE_EVENT_FORK */
-            snprintf(str, len, "EVENT (Linux) with signal: %d (%s)", WSTOPSIG(status),
+            snprintf(str, len, "EVENT (Linux) - fork - with signal: %d (%s)", WSTOPSIG(status),
+                     strsignal(WSTOPSIG(status)));
+            return str;
+        case 2:                /* PTRACE_EVENT_VFORK */
+            snprintf(str, len, "EVENT (Linux) - vfork - with signal: %d (%s)", WSTOPSIG(status),
+                     strsignal(WSTOPSIG(status)));
+            return str;
+        case 3:                /* PTRACE_EVENT_CLONE */
+            snprintf(str, len, "EVENT (Linux) - clone - with signal: %d (%s)", WSTOPSIG(status),
+                     strsignal(WSTOPSIG(status)));
+            return str;
+        case 4:                /* PTRACE_EVENT_EXEC */
+            snprintf(str, len, "EVENT (Linux) - exec - with signal: %d (%s)", WSTOPSIG(status),
+                     strsignal(WSTOPSIG(status)));
+            return str;
+        case 5:                /* PTRACE_EVENT_VFORK_DONE */
+            snprintf(str, len, "EVENT (Linux) - vfork_done - with signal: %d (%s)",
+                     WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+            return str;
+        case 6:                /* PTRACE_EVENT_EXIT */
+            snprintf(str, len, "EVENT (Linux) - exit - with signal: %d (%s)", WSTOPSIG(status),
+                     strsignal(WSTOPSIG(status)));
+            return str;
+        case 7:                /* PTRACE_EVENT_SECCOMP */
+            snprintf(str, len, "EVENT (Linux) - seccomp - with signal: %d (%s)", WSTOPSIG(status),
+                     strsignal(WSTOPSIG(status)));
+            return str;
+        case 128:              /* PTRACE_EVENT_STOP */
+            snprintf(str, len, "EVENT (Linux) - stop - with signal: %d (%s)", WSTOPSIG(status),
                      strsignal(WSTOPSIG(status)));
             return str;
         default:

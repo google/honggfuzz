@@ -328,14 +328,16 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (pid == -1) {
             PLOG_F("wait4() failed");
         }
-        LOG_D("PID '%d' returned with status '%d'", pid, status);
+
+        char statusStr[4096];
+        LOG_D("PID '%d' returned with status: %s", pid,
+              subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
 
         arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->linux.hwCnts.customCnt);
 
         if (hfuzz->persistent && pid == fuzzer->persistentPid
             && (WIFEXITED(status) || WIFSIGNALED(status))) {
             fuzzer->persistentPid = 0;
-            char statusStr[4096];
             LOG_W("Persistent mode: PID %d exited with status: %s", pid,
                   subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
             break;
