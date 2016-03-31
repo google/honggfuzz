@@ -289,8 +289,9 @@ typedef struct {
 
 typedef struct {
     pid_t pid;
+    pid_t persistentPid;
     int64_t timeStartedMillis;
-    char origFileName[PATH_MAX];
+    const char *origFileName;
     char fileName[PATH_MAX];
     char crashFileName[PATH_MAX];
     uint64_t pc;
@@ -300,16 +301,16 @@ typedef struct {
     char report[_HF_REPORT_SIZE];
     bool mainWorker;
     float flipRate;
-
-    sancovcnt_t sanCovCnts;
     uint8_t *dynamicFile;
     size_t dynamicFileSz;
 
+    sancovcnt_t sanCovCnts;
+
     struct {
         /* For Linux code */
-        hwcnt_t hwCnts;
         uint8_t *perfMmapBuf;
         uint8_t *perfMmapAux;
+        hwcnt_t hwCnts;
     } linux;
 } fuzzer_t;
 

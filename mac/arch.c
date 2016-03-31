@@ -718,7 +718,7 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     // handlers
 }
 
-bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED)
+bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
     return true;
 }

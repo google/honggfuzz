@@ -29,7 +29,7 @@
 
 extern bool files_init(honggfuzz_t * hfuzz);
 
-extern size_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz);
+extern ssize_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz);
 
 extern bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flags);
 
@@ -37,13 +37,13 @@ extern bool files_writeToFd(int fd, uint8_t * buf, size_t fileSz);
 
 extern bool files_writeStrToFd(int fd, char *str);
 
-extern size_t files_readFromFd(int fd, uint8_t * buf, size_t fileSz);
+extern ssize_t files_readFromFd(int fd, uint8_t * buf, size_t fileSz);
 
 extern bool files_writePatternToFd(int fd, off_t size, unsigned char p);
 
 extern bool files_exists(char *fileName);
 
-extern char *files_basename(char *fileName);
+extern const char *files_basename(char *fileName);
 
 extern bool files_parseDictionary(honggfuzz_t * hfuzz);
 

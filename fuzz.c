@@ -57,7 +57,6 @@
 extern char **environ;
 
 static pthread_t fuzz_mainThread;
-__thread pid_t fuzz_persistentPid = 0;
 
 static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
 {
@@ -499,51 +498,39 @@ static void fuzz_setState(honggfuzz_t * hfuzz, fuzzState_t state)
     ATOMIC_SET(hfuzz->state, state);
 }
 
-static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
+static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    fuzzer_t fuzzer = {
-        .pid = 0,
-        .timeStartedMillis = util_timeNowMillis(),
-        .crashFileName = {0},
-        .pc = 0ULL,
-        .backtrace = 0ULL,
-        .access = 0ULL,
-        .exception = 0,
-        .report = {'\0'},
-        .mainWorker = true,
-        .flipRate = hfuzz->origFlipRate,
+    fuzzer->pid = 0;
+    fuzzer->timeStartedMillis = util_timeNowMillis();
+    fuzzer->crashFileName[0] = '\0';
+    fuzzer->pc = 0ULL;
+    fuzzer->backtrace = 0ULL;
+    fuzzer->access = 0ULL;
+    fuzzer->exception = 0;
+    fuzzer->report[0] = '\0';
+    fuzzer->mainWorker = true;
+    fuzzer->origFileName = "DYNAMIC";
+    fuzzer->flipRate = hfuzz->origFlipRate;
+    fuzzer->dynamicFileSz = 0;
 
-        .sanCovCnts = {
-                       .hitBBCnt = 0ULL,
-                       .totalBBCnt = 0ULL,
-                       .dsoCnt = 0ULL,
-                       .iDsoCnt = 0ULL,
-                       .newBBCnt = 0ULL,
-                       .crashesCnt = 0ULL,
-                       },
-        .dynamicFileSz = 0,
-        .dynamicFile = util_Malloc(hfuzz->maxFileSz),
+    fuzzer->sanCovCnts.hitBBCnt = 0ULL;
+    fuzzer->sanCovCnts.totalBBCnt = 0ULL;
+    fuzzer->sanCovCnts.dsoCnt = 0ULL;
+    fuzzer->sanCovCnts.newBBCnt = 0ULL;
+    fuzzer->sanCovCnts.crashesCnt = 0ULL;
 
-#if defined(_HF_ARCH_LINUX)
-        .linux = {
-                  .hwCnts = {
-                             .cpuInstrCnt = 0ULL,
-                             .cpuBranchCnt = 0ULL,
-                             .customCnt = 0ULL,
-                             .bbCnt = 0ULL,
-                             .newBBCnt = 0ULL,
-                             },
-                  .perfMmapBuf = NULL,
-                  .perfMmapAux = NULL,
-                  }
-#endif                          // defined(_HF_ARCH_LINUX)
-    };
-    DEFER(free(fuzzer.dynamicFile));
+    fuzzer->linux.hwCnts.cpuInstrCnt = 0ULL;
+    fuzzer->linux.hwCnts.cpuBranchCnt = 0ULL;
+    fuzzer->linux.hwCnts.customCnt = 0ULL;
+    fuzzer->linux.hwCnts.bbCnt = 0ULL;
+    fuzzer->linux.hwCnts.newBBCnt = 0ULL;
+    fuzzer->linux.perfMmapBuf = NULL;
+    fuzzer->linux.perfMmapAux = NULL;
 
     size_t rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
 
     /* If dry run mode, pick the next file and not a random one */
-    if (fuzzer.flipRate == 0.0L && hfuzz->useVerifier) {
+    if (fuzzer->flipRate == 0.0L && hfuzz->useVerifier) {
         rnd_index = ATOMIC_POST_INC(hfuzz->lastFileIndex);
     }
 
@@ -561,84 +548,69 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz)
     }
 
     fuzzState_t state = fuzz_getState(hfuzz);
-    if (state == _HF_STATE_DYNAMIC_MAIN) {
-        strncpy(fuzzer.origFileName, "DYNAMIC", PATH_MAX);
-    } else {
-        strncpy(fuzzer.origFileName, files_basename(hfuzz->files[rnd_index]), PATH_MAX);
+    if (state != _HF_STATE_DYNAMIC_MAIN) {
+        fuzzer->origFileName = files_basename(hfuzz->files[rnd_index]);
     }
 
-    fuzz_getFileName(hfuzz, fuzzer.fileName);
+    fuzz_getFileName(hfuzz, fuzzer->fileName);
 
     if (state == _HF_STATE_DYNAMIC_MAIN) {
-        if (!fuzz_prepareFileDynamically(hfuzz, &fuzzer)) {
+        if (!fuzz_prepareFileDynamically(hfuzz, fuzzer)) {
             exit(EXIT_FAILURE);
         }
     } else if (state == _HF_STATE_DYNAMIC_PRE) {
-        fuzzer.flipRate = 0.0f;
-        if (!fuzz_prepareFile(hfuzz, &fuzzer, rnd_index)) {
+        fuzzer->flipRate = 0.0f;
+        if (!fuzz_prepareFile(hfuzz, fuzzer, rnd_index)) {
             exit(EXIT_FAILURE);
         }
     } else if (hfuzz->externalCommand != NULL) {
-        if (!fuzz_prepareFileExternally(hfuzz, &fuzzer, rnd_index)) {
+        if (!fuzz_prepareFileExternally(hfuzz, fuzzer, rnd_index)) {
             exit(EXIT_FAILURE);
         }
     } else {
-        if (!fuzz_prepareFile(hfuzz, &fuzzer, rnd_index)) {
+        if (!fuzz_prepareFile(hfuzz, fuzzer, rnd_index)) {
             exit(EXIT_FAILURE);
         }
     }
 
-    if (hfuzz->persistent == true) {
-        fuzzer.pid = fuzz_persistentPid;
-    }
-    if (fuzzer.pid == 0) {
-        fuzzer.pid = arch_fork(hfuzz);
-        if (fuzzer.pid == -1) {
+    fuzzer->pid = fuzzer->persistentPid;
+    if (fuzzer->pid == 0) {
+        fuzzer->pid = arch_fork(hfuzz);
+        if (fuzzer->pid == -1) {
             PLOG_F("Couldn't fork");
         }
 
-        if (!fuzzer.pid) {
-            if (!fuzz_prepareExecve(hfuzz, fuzzer.fileName)) {
+        if (!fuzzer->pid) {
+            if (!fuzz_prepareExecve(hfuzz, fuzzer->fileName)) {
                 LOG_E("fuzz_prepareExecve() failed");
                 exit(EXIT_FAILURE);
             }
-            if (!arch_launchChild(hfuzz, fuzzer.fileName)) {
+            if (!arch_launchChild(hfuzz, fuzzer->fileName)) {
                 LOG_E("Error launching child process");
                 exit(EXIT_FAILURE);
             }
         }
-
-        if (hfuzz->persistent == true) {
-            fuzz_persistentPid = fuzzer.pid;
-        }
     }
 
-    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer.pid, hfuzz->threadsMax);
+    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
 
-    arch_reapChild(hfuzz, &fuzzer);
-    unlink(fuzzer.fileName);
+    arch_reapChild(hfuzz, fuzzer);
+    unlink(fuzzer->fileName);
 
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
-        fuzz_perfFeedback(hfuzz, &fuzzer);
+        fuzz_perfFeedback(hfuzz, fuzzer);
     }
     if (hfuzz->useSanCov) {
-        fuzz_sanCovFeedback(hfuzz, &fuzzer);
-    }
-    /*
-     * If it's persistent fuzzing and the process crashed/exited, make sure it's
-     * restarted
-     */
-    if (hfuzz->persistent) {
-        fuzz_persistentPid = fuzzer.pid;
+        fuzz_sanCovFeedback(hfuzz, fuzzer);
     }
 
-    if (hfuzz->useVerifier && (fuzzer.crashFileName[0] != 0) && fuzzer.backtrace) {
-        if (!fuzz_runVerifier(hfuzz, &fuzzer)) {
-            LOG_I("Failed to verify %s", fuzzer.crashFileName);
+    if (hfuzz->useVerifier && (fuzzer->crashFileName[0] != 0) && fuzzer->backtrace) {
+        if (!fuzz_runVerifier(hfuzz, fuzzer)) {
+            LOG_I("Failed to verify %s", fuzzer->crashFileName);
         }
     }
 
-    report_Report(hfuzz, fuzzer.report);
+    report_Report(hfuzz, fuzzer->report);
 
     if (state == _HF_STATE_DYNAMIC_PRE && ATOMIC_PRE_INC(hfuzz->doneFileIndex) >= hfuzz->fileCnt) {
         fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_MAIN);
@@ -649,7 +621,14 @@ static void *fuzz_threadNew(void *arg)
 {
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
 
-    if (arch_archThreadInit(hfuzz) == false) {
+    fuzzer_t fuzzer = {
+        .pid = 0,
+        .persistentPid = 0,
+        .dynamicFile = util_Malloc(hfuzz->maxFileSz),
+    };
+    DEFER(free(fuzzer.dynamicFile));
+
+    if (arch_archThreadInit(hfuzz, &fuzzer) == false) {
         LOG_F("Could not initialize the thread");
     }
 
@@ -672,7 +651,7 @@ static void *fuzz_threadNew(void *arg)
             return NULL;
         }
 
-        fuzz_fuzzLoop(hfuzz);
+        fuzz_fuzzLoop(hfuzz, &fuzzer);
     }
 }
 

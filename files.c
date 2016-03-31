@@ -40,17 +40,17 @@
 #include "log.h"
 #include "util.h"
 
-size_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
+ssize_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
 {
     int fd = open(fileName, O_RDONLY);
     if (fd == -1) {
         PLOG_E("Couldn't open '%s' for R/O", fileName);
-        return 0UL;
+        return -1;
     }
     DEFER(close(fd));
 
-    size_t readSz = files_readFromFd(fd, buf, fileMaxSz);
-    if (readSz == 0) {
+    ssize_t readSz = files_readFromFd(fd, buf, fileMaxSz);
+    if (readSz < 0) {
         LOG_E("Couldn't read '%s' to a buf", fileName);
         return 0UL;
     }
@@ -99,7 +99,7 @@ bool files_writeStrToFd(int fd, char *str)
     return files_writeToFd(fd, (uint8_t *) str, strlen(str));
 }
 
-size_t files_readFromFd(int fd, uint8_t * buf, size_t fileSz)
+ssize_t files_readFromFd(int fd, uint8_t * buf, size_t fileSz)
 {
     size_t readSz = 0;
     while (readSz < fileSz) {
@@ -107,12 +107,15 @@ size_t files_readFromFd(int fd, uint8_t * buf, size_t fileSz)
         if (sz < 0 && errno == EINTR)
             continue;
 
-        if (sz <= 0)
+        if (sz == 0)
             break;
+
+        if (sz < 0)
+            return -1;
 
         readSz += sz;
     }
-    return readSz;
+    return (ssize_t) readSz;
 }
 
 bool files_exists(char *fileName)
@@ -247,9 +250,9 @@ bool files_init(honggfuzz_t * hfuzz)
     return true;
 }
 
-char *files_basename(char *path)
+const char *files_basename(char *path)
 {
-    char *base = strrchr(path, '/');
+    const char *base = strrchr(path, '/');
     return base ? base + 1 : path;
 }
 
@@ -349,8 +352,8 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
     }
     DEFER(free(inFileBuf));
 
-    size_t readSz = files_readFromFd(inFD, inFileBuf, (size_t) inSt.st_size);
-    if (readSz == 0) {
+    ssize_t readSz = files_readFromFd(inFD, inFileBuf, (size_t) inSt.st_size);
+    if (readSz < 0) {
         PLOG_E("Couldn't read '%s' to a buf", source);
         return false;
     }

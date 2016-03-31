@@ -286,7 +286,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     /* A long-lived processed could have already exited, and we wouldn't know */
     if (kill(ptracePid, 0) == -1) {
         if (hfuzz->persistent) {
-            fuzzer->pid = 0;
+            fuzzer->persistentPid = 0;
             return;
         }
 
@@ -347,6 +347,11 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->linux.hwCnts.customCnt);
 
+        if (hfuzz->persistent && pid == fuzzer->persistentPid
+            && (WIFEXITED(status) || WIFSIGNALED(status))) {
+            fuzzer->persistentPid = 0;
+            break;
+        }
         if (ptracePid == childPid) {
             arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
             continue;
@@ -385,10 +390,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     arch_removeTimer(&timerid);
     arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
     sancov_Analyze(hfuzz, fuzzer);
-
-    if (hfuzz->persistent && kill(fuzzer->pid, 0) == ESRCH) {
-        fuzzer->pid = 0;
-    }
 }
 
 bool arch_archInit(honggfuzz_t * hfuzz)
@@ -510,7 +511,7 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     return true;
 }
 
-bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED)
+bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
     return true;
 }

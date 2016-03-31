@@ -194,7 +194,7 @@ bool arch_archInit(honggfuzz_t * hfuzz UNUSED)
     return true;
 }
 
-bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED)
+bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
     return true;
 }
