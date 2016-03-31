@@ -190,21 +190,17 @@ static void arch_sigFunc(int signo, siginfo_t * si UNUSED, void *dummy UNUSED)
 
 static void arch_removeTimer(timer_t * timerid)
 {
-    timer_delete(*timerid);
+    const struct itimerspec ts = {
+        .it_value = {.tv_sec = 0,.tv_nsec = 0},
+        .it_interval = {.tv_sec = 0,.tv_nsec = 000000000,},
+    };
+    if (timer_settime(*timerid, 0, &ts, NULL) == -1) {
+        PLOG_E("timer_settime(disarm)");
+    }
 }
 
 static bool arch_setTimer(timer_t * timerid)
 {
-    struct sigevent sevp = {
-        .sigev_value.sival_ptr = timerid,
-        .sigev_signo = SIGALRM,
-        .sigev_notify = SIGEV_THREAD_ID | SIGEV_SIGNAL,
-        ._sigev_un._tid = syscall(__NR_gettid),
-    };
-    if (timer_create(CLOCK_REALTIME, &sevp, timerid) == -1) {
-        PLOG_E("timer_create(CLOCK_REALTIME) failed");
-        return false;
-    }
     /*
      * Kick in every 200ms, starting with the next second
      */
@@ -213,7 +209,7 @@ static bool arch_setTimer(timer_t * timerid)
         .it_interval = {.tv_sec = 0,.tv_nsec = 200000000,},
     };
     if (timer_settime(*timerid, 0, &ts, NULL) == -1) {
-        PLOG_E("timer_settime() failed");
+        PLOG_E("timer_settime(arm) failed");
         timer_delete(*timerid);
         return false;
     }
@@ -264,8 +260,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
 
-    timer_t timerid;
-    if (arch_setTimer(&timerid) == false) {
+    if (arch_setTimer(&(fuzzer->linux.timerId)) == false) {
         LOG_F("Couldn't set timer");
     }
 
@@ -376,7 +371,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 #endif
 
-    arch_removeTimer(&timerid);
+    arch_removeTimer(&fuzzer->linux.timerId);
     arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
     sancov_Analyze(hfuzz, fuzzer);
 }
@@ -500,7 +495,18 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     return true;
 }
 
-bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
+bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
 {
+    struct sigevent sevp = {
+        .sigev_value.sival_ptr = &fuzzer->linux.timerId,
+        .sigev_signo = SIGALRM,
+        .sigev_notify = SIGEV_THREAD_ID | SIGEV_SIGNAL,
+        ._sigev_un._tid = syscall(__NR_gettid),
+    };
+    if (timer_create(CLOCK_REALTIME, &sevp, &fuzzer->linux.timerId) == -1) {
+        PLOG_E("timer_create(CLOCK_REALTIME) failed");
+        return false;
+    }
+
     return true;
 }

@@ -31,6 +31,7 @@
 #include <sys/param.h>
 #include <sys/queue.h>
 #include <sys/types.h>
+#include <time.h>
 
 #ifdef __clang__
 #include <stdatomic.h>
@@ -313,6 +314,7 @@ typedef struct {
         hwcnt_t hwCnts;
         pid_t attachedPid;
         int persistentSock;
+        timer_t timerId;
     } linux;
 } fuzzer_t;
 
