@@ -70,6 +70,8 @@ NO_SAN static inline ssize_t readFileToBuf(const char *fname, uint8_t * buf, siz
 }
 
 int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len);
+__attribute__ ((weak))
+int LLVMFuzzerInitialize(int *argc, char ***argv);
 
 NO_SAN int main(int argc, char **argv)
 {
@@ -77,6 +79,10 @@ NO_SAN int main(int argc, char **argv)
     if (buf == NULL) {
         perror("malloc");
         _exit(1);
+    }
+
+    if (LLVMFuzzerInitialize) {
+        LLVMFuzzerInitialize(&argc, &argv);
     }
 
     for (;;) {
@@ -107,7 +113,7 @@ NO_SAN int main(int argc, char **argv)
         }
         /*
          * Inform the parent that we're done, so it can break out of its wait()
-         * sleep
+         * sleep cycle
          * */
         raise(SIGCONT);
     }
