@@ -153,7 +153,7 @@ ifeq ($(ANDROID_DEBUG_ENABLED),true)
     NDK_BUILD_ARGS += V=1 NDK_DEBUG=1 APP_OPTIM=debug
 endif
 
-SUBDIR_ROOTS := linux mac posix interceptor
+SUBDIR_ROOTS := linux mac posix libraries
 DIRS := . $(shell find $(SUBDIR_ROOTS) -type d)
 CLEAN_PATTERNS := *.o *~ core *.a *.dSYM *.la *.so *.dylib
 SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
