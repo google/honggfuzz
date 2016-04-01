@@ -131,7 +131,7 @@ endif
 SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
 OBJS := $(SRCS:.c=.o)
 
-LIBS_SRCS := $(wildcard libs/*.c)
+LIBS_SRCS := $(wildcard libraries/*.c)
 LIBS_OBJS := $(LIBS_SRCS:.c=.o)
 
 # Respect external user defines
