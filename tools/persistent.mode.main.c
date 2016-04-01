@@ -24,8 +24,11 @@ NO_SAN static inline ssize_t readFromFd(int fd, uint8_t * buf, size_t len)
         if (sz < 0 && errno == EINTR)
             continue;
 
-        if (sz <= 0)
+        if (sz == 0)
             break;
+
+        if (sz < 0)
+            return -1;
 
         readSz += sz;
     }
@@ -89,7 +92,7 @@ NO_SAN int main(int argc, char **argv)
         /* Receive file-name from the parent (len == PATH_MAX) */
         char fname[PATH_MAX];
         if (readFromFdAll(HF_FUZZ_FD, (uint8_t *) fname, PATH_MAX) == false) {
-            fprintf(stderr, "readFromFdAll()");
+            fprintf(stderr, "readFromFdAll() failed");
             _exit(1);
         }
 
@@ -100,7 +103,7 @@ NO_SAN int main(int argc, char **argv)
 
         int ret = LLVMFuzzerTestOneInput(buf, rsz);
         if (ret != 0) {
-            printf("LLVMFuzzerTestOneInpu returned '%d'", ret);
+            printf("LLVMFuzzerTestOneInput() returned '%d'", ret);
             _exit(1);
         }
 
@@ -108,7 +111,7 @@ NO_SAN int main(int argc, char **argv)
          * Send the 'done' marker to the parent */
         uint8_t z = 'A';
         if (writeToFd(HF_FUZZ_FD, &z, sizeof(z)) == false) {
-            fprintf(stderr, "readFromFdAll()");
+            fprintf(stderr, "readFromFdAll() failed");
             _exit(1);
         }
         /*
