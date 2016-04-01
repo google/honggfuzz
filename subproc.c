@@ -46,13 +46,12 @@ const char *subproc_StatusToStr(int status, char *str, size_t len)
                  strsignal(WTERMSIG(status)));
         return str;
     }
-
 #if defined(WIFCONTINUED)
     if (WIFCONTINUED(status)) {
         snprintf(str, len, "CONTINUED");
         return str;
     }
-#endif  // defined(WIFCONTINUED)
+#endif                          // defined(WIFCONTINUED)
 
     if (!WIFSTOPPED(status)) {
         snprintf(str, len, "UNKNOWN STATUS: %d", status);

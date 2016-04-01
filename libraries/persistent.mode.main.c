@@ -29,12 +29,12 @@ static inline ssize_t readFromFd(int fd, uint8_t * buf, size_t len)
 
         readSz += sz;
     }
-    return (ssize_t)readSz;
+    return (ssize_t) readSz;
 }
 
 static inline bool readFromFdAll(int fd, uint8_t * buf, size_t len)
 {
-    return (readFromFd(fd, buf, len) == (ssize_t)len);
+    return (readFromFd(fd, buf, len) == (ssize_t) len);
 }
 
 static bool writeToFd(int fd, uint8_t * buf, size_t len)
