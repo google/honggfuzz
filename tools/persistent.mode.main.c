@@ -29,7 +29,7 @@ NO_SAN static inline ssize_t readFromFd(int fd, uint8_t * buf, size_t len)
 
         readSz += sz;
     }
-    return len;
+    return readSz;
 }
 
 NO_SAN static inline bool readFromFdAll(int fd, uint8_t * buf, size_t len)
@@ -73,7 +73,7 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len);
 
 NO_SAN int main(int argc, char **argv)
 {
-    uint8_t *buf = malloc(HF_BUF_SIZE);
+    uint8_t *buf = (uint8_t *) malloc(HF_BUF_SIZE);
     if (buf == NULL) {
         perror("malloc");
         _exit(1);
