@@ -357,7 +357,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         char strStatus[4096];
         LOG_D("Process (pid %d) came back with status: %s", fuzzer->pid,
-                      subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
+              subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
 
         if (arch_analyzeSignal(hfuzz, status, fuzzer)) {
             return;

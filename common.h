@@ -314,7 +314,9 @@ typedef struct {
         hwcnt_t hwCnts;
         pid_t attachedPid;
         int persistentSock;
+#if defined(_HF_ARCH_LINUX)
         timer_t timerId;
+#endif                          // defined(_HF_ARCH_LINUX)
     } linux;
 } fuzzer_t;
 
