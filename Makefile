@@ -31,7 +31,6 @@ MARCH ?= $(shell uname -m)
 
 ifeq ($(OS),Linux)
     ARCH := LINUX
-    ARCH_DSUFFIX := .so
 
     ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
@@ -40,7 +39,6 @@ ifeq ($(OS),Linux)
     ARCH_LDFLAGS := -L/usr/local/include -L/usr/include \
                     -lpthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt
     ARCH_SRCS := $(wildcard linux/*.c)
-    INTERCEPTOR_SRCS := $(wildcard interceptor/*.c)
 
     ifeq ("$(wildcard /usr/include/bfd.h)","")
         WARN_LIBRARY += binutils-devel
@@ -71,7 +69,6 @@ ifeq ($(OS),Linux)
     # OS Linux
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
-    ARCH_DSUFFIX := .dylib
     CRASHWRANGLER := third_party/mac
     OS_VERSION := $(shell sw_vers -productVersion)
     ifneq (,$(findstring 10.11,$(OS_VERSION)))
@@ -116,7 +113,6 @@ else ifeq ($(OS),Darwin)
     # OS Darwin
 else
     ARCH := POSIX
-    ARCH_DSUFFIX := .so
     ARCH_SRCS := $(wildcard posix/*.c)
     ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
@@ -134,7 +130,9 @@ endif
 
 SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
 OBJS := $(SRCS:.c=.o)
-INTERCEPTOR_LIBS := $(INTERCEPTOR_SRCS:.c=$(ARCH_DSUFFIX))
+
+LIBS_SRCS := $(wildcard libs/*.c)
+LIBS_OBJS := $(LIBS_SRCS:.c=.o)
 
 # Respect external user defines
 CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH}
@@ -162,7 +160,7 @@ SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
 MAC_GARGBAGE := $(wildcard mac/mach_exc*)
 ANDROID_GARBAGE := obj libs
 
-all: $(BIN) $(INTERCEPTOR_LIBS)
+all: $(BIN) $(LIBS_OBJS)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<

@@ -14,11 +14,9 @@
 #define HF_FUZZ_FD 1023
 #define HF_BUF_SIZE (1024 * 1024 * 16)
 
-#define NO_SAN __attribute__((no_sanitize("address", "thread", "leak", "undefined")))
-
-NO_SAN static inline ssize_t readFromFd(int fd, uint8_t * buf, size_t len)
+static inline ssize_t readFromFd(int fd, uint8_t * buf, size_t len)
 {
-    ssize_t readSz = 0;
+    size_t readSz = 0;
     while (readSz < len) {
         ssize_t sz = read(fd, &buf[readSz], len - readSz);
         if (sz < 0 && errno == EINTR)
@@ -32,17 +30,17 @@ NO_SAN static inline ssize_t readFromFd(int fd, uint8_t * buf, size_t len)
 
         readSz += sz;
     }
-    return readSz;
+    return (ssize_t)readSz;
 }
 
-NO_SAN static inline bool readFromFdAll(int fd, uint8_t * buf, size_t len)
+static inline bool readFromFdAll(int fd, uint8_t * buf, size_t len)
 {
-    return (readFromFd(fd, buf, len) == len);
+    return (readFromFd(fd, buf, len) == (ssize_t)len);
 }
 
-NO_SAN static bool writeToFd(int fd, uint8_t * buf, size_t len)
+static bool writeToFd(int fd, uint8_t * buf, size_t len)
 {
-    ssize_t writtenSz = 0;
+    size_t writtenSz = 0;
     while (writtenSz < len) {
         ssize_t sz = write(fd, &buf[writtenSz], len - writtenSz);
         if (sz < 0 && errno == EINTR)
@@ -56,7 +54,7 @@ NO_SAN static bool writeToFd(int fd, uint8_t * buf, size_t len)
     return (writtenSz == len);
 }
 
-NO_SAN static inline ssize_t readFileToBuf(const char *fname, uint8_t * buf, size_t len)
+static inline ssize_t readFileToBuf(const char *fname, uint8_t * buf, size_t len)
 {
     int fd = open((char *)fname, O_RDONLY);
     if (fd == -1) {
@@ -76,7 +74,7 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len);
 __attribute__ ((weak))
 int LLVMFuzzerInitialize(int *argc, char ***argv);
 
-NO_SAN int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     uint8_t *buf = (uint8_t *) malloc(HF_BUF_SIZE);
     if (buf == NULL) {
