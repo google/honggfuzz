@@ -550,20 +550,20 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (state == _HF_STATE_DYNAMIC_MAIN) {
         if (!fuzz_prepareFileDynamically(hfuzz, fuzzer)) {
-            exit(EXIT_FAILURE);
+            LOG_F("fuzz_prepareFileDynamically() failed");
         }
     } else if (state == _HF_STATE_DYNAMIC_PRE) {
         fuzzer->flipRate = 0.0f;
         if (!fuzz_prepareFile(hfuzz, fuzzer, rnd_index)) {
-            exit(EXIT_FAILURE);
+            LOG_F("fuzz_prepareFile() failed");
         }
     } else if (hfuzz->externalCommand != NULL) {
         if (!fuzz_prepareFileExternally(hfuzz, fuzzer)) {
-            exit(EXIT_FAILURE);
+            LOG_F("fuzz_prepareFileExternally() failed");
         }
     } else {
         if (!fuzz_prepareFile(hfuzz, fuzzer, rnd_index)) {
-            exit(EXIT_FAILURE);
+            LOG_F("fuzz_prepareFile() failed");
         }
     }
 
