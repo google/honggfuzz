@@ -210,11 +210,12 @@ static bool files_readdir(honggfuzz_t * hfuzz)
 bool files_init(honggfuzz_t * hfuzz)
 {
     hfuzz->files = util_Malloc(sizeof(char *));
-    if (hfuzz->externalCommand && !hfuzz->inputFile) {
-        hfuzz->fileCnt = 1;
-        hfuzz->files[0] = "CREATED";
+    hfuzz->files[0] = "NONE";
+    hfuzz->fileCnt = 0;
+
+    if (hfuzz->externalCommand) {
         LOG_I
-            ("No input file corpus specified, the external command '%s' is responsible for creating the fuzz files",
+            ("No input file corpus loaded, the external command '%s' is responsible for creating the fuzz files",
              hfuzz->externalCommand);
         return true;
     }

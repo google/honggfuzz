@@ -220,34 +220,16 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_ind
     return true;
 }
 
-static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
+static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    {
-        int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
-        if (dstfd == -1) {
-            PLOG_E("Couldn't create a temporary file '%s'", fuzzer->fileName);
-            return false;
-        }
-        DEFER(close(dstfd));
-
-        LOG_D("Created '%s' as an input file", fuzzer->fileName);
-
-        if (hfuzz->inputFile) {
-            size_t fileSz = files_readFileToBufMax(hfuzz->files[rnd_index], fuzzer->dynamicFile,
-                                                   hfuzz->maxFileSz);
-            if (fileSz == 0UL) {
-                LOG_E("Couldn't read '%s'", hfuzz->files[rnd_index]);
-                unlink(fuzzer->fileName);
-                return false;
-            }
-
-            if (files_writeToFd(dstfd, fuzzer->dynamicFile, fileSz) == false) {
-                unlink(fuzzer->fileName);
-                return false;
-            }
-        }
-
+    int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR, 0644);
+    if (dstfd == -1) {
+        PLOG_E("Couldn't create a temporary file '%s'", fuzzer->fileName);
+        return false;
     }
+    close(dstfd);
+
+    LOG_D("Created '%s' as an input file", fuzzer->fileName);
 
     pid_t pid = fork();
     if (pid == -1) {
@@ -576,7 +558,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             exit(EXIT_FAILURE);
         }
     } else if (hfuzz->externalCommand != NULL) {
-        if (!fuzz_prepareFileExternally(hfuzz, fuzzer, rnd_index)) {
+        if (!fuzz_prepareFileExternally(hfuzz, fuzzer)) {
             exit(EXIT_FAILURE);
         }
     } else {
@@ -612,7 +594,9 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
 
     arch_reapChild(hfuzz, fuzzer);
-    unlink(fuzzer->fileName);
+    if (hfuzz->persistent == false) {
+        unlink(fuzzer->fileName);
+    }
 
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         fuzz_perfFeedback(hfuzz, fuzzer);

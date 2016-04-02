@@ -238,7 +238,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"wokspace", required_argument, NULL, 'W'}, "Workspace directory to save crashes & runtime files (default: '.')"},
         {{"wordlist", required_argument, NULL, 'w'}, "Wordlist file (tokens delimited by NUL-bytes)"},
         {{"stackhash_bl", required_argument, NULL, 'B'}, "Stackhashes blacklist file (one entry per line)"},
-        {{"mutate_cmd", required_argument, NULL, 'c'}, "External command modifying the input corpus of files, instead of -r param"},
+        {{"mutate_cmd", required_argument, NULL, 'c'}, "External commnd providing fuzz files,, instead of muating the input corpus"},
         {{"iterations", required_argument, NULL, 'N'}, "Number of fuzzing iterations (default: '0' [no limit])"},
         {{"rlimit_as", required_argument, NULL, 0x100}, "Per process memory limit in MiB (default: '0' [no limit])"},
         {{"report", required_argument, NULL, 'R'}, "Write report to this file (default: '" _HF_REPORT_FILE "')"},
