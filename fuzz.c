@@ -196,9 +196,9 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
 {
-    size_t fileSz =
+    ssize_t fileSz =
         files_readFileToBufMax(hfuzz->files[rnd_index], fuzzer->dynamicFile, hfuzz->maxFileSz);
-    if (fileSz == 0UL) {
+    if (fileSz < 0) {
         LOG_E("Couldn't read contents of '%s'", hfuzz->files[rnd_index]);
         return false;
     }
@@ -266,7 +266,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     LOG_D("External command exited with status %d", WEXITSTATUS(childStatus));
 
     ssize_t rsz = files_readFileToBufMax(fuzzer->fileName, fuzzer->dynamicFile, hfuzz->maxFileSz);
-    if (rsz < 1) {
+    if (rsz < 0) {
         LOG_W("Couldn't read back '%s' to the buffer", fuzzer->fileName);
         return false;
     }

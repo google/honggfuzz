@@ -52,7 +52,7 @@ ssize_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
     ssize_t readSz = files_readFromFd(fd, buf, fileMaxSz);
     if (readSz < 0) {
         LOG_E("Couldn't read '%s' to a buf", fileName);
-        return 0UL;
+        return -1;
     }
 
     LOG_D("Read '%zu' bytes from '%s'", readSz, fileName);

@@ -486,16 +486,16 @@ bool arch_archInit(honggfuzz_t * hfuzz)
             return false;
         }
 
-        size_t sz = files_readFileToBufMax(procCmd, (uint8_t *) hfuzz->linux.pidCmd,
-                                           _HF_PROC_CMDLINE_SZ - 1);
-        if (sz == 0) {
+        ssize_t sz = files_readFileToBufMax(procCmd, (uint8_t *) hfuzz->linux.pidCmd,
+                                            _HF_PROC_CMDLINE_SZ - 1);
+        if (sz < 1) {
             LOG_E("Couldn't read '%s'", procCmd);
             free(hfuzz->linux.pidCmd);
             return false;
         }
 
         /* Make human readable */
-        for (size_t i = 0; i < (sz - 1); i++) {
+        for (size_t i = 0; i < ((size_t) sz - 1); i++) {
             if (hfuzz->linux.pidCmd[i] == '\0') {
                 hfuzz->linux.pidCmd[i] = ' ';
             }
