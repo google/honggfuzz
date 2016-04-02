@@ -53,22 +53,6 @@ static bool writeToFd(int fd, uint8_t * buf, size_t len)
     return (writtenSz == len);
 }
 
-static inline ssize_t readFileToBuf(const char *fname, uint8_t * buf, size_t len)
-{
-    int fd = open((char *)fname, O_RDONLY);
-    if (fd == -1) {
-        perror("open");
-        return -1;
-    }
-    ssize_t rsz = readFromFd(fd, buf, len);
-    if (rsz < 0) {
-        close(fd);
-        return -1;
-    }
-    close(fd);
-    return rsz;
-}
-
 int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len);
 __attribute__ ((weak))
 int LLVMFuzzerInitialize(int *argc, char ***argv);
