@@ -256,6 +256,19 @@ static bool arch_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     return false;
 }
 
+static bool arch_persistentSendFile(fuzzer_t * fuzzer)
+{
+    uint64_t len = (uint64_t) fuzzer->dynamicFileSz;
+    if (files_writeToFd(fuzzer->linux.persistentSock, (uint8_t *) & len, sizeof(len)) == false) {
+        return false;
+    }
+    if (files_writeToFd(fuzzer->linux.persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) ==
+        false) {
+        return false;
+    }
+    return true;
+}
+
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
@@ -275,7 +288,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
         fuzzer->linux.attachedPid = ptracePid;
     }
-    /* A long-lived processed could have already exited, and we wouldn't know */
+    /* A long-lived process could have already exited, and we wouldn't know */
     if (kill(ptracePid, 0) == -1) {
         if (hfuzz->linux.pidFile) {
             /* If pid from file, check again for cases of auto-restart daemons that update it */
@@ -304,8 +317,8 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (kill(childPid, SIGCONT) == -1) {
         PLOG_F("Restarting PID: %d failed", childPid);
     }
-    if (hfuzz->persistent == true) {
-        files_writeToFd(fuzzer->linux.persistentSock, (uint8_t *) fuzzer->fileName, PATH_MAX);
+    if (hfuzz->persistent == true && arch_persistentSendFile(fuzzer) == false) {
+        LOG_W("Could not send file contents to the persistent process");
     }
 
     for (;;) {

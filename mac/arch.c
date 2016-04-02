@@ -235,22 +235,18 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
         return true;
     }
 
-    bool dstFileExists = false;
-    if (files_copyFile(fuzzer->fileName, fuzzer->crashFileName, &dstFileExists)) {
-        LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName,
-              fuzzer->crashFileName);
-        // Unique crashes
-        ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
-    } else {
-        if (dstFileExists) {
-            LOG_I("It seems that '%s' already exists, skipping", fuzzer->crashFileName);
-
-            // Clear filename so that verifier can understand we hit a duplicate
-            memset(fuzzer->crashFileName, 0, sizeof(fuzzer->crashFileName));
-        } else {
-            LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
-        }
+    if (files_writeBufToFile
+        (fuzzer->crashFileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+         O_CREAT | O_EXCL | O_WRONLY) == false) {
+        LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
+        return true;
     }
+
+    LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, fuzzer->crashFileName);
+
+    ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
+    /* If unique crash found, reset dynFile counter */
+    ATOMIC_CLEAR(hfuzz->dynFileIterExpire);
 
     return true;
 }

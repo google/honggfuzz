@@ -184,7 +184,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz);
     mangle_mangleContent(hfuzz, fuzzer);
 
-    if (files_writeBufToFile
+    if (hfuzz->persistent == false && files_writeBufToFile
         (fuzzer->fileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
          O_WRONLY | O_CREAT | O_EXCL | O_TRUNC) == false) {
         LOG_E("Couldn't write buffer to file '%s'", fuzzer->fileName);
@@ -210,7 +210,7 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_ind
         mangle_mangleContent(hfuzz, fuzzer);
     }
 
-    if (files_writeBufToFile
+    if (hfuzz->persistent == false && files_writeBufToFile
         (fuzzer->fileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
          O_WRONLY | O_CREAT | O_EXCL) == false) {
         LOG_E("Couldn't write buffer to file '%s'", fuzzer->fileName);
@@ -273,16 +273,28 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, i
     flags |= __WNOTHREAD;
 #endif                          /* defined(__WNOTHREAD) */
     while (wait4(pid, &childStatus, flags, NULL) != pid) ;
-    if (WIFEXITED(childStatus)) {
-        LOG_D("External command exited with status %d", WEXITSTATUS(childStatus));
-        return true;
-    }
     if (WIFSIGNALED(childStatus)) {
         LOG_E("External command terminated with signal %d", WTERMSIG(childStatus));
         return false;
     }
-    LOG_F("External command terminated abnormally, status: %d", childStatus);
-    return false;
+    if (!WIFEXITED(childStatus)) {
+        LOG_F("External command terminated abnormally, status: %d", childStatus);
+        return false;
+    }
+    LOG_D("External command exited with status %d", WEXITSTATUS(childStatus));
+
+    ssize_t rsz = files_readFileToBufMax(fuzzer->fileName, fuzzer->dynamicFile, hfuzz->maxFileSz);
+    if (rsz < 1) {
+        LOG_W("Couldn't read back '%s' to the buffer", fuzzer->fileName);
+        return false;
+    }
+    fuzzer->dynamicFileSz = rsz;
+
+    if (hfuzz->persistent) {
+        unlink(fuzzer->fileName);
+    }
+
+    return true;
 }
 
 static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)

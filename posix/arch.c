@@ -134,9 +134,12 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     ATOMIC_POST_INC(hfuzz->crashesCnt);
     ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
 
-    if (files_copyFile(fuzzer->fileName, newname, NULL) == false) {
-        LOG_E("Couldn't save '%s' as '%s'", fuzzer->fileName, newname);
+    if (files_writeBufToFile
+        (fuzzer->crashFileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+         O_CREAT | O_EXCL | O_WRONLY) == false) {
+        LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
     }
+
     return true;
 }
 

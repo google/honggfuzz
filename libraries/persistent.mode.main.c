@@ -86,19 +86,23 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        /* Receive file-name from the parent (len == PATH_MAX) */
-        char fname[PATH_MAX];
-        if (readFromFdAll(HF_FUZZ_FD, (uint8_t *) fname, PATH_MAX) == false) {
-            fprintf(stderr, "readFromFdAll() failed");
+        uint64_t rlen;
+        if (readFromFdAll(HF_FUZZ_FD, (uint8_t *) & rlen, sizeof(rlen)) == false) {
+            fprintf(stderr, "readFromFdAll(size) failed");
+            _exit(1);
+        }
+        size_t len = (size_t) rlen;
+        if (len > HF_BUF_SIZE) {
+            fprintf(stderr, "len (%zu) > buf_size (%zu)", len, (size_t) HF_BUF_SIZE);
             _exit(1);
         }
 
-        ssize_t rsz = readFileToBuf(fname, buf, HF_BUF_SIZE);
-        if (rsz < 0) {
+        if (readFromFdAll(HF_FUZZ_FD, buf, len) == false) {
+            fprintf(stderr, "readFromFdAll(buf) failed");
             _exit(1);
         }
 
-        int ret = LLVMFuzzerTestOneInput(buf, rsz);
+        int ret = LLVMFuzzerTestOneInput(buf, len);
         if (ret != 0) {
             printf("LLVMFuzzerTestOneInput() returned '%d'", ret);
             _exit(1);
