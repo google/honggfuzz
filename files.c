@@ -211,7 +211,7 @@ bool files_init(honggfuzz_t * hfuzz)
 {
     hfuzz->files = util_Malloc(sizeof(char *));
     hfuzz->files[0] = "NONE";
-    hfuzz->fileCnt = 0;
+    hfuzz->fileCnt = 1;
 
     if (hfuzz->externalCommand) {
         LOG_I
