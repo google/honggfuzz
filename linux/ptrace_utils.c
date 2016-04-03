@@ -58,8 +58,6 @@
 #include "util.h"
 
 #if defined(__ANDROID__)
-#include <linux/ptrace.h>
-#include <asm/ptrace.h>         /* For pt_regs structs */
 #include "capstone.h"
 #endif
 
@@ -217,12 +215,6 @@ struct user_regs_struct_64 {
     uint64_t zero3;
 };
 #endif                          /* defined(__powerpc64__) || defined(__powerpc__) */
-
-#ifdef __ANDROID__
-#ifndef WIFCONTINUED
-#define WIFCONTINUED(x) WEXITSTATUS(0)
-#endif
-#endif
 
 #if defined(__ANDROID__)
 #if defined(__NR_process_vm_readv)

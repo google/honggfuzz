@@ -31,6 +31,7 @@
 #include <sys/param.h>
 #include <sys/queue.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <time.h>
 
 #ifdef __clang__
@@ -135,6 +136,11 @@ static void __attribute__ ((unused)) _clang_cleanup_func(void (^*dfunc) (void))
 
 #define ATOMIC_PRE_OR(x, y) __sync_or_and_fetch(&(x), y)
 #define ATOMIC_POST_OR(x, y) __sync_fetch_and_or(&(x), y)
+
+/* Missing WIFCONTINUED in Android */
+#ifndef WIFCONTINUED
+#define WIFCONTINUED(x) WEXITSTATUS(0)
+#endif                          // ndef(WIFCONTINUED)
 
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
