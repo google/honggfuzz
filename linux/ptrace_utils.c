@@ -233,83 +233,6 @@ static ssize_t honggfuzz_process_vm_readv(pid_t pid,
 #define process_vm_readv(...) (errno = ENOSYS, -1)
 #endif                          /* !defined(__NR_process_vm_readv) */
 
-// Naming compatibilities
-#if !defined(PT_TRACE_ME)
-#define PT_TRACE_ME PTRACE_TRACEME
-#endif
-
-#if !defined(PT_READ_I)
-#define PT_READ_I PTRACE_PEEKTEXT
-#endif
-
-#if !defined(PT_READ_D)
-#define PT_READ_D PTRACE_PEEKDATA
-#endif
-
-#if !defined(PT_READ_U)
-#define PT_READ_U PTRACE_PEEKUSR
-#endif
-
-#if !defined(PT_WRITE_I)
-#define PT_WRITE_I PTRACE_POKETEXT
-#endif
-
-#if !defined(PT_WRITE_D)
-#define PT_WRITE_D PTRACE_POKEDATA
-#endif
-
-#if !defined(PT_WRITE_U)
-#define PT_WRITE_U PTRACE_POKEUSR
-#endif
-
-#if !defined(PT_CONT)
-#define PT_CONT PTRACE_CONT
-#endif
-
-#if !defined(PT_CONTINUE)
-#define PT_CONTINUE PTRACE_CONT
-#endif
-
-#if !defined(PT_KILL)
-#define PT_KILL PTRACE_KILL
-#endif
-
-#if !defined(PT_STEP)
-#define PT_STEP PTRACE_SINGLESTEP
-#endif
-
-#if !defined(PT_GETFPREGS)
-#define PT_GETFPREGS PTRACE_GETFPREGS
-#endif
-
-#if !defined(PT_ATTACH)
-#define PT_ATTACH PTRACE_ATTACH
-#endif
-
-#if !defined(PT_DETACH)
-#define PT_DETACH PTRACE_DETACH
-#endif
-
-#if !defined(PT_SYSCALL)
-#define PT_SYSCALL PTRACE_SYSCALL
-#endif
-
-#if !defined(PT_SETOPTIONS)
-#define PT_SETOPTIONS PTRACE_SETOPTIONS
-#endif
-
-#if !defined(PT_GETEVENTMSG)
-#define PT_GETEVENTMSG PTRACE_GETEVENTMSG
-#endif
-
-#if !defined(PT_GETSIGINFO)
-#define PT_GETSIGINFO PTRACE_GETSIGINFO
-#endif
-
-#if !defined(PT_SETSIGINFO)
-#define PT_SETSIGINFO PTRACE_SETSIGINFO
-#endif
-
 /*
  * Some Android ABIs don't implement PTRACE_GETREGS (e.g. aarch64)
  */
@@ -402,7 +325,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
 
     for (int x = 0; x < cnt; x++) {
         uint8_t *addr = (uint8_t *) (uintptr_t) pc + (int)(x * sizeof(long));
-        long ret = ptrace(PT_READ_D, pid, addr, NULL);
+        long ret = ptrace(PTRACE_PEEKDATA, pid, addr, NULL);
 
         if (errno != 0) {
             PLOG_W("Couldn't PT_READ_D on pid %d, addr: %p", pid, addr);
@@ -782,7 +705,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     siginfo_t si;
     bzero(&si, sizeof(si));
 
-    if (ptrace(PT_GETSIGINFO, pid, 0, &si) == -1) {
+    if (ptrace(PTRACE_GETSIGINFO, pid, 0, &si) == -1) {
         PLOG_W("Couldn't get siginfo for pid %d", pid);
     }
 
@@ -1299,7 +1222,7 @@ static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status,
         break;
     }
 
-    ptrace(PT_CONTINUE, pid, 0, 0);
+    ptrace(PTRACE_CONT, pid, 0, 0);
 }
 
 void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer)
@@ -1326,7 +1249,7 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
                 arch_ptraceAnalyzeData(hfuzz, pid, fuzzer);
             }
         }
-        ptrace(PT_CONTINUE, pid, 0, WSTOPSIG(status));
+        ptrace(PTRACE_CONT, pid, 0, WSTOPSIG(status));
         return;
     }
 
