@@ -25,6 +25,7 @@
 #include "common.h"
 #include "mangle.h"
 
+#include <endian.h>
 #include <inttypes.h>
 #include <math.h>
 #include <stdlib.h>
@@ -226,14 +227,14 @@ static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufS
             uint16_t val = *((uint16_t *) & buf[off]);
             if (util_rndGet(0, 1) == 0) {
                 /* BE */
-                val = util_ToFromBE16(val);
+                val = be16toh(val);
                 val += delta;
-                val = util_ToFromBE16(val);
+                val = htobe16(val);
             } else {
                 /* LE */
-                val = util_ToFromLE16(val);
+		val = le16toh(val);
                 val += delta;
-                val = util_ToFromLE16(val);
+                val = htole16(val);
             }
             mangle_Overwrite(buf, (uint8_t *) & val, bufSz, off, varLen);
             return;
@@ -244,14 +245,14 @@ static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufS
             uint32_t val = *((uint32_t *) & buf[off]);
             if (util_rndGet(0, 1) == 0) {
                 /* BE */
-                val = util_ToFromBE32(val);
+		val = be32toh(val);
                 val += delta;
-                val = util_ToFromBE32(val);
+                val = htobe32(val);
             } else {
                 /* LE */
-                val = util_ToFromLE32(val);
+                val = le32toh(val);
                 val += delta;
-                val = util_ToFromLE32(val);
+                val = htole32(val);
             }
             mangle_Overwrite(buf, (uint8_t *) & val, bufSz, off, varLen);
             return;

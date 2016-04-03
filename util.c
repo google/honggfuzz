@@ -21,7 +21,6 @@
  *
  */
 
-#include <endian.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <math.h>
@@ -227,26 +226,6 @@ int64_t util_timeNowMillis(void)
     }
 
     return (((int64_t) tv.tv_sec * 1000LL) + ((int64_t) tv.tv_usec / 1000LL));
-}
-
-uint16_t util_ToFromBE16(uint16_t val)
-{
-    return be16toh(val);
-}
-
-uint16_t util_ToFromLE16(uint16_t val)
-{
-    return le16toh(val);
-}
-
-uint32_t util_ToFromBE32(uint32_t val)
-{
-    return be32toh(val);
-}
-
-uint32_t util_ToFromLE32(uint32_t val)
-{
-    return le32toh(val);
 }
 
 uint64_t util_getUINT32(const uint8_t * buf)
