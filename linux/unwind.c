@@ -24,13 +24,10 @@
 #include "common.h"
 #include "linux/unwind.h"
 
+#include <byteswap.h>
 #include <libunwind-ptrace.h>
 
 #include "log.h"
-
-#if defined(__ANDROID__)
-#include <sys/endian.h>         /* For __BYTE_ORDER */
-#endif
 
 /*
  * WARNING: Ensure that _UPT-info structs are not shared between threads

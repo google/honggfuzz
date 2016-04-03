@@ -46,12 +46,6 @@
 #include "subproc.h"
 #include "util.h"
 
-#ifdef __ANDROID__
-#ifndef WIFCONTINUED
-#define WIFCONTINUED(x) WEXITSTATUS(0)
-#endif
-#endif
-
 /*  *INDENT-OFF* */
 struct {
     bool important;
