@@ -25,7 +25,7 @@
 #include "common.h"
 #include "mangle.h"
 
-#if defined(_HF_ARCH_LINUX)
+#if defined(_HF_ARCH_LINUX) || defined(__CYGWIN__)
 #include <endian.h>
 #else
 #include <sys/endian.h>
