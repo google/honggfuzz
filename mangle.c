@@ -232,7 +232,7 @@ static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufS
                 val = htobe16(val);
             } else {
                 /* LE */
-		val = le16toh(val);
+                val = le16toh(val);
                 val += delta;
                 val = htole16(val);
             }
@@ -245,7 +245,7 @@ static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufS
             uint32_t val = *((uint32_t *) & buf[off]);
             if (util_rndGet(0, 1) == 0) {
                 /* BE */
-		val = be32toh(val);
+                val = be32toh(val);
                 val += delta;
                 val = htobe32(val);
             } else {
