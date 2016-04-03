@@ -41,18 +41,6 @@
 #include "files.h"
 #include "log.h"
 
-#if defined(__builtin_bswap16)
-#define SWAP16(x)   __builtin_bswap16(x)
-#else
-#define SWAP16(x)   ((x & 0xff) << 8) | ((x & 0xff00) >> 8)
-#endif
-
-#if defined(__builtin_bswap32)
-#define SWAP32(x)   __builtin_bswap32(x)
-#else
-#define SWAP32(x)   ((x & 0xff) << 24) | ((x & 0xff00) << 8) | ((x & 0xff0000) >> 8) | ((x & 0xff000000) >> 24)
-#endif
-
 void *util_Malloc(size_t sz)
 {
     void *p = malloc(sz);
