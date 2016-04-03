@@ -258,7 +258,7 @@ static bool arch_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 static bool arch_persistentSendFile(fuzzer_t * fuzzer)
 {
-    uint64_t len = (uint64_t) fuzzer->dynamicFileSz;
+    uint32_t len = (uint64_t) fuzzer->dynamicFileSz;
     if (files_writeToFd(fuzzer->linux.persistentSock, (uint8_t *) & len, sizeof(len)) == false) {
         return false;
     }

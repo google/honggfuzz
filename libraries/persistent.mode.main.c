@@ -70,7 +70,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        uint64_t rlen;
+        uint32_t rlen;
         if (readFromFdAll(HF_FUZZ_FD, (uint8_t *) & rlen, sizeof(rlen)) == false) {
             fprintf(stderr, "readFromFdAll(size) failed");
             _exit(1);
