@@ -21,6 +21,7 @@
  *
  */
 
+#include <endian.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <math.h>
@@ -230,46 +231,22 @@ int64_t util_timeNowMillis(void)
 
 uint16_t util_ToFromBE16(uint16_t val)
 {
-#if __BYTE_ORDER == __BIG_ENDIAN
-    return val;
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-    return SWAP16(val);
-#else
-#error "Unknown ENDIANNESS"
-#endif
+    return be16toh(val);
 }
 
 uint16_t util_ToFromLE16(uint16_t val)
 {
-#if __BYTE_ORDER == __BIG_ENDIAN
-    return SWAP16(val);
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-    return val;
-#else
-#error "Unknown ENDIANNESS"
-#endif
+    return le16toh(val);
 }
 
 uint32_t util_ToFromBE32(uint32_t val)
 {
-#if __BYTE_ORDER == __BIG_ENDIAN
-    return val;
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-    return SWAP32(val);
-#else
-#error "Unknown ENDIANNESS"
-#endif
+    return be32toh(val);
 }
 
 uint32_t util_ToFromLE32(uint32_t val)
 {
-#if __BYTE_ORDER == __BIG_ENDIAN
-    return SWAP32(val);
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-    return val;
-#else
-#error "Unknown ENDIANNESS"
-#endif
+    return le32toh(val);
 }
 
 uint64_t util_getUINT32(const uint8_t * buf)

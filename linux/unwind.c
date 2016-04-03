@@ -24,7 +24,7 @@
 #include "common.h"
 #include "linux/unwind.h"
 
-#include <byteswap.h>
+#include <endian.h>
 #include <libunwind-ptrace.h>
 
 #include "log.h"
