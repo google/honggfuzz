@@ -25,11 +25,6 @@
 #include "common.h"
 #include "mangle.h"
 
-#if defined(_HF_ARCH_LINUX) || defined(__CYGWIN__)
-#include <endian.h>
-#else
-#include <sys/endian.h>
-#endif
 #include <inttypes.h>
 #include <math.h>
 #include <stdlib.h>
@@ -230,15 +225,12 @@ static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufS
         {
             uint16_t val = *((uint16_t *) & buf[off]);
             if (util_rndGet(0, 1) == 0) {
-                /* BE */
-                val = be16toh(val);
                 val += delta;
-                val = htobe16(val);
             } else {
-                /* LE */
-                val = le16toh(val);
+                /* Foreign endianess */
+                val = __builtin_bswap16(val);
                 val += delta;
-                val = htole16(val);
+                val = __builtin_bswap16(val);
             }
             mangle_Overwrite(buf, (uint8_t *) & val, bufSz, off, varLen);
             return;
@@ -248,15 +240,12 @@ static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufS
         {
             uint32_t val = *((uint32_t *) & buf[off]);
             if (util_rndGet(0, 1) == 0) {
-                /* BE */
-                val = be32toh(val);
                 val += delta;
-                val = htobe32(val);
             } else {
-                /* LE */
-                val = le32toh(val);
+                /* Foreign endianess */
+                val = __builtin_bswap32(val);
                 val += delta;
-                val = htole32(val);
+                val = __builtin_bswap32(val);
             }
             mangle_Overwrite(buf, (uint8_t *) & val, bufSz, off, varLen);
             return;
