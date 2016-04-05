@@ -68,10 +68,7 @@ static bool arch_bfdInit(pid_t pid, bfd_t * bfdParams)
         return false;
     }
 
-    if ((bfdParams->syms = (asymbol **) malloc(storage_needed)) == NULL) {
-        PLOG_E("malloc(%d) failed", storage_needed);
-        return false;
-    }
+    bfdParams->syms = (asymbol **) util_Malloc(storage_needed);
     bfd_canonicalize_symtab(bfdParams->bfdh, bfdParams->syms);
 
     if ((bfdParams->section = bfd_get_section_by_name(bfdParams->bfdh, ".text")) == NULL) {
@@ -88,7 +85,7 @@ static void arch_bfdDestroy(bfd_t * bfdParams)
         free(bfdParams->syms);
     }
     if (bfdParams->bfdh) {
-        bfd_close_all_done(bfdParams->bfdh);
+        bfd_close(bfdParams->bfdh);
     }
 }
 
@@ -153,7 +150,7 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
         LOG_W("bfd_openr('/proc/%d/exe') failed", pid);
         return;
     }
-    DEFER(bfd_close_all_done(bfdh));
+    DEFER(bfd_close(bfdh));
 
     if (!bfd_check_format(bfdh, bfd_object)) {
         LOG_W("bfd_check_format() failed");
