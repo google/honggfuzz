@@ -66,6 +66,15 @@ void *util_MMap(size_t sz)
     return p;
 }
 
+char *util_StrDup(const char *s)
+{
+    char *ret = strdup(s);
+    if (ret == NULL) {
+        LOG_F("strdup(size=%zu)", strlen(s));
+    }
+    return ret;
+}
+
 static int util_urandomFd = -1;
 static __thread uint64_t rndX;
 static __thread uint64_t rndIni = false;

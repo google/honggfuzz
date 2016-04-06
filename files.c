@@ -194,11 +194,7 @@ static bool files_readdir(honggfuzz_t * hfuzz)
             return false;
         }
 
-        hfuzz->files[count] = strdup(path);
-        if (!hfuzz->files[count]) {
-            PLOG_E("Couldn't allocate memory");
-            return false;
-        }
+        hfuzz->files[count] = util_StrDup(path);
         hfuzz->fileCnt = ++count;
         LOG_D("Added '%s' to the list of input files", path);
     }
