@@ -67,7 +67,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     prev_exec_cnt = curr_exec_cnt;
 
     display_put("%s", ESC_CLEAR);
-    display_put("============================== STAT ==============================\n");
+    display_put("==================================== STAT ====================================\n");
 
     display_put("Iterations: " ESC_BOLD "%zu" ESC_RESET, curr_exec_cnt);
     if (hfuzz->mutationsMax) {
@@ -149,7 +149,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put("  - crashes:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
     }
-    display_put("============================== LOGS ==============================\n");
+    display_put("==================================== LOGS ====================================\n");
 }
 
 extern void display_display(honggfuzz_t * hfuzz)
