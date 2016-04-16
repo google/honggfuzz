@@ -77,7 +77,6 @@ static void setupSignalsPreThr(void)
     sigaddset(&ss, SIGTERM);
     sigaddset(&ss, SIGINT);
     sigaddset(&ss, SIGQUIT);
-    sigaddset(&ss, SIGALRM);
     if (sigprocmask(SIG_BLOCK, &ss, NULL) != 0) {
         PLOG_F("pthread_sigmask(SIG_BLOCK)");
     }
@@ -108,7 +107,6 @@ static void setupSignalsPostThr(void)
     sigaddset(&ss, SIGTERM);
     sigaddset(&ss, SIGINT);
     sigaddset(&ss, SIGQUIT);
-    sigaddset(&ss, SIGALRM);
     if (sigprocmask(SIG_UNBLOCK, &ss, NULL) != 0) {
         PLOG_F("pthread_sigmask(SIG_BLOCK)");
     }
