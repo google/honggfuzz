@@ -190,12 +190,13 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t p
         break;
     }
 
-    *perfFd = perf_event_open(&pe, pid, -1, -1, 0);
+#if defined(PERF_FLAG_FD_CLOEXEC)
+    *perfFd = perf_event_open(&pe, pid, -1, -1, PERF_FLAG_FD_CLOEXEC);
+#endif
     if (*perfFd == -1) {
         PLOG_F("perf_event_open() failed");
         return false;
     }
-    fcntl(*perfFd, F_SETFL, fcntl(*perfFd, F_GETFL, 0) | O_CLOEXEC);
 
     if (method != _HF_DYNFILE_BTS_BLOCK && method != _HF_DYNFILE_BTS_EDGE
         && method != _HF_DYNFILE_IPT_BLOCK) {
