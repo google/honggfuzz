@@ -190,9 +190,10 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t p
         break;
     }
 
-#if defined(PERF_FLAG_FD_CLOEXEC)
-    *perfFd = perf_event_open(&pe, pid, -1, -1, PERF_FLAG_FD_CLOEXEC);
+#if !defined(PERF_FLAG_FD_CLOEXEC)
+    #define PERF_FLAG_FD_CLOEXEC 0
 #endif
+    *perfFd = perf_event_open(&pe, pid, -1, -1, PERF_FLAG_FD_CLOEXEC);
     if (*perfFd == -1) {
         PLOG_F("perf_event_open() failed");
         return false;
