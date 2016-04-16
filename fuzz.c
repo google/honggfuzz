@@ -331,7 +331,8 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
 
         fuzz_getFileName(hfuzz, vFuzzer.fileName);
         if (files_writeBufToFile
-            (vFuzzer.fileName, crashBuf, crashFileSz, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC) == false) {
+            (vFuzzer.fileName, crashBuf, crashFileSz,
+             O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC) == false) {
             LOG_E("Couldn't write buffer to file '%s'", vFuzzer.fileName);
             return false;
         }
@@ -400,7 +401,8 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
              "%s/COV.RANK.%06" PRIu64 ".PID.%d.COVBB.%07" PRIu64 ".TIME.%" PRIu64 ".RND.%" PRIx64,
              hfuzz->workDir, (uint64_t) 999999ULL - cov, getpid(), cov, (uint64_t) time(NULL),
              util_rndGet(0, 0xFFFFFFFFFFFF));
-    if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC) == false) {
+    if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC)
+        == false) {
         LOG_W("Couldn't write buffer to file '%s'", fname);
     }
 }

@@ -516,6 +516,13 @@ bool arch_archInit(honggfuzz_t * hfuzz)
 
 bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
 {
+    sigset_t ss;
+    sigemptyset(&ss);
+    sigaddset(&ss, SIGALRM);
+    if (sigprocmask(SIG_UNBLOCK, &ss, NULL) != 0) {
+        PLOG_F("pthread_sigmask(SIG_UNBLOCK)");
+    }
+
     struct sigevent sevp = {
         .sigev_value.sival_ptr = &fuzzer->linux.timerId,
         .sigev_signo = SIGALRM,

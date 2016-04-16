@@ -191,7 +191,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t p
     }
 
 #if !defined(PERF_FLAG_FD_CLOEXEC)
-    #define PERF_FLAG_FD_CLOEXEC 0
+#define PERF_FLAG_FD_CLOEXEC 0
 #endif
     *perfFd = perf_event_open(&pe, pid, -1, -1, PERF_FLAG_FD_CLOEXEC);
     if (*perfFd == -1) {
