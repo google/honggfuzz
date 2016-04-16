@@ -71,8 +71,22 @@ static void setupTimer(void)
 
 static void setupSignalsPreThr(void)
 {
-    /* Block signals which should be handled by the main thread */
+    struct sigaction sa = {
+        .sa_handler = sigHandler,
+        .sa_flags = 0,
+    };
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(SIGALRM, &sa, NULL) == -1) {
+        PLOG_F("sigaction(SIGALRM) failed");
+    }
+
     sigset_t ss;
+    sigemptyset(&ss);
+    if (sigprocmask(SIG_UNBLOCK, &ss, NULL) != 0) {
+        PLOG_F("pthread_sigmask(SIG_BLOCK)");
+    }
+
+    /* Block signals which should be handled by the main thread */
     sigemptyset(&ss);
     sigaddset(&ss, SIGTERM);
     sigaddset(&ss, SIGINT);
@@ -97,9 +111,6 @@ static void setupSignalsPostThr(void)
     }
     if (sigaction(SIGQUIT, &sa, NULL) == -1) {
         PLOG_F("sigaction(SIGQUIT) failed");
-    }
-    if (sigaction(SIGALRM, &sa, NULL) == -1) {
-        PLOG_F("sigaction(SIGALRM) failed");
     }
     /* Unblock signals which should be handled by the main thread */
     sigset_t ss;
