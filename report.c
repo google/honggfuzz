@@ -81,7 +81,7 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
             snprintf(reportFName, sizeof(reportFName), "%s", hfuzz->reportFile);
         }
 
-        reportFD = open(reportFName, O_WRONLY | O_CREAT | O_APPEND, 0644);
+        reportFD = open(reportFName, O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0644);
         if (reportFD == -1) {
             PLOG_F("Couldn't open('%s') for writing", reportFName);
         }

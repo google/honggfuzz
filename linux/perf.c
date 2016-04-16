@@ -195,6 +195,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t p
         PLOG_F("perf_event_open() failed");
         return false;
     }
+    fcntl(*perfFd, F_SETFL, fcntl(*perfFd, F_GETFL, 0) | O_CLOEXEC);
 
     if (method != _HF_DYNFILE_BTS_BLOCK && method != _HF_DYNFILE_BTS_EDGE
         && method != _HF_DYNFILE_IPT_BLOCK) {

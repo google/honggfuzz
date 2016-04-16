@@ -852,7 +852,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 
     if (files_writeBufToFile
         (fuzzer->crashFileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-         O_CREAT | O_EXCL | O_WRONLY) == false) {
+         O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC) == false) {
         LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
         return;
     }

@@ -86,7 +86,7 @@ uint64_t util_rndGet(uint64_t min, uint64_t max)
     }
 
     if (util_urandomFd == -1) {
-        if ((util_urandomFd = open("/dev/urandom", O_RDONLY)) == -1) {
+        if ((util_urandomFd = open("/dev/urandom", O_RDONLY | O_CLOEXEC)) == -1) {
             PLOG_F("Couldn't open /dev/urandom for writing");
         }
     }
