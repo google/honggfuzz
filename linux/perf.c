@@ -87,7 +87,8 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         size_t byteOff = pos / 8;
         uint8_t bitSet = (uint8_t) (1 << (pos % 8));
 
-        register uint8_t prev = ATOMIC_POST_OR(hfuzz->bbMap[byteOff], bitSet);
+        register uint8_t prev =
+            __atomic_fetch_or(&(hfuzz->bbMap[byteOff]), bitSet, __ATOMIC_SEQ_CST);
         if (!(prev & bitSet)) {
             fuzzer->linux.hwCnts.newBBCnt++;
         }

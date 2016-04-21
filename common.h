@@ -115,27 +115,27 @@ static void __attribute__ ((unused)) _clang_cleanup_func(void (^*dfunc) (void))
 #define wmb()	__sync_synchronize()
 
 /* Atomics */
-#define ATOMIC_GET(x) __sync_fetch_and_add(&(x), 0)
-#define ATOMIC_SET(x, y) __sync_lock_test_and_set(&(x), y)
-#define ATOMIC_CLEAR(x) __sync_fetch_and_and(&(x), 0)
+#define ATOMIC_GET(x) __atomic_load_n(&(x), __ATOMIC_RELAXED)
+#define ATOMIC_SET(x, y) __atomic_store_n(&(x), y, __ATOMIC_RELAXED)
+#define ATOMIC_CLEAR(x) __atomic_store_n(&(x), 0, __ATOMIC_RELAXED)
 
-#define ATOMIC_PRE_INC(x) __sync_add_and_fetch(&(x), 1)
-#define ATOMIC_POST_INC(x) __sync_fetch_and_add(&(x), 1)
+#define ATOMIC_PRE_INC(x) __atomic_add_fetch(&(x), 1, __ATOMIC_RELAXED)
+#define ATOMIC_POST_INC(x) __atomic_fetch_add(&(x), 1, __ATOMIC_RELAXED)
 
-#define ATOMIC_PRE_DEC(x) __sync_sub_and_fetch(&(x), 1)
-#define ATOMIC_POST_DEC(x) __sync_fetch_and_sub(&(x), 1)
+#define ATOMIC_PRE_DEC(x) __atomic_sub_fetch(&(x), 1, __ATOMIC_RELAXED)
+#define ATOMIC_POST_DEC(x) __atomic_fetch_sub(&(x), 1, __ATOMIC_RELAXED)
 
-#define ATOMIC_PRE_ADD(x, y) __sync_add_and_fetch(&(x), y)
-#define ATOMIC_POST_ADD(x, y) __sync_fetch_and_add(&(x), y)
+#define ATOMIC_PRE_ADD(x, y) __atomic_add_fetch(&(x), y, __ATOMIC_RELAXED)
+#define ATOMIC_POST_ADD(x, y) __atomic_fetch_add(&(x), y, __ATOMIC_RELAXED)
 
-#define ATOMIC_PRE_SUB(x, y) __sync_sub_and_fetch(&(x), y)
-#define ATOMIC_POST_SUB(x, y) __sync_fetch_and_sub(&(x), y)
+#define ATOMIC_PRE_SUB(x, y) __atomic_sub_fetch(&(x), y, __ATOMIC_RELAXED)
+#define ATOMIC_POST_SUB(x, y) __atomic_fetch_sub(&(x), y, __ATOMIC_RELAXED)
 
-#define ATOMIC_PRE_AND(x, y) __sync_and_and_fetch(&(x), y)
-#define ATOMIC_POST_AND(x, y) __sync_fetch_and_and(&(x), y)
+#define ATOMIC_PRE_AND(x, y) __atomic_and_fetch(&(x), y, __ATOMIC_RELAXED)
+#define ATOMIC_POST_AND(x, y) __atomic_fetch_and(&(x), y, __ATOMIC_RELAXED)
 
-#define ATOMIC_PRE_OR(x, y) __sync_or_and_fetch(&(x), y)
-#define ATOMIC_POST_OR(x, y) __sync_fetch_and_or(&(x), y)
+#define ATOMIC_PRE_OR(x, y) __atomic_or_fetch(&(x), y, __ATOMIC_RELAXED)
+#define ATOMIC_POST_OR(x, y) __atomic_fetch_or(&(x), y, __ATOMIC_RELAXED)
 
 /* Missing WIFCONTINUED in Android */
 #ifndef WIFCONTINUED
