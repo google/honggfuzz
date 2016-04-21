@@ -117,7 +117,7 @@ static void __attribute__ ((unused)) _clang_cleanup_func(void (^*dfunc) (void))
 /* Atomics */
 #define ATOMIC_GET(x) __atomic_load_n(&(x), __ATOMIC_SEQ_CST)
 #define ATOMIC_SET(x, y) __atomic_store_n(&(x), y, __ATOMIC_SEQ_CST)
-#define ATOMIC_CLEAR(x) __atomic_store_n(&(x), 0, __ATOMIC_SEQ_CST)
+#define ATOMIC_CLEAR(x) __atomic_clear(&(x), __ATOMIC_SEQ_CST)
 
 #define ATOMIC_PRE_INC(x) __atomic_add_fetch(&(x), 1, __ATOMIC_SEQ_CST)
 #define ATOMIC_POST_INC(x) __atomic_fetch_add(&(x), 1, __ATOMIC_SEQ_CST)
