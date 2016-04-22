@@ -225,7 +225,9 @@ void arch_ptAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (ptd == NULL) {
         LOG_F("pt_pkt_alloc_decoder() failed");
     }
-    DEFER(pt_pkt_free_decoder(ptd));
+    defer {
+        pt_pkt_free_decoder(ptd);
+    };
 
     errcode = pt_pkt_sync_forward(ptd);
     if (errcode < 0) {

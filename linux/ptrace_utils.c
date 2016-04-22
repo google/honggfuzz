@@ -878,8 +878,12 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
         PLOG_D("Couldn't open '%s' - R/O mode", crashReport);
         return -1;
     }
-    DEFER(fclose(fReport));
-    DEFER(unlink(crashReportCpy));
+    defer {
+        fclose(fReport);
+    };
+    defer {
+        unlink(crashReportCpy);
+    };
 
     char header[35] = { 0 };
     snprintf(header, sizeof(header), "==%d==ERROR: AddressSanitizer:", pid);
@@ -896,7 +900,9 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
         if (getline(&lineptr, &n, fReport) == -1) {
             break;
         }
-        DEFER(free(lineptr));
+        defer {
+            free(lineptr);
+        };
 
         /* First step is to identify header */
         if (headerFound == false) {
@@ -1303,7 +1309,9 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
         PLOG_E("Couldn't open dir '%s'", path);
         return false;
     }
-    DEFER(closedir(dir));
+    defer {
+        closedir(dir);
+    };
 
     for (;;) {
         struct dirent de, *res;

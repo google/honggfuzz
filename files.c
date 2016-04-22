@@ -47,7 +47,9 @@ ssize_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
         PLOG_E("Couldn't open '%s' for R/O", fileName);
         return -1;
     }
-    DEFER(close(fd));
+    defer {
+        close(fd);
+    };
 
     ssize_t readSz = files_readFromFd(fd, buf, fileMaxSz);
     if (readSz < 0) {
@@ -66,7 +68,9 @@ bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flag
         PLOG_E("Couldn't open '%s' for R/O", fileName);
         return false;
     }
-    DEFER(close(fd));
+    defer {
+        close(fd);
+    };
 
     if (files_writeToFd(fd, buf, fileSz) == false) {
         PLOG_E("Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName, fd);
@@ -130,7 +134,9 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
         PLOG_W("Couldn't allocate memory");
         return false;
     }
-    DEFER(free(buf));
+    defer {
+        free(buf);
+    };
 
     memset(buf, p, (size_t) size);
     int ret = files_writeToFd(fd, buf, size);
@@ -145,7 +151,9 @@ static bool files_readdir(honggfuzz_t * hfuzz)
         PLOG_E("Couldn't open dir '%s'", hfuzz->inputFile);
         return false;
     }
-    DEFER(closedir(dir));
+    defer {
+        closedir(dir);
+    };
 
     int count = 0;
     for (;;) {
@@ -260,7 +268,9 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         PLOG_E("Couldn't open '%s' - R/O mode", hfuzz->dictionaryFile);
         return false;
     }
-    DEFER(fclose(fDict));
+    defer {
+        fclose(fDict);
+    };
 
     for (;;) {
         char *lineptr = NULL;
@@ -323,7 +333,9 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
         PLOG_D("Couldn't open '%s' source", source);
         return false;
     }
-    DEFER(close(inFD));
+    defer {
+        close(inFD);
+    };
 
     struct stat inSt;
     if (fstat(inFD, &inSt) == -1) {
@@ -340,14 +352,18 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
         PLOG_D("Couldn't open '%s' destination", destination);
         return false;
     }
-    DEFER(close(outFD));
+    defer {
+        close(outFD);
+    };
 
     uint8_t *inFileBuf = malloc(inSt.st_size);
     if (!inFileBuf) {
         PLOG_E("malloc(%zu) failed", (size_t) inSt.st_size);
         return false;
     }
-    DEFER(free(inFileBuf));
+    defer {
+        free(inFileBuf);
+    };
 
     ssize_t readSz = files_readFromFd(inFD, inFileBuf, (size_t) inSt.st_size);
     if (readSz < 0) {
@@ -372,11 +388,15 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
         PLOG_E("Couldn't open '%s' - R/O mode", hfuzz->blacklistFile);
         return false;
     }
-    DEFER(fclose(fBl));
+    defer {
+        fclose(fBl);
+    };
 
     char *lineptr = NULL;
     /* lineptr can be NULL, but it's fine for free() */
-    DEFER(free(lineptr));
+    defer {
+        free(lineptr);
+    };
     size_t n = 0;
     for (;;) {
         if (getline(&lineptr, &n, fBl) == -1) {
@@ -450,7 +470,9 @@ bool files_readPidFromFile(const char *fileName, pid_t * pidPtr)
         PLOG_E("Couldn't open '%s' - R/O mode", fileName);
         return false;
     }
-    DEFER(fclose(fPID));
+    defer {
+        fclose(fPID);
+    };
 
     char *lineptr = NULL;
     size_t lineSz = 0;
@@ -460,7 +482,9 @@ bool files_readPidFromFile(const char *fileName, pid_t * pidPtr)
             return false;
         }
     }
-    DEFER(free(lineptr));
+    defer {
+        free(lineptr);
+    };
 
     *pidPtr = atoi(lineptr);
     if (*pidPtr < 1) {

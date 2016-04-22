@@ -105,7 +105,9 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
     if (arch_bfdInit(pid, &bfdParams) == false) {
         return;
     }
-    DEFER(arch_bfdDestroy(&bfdParams));
+    defer {
+        arch_bfdDestroy(&bfdParams);
+    };
 
     const char *func;
     const char *file;
@@ -150,7 +152,9 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
         LOG_W("bfd_openr('/proc/%d/exe') failed", pid);
         return;
     }
-    DEFER(bfd_close(bfdh));
+    defer {
+        bfd_close(bfdh);
+    };
 
     if (!bfd_check_format(bfdh, bfd_object)) {
         LOG_W("bfd_check_format() failed");

@@ -59,14 +59,18 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
         LOG_E("[pid='%d'] unw_create_addr_space failed", pid);
         return num_frames;
     }
-    DEFER(unw_destroy_addr_space(as));
+    defer {
+        unw_destroy_addr_space(as);
+    };
 
     void *ui = _UPT_create(pid);
     if (ui == NULL) {
         LOG_E("[pid='%d'] _UPT_create failed", pid);
         return num_frames;
     }
-    DEFER(_UPT_destroy(ui));
+    defer {
+        _UPT_destroy(ui);
+    };
 
     unw_cursor_t c;
     int ret = unw_init_remote(&c, as, ui);
@@ -97,14 +101,18 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
         LOG_E("[pid='%d'] unw_create_addr_space failed", pid);
         return num_frames;
     }
-    DEFER(unw_destroy_addr_space(as));
+    defer {
+        unw_destroy_addr_space(as);
+    };
 
     struct UPT_info *ui = (struct UPT_info *)_UPT_create(pid);
     if (ui == NULL) {
         LOG_E("[pid='%d'] _UPT_create failed", pid);
         return num_frames;
     }
-    DEFER(_UPT_destroy(ui));
+    defer {
+        _UPT_destroy(ui);
+    };
 
     unw_cursor_t cursor;
     int ret = unw_init_remote(&cursor, as, ui);

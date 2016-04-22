@@ -290,8 +290,12 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         LOG_E("Couldn't open and map '%s' in R/O mode", crashedFuzzer->crashFileName);
         return false;
     }
-    DEFER(munmap(crashBuf, crashFileSz));
-    DEFER(close(crashFd));
+    defer {
+        munmap(crashBuf, crashFileSz);
+    };
+    defer {
+        close(crashFd);
+    };
 
     LOG_I("Launching verifier for %" PRIx64 " hash", crashedFuzzer->backtrace);
     for (int i = 0; i < _HF_VERIFIER_ITER; i++) {
@@ -636,7 +640,9 @@ static void *fuzz_threadNew(void *arg)
 #endif                          // defined(_HF_ARCH_LINUX)
         .linux.attachedPid = 0,.linux.persistentSock = -1,
     };
-    DEFER(free(fuzzer.dynamicFile));
+    defer {
+        free(fuzzer.dynamicFile);
+    };
 
     if (arch_archThreadInit(hfuzz, &fuzzer) == false) {
         LOG_F("Could not initialize the thread");

@@ -217,7 +217,6 @@ static bool arch_setTimer(timer_t * timerid)
         return false;
     }
 
-
     return true;
 }
 

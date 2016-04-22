@@ -380,15 +380,19 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         PLOG_E("Couldn't open '%s' - R/O mode", covFile);
         return false;
     }
-    DEFER(fclose(fCovMap));
+    defer {
+        fclose(fCovMap);
+    };
 
     /* First line contains PC length (32/64-bit) */
     if (getline(&pLine, &lineSz, fCovMap) == -1) {
         LOG_E("Invalid map file '%s'", covFile);
         return false;
     }
-    DEFER(free(pLine);
-          pLine = NULL);
+    defer {
+        free(pLine);
+        pLine = NULL;
+    };
 
     int pcLen = atoi(pLine);
     if (pcLen == 32) {
@@ -405,7 +409,9 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         mapsBuf = util_Malloc(prevMapsNum * sizeof(memMap_t));
     }
     /* It's OK to free(NULL) */
-    DEFER(free(mapsBuf));
+    defer {
+        free(mapsBuf);
+    };
 
     /* Iterate map entries */
     for (;;) {
@@ -465,7 +471,9 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     /* Create a quick index array with maps start addresses */
     startMapsIndex = util_Malloc(mapsNum * sizeof(uint64_t));
-    DEFER(free(startMapsIndex));
+    defer {
+        free(startMapsIndex);
+    };
 
     /* Sort quick maps index */
     qsort(mapsBuf, mapsNum, sizeof(memMap_t), sancov_qsortCmp);
@@ -481,7 +489,10 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
         return false;
     }
-    DEFER(munmap(dataBuf, dataFileSz); close(dataFd));
+    defer {
+        munmap(dataBuf, dataFileSz);
+        close(dataFd);
+    };
 
     /*
      * Avoid cost of size checks inside raw data read loop by defining the read function
@@ -629,7 +640,9 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         PLOG_E("opendir('%s')", covFile);
         return false;
     }
-    DEFER(closedir(pSanCovDir));
+    defer {
+        closedir(pSanCovDir);
+    };
 
     struct dirent *pDir = NULL;
     while ((pDir = readdir(pSanCovDir)) != NULL) {
@@ -642,7 +655,10 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
                 return false;
             }
-            DEFER(munmap(dataBuf, dataFileSz); close(dataFd));
+            defer {
+                munmap(dataBuf, dataFileSz);
+                close(dataFd);
+            };
 
             if (dataFileSz < 8) {
                 LOG_E("Coverage data file too short");
@@ -743,7 +759,9 @@ bool sancov_Init(honggfuzz_t * hfuzz)
     size_t flagsSz = 0;
     size_t bufSz = sizeof(kASAN_OPTS) + (2 * PATH_MAX); // Larger constant + 2 dynamic paths
     char *san_opts = util_Calloc(bufSz);
-    DEFER(free(san_opts));
+    defer {
+        free(san_opts);
+    };
 
     /* AddressSanitizer (ASan) */
     if (hfuzz->useSanCov) {
