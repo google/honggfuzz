@@ -242,14 +242,14 @@ uint64_t util_getUINT64(const uint8_t * buf)
 void util_mutexLock(pthread_mutex_t * mutex, const char *func, int line)
 {
     if (pthread_mutex_lock(mutex)) {
-        PLOG_F("%s():%d pthread_mutex_lock(%p)", func, line, mutex);
+        PLOG_F("%s():%d pthread_mutex_lock(%p)", func, line, (void *)mutex);
     }
 }
 
 void util_mutexUnlock(pthread_mutex_t * mutex, const char *func, int line)
 {
     if (pthread_mutex_unlock(mutex)) {
-        PLOG_F("%s():%d pthread_mutex_unlock(%p)", func, line, mutex);
+        PLOG_F("%s():%d pthread_mutex_unlock(%p)", func, line, (void *)mutex);
     }
 }
 
