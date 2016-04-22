@@ -64,6 +64,8 @@
 #define ABORT_FLAG        "abort_on_error=0"
 #endif
 
+#define SIGNAL_TIMER (SIGRTMIN + 1)
+
 static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     if (hfuzz->persistent && fuzzer->linux.attachedPid == fuzzer->pid) {
@@ -184,8 +186,8 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 
 static void arch_sigFunc(int signo, siginfo_t * si UNUSED, void *dummy UNUSED)
 {
-    if (signo != SIGALRM) {
-        LOG_E("Signal != SIGALRM (%d)", signo);
+    if (signo != SIGNAL_TIMER) {
+        LOG_E("Signal != SIGNAL_TIMER (%d)", signo);
     }
 }
 
@@ -214,19 +216,7 @@ static bool arch_setTimer(timer_t * timerid)
         timer_delete(*timerid);
         return false;
     }
-    sigset_t smask;
-    sigemptyset(&smask);
-    struct sigaction sa = {
-        .sa_handler = NULL,
-        .sa_sigaction = arch_sigFunc,
-        .sa_mask = smask,
-        .sa_flags = SA_SIGINFO,
-        .sa_restorer = NULL,
-    };
-    if (sigaction(SIGALRM, &sa, NULL) == -1) {
-        PLOG_E("sigaction(SIGALRM) failed");
-        return false;
-    }
+
 
     return true;
 }
@@ -516,21 +506,35 @@ bool arch_archInit(honggfuzz_t * hfuzz)
 
 bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
 {
-    sigset_t ss;
-    sigemptyset(&ss);
-    sigaddset(&ss, SIGALRM);
-    if (sigprocmask(SIG_UNBLOCK, &ss, NULL) != 0) {
-        PLOG_F("pthread_sigmask(SIG_UNBLOCK)");
-    }
-
     struct sigevent sevp = {
         .sigev_value.sival_ptr = &fuzzer->linux.timerId,
-        .sigev_signo = SIGALRM,
+        .sigev_signo = SIGNAL_TIMER,
         .sigev_notify = SIGEV_THREAD_ID | SIGEV_SIGNAL,
         ._sigev_un._tid = syscall(__NR_gettid),
     };
     if (timer_create(CLOCK_REALTIME, &sevp, &fuzzer->linux.timerId) == -1) {
         PLOG_E("timer_create(CLOCK_REALTIME) failed");
+        return false;
+    }
+
+    sigset_t smask;
+    sigemptyset(&smask);
+    struct sigaction sa = {
+        .sa_handler = NULL,
+        .sa_sigaction = arch_sigFunc,
+        .sa_mask = smask,
+        .sa_flags = SA_SIGINFO,
+        .sa_restorer = NULL,
+    };
+
+    sigset_t ss;
+    sigemptyset(&ss);
+    sigaddset(&ss, SIGNAL_TIMER);
+    if (sigprocmask(SIG_UNBLOCK, &ss, NULL) != 0) {
+        PLOG_F("pthread_sigmask(%d, SIG_UNBLOCK)", SIGNAL_TIMER);
+    }
+    if (sigaction(SIGNAL_TIMER, &sa, NULL) == -1) {
+        PLOG_E("sigaction(SIGNAL_TIMER (%d)) failed", SIGNAL_TIMER);
         return false;
     }
 
