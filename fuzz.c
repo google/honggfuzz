@@ -292,8 +292,6 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     }
     defer {
         munmap(crashBuf, crashFileSz);
-    };
-    defer {
         close(crashFd);
     };
 
