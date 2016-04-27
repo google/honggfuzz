@@ -120,6 +120,9 @@ int main(int argc, char **argv)
      * Work around CygWin/MinGW
      */
     char **myargs = (char **)util_Malloc(sizeof(char *) * (argc + 1));
+    defer {
+        free(myargs);
+    };
 
     int i;
     for (i = 0U; i < argc; i++) {
