@@ -22,6 +22,7 @@
   * Linux - BFD library (libbfd-dev) and LibUnwind (libunwind-dev/libunwind8-dev)
   * FreeBSD - gmake
   * Android - Android SDK/NDK
+  * Clang - BlocksRuntime Library (libblocksruntime-dev)
 
 **Other**
 

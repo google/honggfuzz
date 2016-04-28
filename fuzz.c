@@ -299,6 +299,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     for (int i = 0; i < _HF_VERIFIER_ITER; i++) {
         fuzzer_t vFuzzer = {
             .pid = 0,
+            .persistentPid = 0,
             .timeStartedMillis = util_timeNowMillis(),
             .crashFileName = {0},
             .pc = 0ULL,
@@ -328,8 +329,17 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                                  },
                       .perfMmapBuf = NULL,
                       .perfMmapAux = NULL,
+#if defined(_HF_ARCH_LINUX)
+                      .timerId = (timer_t) 0,
+#endif                          // defined(_HF_ARCH_LINUX)
+                      .attachedPid = 0,
+                      .persistentSock = -1,
                       },
         };
+
+        if (arch_archThreadInit(hfuzz, &vFuzzer) == false) {
+            LOG_F("Could not initialize the thread");
+        }
 
         fuzz_getFileName(hfuzz, vFuzzer.fileName);
         if (files_writeBufToFile

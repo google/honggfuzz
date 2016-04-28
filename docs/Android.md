@@ -7,12 +7,12 @@ Honggfuzz (as of version 0.6) supports Android OS (NDK cross-compilation) using 
   * [Android NDK](https://developer.android.com/ndk/index.html): User has to manually install NDK and set environment PATH
   * [libunwind](http://www.nongnu.org/libunwind/download.html): In case of first build an upstream git fork is executed followed by required patches
   * [capstone](http://www.capstone-engine.org/download.html): In case of first build an upstream git fork is executed
-  
+
 | **Dependency** | **Last Tested Version** |
 |:-------|:-----------|
-| **Android NDK** | r10e with Android API 21 (Lollipop) |
+| **Android NDK** | r11c with Android API 23 (Marshmallow 6.0) |
 | **libunwind** | upstream master commit [396b6c7] |
-| **capstone** | upstream master commit[0793345] | 
+| **capstone** | upstream master commit [0793345] |
 
 ## Compatibility list ##
 
@@ -35,7 +35,7 @@ Helper bash scripts are present to automate capstone & libunwind builds for targ
 
   * third_party/android/scripts/compile-libunwind.sh third_party/android/libunwind \<arch\>
   * third_party/android/scripts/compile-capstone.sh third_party/android/capstone \<arch\>
-  
+
 Were \<arch\>:
 
   * "arm": For armeabi & armeabi-v7a
@@ -76,7 +76,7 @@ Checking connectivity... done.
 
 ## Honggfuzz ##
 
-| **Flags** | **Allowed Values** | 
+| **Flags** | **Allowed Values** |
 |:-------|:-----------|
 | **ANDROID_DEBUG_ENABLED** | true, false (default: false) |
 | **ANDROID_APP_ABI** | armeabi, armeabi-v7a, arm64-v8a, x86, x86_64 (default: armeabi-v7a) |
@@ -85,7 +85,7 @@ Checking connectivity... done.
 
 _`1`) in case of false, POSIX signals interface is used instead of PTRACE API_
 
-_`2`) Due to getdelim() only APIs >= 21 are supported_
+_`2`) Due to bionic incompatibilities only APIs >= 21 are supported_
 
 After compiling the dependencies (ptrace() API only), from project's root directory execute make with android PHONY to cross-compile.
 
@@ -94,7 +94,7 @@ For example in case of ptrace() API for armeabi-v7a:
 ```
 $ make -B android ANDROID_APP_ABI=armeabi-v7a
 ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
-			APP_PLATFORM=android-21 APP_ABI=armeabi-v7a 
+			APP_PLATFORM=android-21 APP_ABI=armeabi-v7a
 ********************************************************************
 Android PTRACE build: Will prevent debuggerd from processing crashes
 ********************************************************************

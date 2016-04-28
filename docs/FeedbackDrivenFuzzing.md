@@ -36,7 +36,7 @@ Input file/dir: 'IN/'
 Fuzzed cmd: './xmllint --format --nonet ___FILE___'
 Fuzzing threads: 3
 Execs per second: 41 (avg: 88)
-Crashes: 0 (unique: 0, blacklist: 0, verified: 0) 
+Crashes: 0 (unique: 0, blacklist: 0, verified: 0)
 Timeouts: 0
 Number of dynamic files: 251
 Coverage (max):
@@ -107,7 +107,7 @@ Input file/dir: 'IN/'
 Fuzzed cmd: '/usr/bin/xmllint -format ___FILE___'
 Fuzzing threads: 2
 Execs per second: 0 (avg: 0)
-Crashes: 0 (unique: 0, blacklist: 0, verified: 0) 
+Crashes: 0 (unique: 0, blacklist: 0, verified: 0)
 Timeouts: 0
 Number of dynamic files: 251
 Coverage (max):
@@ -128,7 +128,7 @@ Input file/dir: 'CURRENT_BEST'
 Fuzzed cmd: '/usr/bin/xmllint -format ___FILE___'
 Fuzzing threads: 2
 Execs per second: 922 (avg: 925)
-Crashes: 0 (unique: 0, blacklist: 0, verified: 0) 
+Crashes: 0 (unique: 0, blacklist: 0, verified: 0)
 Timeouts: 0
 Number of dynamic files: 251
 Coverage (max):
@@ -153,7 +153,7 @@ Input file/dir: 'IN/'
 Fuzzed cmd: '/usr/bin/xmllint -format ___FILE___'
 Fuzzing threads: 2
 Execs per second: 0 (avg: 0)
-Crashes: 0 (unique: 0, blacklist: 0, verified: 0) 
+Crashes: 0 (unique: 0, blacklist: 0, verified: 0)
 Timeouts: 0
 Number of dynamic files: 251
 Coverage (max):
