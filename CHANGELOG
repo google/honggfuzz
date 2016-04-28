@@ -1,7 +1,7 @@
 2016-03-15 - Version 0.7 (rev 6d01e82)
         - Asan code-coverage (SANCOV) available for all platforms (incl. Windows)
-	    - Support for Intel PT under Linux v4.0 and newer (and Broadwell/Skylake/newer Intel CPUs)
-		- Should work under: Linux, FreeBSD, Mac OS X, Windows/Cygwin, possibly other POSIX-compliant systems
+        - Support for Intel PT under Linux v4.0 and newer (and Broadwell/Skylake/newer Intel CPUs)
+        - Should work under: Linux, FreeBSD, Mac OS X, Windows/Cygwin, possibly other POSIX-compliant systems
 
 2015-08-14 - Version 0.6 (rev aa61adb)
         - Improvements to feedback-driven fuzzing. Using bloom-style filter to record branches (much faster).

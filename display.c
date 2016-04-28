@@ -98,7 +98,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     display_put("Crashes: " ESC_BOLD "%zu" ESC_RESET " (unique: " ESC_BOLD "%zu" ESC_RESET
                 ", blacklist: " ESC_BOLD "%zu" ESC_RESET ", verified: " ESC_BOLD "%zu" ESC_RESET
-                ") \n", ATOMIC_GET(hfuzz->crashesCnt),
+                ")\n", ATOMIC_GET(hfuzz->crashesCnt),
                 ATOMIC_GET(hfuzz->uniqueCrashesCnt),
                 ATOMIC_GET(hfuzz->blCrashesCnt), ATOMIC_GET(hfuzz->verifiedCrashesCnt));
     display_put("Timeouts: " ESC_BOLD "%zu" ESC_RESET "\n", ATOMIC_GET(hfuzz->timeoutedCnt));
