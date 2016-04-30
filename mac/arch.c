@@ -191,6 +191,10 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     /*
      * Signal is interesting
      */
+    /*
+     * Increase crashes counter presented by ASCII display
+     */
+    ATOMIC_POST_INC(hfuzz->crashesCnt);
 
     /*
      * Get data from exception handler
@@ -199,6 +203,16 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     fuzzer->exception = g_fuzzer_crash_information[fuzzer->pid].exception;
     fuzzer->access = g_fuzzer_crash_information[fuzzer->pid].access;
     fuzzer->backtrace = g_fuzzer_crash_information[fuzzer->pid].backtrace;
+
+    /*
+     * Check if stackhash is blacklisted
+     */
+    if (hfuzz->blacklist
+        && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) != -1)) {
+        LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
+        ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+        return true;
+    }
 
     /* If dry run mode, copy file with same name into workspace */
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
@@ -221,18 +235,10 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
                  fuzzer->backtrace, fuzzer->access, localtmstr, fuzzer->pid, hfuzz->fileExtn);
     }
 
-    /*
-     * Increase crashes counter presented by ASCII display
-     */
-    ATOMIC_POST_INC(hfuzz->crashesCnt);
-
-    /*
-     * Check if stackhash is blacklisted
-     */
-    if (hfuzz->blacklist
-        && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) != -1)) {
-        LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
-        ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+    if (files_exists(fuzzer->crashFileName)) {
+        LOG_I("It seems that '%s' already exists, skipping", fuzzer->crashFileName);
+        // Clear filename so that verifier can understand we hit a duplicate
+        memset(fuzzer->crashFileName, 0, sizeof(fuzzer->crashFileName));
         return true;
     }
 
