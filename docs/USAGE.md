@@ -4,7 +4,7 @@
 
 # OBJECTIVE #
 
-  Honggfuzz is a general-purpose fuzzing tool. Given an input corpus files, honggfuzz modifies input to a test program and utilize the **ptrace() API**/**POSIX signal interface** to detect and log crashes. It can also use software or hardware-based code covberage techniques to produce more and more interesting inputs
+  Honggfuzz is a general-purpose fuzzing tool. Given an input corpus files, honggfuzz modifies input to a test program and utilize the **ptrace() API**/**POSIX signal interface** to detect and log crashes. It can also use software or hardware-based code coverage techniques to produce more and more interesting inputs
 
 # FEATURES #
 
@@ -35,7 +35,7 @@ It should work under the following operating systems:
 | **MS Windows** | Works | POSIX signal interface via CygWin |
 | **Other Unices** | Depends`*` | POSIX signal interface |
 
- _`*`) It might work provided that a given operating system implements **wait3()** call_
+ _`*`) It might work provided that a given operating system implements **wait4()** call_
 
 # USAGE #
 
@@ -62,7 +62,7 @@ Options:
 	Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])
  --extension|-e VALUE
 	Input file extension (e.g. 'swf'), (default: 'fuzz')
- --wokspace|-W VALUE
+ --workspace|-W VALUE
 	Workspace directory to save crashes & runtime files (default: '.')
  --flip_rate|-r VALUE
 	Maximal flip rate, (default: '0.001')

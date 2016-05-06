@@ -51,7 +51,7 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   # Upstream libunwind compiled from sources with Android NDK toolchain
   LIBUNWIND_A := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(UNW_ARCH).a
   ifeq ("$(wildcard $(LIBUNWIND_A))","")
-    $(error libunwind-$(UNW_ARCH). is missing. Please execute \
+    $(error libunwind-$(UNW_ARCH) is missing. Please execute \
             'third_party/android/scripts/compile-libunwind.sh third_party/android/libunwind $(ARCH_ABI)')
   endif
 
@@ -81,7 +81,7 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   # Upstream capstone compiled from sources with Android NDK toolchain
   LIBCAPSTONE_A := third_party/android/capstone/$(ARCH_ABI)/libcapstone.a
   ifeq ("$(wildcard $(LIBCAPSTONE_A))","")
-    $(error libunwind-$(UNW_ARCH). is missing. Please execute \
+    $(error libcapstone is missing. Please execute \
             'third_party/android/scripts/compile-capstone.sh third_party/android/capstone $(ARCH_ABI)')
   endif
   include $(CLEAR_VARS)
