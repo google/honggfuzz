@@ -15,14 +15,8 @@
 
 LOCAL_PATH := $(abspath $(call my-dir)/..)
 
-# Enable Linux ptrace() instead of POSIX signal interface by default 
+# Enable Linux ptrace() instead of POSIX signal interface by default
 ANDROID_WITH_PTRACE ?= true
-
-# Make sure compiler toolchain is compatible / supported
-ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
-  $(error Clang toolchains are not supported yet. Clang uses __aeabi_read_tp to \
-  implement thread_local, which isn't supported by bionic [$(NDK_TOOLCHAIN)])
-endif
 
 ifeq ($(ANDROID_WITH_PTRACE),true)
   ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi armeabi-v7a))
@@ -51,7 +45,7 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   # Upstream libunwind compiled from sources with Android NDK toolchain
   LIBUNWIND_A := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(UNW_ARCH).a
   ifeq ("$(wildcard $(LIBUNWIND_A))","")
-    $(error libunwind-$(UNW_ARCH). is missing. Please execute \
+    $(error libunwind-$(UNW_ARCH) is missing. Please execute \
             'third_party/android/scripts/compile-libunwind.sh third_party/android/libunwind $(ARCH_ABI)')
   endif
 
@@ -81,13 +75,25 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   # Upstream capstone compiled from sources with Android NDK toolchain
   LIBCAPSTONE_A := third_party/android/capstone/$(ARCH_ABI)/libcapstone.a
   ifeq ("$(wildcard $(LIBCAPSTONE_A))","")
-    $(error libunwind-$(UNW_ARCH). is missing. Please execute \
+    $(error libcapstone is missing. Please execute \
             'third_party/android/scripts/compile-capstone.sh third_party/android/capstone $(ARCH_ABI)')
   endif
   include $(CLEAR_VARS)
   LOCAL_MODULE := libcapstone
   LOCAL_SRC_FILES := $(LIBCAPSTONE_A)
   LOCAL_EXPORT_C_INCLUDES := third_party/android/capstone/include
+  include $(PREBUILT_STATIC_LIBRARY)
+endif
+
+ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
+  LIBBRT_A := third_party/android/libBlocksRuntime/$(ARCH_ABI)/libblocksruntime.a
+  ifeq ("$(wildcard $(LIBBRT_A))","")
+    $(error libBlocksRuntime is missing. Please execute \
+            'third_party/android/scripts/compile-libBlocksRuntime.sh third_party/android/libBlocksRuntime $(ARCH_ABI)')
+  endif
+  include $(CLEAR_VARS)
+  LOCAL_MODULE := libblocksruntime
+  LOCAL_SRC_FILES := $(LIBBRT_A)
   include $(PREBUILT_STATIC_LIBRARY)
 endif
 
@@ -101,7 +107,7 @@ LOCAL_CFLAGS := -std=c11 -I. \
     -Wall -Wextra -Wno-initializer-overrides -Wno-override-init \
     -Wno-unknown-warning-option -Werror -funroll-loops -O2 \
     -Wframe-larger-than=51200
-LOCAL_LDFLAGS := -lm
+LOCAL_LDFLAGS := -lm -latomic
 
 ifeq ($(ANDROID_WITH_PTRACE),true)
   LOCAL_C_INCLUDES := third_party/android/libunwind/include third_party/android/capstone/include
@@ -125,5 +131,10 @@ endif
 
 LOCAL_SRC_FILES += $(ARCH_SRCS)
 LOCAL_CFLAGS += -D_HF_ARCH_${ARCH}
+
+ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
+  LOCAL_CFLAGS += -fblocks
+  LOCAL_STATIC_LIBRARIES += libblocksruntime
+endif
 
 include $(BUILD_EXECUTABLE)

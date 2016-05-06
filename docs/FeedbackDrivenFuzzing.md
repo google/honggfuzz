@@ -25,7 +25,7 @@ There are always 2 phases of the fuzzing:
  * 2) Honggfuzz choses randomly files from the dynamic input corpus (in-memory), mutates them, and runs a new fuzzing task. If the newly created file adds to the code coverage, it gets added to the dynamic input corpus
 
 ## ASAN Code coverage (-C)##
-In otder to make this mode work, one needs to compile the fuzzed tool (_xmllint_ here) with _-fsanitize=address -fsanitize-coverage=bb_
+In order to make this mode work, one needs to compile the fuzzed tool (_xmllint_ here) with _-fsanitize=address -fsanitize-coverage=bb_
 
 ```
 $ honggfuzz -t20 -F 2800 -n3 -f IN/ -r 0.001 -C -q -- ./xmllint --format --nonet ___FILE___

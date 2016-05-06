@@ -23,7 +23,7 @@ if [ -z "$NDK" ]; then
     echo "[-] Could not detect Android NDK dir"
     exit 1
   fi
-fi 
+fi
 
 if [ $# -ne 2 ]; then
   echo "[-] Invalid arguments"
@@ -112,7 +112,7 @@ if [ $? -ne 0 ]; then
     echo "[-] Compilation failed"
     exit 1
 else
-    echo "[*] '$ARCH' libcapstone  available at '$CAPSTONE_DIR/$ARCH'"
+    echo "[*] '$ARCH' libcapstone  vailable at '$CAPSTONE_DIR/$ARCH'"
 fi
 
 cp libcapstone.a $ARCH/

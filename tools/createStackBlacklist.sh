@@ -107,7 +107,7 @@ if [ $nArgs -gt 2 ]; then
   fi
 
   if [[ "$ARCH" != "MAC" && "$ARCH" != "LINUX" ]]; then
-    echo "[-] Invlid architecture, expecting 'MAC' or 'LINUX'"
+    echo "[-] Invalid architecture, expecting 'MAC' or 'LINUX'"
     usage
   fi
 

@@ -283,7 +283,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             /* If pid from file, check again for cases of auto-restart daemons that update it */
             /*
              * TODO: Investigate if we need to delay here, so that target process has
-             * enough time to restart. Tricky to answer since is target dependant.
+             * enough time to restart. Tricky to answer since is target dependent.
              */
             if (files_readPidFromFile(hfuzz->linux.pidFile, &hfuzz->linux.pid) == false) {
                 LOG_F("Failed to read new PID from file - abort");

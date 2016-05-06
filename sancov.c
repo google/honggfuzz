@@ -93,7 +93,7 @@
 #define kMSAN_OPTS          "exit_code=" STR(HF_MSAN_EXIT_CODE) ":"\
                             "wrap_signals=0:print_stats=1"
 
-/* 'log_path' ouput directory for sanitizer reports */
+/* 'log_path' output directory for sanitizer reports */
 #define kSANLOGDIR          "log_path="
 
 /* 'coverage_dir' output directory for coverage data files is set dynamically */
