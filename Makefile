@@ -145,12 +145,30 @@ endif
 
 # Control Android builds
 ANDROID_DEBUG_ENABLED ?= false
+ANDROID_CLANG         ?= false
 ANDROID_APP_ABI       ?= armeabi-v7a
-ANDROID_API           ?= android-21
-ANDROID_NDK_TOOLCHAIN ?=
 NDK_BUILD_ARGS :=
 ifeq ($(ANDROID_DEBUG_ENABLED),true)
     NDK_BUILD_ARGS += V=1 NDK_DEBUG=1 APP_OPTIM=debug
+endif
+
+ifeq ($(ANDROID_CLANG),true)
+  # clang works only for APIs >= 23, so default to it if not set
+  ANDROID_API ?= android-23
+  ifeq ($(ANDROID_APP_ABI),armeabi-v7a)
+    ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-clang3.6
+  else ifeq ($(ANDROID_APP_ABI),x86)
+    ANDROID_NDK_TOOLCHAIN ?= x86-clang3.6
+  else ifeq ($(ANDROID_APP_ABI),arm64-v8a)
+    ANDROID_NDK_TOOLCHAIN ?= aarch64-linux-android-clang3.6
+  else ifeq ($(ANDROID_APP_ABI),x86_64)
+    ANDROID_NDK_TOOLCHAIN ?= x86_64-clang3.6
+  else
+    $(error Unsuported / Unknown APP_API '$(ANDROID_APP_ABI)')
+  endif
+else
+  ANDROID_API           ?= android-21
+  ANDROID_NDK_TOOLCHAIN ?=
 endif
 
 SUBDIR_ROOTS := linux mac posix libraries
