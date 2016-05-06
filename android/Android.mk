@@ -107,7 +107,7 @@ LOCAL_CFLAGS := -std=c11 -I. \
     -Wall -Wextra -Wno-initializer-overrides -Wno-override-init \
     -Wno-unknown-warning-option -Werror -funroll-loops -O2 \
     -Wframe-larger-than=51200
-LOCAL_LDFLAGS := -lm
+LOCAL_LDFLAGS := -lm -latomic
 
 ifeq ($(ANDROID_WITH_PTRACE),true)
   LOCAL_C_INCLUDES := third_party/android/libunwind/include third_party/android/capstone/include
