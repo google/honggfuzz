@@ -444,10 +444,11 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     return true;
 }
 
+#ifdef DEBUG
 /*
  * Write the crash report to DEBUG
  */
-void
+static void
 write_crash_report(thread_port_t thread,
                    task_port_t task,
                    exception_type_t exception,
@@ -478,16 +479,19 @@ write_crash_report(thread_port_t thread,
     [_crashReport release];
     [pool drain];
 }
+#endif
 
 /* Hash the callstack in an unique way */
-uint64_t hash_callstack(thread_port_t thread,
-                        task_port_t task,
-                        exception_type_t exception,
-                        mach_exception_data_t code,
-                        mach_msg_type_number_t code_count,
-                        int *flavor,
-                        thread_state_t in_state,
-                        mach_msg_type_number_t in_state_count) {
+static uint64_t
+hash_callstack(thread_port_t thread,
+               task_port_t task,
+               exception_type_t exception,
+               mach_exception_data_t code,
+               mach_msg_type_number_t code_count,
+               int *flavor,
+               thread_state_t in_state,
+               mach_msg_type_number_t in_state_count)
+{
 
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
     CrashReport *_crashReport = nil;
@@ -548,33 +552,35 @@ uint64_t hash_callstack(thread_port_t thread,
      * For each line, we only take the last three nibbles from the
      * address.
      *
-     * Sample output:
+     * Sample outputs:
      *
-     * 0 libsystem_kernel.dylib 0x00007fff80514d46 __kill + 10 1
-     * libsystem_c.dylib 0x00007fff85731ec0 __abort + 193 2
-     * libsystem_c.dylib 0x00007fff85732d17 __stack_chk_fail + 195 3
-     * stack_buffer_overflow64-stripped 0x000000010339def5 0x10339d000 +
-     * 3829 4 ??? 0x4141414141414141 0 + 4702111234474983745
+     * 0 libsystem_kernel.dylib 0x00007fff80514d46 __kill + 10
+     * 1 libsystem_c.dylib 0x00007fff85731ec0 __abort + 193
+     * 2 libsystem_c.dylib 0x00007fff85732d17 __stack_chk_fail + 195
+     * 3 stack_buffer_overflow64-stripped 0x000000010339def5 0x10339d000 + 3829
+     * 4 ??? 0x4141414141414141 0 + 4702111234474983745
      *
-     * 0 libsystem_kernel.dylib 0x00007fff80514d46 __kill + 10 1
-     * libsystem_c.dylib 0x00007fff85731ec0 __abort + 193 2
-     * libsystem_c.dylib 0x00007fff85732d17 __stack_chk_fail + 195 3
-     * stack_buffer_overflow64 0x0000000108f41ef5 main + 133 4 ???
-     * 0x4141414141414141 0 + 4702111234474983745
+     * 0 libsystem_kernel.dylib 0x00007fff80514d46 __kill + 10
+     * 1 libsystem_c.dylib 0x00007fff85731ec0 __abort + 193
+     * 2 libsystem_c.dylib 0x00007fff85732d17 __stack_chk_fail + 195
+     * 3 stack_buffer_overflow64 0x0000000108f41ef5 main + 133
+     * 4 ??? 0x4141414141414141 0 + 4702111234474983745
      *
-     * 0 libsystem_kernel.dylib 0x940023ba __kill + 10 1
-     * libsystem_kernel.dylib 0x940014bc kill$UNIX2003 + 32 2
-     * libsystem_c.dylib 0x926f362e __abort + 246 3 libsystem_c.dylib
-     * 0x926c2b60 __chk_fail + 49 4 libsystem_c.dylib 0x926c2bf9
-     * __memset_chk + 53 5 stack_buffer_overflow32-stripped 0x00093ee5
-     * 0x93000 + 3813 6 libdyld.dylib 0x978c6725 start + 1
+     * 0 libsystem_kernel.dylib 0x940023ba __kill + 10
+     * 1 libsystem_kernel.dylib 0x940014bc kill$UNIX2003 + 32
+     * 2 libsystem_c.dylib 0x926f362e __abort + 246
+     * 3 libsystem_c.dylib 0x926c2b60 __chk_fail + 49
+     * 4 libsystem_c.dylib 0x926c2bf9 __memset_chk + 53
+     * 5 stack_buffer_overflow32-stripped 0x00093ee5 0x93000 + 3813
+     * 6 libdyld.dylib 0x978c6725 start + 1
      *
-     * 0 libsystem_kernel.dylib 0x940023ba __kill + 10 1
-     * libsystem_kernel.dylib 0x940014bc kill$UNIX2003 + 32 2
-     * libsystem_c.dylib 0x926f362e __abort + 246 3 libsystem_c.dylib
-     * 0x926c2b60 __chk_fail + 49 4 libsystem_c.dylib 0x926c2bf9
-     * __memset_chk + 53 5 stack_buffer_overflow32 0x0003cee5 main + 117 6
-     * libdyld.dylib 0x978c6725 start + 1
+     * 0 libsystem_kernel.dylib 0x940023ba __kill + 10
+     * 1 libsystem_kernel.dylib 0x940014bc kill$UNIX2003 + 32
+     * 2 libsystem_c.dylib 0x926f362e __abort + 246
+     * 3 libsystem_c.dylib 0x926c2b60 __chk_fail + 49
+     * 4 libsystem_c.dylib 0x926c2bf9 __memset_chk + 53
+     * 5 stack_buffer_overflow32 0x0003cee5 main + 117
+     * 6 libdyld.dylib 0x978c6725 start + 1
      *
      */
 
@@ -668,7 +674,6 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
      * Get program counter.
      * Cast to void* in order to silence the alignment warnings
      */
-
     x86_thread_state_t *platform_in_state = ((x86_thread_state_t *) (void *)in_state);
 
     if (x86_THREAD_STATE32 == platform_in_state->tsh.flavor) {
@@ -680,19 +685,15 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     /*
      * Get the exception type
      */
-
     exception_type_t exception_type = ((code[0] >> 20) & 0x0F);
-
     if (exception_type == 0) {
         exception_type = EXC_CRASH;
     }
-
     fuzzer->exception = exception_type;
 
     /*
      * Get the access address.
      */
-
     mach_exception_data_type_t exception_data[2];
     memcpy(exception_data, code, sizeof(exception_data));
     exception_data[0] = (code[0] & ~(0x00000000FFF00000));
@@ -704,16 +705,17 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
     /*
      * Get a hash of the callstack
      */
-
     uint64_t hash = hash_callstack(thread, task, exception, code, code_count, flavor,
                                    in_state, in_state_count);
-
     fuzzer->backtrace = hash;
+
+#ifdef DEBUG
+    write_crash_report(thread, task, exception, code, code_count, flavor, in_state, in_state_count);
+#endif
 
     /*
      * Cleanup
      */
-
     if (mach_port_deallocate(mach_task_self(), task) != KERN_SUCCESS) {
         LOG_W("Exception Handler: Could not deallocate task");
     }
@@ -722,9 +724,11 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
         LOG_W("Exception Handler: Could not deallocate thread");
     }
 
-    return KERN_SUCCESS;        // KERN_SUCCESS indicates that this should
-    // not be forwarded to other crash
-    // handlers
+    /*
+     * KERN_SUCCESS indicates that this should not be forwarded to other crash
+     * handlers
+     */
+    return KERN_SUCCESS;
 }
 
 bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
