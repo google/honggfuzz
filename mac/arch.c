@@ -147,6 +147,26 @@ const char *exception_to_string(int exception)
     return "UNKNOWN";
 }
 
+static void arch_generateReport(fuzzer_t * fuzzer, int termsig)
+{
+    fuzzer->report[0] = '\0';
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n",
+                   fuzzer->origFileName);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n",
+                   fuzzer->crashFileName);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "PID: %d\n", fuzzer->pid);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "SIGNAL: %s (%d)\n",
+                   arch_sigs[termsig].descr, termsig);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "EXCEPTION: %s\n",
+                   exception_to_string(fuzzer->exception));
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FAULT ADDRESS: %p\n", fuzzer->access);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "CRASH FRAME PC: %p\n", fuzzer->pc);
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK HASH: %016llx\n",
+                   fuzzer->backtrace);
+
+    return;
+}
+
 /*
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
@@ -256,6 +276,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
     ATOMIC_CLEAR(hfuzz->dynFileIterExpire);
+
+    arch_generateReport(fuzzer, termsig);
 
     return true;
 }
