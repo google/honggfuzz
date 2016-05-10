@@ -93,6 +93,12 @@ static mach_port_t g_exception_port = MACH_PORT_NULL;
 fuzzer_t g_fuzzer_crash_information[PID_MAX + 1];
 
 /*
+ * Global to store the CrashWrangler generated callstack from
+ * the exception handler thread
+ */
+static char *g_fuzzer_crash_callstack[PID_MAX + 1];
+
+/*
  * Global to have a unique service name for each honggfuzz process
  */
 char g_service_name[256];
@@ -163,6 +169,13 @@ static void arch_generateReport(fuzzer_t * fuzzer, int termsig)
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "CRASH FRAME PC: %p\n", fuzzer->pc);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK HASH: %016llx\n",
                    fuzzer->backtrace);
+    if (g_fuzzer_crash_callstack[fuzzer->pid]) {
+        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK: \n%s\n",
+                       g_fuzzer_crash_callstack[fuzzer->pid]);
+    } else {
+        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report),
+                       "STACK: \n Callstack not available.\n");
+    }
 
     return;
 }
@@ -223,6 +236,13 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     fuzzer->exception = g_fuzzer_crash_information[fuzzer->pid].exception;
     fuzzer->access = g_fuzzer_crash_information[fuzzer->pid].access;
     fuzzer->backtrace = g_fuzzer_crash_information[fuzzer->pid].backtrace;
+
+    defer {
+        if (g_fuzzer_crash_callstack[fuzzer->pid]) {
+            free(g_fuzzer_crash_callstack[fuzzer->pid]);
+            g_fuzzer_crash_callstack[fuzzer->pid] = NULL;
+        }
+    };
 
     /*
      * Check if stackhash is blacklisted
@@ -556,16 +576,47 @@ hash_callstack(thread_port_t thread,
     /*
      * Determine the end of the callstack
      */
-    char *callstack_end = strstr(callstack, "\n\nThread");
+    char *callstack_end = strstr(callstack_start, "\n\nThread");
 
     if (callstack_end == NULL) {
         LOG_F("Could not find callstack end in crash report %s", description);
     }
 
+    if (callstack_end <= callstack_start) {
+        LOG_F("Malformed callstack: %s", description);
+    }
+
     /*
-     * Make sure it's NULL-terminated
+     * Check for too large callstack.
+     */
+#define MAX_CALLSTACK_SIZE 4096
+    const size_t callstack_size = (callstack_end - callstack_start);
+    if (callstack_size > MAX_CALLSTACK_SIZE) {
+        LOG_W("Too large callstack (%zu bytes), truncating to %d bytes",
+              callstack_size, MAX_CALLSTACK_SIZE);
+        callstack_start[MAX_CALLSTACK_SIZE] = '\0';
+        callstack_end = callstack_start + MAX_CALLSTACK_SIZE;
+    }
+
+    pid_t pid;
+    pid_for_task(task, &pid);
+
+    char **buf = &g_fuzzer_crash_callstack[pid];
+    /*
+     * Check for memory leaks. This shouldn't happen.
+     */
+    if (*buf) {
+        LOG_E("Memory leak: arch_analyzeSignal didn't free previous callstack");
+        free(*buf);
+        *buf = NULL;
+    }
+
+    /*
+     * Copy the CrashWrangler formatted callstack and make sure
+     * it's NULL-terminated.
      */
     *callstack_end = '\0';
+    *buf = util_StrDup(callstack_start);
 
     /*
      *
