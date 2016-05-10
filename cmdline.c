@@ -199,6 +199,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .covMetadata = NULL,
         .msanReportUMRS = false,
 
+        .report_mutex = PTHREAD_MUTEX_INITIALIZER,
+
         /* Linux code */
         .linux = {
             .hwCnts = {
