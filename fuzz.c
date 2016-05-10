@@ -625,7 +625,10 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
     }
 
-    report_Report(hfuzz, fuzzer->report);
+    {
+        MX_SCOPED_LOCK(&hfuzz->report_mutex);
+        report_Report(hfuzz, fuzzer->report);
+    }
 
     if (state == _HF_STATE_DYNAMIC_PRE && ATOMIC_PRE_INC(hfuzz->doneFileIndex) >= hfuzz->fileCnt) {
         fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_MAIN);

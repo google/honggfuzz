@@ -283,6 +283,8 @@ typedef struct {
     node_t *covMetadata;
     bool msanReportUMRS;
 
+    pthread_mutex_t report_mutex;
+
     /* For the Linux code */
     struct {
         hwcnt_t hwCnts;
