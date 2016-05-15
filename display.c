@@ -50,7 +50,27 @@ static void display_put(const char *fmt, ...)
 
 static void display_displayLocked(honggfuzz_t * hfuzz)
 {
-    unsigned long elapsed = (unsigned long)(time(NULL) - hfuzz->timeStart);
+    unsigned long elapsed_second = (unsigned long)(time(NULL) - hfuzz->timeStart);
+    
+    unsigned int day,hour,min,second;
+    char time_elapsed_str[128];
+
+    if (elapsed_second < 24*3600)
+    {
+        hour = elapsed_second/3600;
+        min = (elapsed_second - 3600*hour)/60;
+        second = elapsed_second - hour*3600 - min*60;
+        sprintf(time_elapsed_str, "%d hrs %d min %d sec", hour, min, second);
+    }
+    else
+    {
+        day = elapsed_second/24/3600;
+        elapsed_second = elapsed_second - day*24*3600;
+        hour = elapsed_second/3600;
+        min = (elapsed_second - 3600*hour)/60;
+        second = elapsed_second - hour*3600 - min*60;
+        sprintf(time_elapsed_str, "%d days %d hrs %d min %d sec", day, hour, min, second);
+    }
 
     size_t curr_exec_cnt = ATOMIC_GET(hfuzz->mutationsCnt);
     /*
@@ -77,8 +97,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     char start_time_str[128];
     util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
-    display_put("Start time: " ESC_BOLD "%s" ESC_RESET " (" ESC_BOLD "%lu"
-                ESC_RESET " seconds elapsed)\n", start_time_str, elapsed);
+    display_put("Start time: " ESC_BOLD "%s" ESC_RESET "\n", start_time_str);
+    display_put("Run time: " ESC_BOLD "%s" ESC_RESET "\n", time_elapsed_str);
 
     display_put("Input file/dir: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
     display_put("Fuzzed cmd: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
@@ -89,7 +109,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     display_put("Fuzzing threads: " ESC_BOLD "%zu" ESC_RESET "\n", hfuzz->threadsMax);
     display_put("Execs (iterations) per second: " ESC_BOLD "%zu" ESC_RESET " (avg: " ESC_BOLD "%zu"
-                ESC_RESET ")\n", exec_per_sec, elapsed ? (curr_exec_cnt / elapsed) : 0);
+                ESC_RESET ")\n", exec_per_sec, elapsed_second ? (curr_exec_cnt / elapsed_second) : 0);
 
     /* If dry run, print also the input file count */
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
