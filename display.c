@@ -52,7 +52,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 {
     unsigned long elapsed_second = (unsigned long)(time(NULL) - hfuzz->timeStart);
     
-    unsigned int day,hour,min,second;
+    unsigned int day, hour, min, second;
     char time_elapsed_str[128];
 
     if (elapsed_second < 24*3600)
@@ -98,7 +98,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     char start_time_str[128];
     util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
     display_put("Start time: " ESC_BOLD "%s" ESC_RESET "\n", start_time_str);
-    display_put("Run time: " ESC_BOLD "%s" ESC_RESET "\n", time_elapsed_str);
+    display_put("Run time: " ESC_BOLD "%s" ESC_RESET "\n", time_elapsed_str);   // add run time
 
     display_put("Input file/dir: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
     display_put("Fuzzed cmd: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
