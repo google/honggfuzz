@@ -60,7 +60,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         hour = elapsed_second/3600;
         min = (elapsed_second - 3600*hour)/60;
         second = elapsed_second - hour*3600 - min*60;
-        sprintf(time_elapsed_str, "%d hrs %d min %d sec", hour, min, second);
+        snprintf(time_elapsed_str, 50, "%u hrs %u min %u sec", hour, min, second);
     }
     else
     {
@@ -69,7 +69,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         hour = elapsed_second/3600;
         min = (elapsed_second - 3600*hour)/60;
         second = elapsed_second - hour*3600 - min*60;
-        sprintf(time_elapsed_str, "%d days %d hrs %d min %d sec", day, hour, min, second);
+        snprintf(time_elapsed_str, 50, "%u days %u hrs %u min %u sec", day, hour, min, second);
     }
 
     size_t curr_exec_cnt = ATOMIC_GET(hfuzz->mutationsCnt);
