@@ -476,15 +476,15 @@ bool files_readPidFromFile(const char *fileName, pid_t * pidPtr)
 
     char *lineptr = NULL;
     size_t lineSz = 0;
+    defer {
+        free(lineptr);
+    };
     if (getline(&lineptr, &lineSz, fPID) == -1) {
         if (lineSz == 0) {
             LOG_E("Empty PID file (%s)", fileName);
             return false;
         }
     }
-    defer {
-        free(lineptr);
-    };
 
     *pidPtr = atoi(lineptr);
     if (*pidPtr < 1) {

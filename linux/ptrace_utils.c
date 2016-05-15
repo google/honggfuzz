@@ -896,13 +896,13 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
 
     char *lineptr = NULL, *cAddr = NULL;
     size_t n = 0;
+    defer {
+        free(lineptr);
+    };
     for (;;) {
         if (getline(&lineptr, &n, fReport) == -1) {
             break;
         }
-        defer {
-            free(lineptr);
-        };
 
         /* First step is to identify header */
         if (headerFound == false) {
