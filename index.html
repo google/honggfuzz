@@ -1,40 +1,42 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
-    <meta charset='utf-8'>
+    <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+    <title>Honggfuzz by google</title>
 
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-
-    <title>Honggfuzz by google</title>
   </head>
-
   <body>
-    <header>
-      <div class="inner">
-        <h1>Honggfuzz</h1>
-        <h2>A general-purpose, easy-to-use fuzzer with interesting analysis options. Supports feedback-driven code coverage modes.</h2>
-        <a href="https://github.com/google/honggfuzz" class="button"><small>View project on</small> GitHub</a>
-      </div>
-    </header>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">Honggfuzz</h1>
+        <p class="header">A general-purpose, easy-to-use fuzzer with interesting analysis options. Supports feedback-driven code coverage modes.</p>
 
-    <div id="content-wrapper">
-      <div class="inner clearfix">
-        <section id="main-content">
-          <h1>
-<a id="honggfuzz" class="anchor" href="#honggfuzz" aria-hidden="true"><span class="octicon octicon-link"></span></a>honggfuzz</h1>
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/google/honggfuzz/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/google/honggfuzz/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/google/honggfuzz">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/google">google</a></p>
+
+
+      </header>
+      <section>
+        <h1>
+<a id="honggfuzz" class="anchor" href="#honggfuzz" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>honggfuzz</h1>
 
 <p><strong>Description</strong></p>
 
 <ul>
-<li>A general-purpose, easy-to-use fuzzer with interesting analysis options. See <a href="https://github.com/google/honggfuzz/blob/master/README.md">README</a> wiki page for more details</li>
+<li>A general-purpose, easy-to-use fuzzer with interesting analysis options. See <a href="https://github.com/google/honggfuzz/blob/master/docs/USAGE.md">USAGE</a> for more details</li>
 <li>Supports hardware-based <a href="https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md">feedback-driven fuzzing</a> (requires Linux and a supported CPU model), also for closed-source binaries</li>
 <li>It works, at least, under GNU/Linux, FreeBSD, Mac OSX and <a href="https://github.com/google/honggfuzz/blob/master/docs/Android.md">Android</a>
 </li>
@@ -57,7 +59,7 @@
 <p><strong>Code</strong></p>
 
 <ul>
-<li>Latest version: <a href="https://github.com/google/honggfuzz/releases/tag/0.6">0.6</a> <a href="https://github.com/google/honggfuzz/blob/master/CHANGELOG">CHANGELOG</a>
+<li>Latest version: <a href="https://github.com/google/honggfuzz/releases/tag/0.7">0.7</a> <a href="https://github.com/google/honggfuzz/blob/master/CHANGELOG">CHANGELOG</a>
 </li>
 <li>Older versions and static builds: <a href="https://docs.google.com/file/d/0B86hdL7CeBvAX1NzMkMtUzN4Rms/view">Honggfuzz 0.5</a>, <a href="https://docs.google.com/uc?id=0B86hdL7CeBvAX1NzMkMtUzN4Rms&amp;export=download">Direct download link</a> and <a href="https://drive.google.com/folderview?id=0B86hdL7CeBvAfmJXcTJCeTJSeFdHd3E5Q3VGZFdCY192aVBxcHJSbkIyUVZGMG9ualJ6aE0&amp;usp=sharing">earlier versions</a>
 </li>
@@ -66,33 +68,21 @@
 <p><strong>Requirements</strong></p>
 
 <ul>
-<li>Linux) - BFD library (libbfd-dev) and LibUnwind (libunwind-dev/libunwind8-dev)</li>
+<li>Linux - BFD library (libbfd-dev) and LibUnwind (libunwind-dev/libunwind8-dev)</li>
 <li>FreeBSD - gmake</li>
 <li>Android - Android SDK/NDK</li>
+<li>Clang - BlocksRuntime Library (libblocksruntime-dev)</li>
 </ul>
 
 <p><strong>Other</strong></p>
 
 <p>This is NOT an official Google product.</p>
-        </section>
-
-        <aside id="sidebar">
-          <a href="https://github.com/google/honggfuzz/zipball/master" class="button">
-            <small>Download</small>
-            .zip file
-          </a>
-          <a href="https://github.com/google/honggfuzz/tarball/master" class="button">
-            <small>Download</small>
-            .tar.gz file
-          </a>
-
-          <p class="repo-owner"><a href="https://github.com/google/honggfuzz"></a> is maintained by <a href="https://github.com/google">google</a>.</p>
-
-          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
-        </aside>
-      </div>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
     </div>
-
-  
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
   </body>
 </html>
