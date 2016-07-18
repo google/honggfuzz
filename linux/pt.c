@@ -201,7 +201,7 @@ inline static void perf_ptAnalyzePkt(honggfuzz_t * hfuzz, fuzzer_t * fuzzer,
         uint8_t bitSet = (uint8_t) (1 << (pos % 8));
         register uint8_t prev = ATOMIC_POST_OR(hfuzz->bbMap[byteOff], bitSet);
         if (!(prev & bitSet)) {
-            fuzzer->linux.hwCnts.bbCnt++;
+            fuzzer->linux.hwCnts.newBBCnt++;
         }
     }
     return;
