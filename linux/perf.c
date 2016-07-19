@@ -78,10 +78,10 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
 
         register size_t pos = 0UL;
-        if (br->to == 0ULL) {
+        if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
             pos = br->from % (hfuzz->bbMapSz * 8);
         } else {
-            pos = (br->from * br->to) % (hfuzz->bbMapSz * 8);
+            pos = ((br->from << 16) ^ br->to) % (hfuzz->bbMapSz * 8);
         }
 
         size_t byteOff = pos / 8;
