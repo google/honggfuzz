@@ -1369,7 +1369,8 @@ bool arch_ptraceWaitForPidStop(pid_t pid)
 bool arch_ptraceAttach(pid_t pid)
 {
     static const long seize_options =
-        PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACEEXIT;
+        PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACEEXIT |
+        PTRACE_O_EXITKILL;
 
     if (ptrace(PTRACE_SEIZE, pid, NULL, seize_options) == -1) {
         PLOG_W("Couldn't ptrace(PTRACE_SEIZE) to pid: %d", pid);
