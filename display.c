@@ -121,7 +121,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                 ")\n", ATOMIC_GET(hfuzz->crashesCnt),
                 ATOMIC_GET(hfuzz->uniqueCrashesCnt),
                 ATOMIC_GET(hfuzz->blCrashesCnt), ATOMIC_GET(hfuzz->verifiedCrashesCnt));
-    display_put("Timeouts: " ESC_BOLD "%zu" ESC_RESET "\n", ATOMIC_GET(hfuzz->timeoutedCnt));
+    display_put("Timeouts (%zu s.): " ESC_BOLD "%zu" ESC_RESET "\n", hfuzz->tmOut,
+                ATOMIC_GET(hfuzz->timeoutedCnt));
 
     /* Feedback data sources are enabled. Start with common headers. */
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
