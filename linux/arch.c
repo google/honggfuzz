@@ -220,7 +220,7 @@ static bool arch_setTimer(timer_t * timerid)
      * Kick in every 200ms, starting with the next second
      */
     const struct itimerspec ts = {
-        .it_value = {.tv_sec = 1,.tv_nsec = 0},
+        .it_value = {.tv_sec = 0,.tv_nsec = 250000000,},
         .it_interval = {.tv_sec = 0,.tv_nsec = 250000000,},
     };
     if (timer_settime(*timerid, 0, &ts, NULL) == -1) {
