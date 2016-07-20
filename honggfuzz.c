@@ -170,6 +170,7 @@ int main(int argc, char **argv)
 
     if (sigReceived > 0) {
         LOG_I("Signal %d (%s) received, terminating", sigReceived, strsignal(sigReceived));
+        return EXIT_SUCCESS;
     }
 
     /* Clean-up global buffers */
