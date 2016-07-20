@@ -99,10 +99,5 @@ int main(int argc, char **argv)
             fprintf(stderr, "readFromFdAll() failed");
             _exit(1);
         }
-        /*
-         * Inform the parent that we're done, so it can break out of its wait()
-         * sleep cycle
-         * */
-        raise(SIGCONT);
     }
 }

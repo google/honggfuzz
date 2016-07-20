@@ -64,7 +64,7 @@
 #define ABORT_FLAG        "abort_on_error=0"
 #endif
 
-#define SIGNAL_TIMER (SIGRTMIN + 1)
+#define SIGNAL_WAKE (SIGRTMIN + 1)
 
 static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
@@ -106,14 +106,24 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
         if (pid == 0) {
             if (dup2(sv[1], 1023) == -1) {
-                LOG_F("dup2('%d', '%d')", sv[1], 1023);
+                PLOG_F("dup2('%d', '%d')", sv[1], 1023);
             }
             close(sv[0]);
             close(sv[1]);
         }
         if (pid > 0) {
-            fuzzer->linux.persistentSock = sv[0];
             close(sv[1]);
+            fuzzer->linux.persistentSock = sv[0];
+            struct f_owner_ex fown = {.type = F_OWNER_TID,.pid = syscall(__NR_gettid), };
+            if (fcntl(fuzzer->linux.persistentSock, F_SETOWN_EX, &fown)) {
+                PLOG_F("fcntl(%d, F_SETOWN_EX)", fuzzer->linux.persistentSock);
+            }
+            if (fcntl(fuzzer->linux.persistentSock, F_SETSIG, SIGNAL_WAKE) == -1) {
+                PLOG_F("fcntl(%d, F_SETSIG, SIGNAL_WAKE)", fuzzer->linux.persistentSock);
+            }
+            if (fcntl(fuzzer->linux.persistentSock, F_SETFL, O_ASYNC) == -1) {
+                PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->linux.persistentSock);
+            }
         }
     }
     return pid;
@@ -186,11 +196,12 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 
 static void arch_sigFunc(int signo, siginfo_t * si UNUSED, void *dummy UNUSED)
 {
-    if (signo != SIGNAL_TIMER) {
-        LOG_E("Signal != SIGNAL_TIMER (%d)", signo);
+    if (signo != SIGNAL_WAKE) {
+        LOG_E("Signal != SIGNAL_WAKE (%d)", signo);
     }
 }
 
+#if 0
 static void arch_removeTimer(timer_t * timerid)
 {
     const struct itimerspec ts = {
@@ -201,6 +212,7 @@ static void arch_removeTimer(timer_t * timerid)
         PLOG_E("timer_settime(disarm)");
     }
 }
+#endif
 
 static bool arch_setTimer(timer_t * timerid)
 {
@@ -209,7 +221,7 @@ static bool arch_setTimer(timer_t * timerid)
      */
     const struct itimerspec ts = {
         .it_value = {.tv_sec = 1,.tv_nsec = 0},
-        .it_interval = {.tv_sec = 0,.tv_nsec = 200000000,},
+        .it_interval = {.tv_sec = 0,.tv_nsec = 250000000,},
     };
     if (timer_settime(*timerid, 0, &ts, NULL) == -1) {
         PLOG_E("timer_settime(arm) failed");
@@ -263,10 +275,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
 
-    if (arch_setTimer(&(fuzzer->linux.timerId)) == false) {
-        LOG_F("Couldn't set timer");
-    }
-
     if (hfuzz->persistent == false && arch_ptraceWaitForPidStop(childPid) == false) {
         LOG_F("PID %d not in a stopped state", childPid);
     }
@@ -278,7 +286,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         fuzzer->linux.attachedPid = ptracePid;
     }
     /* A long-lived process could have already exited, and we wouldn't know */
-    if (kill(ptracePid, 0) == -1) {
+    if (childPid != ptracePid && kill(ptracePid, 0) == -1) {
         if (hfuzz->linux.pidFile) {
             /* If pid from file, check again for cases of auto-restart daemons that update it */
             /*
@@ -303,7 +311,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (arch_perfEnable(ptracePid, hfuzz, fuzzer, &perfFds) == false) {
         LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
     }
-    if (kill(childPid, SIGCONT) == -1) {
+    if (childPid != ptracePid && kill(childPid, SIGCONT) == -1) {
         PLOG_F("Restarting PID: %d failed", childPid);
     }
     if (hfuzz->persistent == true && arch_persistentSendFile(fuzzer) == false) {
@@ -379,7 +387,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 #endif
 
-    arch_removeTimer(&fuzzer->linux.timerId);
     arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
     sancov_Analyze(hfuzz, fuzzer);
 }
@@ -507,7 +514,7 @@ bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
 {
     struct sigevent sevp = {
         .sigev_value.sival_ptr = &fuzzer->linux.timerId,
-        .sigev_signo = SIGNAL_TIMER,
+        .sigev_signo = SIGNAL_WAKE,
         .sigev_notify = SIGEV_THREAD_ID | SIGEV_SIGNAL,
         ._sigev_un._tid = syscall(__NR_gettid),
     };
@@ -522,19 +529,23 @@ bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
         .sa_handler = NULL,
         .sa_sigaction = arch_sigFunc,
         .sa_mask = smask,
-        .sa_flags = SA_SIGINFO,
+        .sa_flags = 0,
         .sa_restorer = NULL,
     };
 
     sigset_t ss;
     sigemptyset(&ss);
-    sigaddset(&ss, SIGNAL_TIMER);
+    sigaddset(&ss, SIGNAL_WAKE);
     if (sigprocmask(SIG_UNBLOCK, &ss, NULL) != 0) {
-        PLOG_F("pthread_sigmask(%d, SIG_UNBLOCK)", SIGNAL_TIMER);
+        PLOG_F("pthread_sigmask(%d, SIG_UNBLOCK)", SIGNAL_WAKE);
     }
-    if (sigaction(SIGNAL_TIMER, &sa, NULL) == -1) {
-        PLOG_E("sigaction(SIGNAL_TIMER (%d)) failed", SIGNAL_TIMER);
+    if (sigaction(SIGNAL_WAKE, &sa, NULL) == -1) {
+        PLOG_E("sigaction(SIGNAL_WAKE (%d)) failed", SIGNAL_WAKE);
         return false;
+    }
+
+    if (arch_setTimer(&(fuzzer->linux.timerId)) == false) {
+        LOG_F("Couldn't set timer");
     }
 
     return true;
