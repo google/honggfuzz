@@ -453,6 +453,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (prevMapsNum == 0 || prevMapsNum < mapsNum) {
             if ((mapsBuf = realloc(mapsBuf, (size_t) (mapsNum + 1) * sizeof(memMap_t))) == NULL) {
                 PLOG_E("realloc failed (sz=%" PRIu64 ")", (mapsNum + 1) * sizeof(memMap_t));
+                free(mapsBuf);
                 return false;
             }
         }
