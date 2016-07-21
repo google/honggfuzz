@@ -451,7 +451,8 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         /* If not DSO number history (first run) or new DSO loaded, realloc local maps metadata buf */
         if (prevMapsNum == 0 || prevMapsNum < mapsNum) {
-            if ((mapsBuf = realloc(mapsBuf, (size_t) (mapsNum + 1) * sizeof(memMap_t))) == NULL) {
+            if ((mapsBuf =
+                 util_Realloc(mapsBuf, (size_t) (mapsNum + 1) * sizeof(memMap_t))) == NULL) {
                 PLOG_E("realloc failed (sz=%" PRIu64 ")", (mapsNum + 1) * sizeof(memMap_t));
                 return false;
             }

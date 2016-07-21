@@ -37,6 +37,8 @@ extern void *util_Calloc(size_t sz);
 
 extern void *util_MMap(size_t sz);
 
+extern void *util_Realloc(void *ptr, size_t sz);
+
 extern char *util_StrDup(const char *s);
 
 extern uint64_t util_rndGet(uint64_t min, uint64_t max);

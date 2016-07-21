@@ -57,6 +57,17 @@ void *util_Calloc(size_t sz)
     return p;
 }
 
+extern void *util_Realloc(void *ptr, size_t sz)
+{
+    void *ret = realloc(ptr, sz);
+    if (ret == NULL) {
+        PLOG_E("realloc(%p, %zu)", ptr, sz);
+        free(ptr);
+        return NULL;
+    }
+    return ret;
+}
+
 void *util_MMap(size_t sz)
 {
     void *p = mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE | MAP_NORESERVE, -1, 0);

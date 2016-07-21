@@ -197,7 +197,7 @@ static bool files_readdir(honggfuzz_t * hfuzz)
             continue;
         }
 
-        if (!(hfuzz->files = realloc(hfuzz->files, sizeof(char *) * (count + 1)))) {
+        if (!(hfuzz->files = util_Realloc(hfuzz->files, sizeof(char *) * (count + 1)))) {
             PLOG_E("Couldn't allocate memory");
             return false;
         }
@@ -279,8 +279,8 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
             break;
         }
         if ((hfuzz->dictionary =
-             realloc(hfuzz->dictionary,
-                     (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]))) == NULL) {
+             util_Realloc(hfuzz->dictionary,
+                          (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]))) == NULL) {
             PLOG_E("Realloc failed (sz=%zu)",
                    (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]));
             return false;
@@ -404,8 +404,8 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
         }
 
         if ((hfuzz->blacklist =
-             realloc(hfuzz->blacklist,
-                     (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]))) == NULL) {
+             util_Realloc(hfuzz->blacklist,
+                          (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]))) == NULL) {
             PLOG_E("realloc failed (sz=%zu)",
                    (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]));
             return false;
