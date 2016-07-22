@@ -88,7 +88,7 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         uint8_t bitSet = (uint8_t) (1 << (pos % 8));
 
         register uint8_t prev =
-            __atomic_fetch_or(&(hfuzz->bbMap[byteOff]), bitSet, __ATOMIC_SEQ_CST);
+            ATOMIC_POST_OR(hfuzz->bbMap[byteOff], bitSet);
         if (!(prev & bitSet)) {
             fuzzer->linux.hwCnts.newBBCnt++;
         }
@@ -150,7 +150,7 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t p
     pe.exclude_idle = 1;
     pe.exclude_callchain_kernel = 1;
     pe.exclude_callchain_user = 1;
-    if (hfuzz->linux.pid > 0) {
+    if (hfuzz->linux.pid > 0 || hfuzz->persistent == true) {
         pe.disabled = 0;
         pe.enable_on_exec = 0;
     } else {
