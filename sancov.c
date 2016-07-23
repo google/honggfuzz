@@ -713,6 +713,59 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 }
 
 /*
+ * Work In Progress - Simply read 64bit values, and mark it inside bbMap as hit
+ */
+__thread uint8_t *sanCovMap = MAP_FAILED;
+__thread int sanCovFd = -1;
+__thread off_t sanCovSz = 0ULL;
+__thread pid_t sanCovPid = -1;
+__thread char sanCovPathRaw[PATH_MAX];
+__thread char sanCovPathMap[PATH_MAX];
+
+void sancov_ParseFast(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    pid_t targetPid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
+    if (sanCovPid != targetPid && sanCovMap != MAP_FAILED) {
+        munmap(sanCovMap, sanCovSz);
+        close(sanCovFd);
+        sanCovMap = MAP_FAILED;
+        sanCovFd = -1;
+        sanCovPid = -1;
+        sanCovSz = 0ULL;
+        unlink(sanCovPathRaw);
+        unlink(sanCovPathMap);
+    }
+
+    if (sanCovMap == MAP_FAILED) {
+        snprintf(sanCovPathRaw, sizeof(sanCovPathRaw), "%s/%s/%d.sancov.raw", hfuzz->workDir,
+                 _HF_SANCOV_DIR, targetPid);
+        snprintf(sanCovPathMap, sizeof(sanCovPathMap), "%s/%s/%d.sancov.map", hfuzz->workDir,
+                 _HF_SANCOV_DIR, targetPid);
+
+        sanCovMap = files_mapFileShared(sanCovPathRaw, &sanCovSz, &sanCovFd);
+        if (sanCovMap == MAP_FAILED) {
+            LOG_F("Couldn't map '%s' for RO", sanCovPathRaw);
+        }
+
+        sanCovPid = targetPid;
+    }
+
+    for (uint64_t * p = (uint64_t *) sanCovMap; (uint8_t *) p < (sanCovMap + sanCovSz); p++) {
+        register size_t pos = *p;
+        if (pos == 0ULL) {
+            continue;
+        }
+        size_t byteOff = pos / 8;
+        uint8_t bitSet = (uint8_t) (1 << (pos % 8));
+
+        register uint8_t prev = ATOMIC_POST_OR(hfuzz->bbMap[byteOff], bitSet);
+        if (!(prev & bitSet)) {
+            fuzzer->sanCovCnts.newBBCnt++;
+        }
+    }
+}
+
+/*
  * Sanitizer coverage data are stored in FS can be parsed via two methods:
  * raw unpack & separate bin/DSO sancov file. Separate bin/DSO sancov file
  * method is usually avoided since coverage data are lost if sanitizer unhandled
@@ -724,6 +777,11 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 void sancov_Analyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     if (!hfuzz->useSanCov) {
+        return;
+    }
+
+    if (hfuzz->sanCovFast) {
+        sancov_ParseFast(hfuzz, fuzzer);
         return;
     }
 
@@ -742,7 +800,11 @@ bool sancov_Init(honggfuzz_t * hfuzz)
         return true;
     }
 
-    sancov_trieCreate(&hfuzz->covMetadata);
+    if (hfuzz->sanCovFast == true) {
+        hfuzz->bbMap = util_MMap(_HF_PERF_BITMAP_SIZE);
+    } else {
+        sancov_trieCreate(&hfuzz->covMetadata);
+    }
 
     if (hfuzz->linux.pid > 0) {
         return true;

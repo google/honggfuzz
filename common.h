@@ -280,6 +280,7 @@ typedef struct {
     sanOpts_t sanOpts;
     size_t dynFileIterExpire;
     bool useSanCov;
+    bool sanCovFast;
     node_t *covMetadata;
     bool msanReportUMRS;
 

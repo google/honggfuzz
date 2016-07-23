@@ -463,6 +463,31 @@ uint8_t *files_mapFile(char *fileName, off_t * fileSz, int *fd, bool isWritable)
     return buf;
 }
 
+uint8_t *files_mapFileShared(char *fileName, off_t * fileSz, int *fd)
+{
+    if ((*fd = open(fileName, O_RDONLY)) == -1) {
+        PLOG_E("Couldn't open() '%s' file in R/O mode", fileName);
+        return NULL;
+    }
+
+    struct stat st;
+    if (fstat(*fd, &st) == -1) {
+        PLOG_E("Couldn't stat() the '%s' file", fileName);
+        close(*fd);
+        return NULL;
+    }
+
+    uint8_t *buf;
+    if ((buf = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, *fd, 0)) == MAP_FAILED) {
+        PLOG_E("Couldn't mmap() the '%s' file", fileName);
+        close(*fd);
+        return NULL;
+    }
+
+    *fileSz = st.st_size;
+    return buf;
+}
+
 bool files_readPidFromFile(const char *fileName, pid_t * pidPtr)
 {
     FILE *fPID = fopen(fileName, "rb");

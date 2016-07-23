@@ -53,6 +53,8 @@ extern bool files_parseBlacklist(honggfuzz_t * hfuzz);
 
 extern uint8_t *files_mapFile(char *fileName, off_t * fileSz, int *fd, bool isWritable);
 
+extern uint8_t *files_mapFileShared(char *fileName, off_t * fileSz, int *fd);
+
 extern bool files_readPidFromFile(const char *fileName, pid_t * pidPtr);
 
 #endif
