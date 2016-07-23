@@ -732,8 +732,6 @@ void sancov_ParseFast(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         sanCovFd = -1;
         sanCovPid = -1;
         sanCovSz = 0ULL;
-        unlink(sanCovPathRaw);
-        unlink(sanCovPathMap);
     }
 
     if (sanCovMap == MAP_FAILED) {
@@ -748,6 +746,8 @@ void sancov_ParseFast(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
 
         sanCovPid = targetPid;
+        unlink(sanCovPathRaw);
+        unlink(sanCovPathMap);
     }
 
     for (uint64_t * p = (uint64_t *) sanCovMap; (uint8_t *) p < (sanCovMap + sanCovSz); p++) {
