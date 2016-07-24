@@ -347,6 +347,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         if (hfuzz->persistent && pid == fuzzer->persistentPid
             && (WIFEXITED(status) || WIFSIGNALED(status))) {
+            arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
             fuzzer->persistentPid = 0;
             LOG_W("Persistent mode: PID %d exited with status: %s", pid,
                   subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
