@@ -751,7 +751,7 @@ void sancov_ParseFast(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     for (uint64_t * p = (uint64_t *) sanCovMap; (uint8_t *) p < (sanCovMap + sanCovSz); p++) {
-        register size_t pos = *p;
+        register size_t pos = (*p) % (hfuzz->bbMapSz * 8);
         if (pos == 0ULL) {
             continue;
         }
