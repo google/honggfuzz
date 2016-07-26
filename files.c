@@ -141,6 +141,7 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
     memset(buf, p, (size_t) size);
     int ret = files_writeToFd(fd, buf, size);
 
+    free(buf);
     return ret;
 }
 
@@ -368,6 +369,7 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
     ssize_t readSz = files_readFromFd(inFD, inFileBuf, (size_t) inSt.st_size);
     if (readSz < 0) {
         PLOG_E("Couldn't read '%s' to a buf", source);
+        free(inFileBuf);
         return false;
     }
 
