@@ -81,6 +81,11 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     if (hfuzz->mutationsMax > 0 && curr_exec_cnt > hfuzz->mutationsMax) {
         curr_exec_cnt = hfuzz->mutationsMax;
     }
+    float exeProgress = 0.0f;
+    if (hfuzz->mutationsMax > 0) {
+        exeProgress = ((float)curr_exec_cnt * 100 / hfuzz->mutationsMax);
+    }
+
     static size_t prev_exec_cnt = 0UL;
     uintptr_t exec_per_sec = curr_exec_cnt - prev_exec_cnt;
     prev_exec_cnt = curr_exec_cnt;
@@ -90,7 +95,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     display_put("Iterations: " ESC_BOLD "%zu" ESC_RESET, curr_exec_cnt);
     if (hfuzz->mutationsMax) {
-        display_put(" (out of: " ESC_BOLD "%zu" ESC_RESET ")", hfuzz->mutationsMax);
+        display_put(" (out of: " ESC_BOLD "%zu" ESC_RESET " [" ESC_BOLD "%.2f%%" ESC_RESET "])",
+                    hfuzz->mutationsMax, exeProgress);
     }
     display_put("\n");
 
@@ -163,9 +169,9 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
             display_put("  - total hit #bb:  " ESC_BOLD "%" PRIu64 ESC_RESET "\n", hitBB);
         } else {
             uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
-            uint8_t covPer = totalBB ? ((hitBB * 100) / totalBB) : 0;
-            display_put("  - total hit #bb:  " ESC_BOLD "%" PRIu64 ESC_RESET " (coverage %d%%)\n",
-                        hitBB, covPer);
+            float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
+            display_put("  - total hit #bb:  " ESC_BOLD "%" PRIu64 ESC_RESET " (coverage " ESC_BOLD
+                        "%.2f%%" ESC_RESET ")\n", hitBB, covPer);
             display_put("  - total #dso:     " ESC_BOLD "%" PRIu64 ESC_RESET
                         " (instrumented only)\n", ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
             display_put("  - discovered #bb: " ESC_BOLD "%" PRIu64 ESC_RESET
