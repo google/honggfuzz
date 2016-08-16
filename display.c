@@ -165,20 +165,16 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     /* Sanitizer coverage specific counters */
     if (hfuzz->useSanCov) {
         uint64_t hitBB = ATOMIC_GET(hfuzz->sanCovCnts.hitBBCnt);
-        if (hfuzz->sanCovFast == true) {
-            display_put("  - total hit #bb:  " ESC_BOLD "%" PRIu64 ESC_RESET "\n", hitBB);
-        } else {
-            uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
-            float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
-            display_put("  - total hit #bb:  " ESC_BOLD "%" PRIu64 ESC_RESET " (coverage " ESC_BOLD
-                        "%.2f%%" ESC_RESET ")\n", hitBB, covPer);
-            display_put("  - total #dso:     " ESC_BOLD "%" PRIu64 ESC_RESET
-                        " (instrumented only)\n", ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
-            display_put("  - discovered #bb: " ESC_BOLD "%" PRIu64 ESC_RESET
-                        " (new from input seed)\n", ATOMIC_GET(hfuzz->sanCovCnts.newBBCnt));
-            display_put("  - crashes:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
-                        ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
-        }
+        uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
+        float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
+        display_put("  - total hit #bb:  " ESC_BOLD "%" PRIu64 ESC_RESET " (coverage " ESC_BOLD
+                    "%.2f%%" ESC_RESET ")\n", hitBB, covPer);
+        display_put("  - total #dso:     " ESC_BOLD "%" PRIu64 ESC_RESET
+                    " (instrumented only)\n", ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
+        display_put("  - discovered #bb: " ESC_BOLD "%" PRIu64 ESC_RESET
+                    " (new from input seed)\n", ATOMIC_GET(hfuzz->sanCovCnts.newBBCnt));
+        display_put("  - crashes:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+                    ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
     }
     display_put("==================================== LOGS ====================================\n");
 }

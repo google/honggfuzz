@@ -196,7 +196,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             .ubsanOpts = NULL,
         },
         .useSanCov = false,
-        .sanCovFast = false,
         .covMetadata = NULL,
         .msanReportUMRS = false,
 
@@ -250,7 +249,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
         {{"save_all", no_argument, NULL, 'u'}, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames"},
         {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
-        {{"exp_sancov_fast", no_argument, NULL, 0x103}, "Enable sanitizer coverage fast feedback (Experimental)"},
         {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
         {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libraries/persistent.mode.main.o)"},
 
@@ -352,9 +350,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x102:
             hfuzz->msanReportUMRS = true;
-            break;
-        case 0x103:
-            hfuzz->sanCovFast = true;
             break;
         case 'P':
             hfuzz->persistent = true;
