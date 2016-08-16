@@ -31,7 +31,8 @@ extern "C" {
                  return -1;
 
              readSz += sz;
-        } return (ssize_t) readSz;
+        }
+        return (ssize_t) readSz;
     }
 
     static inline bool readFromFdAll(int fd, uint8_t * buf, size_t len) {

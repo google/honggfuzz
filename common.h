@@ -262,7 +262,6 @@ typedef struct {
 
     fuzzState_t state;
     uint8_t *bbMap;
-    size_t bbMapSz;
     size_t dynfileqCnt;
     pthread_mutex_t dynfileq_mutex;
      TAILQ_HEAD(dynfileq_t, dynfile_t) dynfileq;
