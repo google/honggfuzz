@@ -438,8 +438,7 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      * Coverage is the primary counter, the rest is secondary, and taken into consideration only
      * if the coverage counter has not been changed
      */
-    if (fuzzer->linux.hwCnts.newBBCnt > 0 ||
-        (fuzzer->linux.hwCnts.newBBCnt == 0 && (diff0 < 0 || diff1 < 0 || diff2 < 0))) {
+    if (fuzzer->linux.hwCnts.newBBCnt > 0 || (diff0 < 0 || diff1 < 0 || diff2 < 0)) {
         LOG_I
             ("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 ",%"
              PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
@@ -468,6 +467,10 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     MX_SCOPED_LOCK(&hfuzz->dynfileq_mutex);
 
+    int64_t diff0 = hfuzz->linux.hwCnts.cpuInstrCnt - fuzzer->linux.hwCnts.cpuInstrCnt;
+    int64_t diff1 = hfuzz->linux.hwCnts.cpuBranchCnt - fuzzer->linux.hwCnts.cpuBranchCnt;
+    int64_t diff2 = hfuzz->linux.hwCnts.customCnt - fuzzer->linux.hwCnts.customCnt;
+
     /*
      * Keep mutated seed if:
      *  a) Newly discovered (not met before) BBs
@@ -478,7 +481,11 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      * more interesting seeds can be saved between runs instead of instantly discarded
      * based on current absolute elitism (only one mutated seed is promoted).
      */
-    if (fuzzer->sanCovCnts.newBBCnt > 0 || hfuzz->sanCovCnts.iDsoCnt < fuzzer->sanCovCnts.iDsoCnt) {
+
+    bool newCov = (fuzzer->sanCovCnts.newBBCnt > 0
+                   || hfuzz->sanCovCnts.iDsoCnt < fuzzer->sanCovCnts.iDsoCnt);
+
+    if (newCov || (diff0 < 0 || diff1 < 0 || diff2 < 0)) {
         LOG_I("SanCov Update: file size (Cur): %zu, newBBs:%" PRIu64
               ", counters (Cur,New): %" PRIu64 "/%" PRIu64 ",%" PRIu64 "/%" PRIu64,
               fuzzer->dynamicFileSz, fuzzer->sanCovCnts.newBBCnt,
@@ -495,6 +502,10 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             /* Keep only the max value (for dlopen cases) to measure total target coverage */
             hfuzz->sanCovCnts.totalBBCnt = fuzzer->sanCovCnts.totalBBCnt;
         }
+
+        hfuzz->linux.hwCnts.cpuInstrCnt = fuzzer->linux.hwCnts.cpuInstrCnt;
+        hfuzz->linux.hwCnts.cpuBranchCnt = fuzzer->linux.hwCnts.cpuBranchCnt;
+        hfuzz->linux.hwCnts.customCnt = fuzzer->linux.hwCnts.customCnt;
 
         fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
                                   fuzzer->sanCovCnts.hitBBCnt);
