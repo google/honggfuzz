@@ -434,7 +434,12 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int64_t diff1 = hfuzz->linux.hwCnts.cpuBranchCnt - fuzzer->linux.hwCnts.cpuBranchCnt;
     int64_t diff2 = hfuzz->linux.hwCnts.customCnt - fuzzer->linux.hwCnts.customCnt;
 
-    if (diff0 < 0 || diff1 < 0 || diff2 < 0 || fuzzer->linux.hwCnts.newBBCnt > 0) {
+    /*
+     * Coverage is the primary counter, the rest is secondary, and taken into consideration only
+     * if the coverage counter has not been changed
+     */
+    if (fuzzer->linux.hwCnts.newBBCnt > 0 ||
+        (fuzzer->linux.hwCnts.newBBCnt == 0 && (diff0 < 0 || diff1 < 0 || diff2 < 0))) {
         LOG_I
             ("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 ",%"
              PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,

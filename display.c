@@ -146,15 +146,15 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                     ATOMIC_GET(hfuzz->linux.hwCnts.cpuBranchCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        display_put("  - BTS unique blocks: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - BTS unique blocks:     " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        display_put("  - BTS unique edges:   " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - BTS unique edges:      " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        display_put("  - PT unique blocks: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - PT unique blocks:      " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) {
