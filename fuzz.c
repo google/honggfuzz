@@ -366,7 +366,9 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             }
         }
 
+        arch_prepareChild(hfuzz, &vFuzzer);
         arch_reapChild(hfuzz, &vFuzzer);
+
         unlink(vFuzzer.fileName);
 
         /* If stack hash doesn't match skip name tag and exit */
@@ -612,7 +614,9 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
 
+    arch_prepareChild(hfuzz, fuzzer);
     arch_reapChild(hfuzz, fuzzer);
+
     if (hfuzz->persistent == false) {
         unlink(fuzzer->fileName);
     }
