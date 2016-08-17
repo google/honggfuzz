@@ -31,7 +31,8 @@ extern "C" {
                  return -1;
 
              readSz += sz;
-        } return (ssize_t) readSz;
+        }
+        return (ssize_t) readSz;
     }
 
     static inline bool readFromFdAll(int fd, uint8_t * buf, size_t len) {
@@ -56,13 +57,6 @@ extern "C" {
     uint8_t buf[HF_BUF_SIZE];
 
     void HF_ITER(uint8_t ** buf_ptr, size_t * len_ptr) {
-
-/* Clear the custom counter */
-#if defined(__x86_64__)
-#define ARCH_SET_GS 0x1001
-#define __NR_arch_prctl 158
-        syscall(__NR_arch_prctl, ARCH_SET_GS, 0UL);
-#endif
         /*
          * Send the 'done' marker to the parent
          */
@@ -95,6 +89,13 @@ extern "C" {
 
         *buf_ptr = buf;
         *len_ptr = len;
+
+/* Clear the custom counter */
+#if defined(__x86_64__)
+#define ARCH_SET_GS 0x1001
+#define __NR_arch_prctl 158
+        syscall(__NR_arch_prctl, ARCH_SET_GS, 0UL);
+#endif
     }
 
 #ifdef __cplusplus
