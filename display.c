@@ -138,11 +138,11 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     /* HW perf specific counters */
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        display_put("  - cpu instructions:      " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - CPU instructions:      " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.cpuInstrCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        display_put("  - cpu branches:          " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - CPU branches:          " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.cpuBranchCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
@@ -158,7 +158,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                     ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) {
-        display_put("  - custom counter:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - Custom counter:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.customCnt));
     }
 
