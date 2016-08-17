@@ -36,4 +36,6 @@ extern pid_t arch_fork(honggfuzz_t * fuzz, fuzzer_t * fuzzer);
 
 extern void arch_reapChild(honggfuzz_t * fuzz, fuzzer_t * fuzzer);
 
+extern void arch_prepareChild(honggfuzz_t * fuzz, fuzzer_t * fuzzer);
+
 #endif                          /* _HF_ARCH_H_ */

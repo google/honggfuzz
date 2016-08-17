@@ -376,6 +376,11 @@ static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 }
 
+void arch_prepareChild(honggfuzz_t * hfuzz UNSUED, fuzzer_t * fuzzer UNUSED)
+{
+
+}
+
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     /*

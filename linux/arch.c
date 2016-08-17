@@ -270,7 +270,7 @@ static bool arch_persistentSendFile(fuzzer_t * fuzzer)
     return true;
 }
 
-void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
@@ -306,6 +306,12 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             }
         }
     }
+}
+
+void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
+    pid_t childPid = fuzzer->pid;
 
     perfFd_t perfFds;
     if (arch_perfEnable(ptracePid, hfuzz, fuzzer, &perfFds) == false) {
