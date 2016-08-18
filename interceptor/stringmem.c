@@ -62,73 +62,49 @@ void interceptor_increaseBy(unsigned long v)
 
 OPTIMIZATION_OFF int strcmp(const char *s1, const char *s2)
 {
-    int ret = 0;
     for (size_t i = 0; s1[i] || s2[i]; i++) {
         if (s1[i] != s2[i]) {
-            if (ret == 0) {
-                ret = s1[i] - s2[i];
-            }
-        } else {
-            interceptor_increaseBy(1);
+            return (s1[i] - s2[i]);
         }
+        interceptor_increaseBy(1);
     }
-    if (ret == 0) {
-        interceptor_increaseBy(5);
-    }
-    return ret;
+    interceptor_increaseBy(5);
+    return 0;
 }
 
 OPTIMIZATION_OFF int strcasecmp(const char *s1, const char *s2)
 {
-    int ret = 0;
     for (size_t i = 0; s1[i] || s2[i]; i++) {
         if (tolower(s1[i]) != tolower(s2[i])) {
-            if (ret == 0) {
-                ret = tolower(s1[i]) - tolower(s2[i]);
-            }
-        } else {
-            interceptor_increaseBy(1);
+            return (tolower(s1[i]) - tolower(s2[i]));
         }
+        interceptor_increaseBy(1);
     }
-    if (ret == 0) {
-        interceptor_increaseBy(5);
-    }
-    return ret;
+    interceptor_increaseBy(5);
+    return 0;
 }
 
 OPTIMIZATION_OFF int strncmp(const char *s1, const char *s2, size_t n)
 {
-    int ret = 0;
     for (size_t i = 0; (s1[i] || s2[i]) && i < n; i++) {
         if (s1[i] != s2[i]) {
-            if (ret == 0) {
-                ret = s1[i] - s2[i];
-            }
-        } else {
-            interceptor_increaseBy(1);
+            return (s1[i] - s2[i]);
         }
+        interceptor_increaseBy(1);
     }
-    if (ret == 0) {
-        interceptor_increaseBy(5);
-    }
+    interceptor_increaseBy(5);
     return 0;
 }
 
 OPTIMIZATION_OFF int strncasecmp(const char *s1, const char *s2, size_t n)
 {
-    int ret = 0;
     for (size_t i = 0; (s1[i] || s2[i]) && i < n; i++) {
         if (tolower(s1[i]) != tolower(s2[i])) {
-            if (ret == 0) {
-                ret = tolower(s1[i]) - tolower(s2[i]);
-            }
-        } else {
-            interceptor_increaseBy(1);
+            return (tolower(s1[i]) - tolower(s2[i]));
         }
+        interceptor_increaseBy(1);
     }
-    if (ret == 0) {
-        interceptor_increaseBy(5);
-    }
+    interceptor_increaseBy(5);
     return 0;
 }
 
@@ -160,21 +136,15 @@ OPTIMIZATION_OFF int __memcmp(const void *m1, const void *m2, size_t n)
 {
     const char *s1 = (const char *)m1;
     const char *s2 = (const char *)m2;
-    int ret = 0;
 
     for (size_t i = 0; i < n; i++) {
         if (s1[i] != s2[i]) {
-            if (ret == 0) {
-                ret = s1[i] - s2[i];
-            }
-        } else {
-            interceptor_increaseBy(1);
+            return (s1[i] - s2[i]);
         }
+        interceptor_increaseBy(1);
     }
-    if (ret == 0) {
-        interceptor_increaseBy(5);
-    }
-    return ret;
+    interceptor_increaseBy(5);
+    return 0;
 }
 
 OPTIMIZATION_OFF int memcmp(const void *m1, const void *m2, size_t n)

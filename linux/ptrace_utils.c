@@ -343,6 +343,18 @@ void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid UNUSED, uint64_t * 
     if ((hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) == 0) {
         return;
     }
+
+    if (hfuzz->persistent) {
+        ptrace(PTRACE_INTERRUPT, pid, 0, 0);
+        arch_ptraceWaitForPidStop(pid);
+    }
+
+    defer {
+        if (hfuzz->persistent) {
+            ptrace(PTRACE_CONT, pid, 0, 0);
+        }
+    };
+
 #if defined(__i386__) || defined(__x86_64__)
     HEADERS_STRUCT regs;
     struct iovec pt_iov = {

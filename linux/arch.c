@@ -326,6 +326,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     for (;;) {
         if (arch_persistentModeRoundDone(hfuzz, fuzzer)) {
+            arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->linux.hwCnts.customCnt);
             break;
         }
 
@@ -349,7 +350,9 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_D("PID '%d' returned with status: %s", pid,
               subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
 
-        arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->linux.hwCnts.customCnt);
+        if (hfuzz->persistent == false) {
+            arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->linux.hwCnts.customCnt);
+        }
 
         if (hfuzz->persistent && pid == fuzzer->persistentPid
             && (WIFEXITED(status) || WIFSIGNALED(status))) {
