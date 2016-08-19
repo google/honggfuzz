@@ -255,13 +255,13 @@ typedef struct {
     size_t fileCnt;
     size_t lastFileIndex;
     size_t doneFileIndex;
-    int exeFd;
     bool clearEnv;
     char *envs[128];
     bool persistent;
 
     fuzzState_t state;
     uint8_t *bbMap;
+    int bbFd;
     size_t dynfileqCnt;
     pthread_mutex_t dynfileq_mutex;
      TAILQ_HEAD(dynfileq_t, dynfile_t) dynfileq;

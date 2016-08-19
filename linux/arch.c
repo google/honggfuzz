@@ -45,6 +45,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
@@ -98,6 +99,14 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     pid_t pid = syscall(__NR_clone, (uintptr_t) clone_flags, NULL, NULL, NULL, (uintptr_t) 0);
+
+    if (pid == 0) {
+        if (hfuzz->bbFd != -1) {
+            if (dup2(hfuzz->bbFd, 1022) == -1) {
+                PLOG_F("dup2('%d', 1022)", hfuzz->bbFd);
+            }
+        }
+    }
 
     if (hfuzz->persistent == true) {
         if (pid == -1) {
@@ -184,9 +193,6 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
      */
     syscall(__NR_tkill, syscall(__NR_gettid), (uintptr_t) SIGSTOP);
 
-#ifdef __NR_execveat
-    syscall(__NR_execveat, hfuzz->exeFd, "", args, environ, AT_EMPTY_PATH);
-#endif
     execvp(args[0], args);
 
     PLOG_E("execvp('%s')", args[0]);
@@ -405,11 +411,32 @@ bool arch_archInit(honggfuzz_t * hfuzz)
 {
     if (hfuzz->dynFileMethod &
         (_HF_DYNFILE_BTS_BLOCK | _HF_DYNFILE_BTS_EDGE | _HF_DYNFILE_IPT_BLOCK)) {
+#if defined(__NR_memfd_create)
+        if ((hfuzz->bbFd = syscall(__NR_memfd_create, "hfuzz-bbmap", 0)) == -1) {
+            PLOG_W("memfd_create()");
+            return false;
+        }
+        if (ftruncate(hfuzz->bbFd, _HF_PERF_BITMAP_SIZE + getpagesize()) == -1) {
+            PLOG_W("ftruncate('%d', '%llu')", hfuzz->bbFd,
+                   (unsigned long long)(_HF_PERF_BITMAP_SIZE + getpagesize()));
+            close(hfuzz->bbFd);
+            hfuzz->bbFd = -1;
+            return false;
+        }
+        if ((hfuzz->bbMap =
+             mmap(NULL, _HF_PERF_BITMAP_SIZE + getpagesize(), PROT_READ | PROT_WRITE,
+                  MAP_SHARED | MAP_LOCKED, hfuzz->bbFd, 0)) == MAP_FAILED) {
+            PLOG_W("mmap(NULL, %llu, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_LOCKED, %d, 0)",
+                   (unsigned long long)(_HF_PERF_BITMAP_SIZE + getpagesize()), hfuzz->bbFd);
+            hfuzz->bbMap = NULL;
+            close(hfuzz->bbFd);
+            hfuzz->bbFd = -1;
+            return false;
+        }
+#else
         hfuzz->bbMap = util_MMap(_HF_PERF_BITMAP_SIZE);
+#endif
     }
-
-    /* We use execvp() as a fall-back mechanism (using PATH), so it might legitimately fail */
-    hfuzz->exeFd = open(hfuzz->cmdline[0], O_RDONLY | O_CLOEXEC);
 
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         unsigned long major = 0, minor = 0;

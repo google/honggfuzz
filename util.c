@@ -61,7 +61,7 @@ extern void *util_Realloc(void *ptr, size_t sz)
 {
     void *ret = realloc(ptr, sz);
     if (ret == NULL) {
-        PLOG_E("realloc(%p, %zu)", ptr, sz);
+        PLOG_W("realloc(%p, %zu)", ptr, sz);
         free(ptr);
         return NULL;
     }
@@ -198,7 +198,7 @@ bool util_redirectStdin(const char *inputFile)
     int fd = open(inputFile, O_RDONLY);
 
     if (fd == -1) {
-        PLOG_E("Couldn't open '%s'", inputFile);
+        PLOG_W("Couldn't open '%s'", inputFile);
         return false;
     }
 

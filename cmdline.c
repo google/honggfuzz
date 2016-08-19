@@ -159,7 +159,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .fileCnt = 0,
         .lastFileIndex = 0,
         .doneFileIndex = 0,
-        .exeFd = -1,
         .clearEnv = false,
         .envs = {
             [0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,
@@ -168,6 +167,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 
         .state = _HF_STATE_UNSET,
         .bbMap = NULL,
+        .bbFd = -1,
         .dynfileq_mutex = PTHREAD_MUTEX_INITIALIZER,
         .dynfileqCnt = 0U,
 
