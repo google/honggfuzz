@@ -424,7 +424,7 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
 static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     LOG_D
-        ("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 ",%"
+        ("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 "/%"
          PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
          fuzzer->linux.hwCnts.cpuInstrCnt, hfuzz->linux.hwCnts.cpuInstrCnt,
          fuzzer->linux.hwCnts.cpuBranchCnt, hfuzz->linux.hwCnts.cpuBranchCnt,
@@ -445,19 +445,20 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      * if the coverage counter has not been changed
      */
     if (fuzzer->linux.hwCnts.newBBCnt > 0 || softCnt > 0 || diff0 < 0 || diff1 < 0 || diff2 < 0) {
-        LOG_I
-            ("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 ",%"
-             PRIu64 "/%" PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64 "/%" PRIu64,
-             fuzzer->dynamicFileSz, fuzzer->linux.hwCnts.cpuInstrCnt,
-             hfuzz->linux.hwCnts.cpuInstrCnt, fuzzer->linux.hwCnts.cpuBranchCnt, softCnt,
-             hfuzz->linux.hwCnts.cpuBranchCnt, fuzzer->linux.hwCnts.newBBCnt,
-             hfuzz->linux.hwCnts.bbCnt, hfuzz->linux.hwCnts.softCnt);
-
         hfuzz->linux.hwCnts.cpuInstrCnt = fuzzer->linux.hwCnts.cpuInstrCnt;
         hfuzz->linux.hwCnts.cpuBranchCnt = fuzzer->linux.hwCnts.cpuBranchCnt;
         hfuzz->linux.hwCnts.customCnt = fuzzer->linux.hwCnts.customCnt;
         hfuzz->linux.hwCnts.bbCnt += fuzzer->linux.hwCnts.newBBCnt;
         hfuzz->linux.hwCnts.softCnt += softCnt;
+
+        LOG_I
+            ("New file size: %zu, Feedback: New (instr,branch,soft,perf,custom): %" PRIu64 "/%"
+             PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Total: %" PRIu64 "/%" PRIu64 "/%" PRIu64
+             "/%" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz, fuzzer->linux.hwCnts.cpuInstrCnt,
+             fuzzer->linux.hwCnts.cpuBranchCnt, softCnt, fuzzer->linux.hwCnts.newBBCnt,
+             fuzzer->linux.hwCnts.customCnt, hfuzz->linux.hwCnts.cpuInstrCnt,
+             hfuzz->linux.hwCnts.cpuBranchCnt, hfuzz->linux.hwCnts.softCnt,
+             hfuzz->linux.hwCnts.bbCnt, hfuzz->linux.hwCnts.customCnt);
 
         fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
                                   fuzzer->linux.hwCnts.newBBCnt);
