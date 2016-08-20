@@ -100,8 +100,8 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     pid_t pid = syscall(__NR_clone, (uintptr_t) clone_flags, NULL, NULL, NULL, (uintptr_t) 0);
 
-    if (pid == 0) {
-        if (hfuzz->bbFd != -1) {
+    if (hfuzz->bbFd != -1) {
+        if (pid == 0) {
             if (dup2(hfuzz->bbFd, 1022) == -1) {
                 PLOG_F("dup2('%d', 1022)", hfuzz->bbFd);
             }
@@ -410,31 +410,31 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 bool arch_archInit(honggfuzz_t * hfuzz)
 {
     if (hfuzz->dynFileMethod &
-        (_HF_DYNFILE_BTS_BLOCK | _HF_DYNFILE_BTS_EDGE | _HF_DYNFILE_IPT_BLOCK)) {
+        (_HF_DYNFILE_BTS_BLOCK | _HF_DYNFILE_BTS_EDGE | _HF_DYNFILE_IPT_BLOCK | _HF_DYNFILE_SOFT)) {
 #if defined(__NR_memfd_create)
         if ((hfuzz->bbFd = syscall(__NR_memfd_create, "hfuzz-bbmap", 0)) == -1) {
             PLOG_W("memfd_create()");
             return false;
         }
-        if (ftruncate(hfuzz->bbFd, _HF_PERF_BITMAP_SIZE + getpagesize()) == -1) {
+        if (ftruncate(hfuzz->bbFd, _HF_PERF_BITMAP_SIZE + (1024 * 1024)) == -1) {
             PLOG_W("ftruncate('%d', '%llu')", hfuzz->bbFd,
-                   (unsigned long long)(_HF_PERF_BITMAP_SIZE + getpagesize()));
+                   (unsigned long long)(_HF_PERF_BITMAP_SIZE + (1024 * 1024)));
             close(hfuzz->bbFd);
             hfuzz->bbFd = -1;
             return false;
         }
         if ((hfuzz->bbMap =
-             mmap(NULL, _HF_PERF_BITMAP_SIZE + getpagesize(), PROT_READ | PROT_WRITE,
-                  MAP_SHARED | MAP_LOCKED, hfuzz->bbFd, 0)) == MAP_FAILED) {
-            PLOG_W("mmap(NULL, %llu, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_LOCKED, %d, 0)",
-                   (unsigned long long)(_HF_PERF_BITMAP_SIZE + getpagesize()), hfuzz->bbFd);
+             mmap(NULL, _HF_PERF_BITMAP_SIZE + (1024 * 1024), PROT_READ | PROT_WRITE,
+                  MAP_SHARED, hfuzz->bbFd, 0)) == MAP_FAILED) {
+            PLOG_W("mmap(NULL, %llu, PROT_READ|PROT_WRITE, MAP_SHARED, %d, 0)",
+                   (unsigned long long)(_HF_PERF_BITMAP_SIZE + (1024 * 1024)), hfuzz->bbFd);
             hfuzz->bbMap = NULL;
             close(hfuzz->bbFd);
             hfuzz->bbFd = -1;
             return false;
         }
 #else
-        hfuzz->bbMap = util_MMap(_HF_PERF_BITMAP_SIZE);
+        hfuzz->bbMap = util_MMap(_HF_PERF_BITMAP_SIZE + (1024 * 1024));
 #endif
     }
 

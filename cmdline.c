@@ -208,6 +208,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
                 .customCnt = 0ULL,
                 .bbCnt = 0ULL,
                 .newBBCnt = 0ULL,
+                .softCnt = 0ULL,
             },
             .dynamicCutOffAddr = ~(0ULL),
             .disableRandomization = true,
@@ -263,6 +264,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"linux_perf_bts_edge", no_argument, NULL, 0x513}, "Use Intel BTS to count unique edges"},
         {{"linux_perf_ipt_block", no_argument, NULL, 0x514}, "Use Intel Processor Trace to count unique blocks"},
         {{"linux_perf_custom", no_argument, NULL, 0x520}, "Custom counter (see interceptor/stringmem.c)"},
+        {{"linux_perf_soft", no_argument, NULL, 0x521}, "Software experimental counters (see interceptor/gcc.instrument.c)"},
 #endif  // defined(_HF_ARCH_LINUX)
         {{0, 0, 0, 0}, NULL},
     };
@@ -407,6 +409,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x520:
             hfuzz->dynFileMethod |= _HF_DYNFILE_CUSTOM;
+            break;
+        case 0x521:
+            hfuzz->dynFileMethod |= _HF_DYNFILE_SOFT;
             break;
         default:
             cmdlineUsage(argv[0], custom_opts);

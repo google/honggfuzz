@@ -152,6 +152,7 @@ typedef enum {
     _HF_DYNFILE_BTS_EDGE = 0x10,
     _HF_DYNFILE_IPT_BLOCK = 0x20,
     _HF_DYNFILE_CUSTOM = 0x40,
+    _HF_DYNFILE_SOFT = 0x80,
 } dynFileMethod_t;
 
 typedef struct {
@@ -160,6 +161,7 @@ typedef struct {
     uint64_t customCnt;
     uint64_t bbCnt;
     uint64_t newBBCnt;
+    uint64_t softCnt;
 } hwcnt_t;
 
 /* Sanitizer coverage specific data structures */
