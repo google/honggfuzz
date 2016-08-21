@@ -550,7 +550,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                         /* Maintain bitmaps only for exec/DSOs with coverage enabled - allocate on first use */
                         if (curMap->data.pBM == NULL) {
                             LOG_D("Allocating bitmap for map '%s'", mapsBuf[bestFit].mapName);
-                            curMap->data.pBM = sancov_newBitmap(_HF_BITMAP_SIZE);
+                            curMap->data.pBM = sancov_newBitmap(_HF_SANCOV_BITMAP_SIZE);
 
                             /*
                              * If bitmap allocation failed, unset cached Trie node ptr

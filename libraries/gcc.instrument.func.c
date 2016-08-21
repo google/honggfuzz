@@ -38,11 +38,11 @@ static void mapBB(void)
 
 void __cyg_profile_func_enter(void *func, void *caller)
 {
-    size_t pos = (((uintptr_t) func << 12) ^ ((uintptr_t) caller & 0xFFF)) % (bbSz * 8);
+    size_t pos = (((uintptr_t) func << 12) ^ ((uintptr_t) caller & 0xFFF)) & 0xFFFFFF;
     size_t byteOff = pos / 8;
     uint8_t bitSet = (uint8_t) (1 << (pos % 8));
 
-    register uint8_t prev = ATOMIC_POST_OR(bbMap[byteOff], bitSet);
+    register uint8_t prev = __atomic_fetch_or(&bbMap[byteOff], bitSet, __ATOMIC_RELAXED);
     if (!(prev & bitSet)) {
         ATOMIC_PRE_INC(bbCnt[mypid]);
     }

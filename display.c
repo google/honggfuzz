@@ -138,31 +138,31 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     /* HW perf specific counters */
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        display_put("  - CPU instructions:      " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - instructions:    " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.cpuInstrCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        display_put("  - CPU branches:          " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - branches:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.cpuBranchCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        display_put("  - BTS unique blocks:     " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - BTS blocks:      " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        display_put("  - BTS unique edges:      " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - BTS edges:       " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        display_put("  - PT unique blocks:      " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - PT blocks:       " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) {
-        display_put("  - Custom counter:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - custom counter:  " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.customCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_SOFT) {
-        display_put("  - Software counter:      " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - functions taken: " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.softCnt));
     }
 
@@ -171,13 +171,13 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         uint64_t hitBB = ATOMIC_GET(hfuzz->sanCovCnts.hitBBCnt);
         uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
         float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
-        display_put("  - total hit #bb:  " ESC_BOLD "%" PRIu64 ESC_RESET " (coverage " ESC_BOLD
+        display_put("  - total hit #bb:   " ESC_BOLD "%" PRIu64 ESC_RESET " (coverage " ESC_BOLD
                     "%.2f%%" ESC_RESET ")\n", hitBB, covPer);
-        display_put("  - total #dso:     " ESC_BOLD "%" PRIu64 ESC_RESET
+        display_put("  - total #dso:      " ESC_BOLD "%" PRIu64 ESC_RESET
                     " (instrumented only)\n", ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
-        display_put("  - discovered #bb: " ESC_BOLD "%" PRIu64 ESC_RESET
+        display_put("  - discovered #bb:  " ESC_BOLD "%" PRIu64 ESC_RESET
                     " (new from input seed)\n", ATOMIC_GET(hfuzz->sanCovCnts.newBBCnt));
-        display_put("  - crashes:        " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - crashes:         " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
     }
     display_put("==================================== LOGS ====================================\n");

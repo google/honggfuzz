@@ -93,10 +93,11 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 #define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
 
 /* Bitmap size */
-#define _HF_BITMAP_SIZE 0x3FFFFFF
+#define _HF_SANCOV_BITMAP_SIZE 0x3FFFFFF
 
 /* Perf bitmap size */
-#define _HF_PERF_BITMAP_SIZE (1024U * 1024U * 24U)
+#define _HF_PERF_BITMAP_SIZE_16M (1024U * 1024U * 16U)
+#define _HF_PERF_BITMAP_MASK 0xFFFFFF
 
 /* Directory in workspace to store sanitizer coverage data */
 #define _HF_SANCOV_DIR "HF_SANCOV"
