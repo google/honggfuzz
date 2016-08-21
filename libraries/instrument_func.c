@@ -35,7 +35,7 @@ static void mapBB(void)
         _exit(1);
     }
     if ((feedback =
-         mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED, 1022,
+         mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED, _HF_BITMAP_FD,
               0)) == MAP_FAILED) {
         fprintf(stderr, "mmap: %s\n", strerror(errno));
         _exit(1);
