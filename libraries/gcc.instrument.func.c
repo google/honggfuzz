@@ -10,13 +10,17 @@
 
 #include "common.h"
 
-feedback_t *feedback;
+static feedback_t *feedback;
 static pid_t mypid;
 
 __attribute__ ((constructor))
 static void mapBB(void)
 {
     mypid = getpid();
+    if (mypid >= _HF_FEEDBACK_PID_SZ) {
+        fprintf(stderr, "mypid > _HF_FEEDBACK_PID_SZ (%d > %d)\n", mypid, _HF_FEEDBACK_PID_SZ);
+        _exit(1);
+    }
     struct stat st;
     if (fstat(1022, &st) == -1) {
         perror("stat");

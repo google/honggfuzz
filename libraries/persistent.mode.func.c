@@ -10,93 +10,89 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define HF_FUZZ_FD 1023
-#define HF_BUF_SIZE (1024 * 1024 * 16)
+#include "common.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+static inline ssize_t readFromFd(int fd, uint8_t * buf, size_t len)
+{
+    size_t readSz = 0;
+    while (readSz < len) {
+        ssize_t sz = read(fd, &buf[readSz], len - readSz);
+        if (sz < 0 && errno == EINTR)
+            continue;
 
-    static inline ssize_t readFromFd(int fd, uint8_t * buf, size_t len) {
-        size_t readSz = 0;
-        while (readSz < len) {
-            ssize_t sz = read(fd, &buf[readSz], len - readSz);
-            if (sz < 0 && errno == EINTR)
-                continue;
+        if (sz == 0)
+            break;
 
-            if (sz == 0)
-                break;
+        if (sz < 0)
+            return -1;
 
-            if (sz < 0)
-                 return -1;
-
-             readSz += sz;
-        } return (ssize_t) readSz;
+        readSz += sz;
     }
+    return (ssize_t) readSz;
+}
 
-    static inline bool readFromFdAll(int fd, uint8_t * buf, size_t len) {
-        return (readFromFd(fd, buf, len) == (ssize_t) len);
+static inline bool readFromFdAll(int fd, uint8_t * buf, size_t len)
+{
+    return (readFromFd(fd, buf, len) == (ssize_t) len);
+}
+
+static bool writeToFd(int fd, uint8_t * buf, size_t len)
+{
+    size_t writtenSz = 0;
+    while (writtenSz < len) {
+        ssize_t sz = write(fd, &buf[writtenSz], len - writtenSz);
+        if (sz < 0 && errno == EINTR)
+            continue;
+
+        if (sz < 0)
+            return false;
+
+        writtenSz += sz;
     }
+    return (writtenSz == len);
+}
 
-    static bool writeToFd(int fd, uint8_t * buf, size_t len) {
-        size_t writtenSz = 0;
-        while (writtenSz < len) {
-            ssize_t sz = write(fd, &buf[writtenSz], len - writtenSz);
-            if (sz < 0 && errno == EINTR)
-                continue;
+uint8_t buf[_HF_PERF_BITMAP_SIZE_16M];
 
-            if (sz < 0)
-                return false;
+void HF_ITER(uint8_t ** buf_ptr, size_t * len_ptr)
+{
+    /*
+     * Send the 'done' marker to the parent
+     */
+    static bool initialized = false;
 
-            writtenSz += sz;
-        }
-        return (writtenSz == len);
-    }
-
-    uint8_t buf[HF_BUF_SIZE];
-
-    void HF_ITER(uint8_t ** buf_ptr, size_t * len_ptr) {
-        /*
-         * Send the 'done' marker to the parent
-         */
-        static bool initialized = false;
-
-        if (initialized == true) {
-            uint8_t z = 'A';
-            if (writeToFd(HF_FUZZ_FD, &z, sizeof(z)) == false) {
-                fprintf(stderr, "readFromFdAll() failed");
-                _exit(1);
-            }
-        }
-        initialized = true;
-
-        uint32_t rlen;
-        if (readFromFdAll(HF_FUZZ_FD, (uint8_t *) & rlen, sizeof(rlen)) == false) {
-            fprintf(stderr, "readFromFdAll(size) failed");
+    if (initialized == true) {
+        uint8_t z = 'A';
+        if (writeToFd(_HF_PERSISTENT_FD, &z, sizeof(z)) == false) {
+            fprintf(stderr, "readFromFdAll() failed\n");
             _exit(1);
         }
-        size_t len = (size_t) rlen;
-        if (len > HF_BUF_SIZE) {
-            fprintf(stderr, "len (%zu) > buf_size (%zu)", len, (size_t) HF_BUF_SIZE);
-            _exit(1);
-        }
+    }
+    initialized = true;
 
-        if (readFromFdAll(HF_FUZZ_FD, buf, len) == false) {
-            fprintf(stderr, "readFromFdAll(buf) failed");
-            _exit(1);
-        }
+    uint32_t rlen;
+    if (readFromFdAll(_HF_PERSISTENT_FD, (uint8_t *) & rlen, sizeof(rlen)) == false) {
+        fprintf(stderr, "readFromFdAll(size) failed\n");
+        _exit(1);
+    }
+    size_t len = (size_t) rlen;
+    if (len > _HF_PERF_BITMAP_SIZE_16M) {
+        fprintf(stderr, "len (%zu) > buf_size (%zu)\n", len, (size_t) _HF_PERF_BITMAP_SIZE_16M);
+        _exit(1);
+    }
 
-        *buf_ptr = buf;
-        *len_ptr = len;
+    if (readFromFdAll(_HF_PERSISTENT_FD, buf, len) == false) {
+        fprintf(stderr, "readFromFdAll(buf) failed\n");
+        _exit(1);
+    }
+
+    *buf_ptr = buf;
+    *len_ptr = len;
 
 /* Clear the custom counter */
 #if defined(__x86_64__)
 #define ARCH_SET_GS 0x1001
 #define __NR_arch_prctl 158
-        syscall(__NR_arch_prctl, ARCH_SET_GS, 0UL);
+    syscall(__NR_arch_prctl, ARCH_SET_GS, 0UL);
 #endif
-    }
-
-#ifdef __cplusplus
 }
-#endif

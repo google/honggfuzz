@@ -133,6 +133,7 @@ OBJS := $(SRCS:.c=.o)
 
 LIBS_SRCS := $(wildcard libraries/*.c)
 LIBS_OBJS := $(LIBS_SRCS:.c=.o)
+HFUZZ_ARCH := libraries/hfuzz.a
 
 # Respect external user defines
 CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH}
@@ -178,7 +179,7 @@ SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
 MAC_GARGBAGE := $(wildcard mac/mach_exc*)
 ANDROID_GARBAGE := obj libs
 
-all: $(BIN) $(LIBS_OBJS)
+all: $(BIN) $(HFUZZ_ARCH)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
@@ -191,6 +192,9 @@ all: $(BIN) $(LIBS_OBJS)
 
 $(BIN): $(OBJS)
 	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
+
+$(HFUZZ_ARCH): $(LIBS_OBJS)
+	$(AR) rcs $(HFUZZ_ARCH) $(LIBS_OBJS)
 
 .PHONY: clean
 clean:

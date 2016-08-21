@@ -102,8 +102,8 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (hfuzz->bbFd != -1) {
         if (pid == 0) {
-            if (dup2(hfuzz->bbFd, 1022) == -1) {
-                PLOG_F("dup2('%d', 1022)", hfuzz->bbFd);
+            if (dup2(hfuzz->bbFd, _HF_BITMAP_FD) == -1) {
+                PLOG_F("dup2('%d', %d)", hfuzz->bbFd, _HF_BITMAP_FD);
             }
         }
     }
@@ -114,8 +114,8 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             close(sv[1]);
         }
         if (pid == 0) {
-            if (dup2(sv[1], 1023) == -1) {
-                PLOG_F("dup2('%d', '%d')", sv[1], 1023);
+            if (dup2(sv[1], _HF_PERSISTENT_FD) == -1) {
+                PLOG_F("dup2('%d', '%d')", sv[1], _HF_PERSISTENT_FD);
             }
             close(sv[0]);
             close(sv[1]);

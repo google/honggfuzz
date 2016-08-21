@@ -117,6 +117,11 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 #define rmb()	__asm__ __volatile__("":::"memory")
 #define wmb()	__sync_synchronize()
 
+/* FD used to pass feedback bitmap a process */
+#define _HF_BITMAP_FD 1022
+/* FD used to pass data to a persistent process */
+#define _HF_PERSISTENT_FD 1023
+
 /* Atomics */
 #define ATOMIC_GET(x) __atomic_load_n(&(x), __ATOMIC_SEQ_CST)
 #define ATOMIC_SET(x, y) __atomic_store_n(&(x), y, __ATOMIC_SEQ_CST)
@@ -227,9 +232,10 @@ struct dynfile_t {
      TAILQ_ENTRY(dynfile_t) pointers;
 };
 
+#define _HF_FEEDBACK_PID_SZ (1 << 16)
 typedef struct {
     uint8_t bbMap[_HF_PERF_BITMAP_SIZE_16M];
-    uint64_t pidFeedback[1U << 15];
+    uint64_t pidFeedback[_HF_FEEDBACK_PID_SZ];
 } feedback_t __attribute__ ((aligned(4096)));
 
 typedef struct {
