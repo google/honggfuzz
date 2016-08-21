@@ -10,6 +10,13 @@
 #include <stdatomic.h>
 #endif
 
+#ifdef _HF_ARCH_DARWIN
+#include <stdlib.h>
+#define EXITALL(x)  exit(x)
+#else
+#define EXITALL(x)  syscall(__NR_exit_group, x)
+#endif
+
 #define ATOMIC_PRE_INC(x) __atomic_add_fetch(&(x), 1, __ATOMIC_SEQ_CST)
 #define ATOMIC_POST_OR(x, y) __atomic_fetch_or(&(x), y, __ATOMIC_SEQ_CST)
 
@@ -25,12 +32,12 @@ static void mapBB(void)
     struct stat st;
     if (fstat(1022, &st) == -1) {
         perror("stat");
-        syscall(__NR_exit_group, 1);
+        EXITALL(1);
     }
     bbSz = st.st_size - (1024 * 1024);
     if ((bbMap = mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, 1022, 0)) == MAP_FAILED) {
         perror("mmap");
-        syscall(__NR_exit_group, 1);
+        EXITALL(1);
     }
     bbCnt = (uint64_t *) & bbMap[bbSz];
     bbCnt[mypid] = 0;
