@@ -6,16 +6,18 @@
 
 void HF_ITER(uint8_t ** buf, size_t * len);
 
-int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len);
-__attribute__ ((weak))
-int LLVMFuzzerInitialize(int *argc, char ***argv);
-
+int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len) __attribute__ ((weak));
+int LLVMFuzzerInitialize(int *argc, char ***argv) __attribute__ ((weak));
 int main(int argc, char **argv) __attribute__ ((weak));
 
 int main(int argc, char **argv)
 {
     if (LLVMFuzzerInitialize) {
         LLVMFuzzerInitialize(&argc, &argv);
+    }
+    if (LLVMFuzzerTestOneInput == NULL) {
+        fprintf(stderr, "LLVMFuzzerTestOneInput not defined in your code\n");
+        _exit(1);
     }
 
     for (;;) {
@@ -26,7 +28,7 @@ int main(int argc, char **argv)
 
         int ret = LLVMFuzzerTestOneInput(buf, len);
         if (ret != 0) {
-            printf("LLVMFuzzerTestOneInput() returned '%d'", ret);
+            fprintf(stderr, "LLVMFuzzerTestOneInput() returned '%d'\n", ret);
             _exit(1);
         }
     }

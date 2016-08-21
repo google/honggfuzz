@@ -1,7 +1,10 @@
+#include <error.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -22,8 +25,8 @@ static void mapBB(void)
         _exit(1);
     }
     struct stat st;
-    if (fstat(1022, &st) == -1) {
-        perror("stat");
+    if (fstat(_HF_BITMAP_FD, &st) == -1) {
+        fprintf(stderr, "fstat(%d): %s\n", _HF_BITMAP_FD, strerror(errno));
         _exit(1);
     }
     if (st.st_size != sizeof(feedback_t)) {
@@ -34,7 +37,7 @@ static void mapBB(void)
     if ((feedback =
          mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED, 1022,
               0)) == MAP_FAILED) {
-        perror("mmap");
+        fprintf(stderr, "mmap: %s\n", strerror(errno));
         _exit(1);
     }
     feedback->pidFeedback[mypid] = 0U;
