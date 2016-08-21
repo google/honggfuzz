@@ -228,6 +228,11 @@ struct dynfile_t {
 };
 
 typedef struct {
+    uint8_t bbMap[_HF_PERF_BITMAP_SIZE_16M];
+    uint64_t pidFeedback[1U << 15];
+} feedback_t __attribute__ ((aligned(4096)));
+
+typedef struct {
     char **cmdline;
     char cmdline_txt[PATH_MAX];
     char *inputFile;
@@ -263,7 +268,7 @@ typedef struct {
     bool persistent;
 
     fuzzState_t state;
-    uint8_t *bbMap;
+    feedback_t *feedback;
     int bbFd;
     size_t dynfileqCnt;
     pthread_mutex_t dynfileq_mutex;

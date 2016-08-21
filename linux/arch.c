@@ -403,25 +403,23 @@ bool arch_archInit(honggfuzz_t * hfuzz)
             PLOG_W("memfd_create()");
             return false;
         }
-        if (ftruncate(hfuzz->bbFd, _HF_PERF_BITMAP_SIZE_16M + (1024 * 1024)) == -1) {
-            PLOG_W("ftruncate('%d', '%llu')", hfuzz->bbFd,
-                   (unsigned long long)(_HF_PERF_BITMAP_SIZE_16M + (1024 * 1024)));
+        if (ftruncate(hfuzz->bbFd, sizeof(feedback_t)) == -1) {
+            PLOG_W("ftruncate('%d', '%zu')", hfuzz->bbFd, sizeof(feedback_t));
             close(hfuzz->bbFd);
             hfuzz->bbFd = -1;
             return false;
         }
-        if ((hfuzz->bbMap =
-             mmap(NULL, _HF_PERF_BITMAP_SIZE_16M + (1024 * 1024), PROT_READ | PROT_WRITE,
-                  MAP_SHARED, hfuzz->bbFd, 0)) == MAP_FAILED) {
-            PLOG_W("mmap(NULL, %llu, PROT_READ|PROT_WRITE, MAP_SHARED, %d, 0)",
-                   (unsigned long long)(_HF_PERF_BITMAP_SIZE_16M + (1024 * 1024)), hfuzz->bbFd);
-            hfuzz->bbMap = NULL;
+        if ((hfuzz->feedback =
+             mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED,
+                  hfuzz->bbFd, 0)) == MAP_FAILED) {
+            PLOG_W("mmap(NULL, %zu, PROT_READ|PROT_WRITE, MAP_SHARED, %d, 0)", sizeof(feedback_t),
+                   hfuzz->bbFd);
             close(hfuzz->bbFd);
             hfuzz->bbFd = -1;
             return false;
         }
 #else
-        hfuzz->bbMap = util_MMap(_HF_PERF_BITMAP_SIZE_16M + (1024 * 1024));
+        hfuzz->feedback = util_MMap(sizeof(feedback_t));
 #endif
     }
 

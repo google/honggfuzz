@@ -7,16 +7,10 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
-#ifdef __clang__
-#include <stdatomic.h>
-#endif
 
-#define ATOMIC_PRE_INC(x) __atomic_add_fetch(&(x), 1, __ATOMIC_SEQ_CST)
-#define ATOMIC_POST_OR_RELAXED(x, y) __atomic_fetch_or(&(x), y, __ATOMIC_RELAXED)
+#include "common.h"
 
-static uint8_t *bbMap;
-static uint64_t *bbCnt;
-static size_t bbSz;
+feedback_t *feedback;
 static pid_t mypid;
 
 __attribute__ ((constructor))
@@ -28,13 +22,18 @@ static void mapBB(void)
         perror("stat");
         _exit(1);
     }
-    bbSz = st.st_size - (1024 * 1024);
-    if ((bbMap = mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, 1022, 0)) == MAP_FAILED) {
+    if (st.st_size != sizeof(feedback_t)) {
+        fprintf(stderr, "st.size != sizeof(feedback_t) (%zu != %zu)\n", (size_t) st.st_size,
+                sizeof(feedback_t));
+        _exit(1);
+    }
+    if ((feedback =
+         mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED, 1022,
+              0)) == MAP_FAILED) {
         perror("mmap");
         _exit(1);
     }
-    bbCnt = (uint64_t *) & bbMap[bbSz];
-    bbCnt[mypid] = 0;
+    feedback->pidFeedback[mypid] = 0U;
 }
 
 void __cyg_profile_func_enter(void *func, void *caller)
@@ -43,8 +42,8 @@ void __cyg_profile_func_enter(void *func, void *caller)
     size_t byteOff = pos / 8;
     uint8_t bitSet = (uint8_t) (1 << (pos % 8));
 
-    register uint8_t prev = ATOMIC_POST_OR_RELAXED(bbMap[byteOff], bitSet);
+    register uint8_t prev = ATOMIC_POST_OR(feedback->bbMap[byteOff], bitSet);
     if (!(prev & bitSet)) {
-        ATOMIC_PRE_INC(bbCnt[mypid]);
+        ATOMIC_PRE_INC(feedback->pidFeedback[mypid]);
     }
 }

@@ -166,7 +166,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .persistent = false,
 
         .state = _HF_STATE_UNSET,
-        .bbMap = NULL,
+        .feedback = NULL,
         .bbFd = -1,
         .dynfileq_mutex = PTHREAD_MUTEX_INITIALIZER,
         .dynfileqCnt = 0U,
