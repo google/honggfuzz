@@ -337,7 +337,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
 
         int status;
-        pid_t pid = wait4(-1, &status, __WALL | __WNOTHREAD | WUNTRACED, NULL);
+        pid_t pid = wait4(-1, &status, __WALL | __WNOTHREAD, NULL);
         if (pid == -1 && errno == EINTR) {
             if (hfuzz->tmOut) {
                 arch_checkTimeLimit(hfuzz, fuzzer);
