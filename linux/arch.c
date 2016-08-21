@@ -207,19 +207,6 @@ static void arch_sigFunc(int signo, siginfo_t * si UNUSED, void *dummy UNUSED)
     }
 }
 
-#if 0
-static void arch_removeTimer(timer_t * timerid)
-{
-    const struct itimerspec ts = {
-        .it_value = {.tv_sec = 0,.tv_nsec = 0},
-        .it_interval = {.tv_sec = 0,.tv_nsec = 0,},
-    };
-    if (timer_settime(*timerid, 0, &ts, NULL) == -1) {
-        PLOG_E("timer_settime(disarm)");
-    }
-}
-#endif
-
 static bool arch_setTimer(timer_t * timerid)
 {
     /*
@@ -563,10 +550,9 @@ bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
     sigset_t smask;
     sigemptyset(&smask);
     struct sigaction sa = {
-        .sa_handler = NULL,
         .sa_sigaction = arch_sigFunc,
         .sa_mask = smask,
-        .sa_flags = 0,
+        .sa_flags = SA_SIGINFO,
         .sa_restorer = NULL,
     };
 
