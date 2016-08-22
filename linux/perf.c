@@ -208,8 +208,8 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t p
         mmap(NULL, _HF_PERF_MAP_SZ + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
     if (fuzzer->linux.perfMmapBuf == MAP_FAILED) {
         fuzzer->linux.perfMmapBuf = NULL;
-        PLOG_E("mmap(mmapBuf) failed, sz=%zu, try increasing kernel.perf_event_mlock_kb",
-               (size_t) _HF_PERF_MAP_SZ + getpagesize());
+        PLOG_E("mmap(mmapBuf) failed, sz=%zu, try increasing kernel.perf_event_mlock_kb "
+               "(up to sth. like 30000000000)", (size_t) _HF_PERF_MAP_SZ + getpagesize());
         close(*perfFd);
         return false;
     }
