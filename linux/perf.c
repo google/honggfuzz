@@ -84,10 +84,10 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             pos = ((br->from << 12) ^ (br->to & 0xFFF)) & _HF_PERF_BITMAP_MASK;
         }
 
-        size_t byteOff = pos / 8;
-        uint8_t bitSet = (uint8_t) (1 << (pos % 8));
+        register size_t byteOff = pos / 8;
+        register uint8_t bitSet = (uint8_t) (1 << (pos % 8));
 
-        register uint8_t prev = ATOMIC_POST_OR(hfuzz->feedback->bbMap[byteOff], bitSet);
+        register uint8_t prev = ATOMIC_POST_OR_RELAXED(hfuzz->feedback->bbMap[byteOff], bitSet);
         if (!(prev & bitSet)) {
             fuzzer->linux.hwCnts.newBBCnt++;
         }

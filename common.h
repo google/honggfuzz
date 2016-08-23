@@ -145,6 +145,9 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 #define ATOMIC_PRE_OR(x, y) __atomic_or_fetch(&(x), y, __ATOMIC_SEQ_CST)
 #define ATOMIC_POST_OR(x, y) __atomic_fetch_or(&(x), y, __ATOMIC_SEQ_CST)
 
+#define ATOMIC_PRE_INC_RELAXED(x) __atomic_add_fetch(&(x), 1, __ATOMIC_RELAXED)
+#define ATOMIC_POST_OR_RELAXED(x, y) __atomic_fetch_or(&(x), y, __ATOMIC_RELAXED)
+
 /* Missing WIFCONTINUED in Android */
 #ifndef WIFCONTINUED
 #define WIFCONTINUED(x) WEXITSTATUS(0)
@@ -239,7 +242,7 @@ struct dynfile_t {
 #define _HF_FEEDBACK_PID_SZ (1 << 16)
 typedef struct {
     uint8_t bbMap[_HF_PERF_BITMAP_SIZE_16M];
-    uint64_t pidFeedback[_HF_FEEDBACK_PID_SZ];
+    uint32_t pidFeedback[_HF_FEEDBACK_PID_SZ];
 } feedback_t;
 
 typedef struct {
