@@ -16,6 +16,7 @@
 static feedback_t *feedback;
 static pid_t mypid;
 
+__attribute__ ((no_instrument_function))
 __attribute__ ((constructor))
 static void mapBB(void)
 {
@@ -43,6 +44,7 @@ static void mapBB(void)
     feedback->pidFeedback[mypid] = 0U;
 }
 
+__attribute__ ((no_instrument_function))
 void __cyg_profile_func_enter(void *func, void *caller)
 {
     size_t pos = (((uintptr_t) func << 12) ^ ((uintptr_t) caller & 0xFFF)) & 0xFFFFFF;
