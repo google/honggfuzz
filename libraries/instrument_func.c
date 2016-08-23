@@ -47,12 +47,13 @@ static void mapBB(void)
 __attribute__ ((no_instrument_function))
 void __cyg_profile_func_enter(void *func, void *caller)
 {
-    size_t pos = (((uintptr_t) func << 12) ^ ((uintptr_t) caller & 0xFFF)) & 0xFFFFFF;
-    size_t byteOff = pos / 8;
-    uint8_t bitSet = (uint8_t) (1 << (pos % 8));
+    register size_t pos =
+        (((uintptr_t) func << 12) | ((uintptr_t) caller & 0xFFF)) & _HF_PERF_BITMAP_MASK;
+    register size_t byteOff = pos / 8;
+    register uint8_t bitSet = (uint8_t) (1 << (pos % 8));
 
-    register uint8_t prev = ATOMIC_POST_OR(feedback->bbMap[byteOff], bitSet);
+    register uint8_t prev = ATOMIC_POST_OR_RELAXED(feedback->bbMap[byteOff], bitSet);
     if (!(prev & bitSet)) {
-        ATOMIC_PRE_INC(feedback->pidFeedback[mypid]);
+        ATOMIC_PRE_INC_RELAXED(feedback->pidFeedback[mypid]);
     }
 }
