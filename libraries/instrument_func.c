@@ -16,8 +16,7 @@
 static feedback_t *feedback;
 static pid_t mypid;
 
-__attribute__ ((no_instrument_function))
-__attribute__ ((constructor))
+__attribute__ ((no_instrument_function)) __attribute__ ((constructor))
 static void mapBB(void)
 {
     mypid = getpid();
