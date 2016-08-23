@@ -436,8 +436,11 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int64_t diff1 = hfuzz->linux.hwCnts.cpuBranchCnt - fuzzer->linux.hwCnts.cpuBranchCnt;
     int64_t diff2 = hfuzz->linux.hwCnts.customCnt - fuzzer->linux.hwCnts.customCnt;
 
-    uint64_t softCnt = ATOMIC_GET(hfuzz->feedback->pidFeedback[fuzzer->pid]);
-    ATOMIC_CLEAR(hfuzz->feedback->pidFeedback[fuzzer->pid]);
+    uint64_t softCnt = 0UL;
+    if (hfuzz->bbFd != -1) {
+        softCnt = ATOMIC_GET(hfuzz->feedback->pidFeedback[fuzzer->pid]);
+        ATOMIC_CLEAR(hfuzz->feedback->pidFeedback[fuzzer->pid]);
+    }
 
     /*
      * Coverage is the primary counter, the rest is secondary, and taken into consideration only
