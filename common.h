@@ -232,11 +232,15 @@ struct dynfile_t {
      TAILQ_ENTRY(dynfile_t) pointers;
 };
 
+/*
+ * Size of the PID feedback array. Should be bigger than the maximum PID value
+ * on your system
+ */
 #define _HF_FEEDBACK_PID_SZ (1 << 16)
 typedef struct {
     uint8_t bbMap[_HF_PERF_BITMAP_SIZE_16M];
     uint64_t pidFeedback[_HF_FEEDBACK_PID_SZ];
-} feedback_t __attribute__ ((aligned(4096)));
+} feedback_t;
 
 typedef struct {
     char **cmdline;
