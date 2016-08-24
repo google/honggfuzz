@@ -157,6 +157,7 @@ static bool files_readdir(honggfuzz_t * hfuzz)
 
     int count = 0;
     for (;;) {
+        errno = 0;
         struct dirent *res = readdir(dir);
         if (res == NULL && errno != 0) {
             PLOG_W("Couldn't read the '%s' dir", hfuzz->inputFile);
