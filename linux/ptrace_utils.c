@@ -399,7 +399,7 @@ void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid UNUSED, uint64_t * 
 #endif                          /* defined(__i386__) || defined(__x86_64__) */
 }
 
-static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
+static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg UNUSED)
 {
     /*
      * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
@@ -693,7 +693,7 @@ static void arch_ptraceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fu
     if (funcCnt == 0) {
         if (pc) {
             /* Manually update major frame PC & frames counter */
-            funcs[0].pc = (void *)pc;
+            funcs[0].pc = (void *)(uintptr_t) pc;
             funcCnt = 1;
         } else {
             return;
@@ -759,7 +759,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     if (funcCnt == 0) {
         if (pc) {
             /* Manually update major frame PC & frames counter */
-            funcs[0].pc = (void *)pc;
+            funcs[0].pc = (void *)(uintptr_t) pc;
             funcCnt = 1;
         } else {
             saveUnique = false;
@@ -1326,8 +1326,9 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
     };
 
     for (;;) {
-        struct dirent de, *res;
-        if (readdir_r(dir, &de, &res) > 0) {
+        errno = 0;
+        struct dirent *res = readdir(dir);
+        if (res == NULL && errno != 0) {
             PLOG_E("Couldn't read contents of '%s'", path);
             return false;
         }
