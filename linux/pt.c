@@ -189,20 +189,19 @@ inline static void perf_ptAnalyzePkt(honggfuzz_t * hfuzz, fuzzer_t * fuzzer,
         LOG_F("pt_last_ip_update_ip() failed: %s", pt_errstr(errcode));
     }
 
-    uint64_t ip;
-    errcode = pt_last_ip_query(&ip, last_ip);
-    if (errcode < 0) {
-        return;
-    }
     /* Update only on TIP, other packets don't indicate a branch */
     if (packet->type == ppt_tip) {
-        register size_t pos = ip & _HF_PERF_BITMAP_MASK;
-        register size_t byteOff = pos / 8;
-        register uint8_t bitSet = (uint8_t) (1 << (pos % 8));
+        uint64_t ip;
+        errcode = pt_last_ip_query(&ip, last_ip);
+        if (errcode == 0) {
+            register size_t pos = ip & _HF_PERF_BITMAP_MASK;
+            register size_t byteOff = pos / 8;
+            register uint8_t bitSet = (uint8_t) (1 << (pos % 8));
 
-        register uint8_t prev = ATOMIC_POST_OR_RELAXED(hfuzz->feedback->bbMap[byteOff], bitSet);
-        if (!(prev & bitSet)) {
-            fuzzer->linux.hwCnts.newBBCnt++;
+            register uint8_t prev = ATOMIC_POST_OR_RELAXED(hfuzz->feedback->bbMap[byteOff], bitSet);
+            if (!(prev & bitSet)) {
+                fuzzer->linux.hwCnts.newBBCnt++;
+            }
         }
     }
     return;

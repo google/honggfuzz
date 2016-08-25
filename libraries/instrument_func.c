@@ -48,9 +48,9 @@ static void mapBB(void)
 #ifdef __clang__
 #pragma clang optimize on
 #else
-__attribute__((optimize("-Ofast")))
+__attribute__ ((optimize("-Ofast")))
 #endif
-__attribute__ ((no_instrument_function))
+    __attribute__ ((no_instrument_function))
 void __cyg_profile_func_enter(void *func, void *caller)
 {
     register size_t pos =

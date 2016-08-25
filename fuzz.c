@@ -678,7 +678,8 @@ static void *fuzz_threadNew(void *arg)
 #if defined(_HF_ARCH_LINUX)
         .linux.timerId = (timer_t) 0,
 #endif                          // defined(_HF_ARCH_LINUX)
-        .linux.attachedPid = 0,.linux.persistentSock = -1,
+        .linux.attachedPid = 0,
+        .linux.persistentSock = -1,
     };
     defer {
         free(fuzzer.dynamicFile);
