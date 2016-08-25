@@ -34,7 +34,7 @@ ifeq ($(OS),Linux)
 
     ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
-                   -Wno-unknown-warning-option -funroll-loops -O3 \
+                   -Wno-unknown-warning-option -funroll-loops \
                    -D_FILE_OFFSET_BITS=64
     ARCH_LDFLAGS := -L/usr/local/include -L/usr/include \
                     -lpthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt
@@ -94,7 +94,7 @@ else ifeq ($(OS),Darwin)
     endif
     CC := $(shell xcrun --sdk $(SDK_NAME) --find cc)
     LD := $(shell xcrun --sdk $(SDK_NAME) --find cc)
-    ARCH_CFLAGS := -arch x86_64 -O3 -std=c99 -isysroot $(SDK) -I. \
+    ARCH_CFLAGS := -arch x86_64 -std=c99 -isysroot $(SDK) -I. \
                    -x objective-c -pedantic -fblocks \
                    -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
                    -Wreturn-type -Wpointer-arith -Wno-gnu-case-range -Wno-gnu-designator \
@@ -117,7 +117,7 @@ else
     ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
-                   -U__STRICT_ANSI__ -funroll-loops -O2
+                   -U__STRICT_ANSI__ -funroll-loops
     ARCH_LDFLAGS := -lpthread -L/usr/local/include -L/usr/include
     # OS Posix
 endif
