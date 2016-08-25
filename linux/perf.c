@@ -144,11 +144,15 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t p
     memset(&pe, 0, sizeof(struct perf_event_attr));
     pe.size = sizeof(struct perf_event_attr);
     pe.exclude_kernel = 1;
+#if 0
     pe.exclude_hv = 1;
     pe.exclude_guest = 1;
     pe.exclude_idle = 1;
     pe.exclude_callchain_kernel = 1;
     pe.exclude_callchain_user = 1;
+    pe.pinned = 1;
+    pe.precise_ip = 1;
+#endif
     if (hfuzz->linux.pid > 0 || hfuzz->persistent == true) {
         pe.disabled = 0;
         pe.enable_on_exec = 0;
@@ -157,8 +161,6 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t p
         pe.enable_on_exec = 1;
     }
     pe.type = PERF_TYPE_HARDWARE;
-    pe.pinned = 1;
-    pe.precise_ip = 1;
 
     switch (method) {
     case _HF_DYNFILE_INSTR_COUNT:
