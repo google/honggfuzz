@@ -43,6 +43,13 @@ static void mapBB(void)
     feedback->pidFeedback[mypid] = 0U;
 }
 
+/* This should be trully fast */
+
+#ifdef __clang__
+#pragma clang optimize on
+#else
+__attribute__((optimize("-Ofast")))
+#endif
 __attribute__ ((no_instrument_function))
 void __cyg_profile_func_enter(void *func, void *caller)
 {
