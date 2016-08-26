@@ -27,6 +27,12 @@ static void mapBB(void)
     struct stat st;
     if (fstat(_HF_BITMAP_FD, &st) == -1) {
         fprintf(stderr, "fstat(%d): %s\n", _HF_BITMAP_FD, strerror(errno));
+
+#if 0
+	feedback = mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
+	return;
+#endif
+
         _exit(1);
     }
     if (st.st_size != sizeof(feedback_t)) {

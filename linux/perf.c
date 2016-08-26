@@ -46,8 +46,8 @@
 #include "log.h"
 #include "util.h"
 
-#define _HF_PERF_MAP_SZ (1024 * 128)
-#define _HF_PERF_AUX_SZ (1024 * 1024)
+#define _HF_PERF_MAP_SZ (1024 * 512)
+#define _HF_PERF_AUX_SZ (1024 * 1024 * 4)
 /* PERF_TYPE for Intel_PT/BTS -1 if none */
 static int32_t perfIntelPtPerfType = -1;
 static int32_t perfIntelBtsPerfType = -1;
