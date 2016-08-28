@@ -25,14 +25,14 @@ static void mapBB(void)
     }
     struct stat st;
     if (fstat(_HF_BITMAP_FD, &st) == -1) {
-        fprintf(stderr, "fstat(%d): %s\n", _HF_BITMAP_FD, strerror(errno));
+        fprintf(stderr, "fstat(%d): The binary is probably not used with 'honggfuzz -z' %s\n",
+                _HF_BITMAP_FD, strerror(errno));
 
-#if 0
+        /* Fall-back mode, just map the buffer to avoid SIGSEGV in __cyg_profile_func_enter */
         feedback =
             mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1,
                  0);
         return;
-#endif
 
         _exit(1);
     }
@@ -60,9 +60,8 @@ __attribute__ ((optimize("-Ofast")))
     __attribute__ ((no_instrument_function))
 void __cyg_profile_func_enter(void *func, void *caller)
 {
-    register size_t pos =
-        (((uintptr_t) func << 12) | ((uintptr_t) caller & 0xFFF)) & _HF_PERF_BITMAP_MASK;
-    register size_t byteOff = pos / 8;
+    register size_t pos = (((uintptr_t) func << 12) | ((uintptr_t) caller & 0xFFF));
+    register size_t byteOff = (pos / 8) & _HF_PERF_BITMAP_MASK;
     register uint8_t bitSet = (uint8_t) (1 << (pos % 8));
 
     register uint8_t prev = ATOMIC_POST_OR_RELAXED(feedback->bbMap[byteOff], bitSet);

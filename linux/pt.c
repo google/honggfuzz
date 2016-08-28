@@ -194,9 +194,8 @@ inline static void perf_ptAnalyzePkt(honggfuzz_t * hfuzz, fuzzer_t * fuzzer,
         uint64_t ip;
         errcode = pt_last_ip_query(&ip, last_ip);
         if (errcode == 0) {
-            register size_t pos = ip & _HF_PERF_BITMAP_MASK;
-            register size_t byteOff = pos / 8;
-            register uint8_t bitSet = (uint8_t) (1 << (pos % 8));
+            register size_t byteOff = (ip / 8) & _HF_PERF_BITMAP_MASK;
+            register uint8_t bitSet = (uint8_t) (1 << (ip % 8));
 
             register uint8_t prev = ATOMIC_POST_OR_RELAXED(hfuzz->feedback->bbMap[byteOff], bitSet);
             if (!(prev & bitSet)) {

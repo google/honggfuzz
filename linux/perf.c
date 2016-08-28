@@ -79,12 +79,12 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         register size_t pos = 0UL;
         if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-            pos = br->to & _HF_PERF_BITMAP_MASK;
+            pos = br->to;
         } else {
-            pos = ((br->from << 12) ^ (br->to & 0xFFF)) & _HF_PERF_BITMAP_MASK;
+            pos = ((br->from << 12) ^ (br->to & 0xFFF));
         }
 
-        register size_t byteOff = pos / 8;
+        register size_t byteOff = (pos / 8) & _HF_PERF_BITMAP_MASK;
         register uint8_t bitSet = (uint8_t) (1 << (pos % 8));
 
         register uint8_t prev = ATOMIC_POST_OR_RELAXED(hfuzz->feedback->bbMap[byteOff], bitSet);
