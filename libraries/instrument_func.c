@@ -70,3 +70,9 @@ void __cyg_profile_func_enter(void *func, void *caller)
         ATOMIC_PRE_INC_RELAXED(feedback->pidFeedback[mypid]);
     }
 }
+
+__attribute__ ((weak))
+void __cyg_profile_func_exit(void *func UNUSED, void *caller UNUSED)
+{
+    return;
+}
