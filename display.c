@@ -162,7 +162,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                     ATOMIC_GET(hfuzz->linux.hwCnts.customCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_SOFT) {
-        display_put("  - functions seen: "  ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - functions seen:  " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.softCnt));
     }
 
