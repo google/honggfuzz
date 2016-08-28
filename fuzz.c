@@ -153,6 +153,12 @@ static bool fuzz_prepareExecve(honggfuzz_t * hfuzz, const char *fileName)
     }
     setsid();
 
+    if (hfuzz->bbFd != -1) {
+        if (dup2(hfuzz->bbFd, _HF_BITMAP_FD) == -1) {
+            PLOG_F("dup2('%d', %d)", hfuzz->bbFd, _HF_BITMAP_FD);
+        }
+    }
+
     return true;
 }
 

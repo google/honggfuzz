@@ -100,14 +100,6 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     pid_t pid = syscall(__NR_clone, (uintptr_t) clone_flags, NULL, NULL, NULL, (uintptr_t) 0);
 
-    if (hfuzz->bbFd != -1) {
-        if (pid == 0) {
-            if (dup2(hfuzz->bbFd, _HF_BITMAP_FD) == -1) {
-                PLOG_F("dup2('%d', %d)", hfuzz->bbFd, _HF_BITMAP_FD);
-            }
-        }
-    }
-
     if (hfuzz->persistent == true) {
         if (pid == -1) {
             close(sv[0]);
