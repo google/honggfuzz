@@ -25,6 +25,7 @@
 #define _HF_FILES_H_
 
 #include <stdint.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 extern bool files_init(honggfuzz_t * hfuzz);

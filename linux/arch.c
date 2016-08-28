@@ -396,15 +396,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 bool arch_archInit(honggfuzz_t * hfuzz)
 {
-    if (hfuzz->dynFileMethod &
-        (_HF_DYNFILE_BTS_BLOCK | _HF_DYNFILE_BTS_EDGE | _HF_DYNFILE_IPT_BLOCK | _HF_DYNFILE_SOFT)) {
-        hfuzz->feedback = files_mapSharedMem(sizeof(feedback_t), &hfuzz->bbFd);
-        if (hfuzz->feedback == MAP_FAILED) {
-            LOG_W("files_mapSharedMem(sz=%zu) failed", sizeof(feedback_t));
-            return false;
-        }
-    }
-
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         unsigned long major = 0, minor = 0;
         char *p = NULL;

@@ -148,6 +148,13 @@ int main(int argc, char **argv)
         LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.blacklistFile);
     }
 
+    if (hfuzz.dynFileMethod != _HF_DYNFILE_NONE) {
+        hfuzz.feedback = files_mapSharedMem(sizeof(feedback_t), &hfuzz.bbFd);
+        if (hfuzz.feedback == MAP_FAILED) {
+            LOG_F("files_mapSharedMem(sz=%zu) failed", sizeof(feedback_t));
+        }
+    }
+
     /*
      * So far so good
      */

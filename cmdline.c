@@ -249,6 +249,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
         {{"save_all", no_argument, NULL, 'u'}, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames"},
         {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
+        {{"instr", no_argument, NULL, 'z'}, "Enable compile instrumentation (see libraries/instrument_func.c)"},
         {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
         {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libraries/persistent.mode.main.o)"},
 
@@ -264,7 +265,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"linux_perf_bts_edge", no_argument, NULL, 0x513}, "Use Intel BTS to count unique edges"},
         {{"linux_perf_ipt_block", no_argument, NULL, 0x514}, "Use Intel Processor Trace to count unique blocks"},
         {{"linux_perf_custom", no_argument, NULL, 0x520}, "Custom counter (see interceptor/stringmem.c)"},
-        {{"linux_perf_soft", no_argument, NULL, 0x521}, "Software experimental counters (see interceptor/gcc.instrument.c)"},
 #endif  // defined(_HF_ARCH_LINUX)
         {{0, 0, 0, 0}, NULL},
     };
@@ -279,7 +279,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     const char *logfile = NULL;
     int opt_index = 0;
     for (;;) {
-        int c = getopt_long(argc, argv, "-?hqvVsuPf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:C", opts,
+        int c = getopt_long(argc, argv, "-?hqvVsuPf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:Cz", opts,
                             &opt_index);
         if (c < 0)
             break;
@@ -327,6 +327,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 'C':
             hfuzz->useSanCov = true;
+            break;
+        case 'z':
+            hfuzz->dynFileMethod |= _HF_DYNFILE_SOFT;
             break;
         case 'F':
             hfuzz->maxFileSz = strtoul(optarg, NULL, 0);
@@ -409,9 +412,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x520:
             hfuzz->dynFileMethod |= _HF_DYNFILE_CUSTOM;
-            break;
-        case 0x521:
-            hfuzz->dynFileMethod |= _HF_DYNFILE_SOFT;
             break;
         default:
             cmdlineUsage(argv[0], custom_opts);
