@@ -249,7 +249,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
         {{"save_all", no_argument, NULL, 'u'}, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames"},
         {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
-        {{"instr", no_argument, NULL, 'z'}, "Enable compile instrumentation (see libraries/instrument_func.c)"},
+        {{"instr", no_argument, NULL, 'z'}, "Enable compile-time instrumentation (see libraries/instrument_func.c)"},
         {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
         {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libraries/persistent.mode.main.o)"},
 
