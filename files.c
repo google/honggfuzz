@@ -489,6 +489,28 @@ uint8_t *files_mapFileShared(char *fileName, off_t * fileSz, int *fd)
     return buf;
 }
 
+void *files_mapSharedMem(size_t sz, int *fd)
+{
+    char template[] = "/tmp/hfuzz.XXXXXX";
+    if ((*fd = mkstemp(template)) == -1) {
+        PLOG_W("mkstemp('%s')", template);
+        return MAP_FAILED;
+    }
+    unlink(template);
+    if (ftruncate(*fd, sz) == -1) {
+        PLOG_W("ftruncate(%d, %zu)", *fd, sz);
+        close(*fd);
+        return MAP_FAILED;
+    }
+    void *ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_SHARED, *fd, 0);
+    if (ret == MAP_FAILED) {
+        PLOG_W("mmap(sz=%zu, fd=%d)", sz, *fd);
+        close(*fd);
+        return MAP_FAILED;
+    }
+    return ret;
+}
+
 bool files_readPidFromFile(const char *fileName, pid_t * pidPtr)
 {
     FILE *fPID = fopen(fileName, "rb");

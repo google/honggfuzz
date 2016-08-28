@@ -398,29 +398,11 @@ bool arch_archInit(honggfuzz_t * hfuzz)
 {
     if (hfuzz->dynFileMethod &
         (_HF_DYNFILE_BTS_BLOCK | _HF_DYNFILE_BTS_EDGE | _HF_DYNFILE_IPT_BLOCK | _HF_DYNFILE_SOFT)) {
-#if defined(__NR_memfd_create)
-        if ((hfuzz->bbFd = syscall(__NR_memfd_create, "hfuzz-bbmap", 0)) == -1) {
-            PLOG_W("memfd_create()");
+        hfuzz->feedback = files_mapSharedMem(sizeof(feedback_t), &hfuzz->bbFd);
+        if (hfuzz->feedback == MAP_FAILED) {
+            LOG_W("files_mapSharedMem(sz=%zu) failed", sizeof(feedback_t));
             return false;
         }
-        if (ftruncate(hfuzz->bbFd, sizeof(feedback_t)) == -1) {
-            PLOG_W("ftruncate('%d', '%zu')", hfuzz->bbFd, sizeof(feedback_t));
-            close(hfuzz->bbFd);
-            hfuzz->bbFd = -1;
-            return false;
-        }
-        if ((hfuzz->feedback =
-             mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED,
-                  hfuzz->bbFd, 0)) == MAP_FAILED) {
-            PLOG_W("mmap(NULL, %zu, PROT_READ|PROT_WRITE, MAP_SHARED, %d, 0)", sizeof(feedback_t),
-                   hfuzz->bbFd);
-            close(hfuzz->bbFd);
-            hfuzz->bbFd = -1;
-            return false;
-        }
-#else
-        hfuzz->feedback = util_MMap(sizeof(feedback_t));
-#endif
     }
 
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
