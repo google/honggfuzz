@@ -25,16 +25,11 @@ static void mapBB(void)
     }
     struct stat st;
     if (fstat(_HF_BITMAP_FD, &st) == -1) {
-        fprintf(stderr, "fstat(%d): The binary is probably not used with 'honggfuzz -z' %s\n",
-                _HF_BITMAP_FD, strerror(errno));
-
         /* Fall-back mode, just map the buffer to avoid SIGSEGV in __cyg_profile_func_enter */
         feedback =
             mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1,
                  0);
         return;
-
-        _exit(1);
     }
     if (st.st_size != sizeof(feedback_t)) {
         fprintf(stderr, "st.size != sizeof(feedback_t) (%zu != %zu)\n", (size_t) st.st_size,
