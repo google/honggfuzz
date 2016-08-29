@@ -52,7 +52,7 @@ static bool writeToFd(int fd, uint8_t * buf, size_t len)
     return (writtenSz == len);
 }
 
-uint8_t buf[_HF_PERF_BITMAP_SIZE_16M];
+static uint8_t buf[_HF_PERF_BITMAP_SIZE_16M] = { 0 };
 
 void HF_ITER(uint8_t ** buf_ptr, size_t * len_ptr)
 {
