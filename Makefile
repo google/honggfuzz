@@ -25,6 +25,8 @@ BIN := honggfuzz
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=131072
 COMMON_LDFLAGS := -lm
 COMMON_SRCS := honggfuzz.c cmdline.c display.c files.c fuzz.c log.c mangle.c report.c sancov.c subproc.c util.c
+CFLAGS ?= -O3
+LDFLAGS ?=
 
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
