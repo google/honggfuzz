@@ -406,8 +406,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     return true;
 }
 
-static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_t size,
-                                      uint64_t cov)
+static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_t size)
 {
     struct dynfile_t *dynfile = (struct dynfile_t *)util_Malloc(sizeof(struct dynfile_t));
     dynfile->size = size;
@@ -417,10 +416,9 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
     hfuzz->dynfileqCnt++;
 
     char fname[PATH_MAX];
-    snprintf(fname, sizeof(fname),
-             "%s/COV.RANK.%06" PRIu64 ".PID.%d.COVBB.%07" PRIu64 ".TIME.%" PRIu64 ".RND.%" PRIx64,
-             hfuzz->workDir, (uint64_t) 999999ULL - cov, getpid(), cov, (uint64_t) time(NULL),
-             util_rndGet(0, 0xFFFFFFFFFFFF));
+    snprintf(fname, sizeof(fname), "%s/COVERAGE.TIME.%d.PID.%d.ITER.%" PRIu64 ".RND.%" PRIx64,
+             hfuzz->workDir, (int)time(NULL), (int)getpid(),
+             (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt), util_rndGet(0, 0xFFFFFFFFFFFF));
     if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC)
         == false) {
         LOG_W("Couldn't write buffer to file '%s'", fname);
@@ -468,8 +466,7 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
              hfuzz->linux.hwCnts.cpuBranchCnt, hfuzz->linux.hwCnts.softCnt,
              hfuzz->linux.hwCnts.bbCnt, hfuzz->linux.hwCnts.customCnt);
 
-        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-                                  fuzzer->linux.hwCnts.newBBCnt);
+        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
 }
 
@@ -524,8 +521,7 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         hfuzz->linux.hwCnts.cpuBranchCnt = fuzzer->linux.hwCnts.cpuBranchCnt;
         hfuzz->linux.hwCnts.customCnt = fuzzer->linux.hwCnts.customCnt;
 
-        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-                                  fuzzer->sanCovCnts.hitBBCnt);
+        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
 }
 
