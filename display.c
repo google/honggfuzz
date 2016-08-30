@@ -48,6 +48,17 @@ static void display_put(const char *fmt, ...)
     va_end(args);
 }
 
+static void display_printKMG(uint64_t val)
+{
+    if (val >= 1000000000UL) {
+        display_put(" [%.2lfG]", (double)val / 1000000.0);
+    } else if (val >= 1000000UL) {
+        display_put(" [%.2lfM]", (double)val / 1000000.0);
+    } else if (val >= 1000UL) {
+        display_put(" [%.2lfk]", (double)val / 1000.0);
+    }
+}
+
 static void display_displayLocked(honggfuzz_t * hfuzz)
 {
     unsigned long elapsed_second = (unsigned long)(time(NULL) - hfuzz->timeStart);
@@ -95,7 +106,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put("%s", ESC_CLEAR);
     display_put("==================================== STAT ====================================\n");
 
-    display_put("Iterations: " ESC_BOLD "%zu" ESC_RESET, curr_exec_cnt);
+    display_put("Iterations: " ESC_BOLD "%zu" ESC_RESET " ", curr_exec_cnt);
+    display_printKMG(curr_exec_cnt);
     if (hfuzz->mutationsMax) {
         display_put(" (out of: " ESC_BOLD "%zu" ESC_RESET " [" ESC_BOLD "%.2f%%" ESC_RESET "])",
                     hfuzz->mutationsMax, exeProgress);
