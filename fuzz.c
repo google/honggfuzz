@@ -68,7 +68,7 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
              hfuzz->fileExtn);
 }
 
-static bool fuzz_prepareExecve(honggfuzz_t * hfuzz, const char *fileName)
+static bool fuzz_prepareExecve(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *fileName)
 {
     /*
      * Set timeout (prof), real timeout (2*prof), and rlimit_cpu (2*prof)
@@ -151,6 +151,10 @@ static bool fuzz_prepareExecve(honggfuzz_t * hfuzz, const char *fileName)
     for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs) && hfuzz->envs[i]; i++) {
         putenv(hfuzz->envs[i]);
     }
+    char fuzzNo[128];
+    snprintf(fuzzNo, sizeof(fuzzNo), "%" PRId32, fuzzer->fuzzNo);
+    setenv(_HF_THREAD_NO_ENV, fuzzNo, 1);
+
     setsid();
 
     if (hfuzz->bbFd != -1) {
@@ -324,6 +328,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                            },
             .report = {'\0'},
             .mainWorker = false,
+            .fuzzNo = crashedFuzzer->fuzzNo,
 
             .linux = {
                       .hwCnts = {
@@ -362,7 +367,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         }
 
         if (!vFuzzer.pid) {
-            if (fuzz_prepareExecve(hfuzz, crashedFuzzer->crashFileName) == false) {
+            if (fuzz_prepareExecve(hfuzz, crashedFuzzer, crashedFuzzer->crashFileName) == false) {
                 LOG_E("fuzz_prepareExecve() failed");
                 return false;
             }
@@ -442,8 +447,8 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     uint64_t softCnt = 0UL;
     if (hfuzz->bbFd != -1) {
-        softCnt = ATOMIC_GET(hfuzz->feedback->pidFeedback[fuzzer->pid]);
-        ATOMIC_CLEAR(hfuzz->feedback->pidFeedback[fuzzer->pid]);
+        softCnt = ATOMIC_GET(hfuzz->feedback->pidFeedback[fuzzer->fuzzNo]);
+        ATOMIC_CLEAR(hfuzz->feedback->pidFeedback[fuzzer->fuzzNo]);
     }
 
     /*
@@ -618,7 +623,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
 
         if (!fuzzer->pid) {
-            if (!fuzz_prepareExecve(hfuzz, fuzzer->fileName)) {
+            if (!fuzz_prepareExecve(hfuzz, fuzzer, fuzzer->fileName)) {
                 LOG_E("fuzz_prepareExecve() failed");
                 exit(EXIT_FAILURE);
             }
@@ -666,9 +671,12 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 }
 
+static uint32_t fuzz_threadNo = 0;
 static void *fuzz_threadNew(void *arg)
 {
-    LOG_I("Launched new fuzzing thread");
+    unsigned int fuzzNo = ATOMIC_POST_INC(fuzz_threadNo);
+
+    LOG_I("Launched new fuzzing thread, no. #%" PRId32, fuzzNo);
 
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
 
@@ -676,6 +684,7 @@ static void *fuzz_threadNew(void *arg)
         .pid = 0,
         .persistentPid = 0,
         .dynamicFile = util_Malloc(hfuzz->maxFileSz),
+        .fuzzNo = fuzzNo,
 
 #if defined(_HF_ARCH_LINUX)
         .linux.timerId = (timer_t) 0,

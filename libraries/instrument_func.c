@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -13,22 +14,35 @@
 #include "common.h"
 
 static feedback_t *feedback;
-static pid_t mypid;
+static uint32_t my_thread_no = 0;
+
+/* Fall-back mode, just map the buffer to avoid SIGSEGV in __cyg_profile_func_enter */
+__attribute__ ((no_instrument_function))
+static void mapBBFallback(void)
+{
+    feedback =
+        mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    feedback->pidFeedback[my_thread_no] = 0U;
+}
 
 __attribute__ ((no_instrument_function)) __attribute__ ((constructor))
 static void mapBB(void)
 {
-    mypid = getpid();
-    if (mypid >= _HF_FEEDBACK_PID_SZ) {
-        fprintf(stderr, "mypid > _HF_FEEDBACK_PID_SZ (%d > %d)\n", mypid, _HF_FEEDBACK_PID_SZ);
+    char *my_thread_no_str = getenv(_HF_THREAD_NO_ENV);
+    if (my_thread_no_str == NULL) {
+        mapBBFallback();
+        return;
+    }
+    my_thread_no = atoi(my_thread_no_str);
+
+    if (my_thread_no >= _HF_FEEDBACK_THREAD_SZ) {
+        fprintf(stderr, "my_thread_no > _HF_FEEDBACK_THREAD_SZ (%" PRIu32 " > %d)\n", my_thread_no,
+                _HF_FEEDBACK_THREAD_SZ);
         _exit(1);
     }
     struct stat st;
     if (fstat(_HF_BITMAP_FD, &st) == -1) {
-        /* Fall-back mode, just map the buffer to avoid SIGSEGV in __cyg_profile_func_enter */
-        feedback =
-            mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1,
-                 0);
+        mapBBFallback();
         return;
     }
     if (st.st_size != sizeof(feedback_t)) {
@@ -42,7 +56,7 @@ static void mapBB(void)
         fprintf(stderr, "mmap: %s\n", strerror(errno));
         _exit(1);
     }
-    feedback->pidFeedback[mypid] = 0U;
+    feedback->pidFeedback[my_thread_no] = 0U;
 }
 
 /* This should be trully fast */
@@ -61,7 +75,7 @@ void __cyg_profile_func_enter(void *func, void *caller)
 
     register uint8_t prev = ATOMIC_POST_OR_RELAXED(feedback->bbMap[byteOff], bitSet);
     if (!(prev & bitSet)) {
-        ATOMIC_PRE_INC_RELAXED(feedback->pidFeedback[mypid]);
+        ATOMIC_PRE_INC_RELAXED(feedback->pidFeedback[my_thread_no]);
     }
 }
 

@@ -81,6 +81,9 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 /* String buffer size for function names in stack traces produced from libunwind */
 #define _HF_FUNC_NAME_SZ    256 // Should be alright for mangled C++ procs too
 
+/* Name of envvar which indicates sequential number of fuzzer */
+#define _HF_THREAD_NO_ENV "HFUZZ_THREAD_NO"
+
 /* Number of crash verifier iterations before tag crash as stable */
 #define _HF_VERIFIER_ITER   5
 
@@ -235,14 +238,11 @@ struct dynfile_t {
      TAILQ_ENTRY(dynfile_t) pointers;
 };
 
-/*
- * Size of the PID feedback array. Should be bigger than the maximum PID value
- * on your system
- */
-#define _HF_FEEDBACK_PID_SZ (1 << 16)
+/* Maximum number of active fuzzing threads */
+#define _HF_FEEDBACK_THREAD_SZ 1024
 typedef struct {
     uint8_t bbMap[_HF_PERF_BITMAP_SIZE_16M];
-    uint32_t pidFeedback[_HF_FEEDBACK_PID_SZ];
+    uint32_t pidFeedback[_HF_FEEDBACK_THREAD_SZ];
 } feedback_t;
 
 typedef struct {
@@ -334,6 +334,7 @@ typedef struct {
     float flipRate;
     uint8_t *dynamicFile;
     size_t dynamicFileSz;
+    uint32_t fuzzNo;
 
     sancovcnt_t sanCovCnts;
 
