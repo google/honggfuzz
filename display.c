@@ -90,6 +90,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     uintptr_t exec_per_sec = curr_exec_cnt - prev_exec_cnt;
     prev_exec_cnt = curr_exec_cnt;
 
+    MX_SCOPED_LOCK(logMutexGet());
+
     display_put("%s", ESC_CLEAR);
     display_put("==================================== STAT ====================================\n");
 

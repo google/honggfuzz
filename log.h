@@ -23,6 +23,7 @@
 #define _HF_LOG_H_
 
 #include <getopt.h>
+#include <pthread.h>
 #include <stdbool.h>
 
 #include "common.h"
@@ -54,9 +55,10 @@ extern enum llevel_t log_level;
 #define PLOG_E(...) if (log_level >= ERROR) { logLog(ERROR, __FUNCTION__, __LINE__, true, __VA_ARGS__); }
 #define PLOG_F(...) if (log_level >= FATAL) { logLog(FATAL, __FUNCTION__, __LINE__, true, __VA_ARGS__); }
 
-bool logInitLogFile(const char *logfile, enum llevel_t ll);
-void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt, ...)
+extern bool logInitLogFile(const char *logfile, enum llevel_t ll);
+extern void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt, ...)
     __attribute__ ((format(printf, 5, 6)));
-void logStop(int sig);
+extern void logStop(int sig);
+extern pthread_mutex_t *logMutexGet(void);
 
 #endif                          /* _HF_LOG_H_ */
