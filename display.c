@@ -106,7 +106,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put("%s", ESC_CLEAR);
     display_put("==================================== STAT ====================================\n");
 
-    display_put("Iterations: " ESC_BOLD "%zu" ESC_RESET " ", curr_exec_cnt);
+    display_put("Iterations: " ESC_BOLD "%zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
     if (hfuzz->mutationsMax) {
         display_put(" (out of: " ESC_BOLD "%zu" ESC_RESET " [" ESC_BOLD "%.2f%%" ESC_RESET "])",
