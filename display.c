@@ -116,8 +116,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     char start_time_str[128];
     util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
-    display_put("Start time: " ESC_BOLD "%s" ESC_RESET "\n", start_time_str);
-    display_put("Run time: " ESC_BOLD "%s" ESC_RESET "\n", time_elapsed_str);
+    display_put("Run time: " ESC_BOLD "%s" ESC_RESET " (since: " ESC_BOLD "%s" ESC_RESET ")\n",
+                time_elapsed_str, start_time_str);
 
     display_put("Input file/dir: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
     display_put("Fuzzed cmd: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
