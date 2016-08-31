@@ -71,7 +71,7 @@ void __cyg_profile_func_enter(void *func, void *caller)
 {
     register size_t pos =
         (((uintptr_t) func << 12) | ((uintptr_t) caller & 0xFFF)) & _HF_PERF_BITMAP_MASK;
-    register uint8_t prev = ATOMIC_XCHG(feedback->bbMap[pos], 1);
+    register uint8_t prev = ATOMIC_BTS(feedback->bbMap, pos);
     if (!prev) {
         ATOMIC_PRE_INC_RELAXED(feedback->pidFeedback[my_thread_no]);
     }

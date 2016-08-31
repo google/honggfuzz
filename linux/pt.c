@@ -194,8 +194,8 @@ inline static void perf_ptAnalyzePkt(honggfuzz_t * hfuzz, fuzzer_t * fuzzer,
         uint64_t ip;
         errcode = pt_last_ip_query(&ip, last_ip);
         if (errcode == 0) {
-            register size_t pos = ip & _HF_PERF_BITMAP_MASK;
-            register uint8_t prev = ATOMIC_XCHG(hfuzz->feedback->bbMap[pos], 1);
+            ip &= _HF_PERF_BITMAP_MASK;
+            register uint8_t prev = ATOMIC_BTS(hfuzz->feedback->bbMap, ip);
             if (!prev) {
                 fuzzer->linux.hwCnts.newBBCnt++;
             }

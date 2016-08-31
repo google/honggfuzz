@@ -100,7 +100,7 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 
 /* Perf bitmap size */
 #define _HF_PERF_BITMAP_SIZE_16M (1024U * 1024U * 16U)
-#define _HF_PERF_BITMAP_MASK 0xFFFFFF
+#define _HF_PERF_BITMAP_MASK 0x7ffffff
 
 /* Directory in workspace to store sanitizer coverage data */
 #define _HF_SANCOV_DIR "HF_SANCOV"
@@ -151,6 +151,20 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 
 #define ATOMIC_PRE_INC_RELAXED(x) __atomic_add_fetch(&(x), 1, __ATOMIC_RELAXED)
 #define ATOMIC_POST_OR_RELAXED(x, y) __atomic_fetch_or(&(x), y, __ATOMIC_RELAXED)
+
+static inline uint8_t ATOMIC_BTS(uint8_t * addr, size_t offset)
+{
+    uint8_t oldbit;
+    addr += (offset / 8);
+#if defined(__x86_64__)
+ __asm__("lock; bts %2, %1\n" "sbb %0, %0\n":"=r"(oldbit), "+m"(*addr)
+ :         "Ir"(offset % 8)
+        );
+#else
+    oldbit = ATOMIC_POST_OR(*addr, (1U << (offset % 8)));
+#endif
+    return oldbit;
+}
 
 /* Missing WIFCONTINUED in Android */
 #ifndef WIFCONTINUED
