@@ -139,7 +139,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     /* If dry run, print also the input file count */
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
-        display_put("Input Files: '" ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "'\n", hfuzz->fileCnt);
+        display_put("Input Files: '" ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "'\n",
+                    hfuzz->fileCnt);
     }
 
     display_put("Crashes: " ESC_BOLD "%zu" ESC_RESET " (unique: " ESC_BOLD "%zu" ESC_RESET
@@ -147,8 +148,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                 ")\n", ATOMIC_GET(hfuzz->crashesCnt),
                 ATOMIC_GET(hfuzz->uniqueCrashesCnt),
                 ATOMIC_GET(hfuzz->blCrashesCnt), ATOMIC_GET(hfuzz->verifiedCrashesCnt));
-    display_put("Timeouts (%" _HF_MONETARY_MOD "zu sec): " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n", hfuzz->tmOut,
-                ATOMIC_GET(hfuzz->timeoutedCnt));
+    display_put("Timeouts (%" _HF_MONETARY_MOD "zu sec): " ESC_BOLD "%" _HF_MONETARY_MOD "zu"
+                ESC_RESET "\n", hfuzz->tmOut, ATOMIC_GET(hfuzz->timeoutedCnt));
 
     /* Feedback data sources are enabled. Start with common headers. */
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
@@ -192,8 +193,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         uint64_t hitBB = ATOMIC_GET(hfuzz->sanCovCnts.hitBBCnt);
         uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
         float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
-        display_put("  - total hit #bb:   " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET " (coverage " ESC_BOLD
-                    "%.2f%%" ESC_RESET ")\n", hitBB, covPer);
+        display_put("  - total hit #bb:   " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
+                    " (coverage " ESC_BOLD "%.2f%%" ESC_RESET ")\n", hitBB, covPer);
         display_put("  - total #dso:      " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     " (instrumented only)\n", ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
         display_put("  - discovered #bb:  " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
