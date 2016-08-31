@@ -40,6 +40,12 @@
 #define ESC_BOLD "\033[1m"
 #define ESC_RESET "\033[0m"
 
+#if defined(_HF_ARCH_LINUX)
+#define _HF_MONETARY_MOD "'"
+#else
+#define _HF_MONETARY_MOD ""
+#endif
+
 static void display_put(const char *fmt, ...)
 {
     va_list args;
@@ -95,7 +101,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put("%s", ESC_CLEAR);
     display_put("==================================== STAT ====================================\n");
 
-    display_put("Iterations: " ESC_BOLD "%zu" ESC_RESET, curr_exec_cnt);
+    display_put("Iterations: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
     if (hfuzz->mutationsMax) {
         display_put(" (out of: " ESC_BOLD "%zu" ESC_RESET " [" ESC_BOLD "%.2f%%" ESC_RESET "])",
                     hfuzz->mutationsMax, exeProgress);
