@@ -209,7 +209,7 @@ typedef struct __attribute__ ((packed)) {
 } trieData_t;
 
 /* Trie node struct */
-typedef struct __attribute__ ((packed)) node {
+typedef struct node {
     char key;
     trieData_t data;
     struct node *next;
