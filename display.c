@@ -139,7 +139,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     /* If dry run, print also the input file count */
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
-        display_put("Input Files: '" ESC_BOLD "%zu" ESC_RESET "'\n", hfuzz->fileCnt);
+        display_put("Input Files: '" ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "'\n", hfuzz->fileCnt);
     }
 
     display_put("Crashes: " ESC_BOLD "%zu" ESC_RESET " (unique: " ESC_BOLD "%zu" ESC_RESET
@@ -147,7 +147,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                 ")\n", ATOMIC_GET(hfuzz->crashesCnt),
                 ATOMIC_GET(hfuzz->uniqueCrashesCnt),
                 ATOMIC_GET(hfuzz->blCrashesCnt), ATOMIC_GET(hfuzz->verifiedCrashesCnt));
-    display_put("Timeouts (%zu s.): " ESC_BOLD "%zu" ESC_RESET "\n", hfuzz->tmOut,
+    display_put("Timeouts (%" _HF_MONETARY_MOD "zu sec): " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n", hfuzz->tmOut,
                 ATOMIC_GET(hfuzz->timeoutedCnt));
 
     /* Feedback data sources are enabled. Start with common headers. */
@@ -192,13 +192,13 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         uint64_t hitBB = ATOMIC_GET(hfuzz->sanCovCnts.hitBBCnt);
         uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
         float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
-        display_put("  - total hit #bb:   " ESC_BOLD "%" PRIu64 ESC_RESET " (coverage " ESC_BOLD
+        display_put("  - total hit #bb:   " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET " (coverage " ESC_BOLD
                     "%.2f%%" ESC_RESET ")\n", hitBB, covPer);
-        display_put("  - total #dso:      " ESC_BOLD "%" PRIu64 ESC_RESET
+        display_put("  - total #dso:      " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     " (instrumented only)\n", ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
-        display_put("  - discovered #bb:  " ESC_BOLD "%" PRIu64 ESC_RESET
+        display_put("  - discovered #bb:  " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     " (new from input seed)\n", ATOMIC_GET(hfuzz->sanCovCnts.newBBCnt));
-        display_put("  - crashes:         " ESC_BOLD "%" PRIu64 ESC_RESET "\n",
+        display_put("  - crashes:         " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
     }
     display_put("==================================== LOGS ====================================\n");
