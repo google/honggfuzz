@@ -54,6 +54,17 @@ static void display_put(const char *fmt, ...)
     va_end(args);
 }
 
+static void display_printKMG(uint64_t val)
+{
+    if (val >= 1000000000UL) {
+        display_put(" [%.2lfG]", (double)val / 1000000.0);
+    } else if (val >= 1000000UL) {
+        display_put(" [%.2lfM]", (double)val / 1000000.0);
+    } else if (val >= 1000UL) {
+        display_put(" [%.2lfk]", (double)val / 1000.0);
+    }
+}
+
 static void display_displayLocked(honggfuzz_t * hfuzz)
 {
     unsigned long elapsed_second = (unsigned long)(time(NULL) - hfuzz->timeStart);
@@ -102,6 +113,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put("==================================== STAT ====================================\n");
 
     display_put("Iterations: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
+    display_printKMG(curr_exec_cnt);
     if (hfuzz->mutationsMax) {
         display_put(" (out of: " ESC_BOLD "%zu" ESC_RESET " [" ESC_BOLD "%.2f%%" ESC_RESET "])",
                     hfuzz->mutationsMax, exeProgress);
@@ -110,8 +122,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     char start_time_str[128];
     util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
-    display_put("Start time: " ESC_BOLD "%s" ESC_RESET "\n", start_time_str);
-    display_put("Run time: " ESC_BOLD "%s" ESC_RESET "\n", time_elapsed_str);
+    display_put("Run time: " ESC_BOLD "%s" ESC_RESET " (since: " ESC_BOLD "%s" ESC_RESET ")\n",
+                time_elapsed_str, start_time_str);
 
     display_put("Input file/dir: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
     display_put("Fuzzed cmd: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
