@@ -26,13 +26,22 @@
 #include "common.h"
 #include "subproc.h"
 
+#include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #include "log.h"
+#include "sancov.h"
+#include "util.h"
+
+extern char **environ;
 
 const char *subproc_StatusToStr(int status, char *str, size_t len)
 {
@@ -109,4 +118,102 @@ const char *subproc_StatusToStr(int status, char *str, size_t len)
     snprintf(str, len, "STOPPED with signal: %d (%s)", WSTOPSIG(status),
              strsignal(WSTOPSIG(status)));
     return str;
+}
+
+bool subproc_PrepareExecv(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *fileName)
+{
+    /*
+     * Set timeout (prof), real timeout (2*prof), and rlimit_cpu (2*prof)
+     */
+    if (hfuzz->persistent == false && hfuzz->tmOut) {
+        struct itimerval it;
+
+        /*
+         * The hfuzz->tmOut is real CPU usage time...
+         */
+        it.it_value.tv_sec = hfuzz->tmOut;
+        it.it_value.tv_usec = 0;
+        it.it_interval.tv_sec = 0;
+        it.it_interval.tv_usec = 0;
+        if (setitimer(ITIMER_PROF, &it, NULL) == -1) {
+            PLOG_D("Couldn't set the ITIMER_PROF timer");
+        }
+
+        /*
+         * ...so, if a process sleeps, this one should
+         * trigger a signal...
+         */
+        it.it_value.tv_sec = hfuzz->tmOut;
+        it.it_value.tv_usec = 0;
+        it.it_interval.tv_sec = 0;
+        it.it_interval.tv_usec = 0;
+        if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
+            PLOG_E("Couldn't set the ITIMER_REAL timer");
+            return false;
+        }
+
+        /*
+         * ..if a process sleeps and catches SIGPROF/SIGALRM
+         * rlimits won't help either. However, arch_checkTimeLimit
+         * will send a SIGKILL at tmOut + 2 seconds. That should
+         * do it :)
+         */
+        struct rlimit rl;
+
+        rl.rlim_cur = hfuzz->tmOut + 1;
+        rl.rlim_max = hfuzz->tmOut + 1;
+        if (setrlimit(RLIMIT_CPU, &rl) == -1) {
+            PLOG_D("Couldn't enforce the RLIMIT_CPU resource limit");
+        }
+    }
+
+    /*
+     * The address space limit. If big enough - roughly the size of RAM used
+     */
+    if (hfuzz->asLimit) {
+        struct rlimit rl = {
+            .rlim_cur = hfuzz->asLimit * 1024ULL * 1024ULL,
+            .rlim_max = hfuzz->asLimit * 1024ULL * 1024ULL,
+        };
+        if (setrlimit(RLIMIT_AS, &rl) == -1) {
+            PLOG_D("Couldn't enforce the RLIMIT_AS resource limit, ignoring");
+        }
+    }
+
+    if (hfuzz->nullifyStdio) {
+        util_nullifyStdio();
+    }
+
+    if (hfuzz->fuzzStdin) {
+        /*
+         * Uglyyyyyy ;)
+         */
+        if (!util_redirectStdin(fileName)) {
+            return false;
+        }
+    }
+
+    if (hfuzz->clearEnv) {
+        environ = NULL;
+    }
+    if (sancov_prepareExecve(hfuzz) == false) {
+        LOG_E("sancov_prepareExecve() failed");
+        return false;
+    }
+    for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs) && hfuzz->envs[i]; i++) {
+        putenv(hfuzz->envs[i]);
+    }
+    char fuzzNo[128];
+    snprintf(fuzzNo, sizeof(fuzzNo), "%" PRId32, fuzzer->fuzzNo);
+    setenv(_HF_THREAD_NO_ENV, fuzzNo, 1);
+
+    setsid();
+
+    if (hfuzz->bbFd != -1) {
+        if (dup2(hfuzz->bbFd, _HF_BITMAP_FD) == -1) {
+            PLOG_F("dup2('%d', %d)", hfuzz->bbFd, _HF_BITMAP_FD);
+        }
+    }
+
+    return true;
 }

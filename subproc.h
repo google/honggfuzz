@@ -25,5 +25,6 @@
 #define _HF_SUBPROC_H_
 
 extern const char *subproc_StatusToStr(int status, char *str, size_t len);
+extern bool subproc_PrepareExecv(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *fileName);
 
 #endif
