@@ -506,9 +506,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         unlink(fuzzer->fileName);
     }
 
-    arch_prepareChild(hfuzz, fuzzer);
-    arch_reapChild(hfuzz, fuzzer);
-
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         fuzz_perfFeedback(hfuzz, fuzzer);
     }

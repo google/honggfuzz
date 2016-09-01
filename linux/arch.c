@@ -192,32 +192,6 @@ static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 }
 
-static bool arch_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
-{
-    if (hfuzz->persistent == false) {
-        return false;
-    }
-    char z;
-    if (recv(fuzzer->persistentSock, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
-        LOG_D("Persistent mode round finished");
-        return true;
-    }
-    return false;
-}
-
-static bool arch_persistentSendFile(fuzzer_t * fuzzer)
-{
-    uint32_t len = (uint64_t) fuzzer->dynamicFileSz;
-    if (files_writeToFd(fuzzer->persistentSock, (uint8_t *) & len, sizeof(len)) == false) {
-        return false;
-    }
-    if (files_writeToFd(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) ==
-        false) {
-        return false;
-    }
-    return true;
-}
-
 void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
@@ -268,12 +242,8 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
 
-    if (hfuzz->persistent == true && arch_persistentSendFile(fuzzer) == false) {
-        LOG_W("Could not send file contents to the persistent process");
-    }
-
     for (;;) {
-        if (arch_persistentModeRoundDone(hfuzz, fuzzer)) {
+        if (subproc_persistentModeRoundDone(hfuzz, fuzzer)) {
             arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->linux.hwCnts.customCnt);
             break;
         }
