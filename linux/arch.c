@@ -66,8 +66,6 @@
 #define ABORT_FLAG        "abort_on_error=0"
 #endif
 
-#define SIGNAL_WAKE (SIGRTMIN + 1)
-
 static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     if (hfuzz->persistent && fuzzer->linux.attachedPid == fuzzer->pid) {
@@ -79,17 +77,8 @@ static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     return true;
 }
 
-pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED)
 {
-    int sv[2];
-    if (hfuzz->persistent == true) {
-        close(fuzzer->linux.persistentSock);
-        if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1) {
-            LOG_F("socketpair(AF_UNIX, SOCK_STREAM)");
-            return -1;
-        }
-    }
-
     /*
      * We need to wait for the child to finish with wait() in case we're fuzzing
      * an external process
@@ -101,33 +90,6 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     pid_t pid = syscall(__NR_clone, (uintptr_t) clone_flags, NULL, NULL, NULL, (uintptr_t) 0);
 
-    if (hfuzz->persistent == true) {
-        if (pid == -1) {
-            close(sv[0]);
-            close(sv[1]);
-        }
-        if (pid == 0) {
-            if (dup2(sv[1], _HF_PERSISTENT_FD) == -1) {
-                PLOG_F("dup2('%d', '%d')", sv[1], _HF_PERSISTENT_FD);
-            }
-            close(sv[0]);
-            close(sv[1]);
-        }
-        if (pid > 0) {
-            close(sv[1]);
-            fuzzer->linux.persistentSock = sv[0];
-            struct f_owner_ex fown = {.type = F_OWNER_TID,.pid = syscall(__NR_gettid), };
-            if (fcntl(fuzzer->linux.persistentSock, F_SETOWN_EX, &fown)) {
-                PLOG_F("fcntl(%d, F_SETOWN_EX)", fuzzer->linux.persistentSock);
-            }
-            if (fcntl(fuzzer->linux.persistentSock, F_SETSIG, SIGNAL_WAKE) == -1) {
-                PLOG_F("fcntl(%d, F_SETSIG, SIGNAL_WAKE)", fuzzer->linux.persistentSock);
-            }
-            if (fcntl(fuzzer->linux.persistentSock, F_SETFL, O_ASYNC) == -1) {
-                PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->linux.persistentSock);
-            }
-        }
-    }
     return pid;
 }
 
@@ -236,7 +198,7 @@ static bool arch_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         return false;
     }
     char z;
-    if (recv(fuzzer->linux.persistentSock, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
+    if (recv(fuzzer->persistentSock, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
         LOG_D("Persistent mode round finished");
         return true;
     }
@@ -246,10 +208,10 @@ static bool arch_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 static bool arch_persistentSendFile(fuzzer_t * fuzzer)
 {
     uint32_t len = (uint64_t) fuzzer->dynamicFileSz;
-    if (files_writeToFd(fuzzer->linux.persistentSock, (uint8_t *) & len, sizeof(len)) == false) {
+    if (files_writeToFd(fuzzer->persistentSock, (uint8_t *) & len, sizeof(len)) == false) {
         return false;
     }
-    if (files_writeToFd(fuzzer->linux.persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) ==
+    if (files_writeToFd(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) ==
         false) {
         return false;
     }

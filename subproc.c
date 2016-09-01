@@ -26,17 +26,20 @@
 #include "common.h"
 #include "subproc.h"
 
+#include <fcntl.h>
 #include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/resource.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "arch.h"
 #include "log.h"
 #include "sancov.h"
 #include "util.h"
@@ -214,6 +217,81 @@ bool subproc_PrepareExecv(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *fi
             PLOG_F("dup2('%d', %d)", hfuzz->bbFd, _HF_BITMAP_FD);
         }
     }
+
+    return true;
+}
+
+bool subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    fuzzer->pid = fuzzer->persistentPid;
+    if (fuzzer->pid != 0) {
+        return true;
+    }
+
+    int sv[2];
+    if (hfuzz->persistent) {
+        if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1) {
+            PLOG_W("socketpair(AF_UNIX, SOCK_STREAM, 0, sv)");
+            return false;
+        }
+    }
+
+    fuzzer->pid = arch_fork(hfuzz, fuzzer);
+    if (fuzzer->pid == -1) {
+        PLOG_F("Couldn't fork");
+    }
+
+    if (!fuzzer->pid) {
+        if (hfuzz->persistent) {
+            if (dup2(sv[1], _HF_PERSISTENT_FD) == -1) {
+                PLOG_F("dup2('%d', '%d')", sv[1], _HF_PERSISTENT_FD);
+            }
+            close(sv[0]);
+            close(sv[1]);
+        }
+
+        if (!subproc_PrepareExecv(hfuzz, fuzzer, fuzzer->fileName)) {
+            LOG_E("subproc_PrepareExecv() failed");
+            exit(EXIT_FAILURE);
+        }
+        if (!arch_launchChild(hfuzz, fuzzer->fileName)) {
+            LOG_E("Error launching child process");
+            exit(EXIT_FAILURE);
+        }
+
+        abort();
+    }
+
+    close(sv[1]);
+    fuzzer->persistentSock = sv[0];
+
+#if defined(F_SETOWN_EX)
+#include <sys/syscall.h>
+    struct f_owner_ex fown = {.type = F_OWNER_TID,.pid = syscall(__NR_gettid), };
+    if (fcntl(fuzzer->persistentSock, F_SETOWN_EX, &fown)) {
+        PLOG_F("fcntl(%d, F_SETOWN_EX)", fuzzer->persistentSock);
+    }
+#else
+    if (fcntl(fuzzer->persistentSock, F_SETOWN, getpid())) {
+        PLOG_F("fcntl(%d, F_SETOWN)", fuzzer->persistentSock);
+    }
+#endif
+
+#if defined(F_SETSIG)
+    if (fcntl(fuzzer->persistentSock, F_SETSIG, SIGNAL_WAKE) == -1) {
+        PLOG_F("fcntl(%d, F_SETSIG, SIGNAL_WAKE)", fuzzer->persistentSock);
+    }
+#endif
+    if (fcntl(fuzzer->persistentSock, F_SETFL, O_ASYNC) == -1) {
+        PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->persistentSock);
+    }
+
+    if (hfuzz->persistent) {
+        LOG_I("Persistent mode: Launched new persistent PID: %d", (int)fuzzer->pid);
+        fuzzer->persistentPid = fuzzer->pid;
+    }
+
+    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
 
     return true;
 }

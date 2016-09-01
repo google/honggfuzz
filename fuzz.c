@@ -228,6 +228,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             .report = {'\0'},
             .mainWorker = false,
             .fuzzNo = crashedFuzzer->fuzzNo,
+            .persistentSock = -1,
 
             .linux = {
                       .hwCnts = {
@@ -243,7 +244,6 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                       .timerId = (timer_t) 0,
 #endif                          // defined(_HF_ARCH_LINUX)
                       .attachedPid = 0,
-                      .persistentSock = -1,
                       },
         };
 
@@ -259,27 +259,14 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             return false;
         }
 
-        vFuzzer.pid = arch_fork(hfuzz, &vFuzzer);
-        if (vFuzzer.pid == -1) {
-            PLOG_F("Couldn't fork");
-            return false;
+        if (subproc_Run(hfuzz, &vFuzzer) == false) {
+            PLOG_F("subproc_New()");
         }
 
-        if (!vFuzzer.pid) {
-            if (subproc_PrepareExecv(hfuzz, crashedFuzzer, crashedFuzzer->crashFileName) == false) {
-                LOG_E("subproc_PrepareExecv() failed");
-                return false;
-            }
-            if (!arch_launchChild(hfuzz, crashedFuzzer->crashFileName)) {
-                LOG_E("Error launching verifier child process");
-                return false;
-            }
-        }
+        unlink(vFuzzer.fileName);
 
         arch_prepareChild(hfuzz, &vFuzzer);
         arch_reapChild(hfuzz, &vFuzzer);
-
-        unlink(vFuzzer.fileName);
 
         /* If stack hash doesn't match skip name tag and exit */
         if (crashedFuzzer->backtrace != vFuzzer.backtrace) {
@@ -514,38 +501,16 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
     }
 
-    fuzzer->pid = fuzzer->persistentPid;
-    if (fuzzer->pid == 0) {
-        fuzzer->pid = arch_fork(hfuzz, fuzzer);
-        if (fuzzer->pid == -1) {
-            PLOG_F("Couldn't fork");
-        }
-
-        if (!fuzzer->pid) {
-            if (!subproc_PrepareExecv(hfuzz, fuzzer, fuzzer->fileName)) {
-                LOG_E("subproc_PrepareExecv() failed");
-                exit(EXIT_FAILURE);
-            }
-            if (!arch_launchChild(hfuzz, fuzzer->fileName)) {
-                LOG_E("Error launching child process");
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        if (hfuzz->persistent) {
-            LOG_I("Persistent mode: Launched new persistent PID: %d", (int)fuzzer->pid);
-            fuzzer->persistentPid = fuzzer->pid;
-        }
+    if (subproc_Run(hfuzz, fuzzer) == false) {
+        PLOG_F("subproc_New()");
     }
-
-    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
-
-    arch_prepareChild(hfuzz, fuzzer);
-    arch_reapChild(hfuzz, fuzzer);
 
     if (hfuzz->persistent == false) {
         unlink(fuzzer->fileName);
     }
+
+    arch_prepareChild(hfuzz, fuzzer);
+    arch_reapChild(hfuzz, fuzzer);
 
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         fuzz_perfFeedback(hfuzz, fuzzer);
@@ -584,12 +549,12 @@ static void *fuzz_threadNew(void *arg)
         .persistentPid = 0,
         .dynamicFile = util_Malloc(hfuzz->maxFileSz),
         .fuzzNo = fuzzNo,
+        .persistentSock = -1,
 
 #if defined(_HF_ARCH_LINUX)
         .linux.timerId = (timer_t) 0,
 #endif                          // defined(_HF_ARCH_LINUX)
         .linux.attachedPid = 0,
-        .linux.persistentSock = -1,
     };
     defer {
         free(fuzzer.dynamicFile);

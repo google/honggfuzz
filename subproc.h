@@ -24,6 +24,7 @@
 #ifndef _HF_SUBPROC_H_
 #define _HF_SUBPROC_H_
 
+#include <signal.h>
 #include <sys/wait.h>
 
 /* Missing WIFCONTINUED in Android */
@@ -31,7 +32,10 @@
 #define WIFCONTINUED(x) WEXITSTATUS(0)
 #endif
 
+#define SIGNAL_WAKE (SIGRTMIN + 1)
+
 extern const char *subproc_StatusToStr(int status, char *str, size_t len);
 extern bool subproc_PrepareExecv(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *fileName);
+extern bool subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
 
 #endif

@@ -299,6 +299,7 @@ typedef struct {
     uint8_t *dynamicFile;
     size_t dynamicFileSz;
     uint32_t fuzzNo;
+    int persistentSock;
 
     sancovcnt_t sanCovCnts;
 
@@ -308,7 +309,6 @@ typedef struct {
         uint8_t *perfMmapAux;
         hwcnt_t hwCnts;
         pid_t attachedPid;
-        int persistentSock;
 #if defined(_HF_ARCH_LINUX)
         timer_t timerId;
 #endif                          // defined(_HF_ARCH_LINUX)
