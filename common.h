@@ -157,11 +157,15 @@ static inline uint8_t ATOMIC_BTS(uint8_t * addr, size_t offset)
     uint8_t oldbit;
     addr += (offset / 8);
 #if defined(__x86_64__)
- __asm__("lock; bts %2, %1\n" "sbb %0, %0\n":"=r"(oldbit), "+m"(*addr)
- :         "Ir"(offset % 8)
-        );
+    /*  *INDENT-OFF* */
+    __asm__("lock btsq %2, %1\n"
+            "sbb %0, %0\n"
+            :"=r"(oldbit), "+m"(*addr)
+            :"Ir"(offset % 8)
+    );
+    /*  *INDENT-ON* */
 #else
-    oldbit = ATOMIC_POST_OR(*addr, (1U << (offset % 8)));
+    oldbit = ATOMIC_POST_OR(*addr, ((uint8_t) 1U << (offset % 8)));
 #endif
     return oldbit;
 }
