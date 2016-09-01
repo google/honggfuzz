@@ -254,12 +254,6 @@ void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             }
         }
     }
-}
-
-void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
-{
-    pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
-    pid_t childPid = fuzzer->pid;
 
     if (arch_perfEnable(ptracePid, hfuzz, fuzzer) == false) {
         LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
@@ -267,6 +261,13 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (childPid != ptracePid && kill(childPid, SIGCONT) == -1) {
         PLOG_F("Restarting PID: %d failed", childPid);
     }
+}
+
+void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
+    pid_t childPid = fuzzer->pid;
+
     if (hfuzz->persistent == true && arch_persistentSendFile(fuzzer) == false) {
         LOG_W("Could not send file contents to the persistent process");
     }
