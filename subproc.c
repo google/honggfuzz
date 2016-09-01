@@ -221,7 +221,7 @@ bool subproc_PrepareExecv(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *fi
     return true;
 }
 
-bool subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     fuzzer->pid = fuzzer->persistentPid;
     if (fuzzer->pid != 0) {
@@ -294,4 +294,10 @@ bool subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
 
     return true;
+}
+
+void subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    arch_prepareChild(hfuzz, fuzzer);
+    arch_reapChild(hfuzz, fuzzer);
 }

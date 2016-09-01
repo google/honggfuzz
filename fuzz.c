@@ -259,14 +259,10 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             return false;
         }
 
-        if (subproc_Run(hfuzz, &vFuzzer) == false) {
+        if (subproc_New(hfuzz, &vFuzzer) == false) {
             PLOG_F("subproc_New()");
         }
-
-        unlink(vFuzzer.fileName);
-
-        arch_prepareChild(hfuzz, &vFuzzer);
-        arch_reapChild(hfuzz, &vFuzzer);
+        subproc_Run(hfuzz, &vFuzzer);
 
         /* If stack hash doesn't match skip name tag and exit */
         if (crashedFuzzer->backtrace != vFuzzer.backtrace) {
@@ -501,9 +497,10 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
     }
 
-    if (subproc_Run(hfuzz, fuzzer) == false) {
+    if (subproc_New(hfuzz, fuzzer) == false) {
         PLOG_F("subproc_New()");
     }
+    subproc_Run(hfuzz, fuzzer);
 
     if (hfuzz->persistent == false) {
         unlink(fuzzer->fileName);
