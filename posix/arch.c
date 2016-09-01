@@ -185,7 +185,19 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 #ifndef __WALL
 #define __WALL 0
 #endif
-        while (wait4(fuzzer->pid, &status, __WALL, NULL) != fuzzer->pid) ;
+        int ret = wait4(fuzzer->pid, &status, __WALL, NULL);
+        if (ret == -1 && errno == EINTR) {
+            if (subproc_persistentModeRoundDone(hfuzz, fuzzer) == true) {
+                break;
+            }
+            continue;
+        }
+        if (ret == -1) {
+            continue;
+        }
+        if (ret != fuzzer->pid) {
+            continue;
+        }
 
         char strStatus[4096];
         LOG_D("Process (pid %d) came back with status: %s", fuzzer->pid,
