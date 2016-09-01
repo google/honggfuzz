@@ -185,11 +185,11 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 #ifndef __WALL
 #define __WALL 0
 #endif
+        if (subproc_persistentModeRoundDone(hfuzz, fuzzer) == true) {
+            break;
+        }
         int ret = wait4(fuzzer->pid, &status, __WALL, NULL);
         if (ret == -1 && errno == EINTR) {
-            if (subproc_persistentModeRoundDone(hfuzz, fuzzer) == true) {
-                break;
-            }
             continue;
         }
         if (ret == -1) {
