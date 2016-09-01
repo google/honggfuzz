@@ -231,45 +231,46 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t p
     return true;
 }
 
-bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds)
+bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return true;
     }
 
-    perfFds->cpuInstrFd = -1;
-    perfFds->cpuBranchFd = -1;
-    perfFds->cpuIptBtsFd = -1;
+    fuzzer->linux.cpuInstrFd = -1;
+    fuzzer->linux.cpuBranchFd = -1;
+    fuzzer->linux.cpuIptBtsFd = -1;
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        if (arch_perfOpen(hfuzz, fuzzer, pid, _HF_DYNFILE_INSTR_COUNT, &perfFds->cpuInstrFd) ==
+        if (arch_perfOpen(hfuzz, fuzzer, pid, _HF_DYNFILE_INSTR_COUNT, &fuzzer->linux.cpuInstrFd) ==
             false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_INSTR_COUNT)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        if (arch_perfOpen(hfuzz, fuzzer, pid, _HF_DYNFILE_BRANCH_COUNT, &perfFds->cpuBranchFd) ==
-            false) {
+        if (arch_perfOpen(hfuzz, fuzzer, pid, _HF_DYNFILE_BRANCH_COUNT, &fuzzer->linux.cpuBranchFd)
+            == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BRANCH_COUNT)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        if (arch_perfOpen(hfuzz, fuzzer, pid, _HF_DYNFILE_BTS_BLOCK, &perfFds->cpuIptBtsFd) ==
+        if (arch_perfOpen(hfuzz, fuzzer, pid, _HF_DYNFILE_BTS_BLOCK, &fuzzer->linux.cpuIptBtsFd) ==
             false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BTS_BLOCK)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        if (arch_perfOpen(hfuzz, fuzzer, pid, _HF_DYNFILE_BTS_EDGE, &perfFds->cpuIptBtsFd) == false) {
+        if (arch_perfOpen(hfuzz, fuzzer, pid, _HF_DYNFILE_BTS_EDGE, &fuzzer->linux.cpuIptBtsFd) ==
+            false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BTS_EDGE)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        if (arch_perfOpen(hfuzz, fuzzer, pid, _HF_DYNFILE_IPT_BLOCK, &perfFds->cpuIptBtsFd) ==
+        if (arch_perfOpen(hfuzz, fuzzer, pid, _HF_DYNFILE_IPT_BLOCK, &fuzzer->linux.cpuIptBtsFd) ==
             false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_IPT_BLOCK)", pid);
             goto out;
@@ -279,14 +280,14 @@ bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t
     return true;
 
  out:
-    close(perfFds->cpuInstrFd);
-    close(perfFds->cpuBranchFd);
-    close(perfFds->cpuIptBtsFd);
+    close(fuzzer->linux.cpuInstrFd);
+    close(fuzzer->linux.cpuBranchFd);
+    close(fuzzer->linux.cpuIptBtsFd);
 
     return false;
 }
 
-void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds)
+void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return;
@@ -294,37 +295,38 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds
 
     uint64_t instrCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        ioctl(perfFds->cpuInstrFd, PERF_EVENT_IOC_DISABLE, 1);
-        if (read(perfFds->cpuInstrFd, &instrCount, sizeof(instrCount)) != sizeof(instrCount)) {
-            PLOG_E("read(perfFd='%d') failed", perfFds->cpuInstrFd);
+        ioctl(fuzzer->linux.cpuInstrFd, PERF_EVENT_IOC_DISABLE, 1);
+        if (read(fuzzer->linux.cpuInstrFd, &instrCount, sizeof(instrCount)) != sizeof(instrCount)) {
+            PLOG_E("read(perfFd='%d') failed", fuzzer->linux.cpuInstrFd);
         }
-        close(perfFds->cpuInstrFd);
+        close(fuzzer->linux.cpuInstrFd);
     }
 
     uint64_t branchCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        ioctl(perfFds->cpuBranchFd, PERF_EVENT_IOC_DISABLE, 1);
-        if (read(perfFds->cpuBranchFd, &branchCount, sizeof(branchCount)) != sizeof(branchCount)) {
-            PLOG_E("read(perfFd='%d') failed", perfFds->cpuBranchFd);
+        ioctl(fuzzer->linux.cpuBranchFd, PERF_EVENT_IOC_DISABLE, 1);
+        if (read(fuzzer->linux.cpuBranchFd, &branchCount, sizeof(branchCount)) !=
+            sizeof(branchCount)) {
+            PLOG_E("read(perfFd='%d') failed", fuzzer->linux.cpuBranchFd);
         }
-        close(perfFds->cpuBranchFd);
+        close(fuzzer->linux.cpuBranchFd);
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        ioctl(perfFds->cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 1);
-        close(perfFds->cpuIptBtsFd);
+        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 1);
+        close(fuzzer->linux.cpuIptBtsFd);
         arch_perfMmapParse(hfuzz, fuzzer);
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        ioctl(perfFds->cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 1);
-        close(perfFds->cpuIptBtsFd);
+        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 1);
+        close(fuzzer->linux.cpuIptBtsFd);
         arch_perfMmapParse(hfuzz, fuzzer);
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        ioctl(perfFds->cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 1);
-        close(perfFds->cpuIptBtsFd);
+        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 1);
+        close(fuzzer->linux.cpuIptBtsFd);
         arch_perfMmapParse(hfuzz, fuzzer);
     }
 

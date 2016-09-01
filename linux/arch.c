@@ -261,8 +261,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
 
-    perfFd_t perfFds;
-    if (arch_perfEnable(ptracePid, hfuzz, fuzzer, &perfFds) == false) {
+    if (arch_perfEnable(ptracePid, hfuzz, fuzzer) == false) {
         LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
     }
     if (childPid != ptracePid && kill(childPid, SIGCONT) == -1) {
@@ -345,7 +344,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 #endif
 
-    arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
+    arch_perfAnalyze(hfuzz, fuzzer);
     sancov_Analyze(hfuzz, fuzzer);
 }
 

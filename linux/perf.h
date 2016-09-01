@@ -24,15 +24,8 @@
 #ifndef _HF_LINUX_PERF_H_
 #define _HF_LINUX_PERF_H_
 
-typedef struct {
-    int cpuInstrFd;
-    int cpuBranchFd;
-    int cpuIptBtsFd;
-} perfFd_t;
-
-extern bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds);
-extern void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, perfFd_t * perfFds);
-extern void arch_perfPoll(int perfFd);
+extern bool arch_perfEnable(pid_t pid, honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
+extern void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
 extern bool arch_perfInit(honggfuzz_t * hfuzz);
 
 #endif

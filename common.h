@@ -312,6 +312,9 @@ typedef struct {
 #if defined(_HF_ARCH_LINUX)
         timer_t timerId;
 #endif                          // defined(_HF_ARCH_LINUX)
+        int cpuInstrFd;
+        int cpuBranchFd;
+        int cpuIptBtsFd;
     } linux;
 } fuzzer_t;
 
