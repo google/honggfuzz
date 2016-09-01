@@ -28,6 +28,7 @@
 #include <inttypes.h>
 
 #include "log.h"
+#include "util.h"
 
 #ifdef _HF_LINUX_INTEL_PT_LIB
 

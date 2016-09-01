@@ -1,3 +1,5 @@
+#include "common.h"
+
 #include <errno.h>
 #include <inttypes.h>
 #include <stdbool.h>
@@ -11,7 +13,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "common.h"
+#include "util.h"
 
 static feedback_t *feedback;
 static uint32_t my_thread_no = 0;
