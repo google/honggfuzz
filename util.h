@@ -25,6 +25,9 @@
 #define _HF_UTIL_H_
 
 #include <stdarg.h>
+#ifdef __clang__
+#include <stdatomic.h>
+#endif
 #include <stdint.h>
 
 #define MX_LOCK(m) util_mutexLock(m, __func__, __LINE__)

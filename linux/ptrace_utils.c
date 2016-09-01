@@ -55,6 +55,7 @@
 #include "linux/unwind.h"
 #include "log.h"
 #include "sancov.h"
+#include "subproc.h"
 #include "util.h"
 
 #if defined(__ANDROID__)

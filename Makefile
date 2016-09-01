@@ -224,18 +224,19 @@ cmdline.o: cmdline.h common.h log.h files.h util.h
 display.o: common.h display.h log.h util.h
 files.o: common.h files.h log.h util.h
 fuzz.o: common.h fuzz.h arch.h files.h log.h mangle.h report.h sancov.h
-fuzz.o: util.h
-log.o: common.h log.h
+fuzz.o: subproc.h util.h
+log.o: common.h log.h util.h
 mangle.o: common.h mangle.h log.h util.h
 report.o: common.h report.h log.h util.h
 sancov.o: common.h sancov.h files.h log.h util.h
-subproc.o: common.h subproc.h log.h
-util.o: common.h files.h log.h
+subproc.o: common.h subproc.h log.h sancov.h util.h
+util.o: common.h util.h files.h log.h
 linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h linux/bfd.h
-linux/ptrace_utils.o: linux/unwind.h linux/unwind.h log.h sancov.h util.h
+linux/ptrace_utils.o: linux/unwind.h linux/unwind.h log.h sancov.h subproc.h
+linux/ptrace_utils.o: util.h
 linux/perf.o: common.h linux/perf.h files.h linux/pt.h log.h util.h
 linux/bfd.o: common.h linux/bfd.h linux/unwind.h files.h log.h util.h
-linux/pt.o: common.h linux/pt.h log.h
+linux/pt.o: common.h linux/pt.h log.h util.h
 linux/unwind.o: common.h linux/unwind.h log.h
 linux/arch.o: common.h arch.h files.h linux/perf.h linux/ptrace_utils.h log.h
 linux/arch.o: sancov.h subproc.h util.h

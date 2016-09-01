@@ -31,12 +31,7 @@
 #include <sys/param.h>
 #include <sys/queue.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <time.h>
-
-#ifdef __clang__
-#include <stdatomic.h>
-#endif
 
 #ifndef UNUSED
 #define UNUSED __attribute__((unused))
@@ -124,11 +119,6 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 #define _HF_BITMAP_FD 1022
 /* FD used to pass data to a persistent process */
 #define _HF_PERSISTENT_FD 1023
-
-/* Missing WIFCONTINUED in Android */
-#ifndef WIFCONTINUED
-#define WIFCONTINUED(x) WEXITSTATUS(0)
-#endif                          // ndef(WIFCONTINUED)
 
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,

@@ -21,6 +21,9 @@
  *
  */
 
+#include "common.h"
+#include "util.h"
+
 #include <fcntl.h>
 #include <inttypes.h>
 #include <math.h>
@@ -37,7 +40,6 @@
 #include <unistd.h>
 #include <ctype.h>
 
-#include "common.h"
 #include "files.h"
 #include "log.h"
 
