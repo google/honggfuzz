@@ -230,6 +230,10 @@ bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     int sv[2];
     if (hfuzz->persistent) {
+        if (fuzzer->persistentSock != -1) {
+            close(fuzzer->persistentSock);
+        }
+
         if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1) {
             PLOG_W("socketpair(AF_UNIX, SOCK_STREAM, 0, sv)");
             return false;
