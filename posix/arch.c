@@ -196,8 +196,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (ret == -1) {
             continue;
         }
-
-        if (si.si_pid != fuzzer->pid) {
+        if (ret != fuzzer->pid) {
             continue;
         }
 
