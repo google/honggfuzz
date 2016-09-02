@@ -117,9 +117,9 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
         snprintf(newname, sizeof(newname), "%s", fuzzer->origFileName);
     } else {
-        snprintf(newname, sizeof(newname), "%s/%s.ADDR.%p.%d.%s.%s.%s",
+        snprintf(newname, sizeof(newname), "%s/%s.ADDR.%p.PID.%d.TIME.%s.%s",
                  hfuzz->workDir, arch_sigs[termsig].descr, si->si_addr, fuzzer->pid, localtmstr,
-                 fuzzer->origFileName, hfuzz->fileExtn);
+                 hfuzz->fileExtn);
     }
 
     LOG_I("Ok, that's interesting, saving the '%s' as '%s'", fuzzer->fileName, newname);
