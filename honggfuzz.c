@@ -71,7 +71,7 @@ static void setupTimer(void)
 
 static void setupSignalsPreThr(void)
 {
-    /* Block signals which should be handled by the main thread */
+    /* Block signals which should be handled or blocked in the main thread */
     sigset_t ss;
     sigemptyset(&ss);
     sigaddset(&ss, SIGTERM);
@@ -79,6 +79,7 @@ static void setupSignalsPreThr(void)
     sigaddset(&ss, SIGQUIT);
     sigaddset(&ss, SIGALRM);
     sigaddset(&ss, SIGPIPE);
+    sigaddset(&ss, SIGIO);
     if (sigprocmask(SIG_BLOCK, &ss, NULL) != 0) {
         PLOG_F("pthread_sigmask(SIG_BLOCK)");
     }
