@@ -187,8 +187,11 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             break;
         }
         siginfo_t si;
-        int ret = waitid(P_PID, fuzzer->pid, &si, WNOWAIT);
+        int ret = waitid(P_PID, fuzzer->pid, &si, WNOWAIT | WEXITED);
         if (ret == -1) {
+            continue;
+        }
+        if (si.si_pid == 0) {
             continue;
         }
         int status;
