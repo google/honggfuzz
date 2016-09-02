@@ -230,7 +230,7 @@ bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
     };
 
     if (sigaction(SIGIO, &sa, NULL) == -1) {
-        PLOG_E("sigaction(SIGNAL_WAKE (%d)) failed", SIGNAL_WAKE);
+        PLOG_W("sigaction(SIGNAL_WAKE (%d)) failed", SIGNAL_WAKE);
         return false;
     }
 
@@ -238,7 +238,8 @@ bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
     sigemptyset(&ss);
     sigaddset(&ss, SIGIO);
     if (pthread_sigmask(SIG_UNBLOCK, &ss, NULL) != 0) {
-        PLOG_F("pthread_sigmask(%d, SIG_UNBLOCK)", SIGNAL_WAKE);
+        PLOG_W("pthread_sigmask(%d, SIG_UNBLOCK)", SIGNAL_WAKE);
+	return false;
     }
 
     return true;
