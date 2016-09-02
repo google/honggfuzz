@@ -24,6 +24,7 @@
 #include "common.h"
 #include "arch.h"
 
+#include <poll.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -71,7 +72,7 @@ struct {
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
-static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzzer, siginfo_t * si)
+static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzzer)
 {
     /*
      * Resumed by delivery of SIGCONT
@@ -117,8 +118,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
         snprintf(newname, sizeof(newname), "%s", fuzzer->origFileName);
     } else {
-        snprintf(newname, sizeof(newname), "%s/%s.ADDR.%p.PID.%d.TIME.%s.%s",
-                 hfuzz->workDir, arch_sigs[termsig].descr, si->si_addr, fuzzer->pid, localtmstr,
+        snprintf(newname, sizeof(newname), "%s/%s.PID.%d.TIME.%s.%s",
+                 hfuzz->workDir, arch_sigs[termsig].descr, fuzzer->pid, localtmstr,
                  hfuzz->fileExtn);
     }
 
@@ -174,29 +175,33 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 
 void arch_prepareChild(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
-
 }
 
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     for (;;) {
-#ifndef __WALL
-#define __WALL 0
-#endif
         if (subproc_persistentModeRoundDone(hfuzz, fuzzer) == true) {
             break;
         }
-        siginfo_t si;
-        int ret = waitid(P_PID, fuzzer->pid, &si, WNOWAIT | WEXITED);
-        if (ret == -1) {
-            continue;
+        if (hfuzz->persistent) {
+            struct pollfd pfd = {
+                .fd = fuzzer->persistentSock,
+                .events = POLLIN,
+            };
+            int r = poll(&pfd, 1, -1);
+            if (r == -1 && errno != EINTR) {
+                PLOG_F("poll(fd=%d)", fuzzer->persistentSock);
+            }
         }
-        if (si.si_pid == 0) {
-            continue;
-        }
+
         int status;
-        ret = wait4(fuzzer->pid, &status, __WALL, NULL);
+        int flags = hfuzz->persistent ? WNOHANG : 0;
+        int ret = waitpid(fuzzer->pid, &status, flags);
+        if (ret == -1 && errno == EINTR) {
+            continue;
+        }
         if (ret == -1) {
+            PLOG_W("wait4(pid=%d)", fuzzer->pid);
             continue;
         }
         if (ret != fuzzer->pid) {
@@ -214,8 +219,8 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_D("Process (pid %d) came back with status: %s", fuzzer->pid,
               subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
 
-        if (arch_analyzeSignal(hfuzz, status, fuzzer, &si)) {
-            return;
+        if (arch_analyzeSignal(hfuzz, status, fuzzer)) {
+            break;
         }
     }
 }
@@ -248,8 +253,43 @@ static bool arch_setTimer(timer_t * timerid)
     return true;
 }
 
+bool arch_setSig(int signo)
+{
+    sigset_t smask;
+    sigemptyset(&smask);
+    struct sigaction sa = {
+        .sa_handler = arch_sigFunc,
+        .sa_mask = smask,
+        .sa_flags = 0,
+    };
+
+    if (sigaction(signo, &sa, NULL) == -1) {
+        PLOG_W("sigaction(%d) failed", signo);
+        return false;
+    }
+
+    sigset_t ss;
+    sigemptyset(&ss);
+    sigaddset(&ss, signo);
+    if (pthread_sigmask(SIG_UNBLOCK, &ss, NULL) != 0) {
+        PLOG_W("pthread_sigmask(%d, SIG_UNBLOCK)", signo);
+        return false;
+    }
+
+    return true;
+}
+
 bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
+    if (arch_setSig(SIGIO) == false) {
+        LOG_E("arch_setSig(SIGIO)");
+        return false;
+    }
+    if (arch_setSig(SIGCHLD) == false) {
+        LOG_E("arch_setSig(SIGCHLD)");
+        return false;
+    }
+
     struct sigevent sevp = {
         .sigev_value.sival_ptr = &fuzzer->timerId,
         .sigev_signo = SIGIO,
@@ -259,28 +299,6 @@ bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
         PLOG_E("timer_create(CLOCK_REALTIME) failed");
         return false;
     }
-
-    sigset_t smask;
-    sigemptyset(&smask);
-    struct sigaction sa = {
-        .sa_handler = arch_sigFunc,
-        .sa_mask = smask,
-        .sa_flags = 0,
-    };
-
-    if (sigaction(SIGIO, &sa, NULL) == -1) {
-        PLOG_W("sigaction(SIGNAL_WAKE (%d)) failed", SIGNAL_WAKE);
-        return false;
-    }
-
-    sigset_t ss;
-    sigemptyset(&ss);
-    sigaddset(&ss, SIGIO);
-    if (pthread_sigmask(SIG_UNBLOCK, &ss, NULL) != 0) {
-        PLOG_W("pthread_sigmask(%d, SIG_UNBLOCK)", SIGNAL_WAKE);
-        return false;
-    }
-
     if (arch_setTimer(&(fuzzer->timerId)) == false) {
         LOG_F("Couldn't set timer");
     }

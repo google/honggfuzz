@@ -245,7 +245,6 @@ bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (fuzzer->pid == -1) {
         PLOG_F("Couldn't fork");
     }
-
     // Child
     if (!fuzzer->pid) {
         if (hfuzz->persistent) {
@@ -267,35 +266,13 @@ bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         abort();
     }
-
     // Parent
     if (hfuzz->persistent == false) {
-      return true;
+        return true;
     }
 
     close(sv[1]);
     fuzzer->persistentSock = sv[0];
-
-#if defined(F_SETOWN_EX)
-#include <sys/syscall.h>
-    struct f_owner_ex fown = {.type = F_OWNER_TID,.pid = syscall(__NR_gettid), };
-    if (fcntl(fuzzer->persistentSock, F_SETOWN_EX, &fown)) {
-        PLOG_F("fcntl(%d, F_SETOWN_EX)", fuzzer->persistentSock);
-    }
-#else
-    if (fcntl(fuzzer->persistentSock, F_SETOWN, getpid())) {
-        PLOG_F("fcntl(%d, F_SETOWN)", fuzzer->persistentSock);
-    }
-#endif
-
-#if defined(F_SETSIG)
-    if (fcntl(fuzzer->persistentSock, F_SETSIG, SIGNAL_WAKE) == -1) {
-        PLOG_F("fcntl(%d, F_SETSIG, SIGNAL_WAKE)", fuzzer->persistentSock);
-    }
-#endif
-    if (fcntl(fuzzer->persistentSock, F_SETFL, O_ASYNC) == -1) {
-        PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->persistentSock);
-    }
 
     if (hfuzz->persistent) {
         LOG_I("Persistent mode: Launched new persistent PID: %d", (int)fuzzer->pid);
