@@ -71,7 +71,7 @@ struct {
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
-static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzzer, siginfo_t *si)
+static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzzer, siginfo_t * si)
 {
     /*
      * Resumed by delivery of SIGCONT
@@ -186,12 +186,13 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (subproc_persistentModeRoundDone(hfuzz, fuzzer) == true) {
             break;
         }
-	siginfo_t si;
+        siginfo_t si;
         int ret = waitid(P_PID, fuzzer->pid, &si, WNOWAIT);
-	if (ret == -1) {
-		continue;
-	}
-	ret = wait4(pid, &status, __WALL, NULL);
+        if (ret == -1) {
+            continue;
+        }
+        int status;
+        ret = wait4(fuzzer->pid, &status, __WALL, NULL);
         if (ret == -1) {
             continue;
         }
@@ -202,7 +203,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         char strStatus[4096];
         if (hfuzz->persistent && ret == fuzzer->persistentPid
-            && (si.s_code == CLD_KILLED || si.si_code == CLD_EXITED)) {
+            && (WIFEXITED(status) || WIFSIGNALED(status))) {
             fuzzer->persistentPid = 0;
             LOG_W("Persistent mode: PID %d exited with status: %s", ret,
                   subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
