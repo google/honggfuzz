@@ -229,6 +229,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             .mainWorker = false,
             .fuzzNo = crashedFuzzer->fuzzNo,
             .persistentSock = -1,
+            .timerId = (timer_t) 0,
 
             .linux = {
                       .hwCnts = {
@@ -240,9 +241,6 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                                  },
                       .perfMmapBuf = NULL,
                       .perfMmapAux = NULL,
-#if defined(_HF_ARCH_LINUX)
-                      .timerId = (timer_t) 0,
-#endif                          // defined(_HF_ARCH_LINUX)
                       .attachedPid = 0,
                       },
         };
@@ -544,10 +542,8 @@ static void *fuzz_threadNew(void *arg)
         .dynamicFile = util_Malloc(hfuzz->maxFileSz),
         .fuzzNo = fuzzNo,
         .persistentSock = -1,
+        .timerId = (timer_t) 0,
 
-#if defined(_HF_ARCH_LINUX)
-        .linux.timerId = (timer_t) 0,
-#endif                          // defined(_HF_ARCH_LINUX)
         .linux.attachedPid = 0,
     };
     defer {

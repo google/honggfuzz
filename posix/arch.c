@@ -219,8 +219,36 @@ void arch_sigFunc(int sig UNUSED)
     return;
 }
 
+static bool arch_setTimer(timer_t * timerid)
+{
+    /*
+     * Kick in every 200ms, starting with the next second
+     */
+    const struct itimerspec ts = {
+        .it_value = {.tv_sec = 0,.tv_nsec = 250000000,},
+        .it_interval = {.tv_sec = 0,.tv_nsec = 250000000,},
+    };
+    if (timer_settime(*timerid, 0, &ts, NULL) == -1) {
+        PLOG_E("timer_settime(arm) failed");
+        timer_delete(*timerid);
+        return false;
+    }
+
+    return true;
+}
+
 bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
+    struct sigevent sevp = {
+        .sigev_value.sival_ptr = &fuzzer->timerId,
+        .sigev_signo = SIGIO,
+        .sigev_notify = SIGEV_SIGNAL,
+    };
+    if (timer_create(CLOCK_REALTIME, &sevp, &fuzzer->timerId) == -1) {
+        PLOG_E("timer_create(CLOCK_REALTIME) failed");
+        return false;
+    }
+
     sigset_t smask;
     sigemptyset(&smask);
     struct sigaction sa = {
@@ -239,7 +267,11 @@ bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
     sigaddset(&ss, SIGIO);
     if (pthread_sigmask(SIG_UNBLOCK, &ss, NULL) != 0) {
         PLOG_W("pthread_sigmask(%d, SIG_UNBLOCK)", SIGNAL_WAKE);
-	return false;
+        return false;
+    }
+
+    if (arch_setTimer(&(fuzzer->timerId)) == false) {
+        LOG_F("Couldn't set timer");
     }
 
     return true;
