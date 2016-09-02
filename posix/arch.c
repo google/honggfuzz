@@ -71,7 +71,7 @@ struct {
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
-static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzzer)
+static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzzer, siginfo_t *si)
 {
     /*
      * Resumed by delivery of SIGCONT
@@ -117,8 +117,8 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
         snprintf(newname, sizeof(newname), "%s", fuzzer->origFileName);
     } else {
-        snprintf(newname, sizeof(newname), "%s/%s.%d.%s.%s.%s",
-                 hfuzz->workDir, arch_sigs[termsig].descr, fuzzer->pid, localtmstr,
+        snprintf(newname, sizeof(newname), "%s/%s.ADDR.%p.%d.%s.%s.%s",
+                 hfuzz->workDir, arch_sigs[termsig].descr, si->si_addr, fuzzer->pid, localtmstr,
                  fuzzer->origFileName, hfuzz->fileExtn);
     }
 
@@ -179,8 +179,6 @@ void arch_prepareChild(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    int status;
-
     for (;;) {
 #ifndef __WALL
 #define __WALL 0
@@ -188,20 +186,23 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (subproc_persistentModeRoundDone(hfuzz, fuzzer) == true) {
             break;
         }
-        int ret = wait4(fuzzer->pid, &status, __WALL, NULL);
-        if (ret == -1 && errno == EINTR) {
-            continue;
-        }
+	siginfo_t si;
+        int ret = waitid(P_PID, fuzzer->pid, &si, WNOWAIT);
+	if (ret == -1) {
+		continue;
+	}
+	ret = wait4(pid, &status, __WALL, NULL);
         if (ret == -1) {
             continue;
         }
-        if (ret != fuzzer->pid) {
+
+        if (si.si_pid != fuzzer->pid) {
             continue;
         }
 
         char strStatus[4096];
         if (hfuzz->persistent && ret == fuzzer->persistentPid
-            && (WIFEXITED(status) || WIFSIGNALED(status))) {
+            && (si.s_code == CLD_KILLED || si.si_code == CLD_EXITED)) {
             fuzzer->persistentPid = 0;
             LOG_W("Persistent mode: PID %d exited with status: %s", ret,
                   subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
@@ -210,7 +211,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_D("Process (pid %d) came back with status: %s", fuzzer->pid,
               subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
 
-        if (arch_analyzeSignal(hfuzz, status, fuzzer)) {
+        if (arch_analyzeSignal(hfuzz, status, fuzzer, &si)) {
             return;
         }
     }
