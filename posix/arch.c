@@ -131,7 +131,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
 
     if (files_writeBufToFile
-        (fuzzer->crashFileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+        (newname, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
          O_CREAT | O_EXCL | O_WRONLY) == false) {
         LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
     }
@@ -200,6 +200,13 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
 
         char strStatus[4096];
+        if (hfuzz->persistent && ret == fuzzer->persistentPid
+            && (WIFEXITED(status) || WIFSIGNALED(status))) {
+            fuzzer->persistentPid = 0;
+            LOG_W("Persistent mode: PID %d exited with status: %s", ret,
+                  subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
+        }
+
         LOG_D("Process (pid %d) came back with status: %s", fuzzer->pid,
               subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
 
