@@ -214,7 +214,32 @@ bool arch_archInit(honggfuzz_t * hfuzz UNUSED)
     return true;
 }
 
+void arch_sigFunc(int sig UNUSED)
+{
+    return;
+}
+
 bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
+    sigset_t smask;
+    sigemptyset(&smask);
+    struct sigaction sa = {
+        .sa_handler = arch_sigFunc,
+        .sa_mask = smask,
+        .sa_flags = 0,
+    };
+
+    if (sigaction(SIGIO, &sa, NULL) == -1) {
+        PLOG_E("sigaction(SIGNAL_WAKE (%d)) failed", SIGNAL_WAKE);
+        return false;
+    }
+
+    sigset_t ss;
+    sigemptyset(&ss);
+    sigaddset(&ss, SIGIO);
+    if (pthread_sigmask(SIG_UNBLOCK, &ss, NULL) != 0) {
+        PLOG_F("pthread_sigmask(%d, SIG_UNBLOCK)", SIGNAL_WAKE);
+    }
+
     return true;
 }
