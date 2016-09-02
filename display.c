@@ -38,6 +38,7 @@
 #define ESC_CLEAR "\033[H\033[2J"
 #define ESC_NAV(x,y) "\033["#x";"#y"H"
 #define ESC_BOLD "\033[1m"
+#define ESC_RED "\033[31m"
 #define ESC_RESET "\033[0m"
 
 #if defined(_HF_ARCH_LINUX)
@@ -142,21 +143,14 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put("Input Files: '" ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "'\n",
                     hfuzz->fileCnt);
     }
-    
-    /* colored the crash count as red when exist crash */ 
-    if (ATOMIC_GET(hfuzz->crashesCnt) > 0){
-	display_put("Crashes: " ESC_BOLD "\033[31m%zu\033" ESC_RESET " (unique: \033[31m" ESC_BOLD "%zu" ESC_RESET 
-                 "\033[0m, blacklist: " ESC_BOLD "%zu" ESC_RESET ", verified: " ESC_BOLD "%zu" ESC_RESET
-                 ")\n", ATOMIC_GET(hfuzz->crashesCnt),
-                 ATOMIC_GET(hfuzz->uniqueCrashesCnt),
-                 ATOMIC_GET(hfuzz->blCrashesCnt), ATOMIC_GET(hfuzz->verifiedCrashesCnt));
-    }else{
-                display_put("Crashes: " ESC_BOLD "%zu" ESC_RESET " (unique: " ESC_BOLD "%zu" ESC_RESET
+
+    uint64_t crashesCnt = ATOMIC_GET(hfuzz->crashesCnt);
+    /* colored the crash count as red when exist crash */
+    display_put("Crashes: " ESC_BOLD "%s" "%zu" ESC_RESET " (unique: %s" ESC_BOLD "%zu" ESC_RESET
                 ", blacklist: " ESC_BOLD "%zu" ESC_RESET ", verified: " ESC_BOLD "%zu" ESC_RESET
-                ")\n", ATOMIC_GET(hfuzz->crashesCnt),
-                ATOMIC_GET(hfuzz->uniqueCrashesCnt),
+                ")\n", crashesCnt > 0 ? ESC_RED : "", hfuzz->crashesCnt,
+                crashesCnt > 0 ? ESC_RED : "", ATOMIC_GET(hfuzz->uniqueCrashesCnt),
                 ATOMIC_GET(hfuzz->blCrashesCnt), ATOMIC_GET(hfuzz->verifiedCrashesCnt));
-    }
 
     display_put("Timeouts: " ESC_BOLD "%zu" ESC_RESET "\n", ATOMIC_GET(hfuzz->timeoutedCnt));
 

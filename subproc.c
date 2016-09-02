@@ -246,6 +246,7 @@ bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         PLOG_F("Couldn't fork");
     }
 
+    // Child
     if (!fuzzer->pid) {
         if (hfuzz->persistent) {
             if (dup2(sv[1], _HF_PERSISTENT_FD) == -1) {
@@ -265,6 +266,11 @@ bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
 
         abort();
+    }
+
+    // Parent
+    if (hfuzz->persistent == false) {
+      return true;
     }
 
     close(sv[1]);
