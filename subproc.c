@@ -40,7 +40,7 @@
 #include <unistd.h>
 #if defined(_HF_ARCH_LINUX)
 #include <sys/syscall.h>
-#endif  // defined(_HF_ARCH_LINUX)
+#endif                          // defined(_HF_ARCH_LINUX)
 
 #include "arch.h"
 #include "files.h"
@@ -288,7 +288,7 @@ bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (fcntl(fuzzer->persistentSock, F_SETFL, O_ASYNC) == -1) {
         PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->persistentSock);
     }
-#endif  // defined(_HF_LINUX_ARCH)
+#endif                          // defined(_HF_LINUX_ARCH)
 
     if (hfuzz->persistent) {
         LOG_I("Persistent mode: Launched new persistent PID: %d", (int)fuzzer->pid);
