@@ -180,9 +180,6 @@ void arch_prepareChild(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     for (;;) {
-        if (subproc_persistentModeRoundDone(hfuzz, fuzzer) == true) {
-            break;
-        }
         if (hfuzz->persistent) {
             struct pollfd pfd = {
                 .fd = fuzzer->persistentSock,
@@ -192,6 +189,9 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             if (r == -1 && errno != EINTR) {
                 PLOG_F("poll(fd=%d)", fuzzer->persistentSock);
             }
+        }
+        if (subproc_persistentModeRoundDone(hfuzz, fuzzer) == true) {
+            break;
         }
 
         int status;
