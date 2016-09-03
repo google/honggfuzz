@@ -38,9 +38,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#if defined(_HF_ARCH_LINUX)
-#include <sys/syscall.h>
-#endif                          // defined(_HF_ARCH_LINUX)
 
 #include "arch.h"
 #include "files.h"
@@ -242,6 +239,7 @@ bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             PLOG_W("socketpair(AF_UNIX, SOCK_STREAM, 0, sv)");
             return false;
         }
+        fuzzer->persistentSock = sv[0];
     }
 
     fuzzer->pid = arch_fork(hfuzz, fuzzer);
@@ -275,20 +273,6 @@ bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     close(sv[1]);
-    fuzzer->persistentSock = sv[0];
-
-#if defined(_HF_ARCH_LINUX)
-    struct f_owner_ex fown = {.type = F_OWNER_TID,.pid = syscall(__NR_gettid), };
-    if (fcntl(fuzzer->persistentSock, F_SETOWN_EX, &fown)) {
-        PLOG_F("fcntl(%d, F_SETOWN_EX)", fuzzer->persistentSock);
-    }
-    if (fcntl(fuzzer->persistentSock, F_SETSIG, SIGNAL_WAKE) == -1) {
-        PLOG_F("fcntl(%d, F_SETSIG, SIGNAL_WAKE)", fuzzer->persistentSock);
-    }
-    if (fcntl(fuzzer->persistentSock, F_SETFL, O_ASYNC) == -1) {
-        PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->persistentSock);
-    }
-#endif                          // defined(_HF_LINUX_ARCH)
 
     if (hfuzz->persistent) {
         LOG_I("Persistent mode: Launched new persistent PID: %d", (int)fuzzer->pid);
