@@ -133,9 +133,9 @@ endif
 SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
 OBJS := $(SRCS:.c=.o)
 
-LIBS_SRCS := $(wildcard libraries/*.c)
+LIBS_SRCS := $(wildcard lib/*.c)
 LIBS_OBJS := $(LIBS_SRCS:.c=.o)
-HFUZZ_ARCH := libraries/libhfuzz.a
+HFUZZ_ARCH := lib/libhfuzz.a
 
 # Respect external user defines
 CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH}
@@ -174,7 +174,7 @@ else
   ANDROID_NDK_TOOLCHAIN ?=
 endif
 
-SUBDIR_ROOTS := linux mac posix libraries
+SUBDIR_ROOTS := linux mac posix lib
 DIRS := . $(shell find $(SUBDIR_ROOTS) -type d)
 CLEAN_PATTERNS := *.o *~ core *.a *.dSYM *.la *.so *.dylib
 SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
