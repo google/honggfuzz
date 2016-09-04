@@ -61,6 +61,7 @@
 #define ATOMIC_PRE_INC_RELAXED(x) __atomic_add_fetch(&(x), 1, __ATOMIC_RELAXED)
 #define ATOMIC_POST_OR_RELAXED(x, y) __atomic_fetch_or(&(x), y, __ATOMIC_RELAXED)
 
+__attribute__ ((always_inline))
 static inline uint8_t ATOMIC_BTS(uint8_t * addr, size_t offset)
 {
     uint8_t oldbit;

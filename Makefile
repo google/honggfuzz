@@ -229,7 +229,7 @@ log.o: common.h log.h util.h
 mangle.o: common.h mangle.h log.h util.h
 report.o: common.h report.h log.h util.h
 sancov.o: common.h sancov.h files.h log.h util.h
-subproc.o: common.h subproc.h log.h sancov.h util.h
+subproc.o: common.h subproc.h arch.h files.h log.h sancov.h util.h
 util.o: common.h util.h files.h log.h
 linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h linux/bfd.h
 linux/ptrace_utils.o: linux/unwind.h linux/unwind.h log.h sancov.h subproc.h
