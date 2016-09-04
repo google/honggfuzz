@@ -229,7 +229,6 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             .mainWorker = false,
             .fuzzNo = crashedFuzzer->fuzzNo,
             .persistentSock = -1,
-            .timerId = (timer_t) 0,
 
             .linux = {
                       .hwCnts = {
@@ -542,7 +541,6 @@ static void *fuzz_threadNew(void *arg)
         .dynamicFile = util_Malloc(hfuzz->maxFileSz),
         .fuzzNo = fuzzNo,
         .persistentSock = -1,
-        .timerId = (timer_t) 0,
 
         .linux.attachedPid = 0,
     };
