@@ -14,7 +14,7 @@
 
 #if defined(_HF_ARCH_LINUX)
 #include <sys/syscall.h>
-#endif  // defined(_HF_ARCH_LINUX)
+#endif                          // defined(_HF_ARCH_LINUX)
 
 #include "util.h"
 
@@ -64,14 +64,7 @@ static void mapBB(void)
     feedback->pidFeedback[my_thread_no] = 0U;
 }
 
-/* This should be trully fast */
-
-#ifdef __clang__
-#pragma clang optimize on
-#else
-__attribute__ ((optimize("-Ofast")))
-#endif
-    __attribute__ ((no_instrument_function))
+__attribute__ ((no_instrument_function))
 void __cyg_profile_func_enter(void *func, void *caller)
 {
     register size_t pos =
@@ -86,4 +79,14 @@ __attribute__ ((weak))
 void __cyg_profile_func_exit(void *func UNUSED, void *caller UNUSED)
 {
     return;
+}
+
+__attribute__ ((no_instrument_function))
+void __sanitizer_cov_trace_pc(void)
+{
+    register uintptr_t ret = (uintptr_t) __builtin_return_address(0) & _HF_PERF_BITMAP_MASK;
+    register uint8_t prev = ATOMIC_BTS(feedback->bbMap, ret);
+    if (!prev) {
+        ATOMIC_PRE_INC_RELAXED(feedback->pidFeedback[my_thread_no]);
+    }
 }
