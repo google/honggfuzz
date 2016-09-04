@@ -135,7 +135,7 @@ OBJS := $(SRCS:.c=.o)
 
 LIBS_SRCS := $(wildcard libraries/*.c)
 LIBS_OBJS := $(LIBS_SRCS:.c=.o)
-HFUZZ_ARCH := libraries/hfuzz.a
+HFUZZ_ARCH := libraries/libhfuzz.a
 
 # Respect external user defines
 CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH}

@@ -22,7 +22,6 @@ static feedback_t *feedback;
 static uint32_t my_thread_no = 0;
 
 /* Fall-back mode, just map the buffer to avoid SIGSEGV in __cyg_profile_func_enter */
-__attribute__ ((no_instrument_function))
 static void mapBBFallback(void)
 {
     feedback =
@@ -30,7 +29,7 @@ static void mapBBFallback(void)
     feedback->pidFeedback[my_thread_no] = 0U;
 }
 
-__attribute__ ((no_instrument_function)) __attribute__ ((constructor))
+__attribute__ ((constructor))
 static void mapBB(void)
 {
     char *my_thread_no_str = getenv(_HF_THREAD_NO_ENV);
@@ -64,7 +63,9 @@ static void mapBB(void)
     feedback->pidFeedback[my_thread_no] = 0U;
 }
 
-__attribute__ ((no_instrument_function))
+/*
+ * -finstrument-functions
+ */
 void __cyg_profile_func_enter(void *func, void *caller)
 {
     register size_t pos =
@@ -75,13 +76,14 @@ void __cyg_profile_func_enter(void *func, void *caller)
     }
 }
 
-__attribute__ ((weak))
 void __cyg_profile_func_exit(void *func UNUSED, void *caller UNUSED)
 {
     return;
 }
 
-__attribute__ ((no_instrument_function))
+/*
+ * -fsanitize=<address|memory|leak|undefined> -fsanitize-coverage=trace-pc,indirect-calls
+ */
 void __sanitizer_cov_trace_pc(void)
 {
     register uintptr_t ret = (uintptr_t) __builtin_return_address(0) & _HF_PERF_BITMAP_MASK;
@@ -91,7 +93,6 @@ void __sanitizer_cov_trace_pc(void)
     }
 }
 
-__attribute__ ((no_instrument_function))
 void __sanitizer_cov_trace_pc_indir(void *callee)
 {
     callee = (void *)((uintptr_t) callee & _HF_PERF_BITMAP_MASK);
