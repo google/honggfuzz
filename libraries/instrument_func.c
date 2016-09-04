@@ -90,3 +90,13 @@ void __sanitizer_cov_trace_pc(void)
         ATOMIC_PRE_INC_RELAXED(feedback->pidFeedback[my_thread_no]);
     }
 }
+
+__attribute__ ((no_instrument_function))
+void __sanitizer_cov_trace_pc_indir(void *callee)
+{
+    callee = (void *)((uintptr_t) callee & _HF_PERF_BITMAP_MASK);
+    register uint8_t prev = ATOMIC_BTS(feedback->bbMap, (size_t) callee);
+    if (!prev) {
+        ATOMIC_PRE_INC_RELAXED(feedback->pidFeedback[my_thread_no]);
+    }
+}
