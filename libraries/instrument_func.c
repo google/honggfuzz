@@ -9,9 +9,12 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#if defined(_HF_ARCH_LINUX)
+#include <sys/syscall.h>
+#endif  // defined(_HF_ARCH_LINUX)
 
 #include "util.h"
 
