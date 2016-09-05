@@ -95,8 +95,9 @@ void __sanitizer_cov_trace_pc(void)
 
 void __sanitizer_cov_trace_pc_indir(void *callee)
 {
-    callee = (void *)((uintptr_t) callee & _HF_PERF_BITMAP_MASK);
-    register uint8_t prev = ATOMIC_BTS(feedback->bbMap, (size_t) callee);
+    register size_t pos =
+        (((uintptr_t) callee << 12) | ((uintptr_t) __builtin_return_address(0) & 0xFFF)) & _HF_PERF_BITMAP_MASK;
+    register uint8_t prev = ATOMIC_BTS(feedback->bbMap, pos);
     if (!prev) {
         ATOMIC_PRE_INC_RELAXED(feedback->pidFeedback[my_thread_no]);
     }
