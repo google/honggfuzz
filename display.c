@@ -193,8 +193,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         uint64_t softCntMax = ATOMIC_GET(hfuzz->linux.hwCnts.softCntMax);
         double softCntFrac = (softCntMax != 0) ? ((double)softCnt / softCntMax) : 0.0l;
         display_put("  - functions seen:  " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET " (max: "
-                    ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET " - %lf)\n", softCnt, softCntMax,
-                    softCntFrac);
+                    ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET " - %.2lf%%)\n", softCnt,
+                    softCntMax, softCntFrac);
     }
 
     /* Sanitizer coverage specific counters */

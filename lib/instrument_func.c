@@ -21,6 +21,9 @@
 static feedback_t *feedback;
 static uint32_t my_thread_no = 0;
 
+__attribute__ ((weak))
+uintptr_t __sanitizer_get_total_unique_coverage();
+
 /* Fall-back mode, just map the buffer to avoid SIGSEGV in __cyg_profile_func_enter */
 static void mapBBFallback(void)
 {
@@ -62,7 +65,11 @@ static void mapBB(void)
         _exit(1);
     }
     feedback->pidFeedback[my_thread_no] = 0U;
-    feedback->maxFeedback[my_thread_no] = 0U;
+    if (__sanitizer_get_total_unique_coverage == NULL) {
+        feedback->maxFeedback[my_thread_no] = 0U;
+    } else {
+        feedback->maxFeedback[my_thread_no] = (uint64_t) __sanitizer_get_total_unique_coverage();
+    }
 }
 
 /*
