@@ -187,9 +187,14 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put("  - custom counter:  " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET "\n",
                     ATOMIC_GET(hfuzz->linux.hwCnts.customCnt));
     }
+
     if (hfuzz->dynFileMethod & _HF_DYNFILE_SOFT) {
-        display_put("  - functions seen:  " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET "\n",
-                    ATOMIC_GET(hfuzz->linux.hwCnts.softCnt));
+        uint64_t softCnt = ATOMIC_GET(hfuzz->linux.hwCnts.softCnt);
+        uint64_t softCntMax = ATOMIC_GET(hfuzz->linux.hwCnts.softCntMax);
+        double softCntFrac = (softCntMax != 0) ? ((double)softCnt / softCntMax) : 0.0l;
+        display_put("  - functions seen:  " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET " (max: "
+                    ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET " - %.2lf%%)\n", softCnt,
+                    softCntMax, softCntFrac);
     }
 
     /* Sanitizer coverage specific counters */

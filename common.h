@@ -138,6 +138,7 @@ typedef struct {
     uint64_t bbCnt;
     uint64_t newBBCnt;
     uint64_t softCnt;
+    uint64_t softCntMax;
 } hwcnt_t;
 
 /* Sanitizer coverage specific data structures */
@@ -203,10 +204,11 @@ struct dynfile_t {
 };
 
 /* Maximum number of active fuzzing threads */
-#define _HF_FEEDBACK_THREAD_SZ 1024
+#define _HF_THREAD_MAX 1024U
 typedef struct {
     uint8_t bbMap[_HF_PERF_BITMAP_SIZE_16M];
-    uint32_t pidFeedback[_HF_FEEDBACK_THREAD_SZ];
+    uint32_t pidFeedback[_HF_THREAD_MAX];
+    uint32_t maxFeedback[_HF_THREAD_MAX];
 } feedback_t;
 
 typedef struct {
