@@ -31,5 +31,6 @@ extern void arch_ptraceExitAnalyze(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fu
 extern bool arch_ptraceAttach(pid_t pid);
 extern void arch_ptraceDetach(pid_t pid);
 extern void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt);
+extern void arch_ptraceSetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t cnt);
 
 #endif

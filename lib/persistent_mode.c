@@ -88,11 +88,4 @@ void HF_ITER(uint8_t ** buf_ptr, size_t * len_ptr)
 
     *buf_ptr = buf;
     *len_ptr = len;
-
-/* Clear the custom counter */
-#if defined(__x86_64__) && defined(_HF_ARCH_LINUX)
-#define ARCH_SET_GS 0x1001
-#define __NR_arch_prctl 158
-    syscall(__NR_arch_prctl, ARCH_SET_GS, 0UL);
-#endif
 }

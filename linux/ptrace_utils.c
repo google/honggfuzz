@@ -38,7 +38,6 @@
 #include <sys/cdefs.h>
 #include <sys/personality.h>
 #include <sys/ptrace.h>
-#include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -339,7 +338,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
     return memsz;
 }
 
-void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid UNUSED, uint64_t * cnt UNUSED)
+void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt UNUSED)
 {
     if ((hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) == 0) {
         return;
@@ -356,48 +355,43 @@ void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid UNUSED, uint64_t * 
         }
     };
 
-#if defined(__i386__) || defined(__x86_64__)
-    HEADERS_STRUCT regs;
-    struct iovec pt_iov = {
-        .iov_base = &regs,
-        .iov_len = sizeof(regs),
+#if defined(__x86_64__)
+    struct user_regs_struct_64 regs;
+    if (ptrace(PTRACE_GETREGS, pid, 0, &regs) != -1) {
+        *cnt = regs.gs_base;
+        return;
+    }
+#endif                          /*       defined(__x86_64__) */
+    *cnt = 0ULL;
+}
+
+void arch_ptraceSetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t cnt UNUSED)
+{
+    if ((hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) == 0) {
+        return;
+    }
+
+    if (hfuzz->persistent) {
+        ptrace(PTRACE_INTERRUPT, pid, 0, 0);
+        arch_ptraceWaitForPidStop(pid);
+    }
+
+    defer {
+        if (hfuzz->persistent) {
+            ptrace(PTRACE_CONT, pid, 0, 0);
+        }
     };
 
-    if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
-        PLOG_D("ptrace(PTRACE_GETREGSET) failed");
-
-        // If PTRACE_GETREGSET fails, try PTRACE_GETREGS if available
-#if PTRACE_GETREGS_AVAILABLE
-        if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
-            PLOG_D("ptrace(PTRACE_GETREGS) failed");
-            LOG_W("ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to extract target registers");
-            return;
-        }
-#else
-        return;
-#endif
-    }
-
-    /*
-     * 32-bit
-     */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)&regs;
-        *cnt = (uint64_t) r32->gs;
+#if defined(__x86_64__)
+    struct user_regs_struct_64 regs;
+    if (ptrace(PTRACE_GETREGS, pid, 0, &regs) == -1) {
         return;
     }
-
-    /*
-     * 64-bit
-     */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)&regs;
-        *cnt = (uint64_t) r64->gs_base;
+    regs.gs_base = cnt;
+    if (ptrace(PTRACE_SETREGS, pid, 0, &regs) == -1) {
         return;
     }
-
-    LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
-#endif                          /* defined(__i386__) || defined(__x86_64__) */
+#endif                          /*            defined(__x86_64__) */
 }
 
 static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg UNUSED)

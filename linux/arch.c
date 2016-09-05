@@ -248,6 +248,7 @@ void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (childPid != ptracePid && kill(childPid, SIGCONT) == -1) {
         PLOG_F("Restarting PID: %d failed", childPid);
     }
+    arch_ptraceSetCustomPerf(hfuzz, ptracePid, 0ULL);
 }
 
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
