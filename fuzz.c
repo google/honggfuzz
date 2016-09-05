@@ -340,6 +340,7 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         hfuzz->linux.hwCnts.customCnt = fuzzer->linux.hwCnts.customCnt;
         hfuzz->linux.hwCnts.bbCnt += fuzzer->linux.hwCnts.newBBCnt;
         hfuzz->linux.hwCnts.softCnt += softCnt;
+        hfuzz->linux.hwCnts.softCntMax = ATOMIC_GET(hfuzz->feedback->maxFeedback[fuzzer->fuzzNo]);
 
         LOG_I
             ("New file size: %zu, Feedback: New (instr,branch,soft,perf,custom): %" PRIu64 "/%"
