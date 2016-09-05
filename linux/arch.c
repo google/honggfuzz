@@ -66,6 +66,9 @@
 #define ABORT_FLAG        "abort_on_error=0"
 #endif
 
+/* Size of remote pid cmdline char buffer */
+#define _HF_PROC_CMDLINE_SZ 8192
+
 static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     if (hfuzz->persistent && fuzzer->linux.attachedPid == fuzzer->pid) {

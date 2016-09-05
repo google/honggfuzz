@@ -70,44 +70,24 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 /* Default stack-size of created threads. Must be bigger then _HF_DYNAMIC_FILE_MAX_SZ */
 #define _HF_PTHREAD_STACKSIZE (1024 * 1024 * 8) /* 8MB */
 
-/* Align to the upper-page boundary */
-#define _HF_PAGE_ALIGN_UP(x)  (((size_t)x + (size_t)getpagesize() - (size_t)1) & ~((size_t)getpagesize() - (size_t)1))
-
-/* String buffer size for function names in stack traces produced from libunwind */
-#define _HF_FUNC_NAME_SZ    256 // Should be alright for mangled C++ procs too
-
 /* Name of envvar which indicates sequential number of fuzzer */
 #define _HF_THREAD_NO_ENV "HFUZZ_THREAD_NO"
 
 /* Number of crash verifier iterations before tag crash as stable */
 #define _HF_VERIFIER_ITER   5
 
-/* Constant prefix used for single frame crashes stackhash masking */
-#define _HF_SINGLE_FRAME_MASK  0xBADBAD0000000000
-
 /* Size (in bytes) for report data to be stored in stack before written to file */
 #define _HF_REPORT_SIZE 8192
-
-#define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
-
-/* Bitmap size */
-#define _HF_SANCOV_BITMAP_SIZE 0x3FFFFFF
 
 /* Perf bitmap size */
 #define _HF_PERF_BITMAP_SIZE_16M (1024U * 1024U * 16U)
 #define _HF_PERF_BITMAP_MASK 0x7ffffff
-
-/* Directory in workspace to store sanitizer coverage data */
-#define _HF_SANCOV_DIR "HF_SANCOV"
 
 #if defined(__ANDROID__)
 #define _HF_MONITOR_SIGABRT 0
 #else
 #define _HF_MONITOR_SIGABRT 1
 #endif
-
-/* Size of remote pid cmdline char buffer */
-#define _HF_PROC_CMDLINE_SZ 8192
 
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
 

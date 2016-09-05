@@ -24,6 +24,11 @@
 #ifndef _HF_LINUX_PTRACE_UTILS_H_
 #define _HF_LINUX_PTRACE_UTILS_H_
 
+#define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
+
+/* Constant prefix used for single frame crashes stackhash masking */
+#define _HF_SINGLE_FRAME_MASK  0xBADBAD0000000000
+
 extern bool arch_ptraceWaitForPidStop(pid_t pid);
 extern bool arch_ptraceEnable(honggfuzz_t * hfuzz);
 extern void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer);

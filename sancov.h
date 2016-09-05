@@ -35,6 +35,12 @@
 /* Prefix for sanitizer report files */
 #define kLOGPREFIX          ".hf.san"
 
+/* Bitmap size */
+#define _HF_SANCOV_BITMAP_SIZE 0x3FFFFFF
+
+/* Directory in workspace to store sanitizer coverage data */
+#define _HF_SANCOV_DIR "HF_SANCOV"
+
 extern void sancov_Analyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
 extern bool sancov_Init(honggfuzz_t * hfuzz);
 extern bool sancov_prepareExecve(honggfuzz_t * hfuzz);
