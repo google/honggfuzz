@@ -63,11 +63,6 @@ ifeq ($(OS),Linux)
         $(info $(WARN_LIBRARY))
         $(info ***************************************************************)
     endif
-
-    ifeq ($(MARCH),$(filter $(MARCH),x86_64 i386))
-        # Support for popcnt (used in linux/perf.c)
-        ARCH_CFLAGS += -msse4.2
-    endif       # MARCH
     # OS Linux
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
