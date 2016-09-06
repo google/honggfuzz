@@ -50,19 +50,19 @@ esac
 case "$ARCH" in
   arm)
     BRT_ARCH="armeabi-v7a"
-    BRT_TOOLCHAIN="arm-linux-androideabi-clang3.6"
+    BRT_TOOLCHAIN="arm-linux-androideabi-clang"
     ;;
   arm64)
     BRT_ARCH="arm64-v8a"
-    BRT_TOOLCHAIN="aarch64-linux-android-clang3.6"
+    BRT_TOOLCHAIN="aarch64-linux-android-clang"
     ;;
   x86)
     BRT_ARCH="x86"
-    BRT_TOOLCHAIN="x86-clang3.6"
+    BRT_TOOLCHAIN="x86-clang"
     ;;
   x86_64)
     BRT_ARCH="x86_64"
-    BRT_TOOLCHAIN="x86_64-clang3.6"
+    BRT_TOOLCHAIN="x86_64-clang"
     ;;
 esac
 

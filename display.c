@@ -27,6 +27,7 @@
 #include "display.h"
 
 #include <inttypes.h>
+#include <math.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -73,24 +74,27 @@ static double getCpuUse()
 
     FILE *f = fopen("/proc/stat", "r");
     if (f == NULL) {
-
+        return NAN;
     }
     defer {
         fclose(f);
     };
     uint64_t userT, niceT, systemT, idleT;
-    if (fscanf(f, "cpu  %" PRIu64 "%" PRIu64 "%" PRIu64 "%" PRIu64, &userT, &niceT, &systemT, &idleT) != 4) {
+    if (fscanf
+        (f, "cpu  %" PRIu64 "%" PRIu64 "%" PRIu64 "%" PRIu64, &userT, &niceT, &systemT,
+         &idleT) != 4) {
         LOG_W("fscanf('/proc/stat') != 4");
-        return 0U;
+        return NAN;
     }
 
     if (prevUserT == 0UL || prevSystemT == 0UL) {
         prevUserT = userT;
         prevSystemT = systemT;
-        return 0U;
+        return NAN;
     }
 
-    double cpuUse = (double)(((systemT - prevSystemT) + (userT - prevUserT))) / sysconf(_SC_CLK_TCK);
+    double cpuUse =
+        (double)(((systemT - prevSystemT) + (userT - prevUserT))) / sysconf(_SC_CLK_TCK);
     prevUserT = userT;
     prevSystemT = systemT;
     return cpuUse * 100;
@@ -156,11 +160,9 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                     "'\n", hfuzz->linux.pid, hfuzz->linux.pidCmd);
     }
 
-    display_put("Fuzzing threads: " ESC_BOLD "%zu" ESC_RESET, hfuzz->threadsMax);
-    double cpuUse = getCpuUse();
-    if (cpuUse != 0.0l) {
-        display_put("  (CPU: " ESC_BOLD "%.1lf%%" ESC_RESET ")", cpuUse);
-    }
+    display_put("Fuzzing threads: " ESC_BOLD "%zu" ESC_RESET ", CPUs: " ESC_BOLD "%ld" ESC_RESET
+                ", OS load: " ESC_BOLD "%.1lf%%" ESC_RESET, hfuzz->threadsMax,
+                sysconf(_SC_NPROCESSORS_ONLN), getCpuUse());
 
     display_put("\n%s per second: " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET
                 " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n",
