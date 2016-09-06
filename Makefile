@@ -169,7 +169,7 @@ else
   ANDROID_NDK_TOOLCHAIN ?=
 endif
 
-SUBDIR_ROOTS := linux mac posix lib
+SUBDIR_ROOTS := linux mac posix libhfuzz
 DIRS := . $(shell find $(SUBDIR_ROOTS) -type d)
 CLEAN_PATTERNS := *.o *~ core *.a *.dSYM *.la *.so *.dylib
 SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
