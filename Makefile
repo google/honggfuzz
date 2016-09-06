@@ -154,7 +154,7 @@ ifeq ($(ANDROID_CLANG),true)
   # clang works only for APIs >= 23, so default to it if not set
   ANDROID_API ?= android-24
   ifeq ($(ANDROID_APP_ABI),armeabi-v7a)
-    ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-4.9
+    ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-clang
   else ifeq ($(ANDROID_APP_ABI),x86)
     ANDROID_NDK_TOOLCHAIN ?= x86-clang
   else ifeq ($(ANDROID_APP_ABI),arm64-v8a)
