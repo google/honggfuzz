@@ -1,4 +1,4 @@
-#include "common.h"
+#include "../common.h"
 
 #include <errno.h>
 #include <inttypes.h>
@@ -11,14 +11,13 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-
 #if defined(_HF_ARCH_LINUX)
 #include <asm/prctl.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #endif                          // defined(_HF_ARCH_LINUX)
 
-#include "util.h"
+#include "../util.h"
 
 static feedback_t *feedback;
 static uint32_t my_thread_no = 0;

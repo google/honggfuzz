@@ -21,14 +21,14 @@
  *
  */
 
-#include "common.h"
-#include "linux/pt.h"
+#include "../common.h"
+#include "pt.h"
 
 #include <linux/perf_event.h>
 #include <inttypes.h>
 
-#include "log.h"
-#include "util.h"
+#include "../log.h"
+#include "../util.h"
 
 #ifdef _HF_LINUX_INTEL_PT_LIB
 

@@ -21,8 +21,8 @@
  *
  */
 
-#include "common.h"
-#include "linux/perf.h"
+#include "../common.h"
+#include "perf.h"
 
 #include <asm/mman.h>
 #include <errno.h>
@@ -41,10 +41,10 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-#include "files.h"
-#include "linux/pt.h"
-#include "log.h"
-#include "util.h"
+#include "../files.h"
+#include "../log.h"
+#include "../util.h"
+#include "pt.h"
 
 #define _HF_PERF_MAP_SZ (1024 * 1024)
 #define _HF_PERF_AUX_SZ (1024 * 1024 * 8)

@@ -36,7 +36,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <util.h>
+#include "util.h"
 
 #if defined(_HF_ARCH_LINUX)
 #include <sys/syscall.h>

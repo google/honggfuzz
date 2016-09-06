@@ -21,8 +21,8 @@
  *
  */
 
-#include "common.h"
-#include "arch.h"
+#include "../common.h"
+#include "../arch.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -51,13 +51,13 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 
-#include "files.h"
-#include "linux/perf.h"
-#include "linux/ptrace_utils.h"
-#include "log.h"
-#include "sancov.h"
-#include "subproc.h"
-#include "util.h"
+#include "../files.h"
+#include "../linux/perf.h"
+#include "../linux/ptrace_utils.h"
+#include "../log.h"
+#include "../sancov.h"
+#include "../subproc.h"
+#include "../util.h"
 
 /* Common sanitizer flags */
 #if _HF_MONITOR_SIGABRT

@@ -34,7 +34,7 @@ MARCH ?= $(shell uname -m)
 ifeq ($(OS),Linux)
     ARCH := LINUX
 
-    ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
+    ARCH_CFLAGS := -std=c11 -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -funroll-loops \
                    -D_FILE_OFFSET_BITS=64
@@ -111,7 +111,7 @@ else ifeq ($(OS),Darwin)
 else
     ARCH := POSIX
     ARCH_SRCS := $(wildcard posix/*.c)
-    ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
+    ARCH_CFLAGS := -std=c11 -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
                    -U__STRICT_ANSI__ -funroll-loops

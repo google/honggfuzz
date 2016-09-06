@@ -10,7 +10,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "common.h"
+#include "../common.h"
+
+int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len) __attribute__ ((weak));
+int LLVMFuzzerInitialize(int *argc, char ***argv) __attribute__ ((weak));
 
 static inline ssize_t readFromFd(int fd, uint8_t * buf, size_t len)
 {
@@ -88,4 +91,34 @@ void HF_ITER(uint8_t ** buf_ptr, size_t * len_ptr)
 
     *buf_ptr = buf;
     *len_ptr = len;
+}
+
+/*
+ * Declare it 'weak', so it can be safely linked with regular binaries which
+ * implement their own main()
+ */
+__attribute__ ((weak))
+int main(int argc, char **argv)
+{
+    if (LLVMFuzzerInitialize) {
+        LLVMFuzzerInitialize(&argc, &argv);
+    }
+    if (LLVMFuzzerTestOneInput == NULL) {
+        fprintf(stderr, "Define 'int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)' in your "
+                "code to make it work\n");
+        exit(1);
+    }
+
+    for (;;) {
+        size_t len;
+        uint8_t *buf;
+
+        HF_ITER(&buf, &len);
+
+        int ret = LLVMFuzzerTestOneInput(buf, len);
+        if (ret != 0) {
+            fprintf(stderr, "LLVMFuzzerTestOneInput() returned '%d' instead of '0'\n", ret);
+            exit(1);
+        }
+    }
 }

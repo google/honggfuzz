@@ -21,8 +21,8 @@
  *
  */
 
-#include "common.h"
-#include "arch.h"
+#include "../common.h"
+#include "../arch.h"
 
 #include <poll.h>
 #include <ctype.h>
@@ -41,11 +41,11 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "files.h"
-#include "log.h"
-#include "sancov.h"
-#include "subproc.h"
-#include "util.h"
+#include "../files.h"
+#include "../log.h"
+#include "../sancov.h"
+#include "../subproc.h"
+#include "../util.h"
 
 /*  *INDENT-OFF* */
 struct {
