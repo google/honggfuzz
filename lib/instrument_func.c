@@ -118,11 +118,6 @@ void __sanitizer_cov_trace_pc_indir(void *callee)
 static inline void incGs(unsigned long val UNUSED)
 {
 #if defined(__x86_64__) && defined(_HF_ARCH_LINUX)
-    if (val > 64) {
-        fprintf(stderr, "VAL > 64: %lu\n", val);
-        exit(1);
-    }
-
     unsigned long gs;
     syscall(__NR_arch_prctl, ARCH_GET_GS, &gs);
     gs += val;
