@@ -133,9 +133,9 @@ endif
 SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
 OBJS := $(SRCS:.c=.o)
 
-LIBS_SRCS := $(wildcard lib/*.c)
+LIBS_SRCS := $(wildcard libhfuzz/*.c)
 LIBS_OBJS := $(LIBS_SRCS:.c=.o)
-HFUZZ_ARCH := lib/libhfuzz.a
+HFUZZ_ARCH := libhfuzz/libhfuzz.a
 
 # Respect external user defines
 CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH}
