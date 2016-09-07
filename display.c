@@ -69,8 +69,7 @@ static void display_printKMG(uint64_t val)
 
 static double getCpuUse()
 {
-    static uint64_t prevUserT = 0UL;
-    static uint64_t prevSystemT = 0UL;
+    static uint64_t prevIdleT = 0UL;
 
     FILE *f = fopen("/proc/stat", "r");
     if (f == NULL) {
@@ -87,17 +86,14 @@ static double getCpuUse()
         return NAN;
     }
 
-    if (prevUserT == 0UL || prevSystemT == 0UL) {
-        prevUserT = userT;
-        prevSystemT = systemT;
+    if (prevIdleT == 0UL) {
+        prevIdleT = idleT;
         return NAN;
     }
 
-    double cpuUse =
-        (double)(((systemT - prevSystemT) + (userT - prevUserT))) / sysconf(_SC_CLK_TCK);
-    prevUserT = userT;
-    prevSystemT = systemT;
-    return cpuUse * 100;
+    uint64_t cpuUse = (sysconf(_SC_NPROCESSORS_ONLN) * sysconf(_SC_CLK_TCK)) - (idleT - prevIdleT);
+    prevIdleT = idleT;
+    return (double)cpuUse / sysconf(_SC_CLK_TCK) * 100;
 }
 
 static void display_displayLocked(honggfuzz_t * hfuzz)
@@ -146,8 +142,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put("Iterations: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
     if (hfuzz->mutationsMax) {
-        display_put(" (out of: " ESC_BOLD "%zu" ESC_RESET " [" ESC_BOLD "%.2f%%" ESC_RESET
-                    "])", hfuzz->mutationsMax, exeProgress);
+        display_put(" (out of: " ESC_BOLD "%zu" ESC_RESET " [" ESC_BOLD "%.2f" ESC_RESET
+                    "%%])", hfuzz->mutationsMax, exeProgress);
     }
     display_put("\n");
     char start_time_str[128];
@@ -161,9 +157,11 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                     "'\n", hfuzz->linux.pid, hfuzz->linux.pidCmd);
     }
 
+    double cpuUse = getCpuUse();
     display_put("Fuzzing threads: " ESC_BOLD "%zu" ESC_RESET ", CPUs: " ESC_BOLD "%ld" ESC_RESET
-                ", OS load: " ESC_BOLD "%.1lf%%" ESC_RESET, hfuzz->threadsMax,
-                sysconf(_SC_NPROCESSORS_ONLN), getCpuUse());
+                ", CPU: " ESC_BOLD "%.1lf" ESC_RESET "%% (" ESC_BOLD "%.1lf" ESC_RESET "%%/CPU)",
+                hfuzz->threadsMax, sysconf(_SC_NPROCESSORS_ONLN), cpuUse,
+                cpuUse / sysconf(_SC_NPROCESSORS_ONLN));
 
     display_put("\n%s per second: " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET
                 " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n",
@@ -233,7 +231,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
         float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
         display_put("  - total hit #bb:   " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
-                    " (coverage " ESC_BOLD "%.2f%%" ESC_RESET ")\n", hitBB, covPer);
+                    " (coverage " ESC_BOLD "%.2f" ESC_RESET "%%)\n", hitBB, covPer);
         display_put("  - total #dso:      " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     " (instrumented only)\n", ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
         display_put("  - discovered #bb:  " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
