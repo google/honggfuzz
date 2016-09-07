@@ -209,8 +209,8 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                                  .customCnt = 0ULL,
                                  .bbCnt = 0ULL,
                                  .newBBCnt = 0ULL,
-                                 .softCnt = 0ULL,
-                                 .softCntSec = 0ULL,
+                                 .softCntPc = 0ULL,
+                                 .softCntCmp = 0ULL,
                                  },
                       .perfMmapBuf = NULL,
                       .perfMmapAux = NULL,
@@ -294,13 +294,13 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     MX_SCOPED_LOCK(&hfuzz->dynfileq_mutex);
 
-    uint64_t softCnt = 0UL;
-    uint64_t softCntSec = 0UL;
+    uint64_t softCntPc = 0UL;
+    uint64_t softCntCmp = 0UL;
     if (hfuzz->bbFd != -1) {
-        softCnt = ATOMIC_GET(hfuzz->feedback->pidFeedback[fuzzer->fuzzNo]);
-        ATOMIC_CLEAR(hfuzz->feedback->pidFeedback[fuzzer->fuzzNo]);
-        softCntSec = ATOMIC_GET(hfuzz->feedback->pidFeedbackSec[fuzzer->fuzzNo]);
-        ATOMIC_CLEAR(hfuzz->feedback->pidFeedbackSec[fuzzer->fuzzNo]);
+        softCntPc = ATOMIC_GET(hfuzz->feedback->pidFeedbackPc[fuzzer->fuzzNo]);
+        ATOMIC_CLEAR(hfuzz->feedback->pidFeedbackPc[fuzzer->fuzzNo]);
+        softCntCmp = ATOMIC_GET(hfuzz->feedback->pidFeedbackCmp[fuzzer->fuzzNo]);
+        ATOMIC_CLEAR(hfuzz->feedback->pidFeedbackCmp[fuzzer->fuzzNo]);
     }
 
     int64_t diff0 = hfuzz->linux.hwCnts.cpuInstrCnt - fuzzer->linux.hwCnts.cpuInstrCnt;
@@ -311,24 +311,24 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      * Coverage is the primary counter, the rest is secondary, and taken into consideration only
      * if the coverage counter has not been changed
      */
-    if (fuzzer->linux.hwCnts.newBBCnt > 0 || softCnt > 0 || softCntSec > 0 || diff0 < 0 || diff1 < 0
-        || diff2 < 0) {
+    if (fuzzer->linux.hwCnts.newBBCnt > 0 || softCntPc > 0 || softCntCmp > 0 || diff0 < 0
+        || diff1 < 0 || diff2 < 0) {
         hfuzz->linux.hwCnts.cpuInstrCnt = fuzzer->linux.hwCnts.cpuInstrCnt;
         hfuzz->linux.hwCnts.cpuBranchCnt = fuzzer->linux.hwCnts.cpuBranchCnt;
         hfuzz->linux.hwCnts.customCnt = fuzzer->linux.hwCnts.customCnt;
         hfuzz->linux.hwCnts.bbCnt += fuzzer->linux.hwCnts.newBBCnt;
-        hfuzz->linux.hwCnts.softCnt += softCnt;
-        hfuzz->linux.hwCnts.softCntSec += softCntSec;
+        hfuzz->linux.hwCnts.softCntPc += softCntPc;
+        hfuzz->linux.hwCnts.softCntCmp += softCntCmp;
 
         LOG_I
             ("New file size: %zu, Feedback: New (instr,branch,soft,perf,custom): %" PRIu64 "/%"
              PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Total: %" PRIu64 "/%" PRIu64
              "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
-             fuzzer->linux.hwCnts.cpuInstrCnt, fuzzer->linux.hwCnts.cpuBranchCnt, softCnt,
-             softCntSec, fuzzer->linux.hwCnts.newBBCnt, fuzzer->linux.hwCnts.customCnt,
+             fuzzer->linux.hwCnts.cpuInstrCnt, fuzzer->linux.hwCnts.cpuBranchCnt, softCntPc,
+             softCntCmp, fuzzer->linux.hwCnts.newBBCnt, fuzzer->linux.hwCnts.customCnt,
              hfuzz->linux.hwCnts.cpuInstrCnt, hfuzz->linux.hwCnts.cpuBranchCnt,
-             hfuzz->linux.hwCnts.softCnt, hfuzz->linux.hwCnts.softCntSec, hfuzz->linux.hwCnts.bbCnt,
-             hfuzz->linux.hwCnts.customCnt);
+             hfuzz->linux.hwCnts.softCntPc, hfuzz->linux.hwCnts.softCntCmp,
+             hfuzz->linux.hwCnts.bbCnt, hfuzz->linux.hwCnts.customCnt);
 
         fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }

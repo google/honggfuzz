@@ -82,7 +82,7 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             pos = ((br->from << 12) ^ (br->to & 0xFFF));
         }
         pos &= _HF_PERF_BITMAP_MASK;
-        register uint8_t prev = ATOMIC_BTS(hfuzz->feedback->bbMap, pos);
+        register uint8_t prev = ATOMIC_BTS(hfuzz->feedback->bbMapPc, pos);
         if (!prev) {
             fuzzer->linux.hwCnts.newBBCnt++;
         }
