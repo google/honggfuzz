@@ -72,7 +72,7 @@ static double getCpuUse()
 {
     static uint64_t prevIdleT = 0UL;
 
-    FILE *f = fopen("/proc/stat", "r");
+    FILE *f = fopen("/proc/stat", "re");
     if (f == NULL) {
         return NAN;
     }
@@ -146,10 +146,9 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put(" (out of: " ESC_BOLD "%zu" ESC_RESET " [" ESC_BOLD "%.2f" ESC_RESET
                     "%%])", hfuzz->mutationsMax, exeProgress);
     }
-    display_put("\n");
     char start_time_str[128];
     util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
-    display_put("Run time: " ESC_BOLD "%s" ESC_RESET " (since: " ESC_BOLD "%s" ESC_RESET
+    display_put("\nRun time: " ESC_BOLD "%s" ESC_RESET " (since: " ESC_BOLD "%s" ESC_RESET
                 ")\n", time_elapsed_str, start_time_str);
     display_put("Input file/dir: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
     display_put("Fuzzed cmd: '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
@@ -160,11 +159,11 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     double cpuUse = getCpuUse();
     display_put("Fuzzing threads: " ESC_BOLD "%zu" ESC_RESET ", CPUs: " ESC_BOLD "%ld" ESC_RESET
-                ", CPU: " ESC_BOLD "%.1lf" ESC_RESET "%% (" ESC_BOLD "%.1lf" ESC_RESET "%%/CPU)",
+                ", CPU: " ESC_BOLD "%.1lf" ESC_RESET "%% (" ESC_BOLD "%.1lf" ESC_RESET "%%/CPU)\n",
                 hfuzz->threadsMax, sysconf(_SC_NPROCESSORS_ONLN), cpuUse,
                 cpuUse / sysconf(_SC_NPROCESSORS_ONLN));
 
-    display_put("\n%s per second: " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET
+    display_put("%s per second: " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET
                 " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n",
                 hfuzz->persistent ? "Rounds" : "Execs", exec_per_sec,
                 elapsed_second ? (curr_exec_cnt / elapsed_second) : 0);
