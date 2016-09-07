@@ -118,7 +118,7 @@ typedef struct {
     uint64_t bbCnt;
     uint64_t newBBCnt;
     uint64_t softCnt;
-    uint64_t softCntMax;
+    uint64_t softCntSec;
 } hwcnt_t;
 
 /* Sanitizer coverage specific data structures */
@@ -187,8 +187,8 @@ struct dynfile_t {
 #define _HF_THREAD_MAX 1024U
 typedef struct {
     uint8_t bbMap[_HF_PERF_BITMAP_SIZE_16M];
-    uint32_t pidFeedback[_HF_THREAD_MAX];
-    uint32_t maxFeedback[_HF_THREAD_MAX];
+    uint64_t pidFeedback[_HF_THREAD_MAX];
+    uint64_t pidFeedbackSec[_HF_THREAD_MAX];
 } feedback_t;
 
 typedef struct {

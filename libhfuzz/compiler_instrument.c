@@ -11,11 +11,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#if defined(_HF_ARCH_LINUX)
-#include <asm/prctl.h>
-#include <sys/prctl.h>
-#include <sys/syscall.h>
-#endif                          // defined(_HF_ARCH_LINUX)
 
 #include "../util.h"
 
@@ -31,7 +26,7 @@ static void mapBBFallback(void)
     feedback =
         mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
     feedback->pidFeedback[my_thread_no] = 0U;
-    feedback->maxFeedback[my_thread_no] = 0U;
+    feedback->pidFeedbackSec[my_thread_no] = 0U;
 }
 
 __attribute__ ((constructor))
@@ -66,11 +61,7 @@ static void mapBB(void)
         _exit(1);
     }
     feedback->pidFeedback[my_thread_no] = 0U;
-    if (__sanitizer_get_total_unique_coverage == NULL) {
-        feedback->maxFeedback[my_thread_no] = 0U;
-    } else {
-        feedback->maxFeedback[my_thread_no] = (uint64_t) __sanitizer_get_total_unique_coverage();
-    }
+    feedback->pidFeedbackSec[my_thread_no] = 0U;
 }
 
 /*
@@ -114,32 +105,22 @@ void __sanitizer_cov_trace_pc_indir(void *callee)
     }
 }
 
-static inline void incGs(unsigned long val UNUSED)
-{
-#if defined(__x86_64__) && defined(_HF_ARCH_LINUX)
-    unsigned long gs;
-    syscall(__NR_arch_prctl, ARCH_GET_GS, &gs);
-    gs += val;
-    syscall(__NR_arch_prctl, ARCH_SET_GS, gs);
-#endif
-}
-
 void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Arg2)
 {
-    incGs(8U - __builtin_popcount(Arg1 ^ Arg2));
+    ATOMIC_POST_ADD(feedback->pidFeedbackSec[my_thread_no], 8U - __builtin_popcount(Arg1 ^ Arg2));
 }
 
 void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2)
 {
-    incGs(16U - __builtin_popcount(Arg1 ^ Arg2));
+    ATOMIC_POST_ADD(feedback->pidFeedbackSec[my_thread_no], 16U - __builtin_popcount(Arg1 ^ Arg2));
 }
 
 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2)
 {
-    incGs(32U - __builtin_popcount(Arg1 ^ Arg2));
+    ATOMIC_POST_ADD(feedback->pidFeedbackSec[my_thread_no], 32U - __builtin_popcount(Arg1 ^ Arg2));
 }
 
 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2)
 {
-    incGs(64U - __builtin_popcountll(Arg1 ^ Arg2));
+    ATOMIC_POST_ADD(feedback->pidFeedbackSec[my_thread_no], 64U - __builtin_popcount(Arg1 ^ Arg2));
 }

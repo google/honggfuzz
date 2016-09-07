@@ -221,11 +221,10 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_SOFT) {
         uint64_t softCnt = ATOMIC_GET(hfuzz->linux.hwCnts.softCnt);
-        uint64_t softCntMax = ATOMIC_GET(hfuzz->linux.hwCnts.softCntMax);
-        double softCntFrac = (softCntMax != 0) ? ((double)softCnt / softCntMax) : 0.0l;
+        uint64_t softCntSec = ATOMIC_GET(hfuzz->linux.hwCnts.softCntSec);
         display_put("  - functions seen:  " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
-                    " (max: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
-                    " - %.2lf%%)\n", softCnt, softCntMax, softCntFrac);
+                    ", secondary cnt: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET "\n",
+                    softCnt, softCntSec);
     }
 
     /* Sanitizer coverage specific counters */
