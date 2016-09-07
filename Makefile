@@ -53,6 +53,10 @@ ifeq ($(OS),Linux)
         ARCH_CFLAGS += -I/usr/local/include
         ARCH_LDFLAGS += -L/usr/local/lib -lipt -Wl,--rpath=/usr/local/lib
     endif
+    ifeq ($(MARCH),$(filter $(MARCH),x86_64 i386))
+           # Support for popcnt (used in libhfuzz)
+           ARCH_CFLAGS += -msse4.2
+    endif
     ifeq ("$(wildcard /usr/include/intel-pt.h)","/usr/include/intel-pt.h")
         ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
         ARCH_LDFLAGS += -lipt
