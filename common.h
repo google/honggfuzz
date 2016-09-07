@@ -187,6 +187,7 @@ struct dynfile_t {
 #define _HF_THREAD_MAX 1024U
 typedef struct {
     uint8_t bbMap[_HF_PERF_BITMAP_SIZE_16M];
+    uint8_t bbMapSec[_HF_PERF_BITMAP_SIZE_16M];
     uint64_t pidFeedback[_HF_THREAD_MAX];
     uint64_t pidFeedbackSec[_HF_THREAD_MAX];
 } feedback_t;

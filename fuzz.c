@@ -306,20 +306,19 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int64_t diff0 = hfuzz->linux.hwCnts.cpuInstrCnt - fuzzer->linux.hwCnts.cpuInstrCnt;
     int64_t diff1 = hfuzz->linux.hwCnts.cpuBranchCnt - fuzzer->linux.hwCnts.cpuBranchCnt;
     int64_t diff2 = hfuzz->linux.hwCnts.customCnt - fuzzer->linux.hwCnts.customCnt;
-    int64_t diff3 = hfuzz->linux.hwCnts.softCntSec - softCntSec;
 
     /*
      * Coverage is the primary counter, the rest is secondary, and taken into consideration only
      * if the coverage counter has not been changed
      */
-    if (fuzzer->linux.hwCnts.newBBCnt > 0 || softCnt > 0 || diff0 < 0 || diff1 < 0 || diff2 < 0
-        || diff3 < 0) {
+    if (fuzzer->linux.hwCnts.newBBCnt > 0 || softCnt > 0 || softCntSec > 0 || diff0 < 0 || diff1 < 0
+        || diff2 < 0) {
         hfuzz->linux.hwCnts.cpuInstrCnt = fuzzer->linux.hwCnts.cpuInstrCnt;
         hfuzz->linux.hwCnts.cpuBranchCnt = fuzzer->linux.hwCnts.cpuBranchCnt;
         hfuzz->linux.hwCnts.customCnt = fuzzer->linux.hwCnts.customCnt;
         hfuzz->linux.hwCnts.bbCnt += fuzzer->linux.hwCnts.newBBCnt;
         hfuzz->linux.hwCnts.softCnt += softCnt;
-        hfuzz->linux.hwCnts.softCntSec = softCntSec;
+        hfuzz->linux.hwCnts.softCntSec += softCntSec;
 
         LOG_I
             ("New file size: %zu, Feedback: New (instr,branch,soft,perf,custom): %" PRIu64 "/%"

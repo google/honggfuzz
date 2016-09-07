@@ -83,7 +83,8 @@ void __cyg_profile_func_exit(void *func UNUSED, void *caller UNUSED)
 }
 
 /*
- * -fsanitize=<address|memory|leak|undefined> -fsanitize-coverage=trace-pc,indirect-calls
+ * -fsanitize=<address|memory|leak|undefined>
+ * -fsanitize-coverage=trace-pc,indirect-calls,trace-cmp
  */
 void __sanitizer_cov_trace_pc(void)
 {
@@ -107,20 +108,40 @@ void __sanitizer_cov_trace_pc_indir(void *callee)
 
 void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Arg2)
 {
-    ATOMIC_POST_ADD(feedback->pidFeedbackSec[my_thread_no], 8U - __builtin_popcount(Arg1 ^ Arg2));
+    uintptr_t pos = (uintptr_t) __builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
+    register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
+    uint8_t prev = ATOMIC_POST_OR_RELAXED(feedback->bbMapSec[pos], v);
+    if (prev < v) {
+        ATOMIC_POST_ADD(feedback->pidFeedbackSec[my_thread_no], v - prev);
+    }
 }
 
 void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2)
 {
-    ATOMIC_POST_ADD(feedback->pidFeedbackSec[my_thread_no], 16U - __builtin_popcount(Arg1 ^ Arg2));
+    uintptr_t pos = (uintptr_t) __builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
+    register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
+    uint8_t prev = ATOMIC_POST_OR_RELAXED(feedback->bbMapSec[pos], v);
+    if (prev < v) {
+        ATOMIC_POST_ADD(feedback->pidFeedbackSec[my_thread_no], v - prev);
+    }
 }
 
 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2)
 {
-    ATOMIC_POST_ADD(feedback->pidFeedbackSec[my_thread_no], 32U - __builtin_popcount(Arg1 ^ Arg2));
+    uintptr_t pos = (uintptr_t) __builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
+    register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
+    uint8_t prev = ATOMIC_POST_OR_RELAXED(feedback->bbMapSec[pos], v);
+    if (prev < v) {
+        ATOMIC_POST_ADD(feedback->pidFeedbackSec[my_thread_no], v - prev);
+    }
 }
 
 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2)
 {
-    ATOMIC_POST_ADD(feedback->pidFeedbackSec[my_thread_no], 64U - __builtin_popcount(Arg1 ^ Arg2));
+    uintptr_t pos = (uintptr_t) __builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
+    register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcountll(Arg1 ^ Arg2));
+    uint8_t prev = ATOMIC_POST_OR_RELAXED(feedback->bbMapSec[pos], v);
+    if (prev < v) {
+        ATOMIC_POST_ADD(feedback->pidFeedbackSec[my_thread_no], v - prev);
+    }
 }
