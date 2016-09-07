@@ -489,9 +489,10 @@ uint8_t *files_mapFileShared(char *fileName, off_t * fileSz, int *fd)
     return buf;
 }
 
-void *files_mapSharedMem(size_t sz, int *fd)
+void *files_mapSharedMem(size_t sz, int *fd, const char *dir)
 {
-    char template[] = "/tmp/hfuzz.XXXXXX";
+    char template[PATH_MAX];
+    snprintf(template, sizeof(template), "%s/hfuzz.XXXXXX", dir);
     if ((*fd = mkstemp(template)) == -1) {
         PLOG_W("mkstemp('%s')", template);
         return MAP_FAILED;
