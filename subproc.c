@@ -318,3 +318,41 @@ void subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     arch_reapChild(hfuzz, fuzzer);
 }
+
+uint8_t subproc_System(const char *const argv[])
+{
+    pid_t pid = fork();
+    if (pid == -1) {
+        PLOG_E("Couldn't fork");
+        return false;
+    }
+
+    if (!pid) {
+        execv(argv[0], (char *const *)&argv[0]);
+        PLOG_F("Couldn't execute '%s'", argv[0]);
+        return false;
+    }
+
+    int status;
+    int flags = 0;
+#if defined(__WNOTHREAD)
+    flags |= __WNOTHREAD;
+#endif                          /* defined(__WNOTHREAD) */
+    while (wait4(pid, &status, flags, NULL) != pid) ;
+    if (WIFSIGNALED(status)) {
+        LOG_E("Command '%s' terminated with signal: %d", argv[0], WTERMSIG(status));
+        return (100 + WTERMSIG(status));
+    }
+    if (!WIFEXITED(status)) {
+        LOG_F("Command '%s' terminated abnormally, status: %d", argv[0], status);
+        return 100;
+    }
+
+    LOG_D("Command '%s' exited with: %d", argv[0], WEXITSTATUS(status));
+
+    if (WEXITSTATUS(status)) {
+        return 1U;
+    }
+
+    return 0U;
+}

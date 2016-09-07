@@ -39,5 +39,6 @@ extern bool subproc_PrepareExecv(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const c
 extern bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
 extern void subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
 extern bool subproc_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
+extern uint8_t subproc_System(const char *const argv[]);
 
 #endif

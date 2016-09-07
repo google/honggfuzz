@@ -40,7 +40,6 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -140,39 +139,12 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     LOG_D("Created '%s' as an input file", fuzzer->fileName);
 
-    pid_t pid = fork();
-    if (pid == -1) {
-        PLOG_E("Couldn't fork");
+    const char *const argv[] = { hfuzz->externalCommand, fuzzer->fileName, NULL };
+    if (subproc_System(argv) != 0) {
+        LOG_E("Subprocess '%s' returned abnormally", hfuzz->externalCommand);
         return false;
     }
-
-    if (!pid) {
-        /*
-         * child performs the external file modifications
-         */
-        execl(hfuzz->externalCommand, hfuzz->externalCommand, fuzzer->fileName, NULL);
-        PLOG_F("Couldn't execute '%s %s'", hfuzz->externalCommand, fuzzer->fileName);
-        return false;
-    }
-
-    /*
-     * parent waits until child is done fuzzing the input file
-     */
-    int childStatus;
-    int flags = 0;
-#if defined(__WNOTHREAD)
-    flags |= __WNOTHREAD;
-#endif                          /* defined(__WNOTHREAD) */
-    while (wait4(pid, &childStatus, flags, NULL) != pid) ;
-    if (WIFSIGNALED(childStatus)) {
-        LOG_E("External command terminated with signal %d", WTERMSIG(childStatus));
-        return false;
-    }
-    if (!WIFEXITED(childStatus)) {
-        LOG_F("External command terminated abnormally, status: %d", childStatus);
-        return false;
-    }
-    LOG_D("External command exited with status %d", WEXITSTATUS(childStatus));
+    LOG_D("Subporcess '%s' finished with success", hfuzz->externalCommand);
 
     ssize_t rsz = files_readFileToBufMax(fuzzer->fileName, fuzzer->dynamicFile, hfuzz->maxFileSz);
     if (rsz < 0) {
