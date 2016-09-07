@@ -322,11 +322,6 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     MX_SCOPED_LOCK(&hfuzz->dynfileq_mutex);
 
-    int64_t diff0 = hfuzz->linux.hwCnts.cpuInstrCnt - fuzzer->linux.hwCnts.cpuInstrCnt;
-    int64_t diff1 = hfuzz->linux.hwCnts.cpuBranchCnt - fuzzer->linux.hwCnts.cpuBranchCnt;
-    int64_t diff2 = hfuzz->linux.hwCnts.customCnt - fuzzer->linux.hwCnts.customCnt;
-    int64_t diff3 = hfuzz->linux.hwCnts.softCntSec - fuzzer->linux.hwCnts.softCntSec;
-
     uint64_t softCnt = 0UL;
     uint64_t softCntSec = 0UL;
     if (hfuzz->bbFd != -1) {
@@ -335,6 +330,11 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         softCntSec = ATOMIC_GET(hfuzz->feedback->pidFeedbackSec[fuzzer->fuzzNo]);
         ATOMIC_CLEAR(hfuzz->feedback->pidFeedbackSec[fuzzer->fuzzNo]);
     }
+
+    int64_t diff0 = hfuzz->linux.hwCnts.cpuInstrCnt - fuzzer->linux.hwCnts.cpuInstrCnt;
+    int64_t diff1 = hfuzz->linux.hwCnts.cpuBranchCnt - fuzzer->linux.hwCnts.cpuBranchCnt;
+    int64_t diff2 = hfuzz->linux.hwCnts.customCnt - fuzzer->linux.hwCnts.customCnt;
+    int64_t diff3 = hfuzz->linux.hwCnts.softCntSec - softCntSec;
 
     /*
      * Coverage is the primary counter, the rest is secondary, and taken into consideration only
