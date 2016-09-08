@@ -14,27 +14,18 @@
 
 #include "../util.h"
 
-static feedback_t *feedback;
+static feedback_t bbMapFb;
+static feedback_t *feedback = &bbMapFb;
 static uint32_t my_thread_no = 0;
 
 __attribute__ ((weak))
 uintptr_t __sanitizer_get_total_unique_coverage();
-
-/* Fall-back mode, just map the buffer to avoid SIGSEGV in __cyg_profile_func_enter */
-static void mapBBFallback(void)
-{
-    feedback =
-        mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-    feedback->pidFeedbackPc[my_thread_no] = 0U;
-    feedback->pidFeedbackCmp[my_thread_no] = 0U;
-}
 
 __attribute__ ((constructor))
 static void mapBB(void)
 {
     char *my_thread_no_str = getenv(_HF_THREAD_NO_ENV);
     if (my_thread_no_str == NULL) {
-        mapBBFallback();
         return;
     }
     my_thread_no = atoi(my_thread_no_str);
@@ -46,7 +37,6 @@ static void mapBB(void)
     }
     struct stat st;
     if (fstat(_HF_BITMAP_FD, &st) == -1) {
-        mapBBFallback();
         return;
     }
     if (st.st_size != sizeof(feedback_t)) {
