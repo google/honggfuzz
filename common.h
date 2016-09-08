@@ -81,7 +81,7 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 
 /* Perf bitmap size */
 #define _HF_PERF_BITMAP_SIZE_16M (1024U * 1024U * 16U)
-#define _HF_PERF_BITMAP_MASK 0x7ffffff
+#define _HF_PERF_BITMAP_BITSZ_MASK 0x7ffffff
 
 #if defined(__ANDROID__)
 #define _HF_MONITOR_SIGABRT 0
