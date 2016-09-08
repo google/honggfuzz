@@ -110,8 +110,9 @@ void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Arg2)
 {
     uintptr_t pos = (uintptr_t) __builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
-    uint8_t prev = ATOMIC_POST_OR_RELAXED(feedback->bbMapCmp[pos], v);
+    uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
     if (prev < v) {
+        ATOMIC_SET(feedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(feedback->pidFeedbackCmp[my_thread_no], v - prev);
     }
 }
@@ -120,8 +121,9 @@ void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2)
 {
     uintptr_t pos = (uintptr_t) __builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
-    uint8_t prev = ATOMIC_POST_OR_RELAXED(feedback->bbMapCmp[pos], v);
+    uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
     if (prev < v) {
+        ATOMIC_SET(feedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(feedback->pidFeedbackCmp[my_thread_no], v - prev);
     }
 }
@@ -130,8 +132,9 @@ void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2)
 {
     uintptr_t pos = (uintptr_t) __builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
-    uint8_t prev = ATOMIC_POST_OR_RELAXED(feedback->bbMapCmp[pos], v);
+    uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
     if (prev < v) {
+        ATOMIC_SET(feedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(feedback->pidFeedbackCmp[my_thread_no], v - prev);
     }
 }
@@ -140,8 +143,9 @@ void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2)
 {
     uintptr_t pos = (uintptr_t) __builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcountll(Arg1 ^ Arg2));
-    uint8_t prev = ATOMIC_POST_OR_RELAXED(feedback->bbMapCmp[pos], v);
+    uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
     if (prev < v) {
+        ATOMIC_SET(feedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(feedback->pidFeedbackCmp[my_thread_no], v - prev);
     }
 }
