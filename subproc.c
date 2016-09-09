@@ -324,13 +324,13 @@ uint8_t subproc_System(const char *const argv[])
     pid_t pid = fork();
     if (pid == -1) {
         PLOG_E("Couldn't fork");
-        return false;
+        return 255;
     }
 
     if (!pid) {
         execv(argv[0], (char *const *)&argv[0]);
         PLOG_F("Couldn't execute '%s'", argv[0]);
-        return false;
+        return 255;
     }
 
     int status;
