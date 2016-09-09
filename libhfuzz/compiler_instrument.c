@@ -140,11 +140,15 @@ void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2)
     }
 }
 
+/*
+ * Cases[0] is number of comparison entries
+ * Cases[1] is length of Val in bytes
+ */
 void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t * Cases)
 {
     for (uint64_t i = 0; i < Cases[0]; i++) {
         uintptr_t pos = ((uintptr_t) __builtin_return_address(0) + i) % _HF_PERF_BITMAP_SIZE_16M;
-        uint8_t v = ((sizeof(uint64_t) * 8) - __builtin_popcountl(Val ^ Cases[i + 2]));
+        uint8_t v = ((Cases[1] * 8) - __builtin_popcountl(Val ^ Cases[i + 2]));
         uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
         if (prev < v) {
             ATOMIC_SET(feedback->bbMapCmp[pos], v);
