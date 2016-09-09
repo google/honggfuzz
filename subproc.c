@@ -351,6 +351,7 @@ uint8_t subproc_System(const char *const argv[])
     LOG_D("Command '%s' exited with: %d", argv[0], WEXITSTATUS(status));
 
     if (WEXITSTATUS(status)) {
+        LOG_W("Command '%s' exited with code: %d", argv[0], WEXITSTATUS(status));
         return 1U;
     }
 
