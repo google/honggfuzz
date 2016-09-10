@@ -194,6 +194,9 @@ all: $(BIN) $(HFUZZ_ARCH)
 $(BIN): $(OBJS)
 	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
 
+$(LIBS_OBJS): $(LIBS_SRCS)
+	$(CC) -fPIC -fno-builtin -c $(CFLAGS) -o $@ $<
+
 $(HFUZZ_ARCH): $(LIBS_OBJS)
 	$(AR) rcs $(HFUZZ_ARCH) $(LIBS_OBJS)
 
