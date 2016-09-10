@@ -21,7 +21,7 @@
  *
  */
 
-#include "common.h"
+#include "../common.h"
 #include "ptrace_utils.h"
 
 #include <ctype.h>
@@ -38,7 +38,6 @@
 #include <sys/cdefs.h>
 #include <sys/personality.h>
 #include <sys/ptrace.h>
-#include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -50,12 +49,13 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "files.h"
-#include "linux/bfd.h"
-#include "linux/unwind.h"
-#include "log.h"
-#include "sancov.h"
-#include "util.h"
+#include "../files.h"
+#include "../log.h"
+#include "../sancov.h"
+#include "../subproc.h"
+#include "../util.h"
+#include "bfd.h"
+#include "unwind.h"
 
 #if defined(__ANDROID__)
 #include "capstone.h"
@@ -338,56 +338,63 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
     return memsz;
 }
 
-void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid UNUSED, uint64_t * cnt UNUSED)
+void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt UNUSED)
 {
     if ((hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) == 0) {
         return;
     }
-#if defined(__i386__) || defined(__x86_64__)
-    HEADERS_STRUCT regs;
-    struct iovec pt_iov = {
-        .iov_base = &regs,
-        .iov_len = sizeof(regs),
+
+    if (hfuzz->persistent) {
+        ptrace(PTRACE_INTERRUPT, pid, 0, 0);
+        arch_ptraceWaitForPidStop(pid);
+    }
+
+    defer {
+        if (hfuzz->persistent) {
+            ptrace(PTRACE_CONT, pid, 0, 0);
+        }
     };
 
-    if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
-        PLOG_D("ptrace(PTRACE_GETREGSET) failed");
-
-        // If PTRACE_GETREGSET fails, try PTRACE_GETREGS if available
-#if PTRACE_GETREGS_AVAILABLE
-        if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
-            PLOG_D("ptrace(PTRACE_GETREGS) failed");
-            LOG_W("ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to extract target registers");
-            return;
-        }
-#else
-        return;
-#endif
-    }
-
-    /*
-     * 32-bit
-     */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)&regs;
-        *cnt = (uint64_t) r32->gs;
+#if defined(__x86_64__)
+    struct user_regs_struct_64 regs;
+    if (ptrace(PTRACE_GETREGS, pid, 0, &regs) != -1) {
+        *cnt = regs.gs_base;
         return;
     }
-
-    /*
-     * 64-bit
-     */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)&regs;
-        *cnt = (uint64_t) r64->gs_base;
-        return;
-    }
-
-    LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
-#endif                          /* defined(__i386__) || defined(__x86_64__) */
+#endif                          /*       defined(__x86_64__) */
+    *cnt = 0ULL;
 }
 
-static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg)
+void arch_ptraceSetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t cnt UNUSED)
+{
+    if ((hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) == 0) {
+        return;
+    }
+
+    if (hfuzz->persistent) {
+        ptrace(PTRACE_INTERRUPT, pid, 0, 0);
+        arch_ptraceWaitForPidStop(pid);
+    }
+
+    defer {
+        if (hfuzz->persistent) {
+            ptrace(PTRACE_CONT, pid, 0, 0);
+        }
+    };
+
+#if defined(__x86_64__)
+    struct user_regs_struct_64 regs;
+    if (ptrace(PTRACE_GETREGS, pid, 0, &regs) == -1) {
+        return;
+    }
+    regs.gs_base = cnt;
+    if (ptrace(PTRACE_SETREGS, pid, 0, &regs) == -1) {
+        return;
+    }
+#endif                          /*            defined(__x86_64__) */
+}
+
+static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg UNUSED)
 {
     /*
      * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
@@ -681,7 +688,7 @@ static void arch_ptraceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fu
     if (funcCnt == 0) {
         if (pc) {
             /* Manually update major frame PC & frames counter */
-            funcs[0].pc = (void *)pc;
+            funcs[0].pc = (void *)(uintptr_t) pc;
             funcCnt = 1;
         } else {
             return;
@@ -747,7 +754,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     if (funcCnt == 0) {
         if (pc) {
             /* Manually update major frame PC & frames counter */
-            funcs[0].pc = (void *)pc;
+            funcs[0].pc = (void *)(uintptr_t) pc;
             funcCnt = 1;
         } else {
             saveUnique = false;
@@ -896,13 +903,13 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
 
     char *lineptr = NULL, *cAddr = NULL;
     size_t n = 0;
+    defer {
+        free(lineptr);
+    };
     for (;;) {
         if (getline(&lineptr, &n, fReport) == -1) {
             break;
         }
-        defer {
-            free(lineptr);
-        };
 
         /* First step is to identify header */
         if (headerFound == false) {
@@ -1314,8 +1321,9 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
     };
 
     for (;;) {
-        struct dirent de, *res;
-        if (readdir_r(dir, &de, &res) > 0) {
+        errno = 0;
+        struct dirent *res = readdir(dir);
+        if (res == NULL && errno != 0) {
             PLOG_E("Couldn't read contents of '%s'", path);
             return false;
         }
@@ -1369,7 +1377,8 @@ bool arch_ptraceWaitForPidStop(pid_t pid)
 bool arch_ptraceAttach(pid_t pid)
 {
     static const long seize_options =
-        PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACEEXIT;
+        PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACEEXIT |
+        PTRACE_O_EXITKILL;
 
     if (ptrace(PTRACE_SEIZE, pid, NULL, seize_options) == -1) {
         PLOG_W("Couldn't ptrace(PTRACE_SEIZE) to pid: %d", pid);

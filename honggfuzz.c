@@ -71,13 +71,15 @@ static void setupTimer(void)
 
 static void setupSignalsPreThr(void)
 {
-    /* Block signals which should be handled by the main thread */
+    /* Block signals which should be handled or blocked in the main thread */
     sigset_t ss;
     sigemptyset(&ss);
     sigaddset(&ss, SIGTERM);
     sigaddset(&ss, SIGINT);
     sigaddset(&ss, SIGQUIT);
     sigaddset(&ss, SIGALRM);
+    sigaddset(&ss, SIGPIPE);
+    sigaddset(&ss, SIGIO);
     if (sigprocmask(SIG_BLOCK, &ss, NULL) != 0) {
         PLOG_F("pthread_sigmask(SIG_BLOCK)");
     }
@@ -147,6 +149,13 @@ int main(int argc, char **argv)
         LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.blacklistFile);
     }
 
+    if (hfuzz.dynFileMethod != _HF_DYNFILE_NONE) {
+        hfuzz.feedback = files_mapSharedMem(sizeof(feedback_t), &hfuzz.bbFd, hfuzz.workDir);
+        if (hfuzz.feedback == MAP_FAILED) {
+            LOG_F("files_mapSharedMem(sz=%zu, dir='%s') failed", sizeof(feedback_t), hfuzz.workDir);
+        }
+    }
+
     /*
      * So far so good
      */
@@ -170,6 +179,7 @@ int main(int argc, char **argv)
 
     if (sigReceived > 0) {
         LOG_I("Signal %d (%s) received, terminating", sigReceived, strsignal(sigReceived));
+        return EXIT_SUCCESS;
     }
 
     /* Clean-up global buffers */

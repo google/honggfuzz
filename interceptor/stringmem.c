@@ -176,12 +176,12 @@ OPTIMIZATION_OFF
     return NULL;
 }
 
-int _CMP_EQ(unsigned long a, unsigned long b)
+int _CMP_EQ(unsigned long long a, unsigned long long b)
 {
     return (__memcmp(&a, &b, sizeof(a)) == 0);
 }
 
-int _CMP_NEQ(unsigned long a, unsigned long b)
+int _CMP_NEQ(unsigned long long a, unsigned long long b)
 {
     return (__memcmp(&a, &b, sizeof(a)) != 0);
 }

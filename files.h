@@ -25,6 +25,7 @@
 #define _HF_FILES_H_
 
 #include <stdint.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 extern bool files_init(honggfuzz_t * hfuzz);
@@ -52,6 +53,10 @@ extern bool files_copyFile(const char *source, const char *destination, bool * d
 extern bool files_parseBlacklist(honggfuzz_t * hfuzz);
 
 extern uint8_t *files_mapFile(char *fileName, off_t * fileSz, int *fd, bool isWritable);
+
+extern uint8_t *files_mapFileShared(char *fileName, off_t * fileSz, int *fd);
+
+extern void *files_mapSharedMem(size_t sz, int *fd, const char *dir);
 
 extern bool files_readPidFromFile(const char *fileName, pid_t * pidPtr);
 

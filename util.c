@@ -21,6 +21,9 @@
  *
  */
 
+#include "common.h"
+#include "util.h"
+
 #include <fcntl.h>
 #include <inttypes.h>
 #include <math.h>
@@ -37,7 +40,6 @@
 #include <unistd.h>
 #include <ctype.h>
 
-#include "common.h"
 #include "files.h"
 #include "log.h"
 
@@ -55,6 +57,17 @@ void *util_Calloc(size_t sz)
     void *p = util_Malloc(sz);
     memset(p, '\0', sz);
     return p;
+}
+
+extern void *util_Realloc(void *ptr, size_t sz)
+{
+    void *ret = realloc(ptr, sz);
+    if (ret == NULL) {
+        PLOG_W("realloc(%p, %zu)", ptr, sz);
+        free(ptr);
+        return NULL;
+    }
+    return ret;
 }
 
 void *util_MMap(size_t sz)
@@ -187,7 +200,7 @@ bool util_redirectStdin(const char *inputFile)
     int fd = open(inputFile, O_RDONLY);
 
     if (fd == -1) {
-        PLOG_E("Couldn't open '%s'", inputFile);
+        PLOG_W("Couldn't open '%s'", inputFile);
         return false;
     }
 

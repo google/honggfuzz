@@ -37,12 +37,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
-#include <sys/resource.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -52,9 +49,8 @@
 #include "mangle.h"
 #include "report.h"
 #include "sancov.h"
+#include "subproc.h"
 #include "util.h"
-
-extern char **environ;
 
 static pthread_t fuzz_mainThread;
 
@@ -66,94 +62,6 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
     snprintf(fileName, PATH_MAX, "%s/.honggfuzz.%d.%lu.%llx.%s", hfuzz->workDir, (int)getpid(),
              (unsigned long int)tv.tv_sec, (unsigned long long int)util_rndGet(0, 1ULL << 62),
              hfuzz->fileExtn);
-}
-
-static bool fuzz_prepareExecve(honggfuzz_t * hfuzz, const char *fileName)
-{
-    /*
-     * Set timeout (prof), real timeout (2*prof), and rlimit_cpu (2*prof)
-     */
-    if (hfuzz->persistent == false && hfuzz->tmOut) {
-        struct itimerval it;
-
-        /*
-         * The hfuzz->tmOut is real CPU usage time...
-         */
-        it.it_value.tv_sec = hfuzz->tmOut;
-        it.it_value.tv_usec = 0;
-        it.it_interval.tv_sec = 0;
-        it.it_interval.tv_usec = 0;
-        if (setitimer(ITIMER_PROF, &it, NULL) == -1) {
-            PLOG_D("Couldn't set the ITIMER_PROF timer");
-        }
-
-        /*
-         * ...so, if a process sleeps, this one should
-         * trigger a signal...
-         */
-        it.it_value.tv_sec = hfuzz->tmOut;
-        it.it_value.tv_usec = 0;
-        it.it_interval.tv_sec = 0;
-        it.it_interval.tv_usec = 0;
-        if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
-            PLOG_E("Couldn't set the ITIMER_REAL timer");
-            return false;
-        }
-
-        /*
-         * ..if a process sleeps and catches SIGPROF/SIGALRM
-         * rlimits won't help either. However, arch_checkTimeLimit
-         * will send a SIGKILL at tmOut + 2 seconds. That should
-         * do it :)
-         */
-        struct rlimit rl;
-
-        rl.rlim_cur = hfuzz->tmOut + 1;
-        rl.rlim_max = hfuzz->tmOut + 1;
-        if (setrlimit(RLIMIT_CPU, &rl) == -1) {
-            PLOG_D("Couldn't enforce the RLIMIT_CPU resource limit");
-        }
-    }
-
-    /*
-     * The address space limit. If big enough - roughly the size of RAM used
-     */
-    if (hfuzz->asLimit) {
-        struct rlimit rl = {
-            .rlim_cur = hfuzz->asLimit * 1024ULL * 1024ULL,
-            .rlim_max = hfuzz->asLimit * 1024ULL * 1024ULL,
-        };
-        if (setrlimit(RLIMIT_AS, &rl) == -1) {
-            PLOG_D("Couldn't enforce the RLIMIT_AS resource limit, ignoring");
-        }
-    }
-
-    if (hfuzz->nullifyStdio) {
-        util_nullifyStdio();
-    }
-
-    if (hfuzz->fuzzStdin) {
-        /*
-         * Uglyyyyyy ;)
-         */
-        if (!util_redirectStdin(fileName)) {
-            return false;
-        }
-    }
-
-    if (hfuzz->clearEnv) {
-        environ = NULL;
-    }
-    if (sancov_prepareExecve(hfuzz) == false) {
-        LOG_E("sancov_prepareExecve() failed");
-        return false;
-    }
-    for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs) && hfuzz->envs[i]; i++) {
-        putenv(hfuzz->envs[i]);
-    }
-    setsid();
-
-    return true;
 }
 
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
@@ -231,39 +139,12 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     LOG_D("Created '%s' as an input file", fuzzer->fileName);
 
-    pid_t pid = fork();
-    if (pid == -1) {
-        PLOG_E("Couldn't fork");
+    const char *const argv[] = { hfuzz->externalCommand, fuzzer->fileName, NULL };
+    if (subproc_System(argv) != 0) {
+        LOG_E("Subprocess '%s' returned abnormally", hfuzz->externalCommand);
         return false;
     }
-
-    if (!pid) {
-        /*
-         * child performs the external file modifications
-         */
-        execl(hfuzz->externalCommand, hfuzz->externalCommand, fuzzer->fileName, NULL);
-        PLOG_F("Couldn't execute '%s %s'", hfuzz->externalCommand, fuzzer->fileName);
-        return false;
-    }
-
-    /*
-     * parent waits until child is done fuzzing the input file
-     */
-    int childStatus;
-    int flags = 0;
-#if defined(__WNOTHREAD)
-    flags |= __WNOTHREAD;
-#endif                          /* defined(__WNOTHREAD) */
-    while (wait4(pid, &childStatus, flags, NULL) != pid) ;
-    if (WIFSIGNALED(childStatus)) {
-        LOG_E("External command terminated with signal %d", WTERMSIG(childStatus));
-        return false;
-    }
-    if (!WIFEXITED(childStatus)) {
-        LOG_F("External command terminated abnormally, status: %d", childStatus);
-        return false;
-    }
-    LOG_D("External command exited with status %d", WEXITSTATUS(childStatus));
+    LOG_D("Subporcess '%s' finished with success", hfuzz->externalCommand);
 
     ssize_t rsz = files_readFileToBufMax(fuzzer->fileName, fuzzer->dynamicFile, hfuzz->maxFileSz);
     if (rsz < 0) {
@@ -318,6 +199,8 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                            },
             .report = {'\0'},
             .mainWorker = false,
+            .fuzzNo = crashedFuzzer->fuzzNo,
+            .persistentSock = -1,
 
             .linux = {
                       .hwCnts = {
@@ -326,14 +209,12 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                                  .customCnt = 0ULL,
                                  .bbCnt = 0ULL,
                                  .newBBCnt = 0ULL,
+                                 .softCntPc = 0ULL,
+                                 .softCntCmp = 0ULL,
                                  },
                       .perfMmapBuf = NULL,
                       .perfMmapAux = NULL,
-#if defined(_HF_ARCH_LINUX)
-                      .timerId = (timer_t) 0,
-#endif                          // defined(_HF_ARCH_LINUX)
                       .attachedPid = 0,
-                      .persistentSock = -1,
                       },
         };
 
@@ -349,25 +230,10 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             return false;
         }
 
-        vFuzzer.pid = arch_fork(hfuzz, &vFuzzer);
-        if (vFuzzer.pid == -1) {
-            PLOG_F("Couldn't fork");
-            return false;
+        if (subproc_New(hfuzz, &vFuzzer) == false) {
+            PLOG_F("subproc_New()");
         }
-
-        if (!vFuzzer.pid) {
-            if (fuzz_prepareExecve(hfuzz, crashedFuzzer->crashFileName) == false) {
-                LOG_E("fuzz_prepareExecve() failed");
-                return false;
-            }
-            if (!arch_launchChild(hfuzz, crashedFuzzer->crashFileName)) {
-                LOG_E("Error launching verifier child process");
-                return false;
-            }
-        }
-
-        arch_reapChild(hfuzz, &vFuzzer);
-        unlink(vFuzzer.fileName);
+        subproc_Run(hfuzz, &vFuzzer);
 
         /* If stack hash doesn't match skip name tag and exit */
         if (crashedFuzzer->backtrace != vFuzzer.backtrace) {
@@ -398,8 +264,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     return true;
 }
 
-static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_t size,
-                                      uint64_t cov)
+static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_t size)
 {
     struct dynfile_t *dynfile = (struct dynfile_t *)util_Malloc(sizeof(struct dynfile_t));
     dynfile->size = size;
@@ -409,10 +274,9 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
     hfuzz->dynfileqCnt++;
 
     char fname[PATH_MAX];
-    snprintf(fname, sizeof(fname),
-             "%s/COV.RANK.%06" PRIu64 ".PID.%d.COVBB.%07" PRIu64 ".TIME.%" PRIu64 ".RND.%" PRIx64,
-             hfuzz->workDir, (uint64_t) 999999ULL - cov, getpid(), cov, (uint64_t) time(NULL),
-             util_rndGet(0, 0xFFFFFFFFFFFF));
+    snprintf(fname, sizeof(fname), "%s/COVERAGE.TIME.%d.PID.%d.ITER.%" PRIu64 ".RND.%" PRIx64,
+             hfuzz->workDir, (int)time(NULL), (int)getpid(),
+             (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt), util_rndGet(0, 0xFFFFFFFFFFFF));
     if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC)
         == false) {
         LOG_W("Couldn't write buffer to file '%s'", fname);
@@ -422,7 +286,7 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
 static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     LOG_D
-        ("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 ",%"
+        ("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 "/%"
          PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
          fuzzer->linux.hwCnts.cpuInstrCnt, hfuzz->linux.hwCnts.cpuInstrCnt,
          fuzzer->linux.hwCnts.cpuBranchCnt, hfuzz->linux.hwCnts.cpuBranchCnt,
@@ -430,25 +294,43 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     MX_SCOPED_LOCK(&hfuzz->dynfileq_mutex);
 
+    uint64_t softCntPc = 0UL;
+    uint64_t softCntCmp = 0UL;
+    if (hfuzz->bbFd != -1) {
+        softCntPc = ATOMIC_GET(hfuzz->feedback->pidFeedbackPc[fuzzer->fuzzNo]);
+        ATOMIC_CLEAR(hfuzz->feedback->pidFeedbackPc[fuzzer->fuzzNo]);
+        softCntCmp = ATOMIC_GET(hfuzz->feedback->pidFeedbackCmp[fuzzer->fuzzNo]);
+        ATOMIC_CLEAR(hfuzz->feedback->pidFeedbackCmp[fuzzer->fuzzNo]);
+    }
+
     int64_t diff0 = hfuzz->linux.hwCnts.cpuInstrCnt - fuzzer->linux.hwCnts.cpuInstrCnt;
     int64_t diff1 = hfuzz->linux.hwCnts.cpuBranchCnt - fuzzer->linux.hwCnts.cpuBranchCnt;
     int64_t diff2 = hfuzz->linux.hwCnts.customCnt - fuzzer->linux.hwCnts.customCnt;
 
-    if (diff0 < 0 || diff1 < 0 || diff2 < 0 || fuzzer->linux.hwCnts.newBBCnt > 0) {
-        LOG_I
-            ("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 ",%"
-             PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
-             fuzzer->linux.hwCnts.cpuInstrCnt, hfuzz->linux.hwCnts.cpuInstrCnt,
-             fuzzer->linux.hwCnts.cpuBranchCnt, hfuzz->linux.hwCnts.cpuBranchCnt,
-             fuzzer->linux.hwCnts.newBBCnt, hfuzz->linux.hwCnts.bbCnt);
-
+    /*
+     * Coverage is the primary counter, the rest is secondary, and taken into consideration only
+     * if the coverage counter has not been changed
+     */
+    if (fuzzer->linux.hwCnts.newBBCnt > 0 || softCntPc > 0 || softCntCmp > 0 || diff0 < 0
+        || diff1 < 0 || diff2 < 0) {
         hfuzz->linux.hwCnts.cpuInstrCnt = fuzzer->linux.hwCnts.cpuInstrCnt;
         hfuzz->linux.hwCnts.cpuBranchCnt = fuzzer->linux.hwCnts.cpuBranchCnt;
         hfuzz->linux.hwCnts.customCnt = fuzzer->linux.hwCnts.customCnt;
         hfuzz->linux.hwCnts.bbCnt += fuzzer->linux.hwCnts.newBBCnt;
+        hfuzz->linux.hwCnts.softCntPc += softCntPc;
+        hfuzz->linux.hwCnts.softCntCmp += softCntCmp;
 
-        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-                                  fuzzer->linux.hwCnts.newBBCnt);
+        LOG_I
+            ("New file size: %zu, Feedback: New (instr,branch,soft,perf,custom): %" PRIu64 "/%"
+             PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Total: %" PRIu64 "/%" PRIu64
+             "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
+             fuzzer->linux.hwCnts.cpuInstrCnt, fuzzer->linux.hwCnts.cpuBranchCnt, softCntPc,
+             softCntCmp, fuzzer->linux.hwCnts.newBBCnt, fuzzer->linux.hwCnts.customCnt,
+             hfuzz->linux.hwCnts.cpuInstrCnt, hfuzz->linux.hwCnts.cpuBranchCnt,
+             hfuzz->linux.hwCnts.softCntPc, hfuzz->linux.hwCnts.softCntCmp,
+             hfuzz->linux.hwCnts.bbCnt, hfuzz->linux.hwCnts.customCnt);
+
+        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
 }
 
@@ -463,6 +345,10 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     MX_SCOPED_LOCK(&hfuzz->dynfileq_mutex);
 
+    int64_t diff0 = hfuzz->linux.hwCnts.cpuInstrCnt - fuzzer->linux.hwCnts.cpuInstrCnt;
+    int64_t diff1 = hfuzz->linux.hwCnts.cpuBranchCnt - fuzzer->linux.hwCnts.cpuBranchCnt;
+    int64_t diff2 = hfuzz->linux.hwCnts.customCnt - fuzzer->linux.hwCnts.customCnt;
+
     /*
      * Keep mutated seed if:
      *  a) Newly discovered (not met before) BBs
@@ -473,7 +359,11 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      * more interesting seeds can be saved between runs instead of instantly discarded
      * based on current absolute elitism (only one mutated seed is promoted).
      */
-    if (fuzzer->sanCovCnts.newBBCnt > 0 || hfuzz->sanCovCnts.iDsoCnt < fuzzer->sanCovCnts.iDsoCnt) {
+
+    bool newCov = (fuzzer->sanCovCnts.newBBCnt > 0
+                   || hfuzz->sanCovCnts.iDsoCnt < fuzzer->sanCovCnts.iDsoCnt);
+
+    if (newCov || (diff0 < 0 || diff1 < 0 || diff2 < 0)) {
         LOG_I("SanCov Update: file size (Cur): %zu, newBBs:%" PRIu64
               ", counters (Cur,New): %" PRIu64 "/%" PRIu64 ",%" PRIu64 "/%" PRIu64,
               fuzzer->dynamicFileSz, fuzzer->sanCovCnts.newBBCnt,
@@ -491,8 +381,11 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             hfuzz->sanCovCnts.totalBBCnt = fuzzer->sanCovCnts.totalBBCnt;
         }
 
-        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-                                  fuzzer->sanCovCnts.hitBBCnt);
+        hfuzz->linux.hwCnts.cpuInstrCnt = fuzzer->linux.hwCnts.cpuInstrCnt;
+        hfuzz->linux.hwCnts.cpuBranchCnt = fuzzer->linux.hwCnts.cpuBranchCnt;
+        hfuzz->linux.hwCnts.customCnt = fuzzer->linux.hwCnts.customCnt;
+
+        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
 }
 
@@ -581,33 +474,11 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
     }
 
-    fuzzer->pid = fuzzer->persistentPid;
-    if (fuzzer->pid == 0) {
-        fuzzer->pid = arch_fork(hfuzz, fuzzer);
-        if (fuzzer->pid == -1) {
-            PLOG_F("Couldn't fork");
-        }
-
-        if (!fuzzer->pid) {
-            if (!fuzz_prepareExecve(hfuzz, fuzzer->fileName)) {
-                LOG_E("fuzz_prepareExecve() failed");
-                exit(EXIT_FAILURE);
-            }
-            if (!arch_launchChild(hfuzz, fuzzer->fileName)) {
-                LOG_E("Error launching child process");
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        if (hfuzz->persistent) {
-            LOG_I("Persistent mode: Launched new persistent PID: %d", (int)fuzzer->pid);
-            fuzzer->persistentPid = fuzzer->pid;
-        }
+    if (subproc_New(hfuzz, fuzzer) == false) {
+        PLOG_F("subproc_New()");
     }
+    subproc_Run(hfuzz, fuzzer);
 
-    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
-
-    arch_reapChild(hfuzz, fuzzer);
     if (hfuzz->persistent == false) {
         unlink(fuzzer->fileName);
     }
@@ -635,9 +506,12 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 }
 
+static uint32_t fuzz_threadNo = 0;
 static void *fuzz_threadNew(void *arg)
 {
-    LOG_I("Launched new fuzzing thread");
+    unsigned int fuzzNo = ATOMIC_POST_INC(fuzz_threadNo);
+
+    LOG_I("Launched new fuzzing thread, no. #%" PRId32, fuzzNo);
 
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
 
@@ -645,11 +519,10 @@ static void *fuzz_threadNew(void *arg)
         .pid = 0,
         .persistentPid = 0,
         .dynamicFile = util_Malloc(hfuzz->maxFileSz),
+        .fuzzNo = fuzzNo,
+        .persistentSock = -1,
 
-#if defined(_HF_ARCH_LINUX)
-        .linux.timerId = (timer_t) 0,
-#endif                          // defined(_HF_ARCH_LINUX)
-        .linux.attachedPid = 0,.linux.persistentSock = -1,
+        .linux.attachedPid = 0,
     };
     defer {
         free(fuzzer.dynamicFile);

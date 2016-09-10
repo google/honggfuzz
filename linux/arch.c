@@ -21,12 +21,13 @@
  *
  */
 
-#include "common.h"
-#include "arch.h"
+#include "../common.h"
+#include "../arch.h"
 
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <locale.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +37,6 @@
 #include <sys/personality.h>
 #include <sys/ptrace.h>
 #include <sys/prctl.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
@@ -45,17 +45,18 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
 
-#include "files.h"
-#include "linux/perf.h"
-#include "linux/ptrace_utils.h"
-#include "log.h"
-#include "sancov.h"
-#include "subproc.h"
-#include "util.h"
+#include "../files.h"
+#include "../linux/perf.h"
+#include "../linux/ptrace_utils.h"
+#include "../log.h"
+#include "../sancov.h"
+#include "../subproc.h"
+#include "../util.h"
 
 /* Common sanitizer flags */
 #if _HF_MONITOR_SIGABRT
@@ -64,7 +65,8 @@
 #define ABORT_FLAG        "abort_on_error=0"
 #endif
 
-#define SIGNAL_TIMER (SIGRTMIN + 1)
+/* Size of remote pid cmdline char buffer */
+#define _HF_PROC_CMDLINE_SZ 8192
 
 static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
@@ -77,17 +79,8 @@ static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     return true;
 }
 
-pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED)
 {
-    int sv[2];
-    if (hfuzz->persistent == true) {
-        close(fuzzer->linux.persistentSock);
-        if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1) {
-            LOG_F("socketpair(AF_UNIX, SOCK_STREAM)");
-            return -1;
-        }
-    }
-
     /*
      * We need to wait for the child to finish with wait() in case we're fuzzing
      * an external process
@@ -99,23 +92,19 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     pid_t pid = syscall(__NR_clone, (uintptr_t) clone_flags, NULL, NULL, NULL, (uintptr_t) 0);
 
-    if (hfuzz->persistent == true) {
-        if (pid == -1) {
-            close(sv[0]);
-            close(sv[1]);
+    if (pid > 0 && hfuzz->persistent) {
+        struct f_owner_ex fown = {.type = F_OWNER_TID,.pid = syscall(__NR_gettid), };
+        if (fcntl(fuzzer->persistentSock, F_SETOWN_EX, &fown)) {
+            PLOG_F("fcntl(%d, F_SETOWN_EX)", fuzzer->persistentSock);
         }
-        if (pid == 0) {
-            if (dup2(sv[1], 1023) == -1) {
-                LOG_F("dup2('%d', '%d')", sv[1], 1023);
-            }
-            close(sv[0]);
-            close(sv[1]);
+        if (fcntl(fuzzer->persistentSock, F_SETSIG, SIGNAL_WAKE) == -1) {
+            PLOG_F("fcntl(%d, F_SETSIG, SIGNAL_WAKE)", fuzzer->persistentSock);
         }
-        if (pid > 0) {
-            fuzzer->linux.persistentSock = sv[0];
-            close(sv[1]);
+        if (fcntl(fuzzer->persistentSock, F_SETFL, O_ASYNC) == -1) {
+            PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->persistentSock);
         }
     }
+
     return pid;
 }
 
@@ -174,9 +163,6 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
      */
     syscall(__NR_tkill, syscall(__NR_gettid), (uintptr_t) SIGSTOP);
 
-#ifdef __NR_execveat
-    syscall(__NR_execveat, hfuzz->exeFd, "", args, environ, AT_EMPTY_PATH);
-#endif
     execvp(args[0], args);
 
     PLOG_E("execvp('%s')", args[0]);
@@ -186,19 +172,8 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 
 static void arch_sigFunc(int signo, siginfo_t * si UNUSED, void *dummy UNUSED)
 {
-    if (signo != SIGNAL_TIMER) {
-        LOG_E("Signal != SIGNAL_TIMER (%d)", signo);
-    }
-}
-
-static void arch_removeTimer(timer_t * timerid)
-{
-    const struct itimerspec ts = {
-        .it_value = {.tv_sec = 0,.tv_nsec = 0},
-        .it_interval = {.tv_sec = 0,.tv_nsec = 0,},
-    };
-    if (timer_settime(*timerid, 0, &ts, NULL) == -1) {
-        PLOG_E("timer_settime(disarm)");
+    if (signo != SIGNAL_WAKE) {
+        LOG_E("Signal != SIGNAL_WAKE (%d)", signo);
     }
 }
 
@@ -208,8 +183,8 @@ static bool arch_setTimer(timer_t * timerid)
      * Kick in every 200ms, starting with the next second
      */
     const struct itimerspec ts = {
-        .it_value = {.tv_sec = 1,.tv_nsec = 0},
-        .it_interval = {.tv_sec = 0,.tv_nsec = 200000000,},
+        .it_value = {.tv_sec = 0,.tv_nsec = 250000000,},
+        .it_interval = {.tv_sec = 0,.tv_nsec = 250000000,},
     };
     if (timer_settime(*timerid, 0, &ts, NULL) == -1) {
         PLOG_E("timer_settime(arm) failed");
@@ -232,40 +207,10 @@ static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 }
 
-static bool arch_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
-{
-    if (hfuzz->persistent == false) {
-        return false;
-    }
-    char z;
-    if (recv(fuzzer->linux.persistentSock, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
-        LOG_D("Persistent mode round finished");
-        return true;
-    }
-    return false;
-}
-
-static bool arch_persistentSendFile(fuzzer_t * fuzzer)
-{
-    uint32_t len = (uint64_t) fuzzer->dynamicFileSz;
-    if (files_writeToFd(fuzzer->linux.persistentSock, (uint8_t *) & len, sizeof(len)) == false) {
-        return false;
-    }
-    if (files_writeToFd(fuzzer->linux.persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) ==
-        false) {
-        return false;
-    }
-    return true;
-}
-
-void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
-
-    if (arch_setTimer(&(fuzzer->linux.timerId)) == false) {
-        LOG_F("Couldn't set timer");
-    }
 
     if (hfuzz->persistent == false && arch_ptraceWaitForPidStop(childPid) == false) {
         LOG_F("PID %d not in a stopped state", childPid);
@@ -278,7 +223,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         fuzzer->linux.attachedPid = ptracePid;
     }
     /* A long-lived process could have already exited, and we wouldn't know */
-    if (kill(ptracePid, 0) == -1) {
+    if (childPid != ptracePid && kill(ptracePid, 0) == -1) {
         if (hfuzz->linux.pidFile) {
             /* If pid from file, check again for cases of auto-restart daemons that update it */
             /*
@@ -299,24 +244,28 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
     }
 
-    perfFd_t perfFds;
-    if (arch_perfEnable(ptracePid, hfuzz, fuzzer, &perfFds) == false) {
+    if (arch_perfEnable(ptracePid, hfuzz, fuzzer) == false) {
         LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
     }
-    if (kill(childPid, SIGCONT) == -1) {
+    if (childPid != ptracePid && kill(childPid, SIGCONT) == -1) {
         PLOG_F("Restarting PID: %d failed", childPid);
     }
-    if (hfuzz->persistent == true && arch_persistentSendFile(fuzzer) == false) {
-        LOG_W("Could not send file contents to the persistent process");
-    }
+    arch_ptraceSetCustomPerf(hfuzz, ptracePid, 0ULL);
+}
+
+void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
+    pid_t childPid = fuzzer->pid;
 
     for (;;) {
-        if (arch_persistentModeRoundDone(hfuzz, fuzzer)) {
+        if (subproc_persistentModeRoundDone(hfuzz, fuzzer)) {
+            arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->linux.hwCnts.customCnt);
             break;
         }
 
         int status;
-        pid_t pid = wait4(-1, &status, __WALL | __WNOTHREAD | WUNTRACED, NULL);
+        pid_t pid = wait4(-1, &status, __WALL | __WNOTHREAD, NULL);
         if (pid == -1 && errno == EINTR) {
             if (hfuzz->tmOut) {
                 arch_checkTimeLimit(hfuzz, fuzzer);
@@ -335,10 +284,13 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_D("PID '%d' returned with status: %s", pid,
               subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
 
-        arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->linux.hwCnts.customCnt);
+        if (hfuzz->persistent == false) {
+            arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->linux.hwCnts.customCnt);
+        }
 
         if (hfuzz->persistent && pid == fuzzer->persistentPid
             && (WIFEXITED(status) || WIFSIGNALED(status))) {
+            arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
             fuzzer->persistentPid = 0;
             LOG_W("Persistent mode: PID %d exited with status: %s", pid,
                   subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
@@ -379,20 +331,14 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 #endif
 
-    arch_removeTimer(&fuzzer->linux.timerId);
-    arch_perfAnalyze(hfuzz, fuzzer, &perfFds);
+    arch_perfAnalyze(hfuzz, fuzzer);
     sancov_Analyze(hfuzz, fuzzer);
 }
 
 bool arch_archInit(honggfuzz_t * hfuzz)
 {
-    if (hfuzz->dynFileMethod &
-        (_HF_DYNFILE_BTS_BLOCK | _HF_DYNFILE_BTS_EDGE | _HF_DYNFILE_IPT_BLOCK)) {
-        hfuzz->bbMap = util_MMap(_HF_PERF_BITMAP_SIZE);
-    }
-
-    /* We use execvp() as a fall-back mechanism (using PATH), so it might legitimately fail */
-    hfuzz->exeFd = open(hfuzz->cmdline[0], O_RDONLY | O_CLOEXEC);
+    /* Use it to make %'d work */
+    setlocale(LC_NUMERIC, "");
 
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         unsigned long major = 0, minor = 0;
@@ -506,12 +452,12 @@ bool arch_archInit(honggfuzz_t * hfuzz)
 bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
 {
     struct sigevent sevp = {
-        .sigev_value.sival_ptr = &fuzzer->linux.timerId,
-        .sigev_signo = SIGNAL_TIMER,
+        .sigev_value.sival_ptr = &fuzzer->timerId,
+        .sigev_signo = SIGNAL_WAKE,
         .sigev_notify = SIGEV_THREAD_ID | SIGEV_SIGNAL,
         ._sigev_un._tid = syscall(__NR_gettid),
     };
-    if (timer_create(CLOCK_REALTIME, &sevp, &fuzzer->linux.timerId) == -1) {
+    if (timer_create(CLOCK_REALTIME, &sevp, &fuzzer->timerId) == -1) {
         PLOG_E("timer_create(CLOCK_REALTIME) failed");
         return false;
     }
@@ -519,7 +465,6 @@ bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
     sigset_t smask;
     sigemptyset(&smask);
     struct sigaction sa = {
-        .sa_handler = NULL,
         .sa_sigaction = arch_sigFunc,
         .sa_mask = smask,
         .sa_flags = SA_SIGINFO,
@@ -528,13 +473,17 @@ bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
 
     sigset_t ss;
     sigemptyset(&ss);
-    sigaddset(&ss, SIGNAL_TIMER);
+    sigaddset(&ss, SIGNAL_WAKE);
     if (sigprocmask(SIG_UNBLOCK, &ss, NULL) != 0) {
-        PLOG_F("pthread_sigmask(%d, SIG_UNBLOCK)", SIGNAL_TIMER);
+        PLOG_F("pthread_sigmask(%d, SIG_UNBLOCK)", SIGNAL_WAKE);
     }
-    if (sigaction(SIGNAL_TIMER, &sa, NULL) == -1) {
-        PLOG_E("sigaction(SIGNAL_TIMER (%d)) failed", SIGNAL_TIMER);
+    if (sigaction(SIGNAL_WAKE, &sa, NULL) == -1) {
+        PLOG_E("sigaction(SIGNAL_WAKE (%d)) failed", SIGNAL_WAKE);
         return false;
+    }
+
+    if (arch_setTimer(&(fuzzer->timerId)) == false) {
+        LOG_F("Couldn't set timer");
     }
 
     return true;

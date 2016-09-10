@@ -36,6 +36,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "util.h"
+
 #if defined(_HF_ARCH_LINUX)
 #include <sys/syscall.h>
 #define __hf_pid()      (pid_t) syscall(__NR_gettid)
@@ -46,7 +48,7 @@
 static int log_fd;
 static bool log_fd_isatty;
 enum llevel_t log_level;
-pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 __attribute__ ((constructor))
 static void log_init(void)
@@ -112,10 +114,7 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
 
     /* Start printing logs */
     {
-        pthread_mutex_lock(&log_mutex);
-        defer {
-            pthread_mutex_unlock(&log_mutex);
-        };
+        MX_SCOPED_LOCK(&log_mutex);
 
         if (log_fd_isatty) {
             dprintf(log_fd, "%s", logLevels[ll].prefix);
@@ -158,4 +157,9 @@ void logRedirectLogFD(int fd)
 void logDirectlyToFD(const char *msg)
 {
     dprintf(log_fd, "%s", msg);
+}
+
+pthread_mutex_t *logMutexGet(void)
+{
+    return &log_mutex;
 }

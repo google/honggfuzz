@@ -21,8 +21,8 @@
  *
  */
 
-#include "common.h"
-#include "linux/bfd.h"
+#include "../common.h"
+#include "bfd.h"
 
 #include <bfd.h>
 #include <dis-asm.h>
@@ -36,9 +36,9 @@
 #include <inttypes.h>
 #include <unistd.h>
 
-#include "files.h"
-#include "log.h"
-#include "util.h"
+#include "../files.h"
+#include "../log.h"
+#include "../util.h"
 
 typedef struct {
     bfd *bfdh;

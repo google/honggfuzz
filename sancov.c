@@ -451,7 +451,8 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         /* If not DSO number history (first run) or new DSO loaded, realloc local maps metadata buf */
         if (prevMapsNum == 0 || prevMapsNum < mapsNum) {
-            if ((mapsBuf = realloc(mapsBuf, (size_t) (mapsNum + 1) * sizeof(memMap_t))) == NULL) {
+            if ((mapsBuf =
+                 util_Realloc(mapsBuf, (size_t) (mapsNum + 1) * sizeof(memMap_t))) == NULL) {
                 PLOG_E("realloc failed (sz=%" PRIu64 ")", (mapsNum + 1) * sizeof(memMap_t));
                 return false;
             }
@@ -549,7 +550,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                         /* Maintain bitmaps only for exec/DSOs with coverage enabled - allocate on first use */
                         if (curMap->data.pBM == NULL) {
                             LOG_D("Allocating bitmap for map '%s'", mapsBuf[bestFit].mapName);
-                            curMap->data.pBM = sancov_newBitmap(_HF_BITMAP_SIZE);
+                            curMap->data.pBM = sancov_newBitmap(_HF_SANCOV_BITMAP_SIZE);
 
                             /*
                              * If bitmap allocation failed, unset cached Trie node ptr
@@ -712,6 +713,16 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 }
 
 /*
+ * Work In Progress - Simply read 64bit values, and mark it inside bbMap as hit
+ */
+__thread uint8_t *sanCovMap = MAP_FAILED;
+__thread int sanCovFd = -1;
+__thread off_t sanCovSz = 0ULL;
+__thread pid_t sanCovPid = -1;
+__thread char sanCovPathRaw[PATH_MAX];
+__thread char sanCovPathMap[PATH_MAX];
+
+/*
  * Sanitizer coverage data are stored in FS can be parsed via two methods:
  * raw unpack & separate bin/DSO sancov file. Separate bin/DSO sancov file
  * method is usually avoided since coverage data are lost if sanitizer unhandled
@@ -725,7 +736,6 @@ void sancov_Analyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (!hfuzz->useSanCov) {
         return;
     }
-
     /*
      * For now supported methods are implemented in fail-over nature. This will
      * change in the future when best method is concluded.

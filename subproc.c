@@ -26,13 +26,26 @@
 #include "common.h"
 #include "subproc.h"
 
+#include <fcntl.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
+#include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
+#include "arch.h"
+#include "files.h"
 #include "log.h"
+#include "sancov.h"
+#include "util.h"
+
+extern char **environ;
 
 const char *subproc_StatusToStr(int status, char *str, size_t len)
 {
@@ -109,4 +122,243 @@ const char *subproc_StatusToStr(int status, char *str, size_t len)
     snprintf(str, len, "STOPPED with signal: %d (%s)", WSTOPSIG(status),
              strsignal(WSTOPSIG(status)));
     return str;
+}
+
+bool subproc_PrepareExecv(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *fileName)
+{
+    /*
+     * Set timeout (prof), real timeout (2*prof), and rlimit_cpu (2*prof)
+     */
+    if (hfuzz->persistent == false && hfuzz->tmOut) {
+        struct itimerval it;
+
+        /*
+         * The hfuzz->tmOut is real CPU usage time...
+         */
+        it.it_value.tv_sec = hfuzz->tmOut;
+        it.it_value.tv_usec = 0;
+        it.it_interval.tv_sec = 0;
+        it.it_interval.tv_usec = 0;
+        if (setitimer(ITIMER_PROF, &it, NULL) == -1) {
+            PLOG_D("Couldn't set the ITIMER_PROF timer");
+        }
+
+        /*
+         * ...so, if a process sleeps, this one should
+         * trigger a signal...
+         */
+        it.it_value.tv_sec = hfuzz->tmOut;
+        it.it_value.tv_usec = 0;
+        it.it_interval.tv_sec = 0;
+        it.it_interval.tv_usec = 0;
+        if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
+            PLOG_E("Couldn't set the ITIMER_REAL timer");
+            return false;
+        }
+
+        /*
+         * ..if a process sleeps and catches SIGPROF/SIGALRM
+         * rlimits won't help either. However, arch_checkTimeLimit
+         * will send a SIGKILL at tmOut + 2 seconds. That should
+         * do it :)
+         */
+        struct rlimit rl;
+
+        rl.rlim_cur = hfuzz->tmOut + 1;
+        rl.rlim_max = hfuzz->tmOut + 1;
+        if (setrlimit(RLIMIT_CPU, &rl) == -1) {
+            PLOG_D("Couldn't enforce the RLIMIT_CPU resource limit");
+        }
+    }
+
+    /*
+     * The address space limit. If big enough - roughly the size of RAM used
+     */
+    if (hfuzz->asLimit) {
+        struct rlimit rl = {
+            .rlim_cur = hfuzz->asLimit * 1024ULL * 1024ULL,
+            .rlim_max = hfuzz->asLimit * 1024ULL * 1024ULL,
+        };
+        if (setrlimit(RLIMIT_AS, &rl) == -1) {
+            PLOG_D("Couldn't enforce the RLIMIT_AS resource limit, ignoring");
+        }
+    }
+
+    if (hfuzz->nullifyStdio) {
+        util_nullifyStdio();
+    }
+
+    if (hfuzz->fuzzStdin) {
+        /*
+         * Uglyyyyyy ;)
+         */
+        if (!util_redirectStdin(fileName)) {
+            return false;
+        }
+    }
+
+    if (hfuzz->clearEnv) {
+        environ = NULL;
+    }
+    if (sancov_prepareExecve(hfuzz) == false) {
+        LOG_E("sancov_prepareExecve() failed");
+        return false;
+    }
+    for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs) && hfuzz->envs[i]; i++) {
+        putenv(hfuzz->envs[i]);
+    }
+    char fuzzNo[128];
+    snprintf(fuzzNo, sizeof(fuzzNo), "%" PRId32, fuzzer->fuzzNo);
+    setenv(_HF_THREAD_NO_ENV, fuzzNo, 1);
+
+    setsid();
+
+    if (hfuzz->bbFd != -1) {
+        if (dup2(hfuzz->bbFd, _HF_BITMAP_FD) == -1) {
+            PLOG_F("dup2('%d', %d)", hfuzz->bbFd, _HF_BITMAP_FD);
+        }
+        close(hfuzz->bbFd);
+    }
+
+    return true;
+}
+
+bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    fuzzer->pid = fuzzer->persistentPid;
+    if (fuzzer->pid != 0) {
+        return true;
+    }
+
+    int sv[2];
+    if (hfuzz->persistent) {
+        if (fuzzer->persistentSock != -1) {
+            close(fuzzer->persistentSock);
+        }
+
+        int sock_type = SOCK_STREAM;
+#if defined(SOCK_CLOEXEC)
+        sock_type |= SOCK_CLOEXEC;
+#endif
+        if (socketpair(AF_UNIX, sock_type, 0, sv) == -1) {
+            PLOG_W("socketpair(AF_UNIX, SOCK_STREAM, 0, sv)");
+            return false;
+        }
+        fuzzer->persistentSock = sv[0];
+    }
+
+    fuzzer->pid = arch_fork(hfuzz, fuzzer);
+    if (fuzzer->pid == -1) {
+        PLOG_F("Couldn't fork");
+    }
+    // Child
+    if (!fuzzer->pid) {
+        if (hfuzz->persistent) {
+            if (dup2(sv[1], _HF_PERSISTENT_FD) == -1) {
+                PLOG_F("dup2('%d', '%d')", sv[1], _HF_PERSISTENT_FD);
+            }
+            close(sv[0]);
+            close(sv[1]);
+        }
+
+        if (!subproc_PrepareExecv(hfuzz, fuzzer, fuzzer->fileName)) {
+            LOG_E("subproc_PrepareExecv() failed");
+            exit(EXIT_FAILURE);
+        }
+        if (!arch_launchChild(hfuzz, fuzzer->fileName)) {
+            LOG_E("Error launching child process");
+            exit(EXIT_FAILURE);
+        }
+
+        abort();
+    }
+    // Parent
+    if (hfuzz->persistent == false) {
+        return true;
+    }
+
+    close(sv[1]);
+
+    if (hfuzz->persistent) {
+        LOG_I("Persistent mode: Launched new persistent PID: %d", (int)fuzzer->pid);
+        fuzzer->persistentPid = fuzzer->pid;
+    }
+
+    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
+
+    return true;
+}
+
+bool subproc_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    if (hfuzz->persistent == false) {
+        return false;
+    }
+    char z;
+    if (recv(fuzzer->persistentSock, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
+        LOG_D("Persistent mode round finished");
+        return true;
+    }
+    return false;
+}
+
+static bool subproc_persistentSendFile(fuzzer_t * fuzzer)
+{
+    uint32_t len = (uint64_t) fuzzer->dynamicFileSz;
+    if (files_writeToFd(fuzzer->persistentSock, (uint8_t *) & len, sizeof(len)) == false) {
+        return false;
+    }
+    if (files_writeToFd(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) ==
+        false) {
+        return false;
+    }
+    return true;
+}
+
+void subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    arch_prepareChild(hfuzz, fuzzer);
+    if (hfuzz->persistent == true && subproc_persistentSendFile(fuzzer) == false) {
+        LOG_W("Could not send file contents to the persistent process");
+    }
+    arch_reapChild(hfuzz, fuzzer);
+}
+
+uint8_t subproc_System(const char *const argv[])
+{
+    pid_t pid = fork();
+    if (pid == -1) {
+        PLOG_E("Couldn't fork");
+        return 255;
+    }
+
+    if (!pid) {
+        execv(argv[0], (char *const *)&argv[0]);
+        PLOG_F("Couldn't execute '%s'", argv[0]);
+        return 255;
+    }
+
+    int status;
+    int flags = 0;
+#if defined(__WNOTHREAD)
+    flags |= __WNOTHREAD;
+#endif                          /* defined(__WNOTHREAD) */
+    while (wait4(pid, &status, flags, NULL) != pid) ;
+    if (WIFSIGNALED(status)) {
+        LOG_E("Command '%s' terminated with signal: %d", argv[0], WTERMSIG(status));
+        return (100 + WTERMSIG(status));
+    }
+    if (!WIFEXITED(status)) {
+        LOG_F("Command '%s' terminated abnormally, status: %d", argv[0], status);
+        return 100;
+    }
+
+    LOG_D("Command '%s' exited with: %d", argv[0], WEXITSTATUS(status));
+
+    if (WEXITSTATUS(status)) {
+        LOG_W("Command '%s' exited with code: %d", argv[0], WEXITSTATUS(status));
+        return 1U;
+    }
+
+    return 0U;
 }

@@ -31,19 +31,14 @@
 #include <sys/param.h>
 #include <sys/queue.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <time.h>
-
-#ifdef __clang__
-#include <stdatomic.h>
-#endif
 
 #ifndef UNUSED
 #define UNUSED __attribute__((unused))
 #endif
 
 #define PROG_NAME "honggfuzz"
-#define PROG_VERSION "0.7rc"
+#define PROG_VERSION "0.8rc"
 #define PROG_AUTHORS "Robert Swiecki <swiecki@google.com> et al.,\nCopyright 2010-2015 by Google Inc. All Rights Reserved."
 
 /* Go-style defer implementation */
@@ -75,31 +70,18 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 /* Default stack-size of created threads. Must be bigger then _HF_DYNAMIC_FILE_MAX_SZ */
 #define _HF_PTHREAD_STACKSIZE (1024 * 1024 * 8) /* 8MB */
 
-/* Align to the upper-page boundary */
-#define _HF_PAGE_ALIGN_UP(x)  (((size_t)x + (size_t)getpagesize() - (size_t)1) & ~((size_t)getpagesize() - (size_t)1))
-
-/* String buffer size for function names in stack traces produced from libunwind */
-#define _HF_FUNC_NAME_SZ    256 // Should be alright for mangled C++ procs too
+/* Name of envvar which indicates sequential number of fuzzer */
+#define _HF_THREAD_NO_ENV "HFUZZ_THREAD_NO"
 
 /* Number of crash verifier iterations before tag crash as stable */
 #define _HF_VERIFIER_ITER   5
 
-/* Constant prefix used for single frame crashes stackhash masking */
-#define _HF_SINGLE_FRAME_MASK  0xBADBAD0000000000
-
 /* Size (in bytes) for report data to be stored in stack before written to file */
 #define _HF_REPORT_SIZE 8192
 
-#define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
-
-/* Bitmap size */
-#define _HF_BITMAP_SIZE 0x3FFFFFF
-
 /* Perf bitmap size */
-#define _HF_PERF_BITMAP_SIZE (1024U * 1024U * 24U)
-
-/* Directory in workspace to store sanitizer coverage data */
-#define _HF_SANCOV_DIR "HF_SANCOV"
+#define _HF_PERF_BITMAP_SIZE_16M (1024U * 1024U * 16U)
+#define _HF_PERF_BITMAP_BITSZ_MASK 0x7ffffff
 
 #if defined(__ANDROID__)
 #define _HF_MONITOR_SIGABRT 0
@@ -107,42 +89,16 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 #define _HF_MONITOR_SIGABRT 1
 #endif
 
-/* Size of remote pid cmdline char buffer */
-#define _HF_PROC_CMDLINE_SZ 8192
-
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
 
 /* Memory barriers */
 #define rmb()	__asm__ __volatile__("":::"memory")
 #define wmb()	__sync_synchronize()
 
-/* Atomics */
-#define ATOMIC_GET(x) __atomic_load_n(&(x), __ATOMIC_SEQ_CST)
-#define ATOMIC_SET(x, y) __atomic_store_n(&(x), y, __ATOMIC_SEQ_CST)
-#define ATOMIC_CLEAR(x) __atomic_clear(&(x), __ATOMIC_SEQ_CST)
-
-#define ATOMIC_PRE_INC(x) __atomic_add_fetch(&(x), 1, __ATOMIC_SEQ_CST)
-#define ATOMIC_POST_INC(x) __atomic_fetch_add(&(x), 1, __ATOMIC_SEQ_CST)
-
-#define ATOMIC_PRE_DEC(x) __atomic_sub_fetch(&(x), 1, __ATOMIC_SEQ_CST)
-#define ATOMIC_POST_DEC(x) __atomic_fetch_sub(&(x), 1, __ATOMIC_SEQ_CST)
-
-#define ATOMIC_PRE_ADD(x, y) __atomic_add_fetch(&(x), y, __ATOMIC_SEQ_CST)
-#define ATOMIC_POST_ADD(x, y) __atomic_fetch_add(&(x), y, __ATOMIC_SEQ_CST)
-
-#define ATOMIC_PRE_SUB(x, y) __atomic_sub_fetch(&(x), y, __ATOMIC_SEQ_CST)
-#define ATOMIC_POST_SUB(x, y) __atomic_fetch_sub(&(x), y, __ATOMIC_SEQ_CST)
-
-#define ATOMIC_PRE_AND(x, y) __atomic_and_fetch(&(x), y, __ATOMIC_SEQ_CST)
-#define ATOMIC_POST_AND(x, y) __atomic_fetch_and(&(x), y, __ATOMIC_SEQ_CST)
-
-#define ATOMIC_PRE_OR(x, y) __atomic_or_fetch(&(x), y, __ATOMIC_SEQ_CST)
-#define ATOMIC_POST_OR(x, y) __atomic_fetch_or(&(x), y, __ATOMIC_SEQ_CST)
-
-/* Missing WIFCONTINUED in Android */
-#ifndef WIFCONTINUED
-#define WIFCONTINUED(x) WEXITSTATUS(0)
-#endif                          // ndef(WIFCONTINUED)
+/* FD used to pass feedback bitmap a process */
+#define _HF_BITMAP_FD 1022
+/* FD used to pass data to a persistent process */
+#define _HF_PERSISTENT_FD 1023
 
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
@@ -152,6 +108,7 @@ typedef enum {
     _HF_DYNFILE_BTS_EDGE = 0x10,
     _HF_DYNFILE_IPT_BLOCK = 0x20,
     _HF_DYNFILE_CUSTOM = 0x40,
+    _HF_DYNFILE_SOFT = 0x80,
 } dynFileMethod_t;
 
 typedef struct {
@@ -160,6 +117,8 @@ typedef struct {
     uint64_t customCnt;
     uint64_t bbCnt;
     uint64_t newBBCnt;
+    uint64_t softCntPc;
+    uint64_t softCntCmp;
 } hwcnt_t;
 
 /* Sanitizer coverage specific data structures */
@@ -194,7 +153,7 @@ typedef struct __attribute__ ((packed)) {
 } trieData_t;
 
 /* Trie node struct */
-typedef struct __attribute__ ((packed)) node {
+typedef struct node {
     char key;
     trieData_t data;
     struct node *next;
@@ -223,6 +182,15 @@ struct dynfile_t {
     size_t size;
      TAILQ_ENTRY(dynfile_t) pointers;
 };
+
+/* Maximum number of active fuzzing threads */
+#define _HF_THREAD_MAX 1024U
+typedef struct {
+    uint8_t bbMapPc[_HF_PERF_BITMAP_SIZE_16M];
+    uint8_t bbMapCmp[_HF_PERF_BITMAP_SIZE_16M];
+    uint64_t pidFeedbackPc[_HF_THREAD_MAX];
+    uint64_t pidFeedbackCmp[_HF_THREAD_MAX];
+} feedback_t;
 
 typedef struct {
     char **cmdline;
@@ -255,14 +223,13 @@ typedef struct {
     size_t fileCnt;
     size_t lastFileIndex;
     size_t doneFileIndex;
-    int exeFd;
     bool clearEnv;
     char *envs[128];
     bool persistent;
 
     fuzzState_t state;
-    uint8_t *bbMap;
-    size_t bbMapSz;
+    feedback_t *feedback;
+    int bbFd;
     size_t dynfileqCnt;
     pthread_mutex_t dynfileq_mutex;
      TAILQ_HEAD(dynfileq_t, dynfile_t) dynfileq;
@@ -314,6 +281,11 @@ typedef struct {
     float flipRate;
     uint8_t *dynamicFile;
     size_t dynamicFileSz;
+    uint32_t fuzzNo;
+    int persistentSock;
+#if !defined(_HF_ARCH_DARWIN)
+    timer_t timerId;
+#endif                          // !defined(_HF_ARCH_DARWIN)
 
     sancovcnt_t sanCovCnts;
 
@@ -323,10 +295,9 @@ typedef struct {
         uint8_t *perfMmapAux;
         hwcnt_t hwCnts;
         pid_t attachedPid;
-        int persistentSock;
-#if defined(_HF_ARCH_LINUX)
-        timer_t timerId;
-#endif                          // defined(_HF_ARCH_LINUX)
+        int cpuInstrFd;
+        int cpuBranchFd;
+        int cpuIptBtsFd;
     } linux;
 } fuzzer_t;
 

@@ -21,13 +21,13 @@
  *
  */
 
-#include "common.h"
-#include "linux/unwind.h"
+#include "../common.h"
+#include "unwind.h"
 
 #include <endian.h>
 #include <libunwind-ptrace.h>
 
-#include "log.h"
+#include "../log.h"
 
 /*
  * WARNING: Ensure that _UPT-info structs are not shared between threads

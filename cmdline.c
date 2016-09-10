@@ -159,7 +159,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .fileCnt = 0,
         .lastFileIndex = 0,
         .doneFileIndex = 0,
-        .exeFd = -1,
         .clearEnv = false,
         .envs = {
             [0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,
@@ -167,8 +166,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .persistent = false,
 
         .state = _HF_STATE_UNSET,
-        .bbMapSz = _HF_PERF_BITMAP_SIZE,
-        .bbMap = NULL,
+        .feedback = NULL,
+        .bbFd = -1,
         .dynfileq_mutex = PTHREAD_MUTEX_INITIALIZER,
         .dynfileqCnt = 0U,
 
@@ -209,6 +208,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
                 .customCnt = 0ULL,
                 .bbCnt = 0ULL,
                 .newBBCnt = 0ULL,
+                .softCntPc = 0ULL,
+                .softCntCmp = 0ULL,
             },
             .dynamicCutOffAddr = ~(0ULL),
             .disableRandomization = true,
@@ -249,6 +250,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
         {{"save_all", no_argument, NULL, 'u'}, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames"},
         {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
+        {{"instr", no_argument, NULL, 'z'}, "Enable compile-time instrumentation (see libraries/instrument_func.c)"},
         {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
         {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libraries/persistent.mode.main.o)"},
 
@@ -278,7 +280,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     const char *logfile = NULL;
     int opt_index = 0;
     for (;;) {
-        int c = getopt_long(argc, argv, "-?hqvVsuPf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:C", opts,
+        int c = getopt_long(argc, argv, "-?hqvVsuPf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:Cz", opts,
                             &opt_index);
         if (c < 0)
             break;
@@ -326,6 +328,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 'C':
             hfuzz->useSanCov = true;
+            break;
+        case 'z':
+            hfuzz->dynFileMethod |= _HF_DYNFILE_SOFT;
             break;
         case 'F':
             hfuzz->maxFileSz = strtoul(optarg, NULL, 0);
@@ -433,9 +438,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         return false;
     }
 
-    /* Sanity checks for timeout. Optimal ranges highly depend on target */
-    if (hfuzz->useSanCov && hfuzz->tmOut < 10) {
-        LOG_E("Timeout value (%ld) too small for sanitizer coverage feedback", (long)hfuzz->tmOut);
+    if (hfuzz->threadsMax >= _HF_THREAD_MAX) {
+        LOG_E("Too many fuzzing threads specified %zu (>= _HF_THREAD_MAX (%u))", hfuzz->threadsMax,
+              _HF_THREAD_MAX);
         return false;
     }
 

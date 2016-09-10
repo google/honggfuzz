@@ -25,6 +25,8 @@ BIN := honggfuzz
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=131072
 COMMON_LDFLAGS := -lm
 COMMON_SRCS := honggfuzz.c cmdline.c display.c files.c fuzz.c log.c mangle.c report.c sancov.c subproc.c util.c
+CFLAGS ?= -O3
+LDFLAGS ?=
 
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
@@ -32,9 +34,9 @@ MARCH ?= $(shell uname -m)
 ifeq ($(OS),Linux)
     ARCH := LINUX
 
-    ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
+    ARCH_CFLAGS := -std=c11 -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
-                   -Wno-unknown-warning-option -funroll-loops -O3 \
+                   -Wno-unknown-warning-option -funroll-loops \
                    -D_FILE_OFFSET_BITS=64
     ARCH_LDFLAGS := -L/usr/local/include -L/usr/include \
                     -lpthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt
@@ -51,6 +53,10 @@ ifeq ($(OS),Linux)
         ARCH_CFLAGS += -I/usr/local/include
         ARCH_LDFLAGS += -L/usr/local/lib -lipt -Wl,--rpath=/usr/local/lib
     endif
+    ifeq ($(MARCH),$(filter $(MARCH),x86_64 i386))
+           # Support for popcnt (used in libhfuzz)
+           ARCH_CFLAGS += -msse4.2
+    endif
     ifeq ("$(wildcard /usr/include/intel-pt.h)","/usr/include/intel-pt.h")
         ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
         ARCH_LDFLAGS += -lipt
@@ -61,11 +67,6 @@ ifeq ($(OS),Linux)
         $(info $(WARN_LIBRARY))
         $(info ***************************************************************)
     endif
-
-    ifeq ($(MARCH),$(filter $(MARCH),x86_64 i386))
-        # Support for popcnt (used in linux/perf.c)
-        ARCH_CFLAGS += -msse4.2
-    endif       # MARCH
     # OS Linux
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
@@ -94,7 +95,7 @@ else ifeq ($(OS),Darwin)
     endif
     CC := $(shell xcrun --sdk $(SDK_NAME) --find cc)
     LD := $(shell xcrun --sdk $(SDK_NAME) --find cc)
-    ARCH_CFLAGS := -arch x86_64 -O3 -std=c99 -isysroot $(SDK) -I. \
+    ARCH_CFLAGS := -arch x86_64 -std=c99 -isysroot $(SDK) -I. \
                    -x objective-c -pedantic -fblocks \
                    -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
                    -Wreturn-type -Wpointer-arith -Wno-gnu-case-range -Wno-gnu-designator \
@@ -114,11 +115,11 @@ else ifeq ($(OS),Darwin)
 else
     ARCH := POSIX
     ARCH_SRCS := $(wildcard posix/*.c)
-    ARCH_CFLAGS := -std=c11 -I. -I/usr/local/include -I/usr/include \
+    ARCH_CFLAGS := -std=c11 -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
-                   -U__STRICT_ANSI__ -funroll-loops -O2
-    ARCH_LDFLAGS := -lpthread -L/usr/local/include -L/usr/include
+                   -U__STRICT_ANSI__ -funroll-loops
+    ARCH_LDFLAGS := -lpthread -L/usr/local/include -L/usr/include -lrt
     # OS Posix
 endif
 
@@ -131,8 +132,9 @@ endif
 SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
 OBJS := $(SRCS:.c=.o)
 
-LIBS_SRCS := $(wildcard libraries/*.c)
+LIBS_SRCS := $(wildcard libhfuzz/*.c)
 LIBS_OBJS := $(LIBS_SRCS:.c=.o)
+HFUZZ_ARCH := libhfuzz/libhfuzz.a
 
 # Respect external user defines
 CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH}
@@ -154,31 +156,31 @@ endif
 
 ifeq ($(ANDROID_CLANG),true)
   # clang works only for APIs >= 23, so default to it if not set
-  ANDROID_API ?= android-23
+  ANDROID_API ?= android-24
   ifeq ($(ANDROID_APP_ABI),armeabi-v7a)
-    ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-clang3.6
+    ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-clang
   else ifeq ($(ANDROID_APP_ABI),x86)
-    ANDROID_NDK_TOOLCHAIN ?= x86-clang3.6
+    ANDROID_NDK_TOOLCHAIN ?= x86-clang
   else ifeq ($(ANDROID_APP_ABI),arm64-v8a)
-    ANDROID_NDK_TOOLCHAIN ?= aarch64-linux-android-clang3.6
+    ANDROID_NDK_TOOLCHAIN ?= aarch64-linux-android-clang
   else ifeq ($(ANDROID_APP_ABI),x86_64)
-    ANDROID_NDK_TOOLCHAIN ?= x86_64-clang3.6
+    ANDROID_NDK_TOOLCHAIN ?= x86_64-clang
   else
     $(error Unsuported / Unknown APP_API '$(ANDROID_APP_ABI)')
   endif
 else
-  ANDROID_API           ?= android-21
+  ANDROID_API           ?= android-24
   ANDROID_NDK_TOOLCHAIN ?=
 endif
 
-SUBDIR_ROOTS := linux mac posix libraries
+SUBDIR_ROOTS := linux mac posix libhfuzz
 DIRS := . $(shell find $(SUBDIR_ROOTS) -type d)
 CLEAN_PATTERNS := *.o *~ core *.a *.dSYM *.la *.so *.dylib
 SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
 MAC_GARGBAGE := $(wildcard mac/mach_exc*)
 ANDROID_GARBAGE := obj libs
 
-all: $(BIN) $(LIBS_OBJS)
+all: $(BIN) $(HFUZZ_ARCH)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
@@ -191,6 +193,9 @@ all: $(BIN) $(LIBS_OBJS)
 
 $(BIN): $(OBJS)
 	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
+
+$(HFUZZ_ARCH): $(LIBS_OBJS)
+	$(AR) rcs $(HFUZZ_ARCH) $(LIBS_OBJS)
 
 .PHONY: clean
 clean:
@@ -218,17 +223,19 @@ cmdline.o: cmdline.h common.h log.h files.h util.h
 display.o: common.h display.h log.h util.h
 files.o: common.h files.h log.h util.h
 fuzz.o: common.h fuzz.h arch.h files.h log.h mangle.h report.h sancov.h
-fuzz.o: util.h
-log.o: common.h log.h
+fuzz.o: subproc.h util.h
+log.o: common.h log.h util.h
 mangle.o: common.h mangle.h log.h util.h
 report.o: common.h report.h log.h util.h
 sancov.o: common.h sancov.h files.h log.h util.h
-util.o: common.h files.h log.h
-linux/arch.o: common.h arch.h linux/perf.h linux/ptrace_utils.h log.h
-linux/arch.o: sancov.h util.h files.h
-linux/bfd.o: common.h linux/bfd.h linux/unwind.h files.h log.h util.h
-linux/perf.o: common.h linux/perf.h files.h linux/pt.h log.h util.h
-linux/pt.o: common.h linux/pt.h log.h
+subproc.o: common.h subproc.h arch.h files.h log.h sancov.h util.h
+util.o: common.h util.h files.h log.h
 linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h linux/bfd.h
-linux/ptrace_utils.o: linux/unwind.h linux/unwind.h log.h sancov.h util.h
+linux/ptrace_utils.o: linux/unwind.h linux/unwind.h log.h sancov.h subproc.h
+linux/ptrace_utils.o: util.h
+linux/perf.o: common.h linux/perf.h files.h linux/pt.h log.h util.h
+linux/bfd.o: common.h linux/bfd.h linux/unwind.h files.h log.h util.h
+linux/pt.o: common.h linux/pt.h log.h util.h
 linux/unwind.o: common.h linux/unwind.h log.h
+linux/arch.o: common.h arch.h files.h linux/perf.h linux/ptrace_utils.h log.h
+linux/arch.o: sancov.h subproc.h util.h

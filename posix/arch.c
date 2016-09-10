@@ -21,9 +21,10 @@
  *
  */
 
-#include "common.h"
-#include "arch.h"
+#include "../common.h"
+#include "../arch.h"
 
+#include <poll.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -40,11 +41,11 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "files.h"
-#include "log.h"
-#include "sancov.h"
-#include "subproc.h"
-#include "util.h"
+#include "../files.h"
+#include "../log.h"
+#include "../sancov.h"
+#include "../subproc.h"
+#include "../util.h"
 
 /*  *INDENT-OFF* */
 struct {
@@ -117,9 +118,9 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
         snprintf(newname, sizeof(newname), "%s", fuzzer->origFileName);
     } else {
-        snprintf(newname, sizeof(newname), "%s/%s.%d.%s.%s.%s",
+        snprintf(newname, sizeof(newname), "%s/%s.PID.%d.TIME.%s.%s",
                  hfuzz->workDir, arch_sigs[termsig].descr, fuzzer->pid, localtmstr,
-                 fuzzer->origFileName, hfuzz->fileExtn);
+                 hfuzz->fileExtn);
     }
 
     LOG_I("Ok, that's interesting, saving the '%s' as '%s'", fuzzer->fileName, newname);
@@ -131,7 +132,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
 
     if (files_writeBufToFile
-        (fuzzer->crashFileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+        (newname, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
          O_CREAT | O_EXCL | O_WRONLY) == false) {
         LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
     }
@@ -172,22 +173,54 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     return false;
 }
 
+void arch_prepareChild(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
+{
+}
+
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    int status;
-
     for (;;) {
-#ifndef __WALL
-#define __WALL 0
-#endif
-        while (wait4(fuzzer->pid, &status, __WALL, NULL) != fuzzer->pid) ;
+        if (hfuzz->persistent) {
+            struct pollfd pfd = {
+                .fd = fuzzer->persistentSock,
+                .events = POLLIN,
+            };
+            int r = poll(&pfd, 1, -1);
+            if (r == -1 && errno != EINTR) {
+                PLOG_F("poll(fd=%d)", fuzzer->persistentSock);
+            }
+        }
+        if (subproc_persistentModeRoundDone(hfuzz, fuzzer) == true) {
+            break;
+        }
+
+        int status;
+        int flags = hfuzz->persistent ? WNOHANG : 0;
+        int ret = waitpid(fuzzer->pid, &status, flags);
+        if (ret == -1 && errno == EINTR) {
+            continue;
+        }
+        if (ret == -1) {
+            PLOG_W("wait4(pid=%d)", fuzzer->pid);
+            continue;
+        }
+        if (ret != fuzzer->pid) {
+            continue;
+        }
 
         char strStatus[4096];
+        if (hfuzz->persistent && ret == fuzzer->persistentPid
+            && (WIFEXITED(status) || WIFSIGNALED(status))) {
+            fuzzer->persistentPid = 0;
+            LOG_W("Persistent mode: PID %d exited with status: %s", ret,
+                  subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
+        }
+
         LOG_D("Process (pid %d) came back with status: %s", fuzzer->pid,
               subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
 
         if (arch_analyzeSignal(hfuzz, status, fuzzer)) {
-            return;
+            break;
         }
     }
 }
@@ -197,7 +230,78 @@ bool arch_archInit(honggfuzz_t * hfuzz UNUSED)
     return true;
 }
 
+void arch_sigFunc(int sig UNUSED)
+{
+    return;
+}
+
+static bool arch_setTimer(timer_t * timerid)
+{
+    /*
+     * Kick in every 200ms, starting with the next second
+     */
+    const struct itimerspec ts = {
+        .it_value = {.tv_sec = 0,.tv_nsec = 250000000,},
+        .it_interval = {.tv_sec = 0,.tv_nsec = 250000000,},
+    };
+    if (timer_settime(*timerid, 0, &ts, NULL) == -1) {
+        PLOG_E("timer_settime(arm) failed");
+        timer_delete(*timerid);
+        return false;
+    }
+
+    return true;
+}
+
+bool arch_setSig(int signo)
+{
+    sigset_t smask;
+    sigemptyset(&smask);
+    struct sigaction sa = {
+        .sa_handler = arch_sigFunc,
+        .sa_mask = smask,
+        .sa_flags = 0,
+    };
+
+    if (sigaction(signo, &sa, NULL) == -1) {
+        PLOG_W("sigaction(%d) failed", signo);
+        return false;
+    }
+
+    sigset_t ss;
+    sigemptyset(&ss);
+    sigaddset(&ss, signo);
+    if (pthread_sigmask(SIG_UNBLOCK, &ss, NULL) != 0) {
+        PLOG_W("pthread_sigmask(%d, SIG_UNBLOCK)", signo);
+        return false;
+    }
+
+    return true;
+}
+
 bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
+    if (arch_setSig(SIGIO) == false) {
+        LOG_E("arch_setSig(SIGIO)");
+        return false;
+    }
+    if (arch_setSig(SIGCHLD) == false) {
+        LOG_E("arch_setSig(SIGCHLD)");
+        return false;
+    }
+
+    struct sigevent sevp = {
+        .sigev_value.sival_ptr = &fuzzer->timerId,
+        .sigev_signo = SIGIO,
+        .sigev_notify = SIGEV_SIGNAL,
+    };
+    if (timer_create(CLOCK_REALTIME, &sevp, &fuzzer->timerId) == -1) {
+        PLOG_E("timer_create(CLOCK_REALTIME) failed");
+        return false;
+    }
+    if (arch_setTimer(&(fuzzer->timerId)) == false) {
+        LOG_F("Couldn't set timer");
+    }
+
     return true;
 }
