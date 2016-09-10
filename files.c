@@ -514,7 +514,7 @@ void *files_mapSharedMem(size_t sz, int *fd, const char *dir)
 
 bool files_readPidFromFile(const char *fileName, pid_t * pidPtr)
 {
-    FILE *fPID = fopen(fileName, "rb");
+    FILE *fPID = fopen(fileName, "rbe");
     if (fPID == NULL) {
         PLOG_W("Couldn't open '%s' - R/O mode", fileName);
         return false;
