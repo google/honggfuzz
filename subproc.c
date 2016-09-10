@@ -236,7 +236,11 @@ bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             close(fuzzer->persistentSock);
         }
 
-        if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1) {
+        int sock_type = SOCK_STREAM;
+#if defined(SOCK_CLOEXEC)
+        sock_type |= SOCK_CLOEXEC;
+#endif
+        if (socketpair(AF_UNIX, sock_type, 0, sv) == -1) {
             PLOG_W("socketpair(AF_UNIX, SOCK_STREAM, 0, sv)");
             return false;
         }
