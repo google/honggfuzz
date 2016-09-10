@@ -217,6 +217,7 @@ bool subproc_PrepareExecv(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *fi
         if (dup2(hfuzz->bbFd, _HF_BITMAP_FD) == -1) {
             PLOG_F("dup2('%d', %d)", hfuzz->bbFd, _HF_BITMAP_FD);
         }
+        close(hfuzz->bbFd);
     }
 
     return true;
