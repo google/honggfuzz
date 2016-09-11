@@ -189,6 +189,8 @@ static inline void updateCmpMap(void *addr, uint32_t new)
 }
 
 #define RET(x) return (x);
+
+__attribute__ ((always_inline))
 static inline int __strcmp(const char *s1, const char *s2, void *addr)
 {
     uint32_t v = 0;
@@ -209,6 +211,7 @@ int _strcmp(const char *s1, const char *s2)
     return __strcmp(s1, s2, __builtin_return_address(0));
 }
 
+__attribute__ ((always_inline))
 static inline int __strcasecmp(const char *s1, const char *s2, void *addr)
 {
     uint32_t v = 0;
@@ -279,6 +282,7 @@ char *_strcasestr(const char *haystack, const char *needle)
     return NULL;
 }
 
+__attribute__ ((always_inline))
 static inline int __memcmp(const void *m1, const void *m2, size_t n, void *addr)
 {
     uint32_t v = 0;
