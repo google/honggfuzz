@@ -1,5 +1,27 @@
+#include <unistd.h>
+
+/* Declare types that we want to intercept */
+__attribute__ ((alias("_strcmp")))
+int strcmp(const char *__s1, const char *__s2);
+__attribute__ ((alias("_strcasecmp")))
+int strcasecmp(const char *__s1, const char *__s2);
+__attribute__ ((alias("_strncasecmp")))
+int strncasecmp(const char *__s1, const char *__s2, size_t n);
+__attribute__ ((alias("_strstr")))
+char *strstr(const char *__haystack, const char *__needle);
+__attribute__ ((alias("_strcasestr")))
+char *strcasestr(const char *__haystack, const char *__needle);
+__attribute__ ((alias("_memcmp")))
+int memcmp(const void *__s1, const void *__s2, size_t __n);
+__attribute__ ((alias("_bcmp")))
+int bcmp(const void *__s1, const void *__s2, size_t __n);
+__attribute__ ((alias("_memmem")))
+void *memmem(const void *__haystack, size_t __haystacklen, const void *__needle,
+             size_t __needlelen);
+
 #include "../common.h"
 
+#include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <stdbool.h>
@@ -17,9 +39,6 @@
 static feedback_t bbMapFb;
 static feedback_t *feedback = &bbMapFb;
 static uint32_t my_thread_no = 0;
-
-__attribute__ ((weak))
-uintptr_t __sanitizer_get_total_unique_coverage();
 
 __attribute__ ((constructor))
 static void mapBB(void)
@@ -155,4 +174,153 @@ void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t * Cases)
             ATOMIC_POST_ADD(feedback->pidFeedbackCmp[my_thread_no], v - prev);
         }
     }
+}
+
+__attribute__ ((always_inline))
+static inline void updateCmpMap(void *addr, uint32_t new)
+{
+    uintptr_t pos = (uintptr_t) addr % _HF_PERF_BITMAP_SIZE_16M;
+    uint8_t v = new > 255 ? 255 : new;
+    uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
+    if (prev < v) {
+        ATOMIC_SET(feedback->bbMapCmp[pos], v);
+        ATOMIC_POST_ADD(feedback->pidFeedbackCmp[my_thread_no], v - prev);
+    }
+}
+
+#define RET(x) return (x);
+static inline int __strcmp(const char *s1, const char *s2, void *addr)
+{
+    uint32_t v = 0;
+
+    size_t i;
+    for (i = 0; s1[i] == s2[i]; i++) {
+        if (s1[i] == '\0' || s2[i] == '\0') {
+            break;
+        }
+        v++;
+    }
+    updateCmpMap(addr, v);
+    RET(s1[i] - s2[i]);
+}
+
+int _strcmp(const char *s1, const char *s2)
+{
+    return __strcmp(s1, s2, __builtin_return_address(0));
+}
+
+static inline int __strcasecmp(const char *s1, const char *s2, void *addr)
+{
+    uint32_t v = 0;
+
+    size_t i;
+    for (i = 0; tolower(s1[i]) == tolower(s2[i]); i++) {
+        if (s1[i] == '\0' || s2[i] == '\0') {
+            break;
+        }
+        v++;
+    }
+    updateCmpMap(addr, v);
+    RET(tolower(s1[i]) - tolower(s2[i]));
+}
+
+int _strcasecmp(const char *s1, const char *s2)
+{
+    return __strcasecmp(s1, s2, __builtin_return_address(0));
+}
+
+int _strncmp(const char *s1, const char *s2, size_t n)
+{
+    uint32_t v = 0;
+
+    size_t i = 0;
+    for (i = 0; (s1[i] == s2[i]) && i < n; i++) {
+        if (s1[i] == '\0' || s2[i] == '\0') {
+            break;
+        }
+        v++;
+    }
+    updateCmpMap(__builtin_return_address(0), v);
+    RET(s1[i] - s2[i]);
+}
+
+int _strncasecmp(const char *s1, const char *s2, size_t n)
+{
+    uint32_t v = 0;
+
+    size_t i = 0;
+    for (i = 0; (tolower(s1[i]) == tolower(s2[i])) && i < n; i++) {
+        if (s1[i] == '\0' || s2[i] == '\0') {
+            break;
+        }
+        v++;
+    }
+    updateCmpMap(__builtin_return_address(0), v);
+    RET(s1[i] - s2[i]);
+}
+
+char *_strstr(const char *haystack, const char *needle)
+{
+    for (size_t i = 0; haystack[i]; i++) {
+        if (__strcmp(&haystack[i], needle, __builtin_return_address(0)) == 0) {
+            return (char *)(&haystack[i]);
+        }
+    }
+    return NULL;
+}
+
+char *_strcasestr(const char *haystack, const char *needle)
+{
+    for (size_t i = 0; haystack[i]; i++) {
+        if (__strcasecmp(&haystack[i], needle, __builtin_return_address(0)) == 0) {
+            return (char *)(&haystack[i]);
+        }
+    }
+    return NULL;
+}
+
+static inline int __memcmp(const void *m1, const void *m2, size_t n, void *addr)
+{
+    uint32_t v = 0;
+
+    const char *s1 = (const char *)m1;
+    const char *s2 = (const char *)m2;
+
+    size_t i = 0;
+    for (i = 0; i < n; i++) {
+        if (s1[i] != s2[i]) {
+            break;
+        }
+        v++;
+    }
+    updateCmpMap(addr, v);
+    RET(s1[i] - s2[i]);
+}
+
+int _memcmp(const void *m1, const void *m2, size_t n)
+{
+    RET(__memcmp(m1, m2, n, __builtin_return_address(0)));
+}
+
+int _bcmp(const void *m1, const void *m2, size_t n)
+{
+    RET(__memcmp(m1, m2, n, __builtin_return_address(0)));
+}
+
+void *_memmem(const void *haystack, size_t haystacklen, const void *needle, size_t needlelen)
+{
+    if (needlelen > haystacklen) {
+        return NULL;
+    }
+    if (needlelen == 0) {
+        return (void *)haystack;
+    }
+
+    const char *h = haystack;
+    for (size_t i = 0; i <= (haystacklen - needlelen); i++) {
+        if (__memcmp(&h[i], needle, needlelen, __builtin_return_address(0)) == 0) {
+            return (void *)(&h[i]);
+        }
+    }
+    return NULL;
 }

@@ -194,6 +194,9 @@ all: $(BIN) $(HFUZZ_ARCH)
 $(BIN): $(OBJS)
 	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
 
+$(LIBS_OBJS): $(LIBS_SRCS)
+	$(CC) -c -fPIC -fno-builtin $(CFLAGS) -o $@ $(@:.o=.c)
+
 $(HFUZZ_ARCH): $(LIBS_OBJS)
 	$(AR) rcs $(HFUZZ_ARCH) $(LIBS_OBJS)
 
@@ -214,7 +217,6 @@ android:
 	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
                   APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) \
                   NDK_TOOLCHAIN=$(ANDROID_NDK_TOOLCHAIN) $(NDK_BUILD_ARGS)
-
 
 # DO NOT DELETE
 
