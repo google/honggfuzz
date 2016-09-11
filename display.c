@@ -163,7 +163,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                 hfuzz->threadsMax, sysconf(_SC_NPROCESSORS_ONLN), cpuUse,
                 cpuUse / sysconf(_SC_NPROCESSORS_ONLN));
 
-    display_put("     %s Speed : " ESC_BOLD "% "  _HF_MONETARY_MOD "zu" ESC_BOLD "/sec" ESC_RESET
+    display_put("     %s Speed : " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_BOLD "/sec" ESC_RESET
                 " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n",
                 hfuzz->persistent ? "Rounds" : "Execs", exec_per_sec,
                 elapsed_second ? (curr_exec_cnt / elapsed_second) : 0);
