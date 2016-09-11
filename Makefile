@@ -210,7 +210,7 @@ indent:
 
 .PHONY: depend
 depend:
-	makedepend -Y. -Y* -- $(SRCS)
+	makedepend -Y. -Y* -- *.c */*.c
 
 .PHONY: android
 android:
@@ -220,24 +220,29 @@ android:
 
 # DO NOT DELETE
 
-honggfuzz.o: common.h cmdline.h display.h log.h files.h fuzz.h util.h
 cmdline.o: cmdline.h common.h log.h files.h util.h
 display.o: common.h display.h log.h util.h
 files.o: common.h files.h log.h util.h
 fuzz.o: common.h fuzz.h arch.h files.h log.h mangle.h report.h sancov.h
 fuzz.o: subproc.h util.h
+honggfuzz.o: common.h cmdline.h display.h log.h files.h fuzz.h util.h
 log.o: common.h log.h util.h
 mangle.o: common.h mangle.h log.h util.h
 report.o: common.h report.h log.h util.h
 sancov.o: common.h sancov.h files.h log.h util.h
 subproc.o: common.h subproc.h arch.h files.h log.h sancov.h util.h
 util.o: common.h util.h files.h log.h
-linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h log.h common.h
-linux/ptrace_utils.o: sancov.h subproc.h util.h linux/bfd.h linux/unwind.h
-linux/perf.o: common.h linux/perf.h files.h log.h common.h util.h linux/pt.h
-linux/bfd.o: common.h linux/bfd.h linux/unwind.h files.h log.h common.h
-linux/bfd.o: util.h
-linux/pt.o: common.h linux/pt.h log.h common.h util.h
-linux/unwind.o: common.h linux/unwind.h log.h common.h
+libhfuzz/compiler_instrument.o: common.h util.h
+libhfuzz/persistent.o: common.h
 linux/arch.o: common.h arch.h common.h files.h linux/perf.h
 linux/arch.o: linux/ptrace_utils.h log.h sancov.h subproc.h util.h
+linux/bfd.o: common.h linux/bfd.h linux/unwind.h files.h log.h common.h
+linux/bfd.o: util.h
+linux/perf.o: common.h linux/perf.h files.h log.h common.h util.h linux/pt.h
+linux/pt.o: common.h linux/pt.h log.h common.h util.h
+linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h log.h common.h
+linux/ptrace_utils.o: sancov.h subproc.h util.h linux/bfd.h linux/unwind.h
+linux/unwind.o: common.h linux/unwind.h log.h common.h
+mac/arch.o: common.h arch.h files.h log.h sancov.h subproc.h util.h
+posix/arch.o: common.h arch.h common.h files.h log.h sancov.h subproc.h
+posix/arch.o: util.h
