@@ -42,21 +42,25 @@ It should work under the following operating systems:
 ```
 Usage: ./honggfuzz [options] -- path_to_command [args]
 Options:
- --help|-h
+ --help|-h 
 	Help plz..
  --input|-f VALUE
 	Path to the file corpus (file or a directory)
- --nullify_stdio|-q
+ --nullify_stdio|-q 
 	Null-ify children's stdin, stdout, stderr; make them quiet
- --stdin_input|-s
+ --timeout|-t VALUE
+	Timeout in seconds (default: '10')
+ --threads|-n VALUE
+	Number of concurrent fuzzing threads (default: '2')
+ --stdin_input|-s 
 	Provide fuzzing input on STDIN, instead of ___FILE___
- --save_all|-u
-	Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames
+ --mutation_rate|-r VALUE
+	Maximal mutation rate in relation to the file size, (default: '0.001')
  --logfile|-l VALUE
 	Log file
- --verbose|-v
+ --verbose|-v 
 	Disable ANSI console; use simple log output
- --verifier|-V
+ --verifier|-V 
 	Enable crashes verifier
  --debug_level|-d VALUE
 	Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])
@@ -64,18 +68,12 @@ Options:
 	Input file extension (e.g. 'swf'), (default: 'fuzz')
  --workspace|-W VALUE
 	Workspace directory to save crashes & runtime files (default: '.')
- --flip_rate|-r VALUE
-	Maximal flip rate, (default: '0.001')
  --wordlist|-w VALUE
 	Wordlist file (tokens delimited by NUL-bytes)
  --stackhash_bl|-B VALUE
 	Stackhashes blacklist file (one entry per line)
  --mutate_cmd|-c VALUE
-	External command modifying the input corpus of files, instead of -r/-m parameters
- --timeout|-t VALUE
-	Timeout in seconds (default: '10')
- --threads|-n VALUE
-	Number of concurrent fuzzing threads (default: '2')
+	External command providing fuzz files, instead of mutating the input corpus
  --iterations|-N VALUE
 	Number of fuzzing iterations (default: '0' [no limit])
  --rlimit_as VALUE
@@ -84,36 +82,42 @@ Options:
 	Write report to this file (default: 'HONGGFUZZ.REPORT.TXT')
  --max_file_size|-F VALUE
 	Maximal size of files processed by the fuzzer in bytes (default: '1048576')
- --clear_env
+ --clear_env 
 	Clear all environment variables before executing the binary
  --env|-E VALUE
 	Pass this environment variable, can be used multiple times
- --sancov|-C
+ --save_all|-u 
+	Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames
+ --sancov|-C 
 	Enable sanitizer coverage feedback
+ --instr|-z 
+	Enable compile-time instrumentation (see libraries/instrument_func.c)
+ --msan_report_umrs 
+	Report MSAN's UMRS (uninitialized memory access)
+ --persistent|-P 
+	Enable persistent fuzzing (link with libraries/persistent.mode.main.o)
  --linux_pid|-p VALUE
 	Attach to a pid (and its thread group)
- --linux_file_pid|-P VALUE
+ --linux_file_pid VALUE
 	Attach to pid (and its thread group) read from file
  --linux_addr_low_limit VALUE
 	Address limit (from si.si_addr) below which crashes are not reported, (default: '0')
- --linux_keep_aslr
+ --linux_keep_aslr 
 	Don't disable ASLR randomization, might be useful with MSAN
- --linux_report_msan_umrs
-	Report MSAN's UMRS (uninitialized memory access)
  --linux_perf_ignore_above VALUE
 	Ignore perf events which report IPs above this address
- --linux_perf_instr
+ --linux_perf_instr 
 	Use PERF_COUNT_HW_INSTRUCTIONS perf
- --linux_perf_branch
+ --linux_perf_branch 
 	Use PERF_COUNT_HW_BRANCH_INSTRUCTIONS perf
- --linux_perf_bts_block
+ --linux_perf_bts_block 
 	Use Intel BTS to count unique blocks
- --linux_perf_bts_edge
+ --linux_perf_bts_edge 
 	Use Intel BTS to count unique edges
- --linux_perf_ipt_block
+ --linux_perf_ipt_block 
 	Use Intel Processor Trace to count unique blocks
- --linux_perf_custom
-	Custom counter (see the interceptor/ directory for examples)
+ --linux_perf_custom 
+	Custom counter (based on GS register for x86_64)
 
 Examples:
  Run the binary over a mutated file chosen from the directory
