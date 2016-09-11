@@ -232,12 +232,12 @@ report.o: common.h report.h log.h util.h
 sancov.o: common.h sancov.h files.h log.h util.h
 subproc.o: common.h subproc.h arch.h files.h log.h sancov.h util.h
 util.o: common.h util.h files.h log.h
-linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h linux/bfd.h
-linux/ptrace_utils.o: linux/unwind.h linux/unwind.h log.h sancov.h subproc.h
-linux/ptrace_utils.o: util.h
-linux/perf.o: common.h linux/perf.h files.h linux/pt.h log.h util.h
-linux/bfd.o: common.h linux/bfd.h linux/unwind.h files.h log.h util.h
-linux/pt.o: common.h linux/pt.h log.h util.h
-linux/unwind.o: common.h linux/unwind.h log.h
-linux/arch.o: common.h arch.h files.h linux/perf.h linux/ptrace_utils.h log.h
-linux/arch.o: sancov.h subproc.h util.h
+linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h log.h common.h
+linux/ptrace_utils.o: sancov.h subproc.h util.h linux/bfd.h linux/unwind.h
+linux/perf.o: common.h linux/perf.h files.h log.h common.h util.h linux/pt.h
+linux/bfd.o: common.h linux/bfd.h linux/unwind.h files.h log.h common.h
+linux/bfd.o: util.h
+linux/pt.o: common.h linux/pt.h log.h common.h util.h
+linux/unwind.o: common.h linux/unwind.h log.h common.h
+linux/arch.o: common.h arch.h common.h files.h linux/perf.h
+linux/arch.o: linux/ptrace_utils.h log.h sancov.h subproc.h util.h
