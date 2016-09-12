@@ -195,7 +195,7 @@ $(BIN): $(OBJS)
 	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
 
 $(LIBS_OBJS): $(LIBS_SRCS)
-	$(CC) -c -fPIC -fno-builtin $(CFLAGS) -o $@ $(@:.o=.c)
+	$(CC) -c -fPIC -fno-builtin $(CFLAGS) -fno-stack-protector -o $@ $(@:.o=.c)
 
 $(HFUZZ_ARCH): $(LIBS_OBJS)
 	$(AR) rcs $(HFUZZ_ARCH) $(LIBS_OBJS)
