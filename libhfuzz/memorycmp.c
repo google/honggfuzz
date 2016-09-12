@@ -59,6 +59,9 @@ int strncmp(const char *s1, const char *s2, size_t n)
         v++;
     }
     libhfuzz_instrumentUpdateCmpMap(__builtin_return_address(0), v);
+    if (i == n) {
+        return 0;
+    }
     return (s1[i] - s2[i]);
 }
 
@@ -74,6 +77,9 @@ int strncasecmp(const char *s1, const char *s2, size_t n)
         v++;
     }
     libhfuzz_instrumentUpdateCmpMap(__builtin_return_address(0), v);
+    if (i == n) {
+        return 0;
+    }
     return (s1[i] - s2[i]);
 }
 
@@ -113,6 +119,9 @@ static inline int _memcmp(const void *m1, const void *m2, size_t n, void *addr)
         v++;
     }
     libhfuzz_instrumentUpdateCmpMap(addr, v);
+    if (i == n) {
+        return 0;
+    }
     return (s1[i] - s2[i]);
 }
 
