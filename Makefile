@@ -232,7 +232,8 @@ report.o: common.h report.h log.h util.h
 sancov.o: common.h sancov.h files.h log.h util.h
 subproc.o: common.h subproc.h arch.h files.h log.h sancov.h util.h
 util.o: common.h util.h files.h log.h
-libhfuzz/compiler_instrument.o: common.h util.h
+libhfuzz/instrument.o: common.h util.h
+libhfuzz/memorycmp.o: libhfuzz/instrument.h
 libhfuzz/persistent.o: common.h
 linux/arch.o: common.h arch.h common.h files.h linux/perf.h
 linux/arch.o: linux/ptrace_utils.h log.h sancov.h subproc.h util.h
