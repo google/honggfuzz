@@ -287,6 +287,7 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         struct strings_t *str = (struct strings_t *)util_Malloc(sizeof(struct strings_t));
         str->s = util_decodeCString(lineptr);
         hfuzz->dictionaryCnt += 1;
+        TAILQ_INSERT_TAIL(&hfuzz->dictionaryq, str, pointers);
 
         LOG_D("Dictionary: loaded word: '%s' (len=%zu)", str->s, strlen(str->s));
     }
