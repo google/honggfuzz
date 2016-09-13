@@ -183,6 +183,11 @@ struct dynfile_t {
      TAILQ_ENTRY(dynfile_t) pointers;
 };
 
+struct strings_t {
+    char *s;
+     TAILQ_ENTRY(strings_t) pointers;
+};
+
 /* Maximum number of active fuzzing threads */
 #define _HF_THREAD_MAX 1024U
 typedef struct {
@@ -206,13 +211,10 @@ typedef struct {
     char *workDir;
     double origFlipRate;
     char *externalCommand;
-    const char *dictionaryFile;
-    char **dictionary;
     const char *blacklistFile;
     uint64_t *blacklist;
     size_t blacklistCnt;
     long tmOut;
-    size_t dictionaryCnt;
     size_t mutationsMax;
     size_t threadsMax;
     size_t threadsFinished;
@@ -226,6 +228,10 @@ typedef struct {
     bool clearEnv;
     char *envs[128];
     bool persistent;
+
+    const char *dictionaryFile;
+     TAILQ_HEAD(dictionaryq_t, strings_t) dictionaryq;
+    size_t dictionaryCnt;
 
     fuzzState_t state;
     feedback_t *feedback;

@@ -65,7 +65,7 @@ static void mangle_Bit(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz U
     buf[off] ^= (uint8_t) (1U << util_rndGet(0, 7));
 }
 
-static void mangle_Dictionary(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz, size_t off)
+static void mangle_Dictionary(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz, size_t off)
 {
     if (hfuzz->dictionaryCnt == 0) {
         mangle_Bit(hfuzz, buf, bufSz, off);
@@ -73,8 +73,13 @@ static void mangle_Dictionary(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t 
     }
 
     uint64_t choice = util_rndGet(0, hfuzz->dictionaryCnt - 1);
-    mangle_Overwrite(buf, (uint8_t *) hfuzz->dictionary[choice], bufSz, off,
-                     strlen(hfuzz->dictionary[choice]));
+
+    struct strings_t *str = TAILQ_FIRST(&hfuzz->dictionaryq);
+    for (uint64_t i = 0; i < choice; i++) {
+        str = TAILQ_NEXT(str, pointers);
+    }
+
+    mangle_Overwrite(buf, (uint8_t *) str->s, bufSz, off, strlen(str->s));
 }
 
 static void mangle_Magic(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz, size_t off)

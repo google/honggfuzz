@@ -283,18 +283,12 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         if (len > 1 && lineptr[len - 1] == '\n') {
             lineptr[len - 1] = '\0';
         }
-        if ((hfuzz->dictionary =
-             util_Realloc(hfuzz->dictionary,
-                          (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]))) == NULL) {
-            PLOG_W("Realloc failed (sz=%zu)",
-                   (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]));
-            return false;
-        }
-        hfuzz->dictionary[hfuzz->dictionaryCnt] = util_decodeCString(lineptr);
-        LOG_D("Dictionary: loaded word: '%s' (len=%zu)",
-              hfuzz->dictionary[hfuzz->dictionaryCnt],
-              strlen(hfuzz->dictionary[hfuzz->dictionaryCnt]));
+
+        struct strings_t *str = (struct strings_t *)util_Malloc(sizeof(struct strings_t));
+        str->s = util_decodeCString(lineptr);
         hfuzz->dictionaryCnt += 1;
+
+        LOG_D("Dictionary: loaded word: '%s' (len=%zu)", str->s, strlen(str->s));
     }
     LOG_I("Loaded %zu words from the dictionary", hfuzz->dictionaryCnt);
     return true;

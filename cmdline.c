@@ -142,9 +142,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .workDir = ".",
         .origFlipRate = 0.001f,
         .externalCommand = NULL,
-        .dictionaryFile = NULL,
-        .dictionary = NULL,
-        .dictionaryCnt = 0,
         .blacklistFile = NULL,
         .blacklistCnt = 0,
         .blacklist = NULL,
@@ -164,6 +161,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             [0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,
         },
         .persistent = false,
+
+        .dictionaryFile = NULL,
+        .dictionaryCnt = 0,
 
         .state = _HF_STATE_UNSET,
         .feedback = NULL,
@@ -223,6 +223,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     /*  *INDENT-ON* */
 
     TAILQ_INIT(&hfuzz->dynfileq);
+    TAILQ_INIT(&hfuzz->dictionaryq);
 
     /*  *INDENT-OFF* */
     struct custom_option custom_opts[] = {
