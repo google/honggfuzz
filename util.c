@@ -303,3 +303,50 @@ bool util_isANumber(const char *s)
     }
     return true;
 }
+
+char *util_decodeCString(char *s)
+{
+    size_t len = strlen(s);
+    size_t o = 0;
+    for (size_t i = 0; s[i] != '\0' && i < len; i++, o++) {
+        switch (s[i]) {
+        case '\\':{
+                i++;
+                switch (s[i]) {
+                case 'a':
+                    s[o] = '\a';
+                    break;
+                case 'r':
+                    s[o] = '\r';
+                    break;
+                case 'n':
+                    s[o] = '\n';
+                    break;
+                case 't':
+                    s[o] = '\t';
+                    break;
+                case '0':
+                    s[o] = '\0';
+                    break;
+                case 'x':{
+                        /* Yup, this can overflow */
+                        char hex[] = { s[i + 1], s[i + 2], 0 };
+                        s[o] = strtoul(hex, NULL, 16);
+                        i += 2;
+                        break;
+                    }
+                default:
+                    s[o] = ' ';
+                    break;
+                }
+                break;
+            }
+        default:{
+                s[o] = s[i];
+                break;
+            }
+        }
+    }
+    s[o] = '\0';
+    return s;
+}

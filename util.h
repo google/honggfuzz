@@ -118,4 +118,6 @@ extern int64_t fastArray64Search(uint64_t * array, size_t arraySz, uint64_t key)
 
 extern bool util_isANumber(const char *s);
 
+extern char *util_decodeCString(char *s);
+
 #endif
