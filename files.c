@@ -279,6 +279,10 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         if (getdelim(&lineptr, &n, '\n', fDict) == -1) {
             break;
         }
+        size_t len = strlen(lineptr);
+        if (len > 1 && lineptr[len - 1] == '\n') {
+            lineptr[len - 1] = '\0';
+        }
         if ((hfuzz->dictionary =
              util_Realloc(hfuzz->dictionary,
                           (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]))) == NULL) {
