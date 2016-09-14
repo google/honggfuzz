@@ -184,12 +184,6 @@ int main(int argc, char **argv)
 
     /* Clean-up global buffers */
     free(hfuzz.files);
-    if (hfuzz.dictionary) {
-        for (size_t i = 0; i < hfuzz.dictionaryCnt; i++) {
-            free(hfuzz.dictionary[i]);
-        }
-        free(hfuzz.dictionary);
-    }
     if (hfuzz.blacklist) {
         free(hfuzz.blacklist);
     }

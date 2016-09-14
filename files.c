@@ -276,21 +276,20 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
     for (;;) {
         char *lineptr = NULL;
         size_t n = 0;
-        if (getdelim(&lineptr, &n, '\0', fDict) == -1) {
+        if (getdelim(&lineptr, &n, '\n', fDict) == -1) {
             break;
         }
-        if ((hfuzz->dictionary =
-             util_Realloc(hfuzz->dictionary,
-                          (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]))) == NULL) {
-            PLOG_W("Realloc failed (sz=%zu)",
-                   (hfuzz->dictionaryCnt + 1) * sizeof(hfuzz->dictionary[0]));
-            return false;
+        size_t len = strlen(lineptr);
+        if (len > 1 && lineptr[len - 1] == '\n') {
+            lineptr[len - 1] = '\0';
         }
-        hfuzz->dictionary[hfuzz->dictionaryCnt] = lineptr;
-        LOG_D("Dictionary: loaded word: '%s' (len=%zu)",
-              hfuzz->dictionary[hfuzz->dictionaryCnt],
-              strlen(hfuzz->dictionary[hfuzz->dictionaryCnt]));
+
+        struct strings_t *str = (struct strings_t *)util_Malloc(sizeof(struct strings_t));
+        str->s = util_decodeCString(lineptr);
         hfuzz->dictionaryCnt += 1;
+        TAILQ_INSERT_TAIL(&hfuzz->dictionaryq, str, pointers);
+
+        LOG_D("Dictionary: loaded word: '%s' (len=%zu)", str->s, strlen(str->s));
     }
     LOG_I("Loaded %zu words from the dictionary", hfuzz->dictionaryCnt);
     return true;
