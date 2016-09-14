@@ -148,7 +148,7 @@ void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t * Cases)
 {
     for (uint64_t i = 0; i < Cases[0]; i++) {
         uintptr_t pos = ((uintptr_t) __builtin_return_address(0) + i) % _HF_PERF_BITMAP_SIZE_16M;
-        uint8_t v = (64U - __builtin_popcountll(Val ^ Cases[i + 2]));
+        uint8_t v = ((8 * Cases[1]) - __builtin_popcountll(Val ^ Cases[i + 2]));
         uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
         if (prev < v) {
             ATOMIC_SET(feedback->bbMapCmp[pos], v);
@@ -160,7 +160,7 @@ void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t * Cases)
 void libhfuzz_instrumentUpdateCmpMap(void *addr, unsigned int new)
 {
     uintptr_t pos = (uintptr_t) addr % _HF_PERF_BITMAP_SIZE_16M;
-    uint8_t v = new > 255 ? 255 : new;
+    uint8_t v = new > 254 ? 254 : new;
     uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
     if (prev < v) {
         ATOMIC_SET(feedback->bbMapCmp[pos], v);
