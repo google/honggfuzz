@@ -94,7 +94,7 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
         const char *prefix;
         const bool print_funcline;
     };
-    static const struct ll_t const logLevels[] = {
+    static const struct ll_t logLevels[] = {
         {"F", "\033[7;35m", true},
         {"E", "\033[1;31m", true},
         {"W", "\033[0;33m", true},
