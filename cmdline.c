@@ -364,7 +364,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             hfuzz->msanReportUMRS = true;
             break;
         case 0x103:
-            hfuzz->workDir = optarg;
+            hfuzz->covDir = optarg;
             break;
         case 'P':
             hfuzz->persistent = true;
