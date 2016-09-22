@@ -210,6 +210,7 @@ typedef struct {
     time_t timeStart;
     char *fileExtn;
     char *workDir;
+    char *covDir;
     double origFlipRate;
     char *externalCommand;
     const char *blacklistFile;

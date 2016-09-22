@@ -144,6 +144,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .timeStart = time(NULL),
         .fileExtn = "fuzz",
         .workDir = ".",
+        .covDir = NULL,
         .origFlipRate = 0.001f,
         .externalCommand = NULL,
         .blacklistFile = NULL,
@@ -244,6 +245,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"debug_level", required_argument, NULL, 'd'}, "Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])"},
         {{"extension", required_argument, NULL, 'e'}, "Input file extension (e.g. 'swf'), (default: 'fuzz')"},
         {{"workspace", required_argument, NULL, 'W'}, "Workspace directory to save crashes & runtime files (default: '.')"},
+        {{"covdir", required_argument, NULL, 0x103}, "Output directory for coverage data (default: The same as workspace directory)"},
         {{"wordlist", required_argument, NULL, 'w'}, "Wordlist file (tokens delimited by NUL-bytes)"},
         {{"stackhash_bl", required_argument, NULL, 'B'}, "Stackhashes blacklist file (one entry per line)"},
         {{"mutate_cmd", required_argument, NULL, 'c'}, "External command providing fuzz files, instead of mutating the input corpus"},
@@ -361,6 +363,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         case 0x102:
             hfuzz->msanReportUMRS = true;
             break;
+        case 0x103:
+            hfuzz->workDir = optarg;
+            break;
         case 'P':
             hfuzz->persistent = true;
             break;
@@ -469,6 +474,10 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
         LOG_I("Verifier enabled with 0.0 flipRate, activating dry run mode");
+    }
+
+    if (hfuzz->covDir == NULL) {
+        hfuzz->covDir = hfuzz->workDir;
     }
 
     LOG_I("inputFile '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, flipRate: %lf, "
