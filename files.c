@@ -276,20 +276,22 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
     for (;;) {
         char *lineptr = NULL;
         size_t n = 0;
-        if (getdelim(&lineptr, &n, '\n', fDict) == -1) {
+        ssize_t len = getdelim(&lineptr, &n, '\n', fDict);
+        if (len == -1) {
             break;
         }
-        size_t len = strlen(lineptr);
-        if (len > 1 && lineptr[len - 1] == '\n') {
+        if (n > 1 && lineptr[len - 1] == '\n') {
             lineptr[len - 1] = '\0';
+            len--;
         }
 
         struct strings_t *str = (struct strings_t *)util_Malloc(sizeof(struct strings_t));
         str->s = util_decodeCString(lineptr);
+        str->len = len;
         hfuzz->dictionaryCnt += 1;
         TAILQ_INSERT_TAIL(&hfuzz->dictionaryq, str, pointers);
 
-        LOG_D("Dictionary: loaded word: '%s' (len=%zu)", str->s, strlen(str->s));
+        LOG_D("Dictionary: loaded word: '%s' (len=%zu)", str->s, str->len);
     }
     LOG_I("Loaded %zu words from the dictionary", hfuzz->dictionaryCnt);
     return true;

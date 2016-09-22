@@ -79,7 +79,7 @@ static void mangle_Dictionary(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz, 
         str = TAILQ_NEXT(str, pointers);
     }
 
-    mangle_Overwrite(buf, (uint8_t *) str->s, bufSz, off, strlen(str->s));
+    mangle_Overwrite(buf, (uint8_t *) str->s, bufSz, off, str->len);
 }
 
 static void mangle_Magic(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz, size_t off)

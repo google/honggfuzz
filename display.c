@@ -219,7 +219,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     if (hfuzz->dynFileMethod & _HF_DYNFILE_SOFT) {
         uint64_t softCntPc = ATOMIC_GET(hfuzz->linux.hwCnts.softCntPc);
         uint64_t softCntCmp = ATOMIC_GET(hfuzz->linux.hwCnts.softCntCmp);
-        display_put("       *** functions seen:  " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
+        display_put("       *** blocks seen:  " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     ", comparison map: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET "\n",
                     softCntPc, softCntCmp);
     }
