@@ -304,7 +304,7 @@ bool util_isANumber(const char *s)
     return true;
 }
 
-char *util_decodeCString(char *s)
+size_t util_decodeCString(char *s)
 {
     size_t len = strlen(s);
     size_t o = 0;
@@ -348,5 +348,5 @@ char *util_decodeCString(char *s)
         }
     }
     s[o] = '\0';
-    return s;
+    return o;
 }

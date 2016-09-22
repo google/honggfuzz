@@ -286,8 +286,8 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         }
 
         struct strings_t *str = (struct strings_t *)util_Malloc(sizeof(struct strings_t));
-        str->s = util_decodeCString(lineptr);
-        str->len = len;
+        str->len = util_decodeCString(lineptr);
+        str->s = lineptr;
         hfuzz->dictionaryCnt += 1;
         TAILQ_INSERT_TAIL(&hfuzz->dictionaryq, str, pointers);
 
