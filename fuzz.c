@@ -289,7 +289,7 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
     }
 
     char tmstr[512];
-    util_getLocalTime("%Y%e%d.%H%M%S", tmstr, sizeof(tmstr), time(NULL));
+    util_getLocalTime("%Y%m%d.%H%M%S", tmstr, sizeof(tmstr), time(NULL));
     char fname[PATH_MAX];
     if (hfuzz->covDir == NULL) {
         snprintf(fname, sizeof(fname), "%s/TIME.%s.ITER.%" PRIu64 ".RND.%" PRIx64 ".HONGGFUZZ.COV",
