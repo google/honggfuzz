@@ -201,7 +201,7 @@ typedef struct {
 typedef struct {
     char **cmdline;
     char cmdline_txt[PATH_MAX];
-    char *inputFile;
+    char *inputDir;
     bool nullifyStdio;
     bool fuzzStdin;
     bool saveUnique;
@@ -210,7 +210,7 @@ typedef struct {
     time_t timeStart;
     char *fileExtn;
     char *workDir;
-    bool appendToCov;
+    char *covDir;
     double origFlipRate;
     char *externalCommand;
     const char *blacklistFile;

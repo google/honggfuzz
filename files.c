@@ -146,9 +146,9 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
 
 static bool files_readdir(honggfuzz_t * hfuzz)
 {
-    DIR *dir = opendir(hfuzz->inputFile);
+    DIR *dir = opendir(hfuzz->inputDir);
     if (!dir) {
-        PLOG_W("Couldn't open dir '%s'", hfuzz->inputFile);
+        PLOG_W("Couldn't open dir '%s'", hfuzz->inputDir);
         return false;
     }
     defer {
@@ -161,7 +161,7 @@ static bool files_readdir(honggfuzz_t * hfuzz)
         errno = 0;
         struct dirent *res = readdir(dir);
         if (res == NULL && errno != 0) {
-            PLOG_W("Couldn't read the '%s' dir", hfuzz->inputFile);
+            PLOG_W("Couldn't read the '%s' dir", hfuzz->inputDir);
             return false;
         }
 
@@ -170,7 +170,7 @@ static bool files_readdir(honggfuzz_t * hfuzz)
         }
 
         char path[PATH_MAX];
-        snprintf(path, sizeof(path), "%s/%s", hfuzz->inputFile, res->d_name);
+        snprintf(path, sizeof(path), "%s/%s", hfuzz->inputDir, res->d_name);
         struct stat st;
         if (stat(path, &st) == -1) {
             LOG_W("Couldn't stat() the '%s' file", path);
@@ -207,7 +207,7 @@ static bool files_readdir(honggfuzz_t * hfuzz)
     }
 
     if (count == 0) {
-        LOG_W("Directory '%s' doesn't contain any regular files", hfuzz->inputFile);
+        LOG_W("Directory '%s' doesn't contain any regular files", hfuzz->inputDir);
         return false;
     }
 
@@ -232,14 +232,14 @@ bool files_init(honggfuzz_t * hfuzz)
         return true;
     }
 
-    if (!hfuzz->inputFile) {
+    if (!hfuzz->inputDir) {
         LOG_W("No input file/dir specified");
         return false;
     }
 
     struct stat st;
-    if (stat(hfuzz->inputFile, &st) == -1) {
-        PLOG_W("Couldn't stat the input file/dir '%s'", hfuzz->inputFile);
+    if (stat(hfuzz->inputDir, &st) == -1) {
+        PLOG_W("Couldn't stat the input dir '%s'", hfuzz->inputDir);
         return false;
     }
 
@@ -247,25 +247,8 @@ bool files_init(honggfuzz_t * hfuzz)
         return files_readdir(hfuzz);
     }
 
-    if (!S_ISREG(st.st_mode)) {
-        LOG_W("'%s' is not a regular file, nor a directory", hfuzz->inputFile);
-        return false;
-    }
-
-    if (hfuzz->maxFileSz && st.st_size > (off_t) hfuzz->maxFileSz) {
-        LOG_W("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %" PRId64,
-              hfuzz->inputFile, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
-        return false;
-    }
-
-    if (hfuzz->maxFileSz == 0UL) {
-        hfuzz->maxFileSz = (size_t) st.st_size;
-        LOG_I("Maximum corpus file size set to: %zu bytes", hfuzz->maxFileSz);
-    }
-
-    hfuzz->files[0] = hfuzz->inputFile;
-    hfuzz->fileCnt = 1;
-    return true;
+    LOG_W("The initial corpus directory '%s' is not a directory", hfuzz->inputDir);
+    return false;
 }
 
 const char *files_basename(char *path)

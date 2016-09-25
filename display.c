@@ -150,7 +150,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
     display_put("\n        Run Time : " ESC_BOLD "%s" ESC_RESET " (since: " ESC_BOLD "%s" ESC_RESET
                 ")\n", time_elapsed_str, start_time_str);
-    display_put("  Input File/Dir : '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputFile);
+    display_put("       Input Dir : '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->inputDir);
     display_put("      Fuzzed Cmd : '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
     if (hfuzz->linux.pid > 0) {
         display_put("Remote cmd [" ESC_BOLD "%d" ESC_RESET "]: '" ESC_BOLD "%s" ESC_RESET

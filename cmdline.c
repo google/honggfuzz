@@ -135,7 +135,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     (*hfuzz) = (honggfuzz_t) {
         .cmdline = NULL,
         .cmdline_txt[0] = '\0',
-        .inputFile = NULL,
+        .inputDir = NULL,
         .nullifyStdio = false,
         .fuzzStdin = false,
         .saveUnique = true,
@@ -144,7 +144,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .timeStart = time(NULL),
         .fileExtn = "fuzz",
         .workDir = ".",
-        .appendToCov = false,
+        .covDir = NULL,
         .origFlipRate = 0.001f,
         .externalCommand = NULL,
         .blacklistFile = NULL,
@@ -233,7 +233,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     /*  *INDENT-OFF* */
     struct custom_option custom_opts[] = {
         {{"help", no_argument, NULL, 'h'}, "Help plz.."},
-        {{"input", required_argument, NULL, 'f'}, "Path to the file corpus (file or a directory)"},
+        {{"input", required_argument, NULL, 'f'}, "Path to a directory containing initial file corpus"},
         {{"nullify_stdio", no_argument, NULL, 'q'}, "Null-ify children's stdin, stdout, stderr; make them quiet"},
         {{"timeout", required_argument, NULL, 't'}, "Timeout in seconds (default: '10')"},
         {{"threads", required_argument, NULL, 'n'}, "Number of concurrent fuzzing threads (default: '2')"},
@@ -245,7 +245,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"debug_level", required_argument, NULL, 'd'}, "Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])"},
         {{"extension", required_argument, NULL, 'e'}, "Input file extension (e.g. 'swf'), (default: 'fuzz')"},
         {{"workspace", required_argument, NULL, 'W'}, "Workspace directory to save crashes & runtime files (default: '.')"},
-        {{"append_cov", no_argument, NULL, 0x103}, "Append data to the input corpus if new coverage found (default: false)"},
+        {{"covdir", required_argument, NULL, 0x103}, "New coverage is written to a separate directory (default: append new coverage only)"},
         {{"wordlist", required_argument, NULL, 'w'}, "Wordlist file (tokens delimited by NUL-bytes)"},
         {{"stackhash_bl", required_argument, NULL, 'B'}, "Stackhashes blacklist file (one entry per line)"},
         {{"mutate_cmd", required_argument, NULL, 'c'}, "External command providing fuzz files, instead of mutating the input corpus"},
@@ -298,7 +298,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             cmdlineUsage(argv[0], custom_opts);
             break;
         case 'f':
-            hfuzz->inputFile = optarg;
+            hfuzz->inputDir = optarg;
             break;
         case 'q':
             hfuzz->nullifyStdio = true;
@@ -364,7 +364,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             hfuzz->msanReportUMRS = true;
             break;
         case 0x103:
-            hfuzz->appendToCov = true;
+            hfuzz->covDir = optarg;
             break;
         case 'P':
             hfuzz->persistent = true;
@@ -476,10 +476,10 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         LOG_I("Verifier enabled with 0.0 flipRate, activating dry run mode");
     }
 
-    LOG_I("inputFile '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, flipRate: %lf, "
+    LOG_I("inputDir '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, flipRate: %lf, "
           "externalCommand: '%s', tmOut: %ld, mutationsMax: %zu, threadsMax: %zu, fileExtn '%s', "
           "memoryLimit: 0x%" PRIx64 "(MiB), fuzzExe: '%s', fuzzedPid: %d",
-          hfuzz->inputFile,
+          hfuzz->inputDir,
           cmdlineYesNo(hfuzz->nullifyStdio), cmdlineYesNo(hfuzz->fuzzStdin),
           cmdlineYesNo(hfuzz->saveUnique), hfuzz->origFlipRate,
           hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, hfuzz->tmOut,

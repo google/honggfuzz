@@ -284,19 +284,19 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
     hfuzz->dynfileqCnt++;
 
     /* No need to add new coverage if we are supposed to append new coverage-inducing inputs only */
-    if (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_PRE && hfuzz->appendToCov == true) {
-		LOG_D("New coverage found, but we're in the initial coverage assessment state. Skipping");
+    if (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_PRE && hfuzz->covDir == NULL) {
+        LOG_D("New coverage found, but we're in the initial coverage assessment state. Skipping");
         return;
     }
 
     char fname[PATH_MAX];
-    if (hfuzz->appendToCov == true) {
+    if (hfuzz->covDir == NULL) {
         snprintf(fname, sizeof(fname), "%s/COVERAGE.TIME.%d.PID.%d.ITER.%" PRIu64 ".RND.%" PRIx64,
-                 hfuzz->inputFile, (int)time(NULL), (int)getpid(),
+                 hfuzz->inputDir, (int)time(NULL), (int)getpid(),
                  (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt), util_rndGet(0, 0xFFFFFFFFFFFF));
     } else {
         snprintf(fname, sizeof(fname), "%s/COVERAGE.TIME.%d.PID.%d.ITER.%" PRIu64 ".RND.%" PRIx64,
-                 hfuzz->workDir, (int)time(NULL), (int)getpid(),
+                 hfuzz->covDir, (int)time(NULL), (int)getpid(),
                  (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt), util_rndGet(0, 0xFFFFFFFFFFFF));
     }
 
