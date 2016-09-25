@@ -751,14 +751,6 @@ bool sancov_Init(honggfuzz_t * hfuzz)
         return true;
     }
 
-    char sanCovOutDir[PATH_MAX] = { 0 };
-    snprintf(sanCovOutDir, sizeof(sanCovOutDir), "%s/%s", hfuzz->workDir, _HF_SANCOV_DIR);
-    if (!files_exists(sanCovOutDir)) {
-        if (mkdir(sanCovOutDir, S_IRWXU | S_IXGRP | S_IXOTH) != 0) {
-            PLOG_E("mkdir() '%s' failed", sanCovOutDir);
-        }
-    }
-
     /* Set sanitizer flags once to avoid performance overhead per worker spawn */
     size_t flagsSz = 0;
     size_t bufSz = sizeof(kASAN_OPTS) + (2 * PATH_MAX); // Larger constant + 2 dynamic paths
@@ -840,6 +832,14 @@ bool sancov_Init(honggfuzz_t * hfuzz)
         return true;
     }
     sancov_trieCreate(&hfuzz->covMetadata);
+
+    char sanCovOutDir[PATH_MAX] = { 0 };
+    snprintf(sanCovOutDir, sizeof(sanCovOutDir), "%s/%s", hfuzz->workDir, _HF_SANCOV_DIR);
+    if (!files_exists(sanCovOutDir)) {
+        if (mkdir(sanCovOutDir, S_IRWXU | S_IXGRP | S_IXOTH) != 0) {
+            PLOG_E("mkdir() '%s' failed", sanCovOutDir);
+        }
+    }
 
     return true;
 }
