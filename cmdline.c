@@ -150,7 +150,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .blacklistFile = NULL,
         .blacklistCnt = 0,
         .blacklist = NULL,
-        .maxFileSz = (1024 * 1024),
+        .maxFileSz = 0UL,
         .tmOut = 10,
         .mutationsMax = 0,
         .threadsFinished = 0,

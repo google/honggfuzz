@@ -155,7 +155,8 @@ static bool files_readdir(honggfuzz_t * hfuzz)
         closedir(dir);
     };
 
-    int count = 0;
+    size_t maxSize = 0UL;
+    unsigned count = 0;
     for (;;) {
         errno = 0;
         struct dirent *res = readdir(dir);
@@ -164,14 +165,8 @@ static bool files_readdir(honggfuzz_t * hfuzz)
             return false;
         }
 
-        if (res == NULL && count > 0) {
-            LOG_I("%zu input files have been added to the list", hfuzz->fileCnt);
-            return true;
-        }
-
-        if (res == NULL && count == 0) {
-            LOG_W("Directory '%s' doesn't contain any regular files", hfuzz->inputFile);
-            return false;
+        if (res == NULL) {
+            break;
         }
 
         char path[PATH_MAX];
@@ -192,7 +187,7 @@ static bool files_readdir(honggfuzz_t * hfuzz)
             continue;
         }
 
-        if (st.st_size > (off_t) hfuzz->maxFileSz) {
+        if (hfuzz->maxFileSz != 0UL && st.st_size > (off_t) hfuzz->maxFileSz) {
             LOG_W("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %"
                   PRId64, path, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
             continue;
@@ -203,13 +198,25 @@ static bool files_readdir(honggfuzz_t * hfuzz)
             return false;
         }
 
+        if ((size_t) st.st_size > maxSize) {
+            maxSize = st.st_size;
+        }
         hfuzz->files[count] = util_StrDup(path);
         hfuzz->fileCnt = ++count;
         LOG_D("Added '%s' to the list of input files", path);
     }
 
-    abort();                    /* NOTREACHED */
-    return false;
+    if (count == 0) {
+        LOG_W("Directory '%s' doesn't contain any regular files", hfuzz->inputFile);
+        return false;
+    }
+
+    if (hfuzz->maxFileSz == 0UL) {
+        hfuzz->maxFileSz = maxSize;
+    }
+    LOG_I("%zu input files have been added to the list. Max file size: %zu", hfuzz->fileCnt,
+          hfuzz->maxFileSz);
+    return true;
 }
 
 bool files_init(honggfuzz_t * hfuzz)
@@ -245,10 +252,15 @@ bool files_init(honggfuzz_t * hfuzz)
         return false;
     }
 
-    if (st.st_size > (off_t) hfuzz->maxFileSz) {
+    if (hfuzz->maxFileSz && st.st_size > (off_t) hfuzz->maxFileSz) {
         LOG_W("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %" PRId64,
               hfuzz->inputFile, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
         return false;
+    }
+
+    if (hfuzz->maxFileSz == 0UL) {
+        hfuzz->maxFileSz = (size_t) st.st_size;
+        LOG_I("Maximum corpus file size set to: %zu bytes", hfuzz->maxFileSz);
     }
 
     hfuzz->files[0] = hfuzz->inputFile;
