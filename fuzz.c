@@ -289,15 +289,17 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
         return;
     }
 
+    char tmstr[512];
+    util_getLocalTime("%Y%e%d.%H%M%S", tmstr, sizeof(tmstr), time(NULL));
     char fname[PATH_MAX];
     if (hfuzz->covDir == NULL) {
-        snprintf(fname, sizeof(fname), "%s/COVERAGE.TIME.%d.PID.%d.ITER.%" PRIu64 ".RND.%" PRIx64,
-                 hfuzz->inputDir, (int)time(NULL), (int)getpid(),
-                 (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt), util_rndGet(0, 0xFFFFFFFFFFFF));
+        snprintf(fname, sizeof(fname), "%s/TIME.%s.ITER.%" PRIu64 ".RND.%" PRIx64 ".HONGGFUZZ.COV",
+                 hfuzz->inputDir, tmstr, (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt),
+                 util_rndGet(0, 0xFFFFFFFFFFFF));
     } else {
-        snprintf(fname, sizeof(fname), "%s/COVERAGE.TIME.%d.PID.%d.ITER.%" PRIu64 ".RND.%" PRIx64,
-                 hfuzz->covDir, (int)time(NULL), (int)getpid(),
-                 (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt), util_rndGet(0, 0xFFFFFFFFFFFF));
+        snprintf(fname, sizeof(fname), "%s/TIME.%s.ITER.%" PRIu64 ".RND.%" PRIx64 ".HONGGFUZZ.COV",
+                 hfuzz->covDir, tmstr, (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt),
+                 util_rndGet(0, 0xFFFFFFFFFFFF));
     }
 
     if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC)
