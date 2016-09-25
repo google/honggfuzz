@@ -264,6 +264,16 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     return true;
 }
 
+static fuzzState_t fuzz_getState(honggfuzz_t * hfuzz)
+{
+    return ATOMIC_GET(hfuzz->state);
+}
+
+static void fuzz_setState(honggfuzz_t * hfuzz, fuzzState_t state)
+{
+    ATOMIC_SET(hfuzz->state, state);
+}
+
 static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_t size)
 {
     struct dynfile_t *dynfile = (struct dynfile_t *)util_Malloc(sizeof(struct dynfile_t));
@@ -273,10 +283,23 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
     TAILQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
     hfuzz->dynfileqCnt++;
 
+    /* No need to add new coverage if we are supposed to append new coverage-inducing inputs only */
+    if (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_PRE && hfuzz->appendToCov == true) {
+		LOG_D("New coverage found, but we're in the initial coverage assessment state. Skipping");
+        return;
+    }
+
     char fname[PATH_MAX];
-    snprintf(fname, sizeof(fname), "%s/COVERAGE.TIME.%d.PID.%d.ITER.%" PRIu64 ".RND.%" PRIx64,
-             hfuzz->covDir, (int)time(NULL), (int)getpid(),
-             (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt), util_rndGet(0, 0xFFFFFFFFFFFF));
+    if (hfuzz->appendToCov == true) {
+        snprintf(fname, sizeof(fname), "%s/COVERAGE.TIME.%d.PID.%d.ITER.%" PRIu64 ".RND.%" PRIx64,
+                 hfuzz->inputFile, (int)time(NULL), (int)getpid(),
+                 (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt), util_rndGet(0, 0xFFFFFFFFFFFF));
+    } else {
+        snprintf(fname, sizeof(fname), "%s/COVERAGE.TIME.%d.PID.%d.ITER.%" PRIu64 ".RND.%" PRIx64,
+                 hfuzz->workDir, (int)time(NULL), (int)getpid(),
+                 (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt), util_rndGet(0, 0xFFFFFFFFFFFF));
+    }
+
     if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC)
         == false) {
         LOG_W("Couldn't write buffer to file '%s'", fname);
@@ -387,16 +410,6 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
-}
-
-static fuzzState_t fuzz_getState(honggfuzz_t * hfuzz)
-{
-    return ATOMIC_GET(hfuzz->state);
-}
-
-static void fuzz_setState(honggfuzz_t * hfuzz, fuzzState_t state)
-{
-    ATOMIC_SET(hfuzz->state, state);
 }
 
 static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
