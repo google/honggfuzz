@@ -59,9 +59,8 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
     struct timeval tv;
     gettimeofday(&tv, NULL);
 
-    snprintf(fileName, PATH_MAX, "%s/.honggfuzz.%d.%lu.%llx.%s", hfuzz->workDir, (int)getpid(),
-             (unsigned long int)tv.tv_sec, (unsigned long long int)util_rndGet(0, 1ULL << 62),
-             hfuzz->fileExtn);
+    snprintf(fileName, PATH_MAX, "%s/.honggfuzz.%d.%lu.%" PRIx64 ".%s", hfuzz->workDir,
+             (int)getpid(), (unsigned long int)tv.tv_sec, util_rnd64(), hfuzz->fileExtn);
 }
 
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
@@ -294,12 +293,10 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
     char fname[PATH_MAX];
     if (hfuzz->covDir == NULL) {
         snprintf(fname, sizeof(fname), "%s/TIME.%s.ITER.%" PRIu64 ".RND.%" PRIx64 ".HONGGFUZZ.COV",
-                 hfuzz->inputDir, tmstr, (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt),
-                 util_rndGet(0, 0xFFFFFFFFFFFF));
+                 hfuzz->inputDir, tmstr, (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt), util_rnd64());
     } else {
         snprintf(fname, sizeof(fname), "%s/TIME.%s.ITER.%" PRIu64 ".RND.%" PRIx64 ".HONGGFUZZ.COV",
-                 hfuzz->covDir, tmstr, (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt),
-                 util_rndGet(0, 0xFFFFFFFFFFFF));
+                 hfuzz->covDir, tmstr, (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt), util_rnd64());
     }
 
     if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC)

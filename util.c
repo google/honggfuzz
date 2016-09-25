@@ -92,12 +92,8 @@ static int util_urandomFd = -1;
 static __thread uint64_t rndX;
 static __thread uint64_t rndIni = false;
 
-uint64_t util_rndGet(uint64_t min, uint64_t max)
+uint64_t util_rnd64(void)
 {
-    if (min > max) {
-        LOG_F("min:%" PRIu64 " > max:%" PRIu64, min, max);
-    }
-
     if (util_urandomFd == -1) {
         if ((util_urandomFd = open("/dev/urandom", O_RDONLY | O_CLOEXEC)) == -1) {
             PLOG_F("Couldn't open /dev/urandom for writing");
@@ -116,20 +112,22 @@ uint64_t util_rndGet(uint64_t min, uint64_t max)
     static const uint64_t c = 1442695040888963407ULL;
 
     rndX = (a * rndX + c);
+    return rndX;
+}
 
-    return ((rndX % (max - min + 1)) + min);
+uint64_t util_rndGet(uint64_t min, uint64_t max)
+{
+    if (min > max) {
+        LOG_F("min:%" PRIu64 " > max:%" PRIu64, min, max);
+    }
+
+    return ((util_rnd64() % (max - min + 1)) + min);
 }
 
 void util_rndBuf(uint8_t * buf, size_t sz)
 {
-    /* MMIX LCG PRNG */
-    static const uint64_t a = 6364136223846793005ULL;
-    static const uint64_t c = 1442695040888963407ULL;
-    uint64_t x = util_rndGet(0, 1ULL << 62);
-
     for (size_t i = 0; i < sz; i++) {
-        x = (a * x + c);
-        buf[i] = (uint8_t) ((x & 0xFF0000) > 16);
+        buf[i] = (uint8_t) ((util_rnd64() & 0xFF0000) > 16);
     }
 }
 
