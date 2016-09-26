@@ -290,25 +290,6 @@ static void mangle_RepeatByte(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t 
     }
 }
 
-static void mangle_Expand(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz UNUSED,
-                          size_t off)
-{
-    size_t n = util_rndGet(off, bufSz - 1);
-    if (n > 0) {
-        memmove(&buf[n], &buf[off], bufSz - n - 1);
-        util_rndBuf(&buf[off], n);
-    }
-}
-
-static void mangle_Shrink(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz UNUSED,
-                          size_t off)
-{
-    size_t n = util_rndGet(off, bufSz - 1);
-    if (n > 0) {
-        memmove(&buf[off], &buf[n], bufSz - n - 1);
-    }
-}
-
 void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     /*  *INDENT-OFF* */
@@ -330,8 +311,6 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         mangle_MemMove,
         mangle_MemSet,
         mangle_Random,
-        mangle_Expand,
-        mangle_Shrink,
         mangle_RepeatByte,
     };
     /*  *INDENT-ON* */
