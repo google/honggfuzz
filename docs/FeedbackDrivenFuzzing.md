@@ -26,14 +26,14 @@ Developers provide the initial file corpus which will be gradually improved upon
     Intel PT
   * Linux kernel >= v4.2 for AUXTRACE
 
-# Examples #
+# Fuzzing strategy #
 The fuzzing strategy is trying to identify files which add new code coverage (or increased instruction/branch counters). Then it adds such input files to the (dynamic) input corpus.
 
 There are always 2 phases of the fuzzing:
  * 1) Honggfuzz goes through each file in the initial corpus (-f). It adds files which hit new code coverage to the dynamic input corpus (as well as saving them on the disk, using *COVERAGE_DATA.PID.<pid>.RND.<time>.<rnd>* pattern
  * 2) Honggfuzz choses randomly files from the dynamic input corpus (in-memory), mutates them, and runs a new fuzzing task. If the newly created file adds to the code coverage, it gets added to the dynamic input corpus
 
-## ASAN Code coverage (-C)##
+# ASAN Code coverage (-C)#
 In order to make this mode work, one needs to compile the fuzzed tool (_xmllint_ here) with _-fsanitize=address -fsanitize-coverage=bb_
 
 ```
@@ -58,7 +58,7 @@ Coverage (max):
 
 ```
 
-## Compile-time instrumentation with clang/gcc (-z) ##
+# Compile-time instrumentation with clang/gcc (-z) #
 You can use here
   * gcc/clang `-finstrument-functions` (less-precise)
   * clang's (>=4.0) `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp`
@@ -116,6 +116,7 @@ $ clang-4.0 -fsanitize-coverage=trace-pc,indirect-calls,trace-cmp test.c \
  $ honggfuzz/honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
 
+# Hardware-based coverage #
 ## Unique branch points counting (--linux_perf_bts_block)
 
 This feedback-driven counting honggfuzz mode utilizes Intel's BTS (Branch Trace Store) feature to record all basic blocks (jump blocks) inside the fuzzed process. Later on, honggfuzz will de-duplicate those entries. The resulting number of branch jump point is a good approximation of how much code of a given tool have been actively executed/used (code coverage).
