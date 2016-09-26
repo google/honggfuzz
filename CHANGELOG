@@ -1,7 +1,7 @@
 2016-09-01 - Version 0.8 (rev 6b9efac)
         - Clang >= 4.0 -fsanitize-coverage=trace-pc,indirect-calls,trace-cmp support
         - GCC/Clang -finstrument-functions support
-		- Persistent fuzzing mode (-P) for Linux and POSIX
+        - Persistent fuzzing mode (-P) for Linux and POSIX
         - Mutiple smaller fixes (display, stability)
 
 2016-03-15 - Version 0.7 (rev 6d01e82)
