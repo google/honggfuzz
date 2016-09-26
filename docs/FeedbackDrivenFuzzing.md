@@ -49,6 +49,54 @@ Coverage (max):
 
 ```
 
+## Compile-time instrumentation (clang/gcc) ##
+You can use here
+  * gcc/clang `-finstrument-functions` (less-precise)
+  * clang's (>=4.0) `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp`
+
+In both cases you'd need to link your code with `honggfuzz/libhfuzz/libhfuzz.a`
+
+Two modes are available
+###
+*Persistent mode - LLVM-style LLVMFuzzerTestOneInput*
+
+```
+$ cat test.c
+#include <testlib.h>  // Our API to test
+
+int FuzzerTestOneInput(const uint8_t *buf, size_t len) {
+  TestLibFunc(buf, len);
+  return 0;
+}
+
+$ clang-4.0 -fsanitize-coverage=trace-pc,indirect-calls,trace-cmp test.c \
+ -ltestlib honggfuzz/libhfuzz/libhfuzz.a -o test
+
+$ honggfuzz/honggfuzz -z -P -f INPUT.corpus -- ./test
+```
+
+###
+*Persistent mode - fetching input only*
+```
+$ cat test.c
+#include <testlib.h>  // Our API to test
+
+int main(void) {
+  for (;;) {
+    uint8_t *buf;
+    size_t len;
+    HF_ITER(&buf, &len);
+    TestLibFunc(buf, len);
+  }
+  return 0;
+}
+
+$ clang-4.0 -fsanitize-coverage=trace-pc,indirect-calls,trace-cmp test.c \
+ -ltestlib honggfuzz/libhfuzz/libhfuzz.a -o test
+
+ $ honggfuzz/honggfuzz -z -P -f INPUT.corpus -- ./test
+```
+
 ## Unique branch points counting (--linux_perf_bts_block)
 
 This feedback-driven counting honggfuzz mode utilizes Intel's BTS (Branch Trace Store) feature to record all basic blocks (jump blocks) inside the fuzzed process. Later on, honggfuzz will de-duplicate those entries. The resulting number of branch jump point is a good approximation of how much code of a given tool have been actively executed/used (code coverage).
