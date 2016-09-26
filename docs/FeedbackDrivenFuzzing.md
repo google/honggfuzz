@@ -22,12 +22,11 @@ Developers provide the initial file corpus which will be gradually improved upon
   * CPU supporting [Intel PT (Processor Tracing)](https://software.intel.com/en-us/blogs/2013/09/18/processor-tracing) for hardware assisted unique edge (branch pairs) counting. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
 
 # Requirements for hardware-based coverage-feedback fuzzing (Intel/AMD and possibly other CPU architectures) #
-  * GNU/Linux OS with a supported CPU (Intel Core 2 for BTS, Intel Broadwell for
-    Intel PT
-  * Linux kernel >= v4.2 for AUXTRACE
+  * GNU/Linux OS with a supported CPU; Intel Core 2 for BTS, Intel Broadwell for Intel PT
+  * Linux kernel >= v4.2 for perf AUXTRACE
 
 # Fuzzing strategy #
-The fuzzing strategy is trying to identify files which add new code coverage (or increased instruction/branch counters). Then it adds such input files to the (dynamic) input corpus.
+The implemented strategy is trying to identify files which add new code coverage (or increased instruction/branch counters). Then those inputs are added (dynamically stored in memory) corpus, and reused with upcoming fuzzing rounds
 
 There are always 2 phases of the fuzzing:
  * 1) Honggfuzz goes through each file in the initial corpus (-f). It adds files which hit new code coverage to the dynamic input corpus (as well as saving them on the disk, using *COVERAGE_DATA.PID.<pid>.RND.<time>.<rnd>* pattern
