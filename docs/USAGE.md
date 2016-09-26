@@ -17,7 +17,7 @@
 
   * A POSIX compliant operating system (See the compatibility list for more) for
     static and ASAN code-coverage (SANCOV) modes
-  * GNU/Linux with modern kernel (e.g. v4.0) for hardware-based code coveragfe guided fuzzing
+  * GNU/Linux with modern kernel (e.g. v4.0) for hardware-based code coverage guided fuzzing
 
   * A corpus of input files. Honggfuzz expects a set of files to use and modify as input to the application you're fuzzing. How you get or create these files is up to you, but you might be interested in the following sources:
     * Image formats: Tavis Ormandy's [Image Testuite](http://code.google.com/p/imagetestsuite/) has been effective at finding vulnerabilities in various graphics libraries.
@@ -39,28 +39,30 @@ It should work under the following operating systems:
 
 # USAGE #
 
+[This document](ExternalFuzzerUsage.md) explains how to use an external command to create fuzzing input.
+
 ```
 Usage: ./honggfuzz [options] -- path_to_command [args]
 Options:
- --help|-h 
+ --help|-h
 	Help plz..
  --input|-f VALUE
 	Path to the file corpus (file or a directory)
- --nullify_stdio|-q 
+ --nullify_stdio|-q
 	Null-ify children's stdin, stdout, stderr; make them quiet
  --timeout|-t VALUE
 	Timeout in seconds (default: '10')
  --threads|-n VALUE
 	Number of concurrent fuzzing threads (default: '2')
- --stdin_input|-s 
+ --stdin_input|-s
 	Provide fuzzing input on STDIN, instead of ___FILE___
  --mutation_rate|-r VALUE
 	Maximal mutation rate in relation to the file size, (default: '0.001')
  --logfile|-l VALUE
 	Log file
- --verbose|-v 
+ --verbose|-v
 	Disable ANSI console; use simple log output
- --verifier|-V 
+ --verifier|-V
 	Enable crashes verifier
  --debug_level|-d VALUE
 	Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])
@@ -68,6 +70,8 @@ Options:
 	Input file extension (e.g. 'swf'), (default: 'fuzz')
  --workspace|-W VALUE
 	Workspace directory to save crashes & runtime files (default: '.')
+ --covdir VALUE
+	Output directory for coverage data (default: The same as workspace directory)
  --wordlist|-w VALUE
 	Wordlist file (tokens delimited by NUL-bytes)
  --stackhash_bl|-B VALUE
@@ -126,6 +130,10 @@ Examples:
   honggfuzz -f input_dir -s -- /usr/bin/djpeg
  Use SANCOV to maximize code coverage:
   honggfuzz -f input_dir -C -- /usr/bin/tiffinfo -D ___FILE___
+ Use compile-time instrumentation (libhfuzz/instrument.c):
+  honggfuzz -f input_dir -z -- /usr/bin/tiffinfo -D ___FILE___
+ Use persistent mode (libhfuzz/persistent.c):
+  honggfuzz -f input_dir -P -- /usr/bin/tiffinfo_persistent
  Run the binary over a dynamic file, maximize total no. of instructions:
   honggfuzz --linux_perf_instr -- /usr/bin/tiffinfo -D ___FILE___
  Run the binary over a dynamic file, maximize total no. of branches:
@@ -138,25 +146,20 @@ Examples:
   honggfuzz --linux_perf_custom -- /usr/bin/tiffinfo -D ___FILE___
 ```
 
- [This document](ExternalFuzzerUsage.md) explains how to use an external command to create fuzzing input.
-
 # OUTPUT FILES #
 
 | **Mode** | **Output file** |
 |:---------|:----------------|
-| Unique mode (**-u**) | **SIGSEGV.PC.0x7ffff78c8f70.CODE.1.ADDR.0x6c9000.INSTR.mov`_``[`rdi+0x10`]`,`_`[r9](https://code.google.com/p/honggfuzz/source/detail?r=9).ttf** |
-| Non-unique mode | **SIGSEGV.PC.0x8056ad7.CODE.1.ADDR.0x30333037.INSTR.movsx\_eax,`_``[`eax`]`.TIME.2010-06-07.02.25.04.PID.10097.ttf** |
+| Linux | **SIGSEGV.PC.4ba1ae.STACK.13599d485.CODE.1.ADDR.0x10.INSTR.mov____0x10(%rbx),%rax.fuzz** |
 | POSIX signal interface | **SIGSEGV.22758.2010-07-01.17.24.41.tif** |
 
 ## Description ##
 
   * **SIGSEGV**,**SIGILL**,**SIGBUS**,**SIGABRT**,**SIGFPE** - Description of the signal which terminated the process (when using ptrace() API, it's a signal which was delivered to the process, even if silently discarded)
   * **PC.0x8056ad7** - Program Counter (PC) value (ptrace() API only), for x86 it's a value of the EIP register (RIP for x86-64)
-  * **CODE.1** - Value of the _siginfo`_`t.si`_`code_ field (see _man 2 signaction_ for more details), valid for some signals (e.g. SIGSEGV) only
+  * **STACK.13599d485** - Stack signature (based on stack-tracing)
   * **ADDR.0x30333037** - Value of the _siginfo`_`t.si`_`addr_ (see _man 2 signaction_ for more details) (most likely meaningless for SIGABRT)
-  * **INSTR.movsx\_eax,`_``[`eax`]`** - Disassembled instruction which was found under the last known PC (Program Counter) (x86, x86-64 architectures only, meaningless for SIGABRT)
-  * **TIME.2010-06-07.02.25.04** - Local time when the signal was delivered
-  * **PID.10097** - Fuzzing process' id (PID) (See [AttachingToPid](AttachingToPid.md) for more)
+  * **INSTR.mov____0x10(%rbx),%rax`** - Disassembled instruction which was found under the last known PC (Program Counter) (x86, x86-64 architectures only, meaningless for SIGABRT)
 
 # FAQ #
 

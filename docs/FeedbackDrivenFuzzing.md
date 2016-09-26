@@ -53,6 +53,7 @@ Coverage (max):
 You can use here
   * gcc/clang `-finstrument-functions` (less-precise)
   * clang's (>=4.0) `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp`
+    (trace-cmp adds additional comparison map to instrumentation)
 
 In both cases you'd need to link your code with `honggfuzz/libhfuzz/libhfuzz.a`
 
@@ -64,7 +65,9 @@ Two modes are available
 $ cat test.c
 #include <testlib.h>  // Our API to test
 
-int FuzzerTestOneInput(const uint8_t *buf, size_t len) {
+extern int FuzzerTestOneInput(uint8_t **buf, size_t *len);
+
+int FuzzerTestOneInput(uint8_t *buf, size_t len) {
   TestLibFunc(buf, len);
   return 0;
 }
@@ -80,6 +83,8 @@ $ honggfuzz/honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
 $ cat test.c
 #include <testlib.h>  // Our API to test
+
+extern void HF_ITER(uint8_t **buf, size_t *len);
 
 int main(void) {
   for (;;) {
