@@ -1,3 +1,8 @@
+2016-09-01 - Version 0.8 (rev 6b9efac)
+        - Clang >= 4.0 -fsanitize-coverage=trace-pc,indirect-calls,trace-cmp support
+        - GCC/Clang -finstrument-functions support
+        - Mutiple smaller fixes (display, stability)
+
 2016-03-15 - Version 0.7 (rev 6d01e82)
         - Asan code-coverage (SANCOV) available for all platforms (incl. Windows)
         - Support for Intel PT under Linux v4.0 and newer (and Broadwell/Skylake/newer Intel CPUs)
