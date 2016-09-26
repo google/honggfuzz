@@ -185,8 +185,9 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                 _HF_MONETARY_MOD "zu sec.]\n", ATOMIC_GET(hfuzz->timeoutedCnt), hfuzz->tmOut);
     /* Feedback data sources are enabled. Start with common headers. */
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
-        display_put("     Corpus size : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",
-                    hfuzz->dynfileqCnt);
+        display_put("     Corpus size : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
+                    " (max file size: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET " bytes)\n",
+                    hfuzz->dynfileqCnt, hfuzz->maxFileSz);
         display_put("        Coverage :\n");
     }
 
