@@ -1,11 +1,18 @@
 # Feedback-driven fuzzing #
 
-Honggfuzz (since its version 0.5) is capable of performing feedback-guided (code coverage driven) fuzzing. It utilizes either SANCOV (ASAN code coverage) or Linux perf subsystem and hardware CPU counters to achieve the best outcomes.
+Honggfuzz (since its version 0.5) is capable of performing feedback-guided (code coverage driven) fuzzing. It utilizes the following methods:
+  * (Linux) Hardware-based counters (instructions, branches)
+  * (Linux) Intel BTS code coverage (kernel >=v4.2)
+  * (Linux) Intel PT code coverage (kernel >=4.2)
+  * Sanitzer-coverage instrumentation (`-fsanitize-coverage=bb`)
+  * Compile-time instrumentation (`-finstrument-functions` or `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp`)
 
-Developers provide the initial file corpus which will be gradually improved upon. It can even consist of a single 1-byte initial file, and honggfuzz will try to generate better inputs starting from here.
+Developers provide the initial file corpus which will be gradually improved upon. It can even comprise of a single 1-byte initial file, and honggfuzz will try to generate better inputs starting from here.
 
 # Requirements for software-based coverage-guided fuzzing (ASAN code coverage) #
-  * Clang 3.7/3.8/3.9/newer for compiling the fuzzed software (-fsanitize-coverage=bb -fsanitize=address)
+  * `-fsanitize-coverage=bb` - Clang >=3.7
+  * `-finstrument-functions` - Any GCC or Clang
+  * `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp` - Clang >=4.0
 
 # Requirements for hardware-based coverage-guided fuzzing #
   * GNU/Linux OS
@@ -14,8 +21,10 @@ Developers provide the initial file corpus which will be gradually improved upon
   * CPU supporting [BTS (Branch Trace Store)](https://software.intel.com/en-us/forums/topic/277868?language=en) for hardware assisted unique edge (branch pairs) counting. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
   * CPU supporting [Intel PT (Processor Tracing)](https://software.intel.com/en-us/blogs/2013/09/18/processor-tracing) for hardware assisted unique edge (branch pairs) counting. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
 
-# Requirements for hardware-based counter-guided fuzzing (Intel/AMD and possibly other CPU architectures) #
-  * GNU/Linux OS with a supported CPU
+# Requirements for hardware-based coverage-feedback fuzzing (Intel/AMD and possibly other CPU architectures) #
+  * GNU/Linux OS with a supported CPU (Intel Core 2 for BTS, Intel Broadwell for
+    Intel PT
+  * Linux kernel >= v4.2 for AUXTRACE
 
 # Examples #
 The fuzzing strategy is trying to identify files which add new code coverage (or increased instruction/branch counters). Then it adds such input files to the (dynamic) input corpus.
@@ -49,7 +58,7 @@ Coverage (max):
 
 ```
 
-## Compile-time instrumentation (clang/gcc) ##
+## Compile-time instrumentation with clang/gcc (-z) ##
 You can use here
   * gcc/clang `-finstrument-functions` (less-precise)
   * clang's (>=4.0) `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp`
@@ -63,11 +72,12 @@ Two modes are available
 
 ```
 $ cat test.c
+#include <inttypes.h>
 #include <testlib.h>  // Our API to test
 
-extern int FuzzerTestOneInput(uint8_t **buf, size_t *len);
+extern int LLVMFuzzerTestOneInput(uint8_t **buf, size_t *len);
 
-int FuzzerTestOneInput(uint8_t *buf, size_t len) {
+int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len) {
   TestLibFunc(buf, len);
   return 0;
 }
@@ -78,12 +88,16 @@ $ clang-4.0 -fsanitize-coverage=trace-pc,indirect-calls,trace-cmp test.c \
 $ honggfuzz/honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
 
+`LLVMFuzzerInitialize(int *argc, char **argv)` is supported as well
+
 ###
 *Persistent mode - fetching input only*
 ```
 $ cat test.c
+#include <inttypes.h>
 #include <testlib.h>  // Our API to test
 
+// Get input from the fuzzer
 extern void HF_ITER(uint8_t **buf, size_t *len);
 
 int main(void) {
