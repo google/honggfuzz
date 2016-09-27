@@ -1,34 +1,43 @@
 # Feedback-driven fuzzing #
 
-Honggfuzz (since its version 0.5) is capable of performing feedback-guided (code coverage driven) fuzzing. It utilizes either SANCOV (ASAN code coverage) or Linux perf subsystem and hardware CPU counters to achieve the best outcomes.
+Honggfuzz is capable of performing feedback-guided (code coverage driven) fuzzing. It might utilize the following methods:
+  * (Linux) Hardware-based counters (instructions, branches)
+  * (Linux) Intel BTS code coverage (kernel >= 4.2)
+  * (Linux) Intel PT code coverage (kernel >= 4.2)
+  * Sanitzer-coverage instrumentation (`-fsanitize-coverage=bb`)
+  * Compile-time instrumentation (`-finstrument-functions` or `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp` or both)
 
-Developers provide the initial file corpus which will be gradually improved upon. It can even consist of a single 1-byte initial file, and honggfuzz will try to generate better inputs starting from here.
+Developers should provide the initial file corpus which will be gradually improved upon. It can even comprise of a single 1-byte initial file, and honggfuzz will try to generate better inputs starting from here.
 
-# Requirements for software-based coverage-guided fuzzing (ASAN code coverage) #
-  * Clang 3.7/3.8/3.9/newer for compiling the fuzzed software (-fsanitize-coverage=bb -fsanitize=address)
+# Requirements for software-based coverage-guided fuzzing #
+  * `-fsanitize-coverage=bb` - Clang >= 3.7
+  * `-finstrument-functions` - GCC or Clang
+  * `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp` - Clang >= 4.0
 
-# Requirements for hardware-based coverage-guided fuzzing #
+# Requirements for hardware-based counter-based fuzzing #
   * GNU/Linux OS
-  * Relatively modern Linux kernel (v4.0 should suffice)
+  * Relatively modern Linux kernel (4.0 should suffice)
   * CPU which is supported by the [perf subsystem](https://perf.wiki.kernel.org/index.php/Main_Page) for hardware-assisted instruction and branch counting
-  * CPU supporting [BTS (Branch Trace Store)](https://software.intel.com/en-us/forums/topic/277868?language=en) for hardware assisted unique edge (branch pairs) counting. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
-  * CPU supporting [Intel PT (Processor Tracing)](https://software.intel.com/en-us/blogs/2013/09/18/processor-tracing) for hardware assisted unique edge (branch pairs) counting. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
 
-# Requirements for hardware-based counter-guided fuzzing (Intel/AMD and possibly other CPU architectures) #
-  * GNU/Linux OS with a supported CPU
+# Requirements for hardware-based coverage-feedback fuzzing (Intel) #
+  * CPU supporting [BTS (Branch Trace Store)](https://software.intel.com/en-us/forums/topic/277868?language=en) for hardware assisted unique pc and edges (branch pairs) counting. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
+  * CPU supporting [Intel PT (Processor Tracing)](https://software.intel.com/en-us/blogs/2013/09/18/processor-tracing) for hardware assisted unique edge (branch pairs) counting. Currently it's available only in some newer Intel CPUs (since Broadwell architecture)
+  * GNU/Linux OS with a supported CPU; Intel Core 2 for BTS, Intel Broadwell for Intel PT
+  * Intel's [ibipt library](http://packages.ubuntu.com/yakkety/libipt1) for Intel PT
+  * Linux kernel >= v4.2 for perf AUXTRACE
 
-# Examples #
-The fuzzing strategy is trying to identify files which add new code coverage (or increased instruction/branch counters). Then it adds such input files to the (dynamic) input corpus.
+# Fuzzing strategy #
+The implemented strategy is trying to identify files which add new code coverage (or increased instruction/branch counters). Then those inputs are added (dynamically stored in memory) corpus, and reused during following fuzzing rounds
 
-There are always 2 phases of the fuzzing:
- * 1) Honggfuzz goes through each file in the initial corpus (-f). It adds files which hit new code coverage to the dynamic input corpus (as well as saving them on the disk, using *COVERAGE_DATA.PID.<pid>.RND.<time>.<rnd>* pattern
- * 2) Honggfuzz choses randomly files from the dynamic input corpus (in-memory), mutates them, and runs a new fuzzing task. If the newly created file adds to the code coverage, it gets added to the dynamic input corpus
+There are 2 phases of feedback-driven the fuzzing:
+  * Honggfuzz goes through each file in the initial corpus directory (-f). It adds files which hit new code coverage to the dynamic input corpus (as well as saving them on the disk, using *COVERAGE_DATA.PID.<pid>.RND.<time>.<rnd>* pattern
+  * Honggfuzz choses randomly files from the dynamic input corpus (in-memory), mutates them, and runs a new fuzzing round (round in persistent mode, exec in non-persistent mode). If the newly created file induces new code path (extends code coverage), it gets added to the dynamic input corpus
 
-## ASAN Code coverage (-C)##
+# ASAN Code coverage (-C) #
 In order to make this mode work, one needs to compile the fuzzed tool (_xmllint_ here) with _-fsanitize=address -fsanitize-coverage=bb_
 
 ```
-$ honggfuzz -t20 -F 2800 -n3 -f IN/ -r 0.001 -C -q -- ./xmllint --format --nonet ___FILE___
+$ honggfuzz -C -f IN.corpus/ -- ./xmllint --format --nonet ___FILE___
 ============================== STAT ==============================
 Iterations: 1419
 Start time: 2016-03-15 16:43:57 (16 seconds elapsed)
@@ -46,15 +55,91 @@ Coverage (max):
   - crashes:        0
 ============================== LOGS ==============================
 [2016-03-15T16:49:00+0100][I][2094] fuzz_sanCovFeedback():463 SanCov Update: file size (Cur): 2141, newBBs:9, counters (Cur,New): 8569/1,1666/1
-
 ```
 
-## Unique branch points counting (--linux_perf_bts_block)
+# Compile-time instrumentation with clang/gcc -z #
+
+Here you can use the following:
+  * gcc/clang `-finstrument-functions` (less-precise)
+  * clang's (>= 4.0) `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp`
+    (trace-cmp adds additional comparison map to the instrumentation)
+
+In both cases you'll have to link your code with `honggfuzz/libhfuzz/libhfuzz.a`
+
+Two persistent modes are available to be used
+### LLVM-style LLVMFuzzerTestOneInput ###
+
+```
+$ cat test.c
+#include <inttypes.h>
+#include <testlib.h>  // Our API to test
+
+extern int LLVMFuzzerTestOneInput(uint8_t **buf, size_t *len);
+
+int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len) {
+  _FuncFromFuzzedLib_(buf, len);
+  return 0;
+}
+```
+
+```
+$ clang-4.0 -fsanitize-coverage=trace-pc,indirect-calls,trace-cmp fuzzedlib.c -o fuzzedlib.o
+$ clang-4.0 test.c fuzzedlib.o honggfuzz/libhfuzz/libhfuzz.a -o test
+$ honggfuzz -z -P -f INPUT.corpus -- ./test
+```
+
+`LLVMFuzzerInitialize(int *argc, char **argv)` is supported as well
+
+### Fetching input with HF_ITER() ###
+```
+$ cat test.c
+#include <inttypes.h>
+#include <testlib.h>  // Our API to test
+
+// Get input from the fuzzer
+extern void HF_ITER(uint8_t **buf, size_t *len);
+
+int main(void) {
+  for (;;) {
+    uint8_t *buf;
+    size_t len;
+    HF_ITER(&buf, &len);
+    _FuncFromFuzzedLib_(buf, len);
+  }
+  return 0;
+}
+```
+```
+$ clang-4.0 -fsanitize-coverage=trace-pc,indirect-calls,trace-cmp fuzzedlib.c -o fuzzedlib.o
+$ clang-4.0 test.c fuzzedlib.o honggfuzz/libhfuzz/libhfuzz.a -o test
+$ honggfuzz -z -P -f INPUT.corpus -- ./test
+```
+
+Example:
+```
+$ honggfuzz -z -P -f IN.server/ -- ./persistent.server.openssl.1.0.2i.asan
+------------------------------[ honggfuzz v0.8 ]------------------------------
+      Iterations : 3,275,169 [3.28M]
+        Run Time : 2 hrs 17 min 16 sec (since: 2016-09-27 07:30:04)
+       Input Dir : 'IN.server/'
+      Fuzzed Cmd : './persistent.server.openssl.1.0.2i.asan'
+ Fuzzing Threads : 2, CPUs: 8, CPU: 759.0% (94.9%/CPU)
+   Speed (Round) : 86/sec (avg: 397)
+         Crashes : 0 (unique: 0, blacklist: 0, verified: 0)
+        Timeouts : 0 [10 sec.]
+     Corpus size : 393 (max file size: 40,000 bytes)
+        Coverage :
+       *** blocks seen:    3,545, comparison map: 204,542
+-----------------------------------[ LOGS ]-----------------------------------
+```
+
+# Hardware-based coverage #
+## Unique branch points counting (--linux_perf_bts_block) ##
 
 This feedback-driven counting honggfuzz mode utilizes Intel's BTS (Branch Trace Store) feature to record all basic blocks (jump blocks) inside the fuzzed process. Later on, honggfuzz will de-duplicate those entries. The resulting number of branch jump point is a good approximation of how much code of a given tool have been actively executed/used (code coverage).
 
 ```
-$ honggfuzz --linux_perf_bts_block -f CURRENT_BEST -F 2500 -q -n1 -- /usr/bin/xmllint -format ___FILE___
+$ honggfuzz --linux_perf_bts_block -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 0
 Start time: 2016-02-16 18:35:32 (0 seconds elapsed)
@@ -72,12 +157,12 @@ Coverage (max):
 [2016-02-16T18:35:32+0100][I][14846] fuzz_perfFeedback():420 New: (Size New,Old): 257,257, Perf (Cur,New): 0/0/2030/0/0/0,0/0/2031/0/0/0
 ```
 
-## Unique branch pair (edges) counting (--linux_perf_bts_edge)
+## Unique branch pair (edges) counting (--linux_perf_bts_edge) ##
 
 This mode will take into consideration pairs (tuples) of jumps, recording unique from-to jump pairs. The data is taken from the Intel BTS CPU registers.
 
 ```
-$ honggfuzz --linux_perf_bts_edge -f IN/ -F 2500 -q -- /usr/bin/xmllint -format ___FILE___
+$ honggfuzz --linux_perf_bts_edge -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 1
 Start time: 2016-02-16 18:37:08 (1 seconds elapsed)
@@ -99,7 +184,7 @@ Coverage (max):
 This mode will utilize Interl's PT (Process Trace) subsystem, which should be way faster than BTS (Branch Trace Store), but will currently produce less precise results.
 
 ```
-$ honggfuzz --linux_perf_ipt_block -f IN/ -F 2500 -q -n1 -- /usr/bin/xmllint -format ___FILE___
+$ honggfuzz --linux_perf_ipt_block -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 0
 Start time: 2016-02-16 18:38:45 (0 seconds elapsed)
@@ -120,7 +205,7 @@ Coverage (max):
 This mode tries to maximize the number of instructions taken during each process iteration. The counters will be taken from the Linux perf subsystems. Intel, AMD and even other CPU architectures are supported for this mode.
 
 ```
-$ honggfuzz --linux_perf_instr -f IN/ -F 2500 -q -- /usr/bin/xmllint -format ___FILE___
+$ honggfuzz --linux_perf_instr -f IN.corpus -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 2776
 Start time: 2016-02-16 18:40:51 (3 seconds elapsed)

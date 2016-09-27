@@ -72,7 +72,10 @@ else ifeq ($(OS),Darwin)
     ARCH := DARWIN
     CRASHWRANGLER := third_party/mac
     OS_VERSION := $(shell sw_vers -productVersion)
-    ifneq (,$(findstring 10.11,$(OS_VERSION)))
+		ifneq (,$(findstring 10.12,$(OS_VERSION)))
+				SDK_NAME := "macosx10.12"
+				CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
+    else ifneq (,$(findstring 10.11,$(OS_VERSION)))
         # El Capitan didn't break compatibility
         SDK_NAME := "macosx10.11"
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
