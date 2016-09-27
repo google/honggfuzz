@@ -81,7 +81,7 @@ static void cmdlineHelp(const char *pname, struct custom_option *opts)
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -C -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" Use compile-time instrumentation (libhfuzz/instrument.c):");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -z -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
-    LOG_HELP(" Use persistent mode (libhfuzz/persistent.c):");
+    LOG_HELP(" Use persistent mode (libhfuzz/libhfuzz.a):");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -- /usr/bin/tiffinfo_persistent");
 #if defined(_HF_ARCH_LINUX)
     LOG_HELP(" Run the binary over a dynamic file, maximize total no. of instructions:");
@@ -257,7 +257,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
         {{"save_all", no_argument, NULL, 'u'}, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames"},
         {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
-        {{"instr", no_argument, NULL, 'z'}, "Enable compile-time instrumentation (see libraries/instrument_func.c)"},
+        {{"instr", no_argument, NULL, 'z'}, "Enable compile-time instrumentation (link with libraries/libhfuzz.a)"},
         {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
         {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libraries/persistent.mode.main.o)"},
 
