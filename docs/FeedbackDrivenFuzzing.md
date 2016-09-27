@@ -114,6 +114,24 @@ $ clang-4.0 test.c fuzzedlib.o honggfuzz/libhfuzz/libhfuzz.a -o test
 $ honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
 
+A typical output:
+```
+$ honggfuzz -f IN.server/ -z -P -- ./persistent.server.openssl.1.0.2i.asan
+------------------------------[ honggfuzz v0.8 ]------------------------------
+      Iterations : 3,275,169 [3.28M]
+        Run Time : 2 hrs 17 min 16 sec (since: 2016-09-27 07:30:04)
+       Input Dir : 'IN.server/'
+      Fuzzed Cmd : './persistent.server.openssl.1.0.2i.asan'
+ Fuzzing Threads : 2, CPUs: 8, CPU: 759.0% (94.9%/CPU)
+   Speed (Round) : 86/sec (avg: 397)
+         Crashes : 0 (unique: 0, blacklist: 0, verified: 0)
+        Timeouts : 0 [10 sec.]
+     Corpus size : 393 (max file size: 40,000 bytes)
+        Coverage :
+       *** blocks seen:    3,545, comparison map: 204,542
+-----------------------------------[ LOGS ]-----------------------------------
+```
+
 # Hardware-based coverage #
 ## Unique branch points counting (--linux_perf_bts_block) ##
 
