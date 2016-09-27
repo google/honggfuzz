@@ -23,6 +23,7 @@ Developers should provide the initial file corpus which will be gradually improv
   * CPU supporting [BTS (Branch Trace Store)](https://software.intel.com/en-us/forums/topic/277868?language=en) for hardware assisted unique pc and edges (branch pairs) counting. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
   * CPU supporting [Intel PT (Processor Tracing)](https://software.intel.com/en-us/blogs/2013/09/18/processor-tracing) for hardware assisted unique edge (branch pairs) counting. Currently it's available only in some newer Intel CPUs (since Broadwell architecture)
   * GNU/Linux OS with a supported CPU; Intel Core 2 for BTS, Intel Broadwell for Intel PT
+  * Intel's [ibipt library](http://packages.ubuntu.com/yakkety/libipt1) for Intel PT
   * Linux kernel >= v4.2 for perf AUXTRACE
 
 # Fuzzing strategy #
@@ -36,7 +37,7 @@ There are 2 phases feedback-driven the fuzzing:
 In order to make this mode work, one needs to compile the fuzzed tool (_xmllint_ here) with _-fsanitize=address -fsanitize-coverage=bb_
 
 ```
-$ honggfuzz -f IN.corpus/ -- ./xmllint --format --nonet ___FILE___
+$ honggfuzz -C -f IN.corpus/ -- ./xmllint --format --nonet ___FILE___
 ============================== STAT ==============================
 Iterations: 1419
 Start time: 2016-03-15 16:43:57 (16 seconds elapsed)
@@ -114,9 +115,9 @@ $ clang-4.0 test.c fuzzedlib.o honggfuzz/libhfuzz/libhfuzz.a -o test
 $ honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
 
-A typical output:
+Example:
 ```
-$ honggfuzz -f IN.server/ -z -P -- ./persistent.server.openssl.1.0.2i.asan
+$ honggfuzz -z -P -f IN.server/ -- ./persistent.server.openssl.1.0.2i.asan
 ------------------------------[ honggfuzz v0.8 ]------------------------------
       Iterations : 3,275,169 [3.28M]
         Run Time : 2 hrs 17 min 16 sec (since: 2016-09-27 07:30:04)
