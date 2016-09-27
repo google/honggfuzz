@@ -1,27 +1,27 @@
 # Feedback-driven fuzzing #
 
-Honggfuzz (since its version 0.5) is capable of performing feedback-guided (code coverage driven) fuzzing. It utilizes the following methods:
+Honggfuzz is capable of performing feedback-guided (code coverage driven) fuzzing. It might utilize the following methods:
   * (Linux) Hardware-based counters (instructions, branches)
-  * (Linux) Intel BTS code coverage (kernel >=v4.2)
-  * (Linux) Intel PT code coverage (kernel >=4.2)
+  * (Linux) Intel BTS code coverage (kernel >= 4.2)
+  * (Linux) Intel PT code coverage (kernel >= 4.2)
   * Sanitzer-coverage instrumentation (`-fsanitize-coverage=bb`)
-  * Compile-time instrumentation (`-finstrument-functions` or `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp`)
+  * Compile-time instrumentation (`-finstrument-functions` or `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp` or both)
 
-Developers provide the initial file corpus which will be gradually improved upon. It can even comprise of a single 1-byte initial file, and honggfuzz will try to generate better inputs starting from here.
+Developers should provide the initial file corpus which will be gradually improved upon. It can even comprise of a single 1-byte initial file, and honggfuzz will try to generate better inputs starting from here.
 
 # Requirements for software-based coverage-guided fuzzing (ASAN code coverage) #
-  * `-fsanitize-coverage=bb` - Clang >=3.7
-  * `-finstrument-functions` - Any GCC or Clang
-  * `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp` - Clang >=4.0
+  * `-fsanitize-coverage=bb` - Clang >= 3.7
+  * `-finstrument-functions` - GCC or Clang
+  * `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp` - Clang >= 4.0
 
 # Requirements for hardware-based coverage-guided fuzzing #
   * GNU/Linux OS
   * Relatively modern Linux kernel (v4.0 should suffice)
   * CPU which is supported by the [perf subsystem](https://perf.wiki.kernel.org/index.php/Main_Page) for hardware-assisted instruction and branch counting
-  * CPU supporting [BTS (Branch Trace Store)](https://software.intel.com/en-us/forums/topic/277868?language=en) for hardware assisted unique edge (branch pairs) counting. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
-  * CPU supporting [Intel PT (Processor Tracing)](https://software.intel.com/en-us/blogs/2013/09/18/processor-tracing) for hardware assisted unique edge (branch pairs) counting. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
 
 # Requirements for hardware-based coverage-feedback fuzzing (Intel/AMD and possibly other CPU architectures) #
+  * CPU supporting [BTS (Branch Trace Store)](https://software.intel.com/en-us/forums/topic/277868?language=en) for hardware assisted unique pc and edges (branch pairs) counting. Currently it's available only in some newer Intel CPUs (unfortunately no AMD support for now)
+  * CPU supporting [Intel PT (Processor Tracing)](https://software.intel.com/en-us/blogs/2013/09/18/processor-tracing) for hardware assisted unique edge (branch pairs) counting. Currently it's available only in some newer Intel CPUs (since Broadwell architecture)
   * GNU/Linux OS with a supported CPU; Intel Core 2 for BTS, Intel Broadwell for Intel PT
   * Linux kernel >= v4.2 for perf AUXTRACE
 
@@ -32,7 +32,7 @@ There are always 2 phases of the fuzzing:
  * 1) Honggfuzz goes through each file in the initial corpus (-f). It adds files which hit new code coverage to the dynamic input corpus (as well as saving them on the disk, using *COVERAGE_DATA.PID.<pid>.RND.<time>.<rnd>* pattern
  * 2) Honggfuzz choses randomly files from the dynamic input corpus (in-memory), mutates them, and runs a new fuzzing task. If the newly created file adds to the code coverage, it gets added to the dynamic input corpus
 
-# ASAN Code coverage (-C)#
+# ASAN Code coverage (-C) #
 In order to make this mode work, one needs to compile the fuzzed tool (_xmllint_ here) with _-fsanitize=address -fsanitize-coverage=bb_
 
 ```
@@ -54,7 +54,6 @@ Coverage (max):
   - crashes:        0
 ============================== LOGS ==============================
 [2016-03-15T16:49:00+0100][I][2094] fuzz_sanCovFeedback():463 SanCov Update: file size (Cur): 2141, newBBs:9, counters (Cur,New): 8569/1,1666/1
-
 ```
 
 # Compile-time instrumentation with clang/gcc (-z) #
@@ -66,8 +65,7 @@ You can use here
 In both cases you'd need to link your code with `honggfuzz/libhfuzz/libhfuzz.a`
 
 Two modes are available
-###
-*Persistent mode - LLVM-style LLVMFuzzerTestOneInput*
+### Persistent mode - LLVM-style LLVMFuzzerTestOneInput ###
 
 ```
 $ cat test.c
@@ -80,17 +78,17 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len) {
   TestLibFunc(buf, len);
   return 0;
 }
+```
 
+```
 $ clang-4.0 -fsanitize-coverage=trace-pc,indirect-calls,trace-cmp test.c \
  -ltestlib honggfuzz/libhfuzz/libhfuzz.a -o test
-
 $ honggfuzz/honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
 
 `LLVMFuzzerInitialize(int *argc, char **argv)` is supported as well
 
-###
-*Persistent mode - fetching input only*
+### Persistent mode - fetching input only ###
 ```
 $ cat test.c
 #include <inttypes.h>
@@ -108,15 +106,15 @@ int main(void) {
   }
   return 0;
 }
-
+```
+```
 $ clang-4.0 -fsanitize-coverage=trace-pc,indirect-calls,trace-cmp test.c \
  -ltestlib honggfuzz/libhfuzz/libhfuzz.a -o test
-
- $ honggfuzz/honggfuzz -z -P -f INPUT.corpus -- ./test
+$ honggfuzz/honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
 
 # Hardware-based coverage #
-## Unique branch points counting (--linux_perf_bts_block)
+## Unique branch points counting (--linux_perf_bts_block) ##
 
 This feedback-driven counting honggfuzz mode utilizes Intel's BTS (Branch Trace Store) feature to record all basic blocks (jump blocks) inside the fuzzed process. Later on, honggfuzz will de-duplicate those entries. The resulting number of branch jump point is a good approximation of how much code of a given tool have been actively executed/used (code coverage).
 
@@ -139,7 +137,7 @@ Coverage (max):
 [2016-02-16T18:35:32+0100][I][14846] fuzz_perfFeedback():420 New: (Size New,Old): 257,257, Perf (Cur,New): 0/0/2030/0/0/0,0/0/2031/0/0/0
 ```
 
-## Unique branch pair (edges) counting (--linux_perf_bts_edge)
+## Unique branch pair (edges) counting (--linux_perf_bts_edge) ##
 
 This mode will take into consideration pairs (tuples) of jumps, recording unique from-to jump pairs. The data is taken from the Intel BTS CPU registers.
 
