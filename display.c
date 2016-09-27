@@ -138,7 +138,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     prev_exec_cnt = curr_exec_cnt;
     MX_SCOPED_LOCK(logMutexGet());
     display_put("%s", ESC_CLEAR);
-    display_put("------------------------------[ %s v%s ]------------------------------\n",
+    display_put("----------------------------[ %s v%s ]---------------------------\n",
                 PROG_NAME, PROG_VERSION);
     display_put("      Iterations : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
@@ -163,7 +163,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                 hfuzz->threadsMax, sysconf(_SC_NPROCESSORS_ONLN), cpuUse,
                 cpuUse / sysconf(_SC_NPROCESSORS_ONLN));
 
-    display_put("   Speed (%s) : " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_BOLD "/sec" ESC_RESET
+    display_put("   Speed (%s) : " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET "/sec"
                 " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n",
                 hfuzz->persistent ? "Round" : "Execs", exec_per_sec,
                 elapsed_second ? (curr_exec_cnt / elapsed_second) : 0);
@@ -186,7 +186,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     /* Feedback data sources are enabled. Start with common headers. */
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
         display_put("     Corpus size : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
-                    " (max file size: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET " bytes)\n",
+                    ", max size (bytes): " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",
                     hfuzz->dynfileqCnt, hfuzz->maxFileSz);
         display_put("        Coverage :\n");
     }
