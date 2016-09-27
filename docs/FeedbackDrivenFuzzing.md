@@ -133,6 +133,8 @@ $ honggfuzz -z -P -f IN.server/ -- ./persistent.server.openssl.1.0.2i.asan
 -----------------------------------[ LOGS ]-----------------------------------
 ```
 
+PS. You can also use a non-persistent mode here (without the -P flag), in which case you need to read data either from a file passed at command-line (`___FILE___`), or from the standard input (e.g. with `read(0, buf, sizeof(buf))`. The compile-time instrumentation (-z) will still work in such case.
+
 # Hardware-based coverage #
 ## Unique branch points counting (--linux_perf_bts_block) ##
 
