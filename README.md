@@ -17,7 +17,7 @@
 
   * **Linux** - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev)
   * **FreeBSD** - gmake
-  * **Android** - Android SDK/NDK
+  * **Android** - Android SDK/NDK. Also see [this detailed doc](https://github.com/google/honggfuzz/blob/master/docs/Android.md) on how to build and run it
   * **Windows** - CygWin
   * if **Clang/LLVM** is used - the BlocksRuntime Library (libblocksruntime-dev)
 
