@@ -29,7 +29,7 @@ Developers should provide the initial file corpus which will be gradually improv
 # Fuzzing strategy #
 The implemented strategy is trying to identify files which add new code coverage (or increased instruction/branch counters). Then those inputs are added (dynamically stored in memory) corpus, and reused during following fuzzing rounds
 
-There are 2 phases feedback-driven the fuzzing:
+There are 2 phases of feedback-driven the fuzzing:
   * Honggfuzz goes through each file in the initial corpus directory (-f). It adds files which hit new code coverage to the dynamic input corpus (as well as saving them on the disk, using *COVERAGE_DATA.PID.<pid>.RND.<time>.<rnd>* pattern
   * Honggfuzz choses randomly files from the dynamic input corpus (in-memory), mutates them, and runs a new fuzzing round (round in persistent mode, exec in non-persistent mode). If the newly created file induces new code path (extends code coverage), it gets added to the dynamic input corpus
 
@@ -57,17 +57,17 @@ Coverage (max):
 [2016-03-15T16:49:00+0100][I][2094] fuzz_sanCovFeedback():463 SanCov Update: file size (Cur): 2141, newBBs:9, counters (Cur,New): 8569/1,1666/1
 ```
 
-# Compile-time instrumentation with clang/gcc (-z) #
+# Compile-time instrumentation with clang/gcc -z #
 
 Here you can use the following:
   * gcc/clang `-finstrument-functions` (less-precise)
-  * clang's (>=4.0) `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp`
-    (trace-cmp adds additional comparison map to instrumentation)
+  * clang's (>= 4.0) `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp`
+    (trace-cmp adds additional comparison map to the instrumentation)
 
 In both cases you'll have to link your code with `honggfuzz/libhfuzz/libhfuzz.a`
 
-Two modes are available
-### Persistent mode - LLVM-style LLVMFuzzerTestOneInput ###
+Two persistent modes are available to be used
+### LLVM-style LLVMFuzzerTestOneInput ###
 
 ```
 $ cat test.c
@@ -90,7 +90,7 @@ $ honggfuzz -z -P -f INPUT.corpus -- ./test
 
 `LLVMFuzzerInitialize(int *argc, char **argv)` is supported as well
 
-### Persistent mode - fetching input only ###
+### Fetching input with HF_ITER() ###
 ```
 $ cat test.c
 #include <inttypes.h>
