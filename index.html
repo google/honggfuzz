@@ -38,26 +38,33 @@
 <ul>
 <li>A general-purpose, easy-to-use fuzzer with interesting analysis options. See <a href="https://github.com/google/honggfuzz/blob/master/docs/USAGE.md">USAGE</a> for details</li>
 <li>Supports several hardware-based (CPU) and software-based <a href="https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md">feedback-driven fuzzing</a> methods</li>
-<li>It works, at least, under GNU/Linux, FreeBSD, Mac OS X and <a href="https://github.com/google/honggfuzz/blob/master/docs/Android.md">Android</a>
+<li>It works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and <a href="https://github.com/google/honggfuzz/blob/master/docs/Android.md">Android</a>
 </li>
+<li>Supports persistent modes of fuzzing (long-lived process calling a fuzzed API repeatedly) with libhfuzz</li>
 <li>
-<a href="https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md">Can fuzz long-lasting processes</a> (e.g. network servers like Apache's httpd and ISC's bind)</li>
+<a href="https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md">Can fuzz standalone long-lasting processes</a> (e.g. network servers like Apache's httpd and ISC's bind)</li>
 </ul>
 
 <p><strong>Code</strong></p>
 
 <ul>
-<li>Latest version: <a href="https://github.com/google/honggfuzz/releases/tag/0.8">0.8</a> <a href="https://github.com/google/honggfuzz/blob/master/CHANGELOG">CHANGELOG</a>
+<li>Latest version: <a href="https://github.com/google/honggfuzz/releases/tag/0.8">0.8</a>
 </li>
+<li><a href="https://github.com/google/honggfuzz/blob/master/CHANGELOG">Changelog</a></li>
 </ul>
 
 <p><strong>Requirements</strong></p>
 
 <ul>
-<li>Linux - BFD library (libbfd-dev) and LibUnwind (libunwind-dev/libunwind8-dev)</li>
-<li>FreeBSD - gmake</li>
-<li>Android - Android SDK/NDK</li>
-<li>Clang - BlocksRuntime Library (libblocksruntime-dev)</li>
+<li>
+<strong>Linux</strong> - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev)</li>
+<li>
+<strong>FreeBSD</strong> - gmake</li>
+<li>
+<strong>Android</strong> - Android SDK/NDK</li>
+<li>
+<strong>Windows</strong> - CygWin</li>
+<li>if <strong>Clang/LLVM</strong> is used - the BlocksRuntime Library (libblocksruntime-dev)</li>
 </ul>
 
 <p><strong>Trophies</strong></p>
@@ -65,7 +72,13 @@
 <p>The tool has been used to find a few interesting security problems in major software packages; Examples:</p>
 
 <ul>
-<li>FreeType 2 project: <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2497">CVE-2010-2497</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2498">CVE-2010-2498</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2499">CVE-2010-2499</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2500">CVE-2010-2500</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2519">CVE-2010-2519</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2520">CVE-2010-2520</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2527">CVE-2010-2527</a>
+<li>FreeType 2:
+
+<ul>
+<li>
+<a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2497">CVE-2010-2497</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2498">CVE-2010-2498</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2499">CVE-2010-2499</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2500">CVE-2010-2500</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2519">CVE-2010-2519</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2520">CVE-2010-2520</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2527">CVE-2010-2527</a>
+</li>
+</ul>
 </li>
 <li><a href="http://bugzilla.maptools.org/buglist.cgi?query_format=advanced;emailreporter1=1;email1=robert@swiecki.net;product=libtiff;emailtype1=substring">Multiple bugs in the libtiff library</a></li>
 <li><a href="https://bugzilla.gnome.org/buglist.cgi?query_format=advanced;emailreporter1=1;email1=robert%40swiecki.net;product=librsvg;emailtype1=substring">Multiple bugs in the librsvg library</a></li>
