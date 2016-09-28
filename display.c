@@ -68,7 +68,7 @@ static void display_printKMG(uint64_t val)
     }
 }
 
-static double getCpuUse()
+static double getCpuUse(long num_cpu)
 {
     static uint64_t prevIdleT = 0UL;
 
@@ -92,7 +92,7 @@ static double getCpuUse()
         return NAN;
     }
 
-    uint64_t cpuUse = (sysconf(_SC_NPROCESSORS_ONLN) * sysconf(_SC_CLK_TCK)) - (idleT - prevIdleT);
+    uint64_t cpuUse = (num_cpu * sysconf(_SC_CLK_TCK)) - (idleT - prevIdleT);
     prevIdleT = idleT;
     return (double)cpuUse / sysconf(_SC_CLK_TCK) * 100;
 }
@@ -157,11 +157,14 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                     "'\n", hfuzz->linux.pid, hfuzz->linux.pidCmd);
     }
 
-    double cpuUse = getCpuUse();
+    static long num_cpu = 0;
+    if (num_cpu == 0) {
+        num_cpu = sysconf(_SC_NPROCESSORS_ONLN);
+    }
+    double cpuUse = getCpuUse(num_cpu);
     display_put(" Fuzzing Threads : " ESC_BOLD "%zu" ESC_RESET ", CPUs: " ESC_BOLD "%ld" ESC_RESET
                 ", CPU: " ESC_BOLD "%.1lf" ESC_RESET "%% (" ESC_BOLD "%.1lf" ESC_RESET "%%/CPU)\n",
-                hfuzz->threadsMax, sysconf(_SC_NPROCESSORS_ONLN), cpuUse,
-                cpuUse / sysconf(_SC_NPROCESSORS_ONLN));
+                hfuzz->threadsMax, num_cpu, cpuUse, cpuUse / num_cpu);
 
     display_put("   Speed (%s) : " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET "/sec"
                 " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n",
