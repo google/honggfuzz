@@ -146,6 +146,21 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put(" (out of: " ESC_BOLD "%zu" ESC_RESET " [" ESC_BOLD "%.2f" ESC_RESET
                     "%%])", hfuzz->mutationsMax, exeProgress);
     }
+    switch (ATOMIC_GET(hfuzz->state)) {
+    case _HF_STATE_STATIC:
+        display_put("\n           Phase : " ESC_BOLD "Static Main" ESC_RESET);
+        break;
+    case _HF_STATE_DYNAMIC_PRE:
+        display_put("\n           Phase : " ESC_BOLD "Dynamic Pre" ESC_RESET);
+        break;
+    case _HF_STATE_DYNAMIC_MAIN:
+        display_put("\n           Phase : " ESC_BOLD "Dynamic Main" ESC_RESET);
+        break;
+    default:
+        display_put("\n           Phase : " ESC_BOLD "Unknown" ESC_RESET);
+        break;
+    }
+
     char start_time_str[128];
     util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
     display_put("\n        Run Time : " ESC_BOLD "%s" ESC_RESET " (since: " ESC_BOLD "%s" ESC_RESET
