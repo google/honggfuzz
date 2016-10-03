@@ -167,3 +167,16 @@ void libhfuzz_instrumentUpdateCmpMap(void *addr, unsigned int new)
         ATOMIC_POST_ADD(feedback->pidFeedbackCmp[my_thread_no], v - prev);
     }
 }
+
+void __sanitizer_cov_trace_pc_guard_init(uint32_t * start, uint32_t * stop)
+{
+    for (uint32_t * x = start; x < stop; x++) {
+        *x = 1U;
+    }
+}
+
+void __sanitizer_cov_trace_pc_guard(uint32_t * guard UNUSED)
+{
+    *guard = 0U;
+    ATOMIC_PRE_INC_RELAXED(feedback->pidFeedbackPc[my_thread_no]);
+}
