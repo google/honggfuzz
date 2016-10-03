@@ -159,6 +159,29 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     return true;
 }
 
+static bool fuzz_postProcessFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    if (hfuzz->persistent == true) {
+        LOG_F("Postprocessing file in persistent mode not yet supported");
+    }
+
+    const char *const argv[] = { hfuzz->postExternalCommand, fuzzer->fileName, NULL };
+    if (subproc_System(argv) != 0) {
+        LOG_E("Subprocess '%s' returned abnormally", hfuzz->postExternalCommand);
+        return false;
+    }
+    LOG_D("Subporcess '%s' finished with success", hfuzz->externalCommand);
+
+    ssize_t rsz = files_readFileToBufMax(fuzzer->fileName, fuzzer->dynamicFile, hfuzz->maxFileSz);
+    if (rsz < 0) {
+        LOG_W("Couldn't read back '%s' to the buffer", fuzzer->fileName);
+        return false;
+    }
+    fuzzer->dynamicFileSz = rsz;
+
+    return true;
+}
+
 static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
 {
     int crashFd = -1;
@@ -467,7 +490,12 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     fuzz_getFileName(hfuzz, fuzzer->fileName);
 
-    if (hfuzz->externalCommand) {
+    if (state == _HF_STATE_DYNAMIC_PRE) {
+        fuzzer->flipRate = 0.0f;
+        if (!fuzz_prepareFile(hfuzz, fuzzer, rnd_index)) {
+            LOG_F("fuzz_prepareFile() failed");
+        }
+    } else if (hfuzz->externalCommand) {
         if (!fuzz_prepareFileExternally(hfuzz, fuzzer)) {
             LOG_F("fuzz_prepareFileExternally() failed");
         }
@@ -475,14 +503,15 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (!fuzz_prepareFileDynamically(hfuzz, fuzzer)) {
             LOG_F("fuzz_prepareFileDynamically() failed");
         }
-    } else if (state == _HF_STATE_DYNAMIC_PRE) {
-        fuzzer->flipRate = 0.0f;
-        if (!fuzz_prepareFile(hfuzz, fuzzer, rnd_index)) {
-            LOG_F("fuzz_prepareFile() failed");
-        }
     } else {
         if (!fuzz_prepareFile(hfuzz, fuzzer, rnd_index)) {
             LOG_F("fuzz_prepareFile() failed");
+        }
+    }
+
+    if (state == _HF_STATE_STATIC) {
+        if (!fuzz_postProcessFile(hfuzz, fuzzer)) {
+            LOG_F("fuzz_postProcessFile() failed");
         }
     }
 

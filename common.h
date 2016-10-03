@@ -213,6 +213,7 @@ typedef struct {
     char *covDir;
     double origFlipRate;
     char *externalCommand;
+    char *postExternalCommand;
     const char *blacklistFile;
     uint64_t *blacklist;
     size_t blacklistCnt;

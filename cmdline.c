@@ -147,6 +147,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .covDir = NULL,
         .origFlipRate = 0.001f,
         .externalCommand = NULL,
+        .postExternalCommand = NULL,
         .blacklistFile = NULL,
         .blacklistCnt = 0,
         .blacklist = NULL,
@@ -248,7 +249,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"covdir", required_argument, NULL, 0x103}, "New coverage is written to a separate directory (default: append new coverage only)"},
         {{"wordlist", required_argument, NULL, 'w'}, "Wordlist file (tokens delimited by NUL-bytes)"},
         {{"stackhash_bl", required_argument, NULL, 'B'}, "Stackhashes blacklist file (one entry per line)"},
-        {{"mutate_cmd", required_argument, NULL, 'c'}, "External command providing fuzz files, instead of mutating the input corpus"},
+        {{"mutate_cmd", required_argument, NULL, 'c'}, "External command producing fuzz files (instead of internal mutators)"},
+        {{"pprocess_cmd", required_argument, NULL, 0x104}, "External command postprocessing files produced by internal mutators"},
         {{"iterations", required_argument, NULL, 'N'}, "Number of fuzzing iterations (default: '0' [no limit])"},
         {{"rlimit_as", required_argument, NULL, 0x100}, "Per process memory limit in MiB (default: '0' [no limit])"},
         {{"report", required_argument, NULL, 'R'}, "Write report to this file (default: '" _HF_REPORT_FILE "')"},
@@ -365,6 +367,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x103:
             hfuzz->covDir = optarg;
+            break;
+        case 0x104:
+            hfuzz->postExternalCommand = optarg;
             break;
         case 'P':
             hfuzz->persistent = true;
