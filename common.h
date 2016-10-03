@@ -67,8 +67,8 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 /* Default name of the report created with some architectures */
 #define _HF_REPORT_FILE "HONGGFUZZ.REPORT.TXT"
 
-/* Default stack-size of created threads. Must be bigger then _HF_DYNAMIC_FILE_MAX_SZ */
-#define _HF_PTHREAD_STACKSIZE (1024 * 1024 * 8) /* 8MB */
+/* Default stack-size of created threads. */
+#define _HF_PTHREAD_STACKSIZE (1024 * 1024 * 2) /* 2MB */
 
 /* Name of envvar which indicates sequential number of fuzzer */
 #define _HF_THREAD_NO_ENV "HFUZZ_THREAD_NO"
