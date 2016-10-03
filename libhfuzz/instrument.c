@@ -161,6 +161,11 @@ void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t * Cases)
  */
 void __sanitizer_cov_trace_pc_guard_init(uint32_t * start, uint32_t * stop)
 {
+    static bool inited = false;
+    if (inited == true) {
+        return;
+    }
+    inited = true;
     for (uint32_t * x = start; x < stop; x++) {
         *x = 1U;
     }
