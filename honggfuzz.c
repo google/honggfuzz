@@ -183,7 +183,6 @@ int main(int argc, char **argv)
     }
 
     /* Clean-up global buffers */
-    free(hfuzz.files);
     if (hfuzz.blacklist) {
         free(hfuzz.blacklist);
     }

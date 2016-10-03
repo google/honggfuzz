@@ -240,11 +240,11 @@ libhfuzz/memorycmp.o: libhfuzz/instrument.h
 libhfuzz/persistent.o: common.h
 linux/arch.o: common.h arch.h common.h files.h linux/perf.h
 linux/arch.o: linux/ptrace_utils.h log.h sancov.h subproc.h util.h
-linux/bfd.o: common.h linux/bfd.h linux/unwind.h files.h log.h common.h
+linux/bfd.o: common.h linux/bfd.h linux/unwind.h files.h common.h log.h
 linux/bfd.o: util.h
-linux/perf.o: common.h linux/perf.h files.h log.h common.h util.h linux/pt.h
+linux/perf.o: common.h linux/perf.h files.h common.h log.h util.h linux/pt.h
 linux/pt.o: common.h linux/pt.h log.h common.h util.h
-linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h log.h common.h
+linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h common.h log.h
 linux/ptrace_utils.o: sancov.h subproc.h util.h linux/bfd.h linux/unwind.h
 linux/unwind.o: common.h linux/unwind.h log.h common.h
 mac/arch.o: common.h arch.h files.h log.h sancov.h subproc.h util.h

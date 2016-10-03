@@ -24,6 +24,8 @@
 #ifndef _HF_FILES_H_
 #define _HF_FILES_H_
 
+#include "common.h"
+
 #include <stdint.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -59,5 +61,7 @@ extern uint8_t *files_mapFileShared(char *fileName, off_t * fileSz, int *fd);
 extern void *files_mapSharedMem(size_t sz, int *fd, const char *dir);
 
 extern bool files_readPidFromFile(const char *fileName, pid_t * pidPtr);
+
+extern struct paths_t *files_getFileFromFileq(honggfuzz_t * hfuzz, size_t index);
 
 #endif

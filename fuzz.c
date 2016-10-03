@@ -103,10 +103,11 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
 {
-    ssize_t fileSz =
-        files_readFileToBufMax(hfuzz->files[rnd_index], fuzzer->dynamicFile, hfuzz->maxFileSz);
+    struct paths_t *file = files_getFileFromFileq(hfuzz, rnd_index);
+
+    ssize_t fileSz = files_readFileToBufMax(file->path, fuzzer->dynamicFile, hfuzz->maxFileSz);
     if (fileSz < 0) {
-        LOG_E("Couldn't read contents of '%s'", hfuzz->files[rnd_index]);
+        LOG_E("Couldn't read contents of '%s'", file->path);
         return false;
     }
     fuzzer->dynamicFileSz = fileSz;
@@ -485,7 +486,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     fuzzState_t state = fuzz_getState(hfuzz);
     if (state != _HF_STATE_DYNAMIC_MAIN) {
-        fuzzer->origFileName = files_basename(hfuzz->files[rnd_index]);
+        fuzzer->origFileName = files_basename(files_getFileFromFileq(hfuzz, rnd_index)->path);
     }
 
     fuzz_getFileName(hfuzz, fuzzer->fileName);

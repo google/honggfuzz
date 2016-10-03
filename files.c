@@ -193,16 +193,15 @@ static bool files_readdir(honggfuzz_t * hfuzz)
             continue;
         }
 
-        if (!(hfuzz->files = util_Realloc(hfuzz->files, sizeof(char *) * (count + 1)))) {
-            PLOG_W("Couldn't allocate memory");
-            return false;
-        }
-
         if ((size_t) st.st_size > maxSize) {
             maxSize = st.st_size;
         }
-        hfuzz->files[count] = util_StrDup(path);
+
+        struct paths_t *file = (struct paths_t *)util_Malloc(sizeof(struct paths_t));
+        snprintf(file->path, sizeof(file->path), "%s", path);
         hfuzz->fileCnt = ++count;
+        TAILQ_INSERT_TAIL(&hfuzz->fileq, file, pointers);
+
         LOG_D("Added '%s' to the list of input files", path);
     }
 
@@ -221,11 +220,12 @@ static bool files_readdir(honggfuzz_t * hfuzz)
 
 bool files_init(honggfuzz_t * hfuzz)
 {
-    hfuzz->files = util_Malloc(sizeof(char *));
-    hfuzz->files[0] = "NONE";
-    hfuzz->fileCnt = 1;
-
     if (hfuzz->externalCommand) {
+        struct paths_t *file = (struct paths_t *)util_Malloc(sizeof(struct paths_t));
+        snprintf(file->path, sizeof(file->path), "NONE");
+        hfuzz->fileCnt = 1;
+        TAILQ_INSERT_TAIL(&hfuzz->fileq, file, pointers);
+
         LOG_I
             ("No input file corpus loaded, the external command '%s' is responsible for creating the fuzz files",
              hfuzz->externalCommand);
@@ -243,12 +243,12 @@ bool files_init(honggfuzz_t * hfuzz)
         return false;
     }
 
-    if (S_ISDIR(st.st_mode)) {
-        return files_readdir(hfuzz);
+    if (!S_ISDIR(st.st_mode)) {
+        LOG_W("The initial corpus directory '%s' is not a directory", hfuzz->inputDir);
+        return false;
     }
 
-    LOG_W("The initial corpus directory '%s' is not a directory", hfuzz->inputDir);
-    return false;
+    return files_readdir(hfuzz);
 }
 
 const char *files_basename(char *path)
@@ -538,4 +538,22 @@ bool files_readPidFromFile(const char *fileName, pid_t * pidPtr)
     }
 
     return true;
+}
+
+struct paths_t *files_getFileFromFileq(honggfuzz_t * hfuzz, size_t index)
+{
+    if (index >= hfuzz->fileCnt) {
+        LOG_F("File index: %zu >= fileCnt: %zu", index, hfuzz->fileCnt);
+    }
+
+    struct paths_t *file;
+    size_t i = 0;
+    TAILQ_FOREACH(file, &hfuzz->fileq, pointers) {
+        if (i++ == index) {
+            return file;
+        }
+    }
+
+    LOG_F("File index: %zu bigger than fileq size", index);
+    return NULL;
 }

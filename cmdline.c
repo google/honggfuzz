@@ -158,7 +158,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .threadsMax = (sysconf(_SC_NPROCESSORS_ONLN) <= 1) ? 1 : sysconf(_SC_NPROCESSORS_ONLN) / 2,
         .reportFile = NULL,
         .asLimit = 0ULL,
-        .files = NULL,
         .fileCnt = 0,
         .lastFileIndex = 0,
         .doneFileIndex = 0,
@@ -230,6 +229,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 
     TAILQ_INIT(&hfuzz->dynfileq);
     TAILQ_INIT(&hfuzz->dictionaryq);
+    TAILQ_INIT(&hfuzz->fileq);
 
     /*  *INDENT-OFF* */
     struct custom_option custom_opts[] = {
