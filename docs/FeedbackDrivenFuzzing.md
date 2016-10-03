@@ -5,7 +5,7 @@ Honggfuzz is capable of performing feedback-guided (code coverage driven) fuzzin
   * (Linux) Intel BTS code coverage (kernel >= 4.2)
   * (Linux) Intel PT code coverage (kernel >= 4.2)
   * Sanitzer-coverage instrumentation (`-fsanitize-coverage=bb`)
-  * Compile-time instrumentation (`-finstrument-functions` or `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp` or both)
+  * Compile-time instrumentation (`-finstrument-functions` or `-fsanitize-coverage=trace-pc[-guard],indirect-calls,trace-cmp` or both)
 
 Developers should provide the initial file corpus which will be gradually improved upon. It can even comprise of a single 1-byte initial file, and honggfuzz will try to generate better inputs starting from here.
 
@@ -13,6 +13,7 @@ Developers should provide the initial file corpus which will be gradually improv
   * `-fsanitize-coverage=bb` - Clang >= 3.7
   * `-finstrument-functions` - GCC or Clang
   * `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp` - Clang >= 4.0
+  * `-fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp` - Clang >= 4.0
 
 # Requirements for hardware-based counter-based fuzzing #
   * GNU/Linux OS
@@ -61,7 +62,7 @@ Coverage (max):
 
 Here you can use the following:
   * gcc/clang `-finstrument-functions` (less-precise)
-  * clang's (>= 4.0) `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp`
+  * clang's (>= 4.0) `-fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp`
     (trace-cmp adds additional comparison map to the instrumentation)
 
 In both cases you'll have to link your code with `honggfuzz/libhfuzz/libhfuzz.a`
@@ -83,7 +84,7 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len) {
 ```
 
 ```
-$ clang-4.0 -fsanitize-coverage=trace-pc,indirect-calls,trace-cmp fuzzedlib.c -o fuzzedlib.o
+$ clang-4.0 -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp fuzzedlib.c -o fuzzedlib.o
 $ clang-4.0 test.c fuzzedlib.o honggfuzz/libhfuzz/libhfuzz.a -o test
 $ honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
@@ -110,7 +111,7 @@ int main(void) {
 }
 ```
 ```
-$ clang-4.0 -fsanitize-coverage=trace-pc,indirect-calls,trace-cmp fuzzedlib.c -o fuzzedlib.o
+$ clang-4.0 -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp fuzzedlib.c -o fuzzedlib.o
 $ clang-4.0 test.c fuzzedlib.o honggfuzz/libhfuzz/libhfuzz.a -o test
 $ honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
