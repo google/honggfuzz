@@ -74,7 +74,7 @@ static void mangle_Dictionary(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz, 
 
     uint64_t choice = util_rndGet(0, hfuzz->dictionaryCnt - 1);
 
-    struct strings_t *str = TAILQ_FIRST(&hfuzz->dictionaryq);
+    struct strings_t *str = TAILQ_FIRST(&hfuzz->dictq);
     for (uint64_t i = 0; i < choice; i++) {
         str = TAILQ_NEXT(str, pointers);
     }

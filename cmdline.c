@@ -228,7 +228,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     /*  *INDENT-ON* */
 
     TAILQ_INIT(&hfuzz->dynfileq);
-    TAILQ_INIT(&hfuzz->dictionaryq);
+    TAILQ_INIT(&hfuzz->dictq);
     TAILQ_INIT(&hfuzz->fileq);
 
     /*  *INDENT-OFF* */

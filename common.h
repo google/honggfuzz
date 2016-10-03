@@ -229,7 +229,7 @@ typedef struct {
     size_t maxFileSz;
     char *reportFile;
     uint64_t asLimit;
-     TAILQ_HEAD(fileq_t, paths_t) fileq;
+     TAILQ_HEAD(, paths_t) fileq;
     size_t fileCnt;
     size_t lastFileIndex;
     size_t doneFileIndex;
@@ -238,7 +238,7 @@ typedef struct {
     bool persistent;
 
     const char *dictionaryFile;
-     TAILQ_HEAD(dictionaryq_t, strings_t) dictionaryq;
+     TAILQ_HEAD(, strings_t) dictq;
     size_t dictionaryCnt;
 
     fuzzState_t state;
@@ -246,7 +246,7 @@ typedef struct {
     int bbFd;
     size_t dynfileqCnt;
     pthread_mutex_t dynfileq_mutex;
-     TAILQ_HEAD(dynfileq_t, dynfile_t) dynfileq;
+     TAILQ_HEAD(, dynfile_t) dynfileq;
 
     size_t mutationsCnt;
     size_t crashesCnt;
