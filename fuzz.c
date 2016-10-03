@@ -509,7 +509,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
     }
 
-    if (state == _HF_STATE_STATIC) {
+    if (state == _HF_STATE_STATIC && hfuzz->postExternalCommand != NULL) {
         if (!fuzz_postProcessFile(hfuzz, fuzzer)) {
             LOG_F("fuzz_postProcessFile() failed");
         }
