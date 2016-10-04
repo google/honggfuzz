@@ -12,8 +12,8 @@ Developers should provide the initial file corpus which will be gradually improv
 # Requirements for software-based coverage-guided fuzzing #
   * `-fsanitize-coverage=bb` - Clang >= 3.7
   * `-finstrument-functions` - GCC or Clang
-  * `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp` - Clang >= 4.0
   * `-fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp` - Clang >= 4.0
+  * [older, slower variant] `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp` - Clang >= 4.0 
 
 # Requirements for hardware-based counter-based fuzzing #
   * GNU/Linux OS
