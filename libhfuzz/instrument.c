@@ -176,7 +176,7 @@ void __sanitizer_cov_trace_pc_guard_init(uint32_t * start, uint32_t * stop)
     }
 }
 
-void __sanitizer_cov_trace_pc_guard(uint32_t * guard UNUSED)
+void __sanitizer_cov_trace_pc_guard(uint32_t * guard)
 {
     bool prev = ATOMIC_XCHG(feedback->pcGuardMap[*guard], true);
     if (prev == false) {
