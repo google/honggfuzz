@@ -140,7 +140,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put("%s", ESC_CLEAR);
     display_put("----------------------------[ %s v%s ]---------------------------\n",
                 PROG_NAME, PROG_VERSION);
-    display_put("      Iterations : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
+    display_put("  Iterations : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
     if (hfuzz->mutationsMax) {
         display_put(" (out of: " ESC_BOLD "%zu" ESC_RESET " [" ESC_BOLD "%.2f" ESC_RESET
@@ -148,26 +148,26 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     switch (ATOMIC_GET(hfuzz->state)) {
     case _HF_STATE_STATIC:
-        display_put("\n           Phase : " ESC_BOLD "Static Main" ESC_RESET);
+        display_put("\n       Phase : " ESC_BOLD "Static Main" ESC_RESET);
         break;
     case _HF_STATE_DYNAMIC_PRE:
-        display_put("\n           Phase : " ESC_BOLD "Dynamic Pre" ESC_RESET);
+        display_put("\n       Phase : " ESC_BOLD "Dynamic Pre" ESC_RESET);
         break;
     case _HF_STATE_DYNAMIC_MAIN:
-        display_put("\n           Phase : " ESC_BOLD "Dynamic Main" ESC_RESET);
+        display_put("\n       Phase : " ESC_BOLD "Dynamic Main" ESC_RESET);
         break;
     default:
-        display_put("\n           Phase : " ESC_BOLD "Unknown" ESC_RESET);
+        display_put("\n       Phase : " ESC_BOLD "Unknown" ESC_RESET);
         break;
     }
 
     char start_time_str[128];
     util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
-    display_put("\n        Run Time : " ESC_BOLD "%s" ESC_RESET " (since: " ESC_BOLD "%s" ESC_RESET
+    display_put("\n    Run Time : " ESC_BOLD "%s" ESC_RESET " (since: " ESC_BOLD "%s" ESC_RESET
                 ")\n", time_elapsed_str, start_time_str);
-    display_put("       Input Dir : '" ESC_BOLD "%s" ESC_RESET "'\n",
+    display_put("   Input Dir : '" ESC_BOLD "%s" ESC_RESET "'\n",
                 hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]");
-    display_put("      Fuzzed Cmd : '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
+    display_put("  Fuzzed Cmd : '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
     if (hfuzz->linux.pid > 0) {
         display_put("Remote cmd [" ESC_BOLD "%d" ESC_RESET "]: '" ESC_BOLD "%s" ESC_RESET
                     "'\n", hfuzz->linux.pid, hfuzz->linux.pidCmd);
@@ -178,13 +178,12 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         num_cpu = sysconf(_SC_NPROCESSORS_ONLN);
     }
     double cpuUse = getCpuUse(num_cpu);
-    display_put(" Fuzzing Threads : " ESC_BOLD "%zu" ESC_RESET ", CPUs: " ESC_BOLD "%ld" ESC_RESET
+    display_put("     Threads : " ESC_BOLD "%zu" ESC_RESET ", CPUs: " ESC_BOLD "%ld" ESC_RESET
                 ", CPU: " ESC_BOLD "%.1lf" ESC_RESET "%% (" ESC_BOLD "%.1lf" ESC_RESET "%%/CPU)\n",
                 hfuzz->threadsMax, num_cpu, cpuUse, cpuUse / num_cpu);
 
-    display_put("   Speed (%s) : " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET "/sec"
-                " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n",
-                hfuzz->persistent ? "Round" : "Execs", exec_per_sec,
+    display_put("       Speed : " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET "/sec"
+                " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n", exec_per_sec,
                 elapsed_second ? (curr_exec_cnt / elapsed_second) : 0);
     /* If dry run, print also the input file count */
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
@@ -194,20 +193,20 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     uint64_t crashesCnt = ATOMIC_GET(hfuzz->crashesCnt);
     /* colored the crash count as red when exist crash */
-    display_put("         Crashes : " ESC_BOLD "%s" "%zu" ESC_RESET " (unique: %s" ESC_BOLD "%zu"
+    display_put("     Crashes : " ESC_BOLD "%s" "%zu" ESC_RESET " (unique: %s" ESC_BOLD "%zu"
                 ESC_RESET ", blacklist: " ESC_BOLD "%zu" ESC_RESET ", verified: "
                 ESC_BOLD "%zu" ESC_RESET ")\n", crashesCnt > 0 ? ESC_RED : "",
                 hfuzz->crashesCnt, crashesCnt > 0 ? ESC_RED : "",
                 ATOMIC_GET(hfuzz->uniqueCrashesCnt), ATOMIC_GET(hfuzz->blCrashesCnt),
                 ATOMIC_GET(hfuzz->verifiedCrashesCnt));
-    display_put("        Timeouts : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET " [%"
+    display_put("    Timeouts : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET " [%"
                 _HF_MONETARY_MOD "zu sec.]\n", ATOMIC_GET(hfuzz->timeoutedCnt), hfuzz->tmOut);
     /* Feedback data sources are enabled. Start with common headers. */
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
-        display_put("     Corpus size : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
+        display_put(" Corpus Size : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
                     ", max size (bytes): " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",
                     hfuzz->dynfileqCnt, hfuzz->maxFileSz);
-        display_put("        Coverage :\n");
+        display_put("    Coverage :\n");
     }
 
     /* HW perf specific counters */
