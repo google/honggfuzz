@@ -82,6 +82,8 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 /* Perf bitmap size */
 #define _HF_PERF_BITMAP_SIZE_16M (1024U * 1024U * 16U)
 #define _HF_PERF_BITMAP_BITSZ_MASK 0x7ffffff
+/* Maximum number of PC guards (=trace-pc-guard) we support */
+#define _HF_PC_GUARD_MAX (1024U * 1024U)
 
 #if defined(__ANDROID__)
 #define _HF_MONITOR_SIGABRT 0
@@ -197,6 +199,7 @@ struct paths_t {
 /* Maximum number of active fuzzing threads */
 #define _HF_THREAD_MAX 1024U
 typedef struct {
+    bool pcGuardMap[_HF_PC_GUARD_MAX];
     uint8_t bbMapPc[_HF_PERF_BITMAP_SIZE_16M];
     uint8_t bbMapCmp[_HF_PERF_BITMAP_SIZE_16M];
     uint64_t pidFeedbackPc[_HF_THREAD_MAX];

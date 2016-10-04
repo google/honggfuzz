@@ -166,15 +166,23 @@ void __sanitizer_cov_trace_pc_guard_init(uint32_t * start, uint32_t * stop)
         return;
     }
     inited = true;
-    for (uint32_t * x = start; x < stop; x++) {
-        *x = 1U;
+    uint32_t n = 1U;
+    for (uint32_t * x = start; x < stop; x++, n++) {
+        if (n >= _HF_PC_GUARD_MAX) {
+            fprintf(stderr, "This process has too many PC guards\n");
+            exit(1);
+        }
+        *x = n;
     }
 }
 
 void __sanitizer_cov_trace_pc_guard(uint32_t * guard UNUSED)
 {
+    bool prev = ATOMIC_XCHG(feedback->pcGuardMap[*guard], true);
+    if (prev == false) {
+        ATOMIC_PRE_INC_RELAXED(feedback->pidFeedbackPc[my_thread_no]);
+    }
     *guard = 0U;
-    ATOMIC_PRE_INC_RELAXED(feedback->pidFeedbackPc[my_thread_no]);
 }
 
 void libhfuzz_instrumentUpdateCmpMap(void *addr, unsigned int new)
