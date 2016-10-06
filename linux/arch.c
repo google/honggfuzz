@@ -123,7 +123,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
      * Kill a process which corrupts its own heap (with ABRT)
      */
     if (setenv("MALLOC_CHECK_", "7", 0) == -1) {
-        PLOG_E("setenv(MALLOC_CHECK_=3) failed");
+        PLOG_E("setenv(MALLOC_CHECK_=7) failed");
         return false;
     }
 
