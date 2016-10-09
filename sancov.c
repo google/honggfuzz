@@ -713,16 +713,6 @@ static bool sancov_sanCovParse(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 }
 
 /*
- * Work In Progress - Simply read 64bit values, and mark it inside bbMap as hit
- */
-__thread uint8_t *sanCovMap = MAP_FAILED;
-__thread int sanCovFd = -1;
-__thread off_t sanCovSz = 0ULL;
-__thread pid_t sanCovPid = -1;
-__thread char sanCovPathRaw[PATH_MAX];
-__thread char sanCovPathMap[PATH_MAX];
-
-/*
  * Sanitizer coverage data are stored in FS can be parsed via two methods:
  * raw unpack & separate bin/DSO sancov file. Separate bin/DSO sancov file
  * method is usually avoided since coverage data are lost if sanitizer unhandled
