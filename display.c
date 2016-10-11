@@ -136,7 +136,10 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     static size_t prev_exec_cnt = 0UL;
     uintptr_t exec_per_sec = curr_exec_cnt - prev_exec_cnt;
     prev_exec_cnt = curr_exec_cnt;
+
+    /* The lock should be acquired before any output is printed on the screen */
     MX_SCOPED_LOCK(logMutexGet());
+
     display_put("%s", ESC_CLEAR);
     display_put("----------------------------[ %s v%s ]---------------------------\n",
                 PROG_NAME, PROG_VERSION);
