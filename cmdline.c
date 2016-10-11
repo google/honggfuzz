@@ -261,7 +261,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
         {{"instrument", no_argument, NULL, 'z'}, "Enable compile-time instrumentation (link with libraries/instrument.a)"},
         {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
-        {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libraries/persistent.c"},
+        {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libraries/persistent.c)"},
 
 #if defined(_HF_ARCH_LINUX)
         {{"linux_pid", required_argument, NULL, 'p'}, "Attach to a pid (and its thread group)"},
