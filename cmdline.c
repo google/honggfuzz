@@ -246,7 +246,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"debug_level", required_argument, NULL, 'd'}, "Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])"},
         {{"extension", required_argument, NULL, 'e'}, "Input file extension (e.g. 'swf'), (default: 'fuzz')"},
         {{"workspace", required_argument, NULL, 'W'}, "Workspace directory to save crashes & runtime files (default: '.')"},
-        {{"covdir", required_argument, NULL, 0x103}, "New coverage is written to a separate directory (default: append new coverage only)"},
+        {{"covdir", required_argument, NULL, 0x103}, "New coverage is written to a separate directory (default: use the input directory)"},
         {{"wordlist", required_argument, NULL, 'w'}, "Wordlist file (tokens delimited by NUL-bytes)"},
         {{"stackhash_bl", required_argument, NULL, 'B'}, "Stackhashes blacklist file (one entry per line)"},
         {{"mutate_cmd", required_argument, NULL, 'c'}, "External command producing fuzz files (instead of internal mutators)"},
