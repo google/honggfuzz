@@ -149,6 +149,7 @@ ifeq ($(DEBUG),true)
 endif
 
 # Control Android builds
+ANDROID_API           ?= android-24
 ANDROID_DEBUG_ENABLED ?= false
 ANDROID_CLANG         ?= false
 ANDROID_APP_ABI       ?= armeabi-v7a
@@ -158,22 +159,30 @@ ifeq ($(ANDROID_DEBUG_ENABLED),true)
 endif
 
 ifeq ($(ANDROID_CLANG),true)
-  # clang works only for APIs >= 23, so default to it if not set
-  ANDROID_API ?= android-24
-  ifeq ($(ANDROID_APP_ABI),armeabi-v7a)
+  # clang works only against APIs >= 23
+  ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),armeabi armeabi-v7a))
     ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-clang
-  else ifeq ($(ANDROID_APP_ABI),x86)
+  else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86))
     ANDROID_NDK_TOOLCHAIN ?= x86-clang
-  else ifeq ($(ANDROID_APP_ABI),arm64-v8a)
+  else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),arm64-v8a))
     ANDROID_NDK_TOOLCHAIN ?= aarch64-linux-android-clang
-  else ifeq ($(ANDROID_APP_ABI),x86_64)
+  else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86_64))
     ANDROID_NDK_TOOLCHAIN ?= x86_64-clang
   else
     $(error Unsuported / Unknown APP_API '$(ANDROID_APP_ABI)')
   endif
 else
-  ANDROID_API           ?= android-24
-  ANDROID_NDK_TOOLCHAIN ?=
+  ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),armeabi armeabi-v7a))
+    ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-4.9
+  else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86))
+    ANDROID_NDK_TOOLCHAIN ?= x86-4.9
+  else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),arm64-v8a))
+    ANDROID_NDK_TOOLCHAIN ?= aarch64-linux-android-4.9
+  else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86_64))
+    ANDROID_NDK_TOOLCHAIN ?= x86_64-4.9
+  else
+    $(error Unsuported / Unknown APP_API '$(ANDROID_APP_ABI)')
+  endif
 endif
 
 SUBDIR_ROOTS := linux mac posix libhfuzz
