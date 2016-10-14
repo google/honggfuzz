@@ -90,10 +90,14 @@ static void cmdlineHelp(const char *pname, struct custom_option *opts)
     LOG_HELP(" Run the binary over a dynamic file, maximize total no. of branches:");
     LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_branch -- /usr/bin/tiffinfo -D "
                   _HF_FILE_PLACEHOLDER);
-    LOG_HELP(" Run the binary over a dynamic file, maximize unique code blocks (coverage):");
-    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_ip -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
-    LOG_HELP(" Run the binary over a dynamic file, maximize unique branches (edges):");
-    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_ip_addr -- /usr/bin/tiffinfo -D "
+    LOG_HELP(" Run the binary over a dynamic file, maximize unique code blocks via BTS:");
+    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_bts_block -- /usr/bin/tiffinfo -D "
+                  _HF_FILE_PLACEHOLDER);
+    LOG_HELP(" Run the binary over a dynamic file, maximize unique branches (edges) via BTS:");
+    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_bts_edge -- /usr/bin/tiffinfo -D ");
+    LOG_HELP
+        (" Run the binary over a dynamic file, maximize unique code blocks via Intel Processor Trace:");
+    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_ipt_block -- /usr/bin/tiffinfo -D "
                   _HF_FILE_PLACEHOLDER);
     LOG_HELP(" Run the binary over a dynamic file, maximize custom counters (experimental):");
     LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_custom -- /usr/bin/tiffinfo -D "
