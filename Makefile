@@ -16,7 +16,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+#
+#   NOTE: xcrun is within xcode...xcode is required on OSX.
+#
 
 # Common for all architectures
 CC ?= gcc
@@ -71,7 +73,7 @@ ifeq ($(OS),Linux)
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
     CRASHWRANGLER := third_party/mac
-    OS_VERSION := $(shell sw_vers -productVersion)
+    OS_VERSION := $(shell xcrun --show-sdk-version)
 		ifneq (,$(findstring 10.12,$(OS_VERSION)))
 				SDK_NAME := "macosx10.12"
 				CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
