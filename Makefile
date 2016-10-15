@@ -73,26 +73,39 @@ ifeq ($(OS),Linux)
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
     CRASHWRANGLER := third_party/mac
+    OS_VERSION := $(shell sw_vers -productVersion)
     OSX_SDK_VERSION := $(shell xcrun --show-sdk-version)
-		ifneq (,$(findstring 10.12,$(OSX_SDK_VERSION)))
-				SDK_NAME := "macosx10.12"
-				CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
+
+	ifneq (,$(findstring 10.12,$(OS_VERSION)))
+		CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
+    else ifneq (,$(findstring 10.11,$(OS_VERSION)))
+        # El Capitan didn't break compatibility
+        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
+    else ifneq (,$(findstring 10.10,$(OS_VERSION)))
+        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
+    else ifneq (,$(findstring 10.9,$(OS_VERSION)))
+        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mavericks.o
+    else ifneq (,$(findstring 10.8,$(OS_VERSION)))
+        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mountain_Lion.o
+    else
+        $(error Unsupported MAC OS X version)
+    endif
+
+	ifneq (,$(findstring 10.12,$(OSX_SDK_VERSION)))
+		SDK_NAME := "macosx10.12"
     else ifneq (,$(findstring 10.11,$(OSX_SDK_VERSION)))
         # El Capitan didn't break compatibility
         SDK_NAME := "macosx10.11"
-        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
     else ifneq (,$(findstring 10.10,$(OSX_SDK_VERSION)))
         SDK_NAME := "macosx10.10"
-        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
     else ifneq (,$(findstring 10.9,$(OSX_SDK_VERSION)))
         SDK_NAME := "macosx10.9"
-        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mavericks.o
     else ifneq (,$(findstring 10.8,$(OSX_SDK_VERSION)))
         SDK_NAME := "macosx10.8"
-        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mountain_Lion.o
     else
-        $(error Unsupported MAC OSX SDK version)
+        $(error Unsupported MAC OS X SDK version)
     endif
+
     SDK := $(shell xcrun --sdk $(SDK_NAME) --show-sdk-path 2>/dev/null)
     ifeq (,$(findstring MacOSX.platform,$(SDK)))
         XC_PATH := $(shell xcode-select -p)
