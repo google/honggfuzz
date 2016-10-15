@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <setjmp.h>
 #include <sys/cdefs.h>
 #include <sys/personality.h>
 #include <sys/ptrace.h>
@@ -79,6 +80,32 @@ static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     return true;
 }
 
+static uint8_t arch_clone_stack[PTHREAD_STACK_MIN * 2];
+
+static int arch_cloneFunc(void *arg)
+{
+    jmp_buf *env_ptr = (jmp_buf *) arg;
+    longjmp(*env_ptr, 1);
+}
+
+// Avoid problem with caching of PID/TID in glibc
+static pid_t arch_clone(uintptr_t flags)
+{
+    if (flags & CLONE_VM) {
+        LOG_E("Cannot use clone(flags & CLONE_VM)");
+        return -1;
+    }
+
+    jmp_buf env;
+    if (setjmp(env) == 0) {
+        void *stack_mid = &arch_clone_stack[sizeof(arch_clone_stack) / 2];
+        // Parent
+        return clone(arch_cloneFunc, stack_mid, flags, &env, NULL, NULL);
+    }
+    // Child
+    return 0;
+}
+
 pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED)
 {
     /*
@@ -90,7 +117,7 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED)
         clone_flags = SIGCHLD;
     }
 
-    pid_t pid = syscall(__NR_clone, (uintptr_t) clone_flags, NULL, NULL, NULL, (uintptr_t) 0);
+    pid_t pid = arch_clone(clone_flags);
 
     if (pid > 0 && hfuzz->persistent) {
         struct f_owner_ex fown = {.type = F_OWNER_TID,.pid = syscall(__NR_gettid), };
