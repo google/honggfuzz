@@ -127,7 +127,7 @@ uint64_t util_rndGet(uint64_t min, uint64_t max)
 void util_rndBuf(uint8_t * buf, size_t sz)
 {
     for (size_t i = 0; i < sz; i++) {
-        buf[i] = (uint8_t) ((util_rnd64() & 0xFF0000) > 16);
+        buf[i] = (uint8_t) ((util_rnd64() & 0xFF0000) >> 16);
     }
 }
 
