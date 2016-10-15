@@ -86,6 +86,7 @@ static int arch_cloneFunc(void *arg)
 {
     jmp_buf *env_ptr = (jmp_buf *) arg;
     longjmp(*env_ptr, 1);
+    return 0;
 }
 
 // Avoid problem with caching of PID/TID in glibc
