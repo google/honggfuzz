@@ -91,7 +91,7 @@ else ifeq ($(OS),Darwin)
         SDK_NAME := "macosx10.8"
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mountain_Lion.o
     else
-        $(error Unsupported MAC OS X version)
+        $(error Unsupported MAC OSX SDK version)
     endif
     SDK := $(shell xcrun --sdk $(SDK_NAME) --show-sdk-path 2>/dev/null)
     ifeq (,$(findstring MacOSX.platform,$(SDK)))
