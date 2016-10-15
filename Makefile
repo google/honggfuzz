@@ -73,21 +73,21 @@ ifeq ($(OS),Linux)
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
     CRASHWRANGLER := third_party/mac
-    OS_VERSION := $(shell xcrun --show-sdk-version)
-		ifneq (,$(findstring 10.12,$(OS_VERSION)))
+    OSX_SDK_VERSION := $(shell xcrun --show-sdk-version)
+		ifneq (,$(findstring 10.12,$(OSX_SDK_VERSION)))
 				SDK_NAME := "macosx10.12"
 				CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
-    else ifneq (,$(findstring 10.11,$(OS_VERSION)))
+    else ifneq (,$(findstring 10.11,$(OSX_SDK_VERSION)))
         # El Capitan didn't break compatibility
         SDK_NAME := "macosx10.11"
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
-    else ifneq (,$(findstring 10.10,$(OS_VERSION)))
+    else ifneq (,$(findstring 10.10,$(OSX_SDK_VERSION)))
         SDK_NAME := "macosx10.10"
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
-    else ifneq (,$(findstring 10.9,$(OS_VERSION)))
+    else ifneq (,$(findstring 10.9,$(OSX_SDK_VERSION)))
         SDK_NAME := "macosx10.9"
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mavericks.o
-    else ifneq (,$(findstring 10.8,$(OS_VERSION)))
+    else ifneq (,$(findstring 10.8,$(OSX_SDK_VERSION)))
         SDK_NAME := "macosx10.8"
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mountain_Lion.o
     else
