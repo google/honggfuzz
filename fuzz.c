@@ -63,6 +63,22 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
              (int)getpid(), (unsigned long int)tv.tv_sec, util_rnd64(), hfuzz->fileExtn);
 }
 
+void fuzz_getExtension(const char *file_name,char *extension)  
+{  
+    int i=0,length;  
+    length=strlen(file_name);  
+        while(file_name[i])  
+    {  
+        if(file_name[i]=='.')  
+        break;  
+        i++;  
+    }  
+    if(i<length)  
+    strcpy(extension,file_name+i+1);  
+    else  
+    strcpy(extension,"\0");  
+}
+
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     struct dynfile_t *dynfile;
@@ -487,8 +503,13 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzState_t state = fuzz_getState(hfuzz);
     if (state != _HF_STATE_DYNAMIC_MAIN) {
         fuzzer->origFileName = files_basename(files_getFileFromFileq(hfuzz, rnd_index)->path);
+	//printf("origFileName: %s\n",fuzzer->origFileName);
+	fuzz_getExtension(fuzzer->origFileName, fuzzer->ext);
+	//printf("ext: %s\n",fuzzer->ext);
+	
     }
-
+    
+    hfuzz->fileExtn = fuzzer->ext;
     fuzz_getFileName(hfuzz, fuzzer->fileName);
 
     if (state == _HF_STATE_DYNAMIC_PRE) {
