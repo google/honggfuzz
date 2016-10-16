@@ -19,6 +19,7 @@
   * **FreeBSD** - gmake
   * **Android** - Android SDK/NDK. Also see [this detailed doc](https://github.com/google/honggfuzz/blob/master/docs/Android.md) on how to build and run it
   * **Windows** - CygWin
+  * **Darwin/OS X** - Xcode 10.8+
   * if **Clang/LLVM** is used - the BlocksRuntime Library (libblocksruntime-dev)
 
 **Trophies**

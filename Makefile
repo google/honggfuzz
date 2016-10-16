@@ -72,32 +72,34 @@ ifeq ($(OS),Linux)
     # OS Linux
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
+
+    # Figure out which crash reporter to use.
     CRASHWRANGLER := third_party/mac
-    OS_VERSION := $(shell xcrun --show-sdk-version)
-		ifneq (,$(findstring 10.12,$(OS_VERSION)))
-				SDK_NAME := "macosx10.12"
-				CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
+    OS_VERSION := $(shell sw_vers -productVersion)
+	ifneq (,$(findstring 10.12,$(OS_VERSION)))
+		CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
     else ifneq (,$(findstring 10.11,$(OS_VERSION)))
         # El Capitan didn't break compatibility
-        SDK_NAME := "macosx10.11"
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
     else ifneq (,$(findstring 10.10,$(OS_VERSION)))
-        SDK_NAME := "macosx10.10"
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
     else ifneq (,$(findstring 10.9,$(OS_VERSION)))
-        SDK_NAME := "macosx10.9"
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mavericks.o
     else ifneq (,$(findstring 10.8,$(OS_VERSION)))
-        SDK_NAME := "macosx10.8"
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mountain_Lion.o
     else
         $(error Unsupported MAC OS X version)
     endif
+
+    # Figure out which XCode SDK to use.
+    OSX_SDK_VERSION := $(shell xcrun --show-sdk-version)
+    SDK_NAME :=macosx$(OSX_SDK_VERSION)    
     SDK := $(shell xcrun --sdk $(SDK_NAME) --show-sdk-path 2>/dev/null)
     ifeq (,$(findstring MacOSX.platform,$(SDK)))
         XC_PATH := $(shell xcode-select -p)
         $(error $(SDK_NAME) not found in $(XC_PATH))
     endif
+
     CC := $(shell xcrun --sdk $(SDK_NAME) --find cc)
     LD := $(shell xcrun --sdk $(SDK_NAME) --find cc)
     ARCH_CFLAGS := -arch x86_64 -std=c99 -isysroot $(SDK) -I. \
