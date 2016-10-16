@@ -508,7 +508,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 	//printf("ext: %s\n",fuzzer->ext);
 	
     }
-    if(!strcmp(hfuzz->fileExtn, "*")){ 
+    if(!strcmp(hfuzz->fileExtn, "any")){ 
     	hfuzz->fileExtn = fuzzer->ext;
     }
     fuzz_getFileName(hfuzz, fuzzer->fileName);
