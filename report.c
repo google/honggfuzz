@@ -69,7 +69,10 @@ static void report_printTargetCmd(honggfuzz_t * hfuzz)
 
 void report_Report(honggfuzz_t * hfuzz, char *s)
 {
-    if (s[0] == '\0') {
+    static pthread_mutex_t report_mutex = PTHREAD_MUTEX_INITIALIZER;
+    MX_SCOPED_LOCK(&report_mutex);
+
+    if (s == NULL && s[0] == '\0') {
         return;
     }
 
