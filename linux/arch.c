@@ -89,7 +89,7 @@ static int arch_cloneFunc(void *arg)
     return 0;
 }
 
-// Avoid problem with caching of PID/TID in glibc
+/* Avoid problem with caching of PID/TID in glibc */
 static pid_t arch_clone(uintptr_t flags)
 {
     if (flags & CLONE_VM) {
@@ -100,10 +100,10 @@ static pid_t arch_clone(uintptr_t flags)
     jmp_buf env;
     if (setjmp(env) == 0) {
         void *stack_mid = &arch_clone_stack[sizeof(arch_clone_stack) / 2];
-        // Parent
+        /* Parent */
         return clone(arch_cloneFunc, stack_mid, flags, &env, NULL, NULL);
     }
-    // Child
+    /* Child */
     return 0;
 }
 
@@ -138,7 +138,6 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED)
 
 bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 {
-
     /*
      * Kill the children when fuzzer dies (e.g. due to Ctrl+C)
      */
