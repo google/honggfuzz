@@ -54,11 +54,15 @@ esac
 case "$ARCH" in
   arm)
     CS_ARCH="arm"
-    CS_BUILD_BIN="./make.sh cross-android $ARCH"
+    CS_BUILD_BIN="make"
+    TOOLCHAIN=arm-linux-androideabi
+    TOOLCHAIN_S=arm-linux-androideabi-4.9
     ;;
   arm64)
     CS_ARCH="arm aarch64"
-    CS_BUILD_BIN="./make.sh cross-android $ARCH"
+    CS_BUILD_BIN="make"
+    TOOLCHAIN=aarch64-linux-android
+    TOOLCHAIN_S=aarch64-linux-android-4.9
     ;;
   x86)
     CS_ARCH="x86"
@@ -74,30 +78,29 @@ case "$ARCH" in
     ;;
 esac
 
-# Capstone handles internally only Android ARM cross builds not Intel x86/x86_x64
-# We need to prepare the Android NDK toolchains manually for these builds
-if [[ "$ARCH" == "x86" || "$ARCH" == "x86_64" ]]; then
-  if [ -z "$NDK" ]; then
-    # Search in $PATH
-    if [[ $(which ndk-build) != "" ]]; then
-      $NDK=$(dirname $(which ndk-build))
-    else
-      echo "[-] Could not detect Android NDK dir"
-      exit 1
-    fi
+# Capstone ARM/ARM64 cross-compile automation is broken,
+# we need to prepare the Android NDK toolchains manually
+if [ -z "$NDK" ]; then
+  # Search in $PATH
+  if [[ $(which ndk-build) != "" ]]; then
+    $NDK=$(dirname $(which ndk-build))
+  else
+    echo "[-] Could not detect Android NDK dir"
+    exit 1
   fi
-
-  # Support both Linux & Darwin
-  HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-  HOST_ARCH=$(uname -m)
-
-  SYSROOT="$NDK/platforms/android-21/arch-$ARCH"
-  export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc --sysroot=$SYSROOT"
-  export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++ --sysroot=$SYSROOT"
-  export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
-  # We need to construct a cross variable that capstone Makefile can pick ar, strip & ranlib from
-  export CROSS="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-" CFLAGS="--sysroot=$SYSROOT" LDFLAGS="--sysroot=$SYSROOT"
 fi
+
+# Support both Linux & Darwin
+HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+HOST_ARCH=$(uname -m)
+
+SYSROOT="$NDK/platforms/android-21/arch-$ARCH"
+export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc --sysroot=$SYSROOT"
+export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++ --sysroot=$SYSROOT"
+export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
+
+# We need to construct a cross variable that capstone Makefile can pick ar, strip & ranlib from
+export CROSS="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-" CFLAGS="--sysroot=$SYSROOT" LDFLAGS="--sysroot=$SYSROOT"
 
 # Change workdir to simplify args
 cd $CAPSTONE_DIR
