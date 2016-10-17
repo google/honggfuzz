@@ -93,7 +93,7 @@ else ifeq ($(OS),Darwin)
 
     # Figure out which XCode SDK to use.
     OSX_SDK_VERSION := $(shell xcrun --show-sdk-version)
-    SDK_NAME :=macosx$(OSX_SDK_VERSION)    
+    SDK_NAME :=macosx$(OSX_SDK_VERSION)
     SDK := $(shell xcrun --sdk $(SDK_NAME) --show-sdk-path 2>/dev/null)
     ifeq (,$(findstring MacOSX.platform,$(SDK)))
         XC_PATH := $(shell xcode-select -p)
