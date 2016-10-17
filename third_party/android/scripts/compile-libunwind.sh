@@ -48,7 +48,7 @@ fi
 readonly LIBUNWIND_DIR="$1"
 
 if [ ! -d "$LIBUNWIND_DIR" ]; then
-  git submodule update --init --recursive || {
+  git submodule update --init third_party/android/libunwind || {
     echo "[-] git submodules init failed"
     exit 1
   }
