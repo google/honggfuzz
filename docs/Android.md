@@ -10,9 +10,9 @@ Honggfuzz (as of version 0.6) supports Android OS (NDK cross-compilation) using 
 
 | **Dependency** | **Last Tested Version** |
 |:-------|:-----------|
-| **Android NDK** | r11c with Android API 23 (Marshmallow 6.0) |
-| **libunwind** | upstream master commit [396b6c7] |
-| **capstone** | upstream master commit [0793345] |
+| **Android NDK** | r13 with Android API 24 (Nougat 7.0) |
+| **libunwind** | upstream master commit [bc8698f] |
+| **capstone** | 3.0.4 stable version |
 
 ## Compatibility list ##
 
