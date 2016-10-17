@@ -52,11 +52,14 @@ if [ ! -d "$LIBUNWIND_DIR" ]; then
     echo "[-] git submodules init failed"
     exit 1
   }
+fi
 
-  # Also register client hooks
-  hooksDir="$(git -C "$LIBUNWIND_DIR" rev-parse --git-dir)/hooks"
-  mkdir -p "hooksDir"
-cat > "$hooksDir/post-checkout" <<'endmsg'
+# register client hooks
+hooksDir="$(git -C "$LIBUNWIND_DIR" rev-parse --git-dir)/hooks"
+mkdir -p "$hooksDir"
+
+if [ ! -f "$hooksDir/post-checkout" ]; then
+  cat > "$hooksDir/post-checkout" <<'endmsg'
 #!/usr/bin/env bash
 
 rm -f arm/*.a
@@ -64,7 +67,7 @@ rm -f arm64/*.a
 rm -f x86/*.a
 rm -f x86_64/*.a
 endmsg
-chmod +x "$hooksDir/post-checkout"
+  chmod +x "$hooksDir/post-checkout"
 fi
 
 # Change workspace
