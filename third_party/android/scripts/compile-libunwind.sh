@@ -15,13 +15,35 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+#set -x # debug
+
+abort() {
+  # Revert patches if not debugging
+  if [[ "$-" == *x* ]]; then
+    echo "[!] git patches are not reverted since running under debug mode"
+  else
+    # Extra care to ensure we're under expected project
+    if [[ "$(basename $(git rev-parse --show-toplevel))" == "libunwind" ]]; then
+      echo "[*] Resetting locally applied patches"
+      git reset --hard &>/dev/null || {
+        echo "[-] git reset failed"
+      }
+    fi
+  fi
+
+  cd - &>/dev/null
+  exit "$1"
+}
+
+trap "abort 1" SIGINT SIGTERM
+
 if [ -z "$NDK" ]; then
   # Search in $PATH
   if [[ $(which ndk-build) != "" ]]; then
     NDK=$(dirname $(which ndk-build))
   else
     echo "[-] Could not detect Android NDK dir"
-    exit 1
+    abort1 1
   fi
 fi
 
@@ -29,19 +51,20 @@ if [ $# -ne 2 ]; then
   echo "[-] Invalid arguments"
   echo "[!] $0 <LIBUNWIND_DIR> <ARCH>"
   echo "    ARCH: arm arm64 x86 x86_64"
-  exit 1
+  abort 1
 fi
 
-readonly LIBUNWIND_DIR=$1
+readonly LIBUNWIND_DIR="$1"
+cd "$LIBUNWIND_DIR" &>/dev/null
 
 case "$2" in
   arm|arm64|x86|x86_64)
-    readonly ARCH=$2
-    if [ ! -d $LIBUNWIND_DIR/$ARCH ] ; then mkdir -p $LIBUNWIND_DIR/$ARCH; fi
+    readonly ARCH="$2"
+    if [ ! -d "$ARCH" ] ; then mkdir -p "$ARCH"; fi
     ;;
   *)
     echo "[-] Invalid architecture"
-    exit 1
+    abort 1
     ;;
 esac
 
@@ -51,9 +74,6 @@ LC_LDFLAGS="-static"
 # Remember to export UNW_DEBUG_LEVEL=<level>
 # where 1 < level < 16 (usually values up to 5 are enough)
 #LC_CFLAGS="$LC_FLAGS -DDEBUG"
-
-# Change workdir to simplify args
-cd $LIBUNWIND_DIR
 
 # Prepare toolchain
 case "$ARCH" in
@@ -84,7 +104,7 @@ if [ $? -eq 0 ]; then
   patch src/ptrace/_UPT_access_reg.c < ../patches/ptrace-libunwind_1.patch
   if [ $? -ne 0 ]; then
     echo "[-] ptrace-libunwind_1 patch failed"
-    exit 1
+    abort 1
   fi
 fi
 
@@ -93,7 +113,7 @@ if [ $? -eq 0 ]; then
   patch src/ptrace/_UPT_access_fpreg.c < ../patches/ptrace-libunwind_2.patch
   if [ $? -ne 0 ]; then
     echo "[-] ptrace-libunwind_2 patch failed"
-    exit 1
+    abort 1
   fi
 fi
 
@@ -104,7 +124,7 @@ if [ "$ARCH" == "arm64" ]; then
     patch include/libunwind-aarch64.h < ../patches/aarch64-libunwind_1.patch
     if [ $? -ne 0 ]; then
       echo "[-] aarch64-libunwind_1 patch failed"
-      exit 1
+      abort 1
     fi
   fi
   # Frames ip bugs
@@ -113,7 +133,7 @@ if [ "$ARCH" == "arm64" ]; then
     patch src/aarch64/Gstep.c < ../patches/aarch64-libunwind_2.patch
     if [ $? -ne 0 ]; then
       echo "[-] aarch64-libunwind_2 patch failed"
-      exit 1
+      abort 1
     fi
   fi
 fi
@@ -125,7 +145,7 @@ if [ "$ARCH" == "x86" ]; then
     patch src/x86/Gos-linux.c < ../patches/x86-libunwind.patch
     if [ $? -ne 0 ]; then
       echo "[-] x86-libunwind patch failed"
-      exit 1
+      abort 1
     fi
   fi
 fi
@@ -143,7 +163,7 @@ if [ ! -f configure ]; then
   autoreconf -i
   if [ $? -ne 0 ]; then
     echo "[-] autoreconf failed"
-    exit 1
+    abort 1
   fi
   # Patch configure
   sed -i -e 's/-lgcc_s/-lgcc/g' configure
@@ -154,7 +174,7 @@ fi
 ./configure --host=$TOOLCHAIN --disable-coredump
 if [ $? -ne 0 ]; then
   echo "[-] configure failed"
-  exit 1
+  abort 1
 fi
 
 # Fix stuff that configure failed to detect
@@ -168,9 +188,10 @@ make CFLAGS="$LC_CFLAGS" LDFLAGS="$LC_LDFLAGS"
 if [ $? -ne 0 ]; then
     echo "[-] Compilation failed"
     cd - &>/dev/null
-    exit 1
-else
-    echo "[*] '$ARCH' libunwind available at '$LIBUNWIND_DIR/$ARCH'"
-    cp src/.libs/*.a $ARCH
-    cd - &>/dev/null
+    abort 1
 fi
+
+echo "[*] '$ARCH' libunwind available at '$LIBUNWIND_DIR/$ARCH'"
+cp src/.libs/*.a $ARCH
+
+abort 0
