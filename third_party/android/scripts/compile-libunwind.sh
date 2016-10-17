@@ -37,25 +37,48 @@ abort() {
 
 trap "abort 1" SIGINT SIGTERM
 
+if [ $# -ne 2 ]; then
+  echo "[-] Invalid arguments"
+  echo "[!] $0 <LIBUNWIND_DIR> <ARCH>"
+  echo "    ARCH: arm arm64 x86 x86_64"
+  exit 1
+fi
+
+# Change workspace
+readonly LIBUNWIND_DIR="$1"
+
+if [ ! -d "$LIBUNWIND_DIR" ]; then
+  git submodule update --init --recursive || {
+    echo "[-] git submodules init failed"
+    exit 1
+  }
+
+  # Also register client hooks
+  hooksDir="$(git -C "$LIBUNWIND_DIR" rev-parse --git-dir)/hooks"
+  mkdir -p "hooksDir"
+cat > "$hooksDir/post-checkout" <<'endmsg'
+#!/usr/bin/env bash
+
+rm -f arm/*.a
+rm -f arm64/*.a
+rm -f x86/*.a
+rm -f x86_64/*.a
+endmsg
+chmod +x "$hooksDir/post-checkout"
+fi
+
+# Change workspace
+cd "$LIBUNWIND_DIR" &>/dev/null
+
 if [ -z "$NDK" ]; then
   # Search in $PATH
   if [[ $(which ndk-build) != "" ]]; then
     NDK=$(dirname $(which ndk-build))
   else
     echo "[-] Could not detect Android NDK dir"
-    abort1 1
+    abort 1
   fi
 fi
-
-if [ $# -ne 2 ]; then
-  echo "[-] Invalid arguments"
-  echo "[!] $0 <LIBUNWIND_DIR> <ARCH>"
-  echo "    ARCH: arm arm64 x86 x86_64"
-  abort 1
-fi
-
-readonly LIBUNWIND_DIR="$1"
-cd "$LIBUNWIND_DIR" &>/dev/null
 
 case "$2" in
   arm|arm64|x86|x86_64)

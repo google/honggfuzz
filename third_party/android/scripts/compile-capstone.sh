@@ -15,15 +15,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-if [ -z "$NDK" ]; then
-  # Search in $PATH
-  if [[ $(which ndk-build) != "" ]]; then
-    NDK=$(dirname $(which ndk-build))
-  else
-    echo "[-] Could not detect Android NDK dir"
-    exit 1
-  fi
-fi
+abort() {
+  cd - &>/dev/null
+  exit "$1"
+}
+
+trap "abort 1" SIGINT SIGTERM
 
 if [ $# -ne 2 ]; then
   echo "[-] Invalid arguments"
@@ -34,10 +31,43 @@ fi
 
 readonly CAPSTONE_DIR=$1
 
+if [ ! -d "$CAPSTONE_DIR" ]; then
+  git submodule update --init third_party/android/capstone || {
+    echo "[-] git submodules init failed"
+    exit 1
+  }
+
+  # Also register client hooks
+  hooksDir="$(git -C "$CAPSTONE_DIR" rev-parse --git-dir)/hooks"
+  mkdir -p "$hooksDir"
+cat > "$hooksDir/post-checkout" <<'endmsg'
+#!/usr/bin/env bash
+
+rm -f arm/*.a
+rm -f arm64/*.a
+rm -f x86/*.a
+rm -f x86_64/*.a
+endmsg
+chmod +x "$hooksDir/post-checkout"
+fi
+
+# Change workspace
+cd "$CAPSTONE_DIR" &>/dev/null
+
+if [ -z "$NDK" ]; then
+  # Search in $PATH
+  if [[ $(which ndk-build) != "" ]]; then
+    NDK=$(dirname $(which ndk-build))
+  else
+    echo "[-] Could not detect Android NDK dir"
+    exit 1
+  fi
+fi
+
 case "$2" in
   arm|arm64|x86|x86_64)
     readonly ARCH=$2
-    if [ ! -d $CAPSTONE_DIR/$ARCH ] ; then mkdir -p $CAPSTONE_DIR/$ARCH; fi
+    if [ ! -d $ARCH ] ; then mkdir -p $ARCH; fi
     ;;
   *)
     echo "[-] Invalid CPU architecture"
@@ -96,9 +126,6 @@ export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PAT
 # We need to construct a cross variable that capstone Makefile can pick ar, strip & ranlib from
 export CROSS="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-" CFLAGS="--sysroot=$SYSROOT" LDFLAGS="--sysroot=$SYSROOT"
 
-# Change workdir to simplify args
-cd $CAPSTONE_DIR
-
 # Build it
 make clean
 
@@ -114,5 +141,4 @@ fi
 
 cp libcapstone.a $ARCH/
 
-# Revert workdir to caller
-cd - &>/dev/null
+abort 0
