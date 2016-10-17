@@ -34,12 +34,6 @@ fi
 
 readonly CAPSTONE_DIR=$1
 
-# Fetch if not already there
-if [ ! -d $CAPSTONE_DIR ]; then
-    echo "[!] capstone not found. Fetching a fresh copy"
-    git clone https://github.com/aquynh/capstone $CAPSTONE_DIR
-fi
-
 case "$2" in
   arm|arm64|x86|x86_64)
     readonly ARCH=$2

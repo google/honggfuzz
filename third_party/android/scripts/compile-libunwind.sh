@@ -34,12 +34,6 @@ fi
 
 readonly LIBUNWIND_DIR=$1
 
-# Fetch if not already there
-if [ ! -d $LIBUNWIND_DIR ]; then
-    echo "[!] libunwind not found. Fetching a fresh copy"
-    git clone git://git.sv.gnu.org/libunwind.git $LIBUNWIND_DIR
-fi
-
 case "$2" in
   arm|arm64|x86|x86_64)
     readonly ARCH=$2
