@@ -10,9 +10,9 @@ Honggfuzz (as of version 0.6) supports Android OS (NDK cross-compilation) using 
 
 | **Dependency** | **Last Tested Version** |
 |:-------|:-----------|
-| **Android NDK** | r11c with Android API 23 (Marshmallow 6.0) |
-| **libunwind** | upstream master commit [396b6c7] |
-| **capstone** | upstream master commit [0793345] |
+| **Android NDK** | r13 with Android API 24 (Nougat 7.0) |
+| **libunwind** | upstream master commit [bc8698f] |
+| **capstone** | 3.0.4 stable version |
 
 ## Compatibility list ##
 
@@ -33,10 +33,10 @@ _`*`) libunwind fails to extract frames if fuzzing target is 32bit. Prefer a 32b
 
 Helper bash scripts are present to automate capstone & libunwind builds for target CPU in case of ptrace() API interface being used. From project root directory execute the following to compile the two libraries for the matching architecture:
 
-  * third_party/android/scripts/compile-libunwind.sh third_party/android/libunwind \<arch\>
-  * third_party/android/scripts/compile-capstone.sh third_party/android/capstone \<arch\>
+  * `third_party/android/scripts/compile-libunwind.sh third_party/android/libunwind <arch>`
+  * `third_party/android/scripts/compile-capstone.sh third_party/android/capstone <arch>`
 
-Were \<arch\>:
+Were `<arch>`:
 
   * "arm": For armeabi & armeabi-v7a
   * "arm64": For arm64-v8a*
@@ -47,45 +47,37 @@ For example in case of arm:
 
 ```
 $ third_party/android/scripts/compile-libunwind.sh third_party/android/libunwind arm
-[!] libunwind not found. Fetching a fresh copy
-Cloning into 'third_party/android/libunwind'...
-remote: Counting objects: 14860, done.
-remote: Compressing objects: 100% (3855/3855), done.
-remote: Total 14860 (delta 10932), reused 14860 (delta 10932)
-Receiving objects: 100% (14860/14860), 3.46 MiB | 856.00 KiB/s, done.
-Resolving deltas: 100% (10932/10932), done.
-Checking connectivity... done.
+Submodule path 'third_party/android/libunwind': checked out 'bc8698fd7ed13a629a8ec3cb2a89bd74f9d8b5c0'
 patching file src/ptrace/_UPT_access_reg.c
 patching file src/ptrace/_UPT_access_fpreg.c
+glibtoolize: putting auxiliary files in AC_CONFIG_AUX_DIR, 'config'.
+glibtoolize: copying file 'config/ltmain.sh'
 ...
-[*] 'arm' libunwind  available at 'third_party/android/libunwind/arm'
+[*] 'arm' libunwind available at 'third_party/android/libunwind/arm'
+[*] Resetting locally applied patches
 ```
 ```
-$ [!] capstone not found. Fetching a fresh copy
-Cloning into 'third_party/android/capstone'...
-remote: Counting objects: 16981, done.
-remote: Compressing objects: 100% (39/39), done.
-remote: Total 16981 (delta 18), reused 0 (delta 0), pack-reused 16942
-Receiving objects: 100% (16981/16981), 26.18 MiB | 1.24 MiB/s, done.
-Resolving deltas: 100% (12223/12223), done.
-Checking connectivity... done.
+$ third_party/android/scripts/compile-capstone.sh third_party/android/capstone arm
+Submodule path 'third_party/android/capstone': checked out 'e710e4fcf40302c25d7bdc28da93571a61f21f5d'
+rm -f  ./cs.o ./utils.o ./SStream.o ./MCInstrDesc.o
 ...
   GEN     capstone.pc
-[*] 'arm' libcapstone  available at 'third_party/android/capstone/arm'
+[*] 'arm' libcapstone available at 'third_party/android/capstone/arm'
 ```
 
 ## Honggfuzz ##
 
-| **Flags** | **Allowed Values** |
-|:-------|:-----------|
-| **ANDROID_DEBUG_ENABLED** | true, false (default: false) |
-| **ANDROID_APP_ABI** | armeabi, armeabi-v7a, arm64-v8a, x86, x86_64 (default: armeabi-v7a) |
-| **ANDROID_WITH_PTRACE** | true, false (default: true) `1`|
-| **ANDROID_API** | android-21, android-22, ... (default: android-21) `2` |
+| **Flag** | **Options** | **Description** |
+|:----------|:------------|:----------------|
+| **ANDROID_DEBUG_ENABLED** | true, false (default: false) | Enable Android debug builds |
+| **ANDROID_APP_ABI** | armeabi, armeabi-v7a, arm64-v8a, x86, x86_64 (default: armeabi-v7a) | Target CPU |
+| **ANDROID_WITH_PTRACE** | true, false (default: true) `1`| Fuzzing engine backend architecture |
+| **ANDROID_API** | android-21, android-22, ... (default: android-24) `2` | Target Android API |
+| **ANDROID_CLANG** | true, false (default: false) | Android NDK compiler toolchain to use |
 
 _`1`) in case of false, POSIX signals interface is used instead of PTRACE API_
 
-_`2`) Due to bionic incompatibilities only APIs >= 21 are supported_
+_`2`) Due to bionic incompatibilities, only APIs >= 21 are supported_
 
 After compiling the dependencies (ptrace() API only), from project's root directory execute make with android PHONY to cross-compile.
 
@@ -94,23 +86,27 @@ For example in case of ptrace() API for armeabi-v7a:
 ```
 $ make -B android ANDROID_APP_ABI=armeabi-v7a
 ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
-			APP_PLATFORM=android-21 APP_ABI=armeabi-v7a
+                  APP_PLATFORM=android-24 APP_ABI=armeabi-v7a \
+                  NDK_TOOLCHAIN=arm-linux-androideabi-4.9
 ********************************************************************
 Android PTRACE build: Will prevent debuggerd from processing crashes
 ********************************************************************
-make[1]: Entering directory `/Users/anestisb/Tools/Fuzzers/honggfuzz'
 [armeabi-v7a] Compile thumb  : honggfuzz <= honggfuzz.c
+[armeabi-v7a] Compile thumb  : honggfuzz <= cmdline.c
+[armeabi-v7a] Compile thumb  : honggfuzz <= display.c
 [armeabi-v7a] Compile thumb  : honggfuzz <= log.c
 [armeabi-v7a] Compile thumb  : honggfuzz <= files.c
 [armeabi-v7a] Compile thumb  : honggfuzz <= fuzz.c
 [armeabi-v7a] Compile thumb  : honggfuzz <= report.c
 [armeabi-v7a] Compile thumb  : honggfuzz <= mangle.c
 [armeabi-v7a] Compile thumb  : honggfuzz <= util.c
+[armeabi-v7a] Compile thumb  : honggfuzz <= sancov.c
+[armeabi-v7a] Compile thumb  : honggfuzz <= subproc.c
 [armeabi-v7a] Compile thumb  : honggfuzz <= arch.c
 [armeabi-v7a] Compile thumb  : honggfuzz <= ptrace_utils.c
 [armeabi-v7a] Compile thumb  : honggfuzz <= perf.c
 [armeabi-v7a] Compile thumb  : honggfuzz <= unwind.c
+[armeabi-v7a] Compile thumb  : honggfuzz <= pt.c
 [armeabi-v7a] Executable     : honggfuzz
 [armeabi-v7a] Install        : honggfuzz => libs/armeabi-v7a/honggfuzz
-make[1]: Leaving directory `/Users/anestisb/Tools/Fuzzers/honggfuzz'
 ```

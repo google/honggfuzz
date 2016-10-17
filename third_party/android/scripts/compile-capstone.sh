@@ -15,15 +15,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-if [ -z "$NDK" ]; then
-  # Search in $PATH
-  if [[ $(which ndk-build) != "" ]]; then
-    NDK=$(dirname $(which ndk-build))
-  else
-    echo "[-] Could not detect Android NDK dir"
-    exit 1
-  fi
-fi
+abort() {
+  cd - &>/dev/null
+  exit "$1"
+}
+
+trap "abort 1" SIGINT SIGTERM
 
 if [ $# -ne 2 ]; then
   echo "[-] Invalid arguments"
@@ -34,16 +31,46 @@ fi
 
 readonly CAPSTONE_DIR=$1
 
-# Fetch if not already there
-if [ ! -d $CAPSTONE_DIR ]; then
-    echo "[!] capstone not found. Fetching a fresh copy"
-    git clone https://github.com/aquynh/capstone $CAPSTONE_DIR
+if [ ! -d "$CAPSTONE_DIR" ]; then
+  git submodule update --init third_party/android/capstone || {
+    echo "[-] git submodules init failed"
+    exit 1
+  }
+fi
+
+# register client hooks
+hooksDir="$(git -C "$CAPSTONE_DIR" rev-parse --git-dir)/hooks"
+mkdir -p "$hooksDir"
+
+if [ ! -f "$hooksDir/post-checkout" ]; then
+  cat > "$hooksDir/post-checkout" <<'endmsg'
+#!/usr/bin/env bash
+
+rm -f arm/*.a
+rm -f arm64/*.a
+rm -f x86/*.a
+rm -f x86_64/*.a
+endmsg
+  chmod +x "$hooksDir/post-checkout"
+fi
+
+# Change workspace
+cd "$CAPSTONE_DIR" &>/dev/null
+
+if [ -z "$NDK" ]; then
+  # Search in $PATH
+  if [[ $(which ndk-build) != "" ]]; then
+    NDK=$(dirname $(which ndk-build))
+  else
+    echo "[-] Could not detect Android NDK dir"
+    exit 1
+  fi
 fi
 
 case "$2" in
   arm|arm64|x86|x86_64)
     readonly ARCH=$2
-    if [ ! -d $CAPSTONE_DIR/$ARCH ] ; then mkdir -p $CAPSTONE_DIR/$ARCH; fi
+    if [ ! -d $ARCH ] ; then mkdir -p $ARCH; fi
     ;;
   *)
     echo "[-] Invalid CPU architecture"
@@ -54,11 +81,15 @@ esac
 case "$ARCH" in
   arm)
     CS_ARCH="arm"
-    CS_BUILD_BIN="./make.sh cross-android $ARCH"
+    CS_BUILD_BIN="make"
+    TOOLCHAIN=arm-linux-androideabi
+    TOOLCHAIN_S=arm-linux-androideabi-4.9
     ;;
   arm64)
     CS_ARCH="arm aarch64"
-    CS_BUILD_BIN="./make.sh cross-android $ARCH"
+    CS_BUILD_BIN="make"
+    TOOLCHAIN=aarch64-linux-android
+    TOOLCHAIN_S=aarch64-linux-android-4.9
     ;;
   x86)
     CS_ARCH="x86"
@@ -74,33 +105,29 @@ case "$ARCH" in
     ;;
 esac
 
-# Capstone handles internally only Android ARM cross builds not Intel x86/x86_x64
-# We need to prepare the Android NDK toolchains manually for these builds
-if [[ "$ARCH" == "x86" || "$ARCH" == "x86_64" ]]; then
-  if [ -z "$NDK" ]; then
-    # Search in $PATH
-    if [[ $(which ndk-build) != "" ]]; then
-      $NDK=$(dirname $(which ndk-build))
-    else
-      echo "[-] Could not detect Android NDK dir"
-      exit 1
-    fi
+# Capstone ARM/ARM64 cross-compile automation is broken,
+# we need to prepare the Android NDK toolchains manually
+if [ -z "$NDK" ]; then
+  # Search in $PATH
+  if [[ $(which ndk-build) != "" ]]; then
+    $NDK=$(dirname $(which ndk-build))
+  else
+    echo "[-] Could not detect Android NDK dir"
+    exit 1
   fi
-
-  # Support both Linux & Darwin
-  HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-  HOST_ARCH=$(uname -m)
-
-  SYSROOT="$NDK/platforms/android-21/arch-$ARCH"
-  export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc --sysroot=$SYSROOT"
-  export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++ --sysroot=$SYSROOT"
-  export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
-  # We need to construct a cross variable that capstone Makefile can pick ar, strip & ranlib from
-  export CROSS="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-" CFLAGS="--sysroot=$SYSROOT" LDFLAGS="--sysroot=$SYSROOT"
 fi
 
-# Change workdir to simplify args
-cd $CAPSTONE_DIR
+# Support both Linux & Darwin
+HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+HOST_ARCH=$(uname -m)
+
+SYSROOT="$NDK/platforms/android-21/arch-$ARCH"
+export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc --sysroot=$SYSROOT"
+export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++ --sysroot=$SYSROOT"
+export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
+
+# We need to construct a cross variable that capstone Makefile can pick ar, strip & ranlib from
+export CROSS="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-" CFLAGS="--sysroot=$SYSROOT" LDFLAGS="--sysroot=$SYSROOT"
 
 # Build it
 make clean
@@ -112,10 +139,9 @@ if [ $? -ne 0 ]; then
     echo "[-] Compilation failed"
     exit 1
 else
-    echo "[*] '$ARCH' libcapstone  vailable at '$CAPSTONE_DIR/$ARCH'"
+    echo "[*] '$ARCH' libcapstone available at '$CAPSTONE_DIR/$ARCH'"
 fi
 
 cp libcapstone.a $ARCH/
 
-# Revert workdir to caller
-cd - &>/dev/null
+abort 0
