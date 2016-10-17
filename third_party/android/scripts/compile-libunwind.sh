@@ -23,7 +23,7 @@ if [ -z "$NDK" ]; then
     echo "[-] Could not detect Android NDK dir"
     exit 1
   fi
-fi 
+fi
 
 if [ $# -ne 2 ]; then
   echo "[-] Invalid arguments"
@@ -176,7 +176,7 @@ if [ $? -ne 0 ]; then
     cd - &>/dev/null
     exit 1
 else
-    echo "[*] '$ARCH' libunwind  available at '$LIBUNWIND_DIR/$ARCH'"
+    echo "[*] '$ARCH' libunwind available at '$LIBUNWIND_DIR/$ARCH'"
     cp src/.libs/*.a $ARCH
     cd - &>/dev/null
 fi

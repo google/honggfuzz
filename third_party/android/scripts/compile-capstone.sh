@@ -112,7 +112,7 @@ if [ $? -ne 0 ]; then
     echo "[-] Compilation failed"
     exit 1
 else
-    echo "[*] '$ARCH' libcapstone  vailable at '$CAPSTONE_DIR/$ARCH'"
+    echo "[*] '$ARCH' libcapstone available at '$CAPSTONE_DIR/$ARCH'"
 fi
 
 cp libcapstone.a $ARCH/

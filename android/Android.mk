@@ -45,7 +45,7 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   # Upstream libunwind compiled from sources with Android NDK toolchain
   LIBUNWIND_A := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(UNW_ARCH).a
   ifeq ("$(wildcard $(LIBUNWIND_A))","")
-    $(error libunwind-$(UNW_ARCH) is missing. Please execute \
+    $(error libunwind-$(UNW_ARCH) is missing - to build execute \
             'third_party/android/scripts/compile-libunwind.sh third_party/android/libunwind $(ARCH_ABI)')
   endif
 
@@ -75,7 +75,7 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   # Upstream capstone compiled from sources with Android NDK toolchain
   LIBCAPSTONE_A := third_party/android/capstone/$(ARCH_ABI)/libcapstone.a
   ifeq ("$(wildcard $(LIBCAPSTONE_A))","")
-    $(error libcapstone is missing. Please execute \
+    $(error libcapstone is missing - to build execute \
             'third_party/android/scripts/compile-capstone.sh third_party/android/capstone $(ARCH_ABI)')
   endif
   include $(CLEAR_VARS)
@@ -88,7 +88,7 @@ endif
 ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
   LIBBRT_A := third_party/android/libBlocksRuntime/$(ARCH_ABI)/libblocksruntime.a
   ifeq ("$(wildcard $(LIBBRT_A))","")
-    $(error libBlocksRuntime is missing. Please execute \
+    $(error libBlocksRuntime is missing - to build execute \
             'third_party/android/scripts/compile-libBlocksRuntime.sh third_party/android/libBlocksRuntime $(ARCH_ABI)')
   endif
   include $(CLEAR_VARS)
