@@ -69,7 +69,7 @@ static void report_printTargetCmd(honggfuzz_t * hfuzz)
 
 void report_Report(honggfuzz_t * hfuzz, char *s)
 {
-    if (s == NULL && s[0] == '\0') {
+    if (s == NULL || s[0] == '\0') {
         return;
     }
 
