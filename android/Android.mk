@@ -97,27 +97,9 @@ ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
   include $(PREBUILT_STATIC_LIBRARY)
 endif
 
-# Main honggfuzz module
-include $(CLEAR_VARS)
-
-LOCAL_MODULE := honggfuzz
-LOCAL_SRC_FILES := honggfuzz.c cmdline.c display.c log.c files.c fuzz.c report.c mangle.c util.c sancov.c subproc.c
-LOCAL_CFLAGS := -std=c11 -I. \
-    -D_GNU_SOURCE \
-    -Wall -Wextra -Wno-initializer-overrides -Wno-override-init \
-    -Wno-unknown-warning-option -Werror -funroll-loops -O2 \
-    -Wframe-larger-than=51200
-LOCAL_LDFLAGS := -lm -latomic
-
 ifeq ($(ANDROID_WITH_PTRACE),true)
-  LOCAL_C_INCLUDES := third_party/android/libunwind/include third_party/android/capstone/include
-  LOCAL_STATIC_LIBRARIES := libunwind-arch libunwind libunwind-ptrace libunwind-dwarf-generic libcapstone
-  LOCAL_CFLAGS += -D__HF_USE_CAPSTONE__
   ARCH_SRCS := linux/arch.c linux/ptrace_utils.c linux/perf.c linux/unwind.c linux/pt.c
   ARCH := LINUX
-  ifeq ($(ARCH_ABI),arm)
-    LOCAL_CFLAGS += -DOPENSSL_ARMCAP_ABI='$(OPENSSL_ARMCAP_ABI)'
-  endif
   $(info $(shell (echo "********************************************************************")))
   $(info $(shell (echo "Android PTRACE build: Will prevent debuggerd from processing crashes")))
   $(info $(shell (echo "********************************************************************")))
@@ -129,6 +111,49 @@ else
   $(info $(shell (echo "********************************************************************")))
 endif
 
+COMMON_CFLAGS := -std=c11 -I. \
+  -D_GNU_SOURCE \
+  -Wall -Wextra -Wno-initializer-overrides -Wno-override-init \
+  -Wno-unknown-warning-option -Werror -funroll-loops -O2 \
+  -Wframe-larger-than=51200
+
+# libhfuzz module
+include $(CLEAR_VARS)
+LOCAL_MODULE := hfuzz
+LOCAL_SRC_FILES := $(wildcard libhfuzz/*.c)
+LOCAL_CFLAGS := -D_HF_ARCH_${ARCH} $(COMMON_CFLAGS) \
+	-fPIC -fno-builtin -fno-stack-protector
+
+ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
+  LOCAL_CFLAGS += -fblocks
+  LOCAL_STATIC_LIBRARIES += libblocksruntime
+endif
+
+include $(BUILD_STATIC_LIBRARY)
+
+# Main honggfuzz module
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := honggfuzz
+LOCAL_SRC_FILES := $(wildcard *.c)
+LOCAL_CFLAGS := $(COMMON_CFLAGS)
+LOCAL_LDFLAGS := -lm -latomic
+LOCAL_STATIC_LIBRARIES := libhfuzz
+
+ifeq ($(ANDROID_WITH_PTRACE),true)
+  LOCAL_C_INCLUDES := third_party/android/libunwind/include \
+                      third_party/android/capstone/include
+  LOCAL_STATIC_LIBRARIES += libunwind-arch \
+                            libunwind \
+                            libunwind-ptrace \
+                            libunwind-dwarf-generic \
+                            libcapstone
+  LOCAL_CFLAGS += -D__HF_USE_CAPSTONE__
+  ifeq ($(ARCH_ABI),arm)
+    LOCAL_CFLAGS += -DOPENSSL_ARMCAP_ABI='$(OPENSSL_ARMCAP_ABI)'
+  endif
+endif
+
 LOCAL_SRC_FILES += $(ARCH_SRCS)
 LOCAL_CFLAGS += -D_HF_ARCH_${ARCH}
 
@@ -138,3 +163,11 @@ ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
 endif
 
 include $(BUILD_EXECUTABLE)
+
+# The NDK build system does not copy static libraries into project/packages
+# so it has to be done manually in order to have all output under a single path
+all:POST_BUILD_EVENT
+POST_BUILD_EVENT:
+	@test -f $(LOCAL_PATH)/obj/local/$(TARGET_ARCH_ABI)/libhfuzz.a && \
+	  cp $(LOCAL_PATH)/obj/local/$(TARGET_ARCH_ABI)/libhfuzz.a \
+	    $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/libhfuzz.a || true

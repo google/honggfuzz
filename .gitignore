@@ -2,6 +2,7 @@
 *.so
 *.dylib
 *.dSYM
+*.a
 honggfuzz
 mac/mach_exc.h
 mac/mach_excUser.c
