@@ -157,9 +157,19 @@ ANDROID_API           ?= android-24
 ANDROID_DEBUG_ENABLED ?= false
 ANDROID_CLANG         ?= false
 ANDROID_APP_ABI       ?= armeabi-v7a
+ANDROID_SKIP_CLEAN    ?= false
 NDK_BUILD_ARGS :=
+
 ifeq ($(ANDROID_DEBUG_ENABLED),true)
-    NDK_BUILD_ARGS += V=1 NDK_DEBUG=1 APP_OPTIM=debug
+  NDK_BUILD_ARGS += V=1 NDK_DEBUG=1 APP_OPTIM=debug
+endif
+
+# By default ndk-build cleans all project files to ensure that no semi-completed
+# builds reach the app package. The following flag disables this check. It's mainly
+# purposed to be used with android-all rule where we want recursive invocations
+# to keep previous targets' binaries.
+ifeq ($(ANDROID_SKIP_CLEAN),true)
+  NDK_BUILD_ARGS += NDK_APP.local.cleaned_binaries=true
 endif
 
 ifeq ($(ANDROID_CLANG),true)
@@ -231,8 +241,23 @@ depend:
 .PHONY: android
 android:
 	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
-                  APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) \
-                  NDK_TOOLCHAIN=$(ANDROID_NDK_TOOLCHAIN) $(NDK_BUILD_ARGS)
+    APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) \
+    NDK_TOOLCHAIN=$(ANDROID_NDK_TOOLCHAIN) $(NDK_BUILD_ARGS)
+
+# Loop all ABIs and pass-through flags since visibility is lost due to sub-process
+.PHONY: android-all
+android-all:
+	@echo "Cleaning workspace:"
+	$(MAKE) clean
+	@echo ""
+
+	@for abi in armeabi armeabi-v7a arm64-v8a x86 x86_64; do \
+	  ANDROID_APP_ABI=$$abi ANDROID_SKIP_CLEAN=true ANDROID_CLANG=$(ANDROID_CLANG) \
+	  ANDROID_API=$(ANDROID_API) ANDROID_DEBUG_ENABLED=$(ANDROID_DEBUG_ENABLED) \
+	  $(MAKE) android || { \
+	    echo "Recursive make failed"; exit 1; }; \
+	  echo ""; \
+	done
 
 # DO NOT DELETE
 
