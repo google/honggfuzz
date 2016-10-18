@@ -47,7 +47,7 @@ fi
 # Change workspace
 readonly LIBUNWIND_DIR="$1"
 
-if [ ! -d "$LIBUNWIND_DIR" ]; then
+if [ ! -d "$LIBUNWIND_DIR/.git" ]; then
   git submodule update --init third_party/android/libunwind || {
     echo "[-] git submodules init failed"
     exit 1
