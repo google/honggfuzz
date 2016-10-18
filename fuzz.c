@@ -65,18 +65,7 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
 
 void fuzz_getExtension(const char *file_name,char *extension)  
 {  
-    int i=0,length;  
-    length=strlen(file_name);  
-        while(file_name[i])  
-    {  
-        if(file_name[i]=='.')  
-        break;  
-        i++;  
-    }  
-    if(i<length)  
-    strcpy(extension,file_name+i+1);  
-    else  
-    strcpy(extension,"\0");  
+    extension = strrchr(file_name, '.' );   
 }
 
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
