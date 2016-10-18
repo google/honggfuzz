@@ -177,6 +177,18 @@ void arch_prepareChild(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
 }
 
+void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    int64_t curMillis = util_timeNowMillis();
+    int64_t diffMillis = curMillis - fuzzer->timeStartedMillis;
+    if (diffMillis > (hfuzz->tmOut * 1000)) {
+        LOG_W("PID %d took too much time (limit %ld s). Sending SIGKILL",
+              fuzzer->pid, hfuzz->tmOut);
+        kill(fuzzer->pid, SIGKILL);
+        ATOMIC_POST_INC(hfuzz->timeoutedCnt);
+    }
+}
+
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     for (;;) {
@@ -190,24 +202,32 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 PLOG_F("poll(fd=%d)", fuzzer->persistentSock);
             }
         }
+		
         if (subproc_persistentModeRoundDone(hfuzz, fuzzer) == true) {
             break;
         }
 
         int status;
         int flags = hfuzz->persistent ? WNOHANG : 0;
-        int ret = waitpid(fuzzer->pid, &status, flags);
+        int ret = waitpid(fuzzer->pid, &status, flags);		
+		//printf("fuzzer pid: %d\n",fuzzer->pid);
+		//printf("waitpid ret: %d\n", ret);
         if (ret == -1 && errno == EINTR) {
+			if (hfuzz->tmOut) {
+				//printf("Check time1\n");
+                arch_checkTimeLimit(hfuzz, fuzzer);
+            }
             continue;
         }
+		
         if (ret == -1) {
-            PLOG_W("wait4(pid=%d)", fuzzer->pid);
+            printf("waitpid(pid=%d)", fuzzer->pid);
             continue;
         }
         if (ret != fuzzer->pid) {
             continue;
         }
-
+		
         char strStatus[4096];
         if (hfuzz->persistent && ret == fuzzer->persistentPid
             && (WIFEXITED(status) || WIFSIGNALED(status))) {
