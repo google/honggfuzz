@@ -31,7 +31,7 @@ fi
 
 readonly CAPSTONE_DIR=$1
 
-if [ ! -d "$CAPSTONE_DIR" ]; then
+if [ ! -d "$CAPSTONE_DIR/.git" ]; then
   git submodule update --init third_party/android/capstone || {
     echo "[-] git submodules init failed"
     exit 1
