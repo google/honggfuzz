@@ -122,6 +122,7 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
         }
         if (logLevels[ll].print_time) {
             dprintf(log_fd, "[%s][%s][%d] ", timestr, logLevels[ll].descr, __hf_pid());
+        }
         if (logLevels[ll].print_funcline) {
             dprintf(log_fd, "%s():%d ", fn, ln);
         }
