@@ -38,6 +38,7 @@
 #include <sys/personality.h>
 #include <sys/ptrace.h>
 #include <sys/prctl.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
@@ -130,6 +131,10 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED)
         }
         if (fcntl(fuzzer->persistentSock, F_SETFL, O_ASYNC) == -1) {
             PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->persistentSock);
+        }
+        int sndbuf = (1024 * 1024 * 2); /* 2MiB */
+        if (setsockopt(fuzzer->persistentSock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)) == -1) {
+          LOG_W("Couldn't set FD send buffer to '%d' bytes", sndbuf);
         }
     }
 
