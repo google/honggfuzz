@@ -73,6 +73,8 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
         return;
     }
 
+    MX_SCOPED_LOCK(&hfuzz->report_mutex);
+
     if (reportFD == -1) {
         char reportFName[PATH_MAX];
         if (hfuzz->reportFile == NULL) {
