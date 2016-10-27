@@ -199,6 +199,7 @@ bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             PLOG_W("socketpair(AF_UNIX, SOCK_STREAM, 0, sv)");
             return false;
         }
+        fuzzer->persistentSock = sv[0];
     }
 
     fuzzer->pid = arch_fork(hfuzz, fuzzer);
@@ -231,7 +232,6 @@ bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (hfuzz->persistent) {
         close(sv[1]);
-        fuzzer->persistentSock = sv[0];
         LOG_I("Persistent mode: Launched new persistent PID: %d", (int)fuzzer->pid);
         fuzzer->persistentPid = fuzzer->pid;
     }
