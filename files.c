@@ -497,11 +497,13 @@ void *files_mapSharedMem(size_t sz, int *fd, const char *dir)
     if (ftruncate(*fd, sz) == -1) {
         PLOG_W("ftruncate(%d, %zu)", *fd, sz);
         close(*fd);
+        *fd = -1;
         return MAP_FAILED;
     }
     void *ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_SHARED, *fd, 0);
     if (ret == MAP_FAILED) {
         PLOG_W("mmap(sz=%zu, fd=%d)", sz, *fd);
+        *fd = -1;
         close(*fd);
         return MAP_FAILED;
     }
