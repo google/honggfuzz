@@ -228,18 +228,6 @@ static bool arch_setTimer(timer_t * timerid)
     return true;
 }
 
-static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
-{
-    int64_t curMillis = util_timeNowMillis();
-    int64_t diffMillis = curMillis - fuzzer->timeStartedMillis;
-    if (diffMillis > (hfuzz->tmOut * 1000)) {
-        LOG_W("PID %d took too much time (limit %ld s). Sending SIGKILL",
-              fuzzer->pid, hfuzz->tmOut);
-        kill(fuzzer->pid, SIGKILL);
-        ATOMIC_POST_INC(hfuzz->timeoutedCnt);
-    }
-}
-
 void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
@@ -300,9 +288,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         int status;
         pid_t pid = wait4(-1, &status, __WALL | __WNOTHREAD, NULL);
         if (pid == -1 && errno == EINTR) {
-            if (hfuzz->tmOut) {
-                arch_checkTimeLimit(hfuzz, fuzzer);
-            }
+            subproc_checkTimeLimit(hfuzz, fuzzer);
             continue;
         }
         if (pid == -1 && errno == ECHILD) {

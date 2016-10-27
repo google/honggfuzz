@@ -180,6 +180,8 @@ void arch_prepareChild(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     for (;;) {
+        subproc_checkTimeLimit(hfuzz, fuzzer);
+
         if (hfuzz->persistent) {
             struct pollfd pfd = {
                 .fd = fuzzer->persistentSock,

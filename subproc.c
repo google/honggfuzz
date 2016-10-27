@@ -127,51 +127,6 @@ const char *subproc_StatusToStr(int status, char *str, size_t len)
 bool subproc_PrepareExecv(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *fileName)
 {
     /*
-     * Set timeout (prof), real timeout (2*prof), and rlimit_cpu (2*prof)
-     */
-    if (hfuzz->persistent == false && hfuzz->tmOut) {
-        struct itimerval it;
-
-        /*
-         * The hfuzz->tmOut is real CPU usage time...
-         */
-        it.it_value.tv_sec = hfuzz->tmOut;
-        it.it_value.tv_usec = 0;
-        it.it_interval.tv_sec = 0;
-        it.it_interval.tv_usec = 0;
-        if (setitimer(ITIMER_PROF, &it, NULL) == -1) {
-            PLOG_D("Couldn't set the ITIMER_PROF timer");
-        }
-
-        /*
-         * ...so, if a process sleeps, this one should
-         * trigger a signal...
-         */
-        it.it_value.tv_sec = hfuzz->tmOut;
-        it.it_value.tv_usec = 0;
-        it.it_interval.tv_sec = 0;
-        it.it_interval.tv_usec = 0;
-        if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
-            PLOG_E("Couldn't set the ITIMER_REAL timer");
-            return false;
-        }
-
-        /*
-         * ..if a process sleeps and catches SIGPROF/SIGALRM
-         * rlimits won't help either. However, arch_checkTimeLimit
-         * will send a SIGKILL at tmOut + 2 seconds. That should
-         * do it :)
-         */
-        struct rlimit rl;
-
-        rl.rlim_cur = hfuzz->tmOut + 1;
-        rl.rlim_max = hfuzz->tmOut + 1;
-        if (setrlimit(RLIMIT_CPU, &rl) == -1) {
-            PLOG_D("Couldn't enforce the RLIMIT_CPU resource limit");
-        }
-    }
-
-    /*
      * The address space limit. If big enough - roughly the size of RAM used
      */
     if (hfuzz->asLimit) {
@@ -361,4 +316,20 @@ uint8_t subproc_System(const char *const argv[])
     }
 
     return 0U;
+}
+
+void subproc_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    if (hfuzz->tmOut == 0) {
+        return;
+    }
+
+    int64_t curMillis = util_timeNowMillis();
+    int64_t diffMillis = curMillis - fuzzer->timeStartedMillis;
+    if (diffMillis > (hfuzz->tmOut * 1000)) {
+        LOG_W("PID %d took too much time (limit %ld s). Sending SIGKILL",
+              fuzzer->pid, hfuzz->tmOut);
+        kill(fuzzer->pid, SIGKILL);
+        ATOMIC_POST_INC(hfuzz->timeoutedCnt);
+    }
 }
