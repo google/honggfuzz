@@ -228,18 +228,16 @@ bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         abort();
     }
     // Parent
-    if (hfuzz->persistent == false) {
-        return true;
-    }
-
-    close(sv[1]);
+    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
 
     if (hfuzz->persistent) {
-        LOG_I("Persistent mode: Launched new persistent PID: %d", (int)fuzzer->pid);
-        fuzzer->persistentPid = fuzzer->pid;
-    }
+        close(sv[1]);
 
-    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
+        if (hfuzz->persistent) {
+            LOG_I("Persistent mode: Launched new persistent PID: %d", (int)fuzzer->pid);
+            fuzzer->persistentPid = fuzzer->pid;
+        }
+    }
 
     return true;
 }
