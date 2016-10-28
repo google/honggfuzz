@@ -21,16 +21,12 @@ ANDROID_WITH_PTRACE ?= true
 ifeq ($(ANDROID_WITH_PTRACE),true)
   ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi armeabi-v7a))
     ARCH_ABI := arm
-    UNW_ARCH := arm
   else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86))
     ARCH_ABI := x86
-    UNW_ARCH := x86
   else ifeq ($(APP_ABI),$(filter $(APP_ABI),arm64-v8a))
     ARCH_ABI := arm64
-    UNW_ARCH := aarch64
   else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86_64))
     ARCH_ABI := x86_64
-    UNW_ARCH := x86_64
   else
     $(error Unsuported / Unknown APP_API '$(APP_ABI)')
   endif
@@ -43,9 +39,9 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   endif
 
   # Upstream libunwind compiled from sources with Android NDK toolchain
-  LIBUNWIND_A := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(UNW_ARCH).a
+  LIBUNWIND_A := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(ARCH_ABI).a
   ifeq ("$(wildcard $(LIBUNWIND_A))","")
-    $(error libunwind-$(UNW_ARCH) is missing - to build execute \
+    $(error libunwind-$(ARCH_ABI) is missing - to build execute \
             'third_party/android/scripts/compile-libunwind.sh third_party/android/libunwind $(ARCH_ABI)')
   endif
 
@@ -57,7 +53,7 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
 
   include $(CLEAR_VARS)
   LOCAL_MODULE := libunwind-arch
-  LOCAL_SRC_FILES := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(UNW_ARCH).a
+  LOCAL_SRC_FILES := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(ARCH_ABI).a
   LOCAL_EXPORT_C_INCLUDES := third_party/android/libunwind/include
   include $(PREBUILT_STATIC_LIBRARY)
 

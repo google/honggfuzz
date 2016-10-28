@@ -218,6 +218,18 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "[*] '$ARCH' libunwind available at '$LIBUNWIND_DIR/$ARCH'"
-cp src/.libs/*.a $ARCH
+cp src/.libs/*.a "$ARCH"
+
+# Naming conventions for arm64
+if [[ "$ARCH" == "arm64" ]]; then
+  cd "$ARCH"
+  find . -type f -name "*aarch64*.a" | while read -r libFile
+  do
+    fName=$(basename "$libFile")
+    newFName=$(echo "$fName" | sed "s#aarch64#arm64#")
+    ln -sf "$fName" "$newFName"
+  done
+  cd -
+fi
 
 abort 0
