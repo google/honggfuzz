@@ -81,6 +81,18 @@ case "$2" in
     ;;
 esac
 
+# Check if previous build exists and matches selected ANDROID_API level
+# If API cache file not there always rebuild
+if [ -f "$ARCH/libcapstone.a" ]; then
+  if [ -f "$ARCH/android_api.txt" ]; then
+    old_api=$(cat "$ARCH/android_api.txt")
+    if [[ "$old_api" == "$ANDROID_API" ]]; then
+      # No need to recompile
+      abort 0
+    fi
+  fi
+fi
+
 case "$ARCH" in
   arm)
     CS_ARCH="arm"
@@ -153,6 +165,7 @@ else
     echo "[*] '$ARCH' libcapstone available at '$CAPSTONE_DIR/$ARCH'"
 fi
 
-cp libcapstone.a $ARCH/
+cp libcapstone.a "$ARCH/"
+echo "$ANDROID_API" > "$ARCH/android_api.txt"
 
 abort 0

@@ -24,7 +24,7 @@ abort() {
     echo "[!] git patches are not reverted since running under debug mode"
   else
     # Extra care to ensure we're under expected project
-    if [[ "$(basename $(git rev-parse --show-toplevel))" == "libunwind" ]]; then
+    if [[ $# -eq 1 && "$(basename $(git rev-parse --show-toplevel))" == "libunwind" ]]; then
       echo "[*] Resetting locally applied patches"
       git reset --hard &>/dev/null || {
         echo "[-] git reset failed"
@@ -45,7 +45,6 @@ if [ $# -ne 2 ]; then
   exit 1
 fi
 
-# Change workspace
 readonly LIBUNWIND_DIR="$1"
 
 if [ ! -d "$LIBUNWIND_DIR/.git" ]; then
@@ -102,6 +101,18 @@ case "$2" in
     abort 1
     ;;
 esac
+
+# Check if previous build exists and matches selected ANDROID_API level
+# If API cache file not there always rebuild
+if [ -f "$ARCH/libunwind-$ARCH.a" ]; then
+  if [ -f "$ARCH/android_api.txt" ]; then
+    old_api=$(cat "$ARCH/android_api.txt")
+    if [[ "$old_api" == "$ANDROID_API" ]]; then
+      # No need to recompile
+      abort 0 true
+    fi
+  fi
+fi
 
 LC_LDFLAGS="-static"
 
@@ -228,6 +239,7 @@ fi
 
 echo "[*] '$ARCH' libunwind available at '$LIBUNWIND_DIR/$ARCH'"
 cp src/.libs/*.a "$ARCH"
+echo "$ANDROID_API" > "$ARCH/android_api.txt"
 
 # Naming conventions for arm64
 if [[ "$ARCH" == "arm64" ]]; then

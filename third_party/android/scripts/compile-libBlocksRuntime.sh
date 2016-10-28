@@ -53,6 +53,18 @@ case "$2" in
     ;;
 esac
 
+# Check if previous build exists and matches selected ANDROID_API level
+# If API cache file not there always rebuild
+if [ -f "$BRT_DIR/$ARCH/libblocksruntime.a" ]; then
+  if [ -f "$BRT_DIR/$ARCH/android_api.txt" ]; then
+    old_api=$(cat "$BRT_DIR/$ARCH/android_api.txt")
+    if [[ "$old_api" == "$ANDROID_API" ]]; then
+      # No need to recompile
+      exit 0
+    fi
+  fi
+fi
+
 case "$ARCH" in
   arm)
     BRT_ARCH="armeabi-v7a"
@@ -91,7 +103,8 @@ fi
 # Change workdir to simplify args
 cd $BRT_DIR
 
-cp obj/local/$BRT_ARCH/libblocksruntime.a $ARCH/
+cp obj/local/$BRT_ARCH/libblocksruntime.a "$ARCH/"
+echo "$ANDROID_API" > "$ARCH/android_api.txt"
 
 # Revert workdir to caller
 cd - &>/dev/null
