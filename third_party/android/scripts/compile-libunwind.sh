@@ -87,6 +87,10 @@ fi
 if [ -z "$ANDROID_API" ]; then
   ANDROID_API="android-21"
 fi
+if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
+  echo "[-] Invalid ANDROID_API '$ANDROID_API'"
+  abort 1
+fi
 
 case "$2" in
   arm|arm64|x86|x86_64)

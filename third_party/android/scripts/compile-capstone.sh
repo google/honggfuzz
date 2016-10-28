@@ -66,7 +66,7 @@ if [ -z "$NDK" ]; then
     NDK=$(dirname $(which ndk-build))
   else
     echo "[-] Could not detect Android NDK dir"
-    exit 1
+    abort 1
   fi
 fi
 
@@ -77,7 +77,7 @@ case "$2" in
     ;;
   *)
     echo "[-] Invalid CPU architecture"
-    exit 1
+    abort 1
     ;;
 esac
 
@@ -116,12 +116,16 @@ if [ -z "$NDK" ]; then
     $NDK=$(dirname $(which ndk-build))
   else
     echo "[-] Could not detect Android NDK dir"
-    exit 1
+    abort 1
   fi
 fi
 
 if [ -z "$ANDROID_API" ]; then
   ANDROID_API="android-21"
+fi
+if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
+  echo "[-] Invalid ANDROID_API '$ANDROID_API'"
+  abort 1
 fi
 
 # Support both Linux & Darwin
@@ -144,7 +148,7 @@ CAPSTONE_SHARED=no CAPSTONE_STATIC=yes \
 eval $CS_BUILD_BIN
 if [ $? -ne 0 ]; then
     echo "[-] Compilation failed"
-    exit 1
+    abort 1
 else
     echo "[*] '$ARCH' libcapstone available at '$CAPSTONE_DIR/$ARCH'"
 fi

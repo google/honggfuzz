@@ -28,6 +28,10 @@ fi
 if [ -z "$ANDROID_API" ]; then
   ANDROID_API="android-23"
 fi
+if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
+  echo "[-] Invalid ANDROID_API '$ANDROID_API'"
+  exit 1
+fi
 
 if [ $# -ne 2 ]; then
   echo "[-] Invalid arguments"
