@@ -15,8 +15,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-readonly ANDROID_API="android-23"
-
 if [ -z "$NDK" ]; then
   # Search in $PATH
   if [[ $(which ndk-build) != "" ]]; then
@@ -27,6 +25,10 @@ if [ -z "$NDK" ]; then
   fi
 fi
 
+if [ -z "$ANDROID_API" ]; then
+  ANDROID_API="android-23"
+fi
+
 if [ $# -ne 2 ]; then
   echo "[-] Invalid arguments"
   echo "[!] $0 <libBlocksRuntime_DIR> <ARCH>"
@@ -34,7 +36,7 @@ if [ $# -ne 2 ]; then
   exit 1
 fi
 
-readonly BRT_DIR=$1
+readonly BRT_DIR="$1"
 
 case "$2" in
   arm|arm64|x86|x86_64)

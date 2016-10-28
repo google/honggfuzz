@@ -15,6 +15,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+set -e # fail on unhandled error
 #set -x # debug
 
 abort() {
@@ -81,6 +82,10 @@ if [ -z "$NDK" ]; then
     echo "[-] Could not detect Android NDK dir"
     abort 1
   fi
+fi
+
+if [ -z "$ANDROID_API" ]; then
+  ANDROID_API="android-21"
 fi
 
 case "$2" in
@@ -180,7 +185,7 @@ fi
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH=$(uname -m)
 
-SYSROOT="$NDK/platforms/android-21/arch-$ARCH"
+SYSROOT="$NDK/platforms/$ANDROID_API/arch-$ARCH"
 export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc --sysroot=$SYSROOT"
 export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++ --sysroot=$SYSROOT"
 export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH

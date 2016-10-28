@@ -15,6 +15,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+set -e # fail on unhandled error
+#set -x # debug
+
 abort() {
   cd - &>/dev/null
   exit "$1"
@@ -29,7 +32,7 @@ if [ $# -ne 2 ]; then
   exit 1
 fi
 
-readonly CAPSTONE_DIR=$1
+readonly CAPSTONE_DIR="$1"
 
 if [ ! -d "$CAPSTONE_DIR/.git" ]; then
   git submodule update --init third_party/android/capstone || {
@@ -117,11 +120,15 @@ if [ -z "$NDK" ]; then
   fi
 fi
 
+if [ -z "$ANDROID_API" ]; then
+  ANDROID_API="android-21"
+fi
+
 # Support both Linux & Darwin
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH=$(uname -m)
 
-SYSROOT="$NDK/platforms/android-21/arch-$ARCH"
+SYSROOT="$NDK/platforms/$ANDROID_API/arch-$ARCH"
 export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc --sysroot=$SYSROOT"
 export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++ --sysroot=$SYSROOT"
 export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
