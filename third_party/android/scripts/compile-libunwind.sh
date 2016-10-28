@@ -23,7 +23,7 @@ abort() {
     echo "[!] git patches are not reverted since running under debug mode"
   else
     # Extra care to ensure we're under expected project
-    if [[ "$(basename $(git rev-parse --show-toplevel))" == "libunwind" ]]; then
+    if [[ $# -eq 1 && "$(basename $(git rev-parse --show-toplevel))" == "libunwind" ]]; then
       echo "[*] Resetting locally applied patches"
       git reset --hard &>/dev/null || {
         echo "[-] git reset failed"
@@ -44,7 +44,6 @@ if [ $# -ne 2 ]; then
   exit 1
 fi
 
-# Change workspace
 readonly LIBUNWIND_DIR="$1"
 
 if [ ! -d "$LIBUNWIND_DIR/.git" ]; then
@@ -83,6 +82,14 @@ if [ -z "$NDK" ]; then
   fi
 fi
 
+if [ -z "$ANDROID_API" ]; then
+  ANDROID_API="android-21"
+fi
+if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
+  echo "[-] Invalid ANDROID_API '$ANDROID_API'"
+  abort 1
+fi
+
 case "$2" in
   arm|arm64|x86|x86_64)
     readonly ARCH="$2"
@@ -93,6 +100,18 @@ case "$2" in
     abort 1
     ;;
 esac
+
+# Check if previous build exists and matches selected ANDROID_API level
+# If API cache file not there always rebuild
+if [ -f "$ARCH/libunwind-$ARCH.a" ]; then
+  if [ -f "$ARCH/android_api.txt" ]; then
+    old_api=$(cat "$ARCH/android_api.txt")
+    if [[ "$old_api" == "$ANDROID_API" ]]; then
+      # No need to recompile
+      abort 0 true
+    fi
+  fi
+fi
 
 LC_LDFLAGS="-static"
 
@@ -180,7 +199,7 @@ fi
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH=$(uname -m)
 
-SYSROOT="$NDK/platforms/android-21/arch-$ARCH"
+SYSROOT="$NDK/platforms/$ANDROID_API/arch-$ARCH"
 export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc --sysroot=$SYSROOT"
 export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++ --sysroot=$SYSROOT"
 export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
@@ -218,6 +237,19 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "[*] '$ARCH' libunwind available at '$LIBUNWIND_DIR/$ARCH'"
-cp src/.libs/*.a $ARCH
+cp src/.libs/*.a "$ARCH"
+echo "$ANDROID_API" > "$ARCH/android_api.txt"
+
+# Naming conventions for arm64
+if [[ "$ARCH" == "arm64" ]]; then
+  cd "$ARCH"
+  find . -type f -name "*aarch64*.a" | while read -r libFile
+  do
+    fName=$(basename "$libFile")
+    newFName=$(echo "$fName" | sed "s#aarch64#arm64#")
+    ln -sf "$fName" "$newFName"
+  done
+  cd -
+fi
 
 abort 0

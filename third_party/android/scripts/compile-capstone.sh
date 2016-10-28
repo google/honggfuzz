@@ -15,6 +15,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+#set -x # debug
+
 abort() {
   cd - &>/dev/null
   exit "$1"
@@ -29,7 +31,7 @@ if [ $# -ne 2 ]; then
   exit 1
 fi
 
-readonly CAPSTONE_DIR=$1
+readonly CAPSTONE_DIR="$1"
 
 if [ ! -d "$CAPSTONE_DIR/.git" ]; then
   git submodule update --init third_party/android/capstone || {
@@ -63,7 +65,7 @@ if [ -z "$NDK" ]; then
     NDK=$(dirname $(which ndk-build))
   else
     echo "[-] Could not detect Android NDK dir"
-    exit 1
+    abort 1
   fi
 fi
 
@@ -74,9 +76,21 @@ case "$2" in
     ;;
   *)
     echo "[-] Invalid CPU architecture"
-    exit 1
+    abort 1
     ;;
 esac
+
+# Check if previous build exists and matches selected ANDROID_API level
+# If API cache file not there always rebuild
+if [ -f "$ARCH/libcapstone.a" ]; then
+  if [ -f "$ARCH/android_api.txt" ]; then
+    old_api=$(cat "$ARCH/android_api.txt")
+    if [[ "$old_api" == "$ANDROID_API" ]]; then
+      # No need to recompile
+      abort 0
+    fi
+  fi
+fi
 
 case "$ARCH" in
   arm)
@@ -113,15 +127,23 @@ if [ -z "$NDK" ]; then
     $NDK=$(dirname $(which ndk-build))
   else
     echo "[-] Could not detect Android NDK dir"
-    exit 1
+    abort 1
   fi
+fi
+
+if [ -z "$ANDROID_API" ]; then
+  ANDROID_API="android-21"
+fi
+if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
+  echo "[-] Invalid ANDROID_API '$ANDROID_API'"
+  abort 1
 fi
 
 # Support both Linux & Darwin
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH=$(uname -m)
 
-SYSROOT="$NDK/platforms/android-21/arch-$ARCH"
+SYSROOT="$NDK/platforms/$ANDROID_API/arch-$ARCH"
 export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc --sysroot=$SYSROOT"
 export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++ --sysroot=$SYSROOT"
 export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
@@ -137,11 +159,12 @@ CAPSTONE_SHARED=no CAPSTONE_STATIC=yes \
 eval $CS_BUILD_BIN
 if [ $? -ne 0 ]; then
     echo "[-] Compilation failed"
-    exit 1
+    abort 1
 else
     echo "[*] '$ARCH' libcapstone available at '$CAPSTONE_DIR/$ARCH'"
 fi
 
-cp libcapstone.a $ARCH/
+cp libcapstone.a "$ARCH/"
+echo "$ANDROID_API" > "$ARCH/android_api.txt"
 
 abort 0

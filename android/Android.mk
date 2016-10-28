@@ -15,22 +15,36 @@
 
 LOCAL_PATH := $(abspath $(call my-dir)/..)
 
+# Force a clean if target API has changed and a previous build exists
+ifneq ("$(wildcard $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/android_api.txt)","")
+  CACHED_API := $(shell cat "$(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/android_api.txt")
+  ifneq ($(ANDROID_API),$(CACHED_API))
+    $(info [!] Previous build was targeting different API level - cleaning)
+    DUMMY_CLEAN := $(shell make clean)
+  endif
+endif
+
+# Force a clean if selected toolchain has changed and a previous build exists
+ifneq ("$(wildcard $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/ndk_toolchain.txt)","")
+  CACHED_TOOLCHAIN := $(shell cat "$(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/ndk_toolchain.txt")
+  ifneq ($(NDK_TOOLCHAIN),$(CACHED_TOOLCHAIN))
+    $(info [!] Previous build was using different toolchain - cleaning)
+    DUMMY_CLEAN := $(shell make clean)
+  endif
+endif
+
 # Enable Linux ptrace() instead of POSIX signal interface by default
 ANDROID_WITH_PTRACE ?= true
 
 ifeq ($(ANDROID_WITH_PTRACE),true)
   ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi armeabi-v7a))
     ARCH_ABI := arm
-    UNW_ARCH := arm
   else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86))
     ARCH_ABI := x86
-    UNW_ARCH := x86
   else ifeq ($(APP_ABI),$(filter $(APP_ABI),arm64-v8a))
     ARCH_ABI := arm64
-    UNW_ARCH := aarch64
   else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86_64))
     ARCH_ABI := x86_64
-    UNW_ARCH := x86_64
   else
     $(error Unsuported / Unknown APP_API '$(APP_ABI)')
   endif
@@ -43,9 +57,9 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   endif
 
   # Upstream libunwind compiled from sources with Android NDK toolchain
-  LIBUNWIND_A := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(UNW_ARCH).a
+  LIBUNWIND_A := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(ARCH_ABI).a
   ifeq ("$(wildcard $(LIBUNWIND_A))","")
-    $(error libunwind-$(UNW_ARCH) is missing - to build execute \
+    $(error libunwind-$(ARCH_ABI) is missing - to build execute \
             'third_party/android/scripts/compile-libunwind.sh third_party/android/libunwind $(ARCH_ABI)')
   endif
 
@@ -57,7 +71,7 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
 
   include $(CLEAR_VARS)
   LOCAL_MODULE := libunwind-arch
-  LOCAL_SRC_FILES := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(UNW_ARCH).a
+  LOCAL_SRC_FILES := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(ARCH_ABI).a
   LOCAL_EXPORT_C_INCLUDES := third_party/android/libunwind/include
   include $(PREBUILT_STATIC_LIBRARY)
 
@@ -165,9 +179,13 @@ endif
 include $(BUILD_EXECUTABLE)
 
 # The NDK build system does not copy static libraries into project/packages
-# so it has to be done manually in order to have all output under a single path
+# so it has to be done manually in order to have all output under a single path.
+# Also save some build attribute cache files so that cleans can be enforced when
+# required.
 all:POST_BUILD_EVENT
 POST_BUILD_EVENT:
+	@echo $(ANDROID_API) > $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/android_api.txt
+	@echo $(NDK_TOOLCHAIN) > $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/ndk_toolchain.txt
 	@test -f $(LOCAL_PATH)/obj/local/$(TARGET_ARCH_ABI)/libhfuzz.a && \
 	  cp $(LOCAL_PATH)/obj/local/$(TARGET_ARCH_ABI)/libhfuzz.a \
 	    $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/libhfuzz.a || true
