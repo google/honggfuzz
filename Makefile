@@ -278,6 +278,18 @@ android-all:
 	  echo ""; \
 	done
 
+.PHONY: android-clean-deps
+android-clean-deps:
+	@for cpu in arm arm64 x86 x86_64; do \
+	  make -C "third_party/android/capstone" clean; \
+	  rm -rf "third_party/android/capstone/$$cpu"; \
+	  make -C "third_party/android/libunwind" clean; \
+	  rm -rf "third_party/android/libunwind/$$cpu"; \
+	  ndk-build -C "third_party/android/libBlocksRuntime" \
+	    NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=Android.mk clean; \
+	  rm -rf "third_party/android/libBlocksRuntime/$$cpu"; \
+	done
+
 # DO NOT DELETE
 
 cmdline.o: cmdline.h common.h log.h files.h util.h
