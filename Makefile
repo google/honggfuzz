@@ -176,24 +176,32 @@ ifeq ($(ANDROID_CLANG),true)
   # clang works only against APIs >= 23
   ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),armeabi armeabi-v7a))
     ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-clang
+    ANDROID_ARCH_CPU := arm
   else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86))
     ANDROID_NDK_TOOLCHAIN ?= x86-clang
+    ANDROID_ARCH_CPU := x86
   else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),arm64-v8a))
     ANDROID_NDK_TOOLCHAIN ?= aarch64-linux-android-clang
+    ANDROID_ARCH_CPU := arm64
   else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86_64))
     ANDROID_NDK_TOOLCHAIN ?= x86_64-clang
+    ANDROID_ARCH_CPU := x86_64
   else
     $(error Unsuported / Unknown APP_API '$(ANDROID_APP_ABI)')
   endif
 else
   ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),armeabi armeabi-v7a))
     ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-4.9
+    ANDROID_ARCH_CPU := arm
   else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86))
     ANDROID_NDK_TOOLCHAIN ?= x86-4.9
+    ANDROID_ARCH_CPU := x86
   else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),arm64-v8a))
     ANDROID_NDK_TOOLCHAIN ?= aarch64-linux-android-4.9
+    ANDROID_ARCH_CPU := arm64
   else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86_64))
     ANDROID_NDK_TOOLCHAIN ?= x86_64-4.9
+    ANDROID_ARCH_CPU := x86_64
   else
     $(error Unsuported / Unknown APP_API '$(ANDROID_APP_ABI)')
   endif
@@ -240,6 +248,17 @@ depend:
 
 .PHONY: android
 android:
+	@ANDROID_API=$(ANDROID_API) third_party/android/scripts/compile-libunwind.sh \
+	third_party/android/libunwind $(ANDROID_ARCH_CPU)
+
+	@ANDROID_API=$(ANDROID_API) third_party/android/scripts/compile-capstone.sh \
+	third_party/android/capstone $(ANDROID_ARCH_CPU)
+
+  ifeq ($(ANDROID_CLANG),true)
+		@ANDROID_API=$(ANDROID_API) third_party/android/scripts/compile-libBlocksRuntime.sh \
+		third_party/android/libBlocksRuntime $(ANDROID_ARCH_CPU)
+  endif
+
 	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
     APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) \
     NDK_TOOLCHAIN=$(ANDROID_NDK_TOOLCHAIN) $(NDK_BUILD_ARGS)
