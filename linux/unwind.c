@@ -163,3 +163,32 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
     return num_frames;
 }
 #endif                          /* defined(__ANDROID__) */
+
+/*
+ * Nested loop not most efficient approach, although it's assumed that list is
+ * usually target specific and thus small.
+ */
+char *arch_btContainsSymbol(size_t symbolsListSz, char **symbolsList, size_t num_frames,
+                            funcs_t * funcs)
+{
+    for (size_t frame = 0; frame < num_frames; frame++) {
+        size_t len = strlen(funcs[frame].func);
+
+        /* Try only for frames that have symbol name from backtrace */
+        if (strlen(funcs[frame].func) > 0) {
+            for (size_t i = 0; i < symbolsListSz; i++) {
+                /* Wildcard symbol string special case */
+                char *wOff = strchr(symbolsList[i], '*');
+                if (wOff) {
+                    /* Length always > 3 as checked at input file parsing step */
+                    len = wOff - symbolsList[i] - 1;
+                }
+
+                if (strncmp(funcs[frame].func, symbolsList[i], len) == 0) {
+                    return funcs[frame].func;
+                }
+            }
+        }
+    }
+    return NULL;
+}
