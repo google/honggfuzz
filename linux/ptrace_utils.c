@@ -665,14 +665,11 @@ static void arch_ptraceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fu
     /*
      * Unwind and resolve symbols
      */
-    /*  *INDENT-OFF* */
-    funcs_t funcs[_HF_MAX_FUNCS] = {
-        [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
-        [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
-        [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
-        ,
-    };
-    /*  *INDENT-ON* */
+    funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
+    defer {
+        free(funcs);
+    }
+    memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
 #if !defined(__ANDROID__)
     size_t funcCnt = arch_unwindStack(pid, funcs);
@@ -730,14 +727,11 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     /*
      * Unwind and resolve symbols
      */
-    /*  *INDENT-OFF* */
-    funcs_t funcs[_HF_MAX_FUNCS] = {
-        [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
-        [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
-        [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
-        ,
-    };
-    /*  *INDENT-ON* */
+    funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
+    defer {
+        free(funcs);
+    }
+    memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
 #if !defined(__ANDROID__)
     size_t funcCnt = arch_unwindStack(pid, funcs);
@@ -1058,15 +1052,11 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
 
     /* If sanitizer produces reports with stack traces (e.g. ASan), they're parsed manually */
     int funcCnt = 0;
-
-    /*  *INDENT-OFF* */
-    funcs_t funcs[_HF_MAX_FUNCS] = {
-        [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
-        [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
-        [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
-        ,
-    };
-    /*  *INDENT-ON* */
+    funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
+    defer {
+        free(funcs);
+    }
+    memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
     /* If ASan crash, parse report */
     if (exitCode == HF_ASAN_EXIT_CODE) {
@@ -1221,15 +1211,11 @@ static void arch_ptraceExitAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t 
     void *crashAddr = 0;
     char *op = "UNKNOWN";
     int funcCnt = 0;
-
-    /*  *INDENT-OFF* */
-    funcs_t funcs[_HF_MAX_FUNCS] = {
-        [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
-        [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
-        [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
-        ,
-    };
-    /*  *INDENT-ON* */
+    funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
+    defer {
+        free(funcs);
+    }
+    memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
     funcCnt = arch_parseAsanReport(hfuzz, pid, funcs, &crashAddr, &op);
 
