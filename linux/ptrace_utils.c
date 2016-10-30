@@ -630,7 +630,7 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
     for (size_t i = 0; i < funcCnt; i++) {
 #ifdef __HF_USE_CAPSTONE__
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <" REG_PD REG_PM "> ",
-                       (REG_TYPE) (long)funcs[i].pc, funcs[i].func, funcs[i].line);
+                       (REG_TYPE) (long)funcs[i].pc);
         if (funcs[i].func[0] != '\0')
             util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[%s + 0x%x]\n",
                            funcs[i].func, funcs[i].line);
@@ -1199,7 +1199,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK:\n");
         for (int i = 0; i < funcCnt; i++) {
             util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <" REG_PD REG_PM "> ",
-                           (REG_TYPE) (long)funcs[i].pc, funcs[i].func, funcs[i].line);
+                           (REG_TYPE) (long)funcs[i].pc);
             if (funcs[i].func[0] != '\0') {
                 util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[%s + 0x%x]\n",
                                funcs[i].func, funcs[i].line);
