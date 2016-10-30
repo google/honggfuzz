@@ -16,20 +16,23 @@
 LOCAL_PATH := $(abspath $(call my-dir)/..)
 
 # Force a clean if target API has changed and a previous build exists
+CLEAN_RUN := false
 ifneq ("$(wildcard $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/android_api.txt)","")
   CACHED_API := $(shell cat "$(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/android_api.txt")
   ifneq ($(APP_PLATFORM),$(CACHED_API))
     $(info [!] Previous build was targeting different API level - cleaning)
-    DUMMY_CLEAN := $(shell make clean)
+    CLEAN_RUN := $(shell make clean &>/dev/null && echo true || echo false)
   endif
 endif
 
 # Force a clean if selected toolchain has changed and a previous build exists
-ifneq ("$(wildcard $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/ndk_toolchain.txt)","")
-  CACHED_TOOLCHAIN := $(shell cat "$(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/ndk_toolchain.txt")
-  ifneq ($(NDK_TOOLCHAIN),$(CACHED_TOOLCHAIN))
-    $(info [!] Previous build was using different toolchain - cleaning)
-    DUMMY_CLEAN := $(shell make clean)
+ifeq ($(CLEAN_RUN),false)
+  ifneq ("$(wildcard $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/ndk_toolchain.txt)","")
+    CACHED_TOOLCHAIN := $(shell cat "$(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/ndk_toolchain.txt")
+    ifneq ($(NDK_TOOLCHAIN),$(CACHED_TOOLCHAIN))
+      $(info [!] Previous build was using different toolchain - cleaning)
+      CLEAN_RUN := $(shell make clean &>/dev/null && echo true || echo false)
+    endif
   endif
 endif
 
