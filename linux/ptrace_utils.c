@@ -637,8 +637,9 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
         else
             util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[]\n");
 #else
-        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <" REG_PD REG_PM "> [%s():%u at %s]\n",
-                       (REG_TYPE) (long)funcs[i].pc, funcs[i].func, funcs[i].line, funcs[i].mapName);
+        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report),
+                       " <" REG_PD REG_PM "> [%s():%u at %s]\n", (REG_TYPE) (long)funcs[i].pc,
+                       funcs[i].func, funcs[i].line, funcs[i].mapName);
 #endif
     }
 
@@ -1000,7 +1001,8 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
                 if ((startOff == NULL) || (endOff == NULL) || (plusOff == NULL)) {
                     LOG_D("Invalid ASan report entry (%s)", lineptr);
                 } else {
-                    size_t dsoSz = MIN(sizeof(funcs[frameIdx].mapName), (size_t) (plusOff - startOff));
+                    size_t dsoSz =
+                        MIN(sizeof(funcs[frameIdx].mapName), (size_t) (plusOff - startOff));
                     memcpy(funcs[frameIdx].mapName, startOff, dsoSz);
                     char *codeOff = targetStr + (plusOff - startOff) + 1;
                     funcs[frameIdx].line = strtoull(codeOff, NULL, 16);
