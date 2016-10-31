@@ -148,8 +148,7 @@ int main(int argc, char **argv)
     if (hfuzz.blacklistFile && (files_parseBlacklist(&hfuzz) == false)) {
         LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.blacklistFile);
     }
-    /*  *INDENT-OFF* */
-    #define hfuzzl hfuzz.linux
+#define hfuzzl hfuzz.linux
     if (hfuzzl.symsBlFile &&
         ((hfuzzl.symsBlCnt = files_parseSymbolFilter(hfuzzl.symsBlFile, &hfuzzl.symsBl)) == 0)) {
         LOG_F("Couldn't parse symbols blacklist file ('%s')", hfuzzl.symsBlFile);
@@ -159,7 +158,7 @@ int main(int argc, char **argv)
         ((hfuzzl.symsWlCnt = files_parseSymbolFilter(hfuzzl.symsWlFile, &hfuzzl.symsWl)) == 0)) {
         LOG_F("Couldn't parse symbols whitelist file ('%s')", hfuzzl.symsWlFile);
     }
-    /*  *INDENT-ON* */
+
     /*
      * So far so good
      */
