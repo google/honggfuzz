@@ -430,6 +430,58 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
     return true;
 }
 
+/*
+ * Reads symbols from src file (one per line) and append them to filterList. The
+ * total number of added symbols is returned.
+ *
+ * Simple wildcard strings are also supported (e.g. mem*)
+ */
+size_t files_parseSymbolFilter(const char *srcFile, char ***filterList)
+{
+    FILE *f = fopen(srcFile, "rb");
+    if (f == NULL) {
+        PLOG_W("Couldn't open '%s' - R/O mode", srcFile);
+        return 0;
+    }
+    defer {
+        fclose(f);
+    };
+
+    char *lineptr = NULL;
+    defer {
+        free(lineptr);
+    };
+
+    size_t symbolsRead = 0, n = 0;
+    for (;;) {
+        if (getline(&lineptr, &n, f) == -1) {
+            break;
+        }
+
+        if (strlen(lineptr) < 3) {
+            LOG_F("Input symbol '%s' too short (strlen < 3)", lineptr);
+            return 0;
+        }
+
+        if ((*filterList =
+             (char **)util_Realloc(*filterList,
+                                   (symbolsRead + 1) * sizeof((*filterList)[0]))) == NULL) {
+            PLOG_W("realloc failed (sz=%zu)", (symbolsRead + 1) * sizeof((*filterList)[0]));
+            return 0;
+        }
+        (*filterList)[symbolsRead] = malloc(strlen(lineptr));
+        if (!(*filterList)[symbolsRead]) {
+            PLOG_E("malloc(%zu) failed", strlen(lineptr));
+            return 0;
+        }
+        strncpy((*filterList)[symbolsRead], lineptr, strlen(lineptr));
+        symbolsRead++;
+    }
+
+    LOG_I("%zu filter symbols added to list", symbolsRead);
+    return symbolsRead;
+}
+
 uint8_t *files_mapFile(char *fileName, off_t * fileSz, int *fd, bool isWritable)
 {
     int mmapProt = PROT_READ;

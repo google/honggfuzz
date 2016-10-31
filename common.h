@@ -279,6 +279,12 @@ typedef struct {
         pid_t pid;
         const char *pidFile;
         char *pidCmd;
+        const char *symsBlFile;
+        char **symsBl;
+        size_t symsBlCnt;
+        const char *symsWlFile;
+        char **symsWl;
+        size_t symsWlCnt;
     } linux;
 } honggfuzz_t;
 

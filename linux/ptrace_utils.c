@@ -630,15 +630,16 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
     for (size_t i = 0; i < funcCnt; i++) {
 #ifdef __HF_USE_CAPSTONE__
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <" REG_PD REG_PM "> ",
-                       (REG_TYPE) (long)funcs[i].pc, funcs[i].func, funcs[i].line);
+                       (REG_TYPE) (long)funcs[i].pc);
         if (funcs[i].func[0] != '\0')
-            util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[%s + 0x%x]\n",
-                           funcs[i].func, funcs[i].line);
+            util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[%s() + 0x%x at %s]\n",
+                           funcs[i].func, funcs[i].line, funcs[i].mapName);
         else
             util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[]\n");
 #else
-        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <" REG_PD REG_PM "> [%s():%u]\n",
-                       (REG_TYPE) (long)funcs[i].pc, funcs[i].func, funcs[i].line);
+        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report),
+                       " <" REG_PD REG_PM "> [%s():%u at %s]\n", (REG_TYPE) (long)funcs[i].pc,
+                       funcs[i].func, funcs[i].line, funcs[i].mapName);
 #endif
     }
 
@@ -665,14 +666,11 @@ static void arch_ptraceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fu
     /*
      * Unwind and resolve symbols
      */
-    /*  *INDENT-OFF* */
-    funcs_t funcs[_HF_MAX_FUNCS] = {
-        [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
-        [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
-        [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
-        ,
-    };
-    /*  *INDENT-ON* */
+    funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
+    defer {
+        free(funcs);
+    }
+    memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
 #if !defined(__ANDROID__)
     size_t funcCnt = arch_unwindStack(pid, funcs);
@@ -730,14 +728,11 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     /*
      * Unwind and resolve symbols
      */
-    /*  *INDENT-OFF* */
-    funcs_t funcs[_HF_MAX_FUNCS] = {
-        [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
-        [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
-        [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
-        ,
-    };
-    /*  *INDENT-ON* */
+    funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
+    defer {
+        free(funcs);
+    }
+    memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
 #if !defined(__ANDROID__)
     size_t funcCnt = arch_unwindStack(pid, funcs);
@@ -809,13 +804,39 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     ATOMIC_POST_INC(hfuzz->crashesCnt);
 
     /*
-     * Check if stackhash is blacklisted
+     * Check if backtrace contains whitelisted symbol. Whitelist overrides
+     * both stackhash and symbol blacklist. Crash is always kept regardless
+     * of the status of uniqueness flag.
      */
-    if (hfuzz->blacklist
-        && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) != -1)) {
-        LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
-        ATOMIC_POST_INC(hfuzz->blCrashesCnt);
-        return;
+    if (hfuzz->linux.symsWl) {
+        char *wlSymbol = arch_btContainsSymbol(hfuzz->linux.symsWlCnt, hfuzz->linux.symsWl,
+                                               funcCnt, funcs);
+        if (wlSymbol != NULL) {
+            saveUnique = false;
+            LOG_D("Whitelisted symbol '%s' found, skipping blacklist checks", wlSymbol);
+        }
+    } else {
+        /*
+         * Check if stackhash is blacklisted
+         */
+        if (hfuzz->blacklist
+            && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) !=
+                -1)) {
+            LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
+            ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+            return;
+        }
+
+        /*
+         * Check if backtrace contains blacklisted symbol
+         */
+        char *blSymbol = arch_btContainsSymbol(hfuzz->linux.symsBlCnt, hfuzz->linux.symsBl,
+                                               funcCnt, funcs);
+        if (blSymbol != NULL) {
+            LOG_I("Blacklisted symbol '%s' found, skipping", blSymbol);
+            ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+            return;
+        }
     }
 
     /* If non-blacklisted crash detected, zero set two MSB */
@@ -980,8 +1001,9 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
                 if ((startOff == NULL) || (endOff == NULL) || (plusOff == NULL)) {
                     LOG_D("Invalid ASan report entry (%s)", lineptr);
                 } else {
-                    size_t dsoSz = MIN(sizeof(funcs[frameIdx].func), (size_t) (plusOff - startOff));
-                    memcpy(funcs[frameIdx].func, startOff, dsoSz);
+                    size_t dsoSz =
+                        MIN(sizeof(funcs[frameIdx].mapName), (size_t) (plusOff - startOff));
+                    memcpy(funcs[frameIdx].mapName, startOff, dsoSz);
                     char *codeOff = targetStr + (plusOff - startOff) + 1;
                     funcs[frameIdx].line = strtoull(codeOff, NULL, 16);
                 }
@@ -1012,6 +1034,9 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
         return;
     }
 
+    /* Local copy since flag is overridden for some crashes */
+    bool saveUnique = hfuzz->saveUnique;
+
     /* Increase global crashes counter */
     ATOMIC_POST_INC(hfuzz->crashesCnt);
     ATOMIC_POST_AND(hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
@@ -1029,15 +1054,11 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
 
     /* If sanitizer produces reports with stack traces (e.g. ASan), they're parsed manually */
     int funcCnt = 0;
-
-    /*  *INDENT-OFF* */
-    funcs_t funcs[_HF_MAX_FUNCS] = {
-        [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
-        [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
-        [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
-        ,
-    };
-    /*  *INDENT-ON* */
+    funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
+    defer {
+        free(funcs);
+    }
+    memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
     /* If ASan crash, parse report */
     if (exitCode == HF_ASAN_EXIT_CODE) {
@@ -1069,13 +1090,40 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
         arch_hashCallstack(hfuzz, fuzzer, funcs, funcCnt, false);
         pc = (uintptr_t) funcs[0].pc;
 
-        /* Since stack hash is available apply blacklist filters */
-        if (hfuzz->blacklist
-            && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) !=
-                -1)) {
-            LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
-            ATOMIC_POST_INC(hfuzz->blCrashesCnt);
-            return;
+        /*
+         * Check if backtrace contains whitelisted symbol. Whitelist overrides
+         * both stackhash and symbol blacklist. Crash is always kept regardless
+         * of the status of uniqueness flag.
+         */
+        if (hfuzz->linux.symsWl) {
+            char *wlSymbol = arch_btContainsSymbol(hfuzz->linux.symsWlCnt,
+                                                   hfuzz->linux.symsWl, funcCnt, funcs);
+            if (wlSymbol != NULL) {
+                saveUnique = false;
+                LOG_D("Whitelisted symbol '%s' found, skipping blacklist checks", wlSymbol);
+            }
+        } else {
+            /*
+             * Check if stackhash is blacklisted
+             */
+            if (hfuzz->blacklist
+                && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) !=
+                    -1)) {
+                LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
+                ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+                return;
+            }
+
+            /*
+             * Check if backtrace contains blacklisted symbol
+             */
+            char *blSymbol = arch_btContainsSymbol(hfuzz->linux.symsBlCnt,
+                                                   hfuzz->linux.symsBl, funcCnt, funcs);
+            if (blSymbol != NULL) {
+                LOG_I("Blacklisted symbol '%s' found, skipping", blSymbol);
+                ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+                return;
+            }
         }
     }
 
@@ -1085,7 +1133,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
                  hfuzz->workDir, fuzzer->origFileName);
     } else {
         /* Keep the crashes file name format identical */
-        if (fuzzer->backtrace != 0ULL && hfuzz->saveUnique) {
+        if (fuzzer->backtrace != 0ULL && saveUnique) {
             snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
                      "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s",
                      hfuzz->workDir, sanStr, pc, fuzzer->backtrace,
@@ -1143,10 +1191,10 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK:\n");
         for (int i = 0; i < funcCnt; i++) {
             util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <" REG_PD REG_PM "> ",
-                           (REG_TYPE) (long)funcs[i].pc, funcs[i].func, funcs[i].line);
-            if (funcs[i].func[0] != '\0') {
+                           (REG_TYPE) (long)funcs[i].pc);
+            if (funcs[i].mapName[0] != '\0') {
                 util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[%s + 0x%x]\n",
-                               funcs[i].func, funcs[i].line);
+                               funcs[i].mapName, funcs[i].line);
             } else {
                 util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[]\n");
             }
@@ -1165,15 +1213,11 @@ static void arch_ptraceExitAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t 
     void *crashAddr = 0;
     char *op = "UNKNOWN";
     int funcCnt = 0;
-
-    /*  *INDENT-OFF* */
-    funcs_t funcs[_HF_MAX_FUNCS] = {
-        [0 ... (_HF_MAX_FUNCS - 1)].pc = NULL,
-        [0 ... (_HF_MAX_FUNCS - 1)].line = 0,
-        [0 ... (_HF_MAX_FUNCS - 1)].func = {'\0'}
-        ,
-    };
-    /*  *INDENT-ON* */
+    funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
+    defer {
+        free(funcs);
+    }
+    memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
     funcCnt = arch_parseAsanReport(hfuzz, pid, funcs, &crashAddr, &op);
 

@@ -148,12 +148,15 @@ int main(int argc, char **argv)
     if (hfuzz.blacklistFile && (files_parseBlacklist(&hfuzz) == false)) {
         LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.blacklistFile);
     }
+#define hfuzzl hfuzz.linux
+    if (hfuzzl.symsBlFile &&
+        ((hfuzzl.symsBlCnt = files_parseSymbolFilter(hfuzzl.symsBlFile, &hfuzzl.symsBl)) == 0)) {
+        LOG_F("Couldn't parse symbols blacklist file ('%s')", hfuzzl.symsBlFile);
+    }
 
-    if (hfuzz.dynFileMethod != _HF_DYNFILE_NONE) {
-        hfuzz.feedback = files_mapSharedMem(sizeof(feedback_t), &hfuzz.bbFd, hfuzz.workDir);
-        if (hfuzz.feedback == MAP_FAILED) {
-            LOG_F("files_mapSharedMem(sz=%zu, dir='%s') failed", sizeof(feedback_t), hfuzz.workDir);
-        }
+    if (hfuzzl.symsWlFile &&
+        ((hfuzzl.symsWlCnt = files_parseSymbolFilter(hfuzzl.symsWlFile, &hfuzzl.symsWl)) == 0)) {
+        LOG_F("Couldn't parse symbols whitelist file ('%s')", hfuzzl.symsWlFile);
     }
 
     /*
@@ -185,6 +188,12 @@ int main(int argc, char **argv)
     /* Clean-up global buffers */
     if (hfuzz.blacklist) {
         free(hfuzz.blacklist);
+    }
+    if (hfuzz.linux.symsBl) {
+        free(hfuzz.linux.symsBl);
+    }
+    if (hfuzz.linux.symsWl) {
+        free(hfuzz.linux.symsWl);
     }
     if (hfuzz.sanOpts.asanOpts) {
         free(hfuzz.sanOpts.asanOpts);

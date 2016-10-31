@@ -227,6 +227,12 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             .pid = 0,
             .pidFile = NULL,
             .pidCmd = NULL,
+            .symsBlFile = NULL,
+            .symsBlCnt = 0,
+            .symsBl = NULL,
+            .symsWlFile = NULL,
+            .symsWlCnt = 0,
+            .symsWl = NULL,
         },
     };
     /*  *INDENT-ON* */
@@ -268,6 +274,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libraries/persistent.c)"},
 
 #if defined(_HF_ARCH_LINUX)
+        {{"linux_symbols_bl", required_argument, NULL, 0x504}, "Symbols blacklist filter file (one entry per line)"},
+        {{"linux_symbols_wl", required_argument, NULL, 0x505}, "Symbols whitelist filter file (one entry per line)"},
         {{"linux_pid", required_argument, NULL, 'p'}, "Attach to a pid (and its thread group)"},
         {{"linux_file_pid", required_argument, NULL, 0x502}, "Attach to pid (and its thread group) read from file"},
         {{"linux_addr_low_limit", required_argument, NULL, 0x500}, "Address limit (from si.si_addr) below which crashes are not reported, (default: '0')"},
@@ -414,6 +422,12 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x503:
             hfuzz->linux.dynamicCutOffAddr = strtoull(optarg, NULL, 0);
+            break;
+        case 0x504:
+            hfuzz->linux.symsBlFile = optarg;
+            break;
+        case 0x505:
+            hfuzz->linux.symsWlFile = optarg;
             break;
         case 0x510:
             hfuzz->dynFileMethod |= _HF_DYNFILE_INSTR_COUNT;
