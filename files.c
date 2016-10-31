@@ -430,15 +430,21 @@ bool files_parseBlacklist(honggfuzz_t * hfuzz)
     return true;
 }
 
-size_t files_parseSymbolFilter(const char *inFIle, char ***filterList)
+/*
+ * Reads symbols from src file (one per line) and append them to filterList. The
+ * total number of added symbols is returned.
+ *
+ * Simple wildcard strings are also supported (e.g. mem*)
+ */
+size_t files_parseSymbolFilter(const char *srcFile, char ***filterList)
 {
-    FILE *fSBl = fopen(inFIle, "rb");
-    if (fSBl == NULL) {
-        PLOG_W("Couldn't open '%s' - R/O mode", inFIle);
+    FILE *f = fopen(srcFile, "rb");
+    if (f == NULL) {
+        PLOG_W("Couldn't open '%s' - R/O mode", srcFile);
         return 0;
     }
     defer {
-        fclose(fSBl);
+        fclose(f);
     };
 
     char *lineptr = NULL;
@@ -448,7 +454,7 @@ size_t files_parseSymbolFilter(const char *inFIle, char ***filterList)
 
     size_t symbolsRead = 0, n = 0;
     for (;;) {
-        if (getline(&lineptr, &n, fSBl) == -1) {
+        if (getline(&lineptr, &n, f) == -1) {
             break;
         }
 
