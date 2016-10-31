@@ -632,8 +632,8 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <" REG_PD REG_PM "> ",
                        (REG_TYPE) (long)funcs[i].pc);
         if (funcs[i].func[0] != '\0')
-            util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[%s:%s() + 0x%x]\n",
-                           funcs[i].mapName, funcs[i].func, funcs[i].line);
+            util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[%s() + 0x%x at %s]\n",
+                           funcs[i].func, funcs[i].line, funcs[i].mapName);
         else
             util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[]\n");
 #else
