@@ -669,7 +669,7 @@ static void arch_ptraceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fu
     funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
     defer {
         free(funcs);
-    }
+    };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
 #if !defined(__ANDROID__)
@@ -731,7 +731,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
     defer {
         free(funcs);
-    }
+    };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
 #if !defined(__ANDROID__)
@@ -1057,7 +1057,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
     defer {
         free(funcs);
-    }
+    };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
     /* If ASan crash, parse report */
@@ -1216,7 +1216,7 @@ static void arch_ptraceExitAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t 
     funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
     defer {
         free(funcs);
-    }
+    };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
     funcCnt = arch_parseAsanReport(hfuzz, pid, funcs, &crashAddr, &op);
