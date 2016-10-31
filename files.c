@@ -464,16 +464,17 @@ size_t files_parseSymbolFilter(const char *srcFile, char ***filterList)
         }
 
         if ((*filterList =
-             util_Realloc(*filterList, (symbolsRead + 1) * sizeof(*filterList[0]))) == NULL) {
-            PLOG_W("realloc failed (sz=%zu)", (symbolsRead + 1) * sizeof(*filterList[0]));
+             (char **)util_Realloc(*filterList,
+                                   (symbolsRead + 1) * sizeof((*filterList)[0]))) == NULL) {
+            PLOG_W("realloc failed (sz=%zu)", (symbolsRead + 1) * sizeof((*filterList)[0]));
             return 0;
         }
-        *filterList[symbolsRead] = malloc(strlen(lineptr));
-        if (!*filterList[symbolsRead]) {
+        (*filterList)[symbolsRead] = malloc(strlen(lineptr));
+        if (!(*filterList)[symbolsRead]) {
             PLOG_E("malloc(%zu) failed", strlen(lineptr));
             return 0;
         }
-        strncpy(*filterList[symbolsRead], lineptr, strlen(lineptr));
+        strncpy((*filterList)[symbolsRead], lineptr, strlen(lineptr));
         symbolsRead++;
     }
 
