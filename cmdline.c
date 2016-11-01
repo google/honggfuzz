@@ -96,7 +96,7 @@ static void cmdlineHelp(const char *pname, struct custom_option *opts)
     LOG_HELP(" Run the binary over a dynamic file, maximize unique branches (edges) via BTS:");
     LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_bts_edge -- /usr/bin/tiffinfo -D ");
     LOG_HELP
-        (" Run the binary over a dynamic file, maximize unique code blocks via Intel Processor Trace:");
+        (" Run the binary over a dynamic file, maximize unique code blocks via Intel Processor Trace (requires libipt.so):");
     LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_ipt_block -- /usr/bin/tiffinfo -D "
                   _HF_FILE_PLACEHOLDER);
 #endif                          /* defined(_HF_ARCH_LINUX) */
@@ -282,7 +282,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"linux_perf_branch", no_argument, NULL, 0x511}, "Use PERF_COUNT_HW_BRANCH_INSTRUCTIONS perf"},
         {{"linux_perf_bts_block", no_argument, NULL, 0x512}, "Use Intel BTS to count unique blocks"},
         {{"linux_perf_bts_edge", no_argument, NULL, 0x513}, "Use Intel BTS to count unique edges"},
-        {{"linux_perf_ipt_block", no_argument, NULL, 0x514}, "Use Intel Processor Trace to count unique blocks"},
+        {{"linux_perf_ipt_block", no_argument, NULL, 0x514}, "Use Intel Processor Trace to count unique blocks (requires libipt.so)"},
 #endif  // defined(_HF_ARCH_LINUX)
         {{0, 0, 0, 0}, NULL},
     };
