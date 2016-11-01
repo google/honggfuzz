@@ -181,7 +181,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
     procMap_t *mapsList = arch_parsePidMaps(pid, &mapsCnt);
     defer {
         free(mapsList);
-    }
+    };
 
     unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, __BYTE_ORDER);
     if (!as) {
