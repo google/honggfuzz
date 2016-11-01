@@ -268,9 +268,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
         {{"save_all", no_argument, NULL, 'u'}, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames"},
         {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
-        {{"instrument", no_argument, NULL, 'z'}, "Enable compile-time instrumentation (link with libraries/instrument.a)"},
+        {{"instrument", no_argument, NULL, 'z'}, "Enable compile-time instrumentation (link with libhfuzz/libhfuzz.a)"},
         {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
-        {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libraries/persistent.c)"},
+        {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libhfuzz/libhfuzz.a)"},
 
 #if defined(_HF_ARCH_LINUX)
         {{"linux_symbols_bl", required_argument, NULL, 0x504}, "Symbols blacklist filter file (one entry per line)"},
