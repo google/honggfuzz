@@ -215,7 +215,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             .hwCnts = {
                 .cpuInstrCnt = 0ULL,
                 .cpuBranchCnt = 0ULL,
-                .customCnt = 0ULL,
                 .bbCnt = 0ULL,
                 .newBBCnt = 0ULL,
                 .softCntPc = 0ULL,

@@ -115,7 +115,6 @@ typedef enum {
 typedef struct {
     uint64_t cpuInstrCnt;
     uint64_t cpuBranchCnt;
-    uint64_t customCnt;
     uint64_t bbCnt;
     uint64_t newBBCnt;
     uint64_t softCntPc;
