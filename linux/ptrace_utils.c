@@ -338,62 +338,6 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
     return memsz;
 }
 
-void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt UNUSED)
-{
-    if ((hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) == 0) {
-        return;
-    }
-
-    if (hfuzz->persistent) {
-        ptrace(PTRACE_INTERRUPT, pid, 0, 0);
-        arch_ptraceWaitForPidStop(pid);
-    }
-
-    defer {
-        if (hfuzz->persistent) {
-            ptrace(PTRACE_CONT, pid, 0, 0);
-        }
-    };
-
-#if defined(__x86_64__)
-    struct user_regs_struct_64 regs;
-    if (ptrace(PTRACE_GETREGS, pid, 0, &regs) != -1) {
-        *cnt = regs.gs_base;
-        return;
-    }
-#endif                          /*       defined(__x86_64__) */
-    *cnt = 0ULL;
-}
-
-void arch_ptraceSetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t cnt UNUSED)
-{
-    if ((hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) == 0) {
-        return;
-    }
-
-    if (hfuzz->persistent) {
-        ptrace(PTRACE_INTERRUPT, pid, 0, 0);
-        arch_ptraceWaitForPidStop(pid);
-    }
-
-    defer {
-        if (hfuzz->persistent) {
-            ptrace(PTRACE_CONT, pid, 0, 0);
-        }
-    };
-
-#if defined(__x86_64__)
-    struct user_regs_struct_64 regs;
-    if (ptrace(PTRACE_GETREGS, pid, 0, &regs) == -1) {
-        return;
-    }
-    regs.gs_base = cnt;
-    if (ptrace(PTRACE_SETREGS, pid, 0, &regs) == -1) {
-        return;
-    }
-#endif                          /*            defined(__x86_64__) */
-}
-
 static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg UNUSED)
 {
     /*

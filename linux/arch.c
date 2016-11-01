@@ -271,7 +271,6 @@ void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (childPid != ptracePid && kill(childPid, SIGCONT) == -1) {
         PLOG_F("Restarting PID: %d failed", childPid);
     }
-    arch_ptraceSetCustomPerf(hfuzz, ptracePid, 0ULL);
 }
 
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
@@ -281,7 +280,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     for (;;) {
         if (subproc_persistentModeRoundDone(hfuzz, fuzzer)) {
-            arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->linux.hwCnts.customCnt);
             break;
         }
 
@@ -302,10 +300,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         char statusStr[4096];
         LOG_D("PID '%d' returned with status: %s", pid,
               subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
-
-        if (hfuzz->persistent == false) {
-            arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->linux.hwCnts.customCnt);
-        }
 
         if (hfuzz->persistent && pid == fuzzer->persistentPid
             && (WIFEXITED(status) || WIFSIGNALED(status))) {

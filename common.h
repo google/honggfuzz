@@ -109,8 +109,7 @@ typedef enum {
     _HF_DYNFILE_BTS_BLOCK = 0x8,
     _HF_DYNFILE_BTS_EDGE = 0x10,
     _HF_DYNFILE_IPT_BLOCK = 0x20,
-    _HF_DYNFILE_CUSTOM = 0x40,
-    _HF_DYNFILE_SOFT = 0x80,
+    _HF_DYNFILE_SOFT = 0x40,
 } dynFileMethod_t;
 
 typedef struct {

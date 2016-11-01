@@ -233,11 +233,6 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put("       *** PT blocks:      " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     "\n", ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_CUSTOM) {
-        display_put("       *** custom counter: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
-                    "\n", ATOMIC_GET(hfuzz->linux.hwCnts.customCnt));
-    }
-
     if (hfuzz->dynFileMethod & _HF_DYNFILE_SOFT) {
         uint64_t softCntPc = ATOMIC_GET(hfuzz->linux.hwCnts.softCntPc);
         uint64_t softCntCmp = ATOMIC_GET(hfuzz->linux.hwCnts.softCntCmp);
