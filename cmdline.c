@@ -99,7 +99,6 @@ static void cmdlineHelp(const char *pname, struct custom_option *opts)
         (" Run the binary over a dynamic file, maximize unique code blocks via Intel Processor Trace:");
     LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_ipt_block -- /usr/bin/tiffinfo -D "
                   _HF_FILE_PLACEHOLDER);
-    LOG_HELP(" Run the binary over a dynamic file, maximize custom counters (experimental):");
 #endif                          /* defined(_HF_ARCH_LINUX) */
 }
 
