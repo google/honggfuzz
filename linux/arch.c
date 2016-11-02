@@ -53,12 +53,12 @@
 #include <sys/utsname.h>
 
 #include "../files.h"
-#include "../linux/perf.h"
-#include "../linux/ptrace_utils.h"
 #include "../log.h"
 #include "../sancov.h"
 #include "../subproc.h"
 #include "../util.h"
+#include "perf.h"
+#include "ptrace_utils.h"
 
 /* Common sanitizer flags */
 #if _HF_MONITOR_SIGABRT
