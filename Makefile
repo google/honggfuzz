@@ -39,7 +39,6 @@ ifeq ($(OS),Linux)
     ARCH_CFLAGS := -std=c11 -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -funroll-loops \
-                   -fno-stack-protector \
                    -D_FILE_OFFSET_BITS=64
     ARCH_LDFLAGS := -L/usr/local/include -L/usr/include \
                     -lpthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt

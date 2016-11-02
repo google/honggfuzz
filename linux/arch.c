@@ -83,10 +83,10 @@ static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 static uint8_t arch_clone_stack[PTHREAD_STACK_MIN * 2];
 
-static int arch_cloneFunc(void *arg)
+__thread jmp_buf env;
+static int arch_cloneFunc(void *arg UNUSED)
 {
-    jmp_buf *env_ptr = (jmp_buf *) arg;
-    longjmp(*env_ptr, 1);
+    longjmp(env, 1);
     return 0;
 }
 
@@ -98,11 +98,10 @@ static pid_t arch_clone(uintptr_t flags)
         return -1;
     }
 
-    jmp_buf env;
     if (setjmp(env) == 0) {
         void *stack_mid = &arch_clone_stack[sizeof(arch_clone_stack) / 2];
         /* Parent */
-        return clone(arch_cloneFunc, stack_mid, flags, &env, NULL, NULL);
+        return clone(arch_cloneFunc, stack_mid, flags, NULL, NULL, NULL);
     }
     /* Child */
     return 0;
