@@ -124,6 +124,32 @@ const char *subproc_StatusToStr(int status, char *str, size_t len)
     return str;
 }
 
+bool subproc_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    if (hfuzz->persistent == false) {
+        return false;
+    }
+    char z;
+    if (recv(fuzzer->persistentSock, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
+        LOG_D("Persistent mode round finished");
+        return true;
+    }
+    return false;
+}
+
+static bool subproc_persistentSendFile(fuzzer_t * fuzzer)
+{
+    uint32_t len = (uint64_t) fuzzer->dynamicFileSz;
+    if (files_writeToFd(fuzzer->persistentSock, (uint8_t *) & len, sizeof(len)) == false) {
+        return false;
+    }
+    if (files_writeToFd(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) ==
+        false) {
+        return false;
+    }
+    return true;
+}
+
 bool subproc_PrepareExecv(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *fileName)
 {
     /*
@@ -178,7 +204,7 @@ bool subproc_PrepareExecv(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *fi
     return true;
 }
 
-bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+static bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     fuzzer->pid = fuzzer->persistentPid;
     if (fuzzer->pid != 0) {
@@ -239,39 +265,20 @@ bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     return true;
 }
 
-bool subproc_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+bool subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    if (hfuzz->persistent == false) {
+    if (subproc_New(hfuzz, fuzzer) == false) {
+        LOG_E("subproc_New()");
         return false;
     }
-    char z;
-    if (recv(fuzzer->persistentSock, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
-        LOG_D("Persistent mode round finished");
-        return true;
-    }
-    return false;
-}
 
-static bool subproc_persistentSendFile(fuzzer_t * fuzzer)
-{
-    uint32_t len = (uint64_t) fuzzer->dynamicFileSz;
-    if (files_writeToFd(fuzzer->persistentSock, (uint8_t *) & len, sizeof(len)) == false) {
-        return false;
-    }
-    if (files_writeToFd(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) ==
-        false) {
-        return false;
-    }
-    return true;
-}
-
-void subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
-{
     arch_prepareChild(hfuzz, fuzzer);
     if (hfuzz->persistent == true && subproc_persistentSendFile(fuzzer) == false) {
         LOG_W("Could not send file contents to the persistent process");
     }
     arch_reapChild(hfuzz, fuzzer);
+
+    return true;
 }
 
 uint8_t subproc_System(const char *const argv[])

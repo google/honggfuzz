@@ -38,9 +38,7 @@ extern const char *subproc_StatusToStr(int status, char *str, size_t len);
 
 extern bool subproc_PrepareExecv(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *fileName);
 
-extern bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
-
-extern void subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
+extern bool subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
 
 extern bool subproc_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
 
