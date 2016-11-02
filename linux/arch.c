@@ -233,16 +233,13 @@ void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
 
-    if (hfuzz->persistent == false && arch_ptraceWaitForPidStop(childPid) == false) {
-        LOG_F("PID %d not in a stopped state", childPid);
-    }
-
     if (arch_shouldAttach(hfuzz, fuzzer) == true) {
         if (arch_ptraceAttach(ptracePid) == false) {
             LOG_F("arch_ptraceAttach(pid=%d) failed", ptracePid);
         }
         fuzzer->linux.attachedPid = ptracePid;
     }
+
     /* A long-lived process could have already exited, and we wouldn't know */
     if (childPid != ptracePid && kill(ptracePid, 0) == -1) {
         if (hfuzz->linux.pidFile) {
@@ -268,8 +265,13 @@ void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (arch_perfEnable(ptracePid, hfuzz, fuzzer) == false) {
         LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
     }
-    if (childPid != ptracePid && kill(childPid, SIGCONT) == -1) {
-        PLOG_F("Restarting PID: %d failed", childPid);
+    if (childPid != ptracePid) {
+        if (arch_ptraceWaitForPidStop(childPid) == false) {
+            LOG_F("PID: %d not in a stopped state", childPid);
+        }
+        if (kill(childPid, SIGCONT) == -1) {
+            PLOG_F("Restarting PID: %d failed", childPid);
+        }
     }
 }
 
