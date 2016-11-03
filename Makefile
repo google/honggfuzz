@@ -307,8 +307,8 @@ util.o: common.h util.h files.h log.h
 libhfuzz/instrument.o: common.h util.h
 libhfuzz/memorycmp.o: libhfuzz/instrument.h
 libhfuzz/persistent.o: common.h
-linux/arch.o: common.h arch.h common.h files.h linux/perf.h
-linux/arch.o: linux/ptrace_utils.h log.h sancov.h subproc.h util.h
+linux/arch.o: common.h arch.h common.h files.h log.h sancov.h subproc.h
+linux/arch.o: util.h linux/perf.h linux/ptrace_utils.h
 linux/bfd.o: common.h linux/bfd.h linux/unwind.h files.h common.h log.h
 linux/bfd.o: util.h
 linux/perf.o: common.h linux/perf.h files.h common.h log.h util.h linux/pt.h

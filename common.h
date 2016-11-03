@@ -206,7 +206,7 @@ typedef struct {
 
 typedef struct {
     char **cmdline;
-    char cmdline_txt[PATH_MAX];
+    char cmdline_txt[61];
     char *inputDir;
     bool nullifyStdio;
     bool fuzzStdin;
