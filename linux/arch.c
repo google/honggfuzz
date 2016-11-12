@@ -222,7 +222,7 @@ void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     if (arch_shouldAttach(hfuzz, fuzzer) == true) {
-        if (arch_ptraceAttach(ptracePid) == false) {
+        if (arch_ptraceAttach(hfuzz, ptracePid) == false) {
             LOG_F("arch_ptraceAttach(pid=%d) failed", ptracePid);
         }
         fuzzer->linux.attachedPid = ptracePid;

@@ -33,7 +33,7 @@ extern bool arch_ptraceWaitForPidStop(pid_t pid);
 extern bool arch_ptraceEnable(honggfuzz_t * hfuzz);
 extern void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer);
 extern void arch_ptraceExitAnalyze(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer, int exitCode);
-extern bool arch_ptraceAttach(pid_t pid);
+extern bool arch_ptraceAttach(honggfuzz_t * hfuzz, pid_t pid);
 extern void arch_ptraceDetach(pid_t pid);
 extern void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt);
 extern void arch_ptraceSetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t cnt);
