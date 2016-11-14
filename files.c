@@ -42,7 +42,7 @@
 
 ssize_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
 {
-    int fd = open(fileName, O_RDONLY);
+    int fd = open(fileName, O_RDONLY | O_CLOEXEC);
     if (fd == -1) {
         PLOG_W("Couldn't open '%s' for R/O", fileName);
         return -1;
@@ -322,10 +322,10 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
     mode_t dstFilePerms;
 
     // O_EXCL is important for saving unique crashes
-    dstOpenFlags = O_CREAT | O_WRONLY | O_EXCL;
+    dstOpenFlags = O_CREAT | O_WRONLY | O_EXCL | O_CLOEXEC;
     dstFilePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 
-    inFD = open(source, O_RDONLY);
+    inFD = open(source, O_RDONLY | O_CLOEXEC);
     if (inFD == -1) {
         PLOG_D("Couldn't open '%s' source", source);
         return false;
