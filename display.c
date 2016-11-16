@@ -68,7 +68,7 @@ static void display_printKMG(uint64_t val)
     }
 }
 
-static double getCpuUse(long num_cpu)
+static unsigned getCpuUse(long num_cpu)
 {
     static uint64_t prevIdleT = 0UL;
 
@@ -94,7 +94,7 @@ static double getCpuUse(long num_cpu)
 
     uint64_t cpuUse = (num_cpu * sysconf(_SC_CLK_TCK)) - (idleT - prevIdleT);
     prevIdleT = idleT;
-    return (double)cpuUse / sysconf(_SC_CLK_TCK) * 100;
+    return cpuUse * 100 / sysconf(_SC_CLK_TCK);
 }
 
 static void display_displayLocked(honggfuzz_t * hfuzz)
@@ -180,9 +180,9 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     if (num_cpu == 0) {
         num_cpu = sysconf(_SC_NPROCESSORS_ONLN);
     }
-    double cpuUse = getCpuUse(num_cpu);
+    unsigned cpuUse = getCpuUse(num_cpu);
     display_put("     Threads : " ESC_BOLD "%zu" ESC_RESET ", CPUs: " ESC_BOLD "%ld" ESC_RESET
-                ", CPU: " ESC_BOLD "%.1lf" ESC_RESET "%% (" ESC_BOLD "%.1lf" ESC_RESET "%%/CPU)\n",
+                ", CPU: " ESC_BOLD "%u" ESC_RESET "%% (" ESC_BOLD "%u" ESC_RESET "%%/CPU)\n",
                 hfuzz->threadsMax, num_cpu, cpuUse, cpuUse / num_cpu);
 
     display_put("       Speed : " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET "/sec"
