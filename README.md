@@ -32,8 +32,9 @@ The tool has been used to find a few interesting security problems in major soft
   * [Multiple bugs in the librsvg library](https://bugzilla.gnome.org/buglist.cgi?query_format=advanced;emailreporter1=1;email1=robert%40swiecki.net;product=librsvg;emailtype1=substring)
   * [Multiple bugs in the poppler library](http://lists.freedesktop.org/archives/poppler/2010-November/006726.html)
   * [Multiple exploitable bugs in IDA-Pro](https://www.hex-rays.com/bugbounty.shtml)
-  * [Use-after-free in OpenSSL - CVE-2016-6309](https://www.openssl.org/news/secadv/20160926.txt)
-  * [Pre-auth crash in OpenSSH](https://anongit.mindrot.org/openssh.git/commit/?id=28652bca29046f62c7045e933e6b931de1d16737)
+  * [Remote Use-after-Free in OpenSSL - CVE-2016-6309](https://www.openssl.org/news/secadv/20160926.txt)
+  * [Remote OOB write in OpenSSL (crash) - CVE-2016-7053](https://www.openssl.org/news/secadv/20161110.txt)
+  * [Pre-auth remote crash in OpenSSH](https://anongit.mindrot.org/openssh.git/commit/?id=28652bca29046f62c7045e933e6b931de1d16737)
   * ... and more
 
 **Other**
