@@ -7,8 +7,7 @@
 
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/github-light.css">
-    <script src="javascripts/scale.fix.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width">
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
@@ -16,18 +15,17 @@
   <body>
     <div class="wrapper">
       <header>
-        <h1 class="header">Honggfuzz</h1>
-        <p class="header">A general-purpose, easy-to-use fuzzer with interesting analysis options. Supports feedback-driven code coverage modes.</p>
+        <h1>Honggfuzz</h1>
+        <p>An easy-to-use software fuzzer: feedback-driven (hardware and software modes), easy-to-use, security oriented</p>
+
+        <p class="view"><a href="https://github.com/google/honggfuzz">View the Project on GitHub <small>google/honggfuzz</small></a></p>
+
 
         <ul>
-          <li class="download"><a class="buttons" href="https://github.com/google/honggfuzz/zipball/master">Download ZIP</a></li>
-          <li class="download"><a class="buttons" href="https://github.com/google/honggfuzz/tarball/master">Download TAR</a></li>
-          <li><a class="buttons github" href="https://github.com/google/honggfuzz">View On GitHub</a></li>
+          <li><a href="https://github.com/google/honggfuzz/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/google/honggfuzz/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/google/honggfuzz">View On <strong>GitHub</strong></a></li>
         </ul>
-
-        <p class="header">This project is maintained by <a class="header name" href="https://github.com/google">google</a></p>
-
-
       </header>
       <section>
         <h1>
@@ -61,9 +59,11 @@
 <li>
 <strong>FreeBSD</strong> - gmake</li>
 <li>
-<strong>Android</strong> - Android SDK/NDK</li>
+<strong>Android</strong> - Android SDK/NDK. Also see <a href="https://github.com/google/honggfuzz/blob/master/docs/Android.md">this detailed doc</a> on how to build and run it</li>
 <li>
 <strong>Windows</strong> - CygWin</li>
+<li>
+<strong>Darwin/OS X</strong> - Xcode 10.8+</li>
 <li>if <strong>Clang/LLVM</strong> is used - the BlocksRuntime Library (libblocksruntime-dev)</li>
 </ul>
 
@@ -84,8 +84,9 @@
 <li><a href="https://bugzilla.gnome.org/buglist.cgi?query_format=advanced;emailreporter1=1;email1=robert%40swiecki.net;product=librsvg;emailtype1=substring">Multiple bugs in the librsvg library</a></li>
 <li><a href="http://lists.freedesktop.org/archives/poppler/2010-November/006726.html">Multiple bugs in the poppler library</a></li>
 <li><a href="https://www.hex-rays.com/bugbounty.shtml">Multiple exploitable bugs in IDA-Pro</a></li>
-<li><a href="https://www.openssl.org/news/secadv/20160926.txt">Use-after-free in OpenSSL - CVE-2016-6309</a></li>
-<li><a href="https://anongit.mindrot.org/openssh.git/commit/?id=28652bca29046f62c7045e933e6b931de1d16737">Pre-auth crash in OpenSSH</a></li>
+<li><a href="https://www.openssl.org/news/secadv/20160926.txt">Remote Use-after-Free in OpenSSL - CVE-2016-6309</a></li>
+<li><a href="https://www.openssl.org/news/secadv/20161110.txt">Remote OOB write in OpenSSL (crash) - CVE-2016-7053</a></li>
+<li><a href="https://anongit.mindrot.org/openssh.git/commit/?id=28652bca29046f62c7045e933e6b931de1d16737">Pre-auth remote crash in OpenSSH</a></li>
 <li>... and more</li>
 </ul>
 
@@ -94,10 +95,11 @@
 <p>This is NOT an official Google product.</p>
       </section>
       <footer>
-        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+        <p>This project is maintained by <a href="https://github.com/google">google</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
       </footer>
     </div>
-    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
-		
+    <script src="javascripts/scale.fix.js"></script>
+    
   </body>
 </html>
