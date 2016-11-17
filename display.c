@@ -74,7 +74,7 @@ static unsigned getCpuUse(long num_cpu)
 
     FILE *f = fopen("/proc/stat", "re");
     if (f == NULL) {
-        return NAN;
+        return 0;
     }
     defer {
         fclose(f);
@@ -84,12 +84,12 @@ static unsigned getCpuUse(long num_cpu)
         (f, "cpu  %" PRIu64 "%" PRIu64 "%" PRIu64 "%" PRIu64, &userT, &niceT, &systemT,
          &idleT) != 4) {
         LOG_W("fscanf('/proc/stat') != 4");
-        return NAN;
+        return 0;
     }
 
     if (prevIdleT == 0UL) {
         prevIdleT = idleT;
-        return NAN;
+        return 0;
     }
 
     uint64_t cpuUse = (num_cpu * sysconf(_SC_CLK_TCK)) - (idleT - prevIdleT);
