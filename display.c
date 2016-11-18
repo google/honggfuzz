@@ -154,7 +154,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put("\n       Phase : " ESC_BOLD "Main" ESC_RESET);
         break;
     case _HF_STATE_DYNAMIC_PRE:
-        display_put("\n       Phase : " ESC_BOLD "Dynamic Dry Run" ESC_RESET);
+        display_put("\n       Phase : " ESC_BOLD "Dry Run" ESC_RESET);
         break;
     case _HF_STATE_DYNAMIC_MAIN:
         display_put("\n       Phase : " ESC_BOLD "Dynamic Main" ESC_RESET);
