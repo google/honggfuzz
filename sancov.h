@@ -33,7 +33,7 @@
 #define HF_UBSAN_EXIT_CODE  105
 
 /* Prefix for sanitizer report files */
-#define kLOGPREFIX          ".hf.san"
+#define kLOGPREFIX          "HF.sanitizer.log"
 
 /* Bitmap size */
 #define _HF_SANCOV_BITMAP_SIZE 0x3FFFFFF
