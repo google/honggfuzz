@@ -289,7 +289,7 @@ typedef struct {
     const char *origFileName;
     char fileName[PATH_MAX];
     char crashFileName[PATH_MAX];
-    char ext[NAME_MAX];
+    char *ext;
     uint64_t pc;
     uint64_t backtrace;
     uint64_t access;
