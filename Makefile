@@ -232,6 +232,10 @@ android:
                   APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) \
                   NDK_TOOLCHAIN=$(ANDROID_NDK_TOOLCHAIN) $(NDK_BUILD_ARGS)
 
+.PHONY: install                 
+install:
+	sudo cp ./honggfuzz /usr/bin/
+
 # DO NOT DELETE
 
 cmdline.o: cmdline.h common.h log.h files.h util.h
