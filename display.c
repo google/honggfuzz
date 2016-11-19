@@ -156,8 +156,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put(ESC_WHITE "  Iterations : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
     if (hfuzz->mutationsMax) {
-        display_put(" (out of: " ESC_BOLD "%zu" ESC_RESET " [" ESC_BOLD "%.2f" ESC_RESET
-                    "%%])", hfuzz->mutationsMax, exeProgress);
+        display_put(" (out of: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET " [" ESC_BOLD "%.2f"
+            ESC_RESET "%%])", hfuzz->mutationsMax, exeProgress);
     }
     switch (ATOMIC_GET(hfuzz->state)) {
     case _HF_STATE_STATIC:
