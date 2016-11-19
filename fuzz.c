@@ -130,22 +130,25 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_ind
 
 static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0644);
-    if (dstfd == -1) {
-        PLOG_E("Couldn't create a temporary file '%s'", fuzzer->fileName);
-        return false;
-    }
-    close(dstfd);
+    char source[128];
+    sprintf(source, "%s%s",hfuzz->inputDir,fuzzer->origFileName);
+    LOG_I("Externally Cmd: %s",hfuzz->externalCommand);
+    files_copyFile(source, fuzzer->fileName, 0);
 
-    LOG_D("Created '%s' as an input file", fuzzer->fileName);
-
+    LOG_I("Created '%s' as an input file", fuzzer->fileName);
+    
     const char *const argv[] = { hfuzz->externalCommand, fuzzer->fileName, NULL };
+    LOG_I("argv: %s", argv[0]);
     if (subproc_System(argv) != 0) {
         LOG_E("Subprocess '%s' returned abnormally", hfuzz->externalCommand);
         return false;
     }
     LOG_D("Subporcess '%s' finished with success", hfuzz->externalCommand);
-
+    /*
+    char cmd[225];
+    sprintf(cmd, "%s %s", "/bin/cat ",fuzzer->fileName);
+    system(cmd);
+    */
     ssize_t rsz = files_readFileToBufMax(fuzzer->fileName, fuzzer->dynamicFile, hfuzz->maxFileSz);
     if (rsz < 0) {
         LOG_W("Couldn't read back '%s' to the buffer", fuzzer->fileName);
@@ -487,7 +490,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzState_t state = fuzz_getState(hfuzz);
     if (state != _HF_STATE_DYNAMIC_MAIN) {
         fuzzer->origFileName = files_basename(files_getFileFromFileq(hfuzz, rnd_index)->path);
-	fuzzer->ext = strrchr(fuzzer->origFileName, '.' );	
+	    fuzzer->ext = strrchr(fuzzer->origFileName, '.' );	
     }
     if(!strcmp(hfuzz->fileExtn, "any")){ 
     	hfuzz->fileExtn = fuzzer->ext;

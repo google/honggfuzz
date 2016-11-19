@@ -357,7 +357,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
                                  MACH_EXCEPTION_CODES, MACHINE_THREAD_STATE) != KERN_SUCCESS) {
         return false;
     }
-
+    //LOG_I("args: %s",args[1])
     int ret = execvp(args[0], args);
     if(ret == -1){LOG_E("execvp error!\n");}
     return false;

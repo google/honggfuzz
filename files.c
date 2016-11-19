@@ -233,18 +233,6 @@ static bool files_readdir(honggfuzz_t * hfuzz)
 
 bool files_init(honggfuzz_t * hfuzz)
 {
-    if (hfuzz->externalCommand) {
-        struct paths_t *file = (struct paths_t *)util_Malloc(sizeof(struct paths_t));
-        snprintf(file->path, sizeof(file->path), "NONE");
-        hfuzz->fileCnt = 1;
-        TAILQ_INSERT_TAIL(&hfuzz->fileq, file, pointers);
-
-        LOG_I
-            ("No input file corpus loaded, the external command '%s' is responsible for creating the fuzz files",
-             hfuzz->externalCommand);
-        return true;
-    }
-
     if (!hfuzz->inputDir) {
         LOG_W("No input file/dir specified");
         return false;
