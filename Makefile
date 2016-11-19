@@ -234,7 +234,7 @@ android:
 
 .PHONY: install                 
 install:
-	sudo cp ./honggfuzz /usr/bin/
+	sudo cp ./honggfuzz /usr/bin/riufuzz
 
 # DO NOT DELETE
 

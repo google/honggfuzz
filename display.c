@@ -220,7 +220,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put(ESC_WHITE " Corpus Size : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
                     ", max size (bytes): " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",
                     hfuzz->dynfileqCnt, hfuzz->maxFileSz);
-        display_put("    Coverage :\n");
+        display_put(ESC_WHITE "    Coverage :\n" ESC_RESET);
     }
 
     /* HW perf specific counters */
@@ -271,7 +271,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put("       *** crashes:        " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     "\n", ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
     }
-    display_put("-----------------------------------[ LOGS ]-----------------------------------\n");
+    display_put("--------------------------------------[ LOGS ]--------------------------------------\n");
 }
 
 extern void display_display(honggfuzz_t * hfuzz)

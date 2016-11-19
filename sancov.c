@@ -372,7 +372,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     snprintf(covFile, sizeof(covFile), "%s/%s/%d.sancov.map", hfuzz->workDir, _HF_SANCOV_DIR,
              targetPid);
     if (!files_exists(covFile)) {
-        LOG_D("sancov map file not found");
+        LOG_E("sancov map file not found");
         return false;
     }
     FILE *fCovMap = fopen(covFile, "rb");
