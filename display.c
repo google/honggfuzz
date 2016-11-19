@@ -63,7 +63,7 @@ static void display_put(const char *fmt, ...)
 static void display_printKMG(uint64_t val)
 {
     if (val >= 1000000000UL) {
-        display_put(" [%.2lfG]", (double)val / 1000000.0);
+        display_put(" [%.2lfG]", (double)val / 1000000000.0);
     } else if (val >= 1000000UL) {
         display_put(" [%.2lfM]", (double)val / 1000000.0);
     } else if (val >= 1000UL) {
