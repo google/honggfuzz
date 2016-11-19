@@ -151,7 +151,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     
     display_put("%s", ESC_CLEAR);
-    display_put("----------------------------[ %s v%s (" ESC_BOLD ESC_PINK "%s" ESC_RESET") ]---------------------------\n",
+    display_put("----------------------------[ %s v%s " ESC_BOLD ESC_PINK "(%s)" ESC_RESET" ]---------------------------\n",
                 PROG_NAME, PROG_VERSION, target );
     display_put(ESC_WHITE "  Iterations : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
