@@ -231,7 +231,6 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                       .hwCnts = {
                                  .cpuInstrCnt = 0ULL,
                                  .cpuBranchCnt = 0ULL,
-                                 .customCnt = 0ULL,
                                  .bbCnt = 0ULL,
                                  .newBBCnt = 0ULL,
                                  .softCntPc = 0ULL,
@@ -353,30 +352,28 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     int64_t diff0 = hfuzz->linux.hwCnts.cpuInstrCnt - fuzzer->linux.hwCnts.cpuInstrCnt;
     int64_t diff1 = hfuzz->linux.hwCnts.cpuBranchCnt - fuzzer->linux.hwCnts.cpuBranchCnt;
-    int64_t diff2 = hfuzz->linux.hwCnts.customCnt - fuzzer->linux.hwCnts.customCnt;
 
     /*
      * Coverage is the primary counter, the rest is secondary, and taken into consideration only
      * if the coverage counter has not been changed
      */
     if (fuzzer->linux.hwCnts.newBBCnt > 0 || softCntPc > 0 || softCntCmp > 0 || diff0 < 0
-        || diff1 < 0 || diff2 < 0) {
+        || diff1 < 0) {
         hfuzz->linux.hwCnts.cpuInstrCnt = fuzzer->linux.hwCnts.cpuInstrCnt;
         hfuzz->linux.hwCnts.cpuBranchCnt = fuzzer->linux.hwCnts.cpuBranchCnt;
-        hfuzz->linux.hwCnts.customCnt = fuzzer->linux.hwCnts.customCnt;
         hfuzz->linux.hwCnts.bbCnt += fuzzer->linux.hwCnts.newBBCnt;
         hfuzz->linux.hwCnts.softCntPc += softCntPc;
         hfuzz->linux.hwCnts.softCntCmp += softCntCmp;
 
         LOG_I
-            ("New file size: %zu, Feedback: New (instr,branch,soft,perf,custom): %" PRIu64 "/%"
-             PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Total: %" PRIu64 "/%" PRIu64
+            ("New: %zu B., (instr,branch,soft,soft-cmp,perf): %" PRIu64 "/%"
+             PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Total: %" PRIu64
              "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
              fuzzer->linux.hwCnts.cpuInstrCnt, fuzzer->linux.hwCnts.cpuBranchCnt, softCntPc,
-             softCntCmp, fuzzer->linux.hwCnts.newBBCnt, fuzzer->linux.hwCnts.customCnt,
+             softCntCmp, fuzzer->linux.hwCnts.newBBCnt,
              hfuzz->linux.hwCnts.cpuInstrCnt, hfuzz->linux.hwCnts.cpuBranchCnt,
              hfuzz->linux.hwCnts.softCntPc, hfuzz->linux.hwCnts.softCntCmp,
-             hfuzz->linux.hwCnts.bbCnt, hfuzz->linux.hwCnts.customCnt);
+             hfuzz->linux.hwCnts.bbCnt);
 
         fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
@@ -458,7 +455,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     fuzzer->linux.hwCnts.cpuInstrCnt = 0ULL;
     fuzzer->linux.hwCnts.cpuBranchCnt = 0ULL;
-    fuzzer->linux.hwCnts.customCnt = 0ULL;
     fuzzer->linux.hwCnts.bbCnt = 0ULL;
     fuzzer->linux.hwCnts.newBBCnt = 0ULL;
     fuzzer->linux.perfMmapBuf = NULL;
