@@ -40,6 +40,7 @@
 #define ESC_NAV(x,y) "\033["#x";"#y"H"
 #define ESC_BOLD "\033[1m"
 #define ESC_RED "\033[31m"
+#define ESC_PINK "\033[35m"
 #define ESC_RESET "\033[0m"
 
 #if defined(_HF_ARCH_LINUX)
@@ -140,9 +141,16 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     /* The lock should be acquired before any output is printed on the screen */
     MX_SCOPED_LOCK(logMutexGet());
 
+    char *target = strrchr(hfuzz->cmdline[0], '/');   
+    if(target){
+        target = target+1; // Get rid of the inclined shoulder
+    }else{
+        target = hfuzz->cmdline[0];  // only exec file name
+    }
+    
     display_put("%s", ESC_CLEAR);
-    display_put("----------------------------[ %s v%s ]---------------------------\n",
-                PROG_NAME, PROG_VERSION);
+    display_put("----------------------------[ %s v%s (" ESC_BOLD ESC_PINK "%s" ESC_RESET") ]---------------------------\n",
+                PROG_NAME, PROG_VERSION, target );
     display_put("  Iterations : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
     if (hfuzz->mutationsMax) {

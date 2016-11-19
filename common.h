@@ -38,7 +38,7 @@
 #endif
 
 #define PROG_NAME "honggfuzz"
-#define PROG_VERSION "0.9alpha"
+#define PROG_VERSION "0.9"
 #define PROG_AUTHORS "Robert Swiecki <swiecki@google.com> et al.,\nCopyright 2010-2015 by Google Inc. All Rights Reserved."
 
 /* Go-style defer implementation */
