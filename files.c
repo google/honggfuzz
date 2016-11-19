@@ -36,6 +36,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "log.h"
 #include "util.h"
@@ -63,23 +64,35 @@ ssize_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
 
 bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flags)
 {
-    int fd = open(fileName, flags, 0644);
-    if (fd == -1) {
-        PLOG_W("Couldn't open '%s' for R/O", fileName);
-        return false;
-    }
-    defer {
-        close(fd);
-    };
+    extern int errno;
 
-    if (files_writeToFd(fd, buf, fileSz) == false) {
-        PLOG_W("Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName, fd);
-        unlink(fileName);
-        return false;
-    }
+    while(1){
+        int fd = open(fileName, flags, 0644);
+        if (fd == -1) {
+            PLOG_W("Couldn't open '%s' for R/O", fileName);
+            if(errno == ENOSPC){
+                PLOG_W("Please Clean Your Disk Space !!!");
+                printf("Clean Finish(y/n): ");
+                if(getchar() == 'y'){
+                    continue;
+                }
+            }
+            return false;
+        }
+    
+        defer {
+            close(fd);
+        };
 
-    LOG_D("Written '%zu' bytes to '%s'", fileSz, fileName);
-    return true;
+        if (files_writeToFd(fd, buf, fileSz) == false) {
+            PLOG_W("Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName, fd);
+            unlink(fileName);
+            return false;
+        }
+
+        LOG_D("Written '%zu' bytes to '%s'", fileSz, fileName);
+        return true;
+    }
 }
 
 bool files_writeToFd(int fd, uint8_t * buf, size_t fileSz)
