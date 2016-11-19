@@ -130,15 +130,14 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_ind
 
 static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    char source[128];
-    sprintf(source, "%s%s",hfuzz->inputDir,fuzzer->origFileName);
-    LOG_I("Externally Cmd: %s",hfuzz->externalCommand);
-    files_copyFile(source, fuzzer->fileName, 0);
+    char cmd[128];
+    sprintf(cmd, "/bin/cp %s%s %s",hfuzz->inputDir, fuzzer->origFileName, fuzzer->fileName);
+    system(cmd);
 
     LOG_I("Created '%s' as an input file", fuzzer->fileName);
-    
+
     const char *const argv[] = { hfuzz->externalCommand, fuzzer->fileName, NULL };
-    LOG_I("argv: %s", argv[0]);
+    //LOG_I("argv: %s", argv[0]);
     if (subproc_System(argv) != 0) {
         LOG_E("Subprocess '%s' returned abnormally", hfuzz->externalCommand);
         return false;
