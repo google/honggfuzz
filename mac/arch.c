@@ -363,20 +363,6 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     return false;
 }
 
-static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
-{
-    if (!hfuzz->tmOut) {
-        return;
-    }
-    int64_t curMillis = util_timeNowMillis();
-    int64_t diffMillis = curMillis - fuzzer->timeStartedMillis;
-    if (diffMillis > ((hfuzz->tmOut + 2) * 1000)) {
-        LOG_W("PID %d took too much time (limit %ld s). Sending SIGKILL",
-              fuzzer->pid, hfuzz->tmOut);
-        kill(fuzzer->pid, SIGKILL);
-    }
-}
-
 void arch_prepareChild(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
 
@@ -387,7 +373,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     /*
      * First check manually if we have expired children
      */
-    arch_checkTimeLimit(hfuzz, fuzzer);
+    subproc_checkTimeLimit(hfuzz, fuzzer);
 
     /*
      * Now check for signals using wait4
@@ -401,7 +387,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         int status = 0;
         while (wait4(fuzzer->pid, &status, options, NULL) != fuzzer->pid) {
             if (hfuzz->tmOut) {
-                arch_checkTimeLimit(hfuzz, fuzzer);
+                subproc_checkTimeLimit(hfuzz, fuzzer);
                 usleep(0.20 * 1000000);
             }
         }

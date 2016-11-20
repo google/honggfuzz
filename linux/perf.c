@@ -46,8 +46,8 @@
 #include "../util.h"
 #include "pt.h"
 
-#define _HF_PERF_MAP_SZ (1024 * 1024)
-#define _HF_PERF_AUX_SZ (1024 * 1024 * 8)
+#define _HF_PERF_MAP_SZ (1024 * 512)
+#define _HF_PERF_AUX_SZ (1024 * 1024)
 /* PERF_TYPE for Intel_PT/BTS -1 if none */
 static int32_t perfIntelPtPerfType = -1;
 static int32_t perfIntelBtsPerfType = -1;
@@ -215,7 +215,8 @@ static bool arch_perfOpen(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t p
     pem->aux_offset = pem->data_offset + pem->data_size;
     pem->aux_size = _HF_PERF_AUX_SZ;
     fuzzer->linux.perfMmapAux =
-        mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
+        mmap(NULL, pem->aux_size, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, pem->aux_offset);
+
     if (fuzzer->linux.perfMmapAux == MAP_FAILED) {
         munmap(fuzzer->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
         fuzzer->linux.perfMmapBuf = NULL;

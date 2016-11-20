@@ -192,6 +192,7 @@ void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     for (;;) {
+        subproc_checkTimeLimit(hfuzz, fuzzer);
         if (hfuzz->persistent) {
             struct pollfd pfd = {
                 .fd = fuzzer->persistentSock,
