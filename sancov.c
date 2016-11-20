@@ -518,11 +518,11 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     /* Iterate over data buffer containing list of hit BB addresses */
     while (pos < dataFileSz) {
-        uint64_t bbAddr = pReadRawBBAddrFunc(dataBuf + pos);
+        uint64_t bbAddr = pReadRawBBAddrFunc(dataBuf + pos);    // uint8_t（1字节）转换为uint64_t
         pos += pivot;
         /* Don't bother for zero BB addr (inserted checks without hit) */
         if (bbAddr == 0x0) {
-            nZeroBBs++;
+            nZeroBBs++; // 为0则代表未命中的指令分支
             continue;
         } else {
             /* Find best hit based on start addr & verify range for errors */
