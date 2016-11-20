@@ -2,12 +2,12 @@
 
 **Description**
 
-A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See [USAGE](https://github.com/google/honggfuzz/blob/master/docs/USAGE.md) for details
+A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See [USAGE](docs/USAGE.md) for details
 
-  * Supports several hardware-based (CPU) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) methods
-  * It works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md)
-  * Supports persistent modes of fuzzing (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)
-  * [Can fuzz remote/standalone long-lasting processes](https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md) (e.g. network servers like Apache's httpd and ISC's bind)
+  * Supports several hardware-based (CPU) and software-based [feedback-driven fuzzing](docs/FeedbackDrivenFuzzing.md) methods
+  * It works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and [Android](docs/Android.md)
+  * Supports persistent modes of fuzzing (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that [here](docs/PersistentFuzzing.md)
+  * [Can fuzz remote/standalone long-lasting processes](docs/AttachingToPid.md) (e.g. network servers like Apache's httpd and ISC's bind)
 
 **Code**
 
@@ -18,7 +18,7 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
   * **Linux** - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev)
   * **FreeBSD** - gmake
-  * **Android** - Android SDK/NDK. Also see [this detailed doc](https://github.com/google/honggfuzz/blob/master/docs/Android.md) on how to build and run it
+  * **Android** - Android SDK/NDK. Also see [this detailed doc](docs/Android.md) on how to build and run it
   * **Windows** - CygWin
   * **Darwin/OS X** - Xcode 10.8+
   * if **Clang/LLVM** is used - the BlocksRuntime Library (libblocksruntime-dev)
