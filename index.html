@@ -6,8 +6,10 @@
     <title>Honggfuzz by google</title>
 
     <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/github-light.css">
-    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="stylesheets/github-dark.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
@@ -17,10 +19,7 @@
       <header>
         <h1>Honggfuzz</h1>
         <p>An easy-to-use software fuzzer: feedback-driven (hardware and software modes), easy-to-use, security oriented</p>
-
         <p class="view"><a href="https://github.com/google/honggfuzz">View the Project on GitHub <small>google/honggfuzz</small></a></p>
-
-
         <ul>
           <li><a href="https://github.com/google/honggfuzz/zipball/master">Download <strong>ZIP File</strong></a></li>
           <li><a href="https://github.com/google/honggfuzz/tarball/master">Download <strong>TAR Ball</strong></a></li>
@@ -33,16 +32,16 @@
 
 <p><strong>Description</strong></p>
 
-<p>A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See <a href="docs/USAGE.md">USAGE</a> for details</p>
+<p>A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See <a href="https://github.com/google/honggfuzz/blob/master/docs/USAGE.md">USAGE</a> for details</p>
 
 <ul>
-<li>Supports several hardware-based (CPU) and software-based <a href="docs/FeedbackDrivenFuzzing.md">feedback-driven fuzzing</a> methods</li>
-<li>It works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and <a href="docs/Android.md">Android</a>
+<li>Supports several hardware-based (CPU) and software-based <a href="https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md">feedback-driven fuzzing</a> methods</li>
+<li>It works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and <a href="https://github.com/google/honggfuzz/blob/master/docs/Android.md">Android</a>
 </li>
-<li>Supports persistent modes of fuzzing (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that <a href="docs/PersistentFuzzing.md">here</a>
+<li>Supports persistent modes of fuzzing (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that <a href="https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md">here</a>
 </li>
 <li>
-<a href="docs/AttachingToPid.md">Can fuzz remote/standalone long-lasting processes</a> (e.g. network servers like Apache's httpd and ISC's bind)</li>
+<a href="https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md">Can fuzz remote/standalone long-lasting processes</a> (e.g. network servers like Apache's httpd and ISC's bind)</li>
 </ul>
 
 <p><strong>Code</strong></p>
@@ -61,7 +60,7 @@
 <li>
 <strong>FreeBSD</strong> - gmake</li>
 <li>
-<strong>Android</strong> - Android SDK/NDK. Also see <a href="docs/Android.md">this detailed doc</a> on how to build and run it</li>
+<strong>Android</strong> - Android SDK/NDK. Also see <a href="https://github.com/google/honggfuzz/blob/master/docs/Android.md">this detailed doc</a> on how to build and run it</li>
 <li>
 <strong>Windows</strong> - CygWin</li>
 <li>
@@ -97,12 +96,12 @@
 
 <p>This is NOT an official Google product.</p>
       </section>
-      <footer>
-        <p>This project is maintained by <a href="https://github.com/google">google</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
-      </footer>
     </div>
-    <script src="javascripts/scale.fix.js"></script>
+    <footer>
+      <p>Project maintained by <a href="https://github.com/google">google</a></p>
+      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
+    </footer>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
     
   </body>
 </html>
