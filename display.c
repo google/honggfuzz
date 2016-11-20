@@ -82,7 +82,7 @@ static double getCpuUse(long num_cpu)
     defer {
         fclose(f);
     };
-    uint64_t userT, niceT, systemT, idleT;
+    uint64_t userT, niceT, systemT, idleT; 
     if (fscanf
         (f, "cpu  %" PRIu64 "%" PRIu64 "%" PRIu64 "%" PRIu64, &userT, &niceT, &systemT,
          &idleT) != 4) {
@@ -192,8 +192,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     double cpuUse = getCpuUse(num_cpu);
     display_put(ESC_WHITE "     Threads : " ESC_RESET ESC_BOLD "%zu" ESC_RESET ", CPUs: " ESC_BOLD "%ld" ESC_RESET
-                ", CPU: " ESC_BOLD "%.1lf" ESC_RESET "%% (" ESC_BOLD "%.1lf" ESC_RESET "%%/CPU)\n",
-                hfuzz->threadsMax, num_cpu, cpuUse, cpuUse / num_cpu);
+                ", CPU: " ESC_BOLD "%.1lf" ESC_RESET "%%\n",
+                hfuzz->threadsMax, num_cpu, cpuUse / num_cpu);
 
     display_put(ESC_WHITE "       Speed : " ESC_RESET ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET "/sec"
                 " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n", exec_per_sec,
