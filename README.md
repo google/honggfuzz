@@ -1,5 +1,7 @@
 # honggfuzz #
 
+![](./screen.png)
+
 **Description**
 
   * A general-purpose, easy-to-use fuzzer with interesting analysis options. See [USAGE](https://github.com/google/honggfuzz/blob/master/docs/USAGE.md) for details
