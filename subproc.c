@@ -315,13 +315,20 @@ static bool subproc_persistentSendFile(fuzzer_t * fuzzer)
     return true;
 }
 
-void subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+bool subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
+    if (subproc_New(hfuzz, fuzzer) == false) {
+        LOG_E("subproc_New()");
+        return false;
+    }
+
     arch_prepareChild(hfuzz, fuzzer);
     if (hfuzz->persistent == true && subproc_persistentSendFile(fuzzer) == false) {
         LOG_W("Could not send file contents to the persistent process");
     }
     arch_reapChild(hfuzz, fuzzer);
+
+    return true;
 }
 
 uint8_t subproc_System(const char *const argv[])

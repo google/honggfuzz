@@ -254,10 +254,9 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             return false;
         }
 
-        if (subproc_New(hfuzz, &vFuzzer) == false) {
-            PLOG_F("subproc_New()");
-        }
-        subproc_Run(hfuzz, &vFuzzer);
+        if (subproc_Run(hfuzz, &vFuzzer) == false) {           
+            LOG_F("subproc_Run()");
+         }
 
         /* If stack hash doesn't match skip name tag and exit */
         if (crashedFuzzer->backtrace != vFuzzer.backtrace) {
@@ -515,10 +514,9 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
     }
 
-    if (subproc_New(hfuzz, fuzzer) == false) {
-        PLOG_F("subproc_New()");
+    if (subproc_Run(hfuzz, fuzzer) == false) {
+        LOG_F("subproc_Run()");
     }
-    subproc_Run(hfuzz, fuzzer);
 
     if (hfuzz->persistent == false) {
         unlink(fuzzer->fileName);
@@ -537,10 +535,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
     }
 
-    {
-        MX_SCOPED_LOCK(&hfuzz->report_mutex);
-        report_Report(hfuzz, fuzzer->report);
-    }
+    report_Report(hfuzz, fuzzer->report);
 
     if (state == _HF_STATE_DYNAMIC_PRE && ATOMIC_PRE_INC(hfuzz->doneFileIndex) >= hfuzz->fileCnt) {
         fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_MAIN);

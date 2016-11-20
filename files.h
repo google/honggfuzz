@@ -64,4 +64,6 @@ extern bool files_readPidFromFile(const char *fileName, pid_t * pidPtr);
 
 extern struct paths_t *files_getFileFromFileq(honggfuzz_t * hfuzz, size_t index);
 
+extern size_t files_parseSymbolFilter(const char *inFIle, char ***filterList);
+
 #endif
