@@ -151,7 +151,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     
     display_put("%s", ESC_CLEAR);
-    display_put("----------------------------[ %s v%s " ESC_BOLD ESC_PINK "(%s)" ESC_RESET" ]---------------------------\n",
+    display_put("----------------------------[ " ESC_BOLD "%s v%s "  ESC_PINK "(%s)" ESC_RESET" ]---------------------------\n",
                 PROG_NAME, PROG_VERSION, target );
     display_put(ESC_WHITE "  Iterations : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
@@ -161,10 +161,10 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     switch (ATOMIC_GET(hfuzz->state)) {
     case _HF_STATE_STATIC:
-        display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BOLD "Static Main" ESC_RESET);
+        display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BOLD "Main" ESC_RESET);
         break;
     case _HF_STATE_DYNAMIC_PRE:
-        display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BOLD "Dynamic Pre" ESC_RESET);
+        display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BOLD "Dry Run" ESC_RESET);
         break;
     case _HF_STATE_DYNAMIC_MAIN:
         display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BOLD "Dynamic Main" ESC_RESET);
@@ -267,7 +267,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put(ESC_YELLOW "       *** crashes:        " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     "\n", ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
     }
-    display_put("--------------------------------------[ LOGS ]--------------------------------------\n");
+    display_put("--------------------------------------[ " ESC_BOLD "LOGS" ESC_RESET 
+                " ]--------------------------------------\n");
 }
 
 extern void display_display(honggfuzz_t * hfuzz)
