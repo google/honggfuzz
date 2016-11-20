@@ -109,8 +109,7 @@ typedef enum {
     _HF_DYNFILE_BTS_BLOCK = 0x8,
     _HF_DYNFILE_BTS_EDGE = 0x10,
     _HF_DYNFILE_IPT_BLOCK = 0x20,
-    _HF_DYNFILE_CUSTOM = 0x40,
-    _HF_DYNFILE_SOFT = 0x80,
+    _HF_DYNFILE_SOFT = 0x40,
 } dynFileMethod_t;
 
 typedef struct {
@@ -207,7 +206,7 @@ typedef struct {
 
 typedef struct {
     char **cmdline;
-    char cmdline_txt[PATH_MAX];
+    char cmdline_txt[61];
     char *inputDir;
     bool nullifyStdio;
     bool fuzzStdin;
@@ -278,6 +277,12 @@ typedef struct {
         pid_t pid;
         const char *pidFile;
         char *pidCmd;
+        const char *symsBlFile;
+        char **symsBl;
+        size_t symsBlCnt;
+        const char *symsWlFile;
+        char **symsWl;
+        size_t symsWlCnt;
     } linux;
 } honggfuzz_t;
 

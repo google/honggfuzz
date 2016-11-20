@@ -83,6 +83,8 @@ static void cmdlineHelp(const char *pname, struct custom_option *opts)
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -z -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" Use persistent mode (libhfuzz/persistent.c):");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -- /usr/bin/tiffinfo_persistent");
+    LOG_HELP (" Use persistent mode (libhfuzz/persistent.c) and compile-time instrumentation (libhfuzz/instrument.c):");
+    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -z -- /usr/bin/tiffinfo_persistent");
 #if defined(_HF_ARCH_LINUX)
     LOG_HELP(" Run the binary over a dynamic file, maximize total no. of instructions:");
     LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_instr -- /usr/bin/tiffinfo -D "
@@ -94,13 +96,10 @@ static void cmdlineHelp(const char *pname, struct custom_option *opts)
     LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_bts_block -- /usr/bin/tiffinfo -D "
                   _HF_FILE_PLACEHOLDER);
     LOG_HELP(" Run the binary over a dynamic file, maximize unique branches (edges) via BTS:");
-    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_bts_edge -- /usr/bin/tiffinfo -D ");
+    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_bts_edge -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
     LOG_HELP
-        (" Run the binary over a dynamic file, maximize unique code blocks via Intel Processor Trace:");
+        (" Run the binary over a dynamic file, maximize unique code blocks via Intel Processor Trace (requires libipt.so):");
     LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_ipt_block -- /usr/bin/tiffinfo -D "
-                  _HF_FILE_PLACEHOLDER);
-    LOG_HELP(" Run the binary over a dynamic file, maximize custom counters (experimental):");
-    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_custom -- /usr/bin/tiffinfo -D "
                   _HF_FILE_PLACEHOLDER);
 #endif                          /* defined(_HF_ARCH_LINUX) */
 }
@@ -226,6 +225,12 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             .pid = 0,
             .pidFile = NULL,
             .pidCmd = NULL,
+            .symsBlFile = NULL,
+            .symsBlCnt = 0,
+            .symsBl = NULL,
+            .symsWlFile = NULL,
+            .symsWlCnt = 0,
+            .symsWl = NULL,
         },
     };
     /*  *INDENT-ON* */
@@ -262,11 +267,13 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
         {{"save_all", no_argument, NULL, 'u'}, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames"},
         {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
-        {{"instrument", no_argument, NULL, 'z'}, "Enable compile-time instrumentation (link with libraries/instrument.a)"},
+        {{"instrument", no_argument, NULL, 'z'}, "Enable compile-time instrumentation (link with libhfuzz/libhfuzz.a)"},
         {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
-        {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libraries/persistent.c)"},
+        {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libhfuzz/libhfuzz.a)"},
 
 #if defined(_HF_ARCH_LINUX)
+        {{"linux_symbols_bl", required_argument, NULL, 0x504}, "Symbols blacklist filter file (one entry per line)"},
+        {{"linux_symbols_wl", required_argument, NULL, 0x505}, "Symbols whitelist filter file (one entry per line)"},
         {{"linux_pid", required_argument, NULL, 'p'}, "Attach to a pid (and its thread group)"},
         {{"linux_file_pid", required_argument, NULL, 0x502}, "Attach to pid (and its thread group) read from file"},
         {{"linux_addr_low_limit", required_argument, NULL, 0x500}, "Address limit (from si.si_addr) below which crashes are not reported, (default: '0')"},
@@ -276,8 +283,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"linux_perf_branch", no_argument, NULL, 0x511}, "Use PERF_COUNT_HW_BRANCH_INSTRUCTIONS perf"},
         {{"linux_perf_bts_block", no_argument, NULL, 0x512}, "Use Intel BTS to count unique blocks"},
         {{"linux_perf_bts_edge", no_argument, NULL, 0x513}, "Use Intel BTS to count unique edges"},
-        {{"linux_perf_ipt_block", no_argument, NULL, 0x514}, "Use Intel Processor Trace to count unique blocks"},
-        {{"linux_perf_custom", no_argument, NULL, 0x520}, "Custom counter (based on GS register for x86_64)"},
+        {{"linux_perf_ipt_block", no_argument, NULL, 0x514}, "Use Intel Processor Trace to count unique blocks (requires libipt.so)"},
 #endif  // defined(_HF_ARCH_LINUX)
         {{0, 0, 0, 0}, NULL},
     };
@@ -414,6 +420,12 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         case 0x503:
             hfuzz->linux.dynamicCutOffAddr = strtoull(optarg, NULL, 0);
             break;
+        case 0x504:
+            hfuzz->linux.symsBlFile = optarg;
+            break;
+        case 0x505:
+            hfuzz->linux.symsWlFile = optarg;
+            break;
         case 0x510:
             hfuzz->dynFileMethod |= _HF_DYNFILE_INSTR_COUNT;
             break;
@@ -428,9 +440,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x514:
             hfuzz->dynFileMethod |= _HF_DYNFILE_IPT_BLOCK;
-            break;
-        case 0x520:
-            hfuzz->dynFileMethod |= _HF_DYNFILE_CUSTOM;
             break;
         default:
             cmdlineUsage(argv[0], custom_opts);
@@ -497,6 +506,13 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->cmdline[0]);
     for (size_t i = 1; hfuzz->cmdline[i]; i++) {
         util_ssnprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), " %s", hfuzz->cmdline[i]);
+        /* 命令行过长时用省略号代替
+        if (strlen(hfuzz->cmdline_txt) == (sizeof(hfuzz->cmdline_txt) - 1)) {
+            hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 3] = '.';
+            hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 2] = '.';
+            hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 1] = '.';
+        }
+        */
     }
 
     return true;
