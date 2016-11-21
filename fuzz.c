@@ -356,8 +356,13 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
      */
     if (fuzzer->linux.hwCnts.newBBCnt > 0 || softCntPc > 0 || softCntCmp > 0 || diff0 < 0
         || diff1 < 0) {
-        hfuzz->linux.hwCnts.cpuInstrCnt = fuzzer->linux.hwCnts.cpuInstrCnt;
-        hfuzz->linux.hwCnts.cpuBranchCnt = fuzzer->linux.hwCnts.cpuBranchCnt;
+
+        if (diff0 < 0) {
+            hfuzz->linux.hwCnts.cpuInstrCnt = fuzzer->linux.hwCnts.cpuInstrCnt;
+        }
+        if (diff1 < 0) {
+            hfuzz->linux.hwCnts.cpuBranchCnt = fuzzer->linux.hwCnts.cpuBranchCnt;
+        }
         hfuzz->linux.hwCnts.bbCnt += fuzzer->linux.hwCnts.newBBCnt;
         hfuzz->linux.hwCnts.softCntPc += softCntPc;
         hfuzz->linux.hwCnts.softCntCmp += softCntCmp;
