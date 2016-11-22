@@ -211,7 +211,11 @@ static bool files_readdir(honggfuzz_t * hfuzz)
     }
 
     if (hfuzz->maxFileSz == 0UL) {
-        hfuzz->maxFileSz = maxSize;
+        if (maxSize < 128U) {
+            hfuzz->maxFileSz = 128U;
+        } else {
+            hfuzz->maxFileSz = maxSize;
+        }
     }
     LOG_I("%zu input files have been added to the list. Max file size: %zu", hfuzz->fileCnt,
           hfuzz->maxFileSz);
