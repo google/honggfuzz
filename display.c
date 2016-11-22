@@ -161,13 +161,13 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     switch (ATOMIC_GET(hfuzz->state)) {
     case _HF_STATE_STATIC:
-        display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BOLD "Dumb Fuzzing" ESC_RESET);
+        display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BOLD "Static Fuzzing" ESC_RESET);
         break;
     case _HF_STATE_DYNAMIC_PRE:
-        display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BOLD "Coverage-Feedback" ESC_RESET);
+        display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BOLD "Dumb Fuzzing" ESC_RESET);
         break;
     case _HF_STATE_DYNAMIC_MAIN:
-        display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BOLD "Instrumented-Feedback" ESC_RESET);
+        display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BOLD "Feedback-driven Fuzzing" ESC_RESET);
         break;
     default:
         display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BOLD "Unknown" ESC_RESET);
