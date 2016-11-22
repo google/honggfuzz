@@ -2,6 +2,16 @@
 
 ![](./screen.png)
 
+**2016-11-20 更新说明**
+
+1. 修改显示内容，高亮标题，精简内容;
+2. 增加`-e any`参数选项，以保持原始样本后缀，因为有些GUI程序有检测后缀名（默认为`.fuzz`）,设置后则允许同时fuzzing多种文件格式，比如图片格式;
+3. fix bug: 增加Windows平台下的超时检测，若超时则自己关闭程序;
+4. 修复`-C`代码覆盖率驱动导致无语料库输入则中断的bug，保证能生成sancov.map等文件;
+5. 增加扩展fuzzer的功能，通过`-c`参数（原始功能无法使用，只会生成空文件导致程序中断）指定fuzzer文件名，默认传递样本（文件名为.honggfuzz.*的格式），它会代替原有的fuzzer策略；
+6. 当硬盘空间不足时，自动提醒并等待用户清理完毕后，输入`y`命令即可继续fuzzing。
+7. 增加execvp执行结果检测，以匹配最新版MacOS，虽无实际功能，但有时可能会无法正常启动目标程序。
+
 **Description**
 
   * A general-purpose, easy-to-use fuzzer with interesting analysis options. See [USAGE](https://github.com/google/honggfuzz/blob/master/docs/USAGE.md) for details
