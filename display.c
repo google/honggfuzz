@@ -100,16 +100,19 @@ static double getCpuUse(long num_cpu)
     return (double)cpuUse / sysconf(_SC_CLK_TCK) * 100;
 }
 
-static void display_displayLocked(honggfuzz_t * hfuzz)
-{
-    unsigned long elapsed_second = (unsigned long)(time(NULL) - hfuzz->timeStart);
+static char* get_time_elapsed(uint64_t start_time) {
+   
+    unsigned long elapsed_second;
+    elapsed_second = (unsigned long)(time(NULL) - start_time);
+   
     unsigned int day, hour, min, second;
-    char time_elapsed_str[64];
+    static char str_time_elapsed[64];
+
     if (elapsed_second < 24 * 3600) {
         hour = elapsed_second / 3600;
         min = (elapsed_second - 3600 * hour) / 60;
         second = elapsed_second - hour * 3600 - min * 60;
-        snprintf(time_elapsed_str, sizeof(time_elapsed_str), "%u hrs %u min %u sec", hour,
+        snprintf(str_time_elapsed, sizeof(str_time_elapsed), "%u hrs %u min %u sec", hour,
                  min, second);
     } else {
         day = elapsed_second / 24 / 3600;
@@ -117,10 +120,20 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         hour = elapsed_second / 3600;
         min = (elapsed_second - 3600 * hour) / 60;
         second = elapsed_second - hour * 3600 - min * 60;
-        snprintf(time_elapsed_str, sizeof(time_elapsed_str),
+        snprintf(str_time_elapsed, sizeof(str_time_elapsed),
                  "%u days %u hrs %u min %u sec", day, hour, min, second);
     }
+    return str_time_elapsed;
+}    
 
+static void display_displayLocked(honggfuzz_t * hfuzz)
+{
+    char *time_elapsed_str;
+    unsigned long elapsed_second;
+
+    elapsed_second = (unsigned long)(time(NULL) - hfuzz->timeStart);
+    time_elapsed_str = get_time_elapsed(hfuzz->timeStart);
+   
     size_t curr_exec_cnt = ATOMIC_GET(hfuzz->mutationsCnt);
     /*
      * We increase the mutation counter unconditionally in threads, but if it's
@@ -151,7 +164,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     
     display_put("%s", ESC_CLEAR);
-    display_put("----------------------------[ " ESC_BOLD "%s v%s "  ESC_PINK "(%s)" ESC_RESET" ]---------------------------\n",
+    display_put("----------------------------[ " ESC_BOLD ESC_YELLOW "%s " ESC_RESET ESC_BOLD"v%s "  ESC_PINK "(%s)" ESC_RESET" ]---------------------------\n",
                 PROG_NAME, PROG_VERSION, target );
     display_put(ESC_WHITE "  Iterations : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
@@ -258,13 +271,14 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         uint64_t hitBB = ATOMIC_GET(hfuzz->sanCovCnts.hitBBCnt);
         uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
         float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
-        display_put(ESC_YELLOW "       *** total hit #bb:  " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
+        display_put(ESC_YELLOW "       *** hit #bb:     " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     " (coverage " ESC_BOLD "%.2f" ESC_RESET "%%)\n", hitBB, covPer);
-        display_put(ESC_YELLOW "       *** total #dso:     " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
+        display_put(ESC_YELLOW "       *** total #dso:  " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     " (instrumented only)\n", ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
-        display_put(ESC_YELLOW "       *** discovered #bb: " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
-                    " (new from input seed)\n", ATOMIC_GET(hfuzz->sanCovCnts.newBBCnt));
-        display_put(ESC_YELLOW "       *** crashes:        " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
+        display_put(ESC_YELLOW "       *** new #bb:     " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
+                    " (last update:" ESC_BOLD " %s)\n" ESC_RESET, ATOMIC_GET(hfuzz->sanCovCnts.newBBCnt), 
+                        get_time_elapsed(ATOMIC_GET(hfuzz->sanCovCnts.lastBBTime)));          
+        display_put(ESC_YELLOW "       *** crashes:     " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     "\n", ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
     }
     display_put("--------------------------------------[ " ESC_BOLD "LOGS" ESC_RESET 

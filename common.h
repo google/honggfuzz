@@ -128,6 +128,7 @@ typedef struct {
     uint64_t dsoCnt;
     uint64_t iDsoCnt;
     uint64_t newBBCnt;
+    uint64_t lastBBTime;
     uint64_t crashesCnt;
 } sancovcnt_t;
 

@@ -576,7 +576,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                     }
 
                     /* Also increase new BBs counter at worker's thread runtime data */
-                    mapsBuf[bestFit].newBBCnt++;
+                    mapsBuf[bestFit].newBBCnt++;                  
                 }
             } else {
                 /*
@@ -593,6 +593,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     for (uint64_t i = 0; i < mapsNum; i++) {
         if (mapsBuf[i].bbCnt > 0) {
             fuzzer->sanCovCnts.newBBCnt += mapsBuf[i].newBBCnt;
+            hfuzz->sanCovCnts.lastBBTime = time(NULL);
         } else {
             noCovMapsNum++;
         }

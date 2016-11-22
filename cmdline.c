@@ -193,6 +193,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             .dsoCnt = 0ULL,
             .iDsoCnt = 0ULL,
             .newBBCnt = 0ULL,
+            .lastBBTime = 0ULL,
             .crashesCnt = 0ULL,
         },
 
