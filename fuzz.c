@@ -488,7 +488,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if(!strcmp(hfuzz->fileExtn, "any")){ 
     	hfuzz->fileExtn = fuzzer->ext;
         fuzz_getFileName(hfuzz, fuzzer->fileName);
-        hfuzz->fileExtn = "any"; // 恢复配置
+        hfuzz->fileExtn = "any";    // 恢复配置
     }else{
         fuzz_getFileName(hfuzz, fuzzer->fileName);
     }
