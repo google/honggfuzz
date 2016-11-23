@@ -483,12 +483,16 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzState_t state = fuzz_getState(hfuzz);
     if (state != _HF_STATE_DYNAMIC_MAIN) {
         fuzzer->origFileName = files_basename(files_getFileFromFileq(hfuzz, rnd_index)->path);
-	    fuzzer->ext = strrchr(fuzzer->origFileName, '.' );	
+	    fuzzer->ext = strrchr(fuzzer->origFileName, '.' ) + 1;	 // 忽略冒号
     }
     if(!strcmp(hfuzz->fileExtn, "any")){ 
     	hfuzz->fileExtn = fuzzer->ext;
+        fuzz_getFileName(hfuzz, fuzzer->fileName);
+        hfuzz->fileExtn = "any"; // 恢复配置
+    }else{
+        fuzz_getFileName(hfuzz, fuzzer->fileName);
     }
-    fuzz_getFileName(hfuzz, fuzzer->fileName);
+    
 
     if (state == _HF_STATE_DYNAMIC_PRE) {
         fuzzer->flipRate = 0.0f;
