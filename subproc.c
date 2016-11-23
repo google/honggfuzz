@@ -124,24 +124,12 @@ const char *subproc_StatusToStr(int status, char *str, size_t len)
     return str;
 }
 
-static void subproc_persistentModeRoundReady(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
-{
-    if (hfuzz->persistent == false) {
-        return;
-    }
-    uint8_t z;
-    if (files_readFromFd(fuzzer->persistentSock, &z, sizeof(z)) == sizeof(z)) {
-        LOG_D("Persistent mode round ready");
-        return;
-    }
-}
-
 bool subproc_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     if (hfuzz->persistent == false) {
         return false;
     }
-    uint8_t z;
+    char z;
     if (recv(fuzzer->persistentSock, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
         LOG_D("Persistent mode round finished");
         return true;
@@ -283,11 +271,8 @@ bool subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_E("subproc_New()");
         return false;
     }
-    // If this is a persistent process, wait for it to report
-    subproc_persistentModeRoundReady(hfuzz, fuzzer);
 
     arch_prepareChild(hfuzz, fuzzer);
-
     if (hfuzz->persistent == true && subproc_persistentSendFile(fuzzer) == false) {
         LOG_W("Could not send file contents to the persistent process");
     }

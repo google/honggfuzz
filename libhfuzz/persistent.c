@@ -63,23 +63,15 @@ void HF_ITER(uint8_t ** buf_ptr, size_t * len_ptr)
      * Send the 'done' marker to the parent
      */
     static bool initialized = false;
+
     if (initialized == true) {
         uint8_t z = 'A';
         if (writeToFd(_HF_PERSISTENT_FD, &z, sizeof(z)) == false) {
-            fprintf(stderr, "writeToFd(1/A) failed\n");
+            fprintf(stderr, "readFromFdAll() failed\n");
             _exit(1);
         }
     }
     initialized = true;
-
-    /*
-     * Signal that we're ready to receive data
-     */
-    uint8_t z = 'B';
-    if (writeToFd(_HF_PERSISTENT_FD, &z, sizeof(z)) == false) {
-        fprintf(stderr, "writeToFd(2/B) failed\n");
-        _exit(1);
-    }
 
     uint32_t rlen;
     if (readFromFdAll(_HF_PERSISTENT_FD, (uint8_t *) & rlen, sizeof(rlen)) == false) {
