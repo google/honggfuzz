@@ -38,6 +38,7 @@
 #include <sys/personality.h>
 #include <sys/ptrace.h>
 #include <sys/prctl.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
@@ -52,12 +53,12 @@
 #include <sys/utsname.h>
 
 #include "../files.h"
-#include "../linux/perf.h"
-#include "../linux/ptrace_utils.h"
 #include "../log.h"
 #include "../sancov.h"
 #include "../subproc.h"
 #include "../util.h"
+#include "perf.h"
+#include "ptrace_utils.h"
 
 /* Common sanitizer flags */
 #if _HF_MONITOR_SIGABRT
@@ -82,10 +83,10 @@ static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 static uint8_t arch_clone_stack[PTHREAD_STACK_MIN * 2];
 
-static int arch_cloneFunc(void *arg)
+static __thread jmp_buf env;
+static int arch_cloneFunc(void *arg UNUSED)
 {
-    jmp_buf *env_ptr = (jmp_buf *) arg;
-    longjmp(*env_ptr, 1);
+    longjmp(env, 1);
     return 0;
 }
 
@@ -97,43 +98,18 @@ static pid_t arch_clone(uintptr_t flags)
         return -1;
     }
 
-    jmp_buf env;
     if (setjmp(env) == 0) {
         void *stack_mid = &arch_clone_stack[sizeof(arch_clone_stack) / 2];
         /* Parent */
-        return clone(arch_cloneFunc, stack_mid, flags, &env, NULL, NULL);
+        return clone(arch_cloneFunc, stack_mid, flags, NULL, NULL, NULL);
     }
     /* Child */
     return 0;
 }
 
-pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED)
+pid_t arch_fork(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
-    /*
-     * We need to wait for the child to finish with wait() in case we're fuzzing
-     * an external process
-     */
-    uintptr_t clone_flags = CLONE_UNTRACED;
-    if (hfuzz->linux.pid) {
-        clone_flags = SIGCHLD;
-    }
-
-    pid_t pid = arch_clone(clone_flags);
-
-    if (pid > 0 && hfuzz->persistent) {
-        struct f_owner_ex fown = {.type = F_OWNER_TID,.pid = syscall(__NR_gettid), };
-        if (fcntl(fuzzer->persistentSock, F_SETOWN_EX, &fown)) {
-            PLOG_F("fcntl(%d, F_SETOWN_EX)", fuzzer->persistentSock);
-        }
-        if (fcntl(fuzzer->persistentSock, F_SETSIG, SIGNAL_WAKE) == -1) {
-            PLOG_F("fcntl(%d, F_SETSIG, SIGNAL_WAKE)", fuzzer->persistentSock);
-        }
-        if (fcntl(fuzzer->persistentSock, F_SETFL, O_ASYNC) == -1) {
-            PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->persistentSock);
-        }
-    }
-
-    return pid;
+    return arch_clone(CLONE_UNTRACED | SIGCHLD);
 }
 
 bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
@@ -188,7 +164,9 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     /*
      * Wait for the ptrace to attach
      */
-    syscall(__NR_tkill, syscall(__NR_gettid), (uintptr_t) SIGSTOP);
+    if (hfuzz->persistent == false) {
+        syscall(__NR_tkill, syscall(__NR_gettid), (uintptr_t) SIGSTOP);
+    }
 
     execvp(args[0], args);
 
@@ -222,33 +200,36 @@ static bool arch_setTimer(timer_t * timerid)
     return true;
 }
 
-static void arch_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
-{
-    int64_t curMillis = util_timeNowMillis();
-    int64_t diffMillis = curMillis - fuzzer->timeStartedMillis;
-    if (diffMillis > (hfuzz->tmOut * 1000)) {
-        LOG_W("PID %d took too much time (limit %ld s). Sending SIGKILL",
-              fuzzer->pid, hfuzz->tmOut);
-        kill(fuzzer->pid, SIGKILL);
-        ATOMIC_POST_INC(hfuzz->timeoutedCnt);
-    }
-}
-
 void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
 
-    if (hfuzz->persistent == false && arch_ptraceWaitForPidStop(childPid) == false) {
-        LOG_F("PID %d not in a stopped state", childPid);
+    if (hfuzz->persistent) {
+        struct f_owner_ex fown = {.type = F_OWNER_TID,.pid = syscall(__NR_gettid), };
+        if (fcntl(fuzzer->persistentSock, F_SETOWN_EX, &fown)) {
+            PLOG_F("fcntl(%d, F_SETOWN_EX)", fuzzer->persistentSock);
+        }
+        if (fcntl(fuzzer->persistentSock, F_SETSIG, SIGNAL_WAKE) == -1) {
+            PLOG_F("fcntl(%d, F_SETSIG, SIGNAL_WAKE)", fuzzer->persistentSock);
+        }
+        if (fcntl(fuzzer->persistentSock, F_SETFL, O_ASYNC) == -1) {
+            PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->persistentSock);
+        }
+        int sndbuf = (1024 * 1024 * 2); /* 2MiB */
+        if (setsockopt(fuzzer->persistentSock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)) ==
+            -1) {
+            LOG_W("Couldn't set FD send buffer to '%d' bytes", sndbuf);
+        }
     }
 
     if (arch_shouldAttach(hfuzz, fuzzer) == true) {
-        if (arch_ptraceAttach(ptracePid) == false) {
+        if (arch_ptraceAttach(hfuzz, ptracePid) == false) {
             LOG_F("arch_ptraceAttach(pid=%d) failed", ptracePid);
         }
         fuzzer->linux.attachedPid = ptracePid;
     }
+
     /* A long-lived process could have already exited, and we wouldn't know */
     if (childPid != ptracePid && kill(ptracePid, 0) == -1) {
         if (hfuzz->linux.pidFile) {
@@ -274,10 +255,14 @@ void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (arch_perfEnable(ptracePid, hfuzz, fuzzer) == false) {
         LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
     }
-    if (childPid != ptracePid && kill(childPid, SIGCONT) == -1) {
-        PLOG_F("Restarting PID: %d failed", childPid);
+    if (childPid != ptracePid) {
+        if (arch_ptraceWaitForPidStop(childPid) == false) {
+            LOG_F("PID: %d not in a stopped state", childPid);
+        }
+        if (kill(childPid, SIGCONT) == -1) {
+            PLOG_F("Restarting PID: %d failed", childPid);
+        }
     }
-    arch_ptraceSetCustomPerf(hfuzz, ptracePid, 0ULL);
 }
 
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
@@ -287,16 +272,13 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     for (;;) {
         if (subproc_persistentModeRoundDone(hfuzz, fuzzer)) {
-            arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->linux.hwCnts.customCnt);
             break;
         }
 
         int status;
         pid_t pid = wait4(-1, &status, __WALL | __WNOTHREAD, NULL);
         if (pid == -1 && errno == EINTR) {
-            if (hfuzz->tmOut) {
-                arch_checkTimeLimit(hfuzz, fuzzer);
-            }
+            subproc_checkTimeLimit(hfuzz, fuzzer);
             continue;
         }
         if (pid == -1 && errno == ECHILD) {
@@ -310,10 +292,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         char statusStr[4096];
         LOG_D("PID '%d' returned with status: %s", pid,
               subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
-
-        if (hfuzz->persistent == false) {
-            arch_ptraceGetCustomPerf(hfuzz, ptracePid, &fuzzer->linux.hwCnts.customCnt);
-        }
 
         if (hfuzz->persistent && pid == fuzzer->persistentPid
             && (WIFEXITED(status) || WIFSIGNALED(status))) {
