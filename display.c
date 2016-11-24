@@ -189,7 +189,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     char start_time_str[128];
     util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
-    display_put(ESC_WHITE "\n    Run Time : " ESC_RESET ESC_BOLD "%s" ESC_RESET " (since: " ESC_BOLD "%s" ESC_RESET
+    display_put(ESC_WHITE "\n    Run Time : " ESC_RESET ESC_BOLD "%s" ESC_RESET " (" ESC_WHITE "since: " ESC_RESET ESC_BOLD "%s" ESC_RESET
                 ")\n", time_elapsed_str, start_time_str);
     display_put(ESC_WHITE "   Input Dir : " ESC_RESET ESC_BOLD "'%s" ESC_RESET "'\n",
                 hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]");
@@ -204,12 +204,12 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         num_cpu = sysconf(_SC_NPROCESSORS_ONLN);
     }
     double cpuUse = getCpuUse(num_cpu);
-    display_put(ESC_WHITE "     Threads : " ESC_RESET ESC_BOLD "%zu" ESC_RESET ", CPUs: " ESC_BOLD "%ld" ESC_RESET
-                ", CPU: " ESC_BOLD "%.1lf" ESC_RESET "%%\n",
+    display_put(ESC_WHITE "     Threads : " ESC_RESET ESC_BOLD "%zu" ESC_RESET ", " ESC_WHITE "CPUs: " ESC_RESET ESC_BOLD "%ld" ESC_RESET
+                ", " ESC_WHITE "CPU: " ESC_RESET ESC_BOLD "%.1lf" ESC_RESET "%%\n",
                 hfuzz->threadsMax, num_cpu, cpuUse / num_cpu);
 
     display_put(ESC_WHITE "       Speed : " ESC_RESET ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET "/sec"
-                " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n", exec_per_sec,
+                " (" ESC_WHITE "avg: " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n", exec_per_sec,
                 elapsed_second ? (curr_exec_cnt / elapsed_second) : 0);
     /* If dry run, print also the input file count */
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
@@ -219,8 +219,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     uint64_t crashesCnt = ATOMIC_GET(hfuzz->crashesCnt);
     /* colored the crash count as red when exist crash */
-    display_put(ESC_WHITE "     Crashes : " ESC_RESET ESC_BOLD "%s" "%zu" ESC_RESET " (unique: %s" ESC_BOLD "%zu"
-                ESC_RESET ", blacklist: " ESC_BOLD "%zu" ESC_RESET ", verified: "
+    display_put(ESC_WHITE "     Crashes : " ESC_RESET ESC_BOLD "%s" "%zu" ESC_RESET " (" ESC_WHITE "unique: " ESC_RESET "%s" ESC_BOLD "%zu"
+                ESC_RESET ", " ESC_WHITE "blacklist: " ESC_RESET ESC_BOLD "%zu" ESC_RESET ", " ESC_WHITE "verified: " ESC_RESET 
                 ESC_BOLD "%s" "%zu" ESC_RESET ")\n", crashesCnt > 0 ? ESC_RED : "",
                 hfuzz->crashesCnt, crashesCnt > 0 ? ESC_RED : "",
                 ATOMIC_GET(hfuzz->uniqueCrashesCnt), ATOMIC_GET(hfuzz->blCrashesCnt), 
@@ -231,7 +231,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     /* Feedback data sources are enabled. Start with common headers. */
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
         display_put(ESC_WHITE " Corpus Size : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
-                    ", max size (bytes): " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",
+                    ", " ESC_WHITE "max size (bytes): " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",
                     hfuzz->dynfileqCnt, hfuzz->maxFileSz);
         display_put(ESC_WHITE "    Coverage :\n" ESC_RESET);
     }
