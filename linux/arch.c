@@ -164,7 +164,9 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     /*
      * Wait for the ptrace to attach
      */
-    syscall(__NR_tkill, syscall(__NR_gettid), (uintptr_t) SIGSTOP);
+    if (hfuzz->persistent == false) {
+        syscall(__NR_tkill, syscall(__NR_gettid), (uintptr_t) SIGSTOP);
+    }
 
     execvp(args[0], args);
 
