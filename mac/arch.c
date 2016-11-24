@@ -263,7 +263,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
                  "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s",
                  hfuzz->workDir, arch_sigs[termsig].descr,
                  exception_to_string(fuzzer->exception), fuzzer->pc,
-                 fuzzer->backtrace, fuzzer->access, hfuzz->fileExtn);
+                 fuzzer->backtrace, fuzzer->access, fuzzer->ext);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr), time(NULL));
@@ -272,7 +272,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
                  "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s",
                  hfuzz->workDir, arch_sigs[termsig].descr,
                  exception_to_string(fuzzer->exception), fuzzer->pc,
-                 fuzzer->backtrace, fuzzer->access, localtmstr, fuzzer->pid, hfuzz->fileExtn);
+                 fuzzer->backtrace, fuzzer->access, localtmstr, fuzzer->pid, fuzzer->ext);
     }
 
     if (files_exists(fuzzer->crashFileName)) {
