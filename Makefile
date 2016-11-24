@@ -292,7 +292,7 @@ android-clean-deps:
     
 .PHONY: install                 
 install:
-	sudo cp ./honggfuzz /usr/bin/riufuzz
+	cp ./honggfuzz /usr/bin/riufuzz
 
 # DO NOT DELETE
 
