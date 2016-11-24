@@ -276,7 +276,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put(ESC_YELLOW "       *** total #dso:  " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     " (instrumented only)\n", ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
         display_put(ESC_YELLOW "       *** new #bb:     " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
-                    " (last update:" ESC_BOLD " %s)\n" ESC_RESET, ATOMIC_GET(hfuzz->sanCovCnts.newBBCnt), 
+                    " (" ESC_WHITE "last update:" ESC_RESET ESC_BOLD " %s)\n" ESC_RESET, ATOMIC_GET(hfuzz->sanCovCnts.newBBCnt), 
                         get_time_elapsed(ATOMIC_GET(hfuzz->sanCovCnts.lastBBTime)));          
         display_put(ESC_YELLOW "       *** crashes:     " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     "\n", ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
