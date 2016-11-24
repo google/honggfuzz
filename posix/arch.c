@@ -120,7 +120,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     } else {
         snprintf(newname, sizeof(newname), "%s/%s.PID.%d.TIME.%s.%s",
                  hfuzz->workDir, arch_sigs[termsig].descr, fuzzer->pid, localtmstr,
-                 hfuzz->fileExtn);
+                 fuzzer->ext);
     }
 
     LOG_I("Ok, that's interesting, saving the '%s' as '%s'", fuzzer->fileName, newname);
