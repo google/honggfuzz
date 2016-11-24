@@ -143,11 +143,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         return false;
     }
     LOG_D("Subporcess '%s' finished with success", hfuzz->externalCommand);
-    /*
-    char cmd[225];
-    sprintf(cmd, "%s %s", "/bin/cat ",fuzzer->fileName);
-    system(cmd);
-    */
+
     ssize_t rsz = files_readFileToBufMax(fuzzer->fileName, fuzzer->dynamicFile, hfuzz->maxFileSz);
     if (rsz < 0) {
         LOG_W("Couldn't read back '%s' to the buffer", fuzzer->fileName);
@@ -483,7 +479,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzState_t state = fuzz_getState(hfuzz);
     if (state != _HF_STATE_DYNAMIC_MAIN) {
         fuzzer->origFileName = files_basename(files_getFileFromFileq(hfuzz, rnd_index)->path);
-	    fuzzer->ext = strrchr(fuzzer->origFileName, '.' ) + 1;	 // 忽略冒号
+	    fuzzer->ext = strrchr(fuzzer->origFileName, '.' ) + 1;
     }
     if(!strcmp(hfuzz->fileExtn, "any")){ 
     	hfuzz->fileExtn = fuzzer->ext;
@@ -492,7 +488,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }else{
         fuzz_getFileName(hfuzz, fuzzer->fileName);
     }
-    
 
     if (state == _HF_STATE_DYNAMIC_PRE) {
         fuzzer->flipRate = 0.0f;
