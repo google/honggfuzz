@@ -144,6 +144,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .saveUnique = true,
         .useScreen = true,
         .useVerifier = false,
+        .keepext = false,
         .timeStart = time(NULL),
         .fileExtn = "fuzz",
         .workDir = ".",

@@ -214,6 +214,7 @@ typedef struct {
     bool saveUnique;
     bool useScreen;
     bool useVerifier;
+    bool keepext;
     time_t timeStart;
     char *fileExtn;
     char *workDir;

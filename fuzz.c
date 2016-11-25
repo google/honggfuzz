@@ -482,6 +482,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 	    fuzzer->ext = strrchr(fuzzer->origFileName, '.' ) + 1;
     }
     if(!strcmp(hfuzz->fileExtn, "any")){ 
+        hfuzz->keepext = true;
     	hfuzz->fileExtn = fuzzer->ext;
         fuzz_getFileName(hfuzz, fuzzer->fileName);
         hfuzz->fileExtn = "any";    // 恢复配置
