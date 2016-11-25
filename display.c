@@ -227,7 +227,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                 ATOMIC_GET(hfuzz->verifiedCrashesCnt) > 0 ? ESC_RED : "",                
                 ATOMIC_GET(hfuzz->verifiedCrashesCnt));
     display_put(ESC_WHITE "    Timeouts : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET " [%"
-                _HF_MONETARY_MOD "zu sec.]\n", ATOMIC_GET(hfuzz->timeoutedCnt), hfuzz->tmOut);
+                _HF_MONETARY_MOD "zu sec]\n", ATOMIC_GET(hfuzz->timeoutedCnt), hfuzz->tmOut);
     /* Feedback data sources are enabled. Start with common headers. */
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
         display_put(ESC_WHITE " Corpus Size : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
@@ -272,9 +272,9 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
         float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
         display_put(ESC_YELLOW "       *** hit #bb    : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
-                    " (coverage " ESC_BOLD "%.2f" ESC_RESET "%%)\n", hitBB, covPer);
+                    " (" ESC_WHITE "coverage: " ESC_RESET ESC_BOLD "%.2f" ESC_RESET "%%)\n", hitBB, covPer);
         display_put(ESC_YELLOW "       *** total #dso : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
-                    " (instrumented only)\n", ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
+                    " (Dynamic Shared Object)\n", ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
         display_put(ESC_YELLOW "       *** new #bb    : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     " (" ESC_WHITE "last update:" ESC_RESET ESC_BOLD " %s)\n" ESC_RESET, 
                     ATOMIC_GET(hfuzz->sanCovCnts.newBBCnt), 
