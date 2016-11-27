@@ -202,7 +202,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     return false;
 }
 
-static void arch_sigFunc(int signo, siginfo_t * si UNUSED, void *dummy UNUSED)
+static void arch_sigFunc(int signo)
 {
     if (signo != SIGNAL_WAKE) {
         LOG_E("Signal != SIGNAL_WAKE (%d)", signo);
@@ -476,12 +476,12 @@ bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
         return false;
     }
 
-    sigset_t smask;
-    sigemptyset(&smask);
+    sigset_t mask;
+    sigemptyset(&mask);
     struct sigaction sa = {
-        .sa_sigaction = arch_sigFunc,
-        .sa_mask = smask,
-        .sa_flags = SA_SIGINFO,
+        .sa_handler = arch_sigFunc,
+        .sa_mask = mask,
+        .sa_flags = 0,
         .sa_restorer = NULL,
     };
 
