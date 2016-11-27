@@ -109,7 +109,34 @@ static pid_t arch_clone(uintptr_t flags)
 
 pid_t arch_fork(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
-    return arch_clone(CLONE_UNTRACED | SIGCHLD);
+    pid_t pid = arch_clone(CLONE_UNTRACED | SIGCHLD);
+    if (pid == -1) {
+        return pid;
+    }
+    if (pid == 0) {
+        return pid;
+    }
+
+    /* Parent */
+    if (hfuzz->persistent) {
+        struct f_owner_ex fown = {.type = F_OWNER_TID,.pid = syscall(__NR_gettid), };
+        if (fcntl(fuzzer->persistentSock, F_SETOWN_EX, &fown)) {
+            PLOG_F("fcntl(%d, F_SETOWN_EX)", fuzzer->persistentSock);
+        }
+        if (fcntl(fuzzer->persistentSock, F_SETSIG, SIGNAL_WAKE) == -1) {
+            PLOG_F("fcntl(%d, F_SETSIG, SIGNAL_WAKE)", fuzzer->persistentSock);
+        }
+        if (fcntl(fuzzer->persistentSock, F_SETFL, O_ASYNC) == -1) {
+            PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->persistentSock);
+        }
+        int sndbuf = (1024 * 1024 * 2); /* 2MiB */
+        if (setsockopt(fuzzer->persistentSock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)) ==
+            -1) {
+            LOG_W("Couldn't set FD send buffer to '%d' bytes", sndbuf);
+        }
+    }
+
+    return pid;
 }
 
 bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
@@ -204,24 +231,6 @@ void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
-
-    if (hfuzz->persistent) {
-        struct f_owner_ex fown = {.type = F_OWNER_TID,.pid = syscall(__NR_gettid), };
-        if (fcntl(fuzzer->persistentSock, F_SETOWN_EX, &fown)) {
-            PLOG_F("fcntl(%d, F_SETOWN_EX)", fuzzer->persistentSock);
-        }
-        if (fcntl(fuzzer->persistentSock, F_SETSIG, SIGNAL_WAKE) == -1) {
-            PLOG_F("fcntl(%d, F_SETSIG, SIGNAL_WAKE)", fuzzer->persistentSock);
-        }
-        if (fcntl(fuzzer->persistentSock, F_SETFL, O_ASYNC) == -1) {
-            PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->persistentSock);
-        }
-        int sndbuf = (1024 * 1024 * 2); /* 2MiB */
-        if (setsockopt(fuzzer->persistentSock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)) ==
-            -1) {
-            LOG_W("Couldn't set FD send buffer to '%d' bytes", sndbuf);
-        }
-    }
 
     if (arch_shouldAttach(hfuzz, fuzzer) == true) {
         if (arch_ptraceAttach(hfuzz, ptracePid) == false) {
