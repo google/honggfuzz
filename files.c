@@ -287,7 +287,7 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         hfuzz->dictionaryCnt += 1;
         TAILQ_INSERT_TAIL(&hfuzz->dictq, str, pointers);
 
-        LOG_D("Dictionary: loaded word: '%s' (len=%zu)", str->s, str->len);
+        LOG_I("Dictionary: loaded word: '%s' (len=%zu)", str->s, str->len);
     }
     LOG_I("Loaded %zu words from the dictionary", hfuzz->dictionaryCnt);
     return true;
