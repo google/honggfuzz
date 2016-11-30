@@ -1,0 +1,1 @@
+honggfuzz -f /Users/riusksk/Downloads/mac.spx -r 0.00001  -F 5964555 -t3 -n5 -e spx -- /Applications/Utilities/System\ Information.app/Contents/MacOS/System\ Information ___FILE___

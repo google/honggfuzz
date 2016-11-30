@@ -1,0 +1,1 @@
+honggfuzz -f /Volumes/Macintosh/Users/riusksk/bughunt_tools/fuzzdata/samples/xml -e xml -n3 -t 3 -- xmllint ___FILE___

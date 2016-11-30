@@ -1,0 +1,1 @@
+honggfuzz -f /Users/riusksk/Downloads/testpdf -n 3 -t5 -e pdf  -- "/Applications/Foxit Reader.app/Contents/MacOS/FoxitReader" ___FILE___

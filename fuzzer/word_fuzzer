@@ -1,0 +1,2 @@
+cd /Users/riusksk/Library/Containers/com.microsoft.Word/Data
+honggfuzz -n 3 -f /Volumes/Macintosh/Users/riusksk/bughunt_tools/fuzzdata/samples/doc -e doc -t 10 -- /Applications/Microsoft\ Word.app/Contents/MacOS/Microsoft\ Word ___FILE___

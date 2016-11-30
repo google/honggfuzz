@@ -1,0 +1,2 @@
+honggfuzz -f /Volumes/Macintosh/Users/riusksk/bughunt_tools/fuzzdata/samples/icc/profiles -n5 -t2 -e icc -- /Applications/Utilities/ColorSync\ Utility.app/Contents/MacOS/ColorSync\ Utility ___FILE___
+

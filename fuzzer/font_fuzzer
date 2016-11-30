@@ -1,0 +1,1 @@
+riufuzz -w ../dict/font.dict -f /Volumes/Macintosh/Users/riusksk/bughunt_tools/fuzzdata/samples/dfont -e dfont -t3 -r 0.0001 -n3 -- /Applications/Font\ Book.app/Contents/MacOS/Font\ Book ___FILE___

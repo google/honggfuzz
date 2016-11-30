@@ -1,0 +1,2 @@
+cd ~/Library/Containers/com.apple.TextEdit/Data
+honggfuzz -f /Volumes/Macintosh/Users/riusksk/bughunt_tools/fuzzdata/samples/rtf -t3 -n3 -e rtf -- /Applications/TextEdit.app/Contents/MacOS/TextEdit ___FILE___

@@ -1,0 +1,2 @@
+cd /Users/riusksk/Library/Containers/com.apple.Preview/Data
+honggfuzz -f /Volumes/Macintosh/Users/riusksk/bughunt_tools/fuzzdata/samples/j2k -e j2k -n 3 -t 3 --  /Applications/Preview.app/Contents/MacOS/Preview ___FILE___
