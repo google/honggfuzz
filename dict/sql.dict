@@ -1,0 +1,266 @@
+ abs(1)
+ avg(1)
+ changes()
+ char(1)
+ coalesce(1,1)
+ count(1)
+ date(1,1,1)
+ datetime(1,1,1)
+ decimal(1,1)
+ glob(1,1)
+ group_concat(1,1)
+ hex(1)
+ ifnull(1,1)
+ instr(1,1)
+ julianday(1,1,1)
+ last_insert_rowid()
+ length(1)
+ like(1,1)
+ likelihood(1,1)
+ likely(1)
+ load_extension(1,1)
+ lower(1)
+ ltrim(1,1)
+ max(1,1)
+ min(1,1)
+ nullif(1,1)
+ printf(1,1)
+ quote(1)
+ random()
+ randomblob(1)
+ replace(1,1,1)
+ round(1,1)
+ rtrim(1,1)
+ soundex(1)
+ sqlite_compileoption_get(1)
+ sqlite_compileoption_used(1)
+ sqlite_source_id()
+ sqlite_version()
+ strftime(1,1,1,1)
+ substr(1,1,1)
+ sum(1)
+ time(1,1,1)
+ total(1)
+ total_changes()
+ trim(1,1)
+ typeof(1)
+ unicode(1)
+ unlikely(1)
+ upper(1)
+ varchar(1)
+ zeroblob(1)
+
+ABORT
+ACTION
+ADD
+AFTER
+ALL
+ALTER
+ANALYZE
+AND
+AS
+ASC
+ATTACH
+AUTOINCREMENT
+BEFORE
+BEGIN
+BETWEEN
+BY
+CASCADE
+CASE
+CAST
+CHECK
+COLLATE
+COLUMN
+COMMIT
+CONFLICT
+CONSTRAINT
+CREATE
+CROSS
+CURRENT_DATE
+CURRENT_TIME
+CURRENT_TIMESTAMP
+DATABASE
+DEFAULT
+DEFERRABLE
+DEFERRED
+DELETE
+DESC
+DETACH
+DISTINCT
+DROP
+EACH
+ELSE
+END
+ESCAPE
+EXCEPT
+EXCLUSIVE
+EXISTS
+EXPLAIN
+FAIL
+FOR
+FOREIGN
+FROM
+FULL
+GLOB
+GROUP
+HAVING
+IF
+IGNORE
+IMMEDIATE
+IN
+INDEX
+INDEXED
+INITIALLY
+INNER
+INSERT
+INSTEAD
+INTERSECT
+INTO
+IS
+ISNULL
+JOIN
+KEY
+LEFT
+LIKE
+LIMIT
+MATCH
+NATURAL
+NO
+NOT
+NOTNULL
+NULL
+OF
+OFFSET
+ON
+OR
+ORDER
+OUTER
+PLAN
+PRAGMA
+PRIMARY
+QUERY
+RAISE
+RECURSIVE
+REFERENCES
+REGEXP
+REINDEX
+RELEASE
+RENAME
+REPLACE
+RESTRICT
+RIGHT
+ROLLBACK
+ROW
+SAVEPOINT
+SELECT
+SET
+TABLE
+TEMP
+TEMPORARY
+THEN
+TO
+TRANSACTION
+TRIGGER
+UNION
+UNIQUE
+UPDATE
+USING
+VACUUM
+VALUES
+VIEW
+VIRTUAL
+WHEN
+WHERE
+WITH
+WITHOUT
+
+ || 
+
+
+ 1=1
+ @1
+ `a`
+ blob
+ [a]
+ :1
+ /* */
+2001-01-01
+ $1
+ a.b
+%Y
+ int
+ -1
+ a,b
+ (1)
++2 days
+ ?1
+ ;
+ *
+ \a\,\b\
+
+ \a\
+ 'a''b'
+ 'a'
+
+ application_id
+ auto_vacuum
+ automatic_index
+ busy_timeout
+ cache_size
+ cache_spill
+ case_sensitive_like
+ checkpoint_fullfsync
+ collation_list
+ compile_options
+ count_changes
+ data_store_directory
+ database_list
+ default_cache_size
+ defer_foreign_keys
+ empty_result_callbacks
+ encoding
+ foreign_key_check
+ foreign_key_list
+ foreign_keys
+ freelist_count
+ full_column_names
+ fullfsync
+ ignore_check_constraints
+ incremental_vacuum
+ index_info
+ index_list
+ integrity_check
+ journal_mode
+ journal_size_limit
+ legacy_file_format
+ locking_mode
+ max_page_count
+ mmap_size
+ page_count
+ page_size
+ parser_trace
+ query_only
+ quick_check
+ read_uncommitted
+ recursive_triggers
+ reverse_unordered_selects
+ schema_version
+ secure_delete
+ short_column_names
+ shrink_memory
+ soft_heap_limit
+ stats
+ synchronous
+ table_info
+ temp_store
+ temp_store_directory
+ threads
+ user_version
+ vdbe_addoptrace
+ vdbe_debug
+ vdbe_listing
+ vdbe_trace
+ wal_autocheckpoint
+ wal_checkpoint
+ writable_schema

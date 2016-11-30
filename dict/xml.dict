@@ -1,0 +1,60 @@
+ encoding="1"
+ a="1"
+ href="1"
+ standalone="no"
+ version="1"
+ xml:base="1"
+ xml:id="1"
+ xml:lang="1"
+ xml:space="1"
+ xmlns="1"
+&lt;
+&#1;
+&a;
+&#x1;
+ANY
+[]
+CDATA
+:fallback
+:a
+:include
+--
+EMPTY
+""
+''
+ENTITIES
+ENTITY
+#FIXED
+ID
+IDREF
+IDREFS
+#IMPLIED
+NMTOKEN
+NMTOKENS
+NOTATION
+()
+#PCDATA
+%a
+PUBLIC
+#REQUIRED
+:schema
+SYSTEM
+UCS-4
+UTF-16
+UTF-8
+xmlns:
+<!ATTLIST
+<![CDATA[
+</a>
+<!DOCTYPE
+<!ELEMENT
+<!ENTITY
+<![IGNORE[
+<![INCLUDE[
+<!NOTATION
+<a>
+<a />
+<!
+<?
+]]>
+<?xml?>
