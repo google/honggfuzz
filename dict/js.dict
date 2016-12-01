@@ -1,0 +1,98 @@
+arguments
+break
+case
+catch
+const
+continue
+debugger
+decodeURI
+default
+delete
+do
+else
+escape
+eval
+export
+finally
+for (a=0;a<2;a++)
+function
+if
+in
+instanceof
+isNaN
+let
+new
+parseInt
+return
+switch
+this
+throw
+try
+typeof
+var
+void
+while
+with
+
+ 1
+a
+ [1]
+ a=1
+ {1}
+ 1:
+ 'a':
+ ,
+ /* */
+ //
+ 1?2:3
+ --
+ /
+
+ a()
+
+ ++
+ -
+ %
+ ()
+ (1)
+ (1,1,1,1)
+ (a)
+.
+ +
+
+ /a/g
+ <<<
+ ;
+ {'a': 1}
+ 'a'
+ '\\u0001'
+
+ Array
+ Boolean
+ Date
+ Function
+ Infinity
+ Int8Array
+ Math
+ NaN
+ Number
+ Object
+ RegExp
+ String
+ Symbol
+ false
+ null
+ true
+
+.charAt
+.concat
+.constructor
+.destructor
+.length
+.match
+.__proto__
+.prototype
+.slice
+.toCode
+.toString
+.valueOf
