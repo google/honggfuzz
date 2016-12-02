@@ -485,8 +485,11 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzState_t state = fuzz_getState(hfuzz);
     if (state != _HF_STATE_DYNAMIC_MAIN) {
         fuzzer->origFileName = files_basename(files_getFileFromFileq(hfuzz, rnd_index)->path);
+	fuzzer->ext = strrchr(fuzzer->origFileName, '.' );	
     }
-
+    if(!strcmp(hfuzz->fileExtn, "any")){ 
+    	hfuzz->fileExtn = fuzzer->ext;
+    }
     fuzz_getFileName(hfuzz, fuzzer->fileName);
 
     if (state == _HF_STATE_DYNAMIC_PRE) {
