@@ -186,6 +186,9 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 .events = POLLIN,
             };
             int r = poll(&pfd, 1, -1);
+            if (r == -1 && errno == EINTR) {
+                subproc_checkTimeLimit(hfuzz, fuzzer);
+            }
             if (r == -1 && errno != EINTR) {
                 PLOG_F("poll(fd=%d)", fuzzer->persistentSock);
             }
@@ -194,12 +197,11 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             break;
         }
 
-        subproc_checkTimeLimit(hfuzz, fuzzer);
-
         int status;
         int flags = hfuzz->persistent ? WNOHANG : 0;
         int ret = waitpid(fuzzer->pid, &status, flags);
         if (ret == -1 && errno == EINTR) {
+            subproc_checkTimeLimit(hfuzz, fuzzer);
             continue;
         }
         if (ret == -1) {
