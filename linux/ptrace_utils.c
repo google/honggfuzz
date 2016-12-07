@@ -828,12 +828,10 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
                  hfuzz->workDir, arch_sigName(si.si_signo), pc, fuzzer->backtrace,
                  si.si_code, sig_addr, instr, hfuzz->keepext?fuzzer->ext:hfuzz->fileExtn);
     } else {
-        char localtmstr[PATH_MAX];
-        util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
-                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
+                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
                  hfuzz->workDir, arch_sigName(si.si_signo), pc, fuzzer->backtrace,
-                 si.si_code, sig_addr, instr, localtmstr, pid, hfuzz->keepext?fuzzer->ext:hfuzz->fileExtn);
+                 si.si_code, sig_addr, instr, hfuzz->keepext?fuzzer->ext:hfuzz->fileExtn);
     }
 
     if (files_exists(fuzzer->crashFileName)) {
