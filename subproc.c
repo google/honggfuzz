@@ -143,8 +143,7 @@ static bool subproc_persistentSendFile(fuzzer_t * fuzzer)
     if (files_writeToFd(fuzzer->persistentSock, (uint8_t *) & len, sizeof(len)) == false) {
         return false;
     }
-    if (files_writeToFd(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) ==
-        false) {
+    if (files_writeToFd(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) == false) {
         return false;
     }
     return true;

@@ -1,0 +1,1 @@
+riufuzz -f /bin -V -t3 -n3 -- otool -fahlLDtdorSTMRIHGvVcXmQjCP ___FILE___

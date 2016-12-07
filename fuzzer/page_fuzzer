@@ -1,0 +1,2 @@
+cd ~/Library/Containers/com.apple.iWork.Pages/data
+honggfuzz -f /Users/jane/Downloads/比太平苏打还松脆哦——高钙奶盐苏打饼干.pages -t10 -n5 -e pages -- /Applications/Pages.app/Contents/MacOS/Pages ___FILE___

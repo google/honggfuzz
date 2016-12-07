@@ -1,2 +1,3 @@
+defaults write com.apple.QuickTimePlayerX MGPlayMovieOnOpen 1
 cd ~/Library/Containers/com.apple.QuickTimePlayerX/Data
-honggfuzz -f "/Volumes/Macintosh/Users/riusksk/bughunt_tools/fuzzdata/samples/au"  -n 5 -e au -t 3 -- "/Applications/QuickTime Player.app/Contents/MacOS/QuickTime Player" ___FILE___
+honggfuzz -f "/Volumes/Macintosh/Users/riusksk/bughunt_tools/fuzzdata/samples/au"  -V -n 5 -e au -t 3 -- "/Applications/QuickTime Player.app/Contents/MacOS/QuickTime Player" ___FILE___
