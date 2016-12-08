@@ -93,6 +93,15 @@ void HF_ITER(uint8_t ** buf_ptr, size_t * len_ptr)
     *len_ptr = len;
 }
 
+static void runOneInput(uint8_t * buf, size_t len)
+{
+    int ret = LLVMFuzzerTestOneInput(buf, len);
+    if (ret != 0) {
+        fprintf(stderr, "LLVMFuzzerTestOneInput() returned '%d' instead of '0'\n", ret);
+        exit(1);
+    }
+}
+
 /*
  * Declare it 'weak', so it can be safely linked with regular binaries which
  * implement their own main()
@@ -109,16 +118,21 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    if(fcntl(_HF_PERSISTENT_FD, F_GETFD) == -1) {
+        fprintf(stderr, "Accepting input from stdin\n"
+                "Usage for fuzzing: honggfuzz -P [flags] -- %s\n",
+                argv[0]);
+
+        size_t len = readFromFd(STDIN_FILENO, buf, sizeof(buf));
+        runOneInput(buf, len);
+        return 0;
+    }
+
     for (;;) {
         size_t len;
         uint8_t *buf;
 
         HF_ITER(&buf, &len);
-
-        int ret = LLVMFuzzerTestOneInput(buf, len);
-        if (ret != 0) {
-            fprintf(stderr, "LLVMFuzzerTestOneInput() returned '%d' instead of '0'\n", ret);
-            exit(1);
-        }
+        runOneInput(buf, len);
     }
 }
