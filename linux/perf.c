@@ -347,7 +347,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 bool arch_perfInit(honggfuzz_t * hfuzz UNUSED)
 {
     uint8_t buf[PATH_MAX + 1];
-    size_t sz =
+    ssize_t sz =
         files_readFileToBufMax("/sys/bus/event_source/devices/intel_pt/type", buf, sizeof(buf) - 1);
     if (sz > 0) {
         buf[sz] = '\0';
