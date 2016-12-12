@@ -210,6 +210,7 @@ static bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (fuzzer->pid != 0) {
         return true;
     }
+    fuzzer->tmOutSignaled = false;
 
     int sv[2];
     if (hfuzz->persistent) {
