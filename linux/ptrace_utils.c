@@ -244,10 +244,10 @@ static ssize_t honggfuzz_process_vm_readv(pid_t pid,
 #endif                          /* defined(__ANDROID__) */
 
 /*  *INDENT-OFF* */
-struct {
+static struct {
     const char *descr;
     bool important;
-} const arch_sigs[_NSIG + 1] = {
+} arch_sigs[_NSIG + 1] = {
     [0 ... (_NSIG)].important = false,
     [0 ... (_NSIG)].descr = "UNKNOWN",
 
@@ -271,7 +271,10 @@ struct {
 #else
     [SIGABRT].important = false,
 #endif
-    [SIGABRT].descr = "SIGABRT"
+    [SIGABRT].descr = "SIGABRT",
+
+    [SIGVTALRM].important = true,
+    [SIGVTALRM].descr = "SIGVTALRM-TMOUT",
 };
 /*  *INDENT-ON* */
 

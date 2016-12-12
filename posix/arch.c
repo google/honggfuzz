@@ -57,14 +57,21 @@ struct {
 
     [SIGILL].important = true,
     [SIGILL].descr = "SIGILL",
+
     [SIGFPE].important = true,
     [SIGFPE].descr = "SIGFPE",
+
     [SIGSEGV].important = true,
     [SIGSEGV].descr = "SIGSEGV",
+
     [SIGBUS].important = true,
     [SIGBUS].descr = "SIGBUS",
+
     [SIGABRT].important = true,
-    [SIGABRT].descr = "SIGABRT"
+    [SIGABRT].descr = "SIGABRT",
+
+    [SIGVTALRM].important = true,
+    [SIGVTALRM].descr = "SIGVTALRM-TMOUT",
 };
 /*  *INDENT-ON* */
 

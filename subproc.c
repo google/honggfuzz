@@ -329,9 +329,12 @@ void subproc_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int64_t curMillis = util_timeNowMillis();
     int64_t diffMillis = curMillis - fuzzer->timeStartedMillis;
     if (diffMillis > (hfuzz->tmOut * 1000)) {
-        LOG_W("PID %d took too much time (limit %ld s). Sending SIGKILL",
-              fuzzer->pid, hfuzz->tmOut);
-        kill(fuzzer->pid, SIGKILL);
+        LOG_W("PID %d took too much time (limit %ld s). Killing it", fuzzer->pid, hfuzz->tmOut);
+        if (hfuzz->tmout_vtalrm) {
+            kill(fuzzer->pid, SIGVTALRM);
+        } else {
+            kill(fuzzer->pid, SIGKILL);
+        }
         ATOMIC_POST_INC(hfuzz->timeoutedCnt);
     }
 }

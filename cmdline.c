@@ -171,6 +171,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             [0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,
         },
         .persistent = false,
+        .tmout_vtalrm = false,
 
         .dictionaryFile = NULL,
         .dictionaryCnt = 0,
@@ -272,6 +273,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"instrument", no_argument, NULL, 'z'}, "Enable compile-time instrumentation (link with libhfuzz/libhfuzz.a)"},
         {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
         {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libhfuzz/libhfuzz.a)"},
+        {{"tmout_sigvtalrm", no_argument, NULL, 0x105}, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)"},
 
 #if defined(_HF_ARCH_LINUX)
         {{"linux_symbols_bl", required_argument, NULL, 0x504}, "Symbols blacklist filter file (one entry per line)"},
@@ -384,6 +386,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 'P':
             hfuzz->persistent = true;
+            break;
+        case 0x105:
+            hfuzz->tmout_vtalrm = true;
             break;
         case 'p':
             if (util_isANumber(optarg) == false) {
