@@ -124,6 +124,8 @@ void arch_initSigs(void)
     arch_sigs[SIGBUS].descr = "SIGBUS";
     arch_sigs[SIGABRT].important = true;
     arch_sigs[SIGABRT].descr = "SIGABRT";
+    arch_sigs[SIGVTALRM].important = true;
+    arch_sigs[SIGVTALRM].descr = "SIGVTALRM";
 }
 
 const char *exception_to_string(int exception)
