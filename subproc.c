@@ -329,6 +329,15 @@ void subproc_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     int64_t curMillis = util_timeNowMillis();
     int64_t diffMillis = curMillis - fuzzer->timeStartedMillis;
     if (diffMillis > (hfuzz->tmOut * 1000)) {
+        /* Has this instance been already signaled due to timeout? Just, SIGKILL it */
+        if (fuzzer->tmOutSignaled) {
+            LOG_W("PID %d has already been signaled due to timeout. Killing it with SIGKILL",
+                  fuzzer->pid);
+            kill(fuzzer->pid, SIGKILL);
+            return;
+        }
+        fuzzer->tmOutSignaled = true;
+
         LOG_W("PID %d took too much time (limit %ld s). Killing it", fuzzer->pid, hfuzz->tmOut);
         if (hfuzz->tmout_vtalrm) {
             kill(fuzzer->pid, SIGVTALRM);
