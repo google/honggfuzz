@@ -1,39 +1,42 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8">
+    <meta charset='utf-8'>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Honggfuzz by google</title>
-
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/github-light.css">
-    <meta name="viewport" content="width=device-width">
+    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-dark.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
+    <title>Honggfuzz by google</title>
   </head>
+
   <body>
-    <div class="wrapper">
-      <header>
-        <h1>Honggfuzz</h1>
-        <p>An easy-to-use software fuzzer: feedback-driven (hardware and software modes), easy-to-use, security oriented</p>
+    <div id="container">
+      <div class="inner">
 
-        <p class="view"><a href="https://github.com/google/honggfuzz">View the Project on GitHub <small>google/honggfuzz</small></a></p>
+        <header>
+          <h1>Honggfuzz</h1>
+          <h2>An easy-to-use software fuzzer: feedback-driven (hardware and software modes), easy-to-use, security oriented</h2>
+        </header>
 
+        <section id="downloads" class="clearfix">
+          <a href="https://github.com/google/honggfuzz/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
+          <a href="https://github.com/google/honggfuzz/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
+          <a href="https://github.com/google/honggfuzz" id="view-on-github" class="button"><span>View on GitHub</span></a>
+        </section>
 
-        <ul>
-          <li><a href="https://github.com/google/honggfuzz/zipball/master">Download <strong>ZIP File</strong></a></li>
-          <li><a href="https://github.com/google/honggfuzz/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/google/honggfuzz">View On <strong>GitHub</strong></a></li>
-        </ul>
-      </header>
-      <section>
-        <h1>
+        <hr>
+
+        <section id="main_content">
+          <h1>
 <a id="honggfuzz" class="anchor" href="#honggfuzz" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>honggfuzz</h1>
 
 <p><strong>Description</strong></p>
 
-<p>A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See <a href="https://github.com/google/honggfuzz/blob/master/docs/USAGE.md">USAGE</a> for details</p>
+<p>A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See <a href="docs/USAGE.md">USAGE</a> for details</p>
 
 <ul>
 <li>Supports several hardware-based (CPU) and software-based <a href="https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md">feedback-driven fuzzing</a> methods</li>
@@ -61,7 +64,7 @@
 <li>
 <strong>FreeBSD</strong> - gmake</li>
 <li>
-<strong>Android</strong> - Android SDK/NDK. Also see <a href="https://github.com/google/honggfuzz/blob/master/docs/Android.md">this detailed doc</a> on how to build and run it</li>
+<strong>Android</strong> - Android SDK/NDK. Also see <a href="docs/Android.md">this detailed doc</a> on how to build and run it</li>
 <li>
 <strong>Windows</strong> - CygWin</li>
 <li>
@@ -88,21 +91,24 @@
 <li><a href="https://www.hex-rays.com/bugbounty.shtml">Multiple exploitable bugs in IDA-Pro</a></li>
 <li><a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-0316">Adobe Flash memory corruption • CVE-2015-0316</a></li>
 <li><a href="https://www.openssl.org/news/secadv/20160926.txt">Remote Use-after-Free in OpenSSL • CVE-2016-6309</a></li>
-<li><a href="https://www.openssl.org/news/secadv/20161110.txt">Remote OOB write in OpenSSL (crash) • CVE-2016-7053</a></li>
+<li><a href="https://www.openssl.org/news/secadv/20161110.txt">Remote OOB write in OpenSSL • CVE-2016-7054</a></li>
 <li><a href="https://anongit.mindrot.org/openssh.git/commit/?id=28652bca29046f62c7045e933e6b931de1d16737">Pre-auth remote crash in OpenSSH</a></li>
+<li><a href="http://www.openwall.com/lists/oss-security/2016/12/12/7">Remote DoS in Crypto++ • CVE-2016-9939</a></li>
 <li>... and more</li>
 </ul>
 
 <p><strong>Other</strong></p>
 
 <p>This is NOT an official Google product.</p>
-      </section>
-      <footer>
-        <p>This project is maintained by <a href="https://github.com/google">google</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
-      </footer>
+        </section>
+
+        <footer>
+          Honggfuzz is maintained by <a href="https://github.com/google">google</a><br>
+          This page was generated by <a href="https://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.
+        </footer>
+
+        
+      </div>
     </div>
-    <script src="javascripts/scale.fix.js"></script>
-    
   </body>
 </html>
