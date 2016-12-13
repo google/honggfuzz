@@ -34,11 +34,12 @@ The tool has been used to find a few interesting security problems in major soft
   * [Multiple bugs in the poppler library](http://lists.freedesktop.org/archives/poppler/2010-November/006726.html)
   * [Multiple exploitable bugs in IDA-Pro](https://www.hex-rays.com/bugbounty.shtml)
   * [Adobe Flash memory corruption • CVE-2015-0316](http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-0316)
-  * [Remote OOB read in OpenSSL (crash) • CVE-2015-1789]( https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-1789)
-  * [Remote Use-after-Free in OpenSSL • CVE-2016-6309](https://www.openssl.org/news/secadv/20160926.txt)
-  * [Remote OOB write in OpenSSL • CVE-2016-7054](https://www.openssl.org/news/secadv/20161110.txt)
   * [Pre-auth remote crash in OpenSSH](https://anongit.mindrot.org/openssh.git/commit/?id=28652bca29046f62c7045e933e6b931de1d16737)
   * [Remote DoS in Crypto++ • CVE-2016-9939](http://www.openwall.com/lists/oss-security/2016/12/12/7)
+  * OpenSSL
+   * [Remote OOB read • CVE-2015-1789]( https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-1789)
+   * [Remote Use-after-Free (potential RCE) • CVE-2016-6309](https://www.openssl.org/news/secadv/20160926.txt)
+   * [Remote OOB write • CVE-2016-7054](https://www.openssl.org/news/secadv/20161110.txt)
   * ... and more
 
 **Other**
