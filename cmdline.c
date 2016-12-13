@@ -273,7 +273,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"instrument", no_argument, NULL, 'z'}, "Enable compile-time instrumentation (link with libhfuzz/libhfuzz.a)"},
         {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
         {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libhfuzz/libhfuzz.a)"},
-        {{"tmout_sigvtalrm", no_argument, NULL, 0x105}, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)"},
+        {{"tmout_sigvtalrm", no_argument, NULL, 'T'}, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)"},
 
 #if defined(_HF_ARCH_LINUX)
         {{"linux_symbols_bl", required_argument, NULL, 0x504}, "Symbols blacklist filter file (one entry per line)"},
@@ -302,7 +302,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     const char *logfile = NULL;
     int opt_index = 0;
     for (;;) {
-        int c = getopt_long(argc, argv, "-?hqvVsuPf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:Cz", opts,
+        int c = getopt_long(argc, argv, "-?hqvVsuPf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:CzT", opts,
                             &opt_index);
         if (c < 0)
             break;
@@ -387,7 +387,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         case 'P':
             hfuzz->persistent = true;
             break;
-        case 0x105:
+        case 'T':
             hfuzz->tmout_vtalrm = true;
             break;
         case 'p':
