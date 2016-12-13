@@ -4,10 +4,10 @@
 
 A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See [USAGE](docs/USAGE.md) for details
 
-  * Supports several hardware-based (CPU) and software-based [feedback-driven fuzzing](docs/FeedbackDrivenFuzzing.md) methods
-  * It works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and [Android](docs/Android.md)
-  * Supports persistent modes of fuzzing (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that [here](docs/PersistentFuzzing.md)
-  * [Can fuzz remote/standalone long-lasting processes](docs/AttachingToPid.md) (e.g. network servers like Apache's httpd and ISC's bind)
+  * Supports several hardware-based (CPU) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) methods
+  * It works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md)
+  * Supports persistent modes of fuzzing (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)
+  * [Can fuzz remote/standalone long-lasting processes](https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md) (e.g. network servers like Apache's httpd and ISC's bind)
 
 **Code**
 
@@ -35,8 +35,9 @@ The tool has been used to find a few interesting security problems in major soft
   * [Multiple exploitable bugs in IDA-Pro](https://www.hex-rays.com/bugbounty.shtml)
   * [Adobe Flash memory corruption • CVE-2015-0316](http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-0316)
   * [Remote Use-after-Free in OpenSSL • CVE-2016-6309](https://www.openssl.org/news/secadv/20160926.txt)
-  * [Remote OOB write in OpenSSL (crash) • CVE-2016-7054](https://www.openssl.org/news/secadv/20161110.txt)
+  * [Remote OOB write in OpenSSL • CVE-2016-7054](https://www.openssl.org/news/secadv/20161110.txt)
   * [Pre-auth remote crash in OpenSSH](https://anongit.mindrot.org/openssh.git/commit/?id=28652bca29046f62c7045e933e6b931de1d16737)
+  * [Remote DoS in Crypto++ • CVE-2016-9939](http://www.openwall.com/lists/oss-security/2016/12/12/7)
   * ... and more
 
 **Other**
