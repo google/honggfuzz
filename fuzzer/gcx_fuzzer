@@ -1,1 +1,2 @@
- honggfuzz -f ~/Downloads/gcx -e gcx -n 3 -t 3 -- /Applications/Utilities/Grapher.app/Contents/MacOS/Grapher ___FILE___
+cd ~/Library/Containers/com.apple.grapher/Data
+riufuzz -r 0.0001 -V -f ~/Downloads/gcx -e gcx -n 3 -t 3 -- /Applications/Utilities/Grapher.app/Contents/MacOS/Grapher ___FILE___

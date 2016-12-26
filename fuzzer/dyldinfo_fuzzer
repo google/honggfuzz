@@ -1,0 +1,1 @@
+riufuzz -q -r 0.0001 -f /bin -V -t3 -n3 -- dyldinfo -function_starts -dylibs -dr -data_in_code -opcodes -export ___FILE___

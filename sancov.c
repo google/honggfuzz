@@ -587,7 +587,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 LOG_E("Invalid BB addr (%#" PRIx64 ") at offset %" PRId64, bbAddr, (uint64_t) pos);
             }
         }
-        nBBs++;
+        nBBs++; // 命中的分支指令
     }
 
     /* Finally iterate over all instrumented maps to sum-up the number of newly met BB addresses */
@@ -600,10 +600,10 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     /* Successful parsing - update fuzzer worker's counters */
-    fuzzer->sanCovCnts.hitBBCnt = nBBs;
-    fuzzer->sanCovCnts.totalBBCnt = nBBs + nZeroBBs;
-    fuzzer->sanCovCnts.dsoCnt = mapsNum;
-    fuzzer->sanCovCnts.iDsoCnt = mapsNum - noCovMapsNum;        /* Instrumented DSOs */
+    fuzzer->sanCovCnts.hitBBCnt = nBBs;     // BB命中的数量
+    fuzzer->sanCovCnts.totalBBCnt = nBBs + nZeroBBs;    // BB总数
+    fuzzer->sanCovCnts.dsoCnt = mapsNum;    // 动态链接对象个数
+    fuzzer->sanCovCnts.iDsoCnt = mapsNum - noCovMapsNum;   // 被源码插桩的链接库个数     /* Instrumented DSOs */
 
     if (hfuzz->linux.pid == 0 && hfuzz->persistent == false) {
         unlink(covFile);

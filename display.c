@@ -274,7 +274,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put(ESC_YELLOW "       *** hit #bb    : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     " (" ESC_WHITE "coverage: " ESC_RESET ESC_BOLD "%.2f" ESC_RESET "%%)\n", hitBB, covPer);
         display_put(ESC_YELLOW "       *** total #dso : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
-                    " (Dynamic Shared Object)\n", ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
+                    " (" ESC_WHITE "Instrumented Dynamic Shared Object" ESC_RESET ")\n", ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
         display_put(ESC_YELLOW "       *** new #bb    : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     " (" ESC_WHITE "last update:" ESC_RESET ESC_BOLD " %s)\n" ESC_RESET, 
                     ATOMIC_GET(hfuzz->sanCovCnts.newBBCnt), 

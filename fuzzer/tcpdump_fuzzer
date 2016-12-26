@@ -1,0 +1,1 @@
+riufuzz -q -f /Volumes/Macintosh/Users/riusksk/bughunt_tools/fuzzdata/samples/pcap -e any -t5 -n3 -V -- /usr/sbin/tcpdump -r ___FILE___

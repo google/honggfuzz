@@ -1,1 +1,1 @@
-riufuzz -w ../dict/font.dict -f /Library/Fonts -e any -V -t3 -r 0.0001 -n3 -- /Applications/Font\ Book.app/Contents/MacOS/Font\ Book ___FILE___
+riufuzz -w ../dict/font.dict -f /Volumes/Macintosh/Users/riusksk/bughunt_tools/fuzzdata/samples/ttf/languages/Armunicode -e ttf -V -t3 -r 0.0001 -n3 -- /Applications/Font\ Book.app/Contents/MacOS/Font\ Book ___FILE___
