@@ -60,13 +60,6 @@
 #include "perf.h"
 #include "ptrace_utils.h"
 
-/* Common sanitizer flags */
-#if _HF_MONITOR_SIGABRT
-#define ABORT_FLAG        "abort_on_error=1"
-#else
-#define ABORT_FLAG        "abort_on_error=0"
-#endif
-
 /* Size of remote pid cmdline char buffer */
 #define _HF_PROC_CMDLINE_SZ 8192
 
@@ -324,26 +317,30 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
     }
 
-#if !_HF_MONITOR_SIGABRT
-    /*
-     * There might be cases where ASan instrumented targets crash while generating
-     * reports for detected errors (inside __asan_report_error() proc). Under such
-     * scenarios target fails to exit or SIGABRT (AsanDie() proc) as defined in
-     * ASAN_OPTIONS flags, leaving garbage logs. An attempt is made to parse such
-     * logs for cases where enough data are written to identify potentially missed
-     * crashes. If ASan internal error results into a SIGSEGV being raised, it
-     * will get caught from ptrace API, handling the discovered ASan internal crash.
-     */
-    char crashReport[PATH_MAX] = { 0 };
-    snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX, ptracePid);
-    if (files_exists(crashReport)) {
-        LOG_W("Un-handled ASan report due to compiler-rt internal error - retry with '%s' (%s)",
-              crashReport, fuzzer->fileName);
+    if (hfuzz->enableSanitizers) {
+        /*
+         * There might be cases where ASan instrumented targets crash while generating
+         * reports for detected errors (inside __asan_report_error() proc). Under such
+         * scenarios target fails to exit or SIGABRT (AsanDie() proc) as defined in
+         * ASAN_OPTIONS flags, leaving garbage logs. An attempt is made to parse such
+         * logs for cases where enough data are written to identify potentially missed
+         * crashes. If ASan internal error results into a SIGSEGV being raised, it
+         * will get caught from ptrace API, handling the discovered ASan internal crash.
+         */
+        char crashReport[PATH_MAX] = { 0 };
+        snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX,
+                 ptracePid);
+        if (files_exists(crashReport)) {
+            LOG_W("Un-handled ASan report due to compiler-rt internal error - retry with '%s' (%s)",
+                  crashReport, fuzzer->fileName);
 
-        /* Manually set the exitcode to ASan to trigger report parsing */
-        arch_ptraceExitAnalyze(hfuzz, ptracePid, fuzzer, HF_ASAN_EXIT_CODE);
+            /*
+             * Manually set the exitcode to ASan to trigger report parsing  since it's
+             * the only report format supported yet
+             */
+            arch_ptraceExitAnalyze(hfuzz, ptracePid, fuzzer, HF_ASAN_EXIT_CODE);
+        }
     }
-#endif
 
     arch_perfAnalyze(hfuzz, fuzzer);
     sancov_Analyze(hfuzz, fuzzer);
@@ -453,12 +450,12 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     }
 
     /*
-     * If sanitizer fuzzing enabled increase number of major frames, since top 7-9 frames
+     * If sanitizer fuzzing enabled increase number of major frames, since top 5-7 frames
      * will be occupied with sanitizer symbols if 'abort_on_error' flag is set
      */
-#if _HF_MONITOR_SIGABRT
-    hfuzz->linux.numMajorFrames = 14;
-#endif
+    if (hfuzz->monitorSIGABRT) {
+        hfuzz->linux.numMajorFrames = 14;
+    }
 
     return true;
 }

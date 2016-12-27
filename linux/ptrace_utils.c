@@ -266,11 +266,7 @@ static struct {
     [SIGBUS].important = true,
     [SIGBUS].descr = "SIGBUS",
 
-#if _HF_MONITOR_SIGABRT
-    [SIGABRT].important = true,
-#else
     [SIGABRT].important = false,
-#endif
     [SIGABRT].descr = "SIGABRT",
 
     [SIGVTALRM].important = true,
@@ -1263,7 +1259,8 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
         /*
          * If it's an interesting signal, save the testcase
          */
-        if (arch_sigs[WSTOPSIG(status)].important) {
+        if (arch_sigs[WSTOPSIG(status)].important
+            || (WSTOPSIG(status) == SIGABRT && hfuzz->monitorSIGABRT == true)) {
             /*
              * If fuzzer worker is from core fuzzing process run full
              * analysis. Otherwise just unwind and get stack hash signature.

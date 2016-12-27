@@ -48,6 +48,7 @@
 #include "log.h"
 #include "mangle.h"
 #include "report.h"
+#include "sanitizers.h"
 #include "sancov.h"
 #include "subproc.h"
 #include "util.h"
@@ -616,6 +617,9 @@ void fuzz_threads(honggfuzz_t * hfuzz)
 
     if (!arch_archInit(hfuzz)) {
         LOG_F("Couldn't prepare arch for fuzzing");
+    }
+    if (!sanitizers_Init(hfuzz)) {
+        LOG_F("Couldn't prepare sanitizer options");
     }
     if (!sancov_Init(hfuzz)) {
         LOG_F("Couldn't prepare sancov options");

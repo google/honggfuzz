@@ -85,12 +85,6 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 /* Maximum number of PC guards (=trace-pc-guard) we support */
 #define _HF_PC_GUARD_MAX (1024U * 1024U)
 
-#if defined(__ANDROID__)
-#define _HF_MONITOR_SIGABRT 0
-#else
-#define _HF_MONITOR_SIGABRT 1
-#endif
-
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
 
 /* Memory barriers */
@@ -238,6 +232,8 @@ typedef struct {
     char *envs[128];
     bool persistent;
     bool tmout_vtalrm;
+    bool enableSanitizers;
+    bool monitorSIGABRT;
 
     const char *dictionaryFile;
      TAILQ_HEAD(, strings_t) dictq;
