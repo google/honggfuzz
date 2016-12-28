@@ -39,6 +39,14 @@
  * For cases where clang runtime library linking is not an option SIGABRT should
  * be monitored even for noise targets, such as the Android OS, since not
  * alternative exists.
+ *
+ * There might be cases where ASan instrumented targets crash while generating
+ * reports for detected errors (inside __asan_report_error() proc). Under such
+ * scenarios target fails to exit or SIGABRT (AsanDie() proc) as defined in
+ * ASAN_OPTIONS flags, leaving garbage logs. An attempt is made to parse such
+ * logs for cases where enough data are written to identify potentially missed
+ * crashes. If ASan internal error results into a SIGSEGV being raised, it
+ * will get caught from ptrace API, handling the discovered ASan internal crash.
  */
 
 /* 'log_path' output directory for sanitizer reports */
@@ -120,7 +128,7 @@ bool sanitizers_Init(honggfuzz_t * hfuzz)
         abortFlag = kABORT_DISABLED;
     }
 
-    /* AddressSanitizer (ASan) */
+    /* Address Sanitizer (ASan) */
     if (hfuzz->useSanCov) {
         snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s:%s%s/%s", kASAN_OPTS, abortFlag, kSAN_COV_OPTS,
                  kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
@@ -135,7 +143,7 @@ bool sanitizers_Init(honggfuzz_t * hfuzz)
     memcpy(hfuzz->sanOpts.asanOpts, san_opts, flagsSz);
     LOG_D("ASAN_OPTIONS=%s", hfuzz->sanOpts.asanOpts);
 
-    /* Undefined Behavior (UBSan) */
+    /* Undefined Behavior Sanitizer (UBSan) */
     memset(san_opts, 0, bufSz);
     if (hfuzz->useSanCov) {
         snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s:%s%s/%s", kUBSAN_OPTS, abortFlag, kSAN_COV_OPTS,
@@ -151,7 +159,7 @@ bool sanitizers_Init(honggfuzz_t * hfuzz)
     memcpy(hfuzz->sanOpts.ubsanOpts, san_opts, flagsSz);
     LOG_D("UBSAN_OPTIONS=%s", hfuzz->sanOpts.ubsanOpts);
 
-    /* MemorySanitizer (MSan) */
+    /* Memory Sanitizer (MSan) */
     memset(san_opts, 0, bufSz);
     const char *msan_reports_flag = "report_umrs=0";
     if (hfuzz->msanReportUMRS) {
