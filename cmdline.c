@@ -526,8 +526,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
           cmdlineYesNo(hfuzz->saveUnique), hfuzz->origFlipRate,
           hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, hfuzz->tmOut,
           hfuzz->mutationsMax, hfuzz->threadsMax, hfuzz->fileExtn,
-          hfuzz->asLimit, hfuzz->cmdline[0], hfuzz->linux.pid,
-          cmdlineYesNo(hfuzz->monitorSIGABRT));
+          hfuzz->asLimit, hfuzz->cmdline[0], hfuzz->linux.pid, cmdlineYesNo(hfuzz->monitorSIGABRT));
 
     snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->cmdline[0]);
     for (size_t i = 1; hfuzz->cmdline[i]; i++) {
