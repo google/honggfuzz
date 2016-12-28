@@ -903,7 +903,7 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
                 ++pLineLC;
             }
 
-            /* Separator for crash thread stack trace is an empty line (after trmming \n */
+            /* End separator for crash thread stack trace is an empty line */
             if ((*pLineLC == '\0') && (frameIdx != 0)) {
                 break;
             }
@@ -1087,7 +1087,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
 
     /* Generate report */
     fuzzer->report[0] = '\0';
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "TYPE: sanitizer exit code crash\n");
+    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "EXIT_CODE: %s\n", HF_SAN_EXIT_CODE);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n",
                    fuzzer->origFileName);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n",

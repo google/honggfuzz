@@ -446,8 +446,9 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     }
 
     /*
-     * If sanitizer fuzzing enabled increase number of major frames, since top 5-7 frames
-     * will be occupied with sanitizer symbols if 'abort_on_error' flag is set
+     * If sanitizer fuzzing enabled increase number of major frames, since top
+     * 7-9 frames will be occupied with sanitizer symbols if 'abort_on_error'
+     * flag is set
      */
     if (hfuzz->monitorSIGABRT) {
         hfuzz->linux.numMajorFrames = 14;

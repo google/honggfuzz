@@ -60,6 +60,29 @@
 #define kMagic64 0xC0BFFFFFFFFFFF64
 
 /*
+ * Each DSO/executable that has been compiled with enabled coverage instrumentation
+ * is detected from compiler_rt runtime library when loaded. When coverage_direct
+ * method is selected, runtime library is pre-allocating kPcArrayMmapSize [1] byte
+ * chunks until the total size of chunks is greater than the number of inserted
+ * guards. This effectively means that we might have a large unused (zero-filled)
+ * area that we can't identify at runtime (we need to do binary inspection).
+ *
+ * Runtime maintained data structs size overhead is not affected since fixed-size
+ * bitmap is used. However, the way the display coverage statistics are generated
+ * is not very accurate because:
+ *  a) ASan compiled DSO might get loaded although not followed from monitoring
+       execution affecting the counters
+ *  b) Not all zero-fill chunks translate into non-hit basic block as they might
+ *     be the chunk padding
+ *
+ * Probably there aren't many we can do to deal with this issue without introducing
+ * a huge performance overhead at an already costly feedback method.
+ *
+ * [1] 'https://llvm.org/svn/llvm-project/compiler-rt/branches/release_38/lib/sanitizer_common/sanitizer_coverage_libcdep.cc'
+ */
+#define kPcArrayMmapSize (64 * 1024)
+
+/*
  * bitmap implementation
  */
 static bitmap_t *sancov_newBitmap(uint32_t capacity)
@@ -395,7 +418,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             }
         }
 
-        /* If not DSO number history (first run) or new DSO loaded, realloc local maps metadata buf */
+        /* If no DSO number history (first run) or new DSO loaded, realloc local maps metadata buf */
         if (prevMapsNum == 0 || prevMapsNum < mapsNum) {
             if ((mapsBuf =
                  util_Realloc(mapsBuf, (size_t) (mapsNum + 1) * sizeof(memMap_t))) == NULL) {
