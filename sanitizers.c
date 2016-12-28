@@ -74,7 +74,7 @@
 #define kASAN_COMMON_OPTS   "allow_user_segv_handler=1:"\
                             "handle_segv=0:"\
                             "allocator_may_return_null=1:"\
-                            kSAN_COMMON":exitcode=" STR(HF_ASAN_EXIT_CODE)
+                            kSAN_COMMON":exitcode=" STR(HF_SAN_EXIT_CODE)
 /* Platform specific flags */
 #if defined(__ANDROID__)
 /*
@@ -87,10 +87,10 @@
 #endif
 
 /* --{ UBSan }-- */
-#define kUBSAN_OPTS         kSAN_COMMON":exitcode=" STR(HF_UBSAN_EXIT_CODE)
+#define kUBSAN_OPTS         kSAN_COMMON":exitcode=" STR(HF_SAN_EXIT_CODE)
 
 /* --{ MSan }-- */
-#define kMSAN_OPTS          kSAN_COMMON":exit_code=" STR(HF_MSAN_EXIT_CODE) ":"\
+#define kMSAN_OPTS          kSAN_COMMON":exit_code=" STR(HF_SAN_EXIT_CODE) ":"\
                             "wrap_signals=0:print_stats=1"
 
 /*

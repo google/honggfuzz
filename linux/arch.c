@@ -325,15 +325,16 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             if (fuzzer->backtrace) {
                 unlink(crashReport);
             } else {
-                LOG_W("Un-handled ASan report due to compiler-rt internal error - retry with '%s' (%s)",
-                      crashReport, fuzzer->fileName);
+                LOG_W
+                    ("Un-handled ASan report due to compiler-rt internal error - retry with '%s' (%s)",
+                     crashReport, fuzzer->fileName);
 
                 /*
                  * Manually set the exitcode to ASan to trigger report parsing  since it's
                  * the only report format supported yet
                  */
-                arch_ptraceExitAnalyze(hfuzz, ptracePid, fuzzer, HF_ASAN_EXIT_CODE);
-                }
+                arch_ptraceExitAnalyze(hfuzz, ptracePid, fuzzer);
+            }
         }
     }
 

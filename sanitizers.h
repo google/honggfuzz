@@ -20,9 +20,8 @@
 #ifndef _HF_SANITIZERS_H_
 #define _HF_SANITIZERS_H_
 
-#define HF_MSAN_EXIT_CODE   103
-#define HF_ASAN_EXIT_CODE   104
-#define HF_UBSAN_EXIT_CODE  105
+/* Exit code is common for all sanitizers */
+#define HF_SAN_EXIT_CODE   103
 
 /* Prefix for sanitizer report files */
 #define kLOGPREFIX          "HF.sanitizer.log"
