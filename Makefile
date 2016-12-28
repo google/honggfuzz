@@ -261,7 +261,8 @@ android:
 
 	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
     APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) \
-    NDK_TOOLCHAIN=$(ANDROID_NDK_TOOLCHAIN) $(NDK_BUILD_ARGS)
+    NDK_TOOLCHAIN=$(ANDROID_NDK_TOOLCHAIN) $(NDK_BUILD_ARGS) \
+    APP_MODULES='honggfuzz hfuzz'
 
 # Loop all ABIs and pass-through flags since visibility is lost due to sub-process
 .PHONY: android-all
