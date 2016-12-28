@@ -981,9 +981,6 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
         return;
     }
 
-    /* Local copy since flag is overridden for some crashes */
-    bool saveUnique = hfuzz->saveUnique;
-
     /* Increase global crashes counter */
     ATOMIC_POST_INC(hfuzz->crashesCnt);
     ATOMIC_POST_AND(hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
@@ -1032,39 +1029,14 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     pc = (uintptr_t) funcs[0].pc;
 
     /*
-     * Check if backtrace contains whitelisted symbol. Whitelist overrides
-     * both stackhash and symbol blacklist. Crash is always kept regardless
-     * of the status of uniqueness flag.
+     * Check if stackhash is blacklisted
      */
-    if (hfuzz->linux.symsWl) {
-        char *wlSymbol = arch_btContainsSymbol(hfuzz->linux.symsWlCnt,
-                                               hfuzz->linux.symsWl, funcCnt, funcs);
-        if (wlSymbol != NULL) {
-            saveUnique = false;
-            LOG_D("Whitelisted symbol '%s' found, skipping blacklist checks", wlSymbol);
-        }
-    } else {
-        /*
-         * Check if stackhash is blacklisted
-         */
-        if (hfuzz->blacklist
-            && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) !=
-                -1)) {
-            LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
-            ATOMIC_POST_INC(hfuzz->blCrashesCnt);
-            return;
-        }
-
-        /*
-         * Check if backtrace contains blacklisted symbol
-         */
-        char *blSymbol = arch_btContainsSymbol(hfuzz->linux.symsBlCnt,
-                                               hfuzz->linux.symsBl, funcCnt, funcs);
-        if (blSymbol != NULL) {
-            LOG_I("Blacklisted symbol '%s' found, skipping", blSymbol);
-            ATOMIC_POST_INC(hfuzz->blCrashesCnt);
-            return;
-        }
+    if (hfuzz->blacklist
+        && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) !=
+            -1)) {
+        LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
+        ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+        return;
     }
 
     /* If dry run mode, copy file with same name into workspace */
@@ -1073,7 +1045,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
                  hfuzz->workDir, fuzzer->origFileName);
     } else {
         /* Keep the crashes file name format identical */
-        if (fuzzer->backtrace != 0ULL && saveUnique) {
+        if (fuzzer->backtrace != 0ULL && hfuzz->saveUnique) {
             snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
                      "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s",
                      hfuzz->workDir, "SAN", pc, fuzzer->backtrace,
