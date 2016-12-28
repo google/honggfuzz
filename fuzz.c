@@ -258,6 +258,9 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             LOG_F("subproc_Run()");
         }
 
+        /* Delete intermediate files generated from verifier */
+        unlink(vFuzzer.fileName);
+
         /* If stack hash doesn't match skip name tag and exit */
         if (crashedFuzzer->backtrace != vFuzzer.backtrace) {
             LOG_D("Verifier stack hash mismatch");
