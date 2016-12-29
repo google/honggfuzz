@@ -36,22 +36,22 @@ ifeq ($(CLEAN_RUN),false)
   endif
 endif
 
+ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi armeabi-v7a))
+  ARCH_ABI := arm
+else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86))
+  ARCH_ABI := x86
+else ifeq ($(APP_ABI),$(filter $(APP_ABI),arm64-v8a))
+  ARCH_ABI := arm64
+else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86_64))
+  ARCH_ABI := x86_64
+else
+  $(error Unsuported / Unknown APP_API '$(APP_ABI)')
+endif
+
 # Enable Linux ptrace() instead of POSIX signal interface by default
 ANDROID_WITH_PTRACE ?= true
 
 ifeq ($(ANDROID_WITH_PTRACE),true)
-  ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi armeabi-v7a))
-    ARCH_ABI := arm
-  else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86))
-    ARCH_ABI := x86
-  else ifeq ($(APP_ABI),$(filter $(APP_ABI),arm64-v8a))
-    ARCH_ABI := arm64
-  else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86_64))
-    ARCH_ABI := x86_64
-  else
-    $(error Unsuported / Unknown APP_API '$(APP_ABI)')
-  endif
-
   # Additional libcrypto OpenSSL flags required to mitigate bug (ARM systems with API <= 21)
   ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi))
     OPENSSL_ARMCAP_ABI := "5"
