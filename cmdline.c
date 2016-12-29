@@ -518,6 +518,15 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         LOG_I("Verifier enabled with 0.0 flipRate, activating dry run mode");
     }
 
+    /*
+     * 'enableSanitizers' can be auto enabled when 'useSanCov', although it's probably
+     * better to let user know about the features that each flag control.
+     */
+    if (hfuzz->useSanCov == true && hfuzz->enableSanitizers == false) {
+        LOG_E("Sanitizer coverage cannot be used without enabling sanitizers '-S/--sanitizers'");
+        return false;
+    }
+
     LOG_I("inputDir '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, flipRate: %lf, "
           "externalCommand: '%s', tmOut: %ld, mutationsMax: %zu, threadsMax: %zu, fileExtn: '%s', "
           "memoryLimit: 0x%" PRIx64 "(MiB), fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
