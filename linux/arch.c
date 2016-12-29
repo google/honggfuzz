@@ -445,6 +445,9 @@ bool arch_archInit(honggfuzz_t * hfuzz)
         hfuzz->linux.pidCmd[sz] = '\0';
     }
 
+    /* Updates the important signal array based on input args */
+    arch_ptraceSignalsInit(hfuzz);
+
     /*
      * If sanitizer fuzzing enabled and SIGABRT is monitored (abort_on_error=1),
      * increase number of major frames, since top 7-9 frames will be occupied

@@ -266,10 +266,12 @@ static struct {
     [SIGBUS].important = true,
     [SIGBUS].descr = "SIGBUS",
 
+    /* Is affected from monitorSIGABRT flag */
     [SIGABRT].important = false,
     [SIGABRT].descr = "SIGABRT",
 
-    [SIGVTALRM].important = true,
+    /* Is affected from tmout_vtalrm flag */
+    [SIGVTALRM].important = false,
     [SIGVTALRM].descr = "SIGVTALRM-TMOUT",
 };
 /*  *INDENT-ON* */
@@ -1197,8 +1199,7 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
         /*
          * If it's an interesting signal, save the testcase
          */
-        if (arch_sigs[WSTOPSIG(status)].important
-            || (WSTOPSIG(status) == SIGABRT && hfuzz->monitorSIGABRT == true)) {
+        if (arch_sigs[WSTOPSIG(status)].important) {
             /*
              * If fuzzer worker is from core fuzzing process run full
              * analysis. Otherwise just unwind and get stack hash signature.
@@ -1371,4 +1372,13 @@ void arch_ptraceDetach(pid_t pid)
         arch_ptraceWaitForPidStop(tasks[i]);
         ptrace(PTRACE_DETACH, tasks[i], NULL, NULL);
     }
+}
+
+void arch_ptraceSignalsInit(honggfuzz_t * hfuzz)
+{
+    /* Default is true for all platforms except Android */
+    arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
+
+    /* Default is false */
+    arch_sigs[SIGVTALRM].important = hfuzz->tmout_vtalrm;
 }
