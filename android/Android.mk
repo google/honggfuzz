@@ -15,6 +15,9 @@
 
 LOCAL_PATH := $(abspath $(call my-dir)/..)
 
+# Maintain a local copy since some NDK versions lose LOCAL_PATH scope at POST_BUILD_EVENT
+MY_LOCAL_PATH := $(LOCAL_PATH)
+
 # Force a clean if target API has changed and a previous build exists
 CLEAN_RUN := false
 ifneq ("$(wildcard $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/android_api.txt)","")
@@ -186,8 +189,8 @@ include $(BUILD_EXECUTABLE)
 # required.
 all:POST_BUILD_EVENT
 POST_BUILD_EVENT:
-	@echo $(APP_PLATFORM) > $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/android_api.txt
-	@echo $(NDK_TOOLCHAIN) > $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/ndk_toolchain.txt
-	@test -f $(LOCAL_PATH)/obj/local/$(TARGET_ARCH_ABI)/libhfuzz.a && \
-	  cp $(LOCAL_PATH)/obj/local/$(TARGET_ARCH_ABI)/libhfuzz.a \
-	    $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/libhfuzz.a || true
+	@echo $(APP_PLATFORM) > $(MY_LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/android_api.txt
+	@echo $(NDK_TOOLCHAIN) > $(MY_LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/ndk_toolchain.txt
+	@test -f $(MY_LOCAL_PATH)/obj/local/$(TARGET_ARCH_ABI)/libhfuzz.a && \
+	  cp $(MY_LOCAL_PATH)/obj/local/$(TARGET_ARCH_ABI)/libhfuzz.a \
+	    $(MY_LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/libhfuzz.a || true
