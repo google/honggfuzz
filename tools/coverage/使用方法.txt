@@ -1,0 +1,237 @@
+1、运行IDA脚本生成Basic Block 数据
+python CoverageAll.py 
+Analysing 'D:\Program Files\010Editor\010Editor.exe'
+
+2、生成断点文件，原始执行文件另存为original后缀的文件
+python GenBpFiles.py -i "D:\Program Files\010Editor"  -b "C:\Users\reisklin\Desktop\KavalAnts-master\1.Generation\KavalAntsBB"
+
+Loading all BB files
+Finding files to modify
+Modifying D:\Program Files\010Editor\010Editor.exe based of BB-s in C:\Users\reisklin\Desktop\KavalAnts-master\1.Generation\KavalAntsBB/010Editor.exe.bb
+DONE
+
+3、运行程序记录执行过BB地址
+python StartProcess.py -v -f "./result/AcroRd32/06334-reph-telugu-gurmukhi.pdf.txt" -b "C:\Users\reisklin\Desktop\coverage\BBFile\AcroRd32" "C:\Program Files\Adobe\AcrobatReader\Reader\AcroRd32.exe" "C:\Users\reisklin\Desktop\pdfs\06334-reph-telugu-gurmukhi.pdf"
+
+python StartProcess.py -v -f "./result/FoxitReader/06334-reph-telugu-gurmukhi.pdf.txt" -b "C:\Users\reisklin\Desktop\coverage\BBFile\FoxitReader" "C:\Program Files\Foxit Software\Foxit\FoxitReader.exe" "C:\Users\reisklin\Desktop\pdfs\06334-reph-telugu-gurmukhi.pdf"
+
+python StartProcess.py -v -b ./BBFile  "D:\Program Files\010Editor\010Editor.exe" "C:\Users\reisklin\Pictures\tsrc.png"
+
+bbFile:010Editor.exe.bb
+Loaded breakpoints for 010editor.exe with index 00
+Process 010Editor.exe loaded on base 00400000
+  Image 010editor.exe has breakpoints defined
+  Image has breakpoints from 00400000 to 00B6EF96 with index 00
+DLL ntdll loaded on base 77B10000
+DLL kernel32 loaded on base 776B0000
+DLL kernelbase loaded on base 75D90000
+DLL gdi32 loaded on base 76E70000
+DLL user32 loaded on base 77790000
+DLL lpk loaded on base 77C60000
+DLL usp10 loaded on base 77260000
+DLL msvcrt loaded on base 76DC0000
+DLL comdlg32 loaded on base 76A70000
+DLL shlwapi loaded on base 77D00000
+DLL comctl32 loaded on base 73CD0000
+DLL shell32 loaded on base 75E20000
+DLL oleaut32 loaded on base 76AF0000
+DLL ole32 loaded on base 77860000
+DLL rpcrt4 loaded on base 77360000
+DLL imm32 loaded on base 75E00000
+DLL msctf loaded on base 775E0000
+DLL winmm loaded on base 73000000
+DLL winspool loaded on base 6FE70000
+DLL ws2_32 loaded on base 77C80000
+DLL nsi loaded on base 77C70000
+DLL advapi32 loaded on base 76EC0000
+DLL sechost loaded on base 77CC0000
+DLL rshook loaded on base 75A30000
+DLL uxtheme loaded on base 73BC0000
+DLL dwmapi loaded on base 73640000
+DLL cryptbase loaded on base 75980000
+DLL clbcatq loaded on base 76FC0000
+DLL cryptsp loaded on base 75490000
+DLL rsaenh loaded on base 75240000
+DLL rpcrtremote loaded on base 759C0000
+DLL profapi loaded on base 75AE0000
+
+4、分析执行后记录的result.txt文件：
+python Analyze.py -i "C:\Users\reisklin\Desktop\KavalAnts-master\input"
+
+First analysis
+  Files: 1
+  BasicBlocks: 109
+  Time spent: 0 sec
+000001[000 sec]: result.txt covered 109 basicblocks, 0 left
+
+代码覆盖率：109/116 = 93%
+
+==============================================================================
+
+5、精简后仅需要运行如下命令即可，省去上面4条命令：
+
+python run.py -i "C:\Program Files\Foxit Software\Foxit" -e "C:\Program Files\Foxit Software\Foxit\FoxitReader.exe" -s "C:\Users\reisklin\Desktop\pdfs" --nogen
+
+python run.py -i "C:\Program Files\Adobe\AcrobatReader\Reader" -e "C:\Program Files\Adobe\AcrobatReader\Reader\AcroRd32.exe" -s "C:\Users\reisklin\Desktop\pdfs"
+
+
+加上 --nogen 可直接运行程序，而不生成BB文件和断点文件
+
+精简效果：379 => 138 Foxit Reader
+
+[Step 1]: Generage Code Coverage File
+Analysing 'C:\Program Files\Adobe\AcrobatReader\AdobeReader\A3DUtils.dll'
+Analysing 'C:\Program Files\Adobe\AcrobatReader\AdobeReader\ACE.dll'
+……
+[Step 2]: Generage Breakpoint File
+Loading all BB files
+Finding files to modify
+baseExecDir: C:\Program Files\Adobe\AcrobatReader\AdobeReader
+Modifying C:\Program Files\Adobe\AcrobatReader\AdobeReader\ACE.dll based of BB-s in C:\Users\reisklin\Desktop\KavalAnts-master\BBFile\AcroRd32/ACE.dll.bb
+……
+[Step 3]: Start Program File
+……
+[Step 4]: Analysing Code Coverage
+[*] FileCount: 382
+[*] BasicBlocks: 382223
+[*] TotalBB: 4093333
+[*] Coverage: 9.3%
+
+1: 403b_DistributionForm_441802.pdf.txt covered 101779 basicblocks
+2: annotation-text-without-popup.pdf.txt covered 10782 basicblocks
+3: DQA3.pdf.txt covered 6071 basicblocks
+4: HarpersMagazine-1989-09-0059029.pdf.txt covered 3478 basicblocks
+5: bug1001080.pdf.txt covered 2409 basicblocks
+6: annotation-tx.pdf.txt covered 2093 basicblocks
+7: High-Pressure-Measurement-WP-001287.pdf.txt covered 1933 basicblocks
+8: 1737-itcsamsungapple337_794notice14092012.pdf.txt covered 1101 basicblocks
+9: i-9.pdf.txt covered 1020 basicblocks
+10: iplaws01.pdf.txt covered 812 basicblocks
+11: bug946506.pdf.txt covered 648 basicblocks
+12: issue5501.pdf.txt covered 638 basicblocks
+13: annotation-choice-widget.pdf.txt covered 627 basicblocks
+14: hmmTutorialBarbaraExercises.pdf.txt covered 562 basicblocks
+15: afschrift-brief-aan-koningin-beatrix-over-ontslag-kabinet.pdf.txt covered 471 basicblocks
+16: ch01_intro.pdf.txt covered 408 basicblocks
+17: 105315400440pdf_00000009843.pdf.txt covered 376 basicblocks
+18: IBWA05ModelCode_Mar2.pdf.txt covered 289 basicblocks
+19: 466432a.pdf.txt covered 240 basicblocks
+20: coons-allflags-withfunction.pdf.txt covered 234 basicblocks
+21: issue4684.pdf.txt covered 226 basicblocks
+22: blw2014_nachwuchs.pdf.txt covered 224 basicblocks
+23: 64-ia-32-architectures-software-developer-vol-1-manual.pdf.txt covered 182 basicblocks
+24: caravan-d.pdf.txt covered 153 basicblocks
+25: ichiji.pdf.txt covered 141 basicblocks
+26: 06334-reph-telugu-gurmukhi.pdf.txt covered 120 basicblocks
+27: issue3584.pdf.txt covered 116 basicblocks
+28: blendmode.pdf.txt covered 111 basicblocks
+29: annotation-highlight.pdf.txt covered 98 basicblocks
+30: issue2128r.pdf.txt covered 93 basicblocks
+31: bug766086.pdf.txt covered 91 basicblocks
+32: colorkeymask.pdf.txt covered 85 basicblocks
+33: bug1146106.pdf.txt covered 84 basicblocks
+34: ErnestinePro-InfoGuide.pdf.txt covered 79 basicblocks
+35: Gdmogl.pdf.txt covered 75 basicblocks
+36: issue2948.pdf.txt covered 75 basicblocks
+37: alphatrans.pdf.txt covered 70 basicblocks
+38: annotation-text-widget.pdf.txt covered 69 basicblocks
+39: fit11-talk.pdf.txt covered 66 basicblocks
+40: issue5044.pdf.txt covered 62 basicblocks
+41: 716NiagaraWineTrail_opt.pdf.txt covered 61 basicblocks
+42: bug864847.pdf.txt covered 60 basicblocks
+43: issue3371.pdf.txt covered 54 basicblocks
+44: issue5039.pdf.txt covered 54 basicblocks
+45: issue2761.pdf.txt covered 53 basicblocks
+46: issue4573.pdf.txt covered 53 basicblocks
+47: bug866395.pdf.txt covered 52 basicblocks
+48: bug911034.pdf.txt covered 51 basicblocks
+49: f1040.pdf.txt covered 50 basicblocks
+50: issue1905.pdf.txt covered 44 basicblocks
+51: issue3323.pdf.txt covered 41 basicblocks
+52: issue1985.pdf.txt covered 40 basicblocks
+53: bug886717.pdf.txt covered 38 basicblocks
+54: complex_ttf_font.pdf.txt covered 36 basicblocks
+55: extgstate.pdf.txt covered 36 basicblocks
+56: issue4379.pdf.txt covered 36 basicblocks
+57: devicen.pdf.txt covered 34 basicblocks
+58: issue4630.pdf.txt covered 34 basicblocks
+59: bug1065245.pdf.txt covered 31 basicblocks
+60: bug1200096.pdf.txt covered 31 basicblocks
+61: betamax_oral_argument2.pdf.txt covered 30 basicblocks
+62: asciihexdecode.pdf.txt covered 29 basicblocks
+63: gre_research_validity_data.pdf.txt covered 28 basicblocks
+64: annotation-border-styles.pdf.txt covered 25 basicblocks
+65: bug1250079.pdf.txt covered 25 basicblocks
+66: issue3061.pdf.txt covered 25 basicblocks
+67: 4111112.pdf.txt covered 24 basicblocks
+68: alp99.pdf.txt covered 24 basicblocks
+69: bigboundingbox.pdf.txt covered 24 basicblocks
+70: german-umlaut-r.pdf.txt covered 24 basicblocks
+71: bug852992_reduced.pdf.txt covered 23 basicblocks
+72: denoising.pdf.txt covered 23 basicblocks
+73: bug903856.pdf.txt covered 22 basicblocks
+74: freeculture.pdf.txt covered 22 basicblocks
+75: bug1252420.pdf.txt covered 18 basicblocks
+76: calgray.pdf.txt covered 18 basicblocks
+77: issue4550.pdf.txt covered 18 basicblocks
+78: annotation-fileattachment.pdf.txt covered 16 basicblocks
+79: canvas.pdf.txt covered 16 basicblocks
+80: bug900822.pdf.txt covered 15 basicblocks
+81: issue4402_reduced.pdf.txt covered 14 basicblocks
+82: bug1011159.pdf.txt covered 13 basicblocks
+83: bug793632.pdf.txt covered 13 basicblocks
+84: ir_light_hazard.pdf.txt covered 13 basicblocks
+85: issue3025.pdf.txt covered 12 basicblocks
+86: Adoramus_te_Christe.pdf.txt covered 11 basicblocks
+87: annotation-link-text-popup.pdf.txt covered 11 basicblocks
+88: issue2074.pdf.txt covered 11 basicblocks
+89: bug1308536.pdf.txt covered 9 basicblocks
+90: issue4909.pdf.txt covered 9 basicblocks
+91: cmykjpeg.pdf.txt covered 8 basicblocks
+92: issue5084.pdf.txt covered 8 basicblocks
+93: basicapi.pdf.txt covered 7 basicblocks
+94: bug1175962.pdf.txt covered 7 basicblocks
+95: issue2840.pdf.txt covered 7 basicblocks
+96: bug894572.pdf.txt covered 6 basicblocks
+97: filled-background.pdf.txt covered 6 basicblocks
+98: issue3458.pdf.txt covered 6 basicblocks
+99: issue4934.pdf.txt covered 6 basicblocks
+100: CherkasskyGoldberg-1995-MaxFlow.pdf.txt covered 5 basicblocks
+101: issue1293r.pdf.txt covered 5 basicblocks
+102: issue2177.pdf.txt covered 5 basicblocks
+103: issue3521.pdf.txt covered 5 basicblocks
+104: issue4575.pdf.txt covered 5 basicblocks
+105: bug1050040.pdf.txt covered 4 basicblocks
+106: bug1157493.pdf.txt covered 4 basicblocks
+107: dash1.kaptnblaubar.pdf.txt covered 4 basicblocks
+108: glyph_accent.pdf.txt covered 4 basicblocks
+109: issue1512r.pdf.txt covered 4 basicblocks
+110: issue3207r.pdf.txt covered 4 basicblocks
+111: ArabicCIDTrueType.pdf.txt covered 3 basicblocks
+112: CP_080312_Free_mobile.pdf.txt covered 3 basicblocks
+113: franz_2.pdf.txt covered 3 basicblocks
+114: gesamt.pdf.txt covered 3 basicblocks
+115: issue4461.pdf.txt covered 3 basicblocks
+116: bug816075.pdf.txt covered 2 basicblocks
+117: cid_cff.pdf.txt covered 2 basicblocks
+118: issue4436r.pdf.txt covered 2 basicblocks
+119: issue4650.pdf.txt covered 2 basicblocks
+120: issue4665.pdf.txt covered 2 basicblocks
+121: 083014_hanrei.pdf.txt covered 1 basicblocks
+122: annotation-tx3.pdf.txt covered 1 basicblocks
+123: arial_unicode_ab_cidfont.pdf.txt covered 1 basicblocks
+124: ArtofWarbySunTzu.pdf.txt covered 1 basicblocks
+125: bug1068432.pdf.txt covered 1 basicblocks
+126: calrgb.pdf.txt covered 1 basicblocks
+127: issue1171.pdf.txt covered 1 basicblocks
+128: issue2391-1.pdf.txt covered 1 basicblocks
+129: issue2537r.pdf.txt covered 1 basicblocks
+130: issue2833.pdf.txt covered 1 basicblocks
+131: issue2931.pdf.txt covered 1 basicblocks
+132: issue3405r.pdf.txt covered 1 basicblocks
+133: issue3694_reduced.pdf.txt covered 1 basicblocks
+134: issue3928.pdf.txt covered 1 basicblocks
+135: issue4800.pdf.txt covered 1 basicblocks
+136: issue5244.pdf.txt covered 1 basicblocks
+137: issue7020.pdf.txt covered 1 basicblocks
+138: issue918.pdf.txt covered 1 basicblocks

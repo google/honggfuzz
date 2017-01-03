@@ -1,0 +1,1 @@
+Checkers.CHS
