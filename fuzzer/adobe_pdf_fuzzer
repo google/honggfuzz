@@ -1,1 +1,1 @@
-honggfuzz -f ~/Downloads/pdf -r 0.0005 -V -e pdf -t5 -n3 -- /Applications/Adobe\ Acrobat\ Reader\ DC.app/Contents/MacOS/AdobeReader ___FILE___
+riufuzz -r 0.0001 -f /Volumes/Macintosh/Users/riusksk/bughunt_tools/riufuzz/tools/download_pdf/ -w ../dict/pdf.dict  -V -e pdf -t5 -n3 -- /Applications/Adobe\ Acrobat\ Reader\ DC.app/Contents/MacOS/AdobeReader ___FILE___

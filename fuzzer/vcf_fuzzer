@@ -1,0 +1,1 @@
+riufuzz -r 0.0001 -q -f /Volumes/Macintosh/Users/riusksk/bughunt_tools/fuzzdata/samples/vcf -t3 -n3 -V -e vcf -- /Applications/Contacts.app/Contents/MacOS/Contacts ___FILE___

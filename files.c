@@ -64,7 +64,7 @@ ssize_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
 
 bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flags)
 {
-    extern int errno;
+    // extern int errno;
 
     while(1){
         int fd = open(fileName, flags, 0644);

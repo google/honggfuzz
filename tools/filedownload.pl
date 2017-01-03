@@ -62,7 +62,8 @@ sub google{
     my $ua = new LWP::UserAgent;
     $ua->agent("Mozilla/5.0 (X11; Linux i686; rv:2.0.0) Gecko/20130130");
     $ua->max_redirect( 0 );
-    my $response = $ua->get( "http://www.google.com.au/search?hl=zh-CN&q=".$keyword."+filetype:".$ext."&num=100&start=".$start )
+    #my $response = $ua->get( "http://www.google.com.au/search?hl=zh-CN&q=".$keyword."+filetype:".$ext."&num=100&start=".$start )
+    my $response = $ua->get( "http://www.google.com.hk/search?hl=zh-CN&q=".$keyword."+filetype:".$ext."&num=100&start=".$start )
         or die ("[*] google请求失败，请重试！\n");
     #print $response->content."\n";
     my $content = $response->content;
@@ -97,8 +98,8 @@ sub download(){
     my @tmp = split(/\//,$url);
     my $filename = pop(@tmp);
     $filename = uri_unescape($filename);
-    
-    if(open(FH,"download_".$ext."/".$filename)){
+
+    if(-e $filename){
         system("mv *.".$ext." download_".$ext."/");
         return $filename;
     }
