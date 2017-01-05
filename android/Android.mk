@@ -155,7 +155,6 @@ LOCAL_MODULE := honggfuzz
 LOCAL_SRC_FILES := $(wildcard *.c)
 LOCAL_CFLAGS := $(COMMON_CFLAGS)
 LOCAL_LDFLAGS := -lm -latomic
-LOCAL_STATIC_LIBRARIES := libhfuzz
 
 ifeq ($(ANDROID_WITH_PTRACE),true)
   LOCAL_C_INCLUDES := third_party/android/libunwind/include \
