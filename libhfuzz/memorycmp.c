@@ -49,6 +49,10 @@ int strcasecmp(const char *s1, const char *s2)
 
 int strncmp(const char *s1, const char *s2, size_t n)
 {
+    if (n == 0) {
+        return 0;
+    }
+
     unsigned int v = 0;
 
     size_t i = 0;
@@ -67,6 +71,10 @@ int strncmp(const char *s1, const char *s2, size_t n)
 
 int strncasecmp(const char *s1, const char *s2, size_t n)
 {
+    if (n == 0) {
+        return 0;
+    }
+
     unsigned int v = 0;
 
     size_t i = 0;
@@ -106,6 +114,10 @@ char *strcasestr(const char *haystack, const char *needle)
 __attribute__ ((always_inline))
 static inline int _memcmp(const void *m1, const void *m2, size_t n, void *addr)
 {
+    if (n == 0) {
+        return 0;
+    }
+
     unsigned int v = 0;
 
     const char *s1 = (const char *)m1;
