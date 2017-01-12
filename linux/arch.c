@@ -24,10 +24,15 @@
 #include "../common.h"
 #include "../arch.h"
 
+#include <arpa/inet.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <locale.h>
+#include <net/if.h>
+#include <net/route.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,7 +52,9 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
@@ -69,6 +76,36 @@
 
 /* Size of remote pid cmdline char buffer */
 #define _HF_PROC_CMDLINE_SZ 8192
+
+static bool arch_ifaceUp(const char *ifacename)
+{
+    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+    if (sock == -1) {
+        PLOG_E("socket(AF_INET, SOCK_STREAM, IPPROTO_IP)");
+        return false;
+    }
+
+    struct ifreq ifr;
+    memset(&ifr, '\0', sizeof(ifr));
+    snprintf(ifr.ifr_name, IF_NAMESIZE, "%s", ifacename);
+
+    if (ioctl(sock, SIOCGIFFLAGS, &ifr) == -1) {
+        PLOG_E("ioctl(iface='%s', SIOCGIFFLAGS, IFF_UP)", ifacename);
+        close(sock);
+        return false;
+    }
+
+    ifr.ifr_flags |= (IFF_UP | IFF_RUNNING);
+
+    if (ioctl(sock, SIOCSIFFLAGS, &ifr) == -1) {
+        PLOG_E("ioctl(iface='%s', SIOCSIFFLAGS, IFF_UP|IFF_RUNNING)", ifacename);
+        close(sock);
+        return false;
+    }
+
+    close(sock);
+    return true;
+}
 
 static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
@@ -107,13 +144,18 @@ static pid_t arch_clone(uintptr_t flags)
     return 0;
 }
 
-pid_t arch_fork(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
+pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED)
 {
-    pid_t pid = arch_clone(CLONE_UNTRACED | SIGCHLD);
+    pid_t pid = arch_clone(hfuzz->linux.cloneFlags | CLONE_UNTRACED | SIGCHLD);
     if (pid == -1) {
         return pid;
     }
     if (pid == 0) {
+        if (hfuzz->linux.cloneFlags & CLONE_NEWNET) {
+            if (arch_ifaceUp("lo") == false) {
+                LOG_W("Cannot bring interface 'lo' up");
+            }
+        }
         return pid;
     }
 

@@ -27,6 +27,10 @@
 #include <getopt.h>
 #include <inttypes.h>
 #include <limits.h>
+#if defined(_HF_ARCH_LINUX)
+#include <sched.h>
+#endif                          /* defined(_HF_ARCH_LINUX) */
+#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -234,6 +238,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             .symsWlFile = NULL,
             .symsWlCnt = 0,
             .symsWl = NULL,
+            .cloneFlags = 0,
         },
     };
     /*  *INDENT-ON* */
@@ -288,6 +293,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"linux_perf_bts_block", no_argument, NULL, 0x512}, "Use Intel BTS to count unique blocks"},
         {{"linux_perf_bts_edge", no_argument, NULL, 0x513}, "Use Intel BTS to count unique edges"},
         {{"linux_perf_ipt_block", no_argument, NULL, 0x514}, "Use Intel Processor Trace to count unique blocks (requires libipt.so)"},
+        {{"linux_ns_net", no_argument, NULL, 0x0530}, "Use Linux NET namespace isolation"},
+        {{"linux_ns_pid", no_argument, NULL, 0x0531}, "Use Linux PID namespace isolation"},
+        {{"linux_ns_ipc", no_argument, NULL, 0x0532}, "Use Linux IPC namespace isolation"},
 #endif  // defined(_HF_ARCH_LINUX)
         {{0, 0, 0, 0}, NULL},
     };
@@ -418,6 +426,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         case 'B':
             hfuzz->blacklistFile = optarg;
             break;
+#if defined(_HF_ARCH_LINUX)
         case 0x500:
             hfuzz->linux.ignoreAddr = (void *)strtoul(optarg, NULL, 0);
             break;
@@ -448,6 +457,16 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         case 0x514:
             hfuzz->dynFileMethod |= _HF_DYNFILE_IPT_BLOCK;
             break;
+        case 0x530:
+            hfuzz->linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWNET);
+            break;
+        case 0x531:
+            hfuzz->linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWPID);
+            break;
+        case 0x532:
+            hfuzz->linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWIPC);
+            break;
+#endif                          /* defined(_HF_ARCH_LINUX) */
         default:
             cmdlineUsage(argv[0], custom_opts);
             return false;
