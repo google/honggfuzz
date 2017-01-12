@@ -26,6 +26,7 @@
 
 #include <limits.h>
 #include <pthread.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/param.h>
@@ -280,6 +281,7 @@ typedef struct {
         const char *symsWlFile;
         char **symsWl;
         size_t symsWlCnt;
+        uintptr_t cloneFlags;
     } linux;
 } honggfuzz_t;
 
