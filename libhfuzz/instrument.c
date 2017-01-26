@@ -172,7 +172,8 @@ void __sanitizer_cov_trace_pc_guard_init(uint32_t * start, uint32_t * stop)
             fprintf(stderr, "This process has too many PC guards\n");
             exit(1);
         }
-        *x = n;
+        /* If the corresponding PC was already hit, map this specific guard as non-interesting (0) */
+        *x = ATOMIC_GET(feedback->pcGuardMap[n]) ? 0U : n;
     }
 }
 
