@@ -362,7 +362,6 @@ static void mangle_Expand(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t
     size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
 
     fuzzer->dynamicFileSz += len;
-
     mangle_Move(fuzzer, buf, off, off + len, len);
 }
 
@@ -375,8 +374,8 @@ static void mangle_Shrink(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t
     size_t len = util_rndGet(1, fuzzer->dynamicFileSz - 1);
     size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
 
-    fuzzer->dynamicFileSz -= len;
     mangle_Move(fuzzer, buf, off + len, off, len);
+    fuzzer->dynamicFileSz -= len;
 }
 
 void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
