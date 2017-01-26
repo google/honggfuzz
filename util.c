@@ -154,7 +154,7 @@ int util_ssnprintf(char *str, size_t size, const char *format, ...)
     char buf1[size];
     char buf2[size];
 
-    strncpy(buf1, str, size);
+    snprintf(buf1, sizeof(buf1), "%s", str);
 
     va_list args;
     va_start(args, format);

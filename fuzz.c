@@ -88,7 +88,6 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     memcpy(fuzzer->dynamicFile, dynfile->data, dynfile->size);
     fuzzer->dynamicFileSz = dynfile->size;
 
-    mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz);
     mangle_mangleContent(hfuzz, fuzzer);
 
     if (hfuzz->persistent == false && files_writeBufToFile
@@ -114,7 +113,6 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_ind
 
     /* If flip rate is 0.0, early abort file mangling */
     if (fuzzer->flipRate != 0.0L) {
-        mangle_Resize(hfuzz, fuzzer->dynamicFile, &fuzzer->dynamicFileSz);
         mangle_mangleContent(hfuzz, fuzzer);
     }
 
