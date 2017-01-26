@@ -448,6 +448,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzer->report[0] = '\0';
     fuzzer->mainWorker = true;
     fuzzer->origFileName = "DYNAMIC";
+    fuzzer->fileName[0] = '\0';
     fuzzer->flipRate = hfuzz->origFlipRate;
     fuzzer->dynamicFileSz = 0;
 
@@ -489,7 +490,9 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         fuzzer->origFileName = files_basename(files_getFileFromFileq(hfuzz, rnd_index)->path);
     }
 
-    fuzz_getFileName(hfuzz, fuzzer->fileName);
+    if (hfuzz->persistent == false) {
+        fuzz_getFileName(hfuzz, fuzzer->fileName);
+    }
 
     if (state == _HF_STATE_DYNAMIC_PRE) {
         fuzzer->flipRate = 0.0f;
