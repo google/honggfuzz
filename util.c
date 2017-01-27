@@ -130,6 +130,9 @@ uint64_t util_rndGet(uint64_t min, uint64_t max)
 
 void util_rndBuf(uint8_t * buf, size_t sz)
 {
+    if (sz == 0) {
+        return;
+    }
     util_rndInit();
     for (size_t i = 0; i < sz; i++) {
         rndX = a * rndX + c;
