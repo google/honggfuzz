@@ -56,13 +56,13 @@ static inline void mangle_Move(fuzzer_t * fuzzer, uint8_t * buf, size_t off_from
         return;
     }
 
-    size_t len_from = fuzzer->dynamicFileSz - off_from - 1;
-    size_t len_to = fuzzer->dynamicFileSz - off_to - 1;
+    ssize_t len_from = (ssize_t) fuzzer->dynamicFileSz - off_from - 1;
+    ssize_t len_to = (ssize_t) fuzzer->dynamicFileSz - off_to - 1;
 
-    if (len > len_from) {
+    if ((ssize_t) len > len_from) {
         len = len_from;
     }
-    if (len > len_to) {
+    if ((ssize_t) len > len_to) {
         len = len_to;
     }
 
