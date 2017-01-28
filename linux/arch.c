@@ -121,6 +121,9 @@ static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 static uint8_t arch_clone_stack[PTHREAD_STACK_MIN * 2];
 
 static __thread jmp_buf env;
+#if defined(__clang__)
+__attribute__ ((no_sanitize("memory")))
+#endif                          /* defined(__clang__) */
 static int arch_cloneFunc(void *arg UNUSED)
 {
     longjmp(env, 1);
