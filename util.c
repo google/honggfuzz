@@ -92,7 +92,11 @@ static int util_urandomFd = -1;
 static __thread uint64_t rndX;
 static __thread uint64_t rndIni = false;
 
-uint64_t util_rnd64(void)
+/* MMIX LCG PRNG */
+static const uint64_t a = 6364136223846793005ULL;
+static const uint64_t c = 1442695040888963407ULL;
+
+static void util_rndInit(void)
 {
     if (util_urandomFd == -1) {
         if ((util_urandomFd = open("/dev/urandom", O_RDONLY | O_CLOEXEC)) == -1) {
@@ -106,12 +110,12 @@ uint64_t util_rnd64(void)
         }
         rndIni = true;
     }
+}
 
-    /* MMIX LCG PRNG */
-    static const uint64_t a = 6364136223846793005ULL;
-    static const uint64_t c = 1442695040888963407ULL;
-
-    rndX = (a * rndX + c);
+uint64_t util_rnd64(void)
+{
+    util_rndInit();
+    rndX = a * rndX + c;
     return rndX;
 }
 
@@ -126,8 +130,13 @@ uint64_t util_rndGet(uint64_t min, uint64_t max)
 
 void util_rndBuf(uint8_t * buf, size_t sz)
 {
+    if (sz == 0) {
+        return;
+    }
+    util_rndInit();
     for (size_t i = 0; i < sz; i++) {
-        buf[i] = (uint8_t) ((util_rnd64() & 0xFF0000) >> 16);
+        rndX = a * rndX + c;
+        buf[i] = (uint8_t) (rndX >> 15);
     }
 }
 
@@ -154,7 +163,7 @@ int util_ssnprintf(char *str, size_t size, const char *format, ...)
     char buf1[size];
     char buf2[size];
 
-    strncpy(buf1, str, size);
+    snprintf(buf1, sizeof(buf1), "%s", str);
 
     va_list args;
     va_start(args, format);

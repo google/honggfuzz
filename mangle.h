@@ -28,6 +28,4 @@
 
 extern void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
 
-extern bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t * buf, size_t * bufSz);
-
 #endif

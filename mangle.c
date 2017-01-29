@@ -35,54 +35,120 @@
 #include "log.h"
 #include "util.h"
 
-static inline void mangle_Overwrite(uint8_t * dst, const uint8_t * src, size_t dstSz, size_t off,
-                                    size_t sz)
+static inline void mangle_Overwrite(fuzzer_t * fuzzer, const uint8_t * src, size_t off, size_t sz)
 {
-    size_t maxToCopy = dstSz - off;
+    size_t maxToCopy = fuzzer->dynamicFileSz - off;
     if (sz > maxToCopy) {
         sz = maxToCopy;
     }
 
-    memcpy(&dst[off], src, sz);
+    memcpy(&fuzzer->dynamicFile[off], src, sz);
 }
 
-static void mangle_Byte(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz UNUSED, size_t off)
+static inline void mangle_Move(fuzzer_t * fuzzer, size_t off_from, size_t off_to, size_t len)
 {
+    if (off_from >= fuzzer->dynamicFileSz) {
+        return;
+    }
+    if (off_to >= fuzzer->dynamicFileSz) {
+        return;
+    }
+
+    ssize_t len_from = (ssize_t) fuzzer->dynamicFileSz - off_from - 1;
+    ssize_t len_to = (ssize_t) fuzzer->dynamicFileSz - off_to - 1;
+
+    if ((ssize_t) len > len_from) {
+        len = len_from;
+    }
+    if ((ssize_t) len > len_to) {
+        len = len_to;
+    }
+
+    memmove(&fuzzer->dynamicFile[off_to], &fuzzer->dynamicFile[off_from], len);
+}
+
+static void mangle_Inflate(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, size_t off, size_t len)
+{
+    if (fuzzer->dynamicFileSz >= hfuzz->maxFileSz) {
+        return;
+    }
+    if (len > (hfuzz->maxFileSz - fuzzer->dynamicFileSz)) {
+        len = hfuzz->maxFileSz - fuzzer->dynamicFileSz;
+    }
+
+    fuzzer->dynamicFileSz += len;
+    mangle_Move(fuzzer, off, off + len, fuzzer->dynamicFileSz);
+}
+
+static void mangle_MemMove(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf UNUSED)
+{
+    size_t off_from = util_rndGet(0, fuzzer->dynamicFileSz - 1);
+    size_t off_to = util_rndGet(0, fuzzer->dynamicFileSz - 1);
+    size_t len = util_rndGet(0, fuzzer->dynamicFileSz);
+
+    mangle_Move(fuzzer, off_from, off_to, len);
+}
+
+static void mangle_Byte(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf)
+{
+    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
     buf[off] = (uint8_t) util_rndGet(0, UINT8_MAX);
 }
 
-static void mangle_Bytes(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz, size_t off)
+static void mangle_Bytes(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf UNUSED)
 {
+    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
     uint32_t val = (uint32_t) util_rndGet(0, UINT32_MAX);
 
     /* Overwrite with random 2,3,4-byte values */
     size_t toCopy = util_rndGet(2, 4);
-    mangle_Overwrite(buf, (uint8_t *) & val, bufSz, off, toCopy);
+    mangle_Overwrite(fuzzer, (uint8_t *) & val, off, toCopy);
 }
 
-static void mangle_Bit(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz UNUSED, size_t off)
+static void mangle_Bit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf)
 {
+    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
     buf[off] ^= (uint8_t) (1U << util_rndGet(0, 7));
 }
 
-static void mangle_Dictionary(honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz, size_t off)
+static void mangle_DictionaryInsert(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, uint8_t * buf UNUSED)
 {
     if (hfuzz->dictionaryCnt == 0) {
-        mangle_Bit(hfuzz, buf, bufSz, off);
+        mangle_Bit(hfuzz, fuzzer, fuzzer->dynamicFile);
         return;
     }
 
     uint64_t choice = util_rndGet(0, hfuzz->dictionaryCnt - 1);
-
     struct strings_t *str = TAILQ_FIRST(&hfuzz->dictq);
     for (uint64_t i = 0; i < choice; i++) {
         str = TAILQ_NEXT(str, pointers);
     }
 
-    mangle_Overwrite(buf, (uint8_t *) str->s, bufSz, off, str->len);
+    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
+    mangle_Inflate(hfuzz, fuzzer, off, str->len);
+    mangle_Move(fuzzer, off, off + str->len, str->len);
+    mangle_Overwrite(fuzzer, (uint8_t *) str->s, off, str->len);
 }
 
-static void mangle_Magic(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz, size_t off)
+static void mangle_Dictionary(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, uint8_t * buf UNUSED)
+{
+    if (hfuzz->dictionaryCnt == 0) {
+        mangle_Bit(hfuzz, fuzzer, fuzzer->dynamicFile);
+        return;
+    }
+
+    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
+
+    uint64_t choice = util_rndGet(0, hfuzz->dictionaryCnt - 1);
+    struct strings_t *str = TAILQ_FIRST(&hfuzz->dictq);
+    for (uint64_t i = 0; i < choice; i++) {
+        str = TAILQ_NEXT(str, pointers);
+    }
+
+    mangle_Overwrite(fuzzer, (uint8_t *) str->s, off, str->len);
+}
+
+static void mangle_Magic(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf UNUSED)
 {
     /*  *INDENT-OFF* */
     static const struct {
@@ -185,45 +251,39 @@ static void mangle_Magic(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz
     };
     /*  *INDENT-ON* */
 
+    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
     uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleMagicVals) - 1);
-    mangle_Overwrite(buf, mangleMagicVals[choice].val, bufSz, off, mangleMagicVals[choice].size);
+    mangle_Overwrite(fuzzer, mangleMagicVals[choice].val, off, mangleMagicVals[choice].size);
 }
 
-static void mangle_MemSet(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz, size_t off)
+static void mangle_MemSet(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf)
 {
-    uint64_t sz = util_rndGet(1, bufSz - off);
+    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
+    size_t sz = util_rndGet(1, fuzzer->dynamicFileSz - off);
     int val = (int)util_rndGet(0, UINT8_MAX);
 
     memset(&buf[off], val, sz);
 }
 
-static void mangle_MemMove(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz, size_t off)
+static void mangle_Random(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf)
 {
-    uint64_t mangleTo = util_rndGet(0, bufSz - 1);
-    uint64_t mangleSzTo = bufSz - mangleTo;
-
-    uint64_t mangleSzFrom = util_rndGet(1, bufSz - off);
-    uint64_t mangleSz = mangleSzFrom < mangleSzTo ? mangleSzFrom : mangleSzTo;
-
-    memmove(&buf[mangleTo], &buf[off], mangleSz);
+    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
+    size_t len = util_rndGet(1, fuzzer->dynamicFileSz - off);
+    util_rndBuf(&buf[off], len);
 }
 
-static void mangle_Random(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz, size_t off)
+static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf)
 {
-    uint64_t sz = util_rndGet(1, bufSz - off);
-    util_rndBuf(&buf[off], sz);
-}
+    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
 
-static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz, size_t off)
-{
     /* 1,2,4 */
     uint64_t varLen = 1ULL << util_rndGet(0, 2);
-    if ((bufSz - off) < varLen) {
+    if ((fuzzer->dynamicFileSz - off) < varLen) {
         varLen = 1;
     }
 
-    int delta = (int)util_rndGet(0, 64);
-    delta -= 32;
+    int delta = (int)util_rndGet(0, 8192);
+    delta -= 4096;
 
     switch (varLen) {
     case 1:
@@ -234,7 +294,7 @@ static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufS
         }
     case 2:
         {
-            uint16_t val = *((uint16_t *) & buf[off]);
+            int16_t val = *((uint16_t *) & buf[off]);
             if (util_rndGet(0, 1) == 0) {
                 val += delta;
             } else {
@@ -243,13 +303,13 @@ static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufS
                 val += delta;
                 val = __builtin_bswap16(val);
             }
-            mangle_Overwrite(buf, (uint8_t *) & val, bufSz, off, varLen);
+            mangle_Overwrite(fuzzer, (uint8_t *) & val, off, varLen);
             return;
             break;
         }
     case 4:
         {
-            uint32_t val = *((uint32_t *) & buf[off]);
+            int32_t val = *((uint32_t *) & buf[off]);
             if (util_rndGet(0, 1) == 0) {
                 val += delta;
             } else {
@@ -258,7 +318,7 @@ static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufS
                 val += delta;
                 val = __builtin_bswap32(val);
             }
-            mangle_Overwrite(buf, (uint8_t *) & val, bufSz, off, varLen);
+            mangle_Overwrite(fuzzer, (uint8_t *) & val, off, varLen);
             return;
             break;
         }
@@ -270,30 +330,70 @@ static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufS
     }
 }
 
-static void mangle_IncByte(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz UNUSED,
-                           size_t off)
+static void mangle_IncByte(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf)
 {
+    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
     buf[off] += (uint8_t) 1UL;
 }
 
-static void mangle_DecByte(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz UNUSED,
-                           size_t off)
+static void mangle_DecByte(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf)
 {
+    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
     buf[off] -= (uint8_t) 1UL;
 }
 
-static void mangle_RepeatByte(honggfuzz_t * hfuzz UNUSED, uint8_t * buf, size_t bufSz UNUSED,
-                              size_t off)
+static void mangle_CloneByte(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf)
 {
-    if ((off + 1) < bufSz) {
-        buf[off + 1] = buf[off];
+    size_t off1 = util_rndGet(0, fuzzer->dynamicFileSz - 1);
+    size_t off2 = util_rndGet(0, fuzzer->dynamicFileSz - 1);
+
+    uint8_t tmp = buf[off1];
+    buf[off1] = buf[off2];
+    buf[off2] = tmp;
+}
+
+static void mangle_Resize(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf UNUSED)
+{
+    fuzzer->dynamicFileSz = util_rndGet(1, hfuzz->maxFileSz);
+}
+
+static void mangle_Expand(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf UNUSED)
+{
+    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
+    size_t len = util_rndGet(1, fuzzer->dynamicFileSz - off);
+
+    mangle_Inflate(hfuzz, fuzzer, off, len);
+    mangle_Move(fuzzer, off, off + len, fuzzer->dynamicFileSz);
+    memset(buf, '\0', len);
+}
+
+static void mangle_Shrink(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf UNUSED)
+{
+    if (fuzzer->dynamicFileSz <= 1U) {
+        return;
     }
+
+    size_t len = util_rndGet(1, fuzzer->dynamicFileSz - 1);
+    size_t off = util_rndGet(0, len);
+
+    mangle_Move(fuzzer, off + len, off, fuzzer->dynamicFileSz);
+    fuzzer->dynamicFileSz -= len;
+}
+
+static void mangle_InsertRnd(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer, uint8_t * buf UNUSED)
+{
+    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
+    size_t len = util_rndGet(1, fuzzer->dynamicFileSz - off);
+
+    mangle_Inflate(hfuzz, fuzzer, off, len);
+    mangle_Move(fuzzer, off, off + len, fuzzer->dynamicFileSz);
+    util_rndBuf(&buf[off], len);
 }
 
 void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     /*  *INDENT-OFF* */
-    static void (*const mangleFuncs[]) (honggfuzz_t * hfuzz, uint8_t * buf, size_t bufSz, size_t off) = {
+    static void (*const mangleFuncs[]) (honggfuzz_t* hfuzz, fuzzer_t* fuzzer, uint8_t* buf) = {
         mangle_Byte,
         mangle_Byte,
         mangle_Byte,
@@ -308,10 +408,15 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         mangle_DecByte,
         mangle_AddSub,
         mangle_Dictionary,
+        mangle_DictionaryInsert,
         mangle_MemMove,
         mangle_MemSet,
         mangle_Random,
-        mangle_RepeatByte,
+        mangle_CloneByte,
+        mangle_Resize,
+        mangle_Expand,
+        mangle_Shrink,
+        mangle_InsertRnd,
     };
     /*  *INDENT-ON* */
 
@@ -325,65 +430,7 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     changesCnt = util_rndGet(1, changesCnt);
 
     for (uint64_t x = 0; x < changesCnt; x++) {
-        size_t offset = util_rndGet(0, fuzzer->dynamicFileSz - 1);
         uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);
-        mangleFuncs[choice] (hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz, offset);
+        mangleFuncs[choice] (hfuzz, fuzzer, fuzzer->dynamicFile);
     }
-}
-
-static double mangle_ExpDist(void)
-{
-    double rnd = (double)util_rndGet(1, UINT32_MAX) / (double)(UINT32_MAX);
-    return pow(rnd, 4.0L);
-}
-
-/* Gauss-like distribution */
-bool mangle_Resize(honggfuzz_t * hfuzz, uint8_t * buf, size_t * bufSz)
-{
-    static const uint64_t chance_one_in_x = 5;
-    if (util_rndGet(1, chance_one_in_x) != 1) {
-        return true;
-    }
-    ssize_t newSz = *bufSz;
-    int delta = 0;
-    unsigned int val = (unsigned int)util_rndGet(1, 64);
-
-    /*  *INDENT-OFF* */
-    switch (val) {
-    case 1 ... 16:
-        delta = -val;
-        break;
-    case 17 ... 32:
-        delta = val - 16;
-        break;
-    case 33 ... 48:
-        delta += (int)(mangle_ExpDist() * (double)((hfuzz->maxFileSz - *bufSz)));
-        break;
-    case 49 ... 64:
-        delta -= (int)(mangle_ExpDist() * (double)(*bufSz));
-        break;
-    default:
-        LOG_F("Random value out of scope %u", val);
-        break;
-    }
-    /*  *INDENT-ON* */
-
-    newSz += delta;
-
-    if (newSz < 1) {
-        newSz = 1;
-    }
-    if (newSz > (ssize_t) hfuzz->maxFileSz) {
-        newSz = (ssize_t) hfuzz->maxFileSz;
-    }
-
-    if ((size_t) newSz > *bufSz) {
-        util_rndBuf(&buf[*bufSz], newSz - *bufSz);
-    }
-
-    LOG_D("Current size: %zu, Maximal size: %zu, New Size: %zu, Delta: %d", *bufSz,
-          hfuzz->maxFileSz, newSz, delta);
-
-    *bufSz = (size_t) newSz;
-    return true;
 }

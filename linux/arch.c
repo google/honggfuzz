@@ -114,9 +114,16 @@ static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 static uint8_t arch_clone_stack[PTHREAD_STACK_MIN * 2];
 
 static __thread jmp_buf env;
+
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+__attribute__ ((no_sanitize("address"))) __attribute__ ((no_sanitize("memory")))
+#endif                          /* if __has_feature(address_sanitizer) */
+#endif                          /* if defined(__has_feature) */
 static int arch_cloneFunc(void *arg UNUSED)
 {
     longjmp(env, 1);
+    abort();
     return 0;
 }
 
@@ -237,11 +244,8 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     return false;
 }
 
-static void arch_sigFunc(int signo)
+static void arch_sigWake(int signo UNUSED)
 {
-    if (signo != SIGNAL_WAKE) {
-        LOG_E("Signal != SIGNAL_WAKE (%d)", signo);
-    }
 }
 
 static bool arch_setTimer(timer_t * timerid)
@@ -518,7 +522,7 @@ bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
     sigset_t mask;
     sigemptyset(&mask);
     struct sigaction sa = {
-        .sa_handler = arch_sigFunc,
+        .sa_handler = arch_sigWake,
         .sa_mask = mask,
         .sa_flags = 0,
         .sa_restorer = NULL,
