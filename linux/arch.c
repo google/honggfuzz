@@ -125,12 +125,12 @@ static __thread jmp_buf env;
 #if defined(__has_feature)
 #if __has_feature(address_sanitizer)
 __attribute__ ((no_sanitize("address"))) __attribute__ ((no_sanitize("memory")))
-#endif /* if __has_feature(address_sanitizer) */
-#endif /* if defined(__has_feature) */
+#endif                          /* if __has_feature(address_sanitizer) */
+#endif                          /* if defined(__has_feature) */
 static int arch_cloneFunc(void *arg UNUSED)
 {
     longjmp(env, 1);
-	abort();
+    abort();
     return 0;
 }
 

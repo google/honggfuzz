@@ -35,7 +35,7 @@
 #include "log.h"
 #include "util.h"
 
-static inline void mangle_Overwrite(fuzzer_t* fuzzer, const uint8_t * src, size_t off, size_t sz)
+static inline void mangle_Overwrite(fuzzer_t * fuzzer, const uint8_t * src, size_t off, size_t sz)
 {
     size_t maxToCopy = fuzzer->dynamicFileSz - off;
     if (sz > maxToCopy) {
@@ -45,8 +45,7 @@ static inline void mangle_Overwrite(fuzzer_t* fuzzer, const uint8_t * src, size_
     memcpy(&fuzzer->dynamicFile[off], src, sz);
 }
 
-static inline void mangle_Move(fuzzer_t * fuzzer, size_t off_from, size_t off_to,
-                               size_t len)
+static inline void mangle_Move(fuzzer_t * fuzzer, size_t off_from, size_t off_to, size_t len)
 {
     if (off_from >= fuzzer->dynamicFileSz) {
         return;
