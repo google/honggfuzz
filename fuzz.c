@@ -559,7 +559,7 @@ static void *fuzz_threadNew(void *arg)
     fuzzer_t fuzzer = {
         .pid = 0,
         .persistentPid = 0,
-        .dynamicFile = util_Malloc(hfuzz->maxFileSz),
+        .dynamicFile = util_Calloc(hfuzz->maxFileSz),
         .fuzzNo = fuzzNo,
         .persistentSock = -1,
         .tmOutSignaled = false,
