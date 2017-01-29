@@ -24,11 +24,14 @@
 #ifndef _HF_UTIL_H_
 #define _HF_UTIL_H_
 
+#include <pthread.h>
 #include <stdarg.h>
 #ifdef __clang__
 #include <stdatomic.h>
 #endif
+#include <stdbool.h>
 #include <stdint.h>
+#include <time.h>
 
 #define MX_LOCK(m) util_mutexLock(m, __func__, __LINE__)
 #define MX_UNLOCK(m) util_mutexUnlock(m, __func__, __LINE__)

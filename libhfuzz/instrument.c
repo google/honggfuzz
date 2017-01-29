@@ -18,8 +18,8 @@
 #include "../util.h"
 
 static feedback_t bbMapFb;
-static feedback_t *feedback = &bbMapFb;
-static uint32_t my_thread_no = 0;
+feedback_t *feedback = &bbMapFb;
+uint32_t my_thread_no = 0;
 
 __attribute__ ((constructor))
 static void mapBB(void)
@@ -186,15 +186,4 @@ void __sanitizer_cov_trace_pc_guard(uint32_t * guard)
         ATOMIC_PRE_INC_RELAXED(feedback->pidFeedbackPc[my_thread_no]);
     }
     *guard = 0U;
-}
-
-void libhfuzz_instrumentUpdateCmpMap(void *addr, unsigned int new)
-{
-    uintptr_t pos = (uintptr_t) addr % _HF_PERF_BITMAP_SIZE_16M;
-    uint8_t v = new > 254 ? 254 : new;
-    uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
-    if (prev < v) {
-        ATOMIC_SET(feedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(feedback->pidFeedbackCmp[my_thread_no], v - prev);
-    }
 }
