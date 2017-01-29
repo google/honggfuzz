@@ -375,10 +375,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                     ("Un-handled ASan report due to compiler-rt internal error - retry with '%s' (%s)",
                      crashReport, fuzzer->fileName);
 
-                /*
-                 * Manually set the exitcode to ASan to trigger report parsing  since it's
-                 * the only report format supported yet
-                 */
+                /* Try to parse report file */
                 arch_ptraceExitAnalyze(hfuzz, ptracePid, fuzzer);
             }
         }
