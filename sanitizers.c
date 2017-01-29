@@ -20,24 +20,24 @@
 #define STR(x)          XSTR(x)
 
 /*
- * All clang sanitizers except ASan can be activated for target binaries
- * with or without the matching runtime libraries (libcompiler_rt). If runtime
+ * All clang sanitizers, except ASan, can be activated for target binaries
+ * with or without the matching runtime library (libcompiler_rt). If runtime
  * libraries are included in target fuzzing environment, we can benefit from the
  * various Die() callbacks and abort/exit logic manipulation. However, some
- * setups (e.g. Android production ARM/ARM64 devices) enable sanitizers such as
- * UBSan without the runtime libraries. As such they default ftrap is activated
- * which is for most cases a SIGABRT. For such cases user needs to enable SIGABRT
- * monitoring flag, otherwise these crashes will be missed.
+ * setups (e.g. Android production ARM/ARM64 devices) enable sanitizers, such as
+ * UBSan, without the runtime libraries. As such, their default ftrap is activated
+ * which is for most cases a SIGABRT. For these cases end-user needs to enable
+ * SIGABRT monitoring flag, otherwise these crashes will be missed.
  *
- * Normally SIGABRT is not a monitored signal for Android OS, since it produces
+ * Normally SIGABRT is not a wanted signal to monitor for Android, since it produces
  * lots of useless crashes due to way Android process termination hacks work. As
  * a result the sanitizer's 'abort_on_error' flag cannot be utilized since it
  * invokes abort() internally. In order to not lose crashes a custom exitcode can
  * be registered and monitored. Since exitcode is a global flag, it's assumed
  * that target is compiled with only one sanitizer type enabled at a time.
  *
- * For cases where clang runtime library linking is not an option SIGABRT should
- * be monitored even for noise targets, such as the Android OS, since not
+ * For cases where clang runtime library linking is not an option, SIGABRT should
+ * be monitored even for noisy targets, such as the Android OS, since no viable
  * alternative exists.
  *
  * There might be cases where ASan instrumented targets crash while generating
