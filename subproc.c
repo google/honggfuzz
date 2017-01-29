@@ -181,8 +181,8 @@ bool subproc_PrepareExecv(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *fi
     if (hfuzz->clearEnv) {
         environ = NULL;
     }
-    if (sancov_prepareExecve(hfuzz) == false) {
-        LOG_E("sancov_prepareExecve() failed");
+    if (sanitizers_prepareExecve(hfuzz) == false) {
+        LOG_E("sanitizers_prepareExecve() failed");
         return false;
     }
     for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs) && hfuzz->envs[i]; i++) {

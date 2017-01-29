@@ -59,59 +59,28 @@
 #define kMagic32 0xC0BFFFFFFFFFFF32
 #define kMagic64 0xC0BFFFFFFFFFFF64
 
-/* Stringify */
-#define XSTR(x)         #x
-#define STR(x)          XSTR(x)
-
-/* Common sanitizer flags */
-#if _HF_MONITOR_SIGABRT
-#define ABORT_FLAG        "abort_on_error=1"
-#else
-#define ABORT_FLAG        "abort_on_error=0"
-#endif
-
-#if defined(__ANDROID__)
 /*
- * symbolize: Disable symbolication since it changes logs (which are parsed) format
- * start_deactivated: Enable on Android to reduce memory usage (useful when not all
- *                    target's DSOs are compiled with sanitizer enabled
- * abort_on_error: Disable for platforms where SIGABRT is not monitored
+ * Each DSO/executable that has been compiled with enabled coverage instrumentation
+ * is detected from compiler_rt runtime library when loaded. When coverage_direct
+ * method is selected, runtime library is pre-allocating kPcArrayMmapSize [1] byte
+ * chunks until the total size of chunks is greater than the number of inserted
+ * guards. This effectively means that we might have a large unused (zero-filled)
+ * area that we can't identify at runtime (we need to do binary inspection).
+ *
+ * Runtime maintained data structs size overhead is not affected since fixed-size
+ * bitmap is used. However, the way the display coverage statistics are generated
+ * is not very accurate because:
+ *  a) ASan compiled DSO might get loaded although not followed from monitoring
+       execution affecting the counters
+ *  b) Not all zero-fill chunks translate into non-hit basic block as they might
+ *     be the chunk padding
+ *
+ * Probably there aren't many we can do to deal with this issue without introducing
+ * a huge performance overhead at an already costly feedback method.
+ *
+ * [1] 'https://llvm.org/svn/llvm-project/compiler-rt/branches/release_38/lib/sanitizer_common/sanitizer_coverage_libcdep.cc'
  */
-#define kSAN_COMMON_ARCH    "symbolize=0:"ABORT_FLAG":start_deactivated=1"
-#else
-#define kSAN_COMMON_ARCH    "symbolize=0:"ABORT_FLAG
-#endif
-
-/* Sanitizer specific flags (set 'abort_on_error has priority over exitcode') */
-#define kASAN_OPTS          "allow_user_segv_handler=1:"\
-                            "handle_segv=0:"\
-                            "allocator_may_return_null=1:"\
-                            kSAN_COMMON_ARCH":exitcode=" STR(HF_ASAN_EXIT_CODE)
-
-#define kUBSAN_OPTS         kSAN_COMMON_ARCH":exitcode=" STR(HF_UBSAN_EXIT_CODE)
-
-#define kMSAN_OPTS          "exit_code=" STR(HF_MSAN_EXIT_CODE) ":"\
-                            "wrap_signals=0:print_stats=1"
-
-/* 'log_path' output directory for sanitizer reports */
-#define kSANLOGDIR          "log_path="
-
-/* 'coverage_dir' output directory for coverage data files is set dynamically */
-#define kSANCOVDIR          "coverage_dir="
-
-/*
- * If the program ends with a signal that ASan does not handle (or can not
- * handle at all, like SIGKILL), coverage data will be lost. This is a big
- * problem on Android, where SIGKILL is a normal way of evicting applications
- * from memory. With 'coverage_direct=1' coverage data is written to a
- * memory-mapped file as soon as it collected. Non-Android targets can disable
- * coverage direct when more coverage data collection methods are implemented.
- */
-#if defined(__ANDROID__)
-#define kSAN_COV_OPTS  "coverage=1:coverage_direct=1"
-#else
-#define kSAN_COV_OPTS  "coverage=1:coverage_direct=1"
-#endif
+#define kPcArrayMmapSize (64 * 1024)
 
 /*
  * bitmap implementation
@@ -449,7 +418,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             }
         }
 
-        /* If not DSO number history (first run) or new DSO loaded, realloc local maps metadata buf */
+        /* If no DSO number history (first run) or new DSO loaded, realloc local maps metadata buf */
         if (prevMapsNum == 0 || prevMapsNum < mapsNum) {
             if ((mapsBuf =
                  util_Realloc(mapsBuf, (size_t) (mapsNum + 1) * sizeof(memMap_t))) == NULL) {
@@ -737,87 +706,6 @@ void sancov_Analyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 bool sancov_Init(honggfuzz_t * hfuzz)
 {
-    if (hfuzz->linux.pid > 0) {
-        return true;
-    }
-
-    /* Set sanitizer flags once to avoid performance overhead per worker spawn */
-    size_t flagsSz = 0;
-    size_t bufSz = sizeof(kASAN_OPTS) + (2 * PATH_MAX); // Larger constant + 2 dynamic paths
-    char *san_opts = util_Calloc(bufSz);
-    defer {
-        free(san_opts);
-    };
-
-    /* AddressSanitizer (ASan) */
-    if (hfuzz->useSanCov) {
-#if !_HF_MONITOR_SIGABRT
-        /* Write reports in FS only if abort_on_error is disabled */
-        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s:%s%s/%s", kASAN_OPTS, kSAN_COV_OPTS,
-                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
-                 kLOGPREFIX);
-#else
-        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kASAN_OPTS, kSAN_COV_OPTS,
-                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR);
-#endif
-    } else {
-        snprintf(san_opts, bufSz, "%s:%s%s/%s", kASAN_OPTS, kSANLOGDIR, hfuzz->workDir, kLOGPREFIX);
-    }
-
-    flagsSz = strlen(san_opts) + 1;
-    hfuzz->sanOpts.asanOpts = util_Calloc(flagsSz);
-    memcpy(hfuzz->sanOpts.asanOpts, san_opts, flagsSz);
-    LOG_D("ASAN_OPTIONS=%s", hfuzz->sanOpts.asanOpts);
-
-    /* Undefined Behavior (UBSan) */
-    memset(san_opts, 0, bufSz);
-    if (hfuzz->useSanCov) {
-#if !_HF_MONITOR_SIGABRT
-        /* Write reports in FS only if abort_on_error is disabled */
-        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s:%s%s/%s", kUBSAN_OPTS, kSAN_COV_OPTS,
-                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
-                 kLOGPREFIX);
-#else
-        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kUBSAN_OPTS, kSAN_COV_OPTS,
-                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR);
-#endif
-    } else {
-        snprintf(san_opts, bufSz, "%s:%s%s/%s", kUBSAN_OPTS, kSANLOGDIR, hfuzz->workDir,
-                 kLOGPREFIX);
-    }
-
-    flagsSz = strlen(san_opts) + 1;
-    hfuzz->sanOpts.ubsanOpts = util_Calloc(flagsSz);
-    memcpy(hfuzz->sanOpts.ubsanOpts, san_opts, flagsSz);
-    LOG_D("UBSAN_OPTIONS=%s", hfuzz->sanOpts.ubsanOpts);
-
-    /* MemorySanitizer (MSan) */
-    memset(san_opts, 0, bufSz);
-    const char *msan_reports_flag = "report_umrs=0";
-    if (hfuzz->msanReportUMRS) {
-        msan_reports_flag = "report_umrs=1";
-    }
-
-    if (hfuzz->useSanCov) {
-#if !_HF_MONITOR_SIGABRT
-        /* Write reports in FS only if abort_on_error is disabled */
-        snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s:%s%s/%s", kMSAN_OPTS, msan_reports_flag,
-                 kSAN_COV_OPTS, kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR,
-                 hfuzz->workDir, kLOGPREFIX);
-#else
-        snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s", kMSAN_OPTS, msan_reports_flag,
-                 kSAN_COV_OPTS, kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR);
-#endif
-    } else {
-        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kMSAN_OPTS, msan_reports_flag, kSANLOGDIR,
-                 hfuzz->workDir, kLOGPREFIX);
-    }
-
-    flagsSz = strlen(san_opts) + 1;
-    hfuzz->sanOpts.msanOpts = util_Calloc(flagsSz);
-    memcpy(hfuzz->sanOpts.msanOpts, san_opts, flagsSz);
-    LOG_D("MSAN_OPTIONS=%s", hfuzz->sanOpts.msanOpts);
-
     if (hfuzz->useSanCov == false) {
         return true;
     }
@@ -828,35 +716,6 @@ bool sancov_Init(honggfuzz_t * hfuzz)
     if (!files_exists(sanCovOutDir)) {
         if (mkdir(sanCovOutDir, S_IRWXU | S_IXGRP | S_IXOTH) != 0) {
             PLOG_E("mkdir() '%s' failed", sanCovOutDir);
-        }
-    }
-
-    return true;
-}
-
-bool sancov_prepareExecve(honggfuzz_t * hfuzz)
-{
-    /* Address Sanitizer (ASan) */
-    if (hfuzz->sanOpts.asanOpts) {
-        if (setenv("ASAN_OPTIONS", hfuzz->sanOpts.asanOpts, 1) == -1) {
-            PLOG_E("setenv(ASAN_OPTIONS) failed");
-            return false;
-        }
-    }
-
-    /* Memory Sanitizer (MSan) */
-    if (hfuzz->sanOpts.msanOpts) {
-        if (setenv("MSAN_OPTIONS", hfuzz->sanOpts.msanOpts, 1) == -1) {
-            PLOG_E("setenv(MSAN_OPTIONS) failed");
-            return false;
-        }
-    }
-
-    /* Undefined Behavior Sanitizer (UBSan) */
-    if (hfuzz->sanOpts.ubsanOpts) {
-        if (setenv("UBSAN_OPTIONS", hfuzz->sanOpts.ubsanOpts, 1) == -1) {
-            PLOG_E("setenv(UBSAN_OPTIONS) failed");
-            return false;
         }
     }
 

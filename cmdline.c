@@ -176,6 +176,12 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         },
         .persistent = false,
         .tmout_vtalrm = false,
+        .enableSanitizers = false,
+#if defined(__ANDROID__)
+        .monitorSIGABRT = false,
+#else
+        .monitorSIGABRT = true,
+#endif
 
         .dictionaryFile = NULL,
         .dictionaryCnt = 0,
@@ -279,6 +285,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
         {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (link with libhfuzz/libhfuzz.a)"},
         {{"tmout_sigvtalrm", no_argument, NULL, 'T'}, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)"},
+        {{"sanitizers", no_argument, NULL, 'S'}, "Enable sanitizers settings (default: false)"},
+        {{"monitor_sigabrt", required_argument, NULL, 0x105}, "Monitor SIGABRT (default: 'false for Android - 'true for other platforms)"},
 
 #if defined(_HF_ARCH_LINUX)
         {{"linux_symbols_bl", required_argument, NULL, 0x504}, "Symbols blacklist filter file (one entry per line)"},
@@ -310,7 +318,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     const char *logfile = NULL;
     int opt_index = 0;
     for (;;) {
-        int c = getopt_long(argc, argv, "-?hqvVsuPf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:CzT", opts,
+        int c = getopt_long(argc, argv, "-?hqvVsuPf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:CzTS", opts,
                             &opt_index);
         if (c < 0)
             break;
@@ -359,6 +367,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         case 'C':
             hfuzz->useSanCov = true;
             break;
+        case 'S':
+            hfuzz->enableSanitizers = true;
+            break;
         case 'z':
             hfuzz->dynFileMethod |= _HF_DYNFILE_SOFT;
             break;
@@ -391,6 +402,13 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x104:
             hfuzz->postExternalCommand = optarg;
+            break;
+        case 0x105:
+            if ((strcasecmp(optarg, "0") == 0) || (strcasecmp(optarg, "false") == 0)) {
+                hfuzz->monitorSIGABRT = false;
+            } else {
+                hfuzz->monitorSIGABRT = true;
+            }
             break;
         case 'P':
             hfuzz->persistent = true;
@@ -519,15 +537,24 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         LOG_I("Verifier enabled with 0.0 flipRate, activating dry run mode");
     }
 
+    /*
+     * 'enableSanitizers' can be auto enabled when 'useSanCov', although it's probably
+     * better to let user know about the features that each flag control.
+     */
+    if (hfuzz->useSanCov == true && hfuzz->enableSanitizers == false) {
+        LOG_E("Sanitizer coverage cannot be used without enabling sanitizers '-S/--sanitizers'");
+        return false;
+    }
+
     LOG_I("inputDir '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, flipRate: %lf, "
-          "externalCommand: '%s', tmOut: %ld, mutationsMax: %zu, threadsMax: %zu, fileExtn '%s', "
-          "memoryLimit: 0x%" PRIx64 "(MiB), fuzzExe: '%s', fuzzedPid: %d",
+          "externalCommand: '%s', tmOut: %ld, mutationsMax: %zu, threadsMax: %zu, fileExtn: '%s', "
+          "memoryLimit: 0x%" PRIx64 "(MiB), fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
           hfuzz->inputDir,
           cmdlineYesNo(hfuzz->nullifyStdio), cmdlineYesNo(hfuzz->fuzzStdin),
           cmdlineYesNo(hfuzz->saveUnique), hfuzz->origFlipRate,
           hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, hfuzz->tmOut,
           hfuzz->mutationsMax, hfuzz->threadsMax, hfuzz->fileExtn,
-          hfuzz->asLimit, hfuzz->cmdline[0], hfuzz->linux.pid);
+          hfuzz->asLimit, hfuzz->cmdline[0], hfuzz->linux.pid, cmdlineYesNo(hfuzz->monitorSIGABRT));
 
     snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->cmdline[0]);
     for (size_t i = 1; hfuzz->cmdline[i]; i++) {

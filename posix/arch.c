@@ -67,10 +67,12 @@ struct {
     [SIGBUS].important = true,
     [SIGBUS].descr = "SIGBUS",
 
-    [SIGABRT].important = true,
+    /* Is affected from monitorSIGABRT flag */
+    [SIGABRT].important = false,
     [SIGABRT].descr = "SIGABRT",
 
-    [SIGVTALRM].important = true,
+    /* Is affected from tmout_vtalrm flag */
+    [SIGVTALRM].important = false,
     [SIGVTALRM].descr = "SIGVTALRM-TMOUT",
 };
 /*  *INDENT-ON* */
@@ -236,8 +238,14 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 }
 
-bool arch_archInit(honggfuzz_t * hfuzz UNUSED)
+bool arch_archInit(honggfuzz_t * hfuzz)
 {
+    /* Default is true for all platforms except Android */
+    arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
+
+    /* Default is false */
+    arch_sigs[SIGVTALRM].important = hfuzz->tmout_vtalrm;
+
     return true;
 }
 

@@ -1,6 +1,6 @@
 /*
  *
- * honggfuzz - sanitizer coverage feedback parsing
+ * honggfuzz - sanitizers configuration
  * -----------------------------------------------
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -17,16 +17,20 @@
  *
  */
 
-#ifndef _HF_SANCOV_H_
-#define _HF_SANCOV_H_
+#ifndef _HF_SANITIZERS_H_
+#define _HF_SANITIZERS_H_
 
-#include "sanitizers.h"
+/* Exit code is common for all sanitizers */
+#define HF_SAN_EXIT_CODE   103
 
-/* Bitmap size */
-#define _HF_SANCOV_BITMAP_SIZE 0x3FFFFFF
+/* Prefix for sanitizer report files */
+#define kLOGPREFIX          "HF.sanitizer.log"
 
-extern void sancov_Analyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
+/* Directory in workspace to store sanitizer coverage data */
+#define _HF_SANCOV_DIR "HF_SANCOV"
 
-extern bool sancov_Init(honggfuzz_t * hfuzz);
+extern bool sanitizers_Init(honggfuzz_t * hfuzz);
 
-#endif                          /* _HF_SANCOV_H_ */
+extern bool sanitizers_prepareExecve(honggfuzz_t * hfuzz);
+
+#endif                          /* _HF_SANITIZERS_H_ */
