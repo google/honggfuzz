@@ -313,15 +313,14 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
         return;
     }
 
-    char tmstr[512];
-    util_getLocalTime("%Y%m%d.%H%M%S", tmstr, sizeof(tmstr), time(NULL));
     char fname[PATH_MAX];
+
+	uint64_t crc64 = util_CRC64(data, size);
+
     if (hfuzz->covDir == NULL) {
-        snprintf(fname, sizeof(fname), "%s/TIME.%s.ITER.%" PRIu64 ".RND.%" PRIx64 ".HONGGFUZZ.COV",
-                 hfuzz->inputDir, tmstr, (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt), util_rnd64());
+        snprintf(fname, sizeof(fname), "%s/%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov", hfuzz->inputDir, crc64, (uint32_t)size);
     } else {
-        snprintf(fname, sizeof(fname), "%s/TIME.%s.ITER.%" PRIu64 ".RND.%" PRIx64 ".HONGGFUZZ.COV",
-                 hfuzz->covDir, tmstr, (uint64_t) ATOMIC_GET(hfuzz->mutationsCnt), util_rnd64());
+        snprintf(fname, sizeof(fname), "%s/%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov", hfuzz->covDir, crc64, (uint32_t)size);
     }
 
     if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC)
