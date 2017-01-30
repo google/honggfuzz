@@ -11,23 +11,27 @@
 1. Compile honggfuzz
 2. Unpack openssl-1.1.0[a-d].tgz
 3. Patch OpenSSL
+
   ```
   $ cd openssl-1.1.0d
   $ patch -p1 < /tmp/openssl-1.1.0d.honggfuzz.patch
   ```
 4. Configure and compile OpenSSL
+
   ```
   $ make distclean
   $ CC=clang-4.0 ./config enable-fuzz-hfuzz
   $ make -j4
   ```
 5. Prepare fuzzing binaries
+
   ```
   $ clang-4.0 -o persistent.server.openssl.1.1.0d -I./openssl-1.1.0d/include server.c ./openssl-1.1.0d/libssl.a ./openssl-1.1.0d/libcrypto.a ~/honggfuzz/libhfuzz/libhfuzz.a  -ldl -lpthread
   $ clang-4.0 -o persistent.client.openssl.1.1.0d -I./openssl-1.1.0d/include client.c ./openssl-1.1.0d/libssl.a ./openssl-1.1.0d/libcrypto.a ~/honggfuzz/libhfuzz/libhfuzz.a  -ldl -lpthread
   $ clang-4.0 -o persistent.x509.openssl.1.1.0d -I./openssl-1.1.0d/include x509.c ./openssl-1.1.0d/libssl.a ./openssl-1.1.0d/libcrypto.a ~/honggfuzz/libhfuzz/libhfuzz.a  -ldl -lpthread
   ```
-5. Fuzz it
+5 Fuzz it
+
   ```
   $ ~/honggfuzz/honggfuzz -z -P -f corpus_server -t2 -q -- ./persistent.server.openssl.1.1.0d
   $ ~/honggfuzz/honggfuzz -z -P -f corpus_client -t2 -q -- ./persistent.client.openssl.1.1.0d
