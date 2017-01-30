@@ -59,7 +59,7 @@ override some symbols from libhfuzz.a used for coverage counting in honggfuzz.
 
 ***MSAN/UBSAN***
 
-As for ASAN
+As with ASAN
 
 **32-bit builds**
 
