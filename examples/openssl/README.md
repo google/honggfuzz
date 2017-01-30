@@ -52,10 +52,10 @@ $ CC=clang-4.0 ./config enable-fuzz-hfuzz enable-asan
 $ clang-4.0 ~/honggfuzz/libhfuzz/instrument.o -I./openssl-1.1.0d/include server.c ./openssl-1.1.0d/libssl.a ./openssl-1.1.0d/libcrypto.a -o persistent.server.openssl.1.1.0d.asan ~/honggfuzz/libhfuzz/libhfuzz.a -ldl -lpthread -fsanitize=address
 ```
 
-PS. Note the additional _instrument.o_ object file at the beginning of the command-line provided above. It's
-needed here, because when _-fsanitize=address_ (or: memory/undefined) is in use, clang will
-unconditionally link the final binary with _libFuzzer.a_, and this will
-override some symbols from libhfuzz.a used for coverage counting in honggfuzz.
+PS. Note the additional _instrument.o_ object file at the beginning of the command-line shown above. It's
+requires here, because when _-fsanitize=address_ (or: _memory/undefined_) is in use, clang will
+unconditionally link the final binary with _libFuzzer.a_. This will
+override some important symbols from libhfuzz.a used for coverage counting in honggfuzz.
 
 ***MSAN/UBSAN***
 
@@ -78,12 +78,12 @@ Because some bugs may affect 32-builds only (e.g.: the [CVE-2017-3731](https://w
   $ rm -f libhfuzz/*.o libhfuzz/libhfuzz.a
   $ CFLAGS="-m32" make libhfuzz/libhfuzz.a
   ```
-3.  Link the final binaries
+3. Link the final binaries
 
   ```
   $ clang-4.0 -I./openssl-1.1.0d/include server.c ./openssl-1.1.0d/libssl.a ./openssl-1.1.0d/libcrypto.a -o persistent.server.openssl.1.1.0d.32 ~/honggfuzz/libhfuzz/libhfuzz.a  -ldl -lpthread -m32
   ```
-4. Fuzz it
+4. Fuzz it!
 
   ```
   $ ~/honggfuzz/honggfuzz -z -P -f IN.server/ -q -- ./persistent.server.openssl.1.1.0d.32

@@ -1,15 +1,15 @@
-# Fuzzing Apache 2 #
+# Fuzzing Apache 2.4 #
 
 **Requirements**
 
   * honggfuzz
   * clang-4.0, or newer (5.0 works as well)
-  * apache-2 (e.g.: 2.4.25)
+  * apache-2.4.x (e.g.: 2.4.25)
 
 **Preparation**
 
-Note that the examples provided below use hardcoded paths (here to _/home/swiecki/_) and
-version strings of the libraries (e.g. apr-1.5.2). You need to modify them, so they reflect your actual build environment.
+Note: The examples provided below use hardcoded paths (here to _/home/swiecki/_) and
+version strings of the libraries (e.g. apr-_1.5.2_). These will have to be modified, so they reflect your actual build environment.
 
 1. Compile honggfuzz
 2. Prepare (configure and compile) the following packages: apr, apr-util and ngttp2
@@ -37,8 +37,8 @@ version strings of the libraries (e.g. apr-1.5.2). You need to modify them, so t
   ```
 5. Configure, compile and install Apache
 
-  * edit the _compile.sh_ file first, providing correct paths to libraries and
-    to the the destination directory for Apache installation (--prefix)
+  * edit the _compile.sh_ file first, providing correct paths to libraries, and
+    to the the installation directory (--prefix)
   ```
   $ sh compile.sh
   $ make -j4
