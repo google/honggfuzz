@@ -42,6 +42,14 @@ The tool has been used to find a few interesting security problems in major soft
    * [Remote OOB write • CVE-2016-7054](https://www.openssl.org/news/secadv/20161110.txt)
   * ... and more
 
+**Examples**
+
+The [examples](https://github.com/google/honggfuzz/tree/master/examples/)
+directory contains code demonstrating (among others) how to use honggfuzz to find bugs in
+[OpenSSL](https://github.com/google/honggfuzz/tree/master/examples/openssl)
+library and in the [Apache](https://github.com/google/honggfuzz/tree/master/examples/apache)
+web server.
+
 **Other**
 
 This is NOT an official Google product.
