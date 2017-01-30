@@ -27,7 +27,7 @@ version strings of the libraries (e.g. apr-1.5.2). You need to modify them, so t
   ```
   CXX=clang++-4.0 CC=clang-4.0 LDFLAGS="$LIBS" CFLAGS="-ggdb -fno-builtin -fno-inline -funroll-loops -fsanitize-coverage=trace-cmp,trace-pc-guard,indirect-calls" CXXFLAGS="$CFLAGS" ./configure
   ```
-3. Unpack apache-2.4.x.ta.bz2
+3. Unpack apache-2.4.x.tar.bz2
 4. Patch Apache
 
   ```
