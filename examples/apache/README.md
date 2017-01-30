@@ -40,7 +40,7 @@ version strings of the libraries (e.g. apr-1.5.2). You need to modify them, so t
   * edit the _compile.sh_ file first, providing correct paths to libraries and
     the destination directory
   ```
-  $ make distclean
+  $ sh compile.sh
   $ make -j4
   ```
 6. Copy custom configuration files to /home/swiecki/fuzz/apache/apache2/conf/
