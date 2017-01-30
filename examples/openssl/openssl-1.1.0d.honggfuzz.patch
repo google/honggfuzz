@@ -1,0 +1,68 @@
+diff -Nur openssl-1.1.0d.orig/Configure openssl-1.1.0d/Configure
+--- openssl-1.1.0d.orig/Configure	2017-01-26 14:10:21.000000000 +0100
++++ openssl-1.1.0d/Configure	2017-01-30 14:52:43.516625783 +0100
+@@ -359,6 +359,8 @@
+     "filenames",
+     "fuzz-libfuzzer",
+     "fuzz-afl",
++    "fuzz-hfuzz",
++    "32",
+     "gost",
+     "heartbeats",
+     "hw(-.+)?",
+@@ -427,6 +429,8 @@
+ 		  "egd"                 => "default",
+ 		  "fuzz-libfuzzer"	=> "default",
+ 		  "fuzz-afl"		=> "default",
++		  "fuzz-hfuzz"		=> "default",
++		  "32"			=> "default",
+ 		  "heartbeats"          => "default",
+ 		  "md2"                 => "default",
+                   "msan"                => "default",
+@@ -1099,6 +1103,16 @@
+     $config{cflags} .= "-fsanitize-coverage=edge,indirect-calls ";
+ }
+ 
++# Support for honggfuzz
++unless ($disabled{"fuzz-hfuzz"}) {
++	$config{cflags} .= " -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp -fno-builtin -fno-inline -funroll-loops -ggdb -fno-omit-frame-pointer ";
++}
++
++# 32-bit builds, under Linux, use: linux32 ./config enable-32
++unless ($disabled{"32"}) {
++	$config{cflags} .= " -m32 ";
++}
++
+ unless ($disabled{asan}) {
+     $config{cflags} .= "-fsanitize=address ";
+ }
+diff -Nur openssl-1.1.0d.orig/crypto/rand/md_rand.c openssl-1.1.0d/crypto/rand/md_rand.c
+--- openssl-1.1.0d.orig/crypto/rand/md_rand.c	2017-01-26 14:10:23.000000000 +0100
++++ openssl-1.1.0d/crypto/rand/md_rand.c	2017-01-30 14:50:26.225264097 +0100
+@@ -270,10 +270,25 @@
+     return rand_add(buf, num, (double)num);
+ }
+ 
++static uint64_t XX = 0x1234567890ABCDE;
++void RESET_RAND(void) {
++    XX = 0x1234567890ABCDE;
++}
++
+ static int rand_bytes(unsigned char *buf, int num, int pseudo)
+ {
+-    static volatile int stirred_pool = 0;
+     int i, j, k;
++
++    static const uint64_t a = 6364136223846793005ULL;
++    static const uint64_t c = 1442695040888963407ULL;
++
++    for (i = 0; i < num; i++) {
++        XX = a * XX + c;
++        buf[i] = ((XX & 0xFF0000) >> 16);
++    }
++    return (1);
++
++    static volatile int stirred_pool = 0;
+     size_t num_ceil, st_idx, st_num;
+     int ok;
+     long md_c[2];
