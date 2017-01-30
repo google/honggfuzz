@@ -1,3 +1,5 @@
+/* Based on BoringSSL's cert.c fuzzer */
+
 #include <stdio.h>
 #include <openssl/asn1.h>
 #include <openssl/x509.h>
