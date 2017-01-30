@@ -65,7 +65,7 @@ bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flag
 {
     int fd = open(fileName, flags, 0644);
     if (fd == -1) {
-        PLOG_W("Couldn't open '%s' for R/O", fileName);
+        PLOG_W("Couldn't open '%s' for R/W", fileName);
         return false;
     }
     defer {
