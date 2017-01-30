@@ -40,39 +40,50 @@
 
 **Use of sanitizers**
 
-  * ASAN
+***ASAN***
    * Configure OpenSSL
 ```
-CC=clang-4.0 ./config enable-fuzz-hfuzz enable-asan
+$ CC=clang-4.0 ./config enable-fuzz-hfuzz enable-asan
 ```
-   * Compile binaries with (notice the additional _/instrument.o_ at the beginning
-     of the commandline)
+   * Compile the binaries with
+
 ```
-clang-4.0 ~/honggfuzz/libhfuzz/instrument.o -I./openssl-1.1.0d/include server.c ./openssl-1.1.0c/libssl.a ./openssl-1.1.0c/libcrypto.a -o persistent.server.openssl.1.1.0d.asan ~/honggfuzz/libhfuzz/libhfuzz.a -ldl -lpthread -fsanitize=address
+$ clang-4.0 ~/honggfuzz/libhfuzz/instrument.o -I./openssl-1.1.0d/include server.c ./openssl-1.1.0d/libssl.a ./openssl-1.1.0d/libcrypto.a -o persistent.server.openssl.1.1.0d.asan ~/honggfuzz/libhfuzz/libhfuzz.a -ldl -lpthread -fsanitize=address
 ```
-  * MSAN/UBSAN
-   * As for ASAN
+
+PS. Notice the additional _/instrument.o_ at the beginning of the command-line. It's
+needed, because with _-fsanitize=address_ (or, with: memory/undefined) clang will
+unconditionally link the final binary with _libFuzzer.a_, and this will
+override some symbols from libhfuzz.a used for coverage counting in honggfuzz.
+
+***MSAN/UBSAN***
+
+As for ASAN
 
 **32-bit builds**
 
 Because some bugs can only affect 32-builds (e.g.: the [CVE-2017-3731](https://www.openssl.org/news/cl102.txt)), you might want to test your target in 32-bit mode
 
-  * Configure and compile OpenSSL
-```
-$ CC=clang-4.0 linux32 ./config enable-fuzz-hfuzz enable-32
-$ make -j4
-```
-  * Prepare 32-bit version of libhfuzz.a
-```
-$ cd ~/honggfuzz
-$ rm -f libhfuzz/*.o libhfuzz/libhfuzz.a
-$ CFLAGS="-m32" make libhfuzz/libhfuzz.a
-```
-  * Link the final binaries
-```
-$ clang-4.0 -I./openssl-1.1.0d/include server.c ./openssl-1.1.0d/libssl.a ./openssl-1.1.0d/libcrypto.a -o persistent.server.openssl.1.1.0d.32 ~/honggfuzz/libhfuzz/libhfuzz.a  -ldl -lpthread -m32
-```
-  * Fuzz it
-```
-$ ~/honggfuzz/honggfuzz -n2 -z -P -f IN.server/ -n8 -t2 -q -- ./persistent.server.openssl.1.1.0d.32
-```
+1. Configure and compile OpenSSL
+
+  ```
+  $ CC=clang-4.0 linux32 ./config enable-fuzz-hfuzz enable-32
+  $ make -j4
+  ```
+2. Prepare 32-bit version of libhfuzz.a
+
+  ```
+  $ cd ~/honggfuzz
+  $ rm -f libhfuzz/*.o libhfuzz/libhfuzz.a
+  $ CFLAGS="-m32" make libhfuzz/libhfuzz.a
+  ```
+3.  Link the final binaries
+
+  ```
+  $ clang-4.0 -I./openssl-1.1.0d/include server.c ./openssl-1.1.0d/libssl.a ./openssl-1.1.0d/libcrypto.a -o persistent.server.openssl.1.1.0d.32 ~/honggfuzz/libhfuzz/libhfuzz.a  -ldl -lpthread -m32
+  ```
+4. Fuzz it
+
+  ```
+  $ ~/honggfuzz/honggfuzz -n2 -z -P -f IN.server/ -n8 -t2 -q -- ./persistent.server.openssl.1.1.0d.32
+  ```
