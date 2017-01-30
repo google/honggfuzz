@@ -8,8 +8,8 @@
 
 **Preparation**
 
-Note that those examples use hardcoded paths (here to _/home/swiecki/_) and
-version of the libraries (e.g. apr-1.5.2). You nedd to modify them, so they reflect your actual build environment.
+Note that the examples provided below use hardcoded paths (here to _/home/swiecki/_) and
+version strings of the libraries (e.g. apr-1.5.2). You need to modify them, so they reflect your actual build environment.
 
 1. Compile honggfuzz
 2. Prepare (configure and compile) the following packages: apr, apr-util and ngttp2
@@ -27,7 +27,7 @@ version of the libraries (e.g. apr-1.5.2). You nedd to modify them, so they refl
   ```
   CXX=clang++-4.0 CC=clang-4.0 LDFLAGS="$LIBS" CFLAGS="-ggdb -fno-builtin -fno-inline -funroll-loops -fsanitize-coverage=trace-cmp,trace-pc-guard,indirect-calls" CXXFLAGS="$CFLAGS" ./configure
   ```
-3. Unpack apache-2.4.x.tgz
+3. Unpack apache-2.4.x.ta.bz2
 4. Patch Apache
 
   ```
@@ -38,7 +38,7 @@ version of the libraries (e.g. apr-1.5.2). You nedd to modify them, so they refl
 
   ```
   $ make distclean
-  $ $ sh compile.sh
+  $ sh compile.sh
   $ make -j4
   ```
 6. Copy custom configuration files to /home/swiecki/fuzz/apache/apache2/conf/
@@ -46,7 +46,8 @@ version of the libraries (e.g. apr-1.5.2). You nedd to modify them, so they refl
    ```
    cp httpd.conf.h1 httpd.conf.h2 /home/swiecki/fuzz/apache/apache2/conf/
    ```
-7. Fuzz it
+
+**Fuzzing**
 
   * HTTP/1
   ```
