@@ -25,7 +25,8 @@ version strings of the libraries (e.g. apr-1.5.2). You need to modify them, so t
   ```
   * NgHttp2
   ```
-  CXX=clang++-4.0 CC=clang-4.0 LDFLAGS="$LIBS" CFLAGS="-ggdb -fno-builtin -fno-inline -funroll-loops -fsanitize-coverage=trace-cmp,trace-pc-guard,indirect-calls" CXXFLAGS="$CFLAGS" ./configure
+  $ CXX=clang++-4.0 CC=clang-4.0 LDFLAGS="$LIBS" CFLAGS="-ggdb -fno-builtin -fno-inline -funroll-loops -fsanitize-coverage=trace-cmp,trace-pc-guard,indirect-calls" CXXFLAGS="$CFLAGS" ./configure
+  $ make
   ```
 3. Unpack apache-2.4.x.tar.bz2
 4. Patch Apache
@@ -36,15 +37,16 @@ version strings of the libraries (e.g. apr-1.5.2). You need to modify them, so t
   ```
 5. Configure, compile and install Apache
 
+  * edit the _compile.sh_ file first, providing correct paths to libraries and
+    the destination directory
   ```
   $ make distclean
-  $ sh compile.sh
   $ make -j4
   ```
 6. Copy custom configuration files to /home/swiecki/fuzz/apache/apache2/conf/
 
    ```
-   cp httpd.conf.h1 httpd.conf.h2 /home/swiecki/fuzz/apache/apache2/conf/
+   $ cp httpd.conf.h1 httpd.conf.h2 /home/swiecki/fuzz/apache/apache2/conf/
    ```
 
 **Fuzzing**
