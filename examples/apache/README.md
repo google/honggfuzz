@@ -1,0 +1,52 @@
+# Fuzzing Apache 2 #
+
+**Requirements**
+
+  * honggfuzz
+  * clang-4.0, or newer (5.0 works as well)
+  * apache-2 (e.g.: 2.4.25)
+
+**Preparation**
+
+Note that those examples use hardcoded paths (here to _/home/swiecki/_) and
+version of the libraries (e.g. apr-1.5.2). You nedd to modify them, so they reflect your actual build environment.
+
+1. Compile honggfuzz
+2. Prepare the following packages: apr, apr-util and ngttp2
+  * Apr
+  ```
+  $ CC=clang-4.0 CFLAGS="-ggdb -fno-builtin -fno-inline -funroll-loops -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp" LDFLAGS="$CFLAGS" ./configure
+  $ make
+  ```
+  * Apr-Util
+  ```
+  $ CC=clang-4.0 CFLAGS="-ggdb -fno-inline -fno-builtin -fsanitize-coverage=trace-cmp,trace-pc-guard,indirect-calls" LDFLAGS="$CFLAGS" ./configure -with-apr=/home/swiecki/fuzz/apache/apr-1.5.2/
+  $ make
+  ```
+  * NgHttp2
+  ```
+  CXX=clang++-4.0 CC=clang-4.0 LDFLAGS="$LIBS" CFLAGS="-ggdb -fno-builtin -fno-inline -fsanitize-coverage=trace-cmp,trace-pc-guard,indirect-calls" CXXFLAGS="$CFLAGS" ./configure
+  ```
+3. Unpack apache-2.4.x.tgz
+4. Patch Apache
+
+  ```
+  $ cd httpd-2.4.25/
+  $ patch -p1 < /tmp/httpd-2.4.25.honggfuzz.patch
+  ```
+5. Configure, compile and install Apache
+
+  ```
+  $ make distclean
+  $ $ sh compile.sh
+  $ make -j4
+  ```
+6. Fuzz it
+  * HTTP/1
+  ```
+  $ ~/honggfuzz/honggfuzz -z -P -f corpus_http1 -w ./httpd.wordlist -- ./apache2/bin/httpd -X -f /home/swiecki/fuzz/apache/apache2/conf/httpd.conf.h1
+  ```
+  * HTTP/1 + HTTP/2
+  ```
+  $ ~/honggfuzz/honggfuzz -z -P -f corpus_http2 -w ./httpd.wordlist -- ./apache2/bin/httpd -X -f /home/swiecki/fuzz/apache/apache2/conf/httpd.conf.h2
+  ```
