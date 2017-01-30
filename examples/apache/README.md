@@ -38,12 +38,13 @@ version strings of the libraries (e.g. apr-1.5.2). You need to modify them, so t
 5. Configure, compile and install Apache
 
   * edit the _compile.sh_ file first, providing correct paths to libraries and
-    the destination directory
+    to the the destination directory for Apache installation (--prefix)
   ```
   $ sh compile.sh
   $ make -j4
+  $ make install
   ```
-6. Copy custom configuration files to /home/swiecki/fuzz/apache/apache2/conf/
+6. Copy the custom configuration files to /home/swiecki/fuzz/apache/apache2/conf/
 
    ```
    $ cp httpd.conf.h1 httpd.conf.h2 /home/swiecki/fuzz/apache/apache2/conf/
