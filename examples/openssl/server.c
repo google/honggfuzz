@@ -507,9 +507,7 @@ static void Init()
     ret = SSL_CTX_use_certificate(ctx, cert);
     assert(ret == 1);
     X509_free(cert);
-    ret =
-        SSL_CTX_set_cipher_list(ctx,
-                                "TLSv1.2:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-CHACHA20-POLY1305:RSA-PSK-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-PSK-CHACHA20-POLY1305:ECDHE-PSK-AES128-CBC-SHA:ECDHE-PSK-AES256-CBC-SHA:RSA-PSK-AES128-GCM-SHA256");
+    ret = SSL_CTX_set_cipher_list(ctx, "ALL:+NULL");
     assert(ret == 1);
 
     X509_STORE *store = X509_STORE_new();
