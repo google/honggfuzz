@@ -1,6 +1,3 @@
-#define NULL ((void*)0)
-typedef unsigned long size_t;
-
 #include "instrument.h"
 
 extern int tolower(int c);
