@@ -52,7 +52,7 @@ $ CC=clang-4.0 ./config enable-fuzz-hfuzz enable-asan
 $ clang-4.0 ~/honggfuzz/libhfuzz/instrument.o -I./openssl-1.1.0d/include server.c ./openssl-1.1.0d/libssl.a ./openssl-1.1.0d/libcrypto.a -o persistent.server.openssl.1.1.0d.asan ~/honggfuzz/libhfuzz/libhfuzz.a -ldl -lpthread -fsanitize=address
 ```
 
-PS. Note the additional _/instrument.o_ at the beginning of the command-line aboce. It's
+PS. Note the additional _instrument.o_ object file at the beginning of the command-line provided above. It's
 needed here, because when _-fsanitize=address_ (or: memory/undefined) is in use, clang will
 unconditionally link the final binary with _libFuzzer.a_, and this will
 override some symbols from libhfuzz.a used for coverage counting in honggfuzz.
