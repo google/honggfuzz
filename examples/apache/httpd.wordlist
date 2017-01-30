@@ -1,0 +1,176 @@
+PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n
+GET
+PUT
+POST
+DELETE
+CONNECT
+OPTIONS
+TRACE
+PATCH
+PROPFIND
+PROPPATCH
+MKCOL
+COPY
+MOVE
+LOCK
+UNLOCK
+VERSION-CONTROL
+CHECKOUT
+UNCHECKOUT
+CHECKIN
+UPDATE
+LABEL
+REPORT
+MKWORKSPACE
+MKACTIVITY
+BASELINE-CONTROL
+MERGE
+/
+/index.html
+HTTP
+HTTP/
+HTTP/1.0
+AAAAAAAAAAAAAAAAA=BBBBBBBBBBBBBBBBBB&CCCCCCCCCCCCCCCCCC=DDDDDDDDDDDDDDDD
+,
+\n
+\r
+\r\n
+\r\n\r\n
+:
+: 
+ETag:
+Timeout:
+Accept:
+Accept-Charset:
+Accept-Encoding:
+Transfer-Encoding:
+Accept-Language:
+Accept-Datetime:
+Authorization:
+Cache-Control:
+Connection:
+Cookie:
+Set-Cookie:
+Set-Cookie2:
+Server:
+Alt-Svc:
+Cookie2:
+Content-Length:
+Content-MD5:
+Content-Type:
+Date:
+Expires:
+Destination:
+Digest
+Expect:
+From:
+Host:
+Vary:
+If-Match:
+If-Modified-Since:
+If-None-Match:
+If-Range:
+If-Unmodified-Since:
+Max-Forwards:
+Origin:
+Pragma:
+Proxy-Authorization:
+Range:
+Request-Range:
+Referer:
+TE:
+User-Agent:
+Upgrade:
+URI:
+Via:
+Warning:
+Proxy-Connection:
+Fowarded:
+Transfer-Encoding: chunked
+TE: chunked
+novary
+NULL
+null
+127.0.0.1
+[2002:abcd:abcd::1]
+text/plain
+text/html
+utf-8
+iso8859-2
+iso-8859-2
+gzip
+x-gzip
+identity
+ratio
+input
+output
+gzip
+identity
+deflate
+en-US
+pl
+base64
+Basic
+Basic realm="
+QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+no-cache
+no-store
+no-transform
+must-revalidate
+never
+only-if-cached
+none
+keep-alive
+close
+trailer
+Upgrade
+STARTTLS
+SSL
+$Version=1; Skin=new;
+2147483648
+-2147483648
+-2147483647
+2147483647
+-1
+0
+1
+4294967295
+-4294967295
+4294967296
+-4294967296
+9223372036854775808
+-9223372036854775808
+9223372036854775807
+-9223372036854775808
+4611686018427387904
+-4611686018427387904
+4611686018427387903
+-4611686018427387904
+application/x-www-form-urlencoded
+Tue, 15 Nov 1994 08:12:31 GMT
+100-continue
+user@example.com
+en.wikipedia.org:80
+737060cd8c284d8af7ad3082f209582d
+Sat, 29 Oct 1994 19:43:31 GMT
+bytes=000000000000000000000000000000000000000500-000000000000000000000000000999
+Content-Range:
+Last-Modified:
+chunked
+Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20100101 Firefox/21.0
+HTTP/2.0, SHTTP/1.3, IRC/6.9, RTA/x11
+HTTP/1.0
+HTTP/2.0
+HTTP/0.9
+1.0 fred, 1.1 example.com (Apache/1.1)
+199 Miscellaneous warning
+TLS/1.0
+Connection: Upgrade\r\n
+Upgrade: h2c\r\n
+Upgrade: h2\r\n
+HTTP2-Settings: 321323212321321321321321321321321322133213\r\n
+Upgrade:
+h2
+h2c
+HTTP2-Settings: 
