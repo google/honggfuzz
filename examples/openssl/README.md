@@ -30,7 +30,7 @@
   $ clang-4.0 -o persistent.client.openssl.1.1.0d -I./openssl-1.1.0d/include client.c ./openssl-1.1.0d/libssl.a ./openssl-1.1.0d/libcrypto.a ~/honggfuzz/libhfuzz/libhfuzz.a  -ldl -lpthread
   $ clang-4.0 -o persistent.x509.openssl.1.1.0d -I./openssl-1.1.0d/include x509.c ./openssl-1.1.0d/libssl.a ./openssl-1.1.0d/libcrypto.a ~/honggfuzz/libhfuzz/libhfuzz.a  -ldl -lpthread
   ```
-5 Fuzz it
+6. Fuzz it
 
   ```
   $ ~/honggfuzz/honggfuzz -z -P -f corpus_server -t2 -q -- ./persistent.server.openssl.1.1.0d
@@ -54,6 +54,7 @@ clang-4.0 ~/honggfuzz/libhfuzz/instrument.o -I./openssl-1.1.0d/include server.c 
    * As for ASAN
 
 **32-bit builds**
+
 Because some bugs can only affect 32-builds (e.g.: the [CVE-2017-3731](https://www.openssl.org/news/cl102.txt)), you might want to test your target in 32-bit mode
 
   * Configure and compile OpenSSL
