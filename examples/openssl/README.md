@@ -33,9 +33,9 @@
 6. Fuzz it
 
   ```
-  $ ~/honggfuzz/honggfuzz -z -P -f corpus_server -t2 -q -- ./persistent.server.openssl.1.1.0d
-  $ ~/honggfuzz/honggfuzz -z -P -f corpus_client -t2 -q -- ./persistent.client.openssl.1.1.0d
-  $ ~/honggfuzz/honggfuzz -z -P -f corpus_x509 -t2 -q -- ./persistent.x509.openssl.1.1.0d
+  $ ~/honggfuzz/honggfuzz -z -P -f corpus_server -q -- ./persistent.server.openssl.1.1.0d
+  $ ~/honggfuzz/honggfuzz -z -P -f corpus_client -q -- ./persistent.client.openssl.1.1.0d
+  $ ~/honggfuzz/honggfuzz -z -P -f corpus_x509 -q -- ./persistent.x509.openssl.1.1.0d
   ```
 
 **Use of sanitizers**
@@ -85,5 +85,5 @@ Because some bugs can only affect 32-builds (e.g.: the [CVE-2017-3731](https://w
 4. Fuzz it
 
   ```
-  $ ~/honggfuzz/honggfuzz -n2 -z -P -f IN.server/ -n8 -t2 -q -- ./persistent.server.openssl.1.1.0d.32
+  $ ~/honggfuzz/honggfuzz -z -P -f IN.server/ -q -- ./persistent.server.openssl.1.1.0d.32
   ```
