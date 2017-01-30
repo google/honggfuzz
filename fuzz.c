@@ -315,13 +315,9 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
 
     char fname[PATH_MAX];
 
-	uint64_t crc64 = util_CRC64(data, size);
-
-    if (hfuzz->covDir == NULL) {
-        snprintf(fname, sizeof(fname), "%s/%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov", hfuzz->inputDir, crc64, (uint32_t)size);
-    } else {
-        snprintf(fname, sizeof(fname), "%s/%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov", hfuzz->covDir, crc64, (uint32_t)size);
-    }
+    uint64_t crc64 = util_CRC64(data, size);
+    snprintf(fname, sizeof(fname), "%s/%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov",
+             hfuzz->covDir ? hfuzz->covDir : hfuzz->inputDir, crc64, (uint32_t) size);
 
     if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC)
         == false) {
