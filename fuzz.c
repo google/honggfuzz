@@ -314,10 +314,16 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
     }
 
     char fname[PATH_MAX];
-
     uint64_t crc64 = util_CRC64(data, size);
     snprintf(fname, sizeof(fname), "%s/%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov",
              hfuzz->covDir ? hfuzz->covDir : hfuzz->inputDir, crc64, (uint32_t) size);
+
+    if (access(fname, R_OK) == 0) {
+        LOG_D("File '%s' already exists in the corpus directory", fname);
+        return;
+    }
+
+    LOG_D("Adding file '%s' to the corpus directory", fname);
 
     if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC)
         == false) {
