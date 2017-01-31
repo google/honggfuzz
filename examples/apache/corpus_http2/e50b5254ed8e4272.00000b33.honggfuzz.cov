@@ -1,0 +1,48 @@
+=================================================================
+==19423==ERROR: AddressSanitizer: global-buffer-overflow on address 0x00000177a340 at pc 0x00000060471e bp 0x7fffffffcf50 sp 0x7fffffffcf48
+READ of size 8 at 0x00000177a340 thread T0
+    #0 0x60471d  (/usr/local/google/home/swiecki/fuzz/nginx/dist/sbin/nginx+0x60471d)
+    #1 0x5c5cd7  (/usr/local/google/home/swiecki/fuzz/nginx/dist/sbin/nginx+0x5c5cd7)
+    #2 0x5f5571  (/usr/local/google/home/swiecki/fuzz/nginx/dist/sbin/nginx+0x5f5571)
+    #3 0x5f3d5a  (/usr/local/google/home/swiecki/fuzz/nginx/dist/sbin/nginx+0x5f3d5a)
+    #4 0x5eb840  (/usr/local/google/home/swiecki/fuzz/nginx/dist/sbin/nginx+0x5eb840)
+    #5 0x5f03b2  (/usr/local/google/home/swiecki/fuzz/nginx/dist/sbin/nginx+0x5f03b2)
+    #6 0x51e721  (/usr/local/google/home/swiecki/fuzz/nginx/dist/sbin/nginx+0x51e721)
+    #7 0x7ffff6860f44  (/lib/x86_64-linux-gnu/libc.so.6+0x21f44)
+    #8 0x425430  (/usr/local/google/home/swiecki/fuzz/nginx/dist/sbin/nginx+0x425430)
+
+0x00000177a340 is located 32 bytes to the left of global variable 'master_write_fd_set' defined in 'src/event/modules/ngx_select_module.c:26:23' (0x177a360) of size 128
+0x00000177a340 is located 0 bytes to the right of global variable 'master_read_fd_set' defined in 'src/event/modules/ngx_select_module.c:25:23' (0x177a2c0) of size 128
+SUMMARY: AddressSanitizer: global-buffer-overflow (/usr/local/google/home/swiecki/fuzz/nginx/dist/sbin/nginx+0x60471d) 
+Shadow bytes around the buggy address:
+  0x0000802e7410: 00 00 f9 f9 f9 f9 f9 f9 00 f9 f9 f9 f9 f9 f9 f9
+  0x0000802e7420: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0000802e7430: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0000802e7440: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0000802e7450: 00 f9 f9 f9 f9 f9 f9 f9 00 00 00 00 00 00 00 00
+=>0x0000802e7460: 00 00 00 00 00 00 00 00[f9]f9 f9 f9 00 00 00 00
+  0x0000802e7470: 00 00 00 00 00 00 00 00 00 00 00 00 f9 f9 f9 f9
+  0x0000802e7480: 00 f9 f9 f9 f9 f9 f9 f9 00 f9 f9 f9 f9 f9 f9 f9
+  0x0000802e7490: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0000802e74a0: f9 f9 f9 f9 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0000802e74b0: 00 00 00 00 f9 f9 f9 f9 00 f9 f9 f9 f9 f9 f9 f9
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==19423==ABORTING

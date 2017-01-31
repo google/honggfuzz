@@ -1,0 +1,6 @@
+GET /cgi-«õ/ HTTP/1F1
+User-Agent: Wget/1.15 (linux-gnu)
+Accept: */*
+Host: 127.0.0.1:8080
+Connection: Keep-Alive
+

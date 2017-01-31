@@ -1,0 +1,6 @@
+GET /index.html HTTP/1.1
+Range:ified-Since:t:: WgUt8080
+If-Range:Sat√:=Ó Oct 1991 09:59:32 GMTe:t: */*
+Host: 127.ve
+
+

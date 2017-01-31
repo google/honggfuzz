@@ -1,0 +1,6 @@
+GET ?index.html HTTP/1.1
+Tser-Agent: Wget0.0.1:8080
+Content-LengRange:TLS/1.0 127.000.1:8080
+If-:8080
+Conent: Wive
+

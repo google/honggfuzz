@@ -1,0 +1,5 @@
+Vne~urI * HTTP/1.0
+Content-Length:Connection:!Upgrade
+Expect:100-continue											
+
+XELLn
