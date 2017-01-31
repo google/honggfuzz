@@ -57,6 +57,12 @@ requires here, because when _-fsanitize=address_ (or: _memory/undefined_) is in 
 unconditionally link the final binary with _libFuzzer.a_. This will
 override some important symbols from libhfuzz.a used for coverage counting in honggfuzz.
 
+   * Run honggfuzz with the *-S* flag to support the sanitizer exit codes and reporting
+
+```
+$ ~/honggfuzz/honggfuzz -z -P -f corpus_server -q -S -- ./persistent.server.openssl.1.1.0d.asan
+```
+
 ***MSAN/UBSAN***
 
 As with ASAN
