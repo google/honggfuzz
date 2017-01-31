@@ -296,27 +296,31 @@ android-clean-deps:
 cmdline.o: cmdline.h common.h log.h files.h util.h
 display.o: common.h display.h log.h util.h
 files.o: common.h files.h log.h util.h
-fuzz.o: common.h fuzz.h arch.h files.h log.h mangle.h report.h sancov.h
-fuzz.o: subproc.h util.h
+fuzz.o: common.h fuzz.h arch.h files.h log.h mangle.h report.h sanitizers.h
+fuzz.o: sancov.h subproc.h util.h
 honggfuzz.o: common.h cmdline.h display.h log.h files.h fuzz.h util.h
 log.o: common.h log.h util.h
 mangle.o: common.h mangle.h log.h util.h
 report.o: common.h report.h log.h util.h
-sancov.o: common.h sancov.h files.h log.h util.h
-subproc.o: common.h subproc.h arch.h files.h log.h sancov.h util.h
+sancov.o: common.h sancov.h sanitizers.h files.h log.h util.h
+sanitizers.o: common.h sanitizers.h files.h log.h util.h
+subproc.o: common.h subproc.h arch.h files.h log.h sancov.h sanitizers.h
+subproc.o: util.h
 util.o: common.h util.h files.h log.h
 libhfuzz/instrument.o: common.h util.h
-libhfuzz/memorycmp.o: libhfuzz/instrument.h
+libhfuzz/memorycmp.o: libhfuzz/instrument.h common.h util.h
 libhfuzz/persistent.o: common.h
-linux/arch.o: common.h arch.h common.h files.h log.h sancov.h subproc.h
-linux/arch.o: util.h linux/perf.h linux/ptrace_utils.h
+linux/arch.o: common.h arch.h common.h files.h log.h sancov.h sanitizers.h
+linux/arch.o: subproc.h util.h linux/perf.h linux/ptrace_utils.h
 linux/bfd.o: common.h linux/bfd.h linux/unwind.h files.h common.h log.h
 linux/bfd.o: util.h
 linux/perf.o: common.h linux/perf.h files.h common.h log.h util.h linux/pt.h
 linux/pt.o: common.h linux/pt.h log.h common.h util.h
 linux/ptrace_utils.o: common.h linux/ptrace_utils.h files.h common.h log.h
-linux/ptrace_utils.o: sancov.h subproc.h util.h linux/bfd.h linux/unwind.h
+linux/ptrace_utils.o: sancov.h sanitizers.h subproc.h util.h linux/bfd.h
+linux/ptrace_utils.o: linux/unwind.h
 linux/unwind.o: common.h linux/unwind.h log.h common.h
-mac/arch.o: common.h arch.h files.h log.h sancov.h subproc.h util.h
-posix/arch.o: common.h arch.h common.h files.h log.h sancov.h subproc.h
-posix/arch.o: util.h
+mac/arch.o: common.h arch.h files.h log.h sancov.h sanitizers.h subproc.h
+mac/arch.o: util.h
+posix/arch.o: common.h arch.h common.h files.h log.h sancov.h sanitizers.h
+posix/arch.o: subproc.h util.h
