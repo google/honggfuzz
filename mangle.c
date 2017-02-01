@@ -421,11 +421,9 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         mangle_Shrink,
         mangle_InsertRnd,
     };
-    /*  *INDENT-ON* */
-
-    /*
-     * Minimal number of changes is 1
-     */
+	/* *INDENT-ON* */
+    
+    /* Minimal number of changes is 1 */
     uint64_t changesCnt = fuzzer->dynamicFileSz * fuzzer->flipRate;
     if (changesCnt == 0ULL) {
         changesCnt = 1;
