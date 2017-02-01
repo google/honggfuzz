@@ -505,7 +505,7 @@ static void Init()
     ret = SSL_CTX_use_certificate(ctx, cert);
     assert(ret == 1);
     X509_free(cert);
-    ret = SSL_CTX_set_cipher_list(ctx, "ALL:+NULL");
+    ret = SSL_CTX_set_cipher_list(ctx, "ALL:eNULL:@SECLEVEL=0");
     assert(ret == 1);
 
     X509_STORE *store = X509_STORE_new();
@@ -562,6 +562,10 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
             SSL_get_verify_result(client);
             X509_free(peer);
         }
+        SSL_renegotiate(client);
+#ifndef OPENSSL_NO_HEARTBEATS
+        SSL_heartbeat(client);
+#endif
         // Keep reading application data until error or EOF.
         uint8_t tmp[1024 * 1024];
         for (;;) {
@@ -572,10 +576,6 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
             if (SSL_write(client, tmp, r) <= 0) {
                 break;
             }
-            SSL_renegotiate(client);
-#ifndef OPENSSL_NO_HEARTBEATS
-            SSL_heartbeat(client);
-#endif
         }
     }
 
