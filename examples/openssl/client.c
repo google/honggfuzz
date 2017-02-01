@@ -1,5 +1,9 @@
 /* Based on BoringSSL's client.c fuzzer */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <assert.h>
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
@@ -583,3 +587,7 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
 
     return 0;
 }
+
+#ifdef __cplusplus
+}
+#endif

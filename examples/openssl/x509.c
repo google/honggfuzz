@@ -1,5 +1,9 @@
 /* Based on BoringSSL's cert.c fuzzer */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include <openssl/asn1.h>
 #include <openssl/x509.h>
@@ -19,3 +23,7 @@ int LLVMFuzzerTestOneInput(const uint8_t * buf, size_t len)
 
     return 0;
 }
+
+#ifdef __cplusplus
+}
+#endif

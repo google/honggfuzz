@@ -1,5 +1,9 @@
 /* Based on BoringSSL's server.c fuzzer */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <assert.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
@@ -477,7 +481,7 @@ static SSL_CTX *ctx;
 
 static SSL *server;
 
-extern void RESET_RAND(void);
+void RESET_RAND(void);
 
 unsigned int psk_callback(SSL * ssl, const char *identity, unsigned char *psk,
                           unsigned int max_psk_len)
@@ -584,3 +588,7 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
 
     return 0;
 }
+
+#ifdef __cplusplus
+}
+#endif
