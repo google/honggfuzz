@@ -40,7 +40,16 @@ The tool has been used to find a few interesting security problems in major soft
    * [Remote OOB read • CVE-2015-1789]( https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-1789)
    * [Remote Use-after-Free (potential RCE) • CVE-2016-6309](https://www.openssl.org/news/secadv/20160926.txt)
    * [Remote OOB write • CVE-2016-7054](https://www.openssl.org/news/secadv/20161110.txt)
+   * [Remote OOB read • CVE-2017-3731](https://www.openssl.org/news/secadv/20170126.txt)
   * ... and more
+
+**Examples**
+
+The [examples](https://github.com/google/honggfuzz/tree/master/examples/)
+directory contains code demonstrating (among others) how to use honggfuzz to find bugs in the
+[OpenSSL](https://github.com/google/honggfuzz/tree/master/examples/openssl)
+library and in the [Apache](https://github.com/google/honggfuzz/tree/master/examples/apache)
+web server.
 
 **Other**
 
