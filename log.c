@@ -166,3 +166,13 @@ pthread_mutex_t *logMutexGet(void)
 {
     return &log_mutex;
 }
+
+bool logIsTTY(void)
+{
+    return log_fd_isatty;
+}
+
+int logFd(void)
+{
+    return log_fd;
+}

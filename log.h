@@ -62,6 +62,10 @@ extern void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const ch
 
 extern void logStop(int sig);
 
+extern bool logIsTTY(void);
+
+extern int logFd(void);
+
 extern pthread_mutex_t *logMutexGet(void);
 
 #endif                          /* _HF_LOG_H_ */

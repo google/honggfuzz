@@ -52,9 +52,8 @@ static void display_put(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    vfprintf(stdout, fmt, args);
+    vdprintf(logFd(), fmt, args);
     va_end(args);
-    fflush(stdout);
 }
 
 static void display_printKMG(uint64_t val)
@@ -262,5 +261,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
 extern void display_display(honggfuzz_t * hfuzz)
 {
+    if (logIsTTY() == false) {
+        return;
+    }
     display_displayLocked(hfuzz);
 }
