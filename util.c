@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <math.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -90,7 +91,7 @@ char *util_StrDup(const char *s)
 
 static int util_urandomFd = -1;
 static __thread uint64_t rndX;
-static __thread uint64_t rndIni = false;
+pthread_once_t rndOnce = PTHREAD_ONCE_INIT;
 
 /* MMIX LCG PRNG */
 static const uint64_t a = 6364136223846793005ULL;
@@ -104,17 +105,14 @@ static void util_rndInit(void)
         }
     }
 
-    if (rndIni == false) {
-        if (files_readFromFd(util_urandomFd, (uint8_t *) & rndX, sizeof(rndX)) != sizeof(rndX)) {
-            PLOG_F("Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndX));
-        }
-        rndIni = true;
+    if (files_readFromFd(util_urandomFd, (uint8_t *) & rndX, sizeof(rndX)) != sizeof(rndX)) {
+        PLOG_F("Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndX));
     }
 }
 
 uint64_t util_rnd64(void)
 {
-    util_rndInit();
+    pthread_once(&rndOnce, util_rndInit);
     rndX = a * rndX + c;
     return rndX;
 }
@@ -133,7 +131,7 @@ void util_rndBuf(uint8_t * buf, size_t sz)
     if (sz == 0) {
         return;
     }
-    util_rndInit();
+    pthread_once(&rndOnce, util_rndInit);
     for (size_t i = 0; i < sz; i++) {
         rndX = a * rndX + c;
         buf[i] = (uint8_t) (rndX >> 15);
