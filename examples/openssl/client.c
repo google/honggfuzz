@@ -503,6 +503,7 @@ static void Init()
     int ret = SSL_CTX_use_PrivateKey(ctx, pkey);
     assert(ret == 1);
     EVP_PKEY_free(pkey);
+
     bufp = kCertificateDER;
     X509 *cert = d2i_X509(NULL, &bufp, sizeof(kCertificateDER));
     assert(cert != NULL);
@@ -551,6 +552,7 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
     RESET_RAND();
 
     SSL *client = SSL_new(ctx);
+    SSL_set_tlsext_host_name(client, "localhost");
 
     BIO *in = BIO_new(BIO_s_mem());
     BIO_write(in, buf, len);
@@ -566,10 +568,6 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
             SSL_get_verify_result(client);
             X509_free(peer);
         }
-        SSL_renegotiate(client);
-#ifndef OPENSSL_NO_HEARTBEATS
-        SSL_heartbeat(client);
-#endif
         // Keep reading application data until error or EOF.
         uint8_t tmp[1024 * 1024];
         for (;;) {
@@ -580,6 +578,10 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
             if (SSL_write(client, tmp, r) <= 0) {
                 break;
             }
+            SSL_renegotiate(client);
+#ifndef OPENSSL_NO_HEARTBEATS
+            SSL_heartbeat(client);
+#endif
         }
     }
 
