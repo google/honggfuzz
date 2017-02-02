@@ -51,19 +51,21 @@ int strncmp(const char *s1, const char *s2, size_t n)
     }
 
     unsigned int v = 0;
+    int ret = 0;
 
-    size_t i = 0;
-    for (i = 0; (s1[i] == s2[i]) && i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
+        if (s1[i] != s2[i]) {
+            ret = ret ? ret : ((unsigned char)s1[i] - (unsigned char)s2[i]);
+        } else {
+            v++;
+        }
         if (s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
-        v++;
     }
+
     libhfuzz_instrumentUpdateCmpMap(__builtin_return_address(0), v);
-    if (i == n) {
-        return 0;
-    }
-    return (s1[i] - s2[i]);
+    return ret;
 }
 
 int strncasecmp(const char *s1, const char *s2, size_t n)
@@ -73,19 +75,21 @@ int strncasecmp(const char *s1, const char *s2, size_t n)
     }
 
     unsigned int v = 0;
+    int ret = 0;
 
-    size_t i = 0;
-    for (i = 0; (tolower(s1[i]) == tolower(s2[i])) && i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
+        if (tolower(s1[i]) != tolower(s2[i])) {
+            ret = ret ? ret : (tolower(s1[i]) - tolower(s2[i]));
+        } else {
+            v++;
+        }
         if (s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
-        v++;
     }
+
     libhfuzz_instrumentUpdateCmpMap(__builtin_return_address(0), v);
-    if (i == n) {
-        return 0;
-    }
-    return (s1[i] - s2[i]);
+    return ret;
 }
 
 char *strstr(const char *haystack, const char *needle)
@@ -116,22 +120,21 @@ static inline int _memcmp(const void *m1, const void *m2, size_t n, void *addr)
     }
 
     unsigned int v = 0;
+    int ret = 0;
 
-    const char *s1 = (const char *)m1;
-    const char *s2 = (const char *)m2;
+    const unsigned char *s1 = (const unsigned char *)m1;
+    const unsigned char *s2 = (const unsigned char *)m2;
 
-    size_t i = 0;
-    for (i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         if (s1[i] != s2[i]) {
-            break;
+            ret = ret ? ret : s1[i] != s2[i];
+        } else {
+            v++;
         }
-        v++;
     }
+
     libhfuzz_instrumentUpdateCmpMap(addr, v);
-    if (i == n) {
-        return 0;
-    }
-    return (s1[i] - s2[i]);
+    return ret;
 }
 
 int memcmp(const void *m1, const void *m2, size_t n)
