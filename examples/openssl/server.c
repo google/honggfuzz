@@ -496,7 +496,7 @@ static void Init()
     ERR_load_crypto_strings();
     RESET_RAND();
 
-    ctx = SSL_CTX_new(TLS_method());
+    ctx = SSL_CTX_new(SSLv23_method());
     const uint8_t *bufp = kRSAPrivateKeyDER;
     RSA *privkey = d2i_RSAPrivateKey(NULL, &bufp, sizeof(kRSAPrivateKeyDER));
     assert(privkey != NULL);
@@ -512,7 +512,7 @@ static void Init()
     ret = SSL_CTX_use_certificate(ctx, cert);
     assert(ret == 1);
     X509_free(cert);
-    ret = SSL_CTX_set_cipher_list(ctx, "ALL:eNULL:@SECLEVEL=0");
+    ret = SSL_CTX_set_cipher_list(ctx, "ALL:eNULL");
     assert(ret == 1);
 
     X509_STORE *store = X509_STORE_new();
