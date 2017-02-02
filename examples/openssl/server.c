@@ -566,7 +566,6 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
     if (SSL_accept(server) == 1) {
         X509 *peer;
         if ((peer = SSL_get_peer_certificate(server)) != NULL) {
-            ERR_print_errors_fp(stderr);
             SSL_get_verify_result(server);
             X509_free(peer);
         }
@@ -584,7 +583,9 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
 #endif                          /* ifndef OPENSSL_NO_HEARTBEATS */
             SSL_renegotiate(server);
         }
-    }
+    } else {
+        ERR_print_errors_fp(stderr);
+	}
 
     SSL_free(server);
 

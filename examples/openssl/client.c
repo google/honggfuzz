@@ -5,6 +5,7 @@ extern "C" {
 #endif
 
 #include <assert.h>
+#include <openssl/err.h>
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
 #include <stdint.h>
@@ -583,6 +584,8 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
 #endif
             SSL_renegotiate(client);
         }
+    } else {
+		ERR_print_errors_fp(stderr);
     }
 
     SSL_free(client);
