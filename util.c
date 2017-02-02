@@ -91,7 +91,7 @@ char *util_StrDup(const char *s)
 
 static int util_urandomFd = -1;
 static __thread uint64_t rndX;
-pthread_once_t rndOnce = PTHREAD_ONCE_INIT;
+static __thread pthread_once_t rndOnce = PTHREAD_ONCE_INIT;
 
 /* MMIX LCG PRNG */
 static const uint64_t a = 6364136223846793005ULL;
