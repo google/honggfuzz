@@ -578,10 +578,10 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
             if (SSL_write(client, tmp, r) <= 0) {
                 break;
             }
-            SSL_renegotiate(client);
 #ifndef OPENSSL_NO_HEARTBEATS
             SSL_heartbeat(client);
 #endif
+            SSL_renegotiate(client);
         }
     }
 
