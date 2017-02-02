@@ -585,7 +585,7 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
         }
     } else {
         ERR_print_errors_fp(stderr);
-	}
+    }
 
     SSL_free(server);
 
