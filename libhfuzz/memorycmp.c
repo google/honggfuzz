@@ -127,7 +127,7 @@ static inline int _memcmp(const void *m1, const void *m2, size_t n, void *addr)
 
     for (size_t i = 0; i < n; i++) {
         if (s1[i] != s2[i]) {
-            ret = ret ? ret : (s1[i] != s2[i]);
+            ret = ret ? ret : (s1[i] - s2[i]);
         } else {
             v++;
         }
