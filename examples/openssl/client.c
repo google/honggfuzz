@@ -585,7 +585,7 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
             SSL_renegotiate(client);
         }
     } else {
-		ERR_print_errors_fp(stderr);
+        ERR_print_errors_fp(stderr);
     }
 
     SSL_free(client);
