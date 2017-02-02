@@ -372,7 +372,7 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         hfuzz->linux.hwCnts.softCntCmp += softCntCmp;
 
         LOG_I
-            ("New: %zu B., (instr,branch,soft,soft-cmp,perf): %" PRIu64 "/%"
+            ("New: %zu B., (i,b,s,cmp,hw): %" PRIu64 "/%"
              PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Total: %" PRIu64
              "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
              fuzzer->linux.hwCnts.cpuInstrCnt, fuzzer->linux.hwCnts.cpuBranchCnt, softCntPc,
