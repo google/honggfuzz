@@ -486,6 +486,7 @@ void RESET_RAND(void);
 unsigned int psk_callback(SSL * ssl, const char *identity, unsigned char *psk,
                           unsigned int max_psk_len)
 {
+    memset(psk, 'A', max_psk_len);
     return max_psk_len;
 }
 
