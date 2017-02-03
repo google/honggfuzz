@@ -89,30 +89,31 @@ char *util_StrDup(const char *s)
     return ret;
 }
 
-static int util_urandomFd = -1;
+static __thread pthread_once_t rndThreadOnce = PTHREAD_ONCE_INIT;
 static __thread uint64_t rndX;
-static __thread pthread_once_t rndOnce = PTHREAD_ONCE_INIT;
 
 /* MMIX LCG PRNG */
 static const uint64_t a = 6364136223846793005ULL;
 static const uint64_t c = 1442695040888963407ULL;
 
-static void util_rndInit(void)
+static void util_rndInitThread(void)
 {
-    if (util_urandomFd == -1) {
-        if ((util_urandomFd = open("/dev/urandom", O_RDONLY | O_CLOEXEC)) == -1) {
-            PLOG_F("Couldn't open /dev/urandom for writing");
-        }
+    int fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
+    if (fd == -1) {
+        PLOG_F("Couldn't open /dev/urandom for reading");
     }
+    defer {
+        close(fd);
+    };
 
-    if (files_readFromFd(util_urandomFd, (uint8_t *) & rndX, sizeof(rndX)) != sizeof(rndX)) {
+    if (files_readFromFd(fd, (uint8_t *) & rndX, sizeof(rndX)) != sizeof(rndX)) {
         PLOG_F("Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndX));
     }
 }
 
 uint64_t util_rnd64(void)
 {
-    pthread_once(&rndOnce, util_rndInit);
+    pthread_once(&rndThreadOnce, util_rndInitThread);
     rndX = a * rndX + c;
     return rndX;
 }
@@ -131,7 +132,7 @@ void util_rndBuf(uint8_t * buf, size_t sz)
     if (sz == 0) {
         return;
     }
-    pthread_once(&rndOnce, util_rndInit);
+    pthread_once(&rndThreadOnce, util_rndInitThread);
     for (size_t i = 0; i < sz; i++) {
         rndX = a * rndX + c;
         buf[i] = (uint8_t) (rndX >> 15);
