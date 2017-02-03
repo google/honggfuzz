@@ -22,10 +22,10 @@
  * emulation of gcc/clang
  */
 #if defined(__x86_64__) || defined(__i386__)
-	#define ATTRIBUTE_X86_REQUIRE_SSE42  __attribute__((__target__("sse4.2")))
+#define ATTRIBUTE_X86_REQUIRE_SSE42  __attribute__((__target__("sse4.2")))
 #else
-	#define ATTRIBUTE_X86_REQUIRE_SSE42
-#endif /* defined(__x86_64__) || defined(__i386__) */
+#define ATTRIBUTE_X86_REQUIRE_SSE42
+#endif                          /* defined(__x86_64__) || defined(__i386__) */
 
 static feedback_t bbMapFb;
 feedback_t *feedback = &bbMapFb;
@@ -108,8 +108,7 @@ void __sanitizer_cov_trace_pc_indir(void *callee)
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42
-void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Arg2)
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Arg2)
 {
     uintptr_t pos = (uintptr_t) __builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
@@ -120,8 +119,7 @@ void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Arg2)
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42
-void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2)
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2)
 {
     uintptr_t pos = (uintptr_t) __builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
@@ -132,8 +130,7 @@ void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2)
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42
-void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2)
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2)
 {
     uintptr_t pos = (uintptr_t) __builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
@@ -144,8 +141,7 @@ void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2)
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42
-void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2)
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2)
 {
     uintptr_t pos = (uintptr_t) __builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcountll(Arg1 ^ Arg2));
@@ -160,8 +156,7 @@ void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2)
  * Cases[0] is number of comparison entries
  * Cases[1] is length of Val in bits
  */
-ATTRIBUTE_X86_REQUIRE_SSE42
-void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t * Cases)
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t * Cases)
 {
     for (uint64_t i = 0; i < Cases[0]; i++) {
         uintptr_t pos =
