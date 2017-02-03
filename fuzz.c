@@ -547,14 +547,11 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 }
 
-static uint32_t fuzz_threadNo = 0;
 static void *fuzz_threadNew(void *arg)
 {
-    unsigned int fuzzNo = ATOMIC_POST_INC(fuzz_threadNo);
-
-    LOG_I("Launched new fuzzing thread, no. #%" PRId32, fuzzNo);
-
     honggfuzz_t *hfuzz = (honggfuzz_t *) arg;
+    unsigned int fuzzNo = ATOMIC_POST_INC(hfuzz->threadsActiveCnt);
+    LOG_I("Launched new fuzzing thread, no. #%" PRId32, fuzzNo);
 
     fuzzer_t fuzzer = {
         .pid = 0,

@@ -235,6 +235,7 @@ typedef struct {
     bool tmout_vtalrm;
     bool enableSanitizers;
     bool monitorSIGABRT;
+    uint32_t threadsActiveCnt;
 
     const char *dictionaryFile;
      TAILQ_HEAD(, strings_t) dictq;
