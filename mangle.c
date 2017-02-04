@@ -424,7 +424,7 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     };
 
     uint64_t changesCnt = fuzzer->dynamicFileSz * fuzzer->flipRate;
-    if (changesCnt == 0ULL) {
+    if (changesCnt < 3ULL) {
         /* Mini-max number of changes is 3 */
         changesCnt = 3;
     }
