@@ -567,7 +567,6 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
     SSL_set_bio(server, in, out);
 
     if (SSL_accept(server) == 1) {
-        SSL_get_shared_sigalgs(server, -1, NULL, NULL, NULL, NULL, NULL);
         X509 *peer;
         if ((peer = SSL_get_peer_certificate(server)) != NULL) {
             SSL_get_verify_result(server);
