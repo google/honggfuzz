@@ -556,7 +556,6 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
     RESET_RAND();
 
     SSL *server = SSL_new(ctx);
-    SSL_set_tlsext_host_name(server, "localhost");
 
     BIO *in = BIO_new(BIO_s_mem());
     BIO_write(in, buf, len);
