@@ -295,6 +295,20 @@ static fuzzState_t fuzz_getState(honggfuzz_t * hfuzz)
 
 static void fuzz_setState(honggfuzz_t * hfuzz, fuzzState_t state)
 {
+    switch (state) {
+    case _HF_STATE_DYNAMIC_PRE:
+        LOG_I("Entering phase 1/2: Dry Run");
+        break;
+    case _HF_STATE_DYNAMIC_MAIN:
+        LOG_I("Entering phase 2/2: Main");
+        break;
+    case _HF_STATE_STATIC:
+        LOG_I("Entering phase: Static");
+        break;
+    default:
+        LOG_I("Entering unknown phase: %d", state);
+        break;
+    }
     ATOMIC_SET(hfuzz->state, state);
 }
 
