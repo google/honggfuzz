@@ -167,8 +167,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
     display_put("\n    Run Time : " ESC_BOLD "%s" ESC_RESET " (since: " ESC_BOLD "%s" ESC_RESET
                 ")\n", time_elapsed_str, start_time_str);
-    display_put("   Input Dir : '" ESC_BOLD "%s" ESC_RESET "'\n",
-                hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]");
+    display_put("   Input Dir : '" ESC_BOLD "%s" ESC_RESET "' (" ESC_BOLD "%zu" ESC_RESET ")\n",
+                hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]", hfuzz->fileCnt);
     display_put("  Fuzzed Cmd : '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
     if (hfuzz->linux.pid > 0) {
         display_put("Remote cmd [" ESC_BOLD "%d" ESC_RESET "]: '" ESC_BOLD "%s" ESC_RESET
@@ -187,11 +187,6 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put("       Speed : " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET "/sec"
                 " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n", exec_per_sec,
                 elapsed_second ? (curr_exec_cnt / elapsed_second) : 0);
-    /* If dry run, print also the input file count */
-    if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
-        display_put("     Input Files : '" ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "'\n",
-                    hfuzz->fileCnt);
-    }
 
     uint64_t crashesCnt = ATOMIC_GET(hfuzz->crashesCnt);
     /* colored the crash count as red when exist crash */
