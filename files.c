@@ -183,7 +183,7 @@ static bool files_readdir(honggfuzz_t * hfuzz)
         }
 
         if (st.st_size == 0ULL) {
-            LOG_D("'%s' is empty", path);
+            LOG_W("'%s' is empty", path);
             continue;
         }
 
