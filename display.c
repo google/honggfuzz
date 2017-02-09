@@ -271,5 +271,5 @@ extern void display_display(honggfuzz_t * hfuzz)
 
 extern void display_reset(void)
 {
-    display_put("%s", ESC_TERM_RESET);
+    display_put(ESC_SCROLL(1, 100) ESC_NAV(100, 1));
 }
