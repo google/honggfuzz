@@ -37,10 +37,13 @@
 #include "util.h"
 
 #define ESC_CLEAR "\033[H\033[2J"
+#define ESC_TERM_RESET "\033c"
 #define ESC_NAV(x,y) "\033["#x";"#y"H"
 #define ESC_BOLD "\033[1m"
 #define ESC_RED "\033[31m"
 #define ESC_RESET "\033[0m"
+#define ESC_SCROLL(x,y) "\033["#x";"#y"r"
+#define ESC_SCROLL_DISABLE "\033[?7h"
 
 #if defined(_HF_ARCH_LINUX)
 #define _HF_MONETARY_MOD "'"
@@ -98,6 +101,12 @@ static unsigned getCpuUse(long num_cpu)
 
 static void display_displayLocked(honggfuzz_t * hfuzz)
 {
+    static bool firstDisplay = true;
+    if (firstDisplay) {
+        display_put("%s", ESC_CLEAR);
+        firstDisplay = false;
+    }
+
     unsigned long elapsed_second = (unsigned long)(time(NULL) - hfuzz->timeStart);
     unsigned int day, hour, min, second;
     char time_elapsed_str[64];
@@ -139,7 +148,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     /* The lock should be acquired before any output is printed on the screen */
     MX_SCOPED_LOCK(logMutexGet());
 
-    display_put("%s", ESC_CLEAR);
+    display_put("%s", ESC_NAV(1, 1));
     display_put("----------------------------[ " ESC_BOLD "%s v%s" ESC_RESET
                 " ]---------------------------\n", PROG_NAME, PROG_VERSION);
     display_put("  Iterations : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
@@ -170,10 +179,12 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put("   Input Dir : '" ESC_BOLD "%s" ESC_RESET "' (" ESC_BOLD "% " _HF_MONETARY_MOD "zu"
                 ESC_RESET ")\n", hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]",
                 hfuzz->fileCnt);
-    display_put("  Fuzzed Cmd : '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
+
     if (hfuzz->linux.pid > 0) {
         display_put("Remote cmd [" ESC_BOLD "%d" ESC_RESET "]: '" ESC_BOLD "%s" ESC_RESET
                     "'\n", hfuzz->linux.pid, hfuzz->linux.pidCmd);
+    } else {
+        display_put("  Fuzzed Cmd : '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
     }
 
     static long num_cpu = 0;
@@ -247,6 +258,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     display_put("\n-----------------------------------[ " ESC_BOLD "LOGS" ESC_RESET
                 " ]-----------------------------------\n");
+    display_put(ESC_SCROLL(14, 100) ESC_NAV(100, 1));
 }
 
 extern void display_display(honggfuzz_t * hfuzz)
@@ -255,4 +267,9 @@ extern void display_display(honggfuzz_t * hfuzz)
         return;
     }
     display_displayLocked(hfuzz);
+}
+
+extern void display_reset(void)
+{
+    display_put("%s", ESC_TERM_RESET);
 }

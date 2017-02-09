@@ -187,6 +187,10 @@ int main(int argc, char **argv)
         pause();
     }
 
+    if (hfuzz.useScreen) {
+        display_reset();
+    }
+
     if (sigReceived > 0) {
         LOG_I("Signal %d (%s) received, terminating", sigReceived, strsignal(sigReceived));
         return EXIT_SUCCESS;

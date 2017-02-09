@@ -295,7 +295,7 @@ files.o: common.h files.h log.h util.h
 fuzz.o: common.h fuzz.h arch.h files.h log.h mangle.h report.h sanitizers.h
 fuzz.o: sancov.h subproc.h util.h
 honggfuzz.o: common.h cmdline.h display.h log.h files.h fuzz.h util.h
-log.o: common.h log.h util.h
+log.o: common.h log.h display.h util.h
 mangle.o: common.h mangle.h log.h util.h
 report.o: common.h report.h log.h util.h
 sancov.o: common.h sancov.h sanitizers.h files.h log.h util.h
