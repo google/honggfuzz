@@ -93,6 +93,9 @@
 #define kMSAN_OPTS          kSAN_COMMON":exit_code=" STR(HF_SAN_EXIT_CODE) ":"\
                             "wrap_signals=0:print_stats=1"
 
+/* If no sanitzer support was requested, simply make it use abort() on errors */
+#define kSAN_REGULAR		"abort_on_error=1:handle_segv=1:allocator_may_return_null=1"
+
 /*
  * If the program ends with a signal that ASan does not handle (or can not
  * handle at all, like SIGKILL), coverage data will be lost. This is a big
@@ -103,9 +106,24 @@
  */
 #define kSAN_COV_OPTS  "coverage=1:coverage_direct=1"
 
+static void sanitizers_Regular(honggfuzz_t * hfuzz)
+{
+    hfuzz->sanOpts.asanOpts = util_Calloc(strlen(kSAN_REGULAR) + 1);
+    strcpy(hfuzz->sanOpts.asanOpts, kSAN_REGULAR);
+    hfuzz->sanOpts.msanOpts = util_Calloc(strlen(kSAN_REGULAR) + 1);
+    strcpy(hfuzz->sanOpts.msanOpts, kSAN_REGULAR);
+    hfuzz->sanOpts.ubsanOpts = util_Calloc(strlen(kSAN_REGULAR) + 1);
+    strcpy(hfuzz->sanOpts.ubsanOpts, kSAN_REGULAR);
+}
+
 bool sanitizers_Init(honggfuzz_t * hfuzz)
 {
-    if (hfuzz->linux.pid > 0 || hfuzz->enableSanitizers == false) {
+    if (hfuzz->linux.pid > 0) {
+        return true;
+    }
+
+    if (hfuzz->enableSanitizers == false) {
+        sanitizers_Regular(hfuzz);
         return true;
     }
 
@@ -185,10 +203,6 @@ bool sanitizers_Init(honggfuzz_t * hfuzz)
 
 bool sanitizers_prepareExecve(honggfuzz_t * hfuzz)
 {
-    if (hfuzz->enableSanitizers == false) {
-        return true;
-    }
-
     /* Address Sanitizer (ASan) */
     if (hfuzz->sanOpts.asanOpts) {
         if (setenv("ASAN_OPTIONS", hfuzz->sanOpts.asanOpts, 1) == -1) {
