@@ -36,7 +36,8 @@
 #include "log.h"
 #include "util.h"
 
-#define ESC_CLEAR "\033[2J"
+#define ESC_CLEAR_ALL "\033[2J"
+#define ESC_CLEAR_LINE "\033[2K"
 #define ESC_TERM_RESET "\033c"
 #define ESC_NAV(x,y) "\033["#x";"#y"H"
 #define ESC_BOLD "\033[1m"
@@ -53,6 +54,7 @@
 
 static void display_put(const char *fmt, ...)
 {
+    dprintf(logFd(), ESC_CLEAR_LINE);
     va_list args;
     va_start(args, fmt);
     vdprintf(logFd(), fmt, args);
@@ -103,7 +105,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 {
     static bool firstDisplay = true;
     if (firstDisplay) {
-        display_put("%s", ESC_CLEAR);
+        display_put(ESC_CLEAR_ALL);
         firstDisplay = false;
     }
 
@@ -148,7 +150,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     /* The lock should be acquired before any output is printed on the screen */
     MX_SCOPED_LOCK(logMutexGet());
 
-    display_put("%s", ESC_NAV(1, 1));
+    display_put(ESC_NAV(1, 1));
     display_put("----------------------------[ " ESC_BOLD "%s v%s" ESC_RESET
                 " ]---------------------------\n", PROG_NAME, PROG_VERSION);
     display_put("  Iterations : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
