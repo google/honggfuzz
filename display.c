@@ -51,8 +51,6 @@
 #define _HF_MONETARY_MOD ""
 #endif
 
-#define _HF_DISPLAY_LINES 14
-
 static void display_put(const char *fmt, ...)
 {
     va_list args;
@@ -260,7 +258,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     display_put("\n-----------------------------------[ " ESC_BOLD "LOGS" ESC_RESET
                 " ]-----------------------------------\n");
-    display_put(ESC_SCROLL(_HF_DISPLAY_LINES, 999) ESC_NAV(999, 1));
+    display_put(ESC_SCROLL(14, 999) ESC_NAV(999, 1));
 }
 
 extern void display_display(honggfuzz_t * hfuzz)
@@ -273,10 +271,10 @@ extern void display_display(honggfuzz_t * hfuzz)
 
 extern void display_init(void)
 {
-    display_put(ESC_NAV(100, 1));
+    display_put(ESC_NAV(999, 1));
 }
 
 extern void display_fini(void)
 {
-    display_put(ESC_SCROLL(1, 100) ESC_NAV(100, 1));
+    display_put(ESC_SCROLL(1, 999) ESC_NAV(999, 1));
 }
