@@ -40,7 +40,7 @@ static inline bool readFromFdAll(int fd, uint8_t * buf, size_t len)
     return (readFromFd(fd, buf, len) == (ssize_t) len);
 }
 
-static bool writeToFd(int fd, uint8_t * buf, size_t len)
+static bool writeToFd(int fd, const uint8_t * buf, size_t len)
 {
     size_t writtenSz = 0;
     while (writtenSz < len) {
@@ -66,8 +66,8 @@ void HF_ITER(uint8_t ** buf_ptr, size_t * len_ptr)
     static bool initialized = false;
 
     if (initialized == true) {
-        uint8_t z = 'A';
-        if (writeToFd(_HF_PERSISTENT_FD, &z, sizeof(z)) == false) {
+        static const uint8_t readyTag = 'A';
+        if (writeToFd(_HF_PERSISTENT_FD, &readyTag, sizeof(readyTag)) == false) {
             fprintf(stderr, "readFromFdAll() failed\n");
             _exit(1);
         }
