@@ -66,6 +66,7 @@ static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
 
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
+    fuzzer->origFileName = "[DYNAMIC]";
     struct dynfile_t *dynfile;
 
     {
@@ -104,6 +105,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
 {
     struct paths_t *file = files_getFileFromFileq(hfuzz, rnd_index);
+    fuzzer->origFileName = files_basename(file->path);
 
     ssize_t fileSz = files_readFileToBufMax(file->path, fuzzer->dynamicFile, hfuzz->maxFileSz);
     if (fileSz < 0) {
@@ -129,6 +131,8 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_ind
 
 static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
+    fuzzer->origFileName = "[EXTERNAL]";
+
     int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0644);
     if (dstfd == -1) {
         PLOG_E("Couldn't create a temporary file '%s'", fuzzer->fileName);
@@ -500,9 +504,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     fuzzState_t state = fuzz_getState(hfuzz);
-    if (state != _HF_STATE_DYNAMIC_MAIN) {
-        fuzzer->origFileName = files_basename(files_getFileFromFileq(hfuzz, rnd_index)->path);
-    }
 
     if (hfuzz->persistent == false) {
         fuzz_getFileName(hfuzz, fuzzer->fileName);
@@ -558,6 +559,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (state == _HF_STATE_DYNAMIC_PRE && ATOMIC_PRE_INC(hfuzz->doneFileIndex) >= hfuzz->fileCnt) {
         fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_MAIN);
+        snprintf(fuzzer->fileName, sizeof(fuzzer->fileName), "[DYNAMIC]");
     }
 }
 
