@@ -106,11 +106,21 @@
  */
 #define kSAN_COV_OPTS  "coverage=1:coverage_direct=1"
 
-static void sanitizers_Regular(honggfuzz_t * hfuzz)
+static bool sanitizers_Regular(void)
 {
-    hfuzz->sanOpts.asanOpts = util_StrDup(kSAN_REGULAR);
-    hfuzz->sanOpts.msanOpts = util_StrDup(kSAN_REGULAR);
-    hfuzz->sanOpts.ubsanOpts = util_StrDup(kSAN_REGULAR);
+    if (setenv("ASAN_OPTIONS", kSAN_REGULAR, 1) == -1) {
+      PLOG_E("setenv(ASAN_OPTIONS=%s", kSAN_REGULAR);
+      return false;
+    }
+    if (setenv("MSAN_OPTIONS", kSAN_REGULAR, 1) == -1) {
+      PLOG_E("setenv(MSAN_OPTIONS=%s", kSAN_REGULAR);
+      return false;
+    }
+    if (setenv("UBSAN_OPTIONS", kSAN_REGULAR, 1) == -1) {
+      PLOG_E("setenv(UBSAN_OPTIONS=%s", kSAN_REGULAR);
+      return false;
+    }
+    return true;
 }
 
 bool sanitizers_Init(honggfuzz_t * hfuzz)
@@ -120,8 +130,7 @@ bool sanitizers_Init(honggfuzz_t * hfuzz)
     }
 
     if (hfuzz->enableSanitizers == false) {
-        sanitizers_Regular(hfuzz);
-        return true;
+        return sanitizers_Regular();
     }
 
     /* Set sanitizer flags once to avoid performance overhead per worker spawn */
