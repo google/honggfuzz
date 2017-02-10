@@ -55,7 +55,6 @@
 
 static void display_put(const char *fmt, ...)
 {
-    dprintf(logFd(), ESC_CLEAR_LINE);
     va_list args;
     va_start(args, fmt);
     vdprintf(logFd(), fmt, args);
