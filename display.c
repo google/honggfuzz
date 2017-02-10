@@ -36,7 +36,7 @@
 #include "log.h"
 #include "util.h"
 
-#define ESC_CLEAR "\033[H\033[2J"
+#define ESC_CLEAR "\033[2J"
 #define ESC_TERM_RESET "\033c"
 #define ESC_NAV(x,y) "\033["#x";"#y"H"
 #define ESC_BOLD "\033[1m"
@@ -50,6 +50,8 @@
 #else
 #define _HF_MONETARY_MOD ""
 #endif
+
+#define _HF_DISPLAY_LINES 14
 
 static void display_put(const char *fmt, ...)
 {
@@ -258,7 +260,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     display_put("\n-----------------------------------[ " ESC_BOLD "LOGS" ESC_RESET
                 " ]-----------------------------------\n");
-    display_put(ESC_SCROLL(14, 100) ESC_NAV(100, 1));
+    display_put(ESC_SCROLL(_HF_DISPLAY_LINES, 999) ESC_NAV(999, 1));
 }
 
 extern void display_display(honggfuzz_t * hfuzz)

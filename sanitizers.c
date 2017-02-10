@@ -109,16 +109,16 @@
 static bool sanitizers_Regular(void)
 {
     if (setenv("ASAN_OPTIONS", kSAN_REGULAR, 1) == -1) {
-      PLOG_E("setenv(ASAN_OPTIONS=%s", kSAN_REGULAR);
-      return false;
+        PLOG_E("setenv(ASAN_OPTIONS=%s", kSAN_REGULAR);
+        return false;
     }
     if (setenv("MSAN_OPTIONS", kSAN_REGULAR, 1) == -1) {
-      PLOG_E("setenv(MSAN_OPTIONS=%s", kSAN_REGULAR);
-      return false;
+        PLOG_E("setenv(MSAN_OPTIONS=%s", kSAN_REGULAR);
+        return false;
     }
     if (setenv("UBSAN_OPTIONS", kSAN_REGULAR, 1) == -1) {
-      PLOG_E("setenv(UBSAN_OPTIONS=%s", kSAN_REGULAR);
-      return false;
+        PLOG_E("setenv(UBSAN_OPTIONS=%s", kSAN_REGULAR);
+        return false;
     }
     return true;
 }
