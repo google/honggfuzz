@@ -108,12 +108,9 @@
 
 static void sanitizers_Regular(honggfuzz_t * hfuzz)
 {
-    hfuzz->sanOpts.asanOpts = util_Calloc(strlen(kSAN_REGULAR) + 1);
-    strcpy(hfuzz->sanOpts.asanOpts, kSAN_REGULAR);
-    hfuzz->sanOpts.msanOpts = util_Calloc(strlen(kSAN_REGULAR) + 1);
-    strcpy(hfuzz->sanOpts.msanOpts, kSAN_REGULAR);
-    hfuzz->sanOpts.ubsanOpts = util_Calloc(strlen(kSAN_REGULAR) + 1);
-    strcpy(hfuzz->sanOpts.ubsanOpts, kSAN_REGULAR);
+    hfuzz->sanOpts.asanOpts = util_StrDup(kSAN_REGULAR);
+    hfuzz->sanOpts.msanOpts = util_StrDup(kSAN_REGULAR);
+    hfuzz->sanOpts.ubsanOpts = util_StrDup(kSAN_REGULAR);
 }
 
 bool sanitizers_Init(honggfuzz_t * hfuzz)
