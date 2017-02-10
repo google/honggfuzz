@@ -144,7 +144,7 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
     /* End printing logs */
 
     if (ll == FATAL) {
-        display_reset();
+        display_fini();
         exit(1);
     }
 }

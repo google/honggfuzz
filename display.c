@@ -269,7 +269,12 @@ extern void display_display(honggfuzz_t * hfuzz)
     display_displayLocked(hfuzz);
 }
 
-extern void display_reset(void)
+extern void display_init(void)
+{
+    display_put(ESC_NAV(100, 1));
+}
+
+extern void display_fini(void)
 {
     display_put(ESC_SCROLL(1, 100) ESC_NAV(100, 1));
 }

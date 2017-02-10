@@ -25,6 +25,7 @@
 #define _HF_DISPLAY_H_
 
 extern void display_display(honggfuzz_t * hfuzz);
-extern void display_reset(void);
+extern void display_init(void);
+extern void display_fini(void);
 
 #endif

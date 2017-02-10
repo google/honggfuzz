@@ -136,6 +136,10 @@ int main(int argc, char **argv)
         LOG_F("Parsing of the cmd-line arguments failed");
     }
 
+    if (hfuzz.useScreen) {
+        display_init();
+    }
+
     if (!files_init(&hfuzz)) {
         LOG_F("Couldn't load input files");
         exit(EXIT_FAILURE);
@@ -188,7 +192,7 @@ int main(int argc, char **argv)
     }
 
     if (hfuzz.useScreen) {
-        display_reset();
+        display_fini();
     }
 
     if (sigReceived > 0) {
