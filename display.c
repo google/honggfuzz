@@ -181,7 +181,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                 hfuzz->fileCnt);
 
     if (hfuzz->linux.pid > 0) {
-        display_put("Remote cmd [" ESC_BOLD "%d" ESC_RESET "]: '" ESC_BOLD "%s" ESC_RESET
+        display_put("  Remote cmd : [" ESC_BOLD "%d" ESC_RESET "] '" ESC_BOLD "%s" ESC_RESET
                     "'\n", hfuzz->linux.pid, hfuzz->linux.pidCmd);
     } else {
         display_put("  Fuzzed Cmd : '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
