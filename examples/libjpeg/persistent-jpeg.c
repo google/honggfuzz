@@ -7,12 +7,15 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "cderror.h"
 #include "jpeglib.h"
 
 struct jpeg_decompress_struct cinfo;
+int null_fd = -1;
 
 struct jpegErrorManager {
     struct jpeg_error_mgr pub;
@@ -34,6 +37,8 @@ static const char* const cdjpeg_message_table[] = {
 
 int LLVMFuzzerInitialize(int* argc, char*** argv)
 {
+    null_fd = open("/dev/null", O_WRONLY);
+
     cinfo.err = jpeg_std_error(&jerr.pub);
     jerr.pub.error_exit = jpegErrorExit;
 
@@ -75,6 +80,8 @@ int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
     while (cinfo.output_scanline < cinfo.output_height) {
         jpeg_read_scanlines(&cinfo, buffer, 1);
     }
+
+    write(null_fd, buffer[0], row_stride);
 
 out:
     jpeg_abort_decompress(&cinfo);
