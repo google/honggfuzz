@@ -10,5 +10,5 @@ mac/mach_excServer.h
 mac/mach_excServer.c
 libs
 obj
-examples/targets/badcode1
-examples/targets/badcode2
+examples/badcode/targets/badcode1
+examples/badcode/targets/badcode2

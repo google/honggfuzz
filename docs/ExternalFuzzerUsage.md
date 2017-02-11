@@ -31,7 +31,7 @@ $ ./examples/targets/badcode1 examples/inputfiles/badcode1.txt
 The bug in badcode1.c is that it reads lines up to 128 bytes from the input file and writes them to a 64 byte buffer (`fgets(str, 128, fp)`). If we would modify random bytes in the input file, the bug would only trigger when we overwrite the newline in the inputfile. With standard honggfuzz options this might take a while:
 
 ```
-$ ./honggfuzz -n 1 -f examples/inputfiles/badcode1.txt -- ./examples/targets/badcode1 ___FILE___
+$ ./honggfuzz -n 1 -f examples/badcode/inputfiles/badcode1.txt -- ./examples/badcode/targets/badcode1 ___FILE___
 honggfuzz, version 0.1 Robert Swiecki <swiecki@google.com>, Copyright 2010 by Google Inc. All Rights Reserved.
 [INFO] Launched new process, pid: 43288, (1/1)
 123456789012345678901234567890123456789012345678901234567890
@@ -45,14 +45,14 @@ honggfuzz, version 0.1 Robert Swiecki <swiecki@google.com>, Copyright 2010 by Go
 Now if we take a look at the script under [examples/externalfuzzers/lowBytesIncrease.py](http://code.google.com/p/honggfuzz/source/browse/trunk/examples/externalfuzzers/lowBytesIncrease.py), we see that it searches the input file (as provided by `argv[1]`) for low bytes and increases them randomly. This will modify the newlines, and thus trigger the bug much faster, as shown below:
 
 ```
-$ ./honggfuzz -n 1 -f examples/inputfiles/badcode1.txt -c `pwd`/examples/externalfuzzers/lowBytesIncrease.py -- ./examples/targets/badcode1 ___FILE___
+$ ./honggfuzz -n 1 -f examples/badcode/inputfiles/badcode1.txt -c `pwd`/examples/externalfuzzers/lowBytesIncrease.py -- ./examples/badcode/targets/badcode1 ___FILE___
 honggfuzz, version 0.1 Robert Swiecki <swiecki@google.com>, Copyright 2010 by Google Inc. All Rights Reserved.
 [INFO] Launched new process, pid: 44578, (1/1)
 [INFO] Ok, that's interesting, saving the '.honggfuzz.1287067149.44576.413228313.fuzz' as 'SIGSEGV.44578.2010-10-14.16.39.09.fuzz'
 [INFO] Launched new process, pid: 44580, (1/1)
 [INFO] Ok, that's interesting, saving the '.honggfuzz.1287067149.44576.637798454.fuzz' as 'SIGSEGV.44580.2010-10-14.16.39.09.fuzz'
 ...
-```$ ./honggfuzz -n 1 -f examples/inputfiles/badcode1.txt -c `pwd`/examples/externalfuzzers/lowBytesIncrease.py -- ./examples/targets/badcode1 ___FILE___
+```$ ./honggfuzz -n 1 -f examples/badcode/inputfiles/badcode1.txt -c `pwd`/examples/externalfuzzers/lowBytesIncrease.py -- ./examples/badcode/targets/badcode1 ___FILE___
 honggfuzz, version 0.1 Robert Swiecki <swiecki@google.com>, Copyright 2010 by Google Inc. All Rights Reserved.
 [INFO] Launched new process, pid: 44578, (1/1)
 [INFO] Ok, that's interesting, saving the '.honggfuzz.1287067149.44576.413228313.fuzz' as 'SIGSEGV.44578.2010-10-14.16.39.09.fuzz'
