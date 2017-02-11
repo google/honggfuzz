@@ -78,10 +78,14 @@ int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
     int row_stride = cinfo.output_width * cinfo.output_components;
     JSAMPARRAY buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr)&cinfo, JPOOL_IMAGE, row_stride, 1);
     while (cinfo.output_scanline < cinfo.output_height) {
+#if defined(__clang__)
+#if __has_feature(memory_sanitizer)
+        __msan_poison(buffer[0], row_stride);
+#endif /* __has_feature(memory_sanitizer) */
+#endif /* defined(__clang__) */
         jpeg_read_scanlines(&cinfo, buffer, 1);
+        write(null_fd, buffer[0], row_stride);
     }
-
-    write(null_fd, buffer[0], row_stride);
 
 out:
     jpeg_abort_decompress(&cinfo);
