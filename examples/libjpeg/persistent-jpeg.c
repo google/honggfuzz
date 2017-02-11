@@ -49,20 +49,23 @@ int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
 {
     jpeg_mem_src(&cinfo, buf, len);
 
-    if (jpeg_read_header(&cinfo, TRUE) == 0) {
-        return 0;
+    if (setjmp(jerr.setjmp_buffer)) {
+        goto out;
+    }
+
+    if (jpeg_read_header(&cinfo, TRUE) != JPEG_HEADER_OK) {
+        goto out;
     }
 
     if (cinfo.output_height > 10000 || cinfo.output_width > 10000) {
-        return 0;
+        goto out;
     }
 
     cinfo.mem->max_memory_to_use = (1024 * 1024 * 1024);
     cinfo.mem->max_alloc_chunk = (1024 * 128 * 256);
 
     if (setjmp(jerr.setjmp_buffer)) {
-        jpeg_abort_decompress(&cinfo);
-        return 0;
+        goto out;
     }
 
     jpeg_start_decompress(&cinfo);
@@ -73,8 +76,8 @@ int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
         jpeg_read_scanlines(&cinfo, buffer, 1);
     }
 
+out:
     jpeg_abort_decompress(&cinfo);
-
     return 0;
 }
 
