@@ -104,6 +104,24 @@ int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
         write(null_fd, row_pointers[i], row_bytes);
     }
 
+    /* Addtional API calls */
+    png_uint_32 width, ret, res_x, res_y;
+    double file_gamma;
+    png_uint_16p hist;
+    int bit_depth, color_type, interlace_method, compression_method, filter_method, unit_type, num_palette, num_text;
+    png_textp text_ptr;
+    png_colorp palette;
+    png_timep mod_time;
+    png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type, &interlace_method,
+        &compression_method, &filter_method);
+    ret = png_get_gAMA(png_ptr, info_ptr, &file_gamma);
+    ret = png_get_hIST(png_ptr, info_ptr, &hist);
+    ret = png_get_pHYs(png_ptr, info_ptr, &res_x, &res_y, &unit_type);
+    ret = png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette);
+    ret = png_get_text(png_ptr, info_ptr, &text_ptr, &num_text);
+    ret = png_get_tIME(png_ptr, info_ptr, &mod_time);
+    png_voidp vp = png_get_progressive_ptr(png_ptr);
+
     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 
     return 0;
