@@ -84,8 +84,8 @@ int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
 
     png_set_crc_action(png_ptr, PNG_CRC_QUIET_USE, PNG_CRC_QUIET_USE);
     png_set_user_limits(png_ptr, 10000U, 10000U);
-    png_set_chunk_cache_max(png_ptr, 1024ULL * 1024ULL * 128ULL);
-    png_set_chunk_malloc_max(png_ptr, 1024ULL * 1024ULL * 1024ULL);
+    png_set_chunk_cache_max(png_ptr, 1024ULL * 1024ULL * 64ULL);
+    png_set_chunk_malloc_max(png_ptr, 1024ULL * 1024ULL * 512ULL);
 
     user_file_t f = {
         .ptr = buf,
