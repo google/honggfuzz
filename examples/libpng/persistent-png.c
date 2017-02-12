@@ -16,6 +16,8 @@ extern "C" {
 #include "pngpriv.h"
 #include "pngstruct.h"
 
+void __msan_poison(const volatile void *a, size_t size);
+
 void fatal(const char* s, ...)
 {
     va_list args;
