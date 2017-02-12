@@ -16,7 +16,11 @@ extern "C" {
 #include "pngpriv.h"
 #include "pngstruct.h"
 
-void __msan_poison(const volatile void *a, size_t size);
+#if defined(__clang__)
+#if __has_feature(memory_sanitizer)
+#include <sanitizer/msan_interface.h>
+#endif /* __has_feature(memory_sanitizer) */
+#endif /* defined(__clang__) */
 
 void fatal(const char* s, ...)
 {
