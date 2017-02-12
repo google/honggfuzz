@@ -55,6 +55,12 @@ void png_user_free(png_structp png_ptr, png_voidp ptr)
 
 void png_user_read_data(png_structp png_ptr, png_bytep data, png_size_t length)
 {
+#if defined(__clang__)
+#if __has_feature(memory_sanitizer)
+            __msan_poison(data, length);
+#endif /* __has_feature(memory_sanitizer) */
+#endif /* defined(__clang__) */
+
     user_file_t* f = (user_file_t*)png_ptr->io_ptr;
 
     if (length > f->len) {
