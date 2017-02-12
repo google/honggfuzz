@@ -174,13 +174,9 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         break;
     }
 
-    char start_time_str[128];
-    util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
-    display_put("\n    Run Time : " ESC_BOLD "%s" ESC_RESET " (since: " ESC_BOLD "%s" ESC_RESET
-                ")\n", time_elapsed_str, start_time_str);
-    display_put("   Input Dir : '" ESC_BOLD "%s" ESC_RESET "' (" ESC_BOLD "% " _HF_MONETARY_MOD "zu"
-                ESC_RESET ")\n", hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]",
-                hfuzz->fileCnt);
+    display_put("\n    Run Time : " ESC_BOLD "%s" ESC_RESET "\n", time_elapsed_str);
+    display_put("   Input Dir : [% " _HF_MONETARY_MOD "zu] '" ESC_BOLD "%s" ESC_RESET "'\n",
+                hfuzz->fileCnt, hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]");
 
     if (hfuzz->linux.pid > 0) {
         display_put("  Remote cmd : [" ESC_BOLD "%d" ESC_RESET "] '" ESC_BOLD "%s" ESC_RESET
@@ -215,7 +211,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     /* Feedback data sources are enabled. Start with common headers. */
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
         display_put(" Corpus Size : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
-                    ", max size (bytes): " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",
+                    ", max file size: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",
                     hfuzz->dynfileqCnt, hfuzz->maxFileSz);
         display_put("    Coverage :");
     }
