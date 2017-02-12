@@ -83,11 +83,6 @@ int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
     }
 
     png_set_crc_action(png_ptr, PNG_CRC_QUIET_USE, PNG_CRC_QUIET_USE);
-    png_ptr->flags &= ~PNG_FLAG_CRC_CRITICAL_MASK;
-    png_ptr->flags |= PNG_FLAG_CRC_CRITICAL_IGNORE;
-    png_ptr->flags &= ~PNG_FLAG_CRC_ANCILLARY_MASK;
-    png_ptr->flags |= PNG_FLAG_CRC_ANCILLARY_NOWARN;
-
     png_set_user_limits(png_ptr, 100000U, 100000U);
     png_set_chunk_cache_max(png_ptr, 1024ULL * 1024ULL * 128ULL);
     png_set_chunk_malloc_max(png_ptr, 1024ULL * 1024ULL * 1024ULL);
