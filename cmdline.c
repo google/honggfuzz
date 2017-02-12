@@ -183,6 +183,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .monitorSIGABRT = true,
 #endif
         .threadsActiveCnt = 0,
+        .mainPid = getpid(),
 
         .dictionaryFile = NULL,
         .dictionaryCnt = 0,

@@ -249,10 +249,10 @@ static bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
         if (!arch_launchChild(hfuzz, fuzzer->fileName)) {
             LOG_E("Error launching child process");
-            exit(EXIT_FAILURE);
+            kill(hfuzz->mainPid, SIGKILL);
+            abort();
+            _exit(EXIT_FAILURE);
         }
-
-        abort();
     }
     // Parent
     LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
