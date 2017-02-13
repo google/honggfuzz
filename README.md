@@ -5,7 +5,7 @@
 A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See [USAGE](docs/USAGE.md) for details
 
   * Supports several hardware-based (CPU) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) methods
-  * It works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md)
+  * It works (at least) under GNU/Linux, FreeBSD (compile with clang-3.6 or newer), Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md)
   * Supports persistent modes of fuzzing (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)
   * [Can fuzz remote/standalone long-lasting processes](https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md) (e.g. network servers like Apache's httpd and ISC's bind)
 
