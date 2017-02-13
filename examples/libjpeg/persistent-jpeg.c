@@ -52,11 +52,11 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
 
 int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
 {
-    jpeg_mem_src(&cinfo, buf, len);
-
     if (setjmp(jerr.setjmp_buffer)) {
         goto out;
     }
+
+    jpeg_mem_src(&cinfo, buf, len);
 
     if (jpeg_read_header(&cinfo, TRUE) != JPEG_HEADER_OK) {
         goto out;
