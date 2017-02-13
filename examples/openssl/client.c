@@ -9,8 +9,8 @@ extern "C" {
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
 #include <stdint.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 
 static const uint8_t kCertificateDER[] = {
     0x30, 0x82, 0x05, 0x65, 0x30, 0x82, 0x03, 0x4d, 0x02, 0x09, 0x00, 0xe8,
@@ -477,14 +477,14 @@ static const uint8_t kECCACertDER[] = {
     0x8d, 0x9a
 };
 
-static SSL_CTX *ctx;
-static SSL *client;
+static SSL_CTX* ctx;
+static SSL* client;
 
 extern void RESET_RAND(void);
 
-unsigned int psk_callback(SSL * ssl, const char *hint, char *identuty,
-                          unsigned int max_identity_len, unsigned char *psk,
-                          unsigned int max_psk_len)
+unsigned int psk_callback(SSL* ssl, const char* hint, char* identuty,
+    unsigned int max_identity_len, unsigned char* psk,
+    unsigned int max_psk_len)
 {
     memset(psk, 'A', max_psk_len);
     return max_psk_len;
@@ -497,17 +497,17 @@ static void Init()
     RESET_RAND();
 
     ctx = SSL_CTX_new(SSLv23_method());
-    const uint8_t *bufp = kRSAPrivateKeyDER;
-    RSA *privkey = d2i_RSAPrivateKey(NULL, &bufp, sizeof(kRSAPrivateKeyDER));
+    const uint8_t* bufp = kRSAPrivateKeyDER;
+    RSA* privkey = d2i_RSAPrivateKey(NULL, &bufp, sizeof(kRSAPrivateKeyDER));
     assert(privkey != NULL);
-    EVP_PKEY *pkey = EVP_PKEY_new();
+    EVP_PKEY* pkey = EVP_PKEY_new();
     EVP_PKEY_assign_RSA(pkey, privkey);
     int ret = SSL_CTX_use_PrivateKey(ctx, pkey);
     assert(ret == 1);
     EVP_PKEY_free(pkey);
 
     bufp = kCertificateDER;
-    X509 *cert = d2i_X509(NULL, &bufp, sizeof(kCertificateDER));
+    X509* cert = d2i_X509(NULL, &bufp, sizeof(kCertificateDER));
     assert(cert != NULL);
     ret = SSL_CTX_use_certificate(ctx, cert);
     assert(ret == 1);
@@ -515,7 +515,7 @@ static void Init()
     ret = SSL_CTX_set_cipher_list(ctx, "ALL:eNULL");
     assert(ret == 1);
 
-    X509_STORE *store = X509_STORE_new();
+    X509_STORE* store = X509_STORE_new();
     assert(store != NULL);
 
     bufp = kRSACACertDER;
@@ -547,7 +547,7 @@ static void Init()
 #endif /* !defined(LIBRESSL_VERSION_NUMBER) */
 }
 
-int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
+int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
 {
 
     if (ctx == NULL)
@@ -555,19 +555,19 @@ int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)
 
     RESET_RAND();
 
-    SSL *client = SSL_new(ctx);
+    SSL* client = SSL_new(ctx);
     SSL_set_tlsext_host_name(client, "localhost");
 
-    BIO *in = BIO_new(BIO_s_mem());
+    BIO* in = BIO_new(BIO_s_mem());
     BIO_write(in, buf, len);
 
-    BIO *out = BIO_new(BIO_s_fd());
+    BIO* out = BIO_new(BIO_s_fd());
     BIO_set_fd(out, 1, BIO_NOCLOSE);
 
     SSL_set_bio(client, in, out);
 
     if (SSL_connect(client) == 1) {
-        X509 *peer;
+        X509* peer;
         if ((peer = SSL_get_peer_certificate(client)) != NULL) {
             SSL_get_verify_result(client);
             X509_free(peer);
