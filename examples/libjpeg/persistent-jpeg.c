@@ -69,10 +69,6 @@ int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
     cinfo.mem->max_memory_to_use = (1024 * 1024 * 1024);
     cinfo.mem->max_alloc_chunk = (1024 * 128 * 256);
 
-    if (setjmp(jerr.setjmp_buffer)) {
-        goto out;
-    }
-
     jpeg_start_decompress(&cinfo);
 
     int row_stride = cinfo.output_width * cinfo.output_components;
