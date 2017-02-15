@@ -192,6 +192,9 @@ void __sanitizer_cov_trace_pc_guard_init(uint32_t * start, uint32_t * stop)
 
 void __sanitizer_cov_trace_pc_guard(uint32_t * guard)
 {
+    if (*guard == 0U) {
+        return;
+    }
     bool prev = ATOMIC_XCHG(feedback->pcGuardMap[*guard], true);
     if (prev == false) {
         ATOMIC_PRE_INC_RELAXED(feedback->pidFeedbackPc[my_thread_no]);
