@@ -159,9 +159,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint6
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t * Cases)
 {
     for (uint64_t i = 0; i < Cases[0]; i++) {
-        uintptr_t pos =
-            (((uintptr_t) __builtin_return_address(0) + i) +
-             (_HF_PERF_BITMAP_SIZE_16M / 2)) % _HF_PERF_BITMAP_SIZE_16M;
+        uintptr_t pos = ((uintptr_t) __builtin_return_address(0) + i) % _HF_PERF_BITMAP_SIZE_16M;
         uint8_t v = (uint8_t) Cases[1] - __builtin_popcountll(Val ^ Cases[i + 2]);
         uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
         if (prev < v) {
