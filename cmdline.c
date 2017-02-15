@@ -176,6 +176,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         },
         .persistent = false,
         .tmout_vtalrm = false,
+        .skipFeedbackOnTimeout = false,
         .enableSanitizers = false,
 #if defined(__ANDROID__)
         .monitorSIGABRT = false,
@@ -289,6 +290,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"tmout_sigvtalrm", no_argument, NULL, 'T'}, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)"},
         {{"sanitizers", no_argument, NULL, 'S'}, "Enable sanitizers settings (default: false)"},
         {{"monitor_sigabrt", required_argument, NULL, 0x105}, "Monitor SIGABRT (default: 'false for Android - 'true for other platforms)"},
+        {{"no_fb_timeout", required_argument, NULL, 0x106}, "Skip feedback if the process has timeouted (default: 'false')"},
 
 #if defined(_HF_ARCH_LINUX)
         {{"linux_symbols_bl", required_argument, NULL, 0x504}, "Symbols blacklist filter file (one entry per line)"},
@@ -411,6 +413,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             } else {
                 hfuzz->monitorSIGABRT = true;
             }
+            break;
+        case 0x106:
+            hfuzz->skipFeedbackOnTimeout = true;
             break;
         case 'P':
             hfuzz->persistent = true;

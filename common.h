@@ -233,6 +233,7 @@ typedef struct {
     char *envs[128];
     bool persistent;
     bool tmout_vtalrm;
+    bool skipFeedbackOnTimeout;
     bool enableSanitizers;
     bool monitorSIGABRT;
     uint32_t threadsActiveCnt;

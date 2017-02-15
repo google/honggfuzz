@@ -542,11 +542,13 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         unlink(fuzzer->fileName);
     }
 
-    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
-        fuzz_perfFeedback(hfuzz, fuzzer);
-    }
-    if (hfuzz->useSanCov) {
-        fuzz_sanCovFeedback(hfuzz, fuzzer);
+    if (hfuzz->skipFeedbackOnTimeout == false || fuzzer->tmOutSignaled == false) {
+        if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+            fuzz_perfFeedback(hfuzz, fuzzer);
+        }
+        if (hfuzz->useSanCov) {
+            fuzz_sanCovFeedback(hfuzz, fuzzer);
+        }
     }
 
     if (hfuzz->useVerifier && (fuzzer->crashFileName[0] != 0) && fuzzer->backtrace) {
