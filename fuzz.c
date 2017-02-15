@@ -351,6 +351,10 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
 
 static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
+    if (hfuzz->skipFeedbackOnTimeout && fuzzer->tmOutSignaled) {
+        return;
+    }
+
     LOG_D("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 "/%"
           PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
           fuzzer->linux.hwCnts.cpuInstrCnt, hfuzz->linux.hwCnts.cpuInstrCnt,
@@ -403,6 +407,10 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
+    if (hfuzz->skipFeedbackOnTimeout && fuzzer->tmOutSignaled) {
+        return;
+    }
+
     LOG_D
         ("File size (Best/New): %zu, SanCov feedback (bb,dso): Best: [%" PRIu64
          ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64 "], newBBs:%" PRIu64,
@@ -542,13 +550,11 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         unlink(fuzzer->fileName);
     }
 
-    if (hfuzz->skipFeedbackOnTimeout == false || fuzzer->tmOutSignaled == false) {
-        if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
-            fuzz_perfFeedback(hfuzz, fuzzer);
-        }
-        if (hfuzz->useSanCov) {
-            fuzz_sanCovFeedback(hfuzz, fuzzer);
-        }
+    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+        fuzz_perfFeedback(hfuzz, fuzzer);
+    }
+    if (hfuzz->useSanCov) {
+        fuzz_sanCovFeedback(hfuzz, fuzzer);
     }
 
     if (hfuzz->useVerifier && (fuzzer->crashFileName[0] != 0) && fuzzer->backtrace) {
