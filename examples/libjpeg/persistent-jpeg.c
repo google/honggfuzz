@@ -62,7 +62,7 @@ int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
         goto out;
     }
 
-    if (cinfo.output_height > 10 || cinfo.output_width > 10) {
+    if (cinfo.output_height > 10000 || cinfo.output_width > 10000) {
         goto out;
     }
 
