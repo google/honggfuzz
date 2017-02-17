@@ -482,7 +482,7 @@ static SSL_CTX* ctx;
 int rand_predictable __attribute__((weak));
 void RAND_reset_for_fuzzing(void) __attribute__((weak));
 
-int FuzzerInitialize(int* argc, char*** argv)
+int LLVMFuzzerInitialize(int* argc, char*** argv)
 {
     rand_predictable = 1;
     return 1;
