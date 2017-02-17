@@ -5,7 +5,7 @@ extern "C" {
 #endif
 
 #include <openssl/asn1.h>
-#include <openssl/mem.h>
+#include <openssl/crypto.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <stdint.h>
