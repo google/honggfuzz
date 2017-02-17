@@ -478,9 +478,15 @@ static const uint8_t kECCACertDER[] = {
 };
 
 static SSL_CTX* ctx;
-static SSL* client;
 
-extern void RESET_RAND(void);
+int rand_predictable __attribute__((weak));
+void RAND_reset_for_fuzzing(void) __attribute__((weak));
+
+int FuzzerInitialize(int* argc, char*** argv)
+{
+    rand_predictable = 1;
+    return 1;
+}
 
 unsigned int psk_callback(SSL* ssl, const char* hint, char* identuty,
     unsigned int max_identity_len, unsigned char* psk,
@@ -492,9 +498,11 @@ unsigned int psk_callback(SSL* ssl, const char* hint, char* identuty,
 
 static void Init()
 {
+    if (RAND_reset_for_fuzzing)
+        RAND_reset_for_fuzzing();
+
     SSL_library_init();
     OpenSSL_add_ssl_algorithms();
-    RESET_RAND();
 
     ctx = SSL_CTX_new(SSLv23_method());
     const uint8_t* bufp = kRSAPrivateKeyDER;
@@ -549,11 +557,11 @@ static void Init()
 
 int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
 {
-
     if (ctx == NULL)
         Init();
 
-    RESET_RAND();
+    if (RAND_reset_for_fuzzing)
+        RAND_reset_for_fuzzing();
 
     SSL* client = SSL_new(ctx);
     SSL_set_tlsext_host_name(client, "localhost");
