@@ -17,6 +17,11 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
     if (x) {
         BIO* o = BIO_new_fp(stdout, BIO_NOCLOSE);
         X509_print_ex(o, x, XN_FLAG_RFC2253, X509_FLAG_COMPAT);
+
+		unsigned char *der = NULL;
+		i2d_X509(x, &der);
+		OPENSSL_free(der);
+
         X509_free(x);
         BIO_free(o);
     }

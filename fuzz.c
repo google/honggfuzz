@@ -392,14 +392,13 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         hfuzz->linux.hwCnts.softCntPc += softCntPc;
         hfuzz->linux.hwCnts.softCntCmp += softCntCmp;
 
-        LOG_I("New: Len:%zu, (i,b,s,cmp,hw): %" PRIu64 "/%"
-              PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Total: %" PRIu64
+        LOG_I("NEW, size:%zu (i,b,sw,hw,cmp): %" PRIu64 "/%"
+              PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Tot:%" PRIu64
               "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
               fuzzer->linux.hwCnts.cpuInstrCnt, fuzzer->linux.hwCnts.cpuBranchCnt, softCntPc,
-              softCntCmp, fuzzer->linux.hwCnts.newBBCnt,
-              hfuzz->linux.hwCnts.cpuInstrCnt, hfuzz->linux.hwCnts.cpuBranchCnt,
-              hfuzz->linux.hwCnts.softCntPc, hfuzz->linux.hwCnts.softCntCmp,
-              hfuzz->linux.hwCnts.bbCnt);
+              fuzzer->linux.hwCnts.newBBCnt, softCntCmp, hfuzz->linux.hwCnts.cpuInstrCnt,
+              hfuzz->linux.hwCnts.cpuBranchCnt, hfuzz->linux.hwCnts.softCntPc,
+              hfuzz->linux.hwCnts.bbCnt, hfuzz->linux.hwCnts.softCntCmp);
 
         fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     }
