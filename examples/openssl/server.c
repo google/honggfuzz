@@ -482,12 +482,6 @@ static SSL_CTX* ctx;
 int rand_predictable __attribute__((weak));
 void RAND_reset_for_fuzzing(void) __attribute__((weak));
 
-int LLVMFuzzerInitialize(int* argc, char*** argv)
-{
-    rand_predictable = 1;
-    return 1;
-}
-
 unsigned int psk_callback(SSL* ssl, const char* identity, unsigned char* psk,
     unsigned int max_psk_len)
 {
@@ -495,14 +489,16 @@ unsigned int psk_callback(SSL* ssl, const char* identity, unsigned char* psk,
     return max_psk_len;
 }
 
-static void Init()
+int LLVMFuzzerInitialize(int* argc, char*** argv)
 {
-    if (RAND_reset_for_fuzzing)
-        RAND_reset_for_fuzzing();
+    rand_predictable = 1;
 
     SSL_library_init();
     OpenSSL_add_ssl_algorithms();
     ERR_load_crypto_strings();
+
+    if (RAND_reset_for_fuzzing)
+        RAND_reset_for_fuzzing();
 
     ctx = SSL_CTX_new(SSLv23_method());
     const uint8_t* bufp = kRSAPrivateKeyDER;
@@ -553,13 +549,12 @@ static void Init()
     ret = SSL_CTX_use_psk_identity_hint(ctx, "ABCDEFUZZ");
     assert(ret == 1);
 #endif /* !defined(LIBRESSL_VERSION_NUMBER) */
+
+    return 1;
 }
 
 int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
 {
-    if (ctx == NULL)
-        Init();
-
     if (RAND_reset_for_fuzzing) {
         RAND_reset_for_fuzzing();
     }
