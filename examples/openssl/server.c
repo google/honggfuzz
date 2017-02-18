@@ -477,7 +477,7 @@ static const uint8_t kECCACertDER[] = {
     0x8d, 0x9a
 };
 
-static SSL_CTX* ctx;
+static SSL_CTX* ctx = NULL;
 
 int rand_predictable __attribute__((weak));
 void RAND_reset_for_fuzzing(void) __attribute__((weak));
