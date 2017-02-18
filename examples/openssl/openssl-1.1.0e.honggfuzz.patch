@@ -1,0 +1,32 @@
+diff -Nur ORIG.openssl-1.1.0e/Configure openssl-1.1.0e/Configure
+--- ORIG.openssl-1.1.0e/Configure	2017-02-16 12:58:20.000000000 +0100
++++ openssl-1.1.0e/Configure	2017-02-18 01:10:44.446113321 +0100
+@@ -359,6 +359,7 @@
+     "filenames",
+     "fuzz-libfuzzer",
+     "fuzz-afl",
++    "fuzz-hfuzz",
+     "gost",
+     "heartbeats",
+     "hw(-.+)?",
+@@ -427,6 +428,7 @@
+ 		  "egd"                 => "default",
+ 		  "fuzz-libfuzzer"	=> "default",
+ 		  "fuzz-afl"		=> "default",
++		  "fuzz-hfuzz"		=> "default",
+ 		  "heartbeats"          => "default",
+ 		  "md2"                 => "default",
+                   "msan"                => "default",
+@@ -1099,6 +1101,12 @@
+     $config{cflags} .= "-fsanitize-coverage=edge,indirect-calls ";
+ }
+ 
++unless ($disabled{"fuzz-hfuzz"}) {
++    $config{cflags} .= "-march=skylake -fno-omit-frame-pointer -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp -fno-builtin -fno-inline -funroll-loops -g ";
++    push @{$config{defines}}, "FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION";
++    push @{$config{defines}}, "BN_DEBUG";
++}
++
+ unless ($disabled{asan}) {
+     $config{cflags} .= "-fsanitize=address ";
+ }
