@@ -32,8 +32,16 @@ diff -Nur ORIG.openssl-1.1.0e/Configure openssl-1.1.0e/Configure
  }
 diff -Nur ORIG.openssl-1.1.0e/crypto/cryptlib.c openssl-1.1.0e/crypto/cryptlib.c
 --- ORIG.openssl-1.1.0e/crypto/cryptlib.c	2017-02-16 12:58:21.000000000 +0100
-+++ openssl-1.1.0e/crypto/cryptlib.c	2017-02-19 17:03:41.093898461 +0100
-@@ -324,7 +324,7 @@
++++ openssl-1.1.0e/crypto/cryptlib.c	2017-02-19 18:11:11.475676125 +0100
+@@ -26,6 +26,7 @@
+ #include <stdio.h>
+ #  define OPENSSL_CPUID_SETUP
+ typedef uint64_t IA32CAP;
++__attribute__((no_sanitize("address", "thread", "memory")))
+ void OPENSSL_cpuid_setup(void)
+ {
+     static int trigger = 0;
+@@ -324,7 +325,7 @@
   * pointers to volatile to not be emitted in some rare,
   * never needed in real life, pieces of code.
   */
