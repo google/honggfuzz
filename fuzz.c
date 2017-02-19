@@ -437,8 +437,8 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                    || hfuzz->sanCovCnts.iDsoCnt < fuzzer->sanCovCnts.iDsoCnt);
 
     if (newCov || (diff0 < 0 || diff1 < 0)) {
-        LOG_I("SanCov Update: file size (Cur): %zu, newBBs:%" PRIu64
-              ", counters (Cur,New): %" PRIu64 "/%" PRIu64 ",%" PRIu64 "/%" PRIu64,
+        LOG_I("SanCov Update: fsize:%zu, newBBs:%" PRIu64
+              ", (Cur,New): %" PRIu64 "/%" PRIu64 ",%" PRIu64 "/%" PRIu64,
               fuzzer->dynamicFileSz, fuzzer->sanCovCnts.newBBCnt,
               hfuzz->sanCovCnts.hitBBCnt, hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitBBCnt,
               fuzzer->sanCovCnts.iDsoCnt);
