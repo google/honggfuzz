@@ -30,6 +30,18 @@ diff -Nur ORIG.openssl-1.1.0e/Configure openssl-1.1.0e/Configure
  unless ($disabled{asan}) {
      $config{cflags} .= "-fsanitize=address ";
  }
+diff -Nur ORIG.openssl-1.1.0e/crypto/cryptlib.c openssl-1.1.0e/crypto/cryptlib.c
+--- ORIG.openssl-1.1.0e/crypto/cryptlib.c	2017-02-16 12:58:21.000000000 +0100
++++ openssl-1.1.0e/crypto/cryptlib.c	2017-02-19 17:03:41.093898461 +0100
+@@ -324,7 +324,7 @@
+  * pointers to volatile to not be emitted in some rare,
+  * never needed in real life, pieces of code.
+  */
+-int CRYPTO_memcmp(const volatile void * volatile in_a,
++int DISABLED_CRYPTO_memcmp(const volatile void * volatile in_a,
+                   const volatile void * volatile in_b,
+                   size_t len)
+ {
 diff -Nur ORIG.openssl-1.1.0e/include/openssl/crypto.h openssl-1.1.0e/include/openssl/crypto.h
 --- ORIG.openssl-1.1.0e/include/openssl/crypto.h	2017-02-16 12:58:23.000000000 +0100
 +++ openssl-1.1.0e/include/openssl/crypto.h	2017-02-19 17:01:34.004166029 +0100
