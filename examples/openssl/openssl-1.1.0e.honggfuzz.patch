@@ -30,3 +30,20 @@ diff -Nur ORIG.openssl-1.1.0e/Configure openssl-1.1.0e/Configure
  unless ($disabled{asan}) {
      $config{cflags} .= "-fsanitize=address ";
  }
+diff -Nur ORIG.openssl-1.1.0e/include/openssl/crypto.h openssl-1.1.0e/include/openssl/crypto.h
+--- ORIG.openssl-1.1.0e/include/openssl/crypto.h	2017-02-16 12:58:23.000000000 +0100
++++ openssl-1.1.0e/include/openssl/crypto.h	2017-02-19 17:01:34.004166029 +0100
+@@ -346,9 +346,13 @@
+  * into a defined order as the return value when a != b is undefined, other
+  * than to be non-zero.
+  */
++/*
+ int CRYPTO_memcmp(const volatile void * volatile in_a,
+                   const volatile void * volatile in_b,
+                   size_t len);
++*/
++
++#define CRYPTO_memcmp memcmp
+ 
+ /* Standard initialisation options */
+ # define OPENSSL_INIT_NO_LOAD_CRYPTO_STRINGS 0x00000001L
