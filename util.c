@@ -73,7 +73,7 @@ extern void *util_Realloc(void *ptr, size_t sz)
 
 void *util_MMap(size_t sz)
 {
-    void *p = mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE | MAP_NORESERVE, -1, 0);
+    void *p = mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
     if (p == MAP_FAILED) {
         LOG_F("mmap(size='%zu')", sz);
     }
