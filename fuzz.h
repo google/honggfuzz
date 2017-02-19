@@ -24,6 +24,9 @@
 #ifndef _HF_FUZZ_H_
 #define _HF_FUZZ_H_
 
-extern void fuzz_threads(honggfuzz_t * fuzz);
+#include <pthread.h>
+
+extern void fuzz_threadsStart(honggfuzz_t * fuzz, pthread_t * threads);
+extern void fuzz_threadsStop(honggfuzz_t * fuzz, pthread_t * threads);
 
 #endif

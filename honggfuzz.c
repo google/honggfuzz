@@ -173,8 +173,10 @@ int main(int argc, char **argv)
     /*
      * So far so good
      */
+    pthread_t threads[hfuzz.threadsMax];
+
     setupSignalsPreThr();
-    fuzz_threads(&hfuzz);
+    fuzz_threadsStart(&hfuzz, threads);
     setupSignalsPostThr();
 
     setupTimer();
@@ -199,6 +201,8 @@ int main(int argc, char **argv)
         LOG_I("Signal %d (%s) received, terminating", sigReceived, strsignal(sigReceived));
         return EXIT_SUCCESS;
     }
+
+    fuzz_threadsStop(&hfuzz, threads);
 
     /* Clean-up global buffers */
     if (hfuzz.blacklist) {

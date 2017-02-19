@@ -617,24 +617,25 @@ static void *fuzz_threadNew(void *arg)
     }
 }
 
-static void fuzz_runThread(honggfuzz_t * hfuzz, void *(*thread) (void *))
+static void fuzz_runThread(honggfuzz_t * hfuzz, pthread_t * thread, void *(*thread_func) (void *))
 {
     pthread_attr_t attr;
 
     pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     pthread_attr_setstacksize(&attr, _HF_PTHREAD_STACKSIZE);
     pthread_attr_setguardsize(&attr, (size_t) sysconf(_SC_PAGESIZE));
 
-    pthread_t t;
-    if (pthread_create(&t, &attr, thread, (void *)hfuzz) < 0) {
+    if (pthread_create(thread, &attr, thread_func, (void *)hfuzz) < 0) {
         PLOG_F("Couldn't create a new thread");
     }
+
+    pthread_attr_destroy(&attr);
 
     return;
 }
 
-void fuzz_threads(honggfuzz_t * hfuzz)
+void fuzz_threadsStart(honggfuzz_t * hfuzz, pthread_t * threads)
 {
     fuzz_mainThread = pthread_self();
 
@@ -655,6 +656,17 @@ void fuzz_threads(honggfuzz_t * hfuzz)
     }
 
     for (size_t i = 0; i < hfuzz->threadsMax; i++) {
-        fuzz_runThread(hfuzz, fuzz_threadNew);
+        fuzz_runThread(hfuzz, &threads[i], fuzz_threadNew);
     }
+}
+
+void fuzz_threadsStop(honggfuzz_t * hfuzz, pthread_t * threads)
+{
+    for (size_t i = 0; i < hfuzz->threadsMax; i++) {
+        void *retval;
+        if (pthread_join(threads[i], &retval) != 0) {
+            PLOG_F("Couldn't pthread_join() thread: %zu", i);
+        }
+    }
+    LOG_I("All threads done");
 }
