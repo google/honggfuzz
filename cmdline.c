@@ -185,6 +185,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 #endif
         .threadsActiveCnt = 0,
         .mainPid = getpid(),
+        .terminating = false,
 
         .dictionaryFile = NULL,
         .dictionaryCnt = 0,

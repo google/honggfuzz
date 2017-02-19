@@ -238,6 +238,7 @@ typedef struct {
     bool monitorSIGABRT;
     uint32_t threadsActiveCnt;
     pid_t mainPid;
+    bool terminating;
 
     const char *dictionaryFile;
      TAILQ_HEAD(, strings_t) dictq;

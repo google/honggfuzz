@@ -613,6 +613,10 @@ static void *fuzz_threadNew(void *arg)
             return NULL;
         }
 
+        if (ATOMIC_GET(hfuzz->terminating) == true) {
+            return NULL;
+        }
+
         fuzz_fuzzLoop(hfuzz, &fuzzer);
     }
 }

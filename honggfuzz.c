@@ -55,7 +55,14 @@ void sigHandler(int sig)
         return;
     }
 
-    sigReceived = sig;
+    if (ATOMIC_GET(sigReceived) != 0) {
+        static const char *const sigMsg = "Repeated termination signal caugth\n";
+        if (write(STDERR_FILENO, sigMsg, strlen(sigMsg) + 1) == -1) {
+        };
+        _exit(EXIT_FAILURE);
+    }
+
+    ATOMIC_SET(sigReceived, sig);
 }
 
 static void setupTimer(void)
@@ -184,7 +191,7 @@ int main(int argc, char **argv)
         if (hfuzz.useScreen) {
             display_display(&hfuzz);
         }
-        if (sigReceived > 0) {
+        if (ATOMIC_GET(sigReceived) > 0) {
             break;
         }
         if (ATOMIC_GET(hfuzz.threadsFinished) >= hfuzz.threadsMax) {
@@ -197,9 +204,10 @@ int main(int argc, char **argv)
         display_fini();
     }
 
-    if (sigReceived > 0) {
-        LOG_I("Signal %d (%s) received, terminating", sigReceived, strsignal(sigReceived));
-        return EXIT_SUCCESS;
+    if (ATOMIC_GET(sigReceived) > 0) {
+        LOG_I("Signal %d (%s) received, terminating", ATOMIC_GET(sigReceived),
+              strsignal(ATOMIC_GET(sigReceived)));
+        ATOMIC_SET(hfuzz.terminating, true);
     }
 
     fuzz_threadsStop(&hfuzz, threads);
