@@ -435,3 +435,14 @@ uint64_t util_CRC64(uint8_t * buf, size_t len)
 
     return res;
 }
+
+uint64_t util_CRC64Rev(uint8_t * buf, size_t len)
+{
+    uint64_t res = 0ULL;
+
+    for (ssize_t i = (ssize_t) len - 1; i >= 0; i--) {
+        res = util_CRC64ISOPoly[(uint8_t) res ^ buf[i]] ^ (res >> 8);
+    }
+
+    return res;
+}
