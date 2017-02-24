@@ -151,6 +151,7 @@ static bool files_getDirStatsAndRewind(honggfuzz_t * hfuzz)
     size_t maxSize = 0U;
     size_t fileCnt = 0U;
     for (;;) {
+        errno = 0;
         struct dirent *entry = readdir(hfuzz->inputDirP);
         if (entry == NULL && errno == EINTR) {
             continue;
@@ -218,6 +219,7 @@ bool files_getNext(honggfuzz_t * hfuzz, char *fname, bool rewind)
     MX_SCOPED_LOCK(&files_mutex);
 
     for (;;) {
+        errno = 0;
         struct dirent *entry = readdir(hfuzz->inputDirP);
         if (entry == NULL && errno == EINTR) {
             continue;
