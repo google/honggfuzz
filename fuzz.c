@@ -327,26 +327,26 @@ static void fuzz_setState(honggfuzz_t * hfuzz, fuzzState_t state)
     ATOMIC_SET(hfuzz->state, state);
 }
 
-static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_t size)
+static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     struct dynfile_t *dynfile = (struct dynfile_t *)util_Malloc(sizeof(struct dynfile_t));
-    dynfile->size = size;
-    dynfile->data = (uint8_t *) util_Malloc(size);
-    memcpy(dynfile->data, data, size);
+    dynfile->size = fuzzer->dynamicFileSz;
+    dynfile->data = (uint8_t *) util_Malloc(fuzzer->dynamicFileSz);
+    memcpy(dynfile->data, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     TAILQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
     hfuzz->dynfileqCnt++;
 
     /* No need to add new coverage if we are supposed to append new coverage-inducing inputs only */
-    if (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_PRE && hfuzz->covDir == NULL) {
+    if (fuzzer->state == _HF_STATE_DYNAMIC_PRE && hfuzz->covDir == NULL) {
         LOG_D("New coverage found, but we're in the initial coverage assessment state. Skipping");
         return;
     }
 
     char fname[PATH_MAX];
-    uint64_t crc64f = util_CRC64(data, size);
-    uint64_t crc64r = util_CRC64Rev(data, size);
+    uint64_t crc64f = util_CRC64(fuzzer->dynamicFile, fuzzer->dynamicFileSz);
+    uint64_t crc64r = util_CRC64Rev(fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     snprintf(fname, sizeof(fname), "%s/%016" PRIx64 "%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov",
-             hfuzz->covDir ? hfuzz->covDir : hfuzz->inputDir, crc64f, crc64r, (uint32_t) size);
+             hfuzz->covDir ? hfuzz->covDir : hfuzz->inputDir, crc64f, crc64r, (uint32_t) fuzzer->dynamicFileSz);
 
     if (access(fname, R_OK) == 0) {
         LOG_D("File '%s' already exists in the corpus directory", fname);
@@ -355,7 +355,7 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
 
     LOG_D("Adding file '%s' to the corpus directory", fname);
 
-    if (files_writeBufToFile(fname, data, size, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC)
+    if (files_writeBufToFile(fname, fuzzer->dynamicFile, fuzzer->dynamicFileSz, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC)
         == false) {
         LOG_W("Couldn't write buffer to file '%s'", fname);
     }
@@ -412,7 +412,7 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
               hfuzz->linux.hwCnts.cpuBranchCnt, hfuzz->linux.hwCnts.softCntPc,
               hfuzz->linux.hwCnts.bbCnt, hfuzz->linux.hwCnts.softCntCmp);
 
-        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
+        fuzz_addFileToFileQLocked(hfuzz, fuzzer);
     }
 }
 
@@ -469,7 +469,7 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         hfuzz->linux.hwCnts.cpuInstrCnt = fuzzer->linux.hwCnts.cpuInstrCnt;
         hfuzz->linux.hwCnts.cpuBranchCnt = fuzzer->linux.hwCnts.cpuBranchCnt;
 
-        fuzz_addFileToFileQLocked(hfuzz, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
+        fuzz_addFileToFileQLocked(hfuzz, fuzzer);
     }
 }
 
@@ -477,6 +477,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     fuzzer->pid = 0;
     fuzzer->timeStartedMillis = util_timeNowMillis();
+    fuzzer->state = fuzz_getState(hfuzz);
     fuzzer->crashFileName[0] = '\0';
     fuzzer->pc = 0ULL;
     fuzzer->backtrace = 0ULL;
@@ -502,26 +503,24 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzer->linux.perfMmapBuf = NULL;
     fuzzer->linux.perfMmapAux = NULL;
 
-    fuzzState_t state = fuzz_getState(hfuzz);
-
     if (hfuzz->persistent == false) {
         fuzz_getFileName(hfuzz, fuzzer->fileName);
     }
 
-    if (state == _HF_STATE_DYNAMIC_PRE) {
+    if (fuzzer->state == _HF_STATE_DYNAMIC_PRE) {
         fuzzer->flipRate = 0.0f;
         if (fuzz_prepareFile(hfuzz, fuzzer, false /* rewind */ ) == false) {
             fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_MAIN);
-            state = fuzz_getState(hfuzz);
+            fuzzer->state = fuzz_getState(hfuzz);
             snprintf(fuzzer->fileName, sizeof(fuzzer->fileName), "[DYNAMIC]");
         }
     }
-    if (state == _HF_STATE_DYNAMIC_MAIN) {
+    if (fuzzer->state == _HF_STATE_DYNAMIC_MAIN) {
         if (!fuzz_prepareFileDynamically(hfuzz, fuzzer)) {
             LOG_F("fuzz_prepareFileDynamically() failed");
         }
     }
-    if (state == _HF_STATE_STATIC) {
+    if (fuzzer->state == _HF_STATE_STATIC) {
         if (hfuzz->externalCommand) {
             if (!fuzz_prepareFileExternally(hfuzz, fuzzer)) {
                 LOG_F("fuzz_prepareFileExternally() failed");

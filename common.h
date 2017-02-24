@@ -292,6 +292,7 @@ typedef struct {
 typedef struct {
     pid_t pid;
     pid_t persistentPid;
+    fuzzState_t state;
     int64_t timeStartedMillis;
     const char *origFileName;
     char fileName[PATH_MAX];
