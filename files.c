@@ -152,6 +152,9 @@ static bool files_getDirStatsAndRewind(honggfuzz_t * hfuzz)
     size_t fileCnt = 0U;
     for (;;) {
         struct dirent* entry = readdir(hfuzz->inputDirP);
+		if (entry == NULL && errno == EINTR) {
+				continue;
+		}
         if (entry == NULL && errno != 0) {
             PLOG_W("readdir('%s')", hfuzz->inputDir);
             return false;
@@ -216,6 +219,9 @@ bool files_getNext(honggfuzz_t * hfuzz, char *fname, bool rewind)
 
     for (;;) {
         struct dirent* entry = readdir(hfuzz->inputDirP);
+		if (entry == NULL && errno == EINTR) {
+				continue;
+		}
         if (entry == NULL && errno != 0) {
             PLOG_W("readdir_r('%s')", hfuzz->inputDir);
             return false;
