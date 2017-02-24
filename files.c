@@ -148,23 +148,20 @@ static bool files_getDirStatsAndRewind(honggfuzz_t * hfuzz)
 {
     rewinddir(hfuzz->inputDirP);
 
-    struct dirent *result = NULL;
-    struct dirent entry;
-
     size_t maxSize = 0U;
     size_t fileCnt = 0U;
     for (;;) {
-        int ret = readdir_r(hfuzz->inputDirP, &entry, &result);
-        if (ret != 0) {
-            PLOG_W("readdir_r('%s')", hfuzz->inputDir);
+        struct dirent* entry = readdir(hfuzz->inputDirP);
+        if (entry == NULL && errno != 0) {
+            PLOG_W("readdir('%s')", hfuzz->inputDir);
             return false;
         }
-        if (result == NULL) {
+        if (entry == NULL) {
             break;
         }
 
         char fname[PATH_MAX];
-        snprintf(fname, sizeof(fname), "%s/%s", hfuzz->inputDir, entry.d_name);
+        snprintf(fname, sizeof(fname), "%s/%s", hfuzz->inputDir, entry->d_name);
         LOG_D("Analyzing file '%s'", fname);
 
         struct stat st;
@@ -217,28 +214,24 @@ bool files_getNext(honggfuzz_t * hfuzz, char *fname, bool rewind)
     static pthread_mutex_t files_mutex = PTHREAD_MUTEX_INITIALIZER;
     MX_SCOPED_LOCK(&files_mutex);
 
-    struct dirent *result = NULL;
-    struct dirent entry;
-
     for (;;) {
-        int ret = readdir_r(hfuzz->inputDirP, &entry, &result);
-        if (ret != 0) {
+        struct dirent* entry = readdir(hfuzz->inputDirP);
+        if (entry == NULL && errno != 0) {
             PLOG_W("readdir_r('%s')", hfuzz->inputDir);
             return false;
         }
-        if (result == NULL && rewind == false) {
+        if (entry == NULL && rewind == false) {
             return false;
         }
-        if (result == NULL && rewind == true) {
+        if (entry == NULL && rewind == true) {
             if (files_getDirStatsAndRewind(hfuzz) == false) {
                 LOG_E("files_getDirStatsAndRewind('%s')", hfuzz->inputDir);
                 return false;
             }
-            result = NULL;
             continue;
         }
 
-        snprintf(fname, PATH_MAX, "%s/%s", hfuzz->inputDir, entry.d_name);
+        snprintf(fname, PATH_MAX, "%s/%s", hfuzz->inputDir, entry->d_name);
 
         struct stat st;
         if (stat(fname, &st) == -1) {
