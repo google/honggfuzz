@@ -144,92 +144,114 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
     return ret;
 }
 
-static bool files_readdir(honggfuzz_t * hfuzz)
+static bool files_getDirStatsAndRewind(honggfuzz_t * hfuzz)
 {
-    DIR *dir = opendir(hfuzz->inputDir);
-    if (!dir) {
-        PLOG_W("Couldn't open dir '%s'", hfuzz->inputDir);
-        return false;
-    }
-    defer {
-        closedir(dir);
-    };
+    rewinddir(hfuzz->inputDirP);
 
-    size_t maxSize = 0UL;
-    unsigned count = 0;
+    struct dirent *result = NULL;
+    struct dirent entry;
+
+    size_t maxSize = 0U;
+    size_t fileCnt = 0U;
     for (;;) {
-        errno = 0;
-        struct dirent *res = readdir(dir);
-        if (res == NULL && errno != 0) {
-            PLOG_W("Couldn't read the '%s' dir", hfuzz->inputDir);
+        int ret = readdir_r(hfuzz->inputDirP, &entry, &result);
+        if (ret != 0) {
+            PLOG_W("readdir_r('%s')", hfuzz->inputDir);
             return false;
         }
-
-        if (res == NULL) {
+        if (result == NULL) {
             break;
         }
 
-        char path[PATH_MAX];
-        snprintf(path, sizeof(path), "%s/%s", hfuzz->inputDir, res->d_name);
+        char fname[PATH_MAX];
+        snprintf(fname, sizeof(fname), "%s/%s", hfuzz->inputDir, entry.d_name);
+        LOG_D("Analyzing file '%s'", fname);
+
         struct stat st;
-        if (stat(path, &st) == -1) {
-            LOG_W("Couldn't stat() the '%s' file", path);
+        if (stat(fname, &st) == -1) {
+            LOG_W("Couldn't stat() the '%s' file", fname);
             continue;
         }
-
         if (!S_ISREG(st.st_mode)) {
-            LOG_D("'%s' is not a regular file, skipping", path);
+            LOG_D("'%s' is not a regular file, skipping", fname);
             continue;
         }
-
-        if (st.st_size == 0ULL) {
-            LOG_W("'%s' is empty", path);
-            continue;
-        }
-
         if (hfuzz->maxFileSz != 0UL && st.st_size > (off_t) hfuzz->maxFileSz) {
             LOG_W("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %"
-                  PRId64, path, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
-            continue;
+                  PRId64, fname, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
         }
-
         if ((size_t) st.st_size > maxSize) {
             maxSize = st.st_size;
         }
-
-        struct paths_t *file = (struct paths_t *)util_Malloc(sizeof(struct paths_t));
-        snprintf(file->path, sizeof(file->path), "%s", path);
-        hfuzz->fileCnt = ++count;
-        TAILQ_INSERT_TAIL(&hfuzz->fileq, file, pointers);
-
-        LOG_D("Added '%s' to the list of input files", path);
+        fileCnt++;
     }
 
-    if (count == 0) {
-        LOG_W("Directory '%s' doesn't contain any regular files", hfuzz->inputDir);
-        return false;
-    }
-
-    if (hfuzz->maxFileSz == 0UL) {
+    ATOMIC_SET(hfuzz->fileCnt, fileCnt);
+    if (hfuzz->maxFileSz == 0U) {
         if (maxSize < 128U) {
             hfuzz->maxFileSz = 128U;
         } else {
             hfuzz->maxFileSz = maxSize;
         }
     }
-    LOG_I("%zu input files have been added to the list. Max file size: %zu", hfuzz->fileCnt,
-          hfuzz->maxFileSz);
+
+    if (hfuzz->fileCnt == 0U) {
+        LOG_W("No usable files in the input directory '%s'", hfuzz->inputDir);
+        return false;
+    }
+
+    LOG_D("Re-read the '%s', maxFileSz:%zu, number of usable files:%zu", hfuzz->inputDir,
+          hfuzz->maxFileSz, hfuzz->fileCnt);
+
+    rewinddir(hfuzz->inputDirP);
+
     return true;
+}
+
+bool files_getNext(honggfuzz_t * hfuzz, char *fname, bool rewind)
+{
+    static pthread_mutex_t files_mutex = PTHREAD_MUTEX_INITIALIZER;
+    MX_SCOPED_LOCK(&files_mutex);
+
+    struct dirent *result = NULL;
+    struct dirent entry;
+
+    for (;;) {
+        int ret = readdir_r(hfuzz->inputDirP, &entry, &result);
+        if (ret != 0) {
+            PLOG_W("readdir_r('%s')", hfuzz->inputDir);
+            return false;
+        }
+        if (result == NULL && rewind == false) {
+            return false;
+        }
+        if (result == NULL && rewind == true) {
+            if (files_getDirStatsAndRewind(hfuzz) == false) {
+                LOG_E("files_getDirStatsAndRewind('%s')", hfuzz->inputDir);
+                return false;
+            }
+            result = NULL;
+            continue;
+        }
+
+        snprintf(fname, PATH_MAX, "%s/%s", hfuzz->inputDir, entry.d_name);
+
+        struct stat st;
+        if (stat(fname, &st) == -1) {
+            LOG_W("Couldn't stat() the '%s' file", fname);
+            continue;
+        }
+        if (!S_ISREG(st.st_mode)) {
+            LOG_D("'%s' is not a regular file, skipping", fname);
+            continue;
+        }
+        return true;
+    }
 }
 
 bool files_init(honggfuzz_t * hfuzz)
 {
     if (hfuzz->externalCommand) {
-        struct paths_t *file = (struct paths_t *)util_Malloc(sizeof(struct paths_t));
-        snprintf(file->path, sizeof(file->path), "NONE");
-        hfuzz->fileCnt = 1;
-        TAILQ_INSERT_TAIL(&hfuzz->fileq, file, pointers);
-
         LOG_I
             ("No input file corpus loaded, the external command '%s' is responsible for creating the fuzz files",
              hfuzz->externalCommand);
@@ -241,18 +263,17 @@ bool files_init(honggfuzz_t * hfuzz)
         return false;
     }
 
-    struct stat st;
-    if (stat(hfuzz->inputDir, &st) == -1) {
-        PLOG_W("Couldn't stat the input dir '%s'", hfuzz->inputDir);
+    if ((hfuzz->inputDirP = opendir(hfuzz->inputDir)) == NULL) {
+        PLOG_W("opendir('%s')", hfuzz->inputDir);
         return false;
     }
 
-    if (!S_ISDIR(st.st_mode)) {
-        LOG_W("The initial corpus directory '%s' is not a directory", hfuzz->inputDir);
+    if (files_getDirStatsAndRewind(hfuzz) == false) {
+        LOG_W("files_getDirStatsAndRewind('%s')", hfuzz->inputDir);
         return false;
     }
 
-    return files_readdir(hfuzz);
+    return true;
 }
 
 const char *files_basename(char *path)
@@ -596,22 +617,4 @@ bool files_readPidFromFile(const char *fileName, pid_t * pidPtr)
     }
 
     return true;
-}
-
-struct paths_t *files_getFileFromFileq(honggfuzz_t * hfuzz, size_t index)
-{
-    if (index >= hfuzz->fileCnt) {
-        LOG_F("File index: %zu >= fileCnt: %zu", index, hfuzz->fileCnt);
-    }
-
-    struct paths_t *file;
-    size_t i = 0;
-    TAILQ_FOREACH(file, &hfuzz->fileq, pointers) {
-        if (i++ == index) {
-            return file;
-        }
-    }
-
-    LOG_F("File index: %zu bigger than fileq size", index);
-    return NULL;
 }

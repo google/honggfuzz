@@ -176,7 +176,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     display_put("\n    Run Time : " ESC_BOLD "%s" ESC_RESET "\n", time_elapsed_str);
     display_put("   Input Dir : [% " _HF_MONETARY_MOD "zu] '" ESC_BOLD "%s" ESC_RESET "'\n",
-                hfuzz->fileCnt, hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]");
+                ATOMIC_GET(hfuzz->fileCnt), hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]");
 
     if (hfuzz->linux.pid > 0) {
         display_put("  Remote cmd : [" ESC_BOLD "%d" ESC_RESET "] '" ESC_BOLD "%s" ESC_RESET
@@ -208,13 +208,11 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                 ATOMIC_GET(hfuzz->verifiedCrashesCnt));
     display_put("    Timeouts : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET " [%"
                 _HF_MONETARY_MOD "zu sec.]\n", ATOMIC_GET(hfuzz->timeoutedCnt), hfuzz->tmOut);
-    /* Feedback data sources are enabled. Start with common headers. */
-    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
-        display_put(" Corpus Size : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
-                    ", max file size: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",
-                    hfuzz->dynfileqCnt, hfuzz->maxFileSz);
-        display_put("    Coverage :");
-    }
+    /* Feedback data sources. Common headers. */
+    display_put(" Corpus Size : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
+                ", max file size: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",
+                hfuzz->dynfileqCnt, hfuzz->maxFileSz);
+    display_put("    Coverage :");
 
     /* HW perf specific counters */
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
@@ -245,7 +243,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         uint64_t hitBB = ATOMIC_GET(hfuzz->sanCovCnts.hitBBCnt);
         uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
         float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
-        display_put(" #bb: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET " (cov: "
+        display_put(" #sancov_bb: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET " (cov: "
                     ESC_BOLD "%.2f" ESC_RESET "%%)", hitBB, covPer);
         display_put(" #dso: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET,
                     ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));

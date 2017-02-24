@@ -32,6 +32,8 @@
 
 extern bool files_init(honggfuzz_t * hfuzz);
 
+extern bool files_getNext(honggfuzz_t * hfuzz, char *fname, bool rewind);
+
 extern ssize_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz);
 
 extern bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flags);
@@ -61,8 +63,6 @@ extern uint8_t *files_mapFileShared(char *fileName, off_t * fileSz, int *fd);
 extern void *files_mapSharedMem(size_t sz, int *fd, const char *dir);
 
 extern bool files_readPidFromFile(const char *fileName, pid_t * pidPtr);
-
-extern struct paths_t *files_getFileFromFileq(honggfuzz_t * hfuzz, size_t index);
 
 extern size_t files_parseSymbolFilter(const char *inFIle, char ***filterList);
 

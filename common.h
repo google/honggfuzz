@@ -24,6 +24,7 @@
 #ifndef _HF_COMMON_H_
 #define _HF_COMMON_H_
 
+#include <dirent.h>
 #include <limits.h>
 #include <pthread.h>
 #include <inttypes.h>
@@ -203,6 +204,9 @@ typedef struct {
     char **cmdline;
     char cmdline_txt[61];
     char *inputDir;
+    DIR *inputDirP;
+    size_t fileCnt;
+    bool fileCntDone;
     bool nullifyStdio;
     bool fuzzStdin;
     bool saveUnique;
@@ -225,10 +229,6 @@ typedef struct {
     size_t maxFileSz;
     char *reportFile;
     uint64_t asLimit;
-     TAILQ_HEAD(, paths_t) fileq;
-    size_t fileCnt;
-    size_t lastFileIndex;
-    size_t doneFileIndex;
     bool clearEnv;
     char *envs[128];
     bool persistent;

@@ -145,6 +145,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .cmdline = NULL,
         .cmdline_txt[0] = '\0',
         .inputDir = NULL,
+        .inputDirP = NULL,
+        .fileCnt = 0,
+        .fileCntDone = false,
         .nullifyStdio = false,
         .fuzzStdin = false,
         .saveUnique = true,
@@ -167,9 +170,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .threadsMax = (sysconf(_SC_NPROCESSORS_ONLN) <= 1) ? 1 : sysconf(_SC_NPROCESSORS_ONLN) / 2,
         .reportFile = NULL,
         .asLimit = 0ULL,
-        .fileCnt = 0,
-        .lastFileIndex = 0,
-        .doneFileIndex = 0,
         .clearEnv = false,
         .envs = {
             [0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,
@@ -255,7 +255,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 
     TAILQ_INIT(&hfuzz->dynfileq);
     TAILQ_INIT(&hfuzz->dictq);
-    TAILQ_INIT(&hfuzz->fileq);
 
     /*  *INDENT-OFF* */
     struct custom_option custom_opts[] = {

@@ -102,14 +102,17 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     return true;
 }
 
-static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_index)
+static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, bool rewind)
 {
-    struct paths_t *file = files_getFileFromFileq(hfuzz, rnd_index);
-    fuzzer->origFileName = files_basename(file->path);
+    char fname[PATH_MAX];
+    if (files_getNext(hfuzz, fname, rewind) == false) {
+        return false;
+    }
+    fuzzer->origFileName = files_basename(fname);
 
-    ssize_t fileSz = files_readFileToBufMax(file->path, fuzzer->dynamicFile, hfuzz->maxFileSz);
+    ssize_t fileSz = files_readFileToBufMax(fname, fuzzer->dynamicFile, hfuzz->maxFileSz);
     if (fileSz < 0) {
-        LOG_E("Couldn't read contents of '%s'", file->path);
+        LOG_E("Couldn't read contents of '%s'", fname);
         return false;
     }
     fuzzer->dynamicFileSz = fileSz;
@@ -299,6 +302,13 @@ static fuzzState_t fuzz_getState(honggfuzz_t * hfuzz)
 
 static void fuzz_setState(honggfuzz_t * hfuzz, fuzzState_t state)
 {
+    static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
+    MX_SCOPED_LOCK(&state_mutex);
+
+    if (hfuzz->state == state) {
+        return;
+    }
+
     switch (state) {
     case _HF_STATE_DYNAMIC_PRE:
         LOG_I("Entering phase 1/2: Dry Run");
@@ -313,6 +323,7 @@ static void fuzz_setState(honggfuzz_t * hfuzz, fuzzState_t state)
         LOG_I("Entering unknown phase: %d", state);
         break;
     }
+
     ATOMIC_SET(hfuzz->state, state);
 }
 
@@ -491,26 +502,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzer->linux.perfMmapBuf = NULL;
     fuzzer->linux.perfMmapAux = NULL;
 
-    size_t rnd_index = util_rndGet(0, hfuzz->fileCnt - 1);
-
-    /* If dry run mode, pick the next file and not a random one */
-    if (fuzzer->flipRate == 0.0L && hfuzz->useVerifier) {
-        rnd_index = ATOMIC_POST_INC(hfuzz->lastFileIndex);
-    }
-
-    if (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_PRE) {
-        rnd_index = ATOMIC_POST_INC(hfuzz->lastFileIndex);
-        if (rnd_index >= hfuzz->fileCnt) {
-            /*
-             * The waiting logic (for the DYNAMIC_PRE phase to finish) should be based on cond-waits
-             * or mutexes, but it'd complicate code too much
-             */
-            while (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_PRE) {
-                sleep(1);
-            }
-        }
-    }
-
     fuzzState_t state = fuzz_getState(hfuzz);
 
     if (hfuzz->persistent == false) {
@@ -519,26 +510,32 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (state == _HF_STATE_DYNAMIC_PRE) {
         fuzzer->flipRate = 0.0f;
-        if (!fuzz_prepareFile(hfuzz, fuzzer, rnd_index)) {
-            LOG_F("fuzz_prepareFile() failed");
+        if (fuzz_prepareFile(hfuzz, fuzzer, false /* rewind */ ) == false) {
+            fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_MAIN);
+            state = fuzz_getState(hfuzz);
+            snprintf(fuzzer->fileName, sizeof(fuzzer->fileName), "[DYNAMIC]");
         }
-    } else if (hfuzz->externalCommand) {
-        if (!fuzz_prepareFileExternally(hfuzz, fuzzer)) {
-            LOG_F("fuzz_prepareFileExternally() failed");
-        }
-    } else if (state == _HF_STATE_DYNAMIC_MAIN) {
+    }
+    if (state == _HF_STATE_DYNAMIC_MAIN) {
         if (!fuzz_prepareFileDynamically(hfuzz, fuzzer)) {
             LOG_F("fuzz_prepareFileDynamically() failed");
         }
-    } else {
-        if (!fuzz_prepareFile(hfuzz, fuzzer, rnd_index)) {
-            LOG_F("fuzz_prepareFile() failed");
-        }
     }
+    if (state == _HF_STATE_STATIC) {
+        if (hfuzz->externalCommand) {
+            if (!fuzz_prepareFileExternally(hfuzz, fuzzer)) {
+                LOG_F("fuzz_prepareFileExternally() failed");
+            }
+        } else {
+            if (!fuzz_prepareFile(hfuzz, fuzzer, true /* rewind */ )) {
+                LOG_F("fuzz_prepareFile() failed");
+            }
+        }
 
-    if (state == _HF_STATE_STATIC && hfuzz->postExternalCommand != NULL) {
-        if (!fuzz_postProcessFile(hfuzz, fuzzer)) {
-            LOG_F("fuzz_postProcessFile() failed");
+        if (hfuzz->postExternalCommand != NULL) {
+            if (!fuzz_postProcessFile(hfuzz, fuzzer)) {
+                LOG_F("fuzz_postProcessFile() failed");
+            }
         }
     }
 
@@ -564,11 +561,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     report_Report(hfuzz, fuzzer->report);
-
-    if (state == _HF_STATE_DYNAMIC_PRE && ATOMIC_PRE_INC(hfuzz->doneFileIndex) >= hfuzz->fileCnt) {
-        fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_MAIN);
-        snprintf(fuzzer->fileName, sizeof(fuzzer->fileName), "[DYNAMIC]");
-    }
 }
 
 static void *fuzz_threadNew(void *arg)
