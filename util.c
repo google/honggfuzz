@@ -124,6 +124,10 @@ uint64_t util_rndGet(uint64_t min, uint64_t max)
         LOG_F("min:%" PRIu64 " > max:%" PRIu64, min, max);
     }
 
+    if (max == UINT64_MAX) {
+      return util_rnd64();
+    }
+
     return ((util_rnd64() % (max - min + 1)) + min);
 }
 
