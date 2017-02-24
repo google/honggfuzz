@@ -347,7 +347,8 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     uint64_t crc64f = util_CRC64(fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     uint64_t crc64r = util_CRC64Rev(fuzzer->dynamicFile, fuzzer->dynamicFileSz);
     snprintf(fname, sizeof(fname), "%s/%016" PRIx64 "%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov",
-             hfuzz->covDir ? hfuzz->covDir : hfuzz->inputDir, crc64f, crc64r, (uint32_t) fuzzer->dynamicFileSz);
+             hfuzz->covDir ? hfuzz->covDir : hfuzz->inputDir, crc64f, crc64r,
+             (uint32_t) fuzzer->dynamicFileSz);
 
     if (access(fname, R_OK) == 0) {
         LOG_D("File '%s' already exists in the corpus directory", fname);
@@ -356,7 +357,9 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     LOG_D("Adding file '%s' to the corpus directory", fname);
 
-    if (files_writeBufToFile(fname, fuzzer->dynamicFile, fuzzer->dynamicFileSz, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC)
+    if (files_writeBufToFile
+        (fname, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+         O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC)
         == false) {
         LOG_W("Couldn't write buffer to file '%s'", fname);
     }
