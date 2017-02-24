@@ -189,6 +189,38 @@ static bool fuzz_postProcessFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     return true;
 }
 
+static fuzzState_t fuzz_getState(honggfuzz_t * hfuzz)
+{
+    return ATOMIC_GET(hfuzz->state);
+}
+
+static void fuzz_setState(honggfuzz_t * hfuzz, fuzzState_t state)
+{
+    static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
+    MX_SCOPED_LOCK(&state_mutex);
+
+    if (hfuzz->state == state) {
+        return;
+    }
+
+    switch (state) {
+    case _HF_STATE_DYNAMIC_PRE:
+        LOG_I("Entering phase 1/2: Dry Run");
+        break;
+    case _HF_STATE_DYNAMIC_MAIN:
+        LOG_I("Entering phase 2/2: Main");
+        break;
+    case _HF_STATE_STATIC:
+        LOG_I("Entering phase: Static");
+        break;
+    default:
+        LOG_I("Entering unknown phase: %d", state);
+        break;
+    }
+
+    ATOMIC_SET(hfuzz->state, state);
+}
+
 static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
 {
     int crashFd = -1;
@@ -210,6 +242,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         fuzzer_t vFuzzer = {
             .pid = 0,
             .persistentPid = 0,
+            .state = fuzz_getState(hfuzz),
             .timeStartedMillis = util_timeNowMillis(),
             .crashFileName = {0},
             .pc = 0ULL,
@@ -293,38 +326,6 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     }
 
     return true;
-}
-
-static fuzzState_t fuzz_getState(honggfuzz_t * hfuzz)
-{
-    return ATOMIC_GET(hfuzz->state);
-}
-
-static void fuzz_setState(honggfuzz_t * hfuzz, fuzzState_t state)
-{
-    static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
-    MX_SCOPED_LOCK(&state_mutex);
-
-    if (hfuzz->state == state) {
-        return;
-    }
-
-    switch (state) {
-    case _HF_STATE_DYNAMIC_PRE:
-        LOG_I("Entering phase 1/2: Dry Run");
-        break;
-    case _HF_STATE_DYNAMIC_MAIN:
-        LOG_I("Entering phase 2/2: Main");
-        break;
-    case _HF_STATE_STATIC:
-        LOG_I("Entering phase: Static");
-        break;
-    default:
-        LOG_I("Entering unknown phase: %d", state);
-        break;
-    }
-
-    ATOMIC_SET(hfuzz->state, state);
 }
 
 static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
