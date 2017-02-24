@@ -180,6 +180,10 @@ static bool files_getDirStatsAndRewind(honggfuzz_t * hfuzz)
             LOG_W("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %"
                   PRId64, fname, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
         }
+        if (st.st_size == 0U) {
+            LOG_W("File '%s' is empty", fname);
+            continue;
+        }
         if ((size_t) st.st_size > maxSize) {
             maxSize = st.st_size;
         }
@@ -243,6 +247,10 @@ bool files_getNext(honggfuzz_t * hfuzz, char *fname, bool rewind)
         }
         if (!S_ISREG(st.st_mode)) {
             LOG_D("'%s' is not a regular file, skipping", fname);
+            continue;
+        }
+        if (st.st_size == 0U) {
+            LOG_D("File '%s' is empty", fname);
             continue;
         }
         return true;
