@@ -348,3 +348,11 @@ void subproc_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         ATOMIC_POST_INC(hfuzz->timeoutedCnt);
     }
 }
+
+void subproc_checkTermination(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
+    if (ATOMIC_GET(hfuzz->terminating)) {
+        LOG_D("Killing PID: %d", (int)fuzzer->pid);
+        kill(fuzzer->pid, SIGKILL);
+    }
+}

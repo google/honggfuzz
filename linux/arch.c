@@ -327,6 +327,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         pid_t pid = wait4(-1, &status, __WALL | __WNOTHREAD, NULL);
         if (pid == -1 && errno == EINTR) {
             subproc_checkTimeLimit(hfuzz, fuzzer);
+            subproc_checkTermination(hfuzz, fuzzer);
             continue;
         }
         if (pid == -1 && errno == ECHILD) {

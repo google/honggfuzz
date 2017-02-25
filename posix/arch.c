@@ -197,6 +197,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             int r = poll(&pfd, 1, -1);
             if (r == -1 && errno == EINTR) {
                 subproc_checkTimeLimit(hfuzz, fuzzer);
+                subproc_checkTermination(hfuzz, fuzzer);
             }
             if (r == -1 && errno != EINTR) {
                 PLOG_F("poll(fd=%d)", fuzzer->persistentSock);
