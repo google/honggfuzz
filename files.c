@@ -39,10 +39,10 @@
 
 #if defined(_HF_ARCH_LINUX)
 #include <sys/syscall.h>
-#endif                          /* defined(_HF_ARCH_LINUX) */
 #if defined(__NR_memfd_create)
 #include <linux/memfd.h>
 #endif                          /* defined(__NR_memfd_create) */
+#endif                          /* defined(_HF_ARCH_LINUX) */
 
 #include "log.h"
 #include "util.h"
