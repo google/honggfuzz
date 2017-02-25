@@ -196,6 +196,15 @@ static fuzzState_t fuzz_getState(honggfuzz_t * hfuzz)
 
 static void fuzz_setState(honggfuzz_t * hfuzz, fuzzState_t state)
 {
+    /* All threads must indicate willingness to switch to _HF_STATE_DYNAMIC_MAIN */
+    if (state == _HF_STATE_DYNAMIC_MAIN) {
+        static size_t cnt = 0;
+        ATOMIC_PRE_INC(cnt);
+        while (ATOMIC_GET(cnt) < hfuzz->threadsMax) {
+            sleep(1);
+        }
+    }
+
     static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
     MX_SCOPED_LOCK(&state_mutex);
 
