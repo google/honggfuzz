@@ -1,5 +1,6 @@
 #include <openssl/err.h>
 #include <openssl/evp.h>
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
