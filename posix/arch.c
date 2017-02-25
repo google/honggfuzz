@@ -226,8 +226,10 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (hfuzz->persistent && ret == fuzzer->persistentPid
             && (WIFEXITED(status) || WIFSIGNALED(status))) {
             fuzzer->persistentPid = 0;
-            LOG_W("Persistent mode: PID %d exited with status: %s", ret,
-                  subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
+            if (ATOMIC_GET(hfuzz->terminating) == false) {
+                LOG_W("Persistent mode: PID %d exited with status: %s", ret,
+                      subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
+            }
         }
 
         LOG_D("Process (pid %d) came back with status: %s", fuzzer->pid,
