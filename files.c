@@ -37,6 +37,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#if defined(_HF_ARCH_LINUX)
+#include <sys/syscall.h>
+#endif                          /* defined(_HF_ARCH_LINUX) */
+
 #include "log.h"
 #include "util.h"
 
@@ -573,13 +577,18 @@ uint8_t *files_mapFileShared(char *fileName, off_t * fileSz, int *fd)
 
 void *files_mapSharedMem(size_t sz, int *fd, const char *dir)
 {
-    char template[PATH_MAX];
-    snprintf(template, sizeof(template), "%s/hfuzz.XXXXXX", dir);
-    if ((*fd = mkstemp(template)) == -1) {
-        PLOG_W("mkstemp('%s')", template);
-        return MAP_FAILED;
+#if defined(_HF_ARCH_LINUX) && defined(__NR_memfd_create)
+    *fd = syscall(__NR_memfd_create, "honggfuzz", 0);
+#endif                          /* defined(_HF_ARCH_LINUX) && defined(__NR_memfd_create) */
+    if (*fd == -1) {
+        char template[PATH_MAX];
+        snprintf(template, sizeof(template), "%s/hfuzz.XXXXXX", dir);
+        if ((*fd = mkstemp(template)) == -1) {
+            PLOG_W("mkstemp('%s')", template);
+            return MAP_FAILED;
+        }
+        unlink(template);
     }
-    unlink(template);
     if (ftruncate(*fd, sz) == -1) {
         PLOG_W("ftruncate(%d, %zu)", *fd, sz);
         close(*fd);
