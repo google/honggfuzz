@@ -40,6 +40,9 @@
 #if defined(_HF_ARCH_LINUX)
 #include <sys/syscall.h>
 #endif                          /* defined(_HF_ARCH_LINUX) */
+#if defined(__NR_memfd_create)
+#include <linux/memfd.h>
+#endif                          /* defined(__NR_memfd_create) */
 
 #include "log.h"
 #include "util.h"
@@ -578,7 +581,7 @@ uint8_t *files_mapFileShared(char *fileName, off_t * fileSz, int *fd)
 void *files_mapSharedMem(size_t sz, int *fd, const char *dir)
 {
 #if defined(_HF_ARCH_LINUX) && defined(__NR_memfd_create)
-    *fd = syscall(__NR_memfd_create, "honggfuzz", 0);
+    *fd = syscall(__NR_memfd_create, "honggfuzz", (uintptr_t) MFD_CLOEXEC);
 #endif                          /* defined(_HF_ARCH_LINUX) && defined(__NR_memfd_create) */
     if (*fd == -1) {
         char template[PATH_MAX];
