@@ -588,7 +588,7 @@ static int srp_callback(SSL* s, int* ad, void* arg)
         *ad = SSL_AD_INTERNAL_ERROR;
         return SSL3_AL_FATAL;
     }
-    if (SSL_set_srp_server_param_pw(s, "USER", "PASS", "GROUP") < 0) {
+    if (SSL_set_srp_server_param_pw(s, "USER", "PASS", "1024") < 0) {
         *ad = SSL_AD_INTERNAL_ERROR;
         return SSL3_AL_FATAL;
     }
