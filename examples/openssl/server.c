@@ -581,6 +581,21 @@ unsigned int psk_callback(SSL* ssl, const char* identity, unsigned char* psk,
     return max_psk_len;
 }
 
+#if !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
+static int srp_callback(SSL* s, int* ad, void* arg)
+{
+    if (strcmp(SSL_get_srp_username(s), "USER") != 0) {
+        *ad = SSL_AD_INTERNAL_ERROR;
+        return SSL3_AL_FATAL;
+    }
+    if (SSL_set_srp_server_param_pw(s, "USER", "PASS", "GROUP") < 0) {
+        *ad = SSL_AD_INTERNAL_ERROR;
+        return SSL3_AL_FATAL;
+    }
+    return SSL_ERROR_NONE;
+}
+#endif /* !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION) */
+
 int LLVMFuzzerInitialize(int* argc, char*** argv)
 {
     rand_predictable = 1;
@@ -649,6 +664,13 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
     ret = SSL_CTX_use_psk_identity_hint(ctx, "ABCDEFUZZ");
     assert(ret == 1);
 #endif /* !defined(LIBRESSL_VERSION_NUMBER) */
+
+#if !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
+    ret = SSL_CTX_set_srp_username_callback(ctx, srp_callback);
+    assert(ret == 1);
+    ret = SSL_CTX_set_srp_cb_arg(ctx, NULL);
+    assert(ret == 1);
+#endif /* !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION) */
 
     return 1;
 }
