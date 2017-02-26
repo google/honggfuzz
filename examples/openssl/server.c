@@ -596,6 +596,14 @@ static int srp_callback(SSL* s, int* ad, void* arg)
 }
 #endif /* !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION) */
 
+int alpn_callback(SSL* ssl, const unsigned char** out, unsigned char* outlen,
+    const unsigned char* in, unsigned int inlen, void* arg)
+{
+    *out = &in[1];
+    *outlen = in[0];
+    return SSL_TLSEXT_ERR_OK;
+}
+
 int LLVMFuzzerInitialize(int* argc, char*** argv)
 {
     rand_predictable = 1;
@@ -672,6 +680,8 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
     assert(ret == 1);
 #endif /* !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION) */
 
+    SSL_CTX_set_alpn_select_cb(ctx, alpn_callback, NULL);
+
     return 1;
 }
 
@@ -709,7 +719,6 @@ int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
 #ifndef OPENSSL_NO_HEARTBEATS
             SSL_heartbeat(server);
 #endif /* ifndef OPENSSL_NO_HEARTBEATS */
-            SSL_renegotiate(server);
         }
     } else {
         ERR_print_errors_fp(stderr);
