@@ -604,6 +604,16 @@ int alpn_callback(SSL* ssl, const unsigned char** out, unsigned char* outlen,
     return SSL_TLSEXT_ERR_OK;
 }
 
+static int npn_callback(SSL* ssl, const uint8_t** out, unsigned* out_len, void* arg)
+{
+    static const uint8_t kProtocols[] = {
+        0x01, 'a', 0x02, 'a', 'a', 0x03, 'a', 'a', 'a',
+    };
+    *out = kProtocols;
+    *out_len = sizeof(kProtocols);
+    return SSL_TLSEXT_ERR_OK;
+}
+
 int LLVMFuzzerInitialize(int* argc, char*** argv)
 {
     rand_predictable = 1;
@@ -681,6 +691,10 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
 #endif /* !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION) */
 
     SSL_CTX_set_alpn_select_cb(ctx, alpn_callback, NULL);
+    SSL_CTX_set_next_protos_advertised_cb(ctx, npn_callback, NULL);
+#if defined(BORINGSSL_API_VERSION)
+	SSL_CTX_set_short_header_enabled(ctx, 1);
+#endif
 
     return 1;
 }
