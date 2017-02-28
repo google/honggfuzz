@@ -305,7 +305,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         .tv_nsec = 250000000U,
     };
     for (;;) {
-        int sig = sigtimedwait(&sset, NULL, &ts);
+        int sig = syscall(__NR_rt_sigtimedwait, &sset, NULL, &ts, _NSIG / 8);
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
             PLOG_F("sigtimedwaid(SIGNAL_WAKE|SIGCHLD), 0.25s");
             continue;
@@ -509,7 +509,8 @@ bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
     sigaddset(&ss, SIGNAL_WAKE);
     sigaddset(&ss, SIGCHLD);
     if (pthread_sigmask(SIG_BLOCK, &ss, NULL) != 0) {
-        PLOG_F("pthread_sigmask(SIG_BLOCK, SIGNAL_WAKE|SIGCHLD)");
+        PLOG_E("pthread_sigmask(SIG_BLOCK, SIGNAL_WAKE|SIGCHLD)");
+        return false;
     }
 
     return true;
