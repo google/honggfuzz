@@ -194,8 +194,8 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 .fd = fuzzer->persistentSock,
                 .events = POLLIN,
             };
-            int r = poll(&pfd, 1, -1);
-            if (r == -1 && errno == EINTR) {
+            int r = poll(&pfd, 1, 250 /* 0.25s */ );
+            if (r == 0 || (r == -1 && errno == EINTR)) {
                 subproc_checkTimeLimit(hfuzz, fuzzer);
                 subproc_checkTermination(hfuzz, fuzzer);
             }
@@ -257,24 +257,6 @@ void arch_sigFunc(int sig UNUSED)
     return;
 }
 
-static bool arch_setTimer(timer_t * timerid)
-{
-    /*
-     * Kick in every 200ms, starting with the next second
-     */
-    const struct itimerspec ts = {
-        .it_value = {.tv_sec = 0,.tv_nsec = 250000000,},
-        .it_interval = {.tv_sec = 0,.tv_nsec = 250000000,},
-    };
-    if (timer_settime(*timerid, 0, &ts, NULL) == -1) {
-        PLOG_E("timer_settime(arm) failed");
-        timer_delete(*timerid);
-        return false;
-    }
-
-    return true;
-}
-
 bool arch_setSig(int signo)
 {
     sigset_t smask;
@@ -303,27 +285,5 @@ bool arch_setSig(int signo)
 
 bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
-    if (arch_setSig(SIGIO) == false) {
-        LOG_E("arch_setSig(SIGIO)");
-        return false;
-    }
-    if (arch_setSig(SIGCHLD) == false) {
-        LOG_E("arch_setSig(SIGCHLD)");
-        return false;
-    }
-
-    struct sigevent sevp = {
-        .sigev_value.sival_ptr = &fuzzer->timerId,
-        .sigev_signo = SIGIO,
-        .sigev_notify = SIGEV_SIGNAL,
-    };
-    if (timer_create(CLOCK_REALTIME, &sevp, &fuzzer->timerId) == -1) {
-        PLOG_E("timer_create(CLOCK_REALTIME) failed");
-        return false;
-    }
-    if (arch_setTimer(&(fuzzer->timerId)) == false) {
-        LOG_F("Couldn't set timer");
-    }
-
     return true;
 }
