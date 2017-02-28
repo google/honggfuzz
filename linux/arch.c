@@ -310,6 +310,10 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             PLOG_F("sigtimedwaid(SIGNAL_WAKE|SIGCHLD), 0.25s");
             continue;
         }
+        if (sig == -1) {
+            subproc_checkTimeLimit(hfuzz, fuzzer);
+            subproc_checkTermination(hfuzz, fuzzer);
+        }
         if (subproc_persistentModeRoundDone(hfuzz, fuzzer)) {
             break;
         }
