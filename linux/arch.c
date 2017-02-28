@@ -291,11 +291,60 @@ void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 }
 
-void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+static bool arch_checkWait(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
 
+	/* All queued wait events must be tested */
+    for (;;) {
+        int status;
+        pid_t pid = waitpid(-1, &status, __WALL | __WNOTHREAD | WNOHANG);
+        if (pid == 0) {
+            return false;
+        }
+        if (pid == -1 && errno == EINTR) {
+            continue;
+        }
+        if (pid == -1 && errno == ECHILD) {
+            LOG_D("No more processes to track");
+            return true;
+        }
+        if (pid == -1) {
+            PLOG_F("wait4() failed");
+        }
+
+        char statusStr[4096];
+        LOG_D("PID '%d' returned with status: %s", pid,
+              subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
+
+        if (hfuzz->persistent && pid == fuzzer->persistentPid
+            && (WIFEXITED(status) || WIFSIGNALED(status))) {
+            arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
+            fuzzer->persistentPid = 0;
+            if (ATOMIC_GET(hfuzz->terminating) == false) {
+                LOG_W("Persistent mode: PID %d exited with status: %s", pid,
+                      subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
+            }
+            return true;
+        }
+        if (ptracePid == childPid) {
+            arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
+            continue;
+        }
+        if (pid == childPid && (WIFEXITED(status) || WIFSIGNALED(status))) {
+            return true;
+        }
+        if (pid == childPid) {
+            continue;
+        }
+
+        arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
+    }
+}
+
+void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+{
     sigset_t sset;
     sigemptyset(&sset);
     sigaddset(&sset, SIGNAL_WAKE);
@@ -316,52 +365,13 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (subproc_persistentModeRoundDone(hfuzz, fuzzer)) {
             break;
         }
-
-        int status;
-        pid_t pid = waitpid(-1, &status, __WALL | __WNOTHREAD | WNOHANG);
-        if (pid == 0) {
-            continue;
-        }
-        if (pid == -1 && errno == EINTR) {
-            continue;
-        }
-        if (pid == -1 && errno == ECHILD) {
-            LOG_D("No more processes to track");
+        if (arch_checkWait(hfuzz, fuzzer)) {
             break;
         }
-        if (pid == -1) {
-            PLOG_F("wait4() failed");
-        }
-
-        char statusStr[4096];
-        LOG_D("PID '%d' returned with status: %s", pid,
-              subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
-
-        if (hfuzz->persistent && pid == fuzzer->persistentPid
-            && (WIFEXITED(status) || WIFSIGNALED(status))) {
-            arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
-            fuzzer->persistentPid = 0;
-            if (ATOMIC_GET(hfuzz->terminating) == false) {
-                LOG_W("Persistent mode: PID %d exited with status: %s", pid,
-                      subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
-            }
-            break;
-        }
-        if (ptracePid == childPid) {
-            arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
-            continue;
-        }
-        if (pid == childPid && (WIFEXITED(status) || WIFSIGNALED(status))) {
-            break;
-        }
-        if (pid == childPid) {
-            continue;
-        }
-
-        arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
     }
 
     if (hfuzz->enableSanitizers) {
+        pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
         char crashReport[PATH_MAX] = { 0 };
         snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX,
                  ptracePid);

@@ -210,12 +210,15 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         int status;
         int flags = hfuzz->persistent ? WNOHANG : 0;
         int ret = waitpid(fuzzer->pid, &status, flags);
+		if (ret == 0) {
+				continue;
+		}
         if (ret == -1 && errno == EINTR) {
             subproc_checkTimeLimit(hfuzz, fuzzer);
             continue;
         }
         if (ret == -1) {
-            PLOG_W("wait4(pid=%d)", fuzzer->pid);
+            PLOG_W("waitpid(pid=%d)", fuzzer->pid);
             continue;
         }
         if (ret != fuzzer->pid) {
@@ -255,32 +258,6 @@ bool arch_archInit(honggfuzz_t * hfuzz)
 void arch_sigFunc(int sig UNUSED)
 {
     return;
-}
-
-bool arch_setSig(int signo)
-{
-    sigset_t smask;
-    sigemptyset(&smask);
-    struct sigaction sa = {
-        .sa_handler = arch_sigFunc,
-        .sa_mask = smask,
-        .sa_flags = 0,
-    };
-
-    if (sigaction(signo, &sa, NULL) == -1) {
-        PLOG_W("sigaction(%d) failed", signo);
-        return false;
-    }
-
-    sigset_t ss;
-    sigemptyset(&ss);
-    sigaddset(&ss, signo);
-    if (pthread_sigmask(SIG_UNBLOCK, &ss, NULL) != 0) {
-        PLOG_W("pthread_sigmask(%d, SIG_UNBLOCK)", signo);
-        return false;
-    }
-
-    return true;
 }
 
 bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
