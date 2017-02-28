@@ -308,7 +308,6 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         int sig = syscall(__NR_rt_sigtimedwait, &sset, NULL, &ts, _NSIG / 8);
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
             PLOG_F("sigtimedwaid(SIGNAL_WAKE|SIGCHLD), 0.25s");
-            continue;
         }
         if (sig == -1) {
             subproc_checkTimeLimit(hfuzz, fuzzer);
