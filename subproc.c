@@ -201,6 +201,12 @@ bool subproc_PrepareExecv(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *fi
         close(hfuzz->bbFd);
     }
 
+    sigset_t sset;
+    sigemptyset(&sset);
+    if (sigprocmask(SIG_SETMASK, &sset, NULL) == -1) {
+        PLOG_W("sigprocmask(empty_set)");
+    }
+
     return true;
 }
 
@@ -291,6 +297,9 @@ uint8_t subproc_System(const char *const argv[])
     }
 
     if (!pid) {
+        sigset_t sset;
+        sigemptyset(&sset);
+        sigprocmask(SIG_SETMASK, &sset, NULL);
         execv(argv[0], (char *const *)&argv[0]);
         PLOG_F("Couldn't execute '%s'", argv[0]);
         return 255;

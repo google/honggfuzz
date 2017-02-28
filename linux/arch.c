@@ -244,28 +244,6 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     return false;
 }
 
-static void arch_sigWake(int signo UNUSED)
-{
-}
-
-static bool arch_setTimer(timer_t * timerid)
-{
-    /*
-     * Kick in every 200ms, starting with the next second
-     */
-    const struct itimerspec ts = {
-        .it_value = {.tv_sec = 0,.tv_nsec = 250000000,},
-        .it_interval = {.tv_sec = 0,.tv_nsec = 250000000,},
-    };
-    if (timer_settime(*timerid, 0, &ts, NULL) == -1) {
-        PLOG_E("timer_settime(arm) failed");
-        timer_delete(*timerid);
-        return false;
-    }
-
-    return true;
-}
-
 void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
@@ -318,16 +296,30 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
 
+    sigset_t sset;
+    sigemptyset(&sset);
+    sigaddset(&sset, SIGNAL_WAKE);
+    sigaddset(&sset, SIGCHLD);
+    struct timespec ts = {
+        .tv_sec = 0U,
+        .tv_nsec = 250000000U,
+    };
     for (;;) {
+        int sig = sigtimedwait(&sset, NULL, &ts);
+        if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
+            PLOG_F("sigtimedwaid(SIGNAL_WAKE|SIGCHLD), 0.25s");
+            continue;
+        }
         if (subproc_persistentModeRoundDone(hfuzz, fuzzer)) {
             break;
         }
 
         int status;
-        pid_t pid = wait4(-1, &status, __WALL | __WNOTHREAD, NULL);
+        pid_t pid = wait4(-1, &status, __WALL | __WNOTHREAD | WNOHANG, NULL);
+        if (pid == 0) {
+            continue;
+        }
         if (pid == -1 && errno == EINTR) {
-            subproc_checkTimeLimit(hfuzz, fuzzer);
-            subproc_checkTermination(hfuzz, fuzzer);
             continue;
         }
         if (pid == -1 && errno == ECHILD) {
@@ -506,41 +498,14 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     return true;
 }
 
-bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
+bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
-    struct sigevent sevp = {
-        .sigev_value.sival_ptr = &fuzzer->timerId,
-        .sigev_signo = SIGNAL_WAKE,
-        .sigev_notify = SIGEV_THREAD_ID | SIGEV_SIGNAL,
-        ._sigev_un._tid = syscall(__NR_gettid),
-    };
-    if (timer_create(CLOCK_REALTIME, &sevp, &fuzzer->timerId) == -1) {
-        PLOG_E("timer_create(CLOCK_REALTIME) failed");
-        return false;
-    }
-
-    sigset_t mask;
-    sigemptyset(&mask);
-    struct sigaction sa = {
-        .sa_handler = arch_sigWake,
-        .sa_mask = mask,
-        .sa_flags = 0,
-        .sa_restorer = NULL,
-    };
-
     sigset_t ss;
     sigemptyset(&ss);
     sigaddset(&ss, SIGNAL_WAKE);
-    if (sigprocmask(SIG_UNBLOCK, &ss, NULL) != 0) {
-        PLOG_F("pthread_sigmask(%d, SIG_UNBLOCK)", SIGNAL_WAKE);
-    }
-    if (sigaction(SIGNAL_WAKE, &sa, NULL) == -1) {
-        PLOG_E("sigaction(SIGNAL_WAKE (%d)) failed", SIGNAL_WAKE);
-        return false;
-    }
-
-    if (arch_setTimer(&(fuzzer->timerId)) == false) {
-        LOG_F("Couldn't set timer");
+    sigaddset(&ss, SIGCHLD);
+    if (pthread_sigmask(SIG_BLOCK, &ss, NULL) != 0) {
+        PLOG_F("pthread_sigmask(SIG_BLOCK, SIGNAL_WAKE|SIGCHLD)");
     }
 
     return true;
