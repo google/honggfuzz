@@ -318,7 +318,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
 
         int status;
-        pid_t pid = wait4(-1, &status, __WALL | __WNOTHREAD | WNOHANG, NULL);
+        pid_t pid = waitpid(-1, &status, __WALL | __WNOTHREAD | WNOHANG);
         if (pid == 0) {
             continue;
         }
