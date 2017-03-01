@@ -372,7 +372,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (hfuzz->enableSanitizers) {
         pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
-        char crashReport[PATH_MAX] = { 0 };
+        char crashReport[PATH_MAX];
         snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX,
                  ptracePid);
         if (files_exists(crashReport)) {
