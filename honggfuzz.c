@@ -87,6 +87,7 @@ static void setupSignalsPreThr(void)
     sigaddset(&ss, SIGALRM);
     sigaddset(&ss, SIGPIPE);
     sigaddset(&ss, SIGIO);
+    sigaddset(&ss, SIGCHLD);
     if (sigprocmask(SIG_BLOCK, &ss, NULL) != 0) {
         PLOG_F("pthread_sigmask(SIG_BLOCK)");
     }
