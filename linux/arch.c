@@ -296,7 +296,7 @@ static bool arch_checkWait(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
     pid_t childPid = fuzzer->pid;
 
-	/* All queued wait events must be tested */
+    /* All queued wait events must be tested */
     for (;;) {
         int status;
         pid_t pid = waitpid(-1, &status, __WALL | __WNOTHREAD | WNOHANG);
@@ -349,7 +349,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     sigemptyset(&sset);
     sigaddset(&sset, SIGNAL_WAKE);
     sigaddset(&sset, SIGCHLD);
-    struct timespec ts = {
+    const struct timespec ts = {
         .tv_sec = 0U,
         .tv_nsec = 250000000U,
     };

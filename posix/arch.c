@@ -210,9 +210,9 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         int status;
         int flags = hfuzz->persistent ? WNOHANG : 0;
         int ret = waitpid(fuzzer->pid, &status, flags);
-		if (ret == 0) {
-				continue;
-		}
+        if (ret == 0) {
+            continue;
+        }
         if (ret == -1 && errno == EINTR) {
             subproc_checkTimeLimit(hfuzz, fuzzer);
             continue;
