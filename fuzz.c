@@ -117,10 +117,7 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, bool rewind
     }
     fuzzer->dynamicFileSz = fileSz;
 
-    /* If flip rate is 0.0, early abort file mangling */
-    if (fuzzer->flipRate != 0.0L) {
-        mangle_mangleContent(hfuzz, fuzzer);
-    }
+    mangle_mangleContent(hfuzz, fuzzer);
 
     if (hfuzz->persistent == false && files_writeBufToFile
         (fuzzer->fileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,

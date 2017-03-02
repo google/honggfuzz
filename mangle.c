@@ -398,10 +398,10 @@ static void mangle_InsertRnd(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
 
 void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    /* In 20% of cases: resize the file */
-    if (util_rndGet(0, 5) == 0) {
-        mangle_Resize(hfuzz, fuzzer);
+    if (fuzzer->flipRate == 0.0f) {
+        return;
     }
+
     static void (*const mangleFuncs[]) (honggfuzz_t * hfuzz, fuzzer_t * fuzzer) = {
     /*  *INDENT-OFF* */
         mangle_Byte,
@@ -427,6 +427,7 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         mangle_Expand,
         mangle_Shrink,
         mangle_InsertRnd,
+        mangle_Resize,
     /* *INDENT-ON* */
     };
 
