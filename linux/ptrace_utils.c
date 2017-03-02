@@ -1210,7 +1210,9 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
                 arch_ptraceAnalyzeData(hfuzz, pid, fuzzer);
             }
         }
-        ptrace(PTRACE_CONT, pid, 0, WSTOPSIG(status));
+        /* Do not deliver SIGSTOP, as we don't support PTRACE_LISTEN anyway */
+        int sig = (WSTOPSIG(status) != SIGSTOP) ? WSTOPSIG(status) : 0;
+        ptrace(PTRACE_CONT, pid, 0, sig);
         return;
     }
 
