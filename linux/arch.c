@@ -165,8 +165,8 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED)
         if (fcntl(fuzzer->persistentSock, F_SETOWN_EX, &fown)) {
             PLOG_F("fcntl(%d, F_SETOWN_EX)", fuzzer->persistentSock);
         }
-        if (fcntl(fuzzer->persistentSock, F_SETSIG, SIGNAL_WAKE) == -1) {
-            PLOG_F("fcntl(%d, F_SETSIG, SIGNAL_WAKE)", fuzzer->persistentSock);
+        if (fcntl(fuzzer->persistentSock, F_SETSIG, SIGIO) == -1) {
+            PLOG_F("fcntl(%d, F_SETSIG, SIGIO)", fuzzer->persistentSock);
         }
         if (fcntl(fuzzer->persistentSock, F_SETFL, O_ASYNC) == -1) {
             PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->persistentSock);
@@ -347,7 +347,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     sigset_t sset;
     sigemptyset(&sset);
-    sigaddset(&sset, SIGNAL_WAKE);
+    sigaddset(&sset, SIGIO);
     sigaddset(&sset, SIGCHLD);
     const struct timespec ts = {
         .tv_sec = 0U,
@@ -356,7 +356,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     for (;;) {
         int sig = syscall(__NR_rt_sigtimedwait, &sset, NULL, &ts, _NSIG / 8);
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
-            PLOG_F("sigtimedwaid(SIGNAL_WAKE|SIGCHLD), 0.25s");
+            PLOG_F("sigtimedwaid(SIGIO|SIGCHLD), 0.25s");
         }
         if (sig == -1) {
             subproc_checkTimeLimit(hfuzz, fuzzer);
@@ -513,14 +513,5 @@ bool arch_archInit(honggfuzz_t * hfuzz)
 
 bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
-    sigset_t ss;
-    sigemptyset(&ss);
-    sigaddset(&ss, SIGNAL_WAKE);
-    sigaddset(&ss, SIGCHLD);
-    if (pthread_sigmask(SIG_BLOCK, &ss, NULL) != 0) {
-        PLOG_E("pthread_sigmask(SIG_BLOCK, SIGNAL_WAKE|SIGCHLD)");
-        return false;
-    }
-
     return true;
 }
