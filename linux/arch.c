@@ -144,8 +144,10 @@ static pid_t arch_clone(uintptr_t flags)
     return 0;
 }
 
-pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED)
+pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
+    arch_perfClose(hfuzz, fuzzer);
+
     pid_t pid = arch_clone(hfuzz->linux.cloneFlags | CLONE_UNTRACED | SIGCHLD);
     if (pid == -1) {
         return pid;
@@ -175,6 +177,13 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED)
         if (setsockopt(fuzzer->persistentSock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)) ==
             -1) {
             LOG_W("Couldn't set FD send buffer to '%d' bytes", sndbuf);
+        }
+    }
+
+    {
+        pid_t perf_pid = (hfuzz->linux.pid == 0) ? pid : hfuzz->linux.pid;
+        if (arch_perfOpen(perf_pid, hfuzz, fuzzer) == false) {
+            return -1;
         }
     }
 
@@ -278,7 +287,7 @@ void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
     }
 
-    if (arch_perfEnable(ptracePid, hfuzz, fuzzer) == false) {
+    if (arch_perfEnable(hfuzz, fuzzer) == false) {
         LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
     }
     if (childPid != ptracePid) {
@@ -513,5 +522,11 @@ bool arch_archInit(honggfuzz_t * hfuzz)
 
 bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 {
+    fuzzer->linux.perfMmapBuf = NULL;
+    fuzzer->linux.perfMmapAux = NULL;
+    fuzzer->linux.cpuInstrFd = -1;
+    fuzzer->linux.cpuBranchFd = -1;
+    fuzzer->linux.cpuIptBtsFd = -1;
+
     return true;
 }

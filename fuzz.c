@@ -280,8 +280,6 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
                                  .softCntPc = 0ULL,
                                  .softCntCmp = 0ULL,
                                  },
-                      .perfMmapBuf = NULL,
-                      .perfMmapAux = NULL,
                       .attachedPid = 0,
                       },
         };
@@ -510,8 +508,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzer->linux.hwCnts.cpuBranchCnt = 0ULL;
     fuzzer->linux.hwCnts.bbCnt = 0ULL;
     fuzzer->linux.hwCnts.newBBCnt = 0ULL;
-    fuzzer->linux.perfMmapBuf = NULL;
-    fuzzer->linux.perfMmapAux = NULL;
 
     if (hfuzz->persistent == false) {
         fuzz_getFileName(hfuzz, fuzzer->fileName);
