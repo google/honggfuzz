@@ -215,7 +215,7 @@ static bool arch_perfCreate(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t
     pem->aux_offset = pem->data_offset + pem->data_size;
     pem->aux_size = _HF_PERF_AUX_SZ;
     fuzzer->linux.perfMmapAux =
-        mmap(NULL, pem->aux_size, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, pem->aux_offset);
+        mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
 
     if (fuzzer->linux.perfMmapAux == MAP_FAILED) {
         munmap(fuzzer->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
@@ -392,14 +392,10 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (fuzzer->linux.perfMmapBuf != NULL) {
         struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
-        ATOMIC_SET(pem->aux_head, 0);
-        ATOMIC_SET(pem->aux_tail, 0);
-        ATOMIC_SET(pem->aux_offset, 0);
-        ATOMIC_SET(pem->aux_size, 0);
         ATOMIC_SET(pem->data_head, 0);
         ATOMIC_SET(pem->data_tail, 0);
-        ATOMIC_SET(pem->data_offset, 0);
-        ATOMIC_SET(pem->data_size, 0);
+        ATOMIC_SET(pem->aux_head, 0);
+        ATOMIC_SET(pem->aux_tail, 0);
     }
 
     fuzzer->linux.hwCnts.cpuInstrCnt = instrCount;

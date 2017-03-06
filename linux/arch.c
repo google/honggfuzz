@@ -180,11 +180,9 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
     }
 
-    {
-        pid_t perf_pid = (hfuzz->linux.pid == 0) ? pid : hfuzz->linux.pid;
-        if (arch_perfOpen(perf_pid, hfuzz, fuzzer) == false) {
-            return -1;
-        }
+    pid_t perf_pid = (hfuzz->linux.pid == 0) ? pid : hfuzz->linux.pid;
+    if (arch_perfOpen(perf_pid, hfuzz, fuzzer) == false) {
+        return -1;
     }
 
     return pid;
