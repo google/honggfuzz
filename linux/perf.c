@@ -348,7 +348,8 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     uint64_t instrCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
         ioctl(fuzzer->linux.cpuInstrFd, PERF_EVENT_IOC_DISABLE, 0);
-        if (read(fuzzer->linux.cpuInstrFd, &instrCount, sizeof(instrCount)) != sizeof(instrCount)) {
+        if (files_readFromFd(fuzzer->linux.cpuInstrFd, (uint8_t *) & instrCount, sizeof(instrCount))
+            != sizeof(instrCount)) {
             PLOG_E("read(perfFd='%d') failed", fuzzer->linux.cpuInstrFd);
         }
         ioctl(fuzzer->linux.cpuInstrFd, PERF_EVENT_IOC_RESET, 0);
@@ -357,8 +358,9 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     uint64_t branchCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
         ioctl(fuzzer->linux.cpuBranchFd, PERF_EVENT_IOC_DISABLE, 0);
-        if (read(fuzzer->linux.cpuBranchFd, &branchCount, sizeof(branchCount)) !=
-            sizeof(branchCount)) {
+        if (files_readFromFd
+            (fuzzer->linux.cpuBranchFd, (uint8_t *) & branchCount,
+             sizeof(branchCount)) != sizeof(branchCount)) {
             PLOG_E("read(perfFd='%d') failed", fuzzer->linux.cpuBranchFd);
         }
         ioctl(fuzzer->linux.cpuBranchFd, PERF_EVENT_IOC_RESET, 0);
@@ -368,12 +370,10 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(hfuzz, fuzzer);
     }
-
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(hfuzz, fuzzer);
     }
-
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
         ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(hfuzz, fuzzer);
