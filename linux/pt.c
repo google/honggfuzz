@@ -209,8 +209,8 @@ void arch_ptAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
 
-    size_t aux_tail = ATOMIC_GET(pem->aux_tail);
-    size_t aux_head = ATOMIC_GET(pem->aux_head);
+    uint64_t aux_tail = ATOMIC_GET(pem->aux_tail);
+    uint64_t aux_head = ATOMIC_GET(pem->aux_head);
 
     struct pt_config ptc;
     pt_config_init(&ptc);

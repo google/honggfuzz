@@ -62,8 +62,9 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         uint64_t misc;
     };
 
+    uint64_t aux_head = ATOMIC_GET(pem->aux_head);
     struct bts_branch *br = (struct bts_branch *)fuzzer->linux.perfMmapAux;
-    for (; br < ((struct bts_branch *)(fuzzer->linux.perfMmapAux + pem->aux_head)); br++) {
+    for (; br < ((struct bts_branch *)(fuzzer->linux.perfMmapAux + aux_head)); br++) {
         /*
          * Kernel sometimes reports branches from the kernel (iret), we are not interested in that as it
          * makes the whole concept of unique branch counting less predictable
@@ -139,15 +140,6 @@ static bool arch_perfCreate(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t
     memset(&pe, 0, sizeof(struct perf_event_attr));
     pe.size = sizeof(struct perf_event_attr);
     pe.exclude_kernel = 1;
-#if 0
-    pe.exclude_hv = 1;
-    pe.exclude_guest = 1;
-    pe.exclude_idle = 1;
-    pe.exclude_callchain_kernel = 1;
-    pe.exclude_callchain_user = 1;
-    pe.pinned = 1;
-    pe.precise_ip = 1;
-#endif
     if (hfuzz->linux.pid > 0 || hfuzz->persistent == true) {
         pe.disabled = 0;
         pe.enable_on_exec = 0;
@@ -375,27 +367,26 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
         ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(hfuzz, fuzzer);
-        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(hfuzz, fuzzer);
-        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
         ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(hfuzz, fuzzer);
-        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
     }
 
     if (fuzzer->linux.perfMmapBuf != NULL) {
         struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
         ATOMIC_SET(pem->data_head, 0);
         ATOMIC_SET(pem->data_tail, 0);
+#if defined(PERF_ATTR_SIZE_VER5)
         ATOMIC_SET(pem->aux_head, 0);
         ATOMIC_SET(pem->aux_tail, 0);
+#endif /* defined(PERF_ATTR_SIZE_VER5) */
     }
 
     fuzzer->linux.hwCnts.cpuInstrCnt = instrCount;
