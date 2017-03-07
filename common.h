@@ -185,11 +185,6 @@ struct strings_t {
      TAILQ_ENTRY(strings_t) pointers;
 };
 
-struct paths_t {
-    char path[PATH_MAX];
-     TAILQ_ENTRY(paths_t) pointers;
-};
-
 /* Maximum number of active fuzzing threads */
 #define _HF_THREAD_MAX 1024U
 typedef struct {
