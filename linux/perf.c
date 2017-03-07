@@ -386,7 +386,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 #if defined(PERF_ATTR_SIZE_VER5)
         ATOMIC_SET(pem->aux_head, 0);
         ATOMIC_SET(pem->aux_tail, 0);
-#endif /* defined(PERF_ATTR_SIZE_VER5) */
+#endif                          /* defined(PERF_ATTR_SIZE_VER5) */
     }
 
     fuzzer->linux.hwCnts.cpuInstrCnt = instrCount;

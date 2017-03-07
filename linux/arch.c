@@ -356,7 +356,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     sigemptyset(&sset);
     sigaddset(&sset, SIGIO);
     sigaddset(&sset, SIGCHLD);
-    const struct timespec ts = {
+    static const struct timespec ts = {
         .tv_sec = 0U,
         .tv_nsec = 250000000U,
     };
