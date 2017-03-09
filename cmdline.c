@@ -189,12 +189,15 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 
         .dictionaryFile = NULL,
         .dictionaryCnt = 0,
+        .dictqCurrent = NULL,
 
         .state = _HF_STATE_UNSET,
         .feedback = NULL,
         .bbFd = -1,
+
         .dynfileq_mutex = PTHREAD_MUTEX_INITIALIZER,
         .dynfileqCnt = 0U,
+        .dynfileqCurrent = NULL,
 
         .mutationsCnt = 0,
         .crashesCnt = 0,
@@ -253,8 +256,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     };
     /*  *INDENT-ON* */
 
-    TAILQ_INIT(&hfuzz->dynfileq);
-    TAILQ_INIT(&hfuzz->dictq);
+    CIRCLEQ_INIT(&hfuzz->dynfileq);
+    CIRCLEQ_INIT(&hfuzz->dictq);
 
     /*  *INDENT-OFF* */
     struct custom_option custom_opts[] = {
