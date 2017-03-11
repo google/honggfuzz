@@ -350,18 +350,16 @@ static bool arch_checkWait(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 }
 
+__thread sigset_t sset_io_chld;
+
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    sigset_t sset;
-    sigemptyset(&sset);
-    sigaddset(&sset, SIGIO);
-    sigaddset(&sset, SIGCHLD);
     static const struct timespec ts = {
         .tv_sec = 0U,
         .tv_nsec = 250000000U,
     };
     for (;;) {
-        int sig = syscall(__NR_rt_sigtimedwait, &sset, NULL, &ts, _NSIG / 8);
+        int sig = syscall(__NR_rt_sigtimedwait, &sset_io_chld, NULL, &ts, _NSIG / 8);
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
             PLOG_F("sigtimedwait(SIGIO|SIGCHLD, 0.25s)");
         }
@@ -525,6 +523,10 @@ bool arch_archThreadInit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
     fuzzer->linux.cpuInstrFd = -1;
     fuzzer->linux.cpuBranchFd = -1;
     fuzzer->linux.cpuIptBtsFd = -1;
+
+    sigemptyset(&sset_io_chld);
+    sigaddset(&sset_io_chld, SIGIO);
+    sigaddset(&sset_io_chld, SIGCHLD);
 
     return true;
 }
