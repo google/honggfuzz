@@ -199,6 +199,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .dynfileqCnt = 0U,
         .dynfileqCurrent = NULL,
 
+        .feedback_mutex = PTHREAD_MUTEX_INITIALIZER,
+
         .mutationsCnt = 0,
         .crashesCnt = 0,
         .uniqueCrashesCnt = 0,

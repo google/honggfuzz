@@ -331,12 +331,14 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     return true;
 }
 
-static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+static void fuzz_addFileToFileQ(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     struct dynfile_t *dynfile = (struct dynfile_t *)util_Malloc(sizeof(struct dynfile_t));
     dynfile->size = fuzzer->dynamicFileSz;
     dynfile->data = (uint8_t *) util_Malloc(fuzzer->dynamicFileSz);
     memcpy(dynfile->data, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
+
+    MX_SCOPED_LOCK(&hfuzz->dynfileq_mutex);
     CIRCLEQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
     hfuzz->dynfileqCnt++;
 
@@ -380,7 +382,7 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
           fuzzer->linux.hwCnts.cpuBranchCnt, hfuzz->linux.hwCnts.cpuBranchCnt,
           fuzzer->linux.hwCnts.newBBCnt, hfuzz->linux.hwCnts.bbCnt);
 
-    MX_SCOPED_LOCK(&hfuzz->dynfileq_mutex);
+    MX_SCOPED_LOCK(&hfuzz->feedback_mutex);
 
     uint64_t softCntPc = 0UL;
     uint64_t softCntCmp = 0UL;
@@ -419,7 +421,7 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
               hfuzz->linux.hwCnts.cpuBranchCnt, hfuzz->linux.hwCnts.softCntPc,
               hfuzz->linux.hwCnts.bbCnt, hfuzz->linux.hwCnts.softCntCmp);
 
-        fuzz_addFileToFileQLocked(hfuzz, fuzzer);
+        fuzz_addFileToFileQ(hfuzz, fuzzer);
     }
 }
 
@@ -436,7 +438,7 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
          hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitBBCnt, fuzzer->sanCovCnts.iDsoCnt,
          fuzzer->sanCovCnts.newBBCnt);
 
-    MX_SCOPED_LOCK(&hfuzz->dynfileq_mutex);
+    MX_SCOPED_LOCK(&hfuzz->feedback_mutex);
 
     int64_t diff0 = hfuzz->linux.hwCnts.cpuInstrCnt - fuzzer->linux.hwCnts.cpuInstrCnt;
     int64_t diff1 = hfuzz->linux.hwCnts.cpuBranchCnt - fuzzer->linux.hwCnts.cpuBranchCnt;
@@ -476,7 +478,7 @@ static void fuzz_sanCovFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         hfuzz->linux.hwCnts.cpuInstrCnt = fuzzer->linux.hwCnts.cpuInstrCnt;
         hfuzz->linux.hwCnts.cpuBranchCnt = fuzzer->linux.hwCnts.cpuBranchCnt;
 
-        fuzz_addFileToFileQLocked(hfuzz, fuzzer);
+        fuzz_addFileToFileQ(hfuzz, fuzzer);
     }
 }
 

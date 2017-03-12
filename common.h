@@ -249,6 +249,8 @@ typedef struct {
      CIRCLEQ_HEAD(, dynfile_t) dynfileq;
     struct dynfile_t *dynfileqCurrent;
 
+    pthread_mutex_t feedback_mutex;
+
     size_t mutationsCnt;
     size_t crashesCnt;
     size_t uniqueCrashesCnt;
