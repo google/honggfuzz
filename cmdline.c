@@ -258,8 +258,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     };
     /*  *INDENT-ON* */
 
-    CIRCLEQ_INIT(&hfuzz->dynfileq);
-    CIRCLEQ_INIT(&hfuzz->dictq);
+    TAILQ_INIT(&hfuzz->dynfileq);
+    TAILQ_INIT(&hfuzz->dictq);
 
     /*  *INDENT-OFF* */
     struct custom_option custom_opts[] = {

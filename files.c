@@ -325,7 +325,7 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         str->len = util_decodeCString(lineptr);
         str->s = lineptr;
         hfuzz->dictionaryCnt += 1;
-        CIRCLEQ_INSERT_TAIL(&hfuzz->dictq, str, pointers);
+        TAILQ_INSERT_TAIL(&hfuzz->dictq, str, pointers);
 
         LOG_D("Dictionary: loaded word: '%s' (len=%zu)", str->s, str->len);
     }

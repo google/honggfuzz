@@ -119,9 +119,9 @@ static void mangle_DictionaryInsert(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     uint64_t choice = util_rndGet(0, hfuzz->dictionaryCnt - 1);
-    struct strings_t *str = CIRCLEQ_FIRST(&hfuzz->dictq);
+    struct strings_t *str = TAILQ_FIRST(&hfuzz->dictq);
     for (uint64_t i = 0; i < choice; i++) {
-        str = CIRCLEQ_NEXT(str, pointers);
+        str = TAILQ_NEXT(str, pointers);
     }
 
     size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
@@ -140,9 +140,9 @@ static void mangle_Dictionary(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
 
     uint64_t choice = util_rndGet(0, hfuzz->dictionaryCnt - 1);
-    struct strings_t *str = CIRCLEQ_FIRST(&hfuzz->dictq);
+    struct strings_t *str = TAILQ_FIRST(&hfuzz->dictq);
     for (uint64_t i = 0; i < choice; i++) {
-        str = CIRCLEQ_NEXT(str, pointers);
+        str = TAILQ_NEXT(str, pointers);
     }
 
     mangle_Overwrite(fuzzer, (uint8_t *) str->s, off, str->len);

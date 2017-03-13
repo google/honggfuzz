@@ -176,13 +176,13 @@ typedef enum {
 struct dynfile_t {
     uint8_t *data;
     size_t size;
-     CIRCLEQ_ENTRY(dynfile_t) pointers;
+     TAILQ_ENTRY(dynfile_t) pointers;
 };
 
 struct strings_t {
     char *s;
     size_t len;
-     CIRCLEQ_ENTRY(strings_t) pointers;
+     TAILQ_ENTRY(strings_t) pointers;
 };
 
 /* Maximum number of active fuzzing threads */
@@ -236,7 +236,7 @@ typedef struct {
     bool terminating;
 
     const char *dictionaryFile;
-     CIRCLEQ_HEAD(, strings_t) dictq;
+     TAILQ_HEAD(strq_t, strings_t) dictq;
     size_t dictionaryCnt;
     struct strings_t *dictqCurrent;
 
@@ -246,7 +246,7 @@ typedef struct {
 
     size_t dynfileqCnt;
     pthread_mutex_t dynfileq_mutex;
-     CIRCLEQ_HEAD(, dynfile_t) dynfileq;
+     TAILQ_HEAD(dictq_t, dynfile_t) dynfileq;
     struct dynfile_t *dynfileqCurrent;
 
     pthread_mutex_t feedback_mutex;
