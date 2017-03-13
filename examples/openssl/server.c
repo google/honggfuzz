@@ -722,9 +722,11 @@ int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
         for (;;) {
             ssize_t r = SSL_read(server, tmp, sizeof(tmp));
             if (r <= 0) {
+                SSL_shutdown(server);
                 break;
             }
             if (SSL_write(server, tmp, r) <= 0) {
+                SSL_shutdown(server);
                 break;
             }
 #ifndef OPENSSL_NO_HEARTBEATS
