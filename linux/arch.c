@@ -77,6 +77,9 @@ static bool arch_ifaceUp(const char *ifacename)
         PLOG_E("socket(AF_INET, SOCK_STREAM, IPPROTO_IP)");
         return false;
     }
+    defer {
+        close(sock);
+    };
 
     struct ifreq ifr;
     memset(&ifr, '\0', sizeof(ifr));
@@ -84,7 +87,6 @@ static bool arch_ifaceUp(const char *ifacename)
 
     if (ioctl(sock, SIOCGIFFLAGS, &ifr) == -1) {
         PLOG_E("ioctl(iface='%s', SIOCGIFFLAGS, IFF_UP)", ifacename);
-        close(sock);
         return false;
     }
 
@@ -92,11 +94,9 @@ static bool arch_ifaceUp(const char *ifacename)
 
     if (ioctl(sock, SIOCSIFFLAGS, &ifr) == -1) {
         PLOG_E("ioctl(iface='%s', SIOCSIFFLAGS, IFF_UP|IFF_RUNNING)", ifacename);
-        close(sock);
         return false;
     }
 
-    close(sock);
     return true;
 }
 
@@ -163,7 +163,10 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     /* Parent */
     if (hfuzz->persistent) {
-        struct f_owner_ex fown = {.type = F_OWNER_TID,.pid = syscall(__NR_gettid), };
+        const struct f_owner_ex fown = {
+            .type = F_OWNER_TID,
+            .pid = syscall(__NR_gettid),
+        };
         if (fcntl(fuzzer->persistentSock, F_SETOWN_EX, &fown)) {
             PLOG_F("fcntl(%d, F_SETOWN_EX)", fuzzer->persistentSock);
         }
@@ -355,8 +358,8 @@ __thread sigset_t sset_io_chld;
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     static const struct timespec ts = {
-        .tv_sec = 0U,
-        .tv_nsec = 250000000U,
+        .tv_sec = 0L,
+        .tv_nsec = 250000000L,
     };
     for (;;) {
         int sig = syscall(__NR_rt_sigtimedwait, &sset_io_chld, NULL, &ts, _NSIG / 8);
@@ -400,7 +403,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 bool arch_archInit(honggfuzz_t * hfuzz)
 {
-    /* Use it to make %'d work */
+    /* Make %'d work */
     setlocale(LC_NUMERIC, "");
 
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {

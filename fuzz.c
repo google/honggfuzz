@@ -495,7 +495,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzer->report[0] = '\0';
     fuzzer->mainWorker = true;
     fuzzer->origFileName = "DYNAMIC";
-    fuzzer->fileName[0] = '\0';
     fuzzer->flipRate = hfuzz->origFlipRate;
     fuzzer->dynamicFileSz = 0;
 
@@ -582,6 +581,7 @@ static void *fuzz_threadNew(void *arg)
         .fuzzNo = fuzzNo,
         .persistentSock = -1,
         .tmOutSignaled = false,
+        .fileName[0] = '\0',
 
         .linux.attachedPid = 0,
     };

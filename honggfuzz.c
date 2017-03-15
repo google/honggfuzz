@@ -179,7 +179,7 @@ int main(int argc, char **argv)
     }
 
     /*
-     * So far so good
+     * So far, so good
      */
     pthread_t threads[hfuzz.threadsMax];
 
