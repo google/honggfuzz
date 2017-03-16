@@ -692,6 +692,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
 
     SSL_CTX_set_alpn_select_cb(ctx, alpn_callback, NULL);
     SSL_CTX_set_next_protos_advertised_cb(ctx, npn_callback, NULL);
+    SSL_CTX_set_ecdh_auto(ctx, 1);
 
     return 1;
 }

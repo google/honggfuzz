@@ -651,6 +651,8 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
     assert(ret == 1);
 #endif /* !defined(LIBRESSL_VERSION_NUMBER) */
 
+    SSL_CTX_set_ecdh_auto(ctx, 1);
+
     return 1;
 }
 
