@@ -518,7 +518,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (fuzz_prepareFile(hfuzz, fuzzer, false /* rewind */ ) == false) {
             fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_MAIN);
             fuzzer->state = fuzz_getState(hfuzz);
-            snprintf(fuzzer->fileName, sizeof(fuzzer->fileName), "[DYNAMIC]");
+            snprintf(fuzzer->fileName, sizeof(fuzzer->fileName), "[DYNAMIC%d]", fuzzer->fuzzNo);
         }
     }
     if (fuzzer->state == _HF_STATE_DYNAMIC_MAIN) {
