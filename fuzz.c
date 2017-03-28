@@ -580,15 +580,13 @@ static void *fuzz_threadNew(void *arg)
         .fuzzNo = fuzzNo,
         .persistentSock = -1,
         .tmOutSignaled = false,
-        .fileName[0] = '\0',
+        .fileName = "[UNSET]",
 
         .linux.attachedPid = 0,
     };
     defer {
         free(fuzzer.dynamicFile);
     };
-
-    snprintf(fuzzer.fileName, sizeof(fuzzer.fileName), "[UNSET]");
 
     if (arch_archThreadInit(hfuzz, &fuzzer) == false) {
         LOG_F("Could not initialize the thread");
