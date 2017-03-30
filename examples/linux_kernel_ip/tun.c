@@ -79,8 +79,8 @@ int main(void)
     if (ioctl(fd, TUNSETIFF, (void*)&ifr) != 0) {
         pfatal("ioctl(TUNSETIFF)");
     }
-    if (ioctl(fd, TUNSETNOCSUM, 1) != 0) {
-        pfatal("ioctl(TUNSETNOCSUM)");
+    if (ioctl(fd, TUNSETOFFLOAD, TUN_F_CSUM | TUN_F_TSO_ECN | TUN_F_TSO4 | TUN_F_TSO6 | TUN_F_UFO) == -1) {
+        pfatal("ioctl(fd, TUNSETOFFLOAD)");
     }
 
     int udp_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
@@ -94,6 +94,17 @@ int main(void)
     int sctp_sock = socket(AF_INET, SOCK_SEQPACKET, IPPROTO_SCTP);
     if (sctp_sock == -1) {
         pfatal("socket(AF_INET, SOCK_SEQPACKET, IPPROTO_SCTP)");
+    }
+
+    int disable = 1;
+    if (setsockopt(udp_sock, SOL_SOCKET, SO_NO_CHECK, (void*)&disable, sizeof(disable)) == -1) {
+        pfatal("setsockopt(udp_sock, SOL_SOCKET, SO_NO_CHECK)");
+    }
+    if (setsockopt(tcp_sock, SOL_SOCKET, SO_NO_CHECK, (void*)&disable, sizeof(disable)) == -1) {
+        pfatal("setsockopt(tcp_sock, SOL_SOCKET, SO_NO_CHECK)");
+    }
+    if (setsockopt(sctp_sock, SOL_SOCKET, SO_NO_CHECK, (void*)&disable, sizeof(disable)) == -1) {
+        pfatal("setsockopt(sctp_sock, SOL_SOCKET, SO_NO_CHECK)");
     }
 
     struct sockaddr_in* sa = (struct sockaddr_in*)(&ifr.ifr_addr);
@@ -158,11 +169,7 @@ int main(void)
 
         HF_ITER(&buf, &len);
 
-        while (len > 0) {
-            size_t tlen = (len > 1400) ? 1400 : len;
-            write(fd, buf, tlen);
-            len -= tlen;
-        }
+        write(fd, buf, len);
 
         char b[1024 * 128];
         for (;;) {
