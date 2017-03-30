@@ -69,8 +69,9 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
          * Kernel sometimes reports branches from the kernel (iret), we are not interested in that as it
          * makes the whole concept of unique branch counting less predictable
          */
-        if (__builtin_expect(br->from > 0xFFFFFFFF00000000, false)
-            || __builtin_expect(br->to > 0xFFFFFFFF00000000, false)) {
+        if (hfuzz->linux.kernelOnly == false
+            && (__builtin_expect(br->from > 0xFFFFFFFF00000000, false)
+                || __builtin_expect(br->to > 0xFFFFFFFF00000000, false))) {
             LOG_D("Adding branch %#018" PRIx64 " - %#018" PRIx64, br->from, br->to);
             continue;
         }
