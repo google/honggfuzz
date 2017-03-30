@@ -139,7 +139,11 @@ static bool arch_perfCreate(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(struct perf_event_attr));
     pe.size = sizeof(struct perf_event_attr);
-    pe.exclude_kernel = 1;
+    if (hfuzz->linux.kernelOnly) {
+      pe.exclude_user = 1;
+    } else {
+      pe.exclude_kernel = 1;
+    }
     if (hfuzz->linux.pid > 0 || hfuzz->persistent == true) {
         pe.disabled = 0;
         pe.enable_on_exec = 0;

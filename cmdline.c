@@ -254,6 +254,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             .symsWlCnt = 0,
             .symsWl = NULL,
             .cloneFlags = 0,
+            .kernelOnly = false,
         },
     };
     /*  *INDENT-ON* */
@@ -310,6 +311,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"linux_perf_bts_block", no_argument, NULL, 0x512}, "Use Intel BTS to count unique blocks"},
         {{"linux_perf_bts_edge", no_argument, NULL, 0x513}, "Use Intel BTS to count unique edges"},
         {{"linux_perf_ipt_block", no_argument, NULL, 0x514}, "Use Intel Processor Trace to count unique blocks (requires libipt.so)"},
+        {{"linux_perf_kernel_only", no_argument, NULL, 0x515}, "Gather kernel-only coverage with Intel PT and with Intel BTS"},
         {{"linux_ns_net", no_argument, NULL, 0x0530}, "Use Linux NET namespace isolation"},
         {{"linux_ns_pid", no_argument, NULL, 0x0531}, "Use Linux PID namespace isolation"},
         {{"linux_ns_ipc", no_argument, NULL, 0x0532}, "Use Linux IPC namespace isolation"},
@@ -486,6 +488,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x514:
             hfuzz->dynFileMethod |= _HF_DYNFILE_IPT_BLOCK;
+            break;
+        case 0x515:
+            hfuzz->linux.kernelOnly = true;
             break;
         case 0x530:
             hfuzz->linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWNET);

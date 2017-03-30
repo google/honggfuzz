@@ -286,6 +286,7 @@ typedef struct {
         char **symsWl;
         size_t symsWlCnt;
         uintptr_t cloneFlags;
+        bool kernelOnly;
     } linux;
 } honggfuzz_t;
 
