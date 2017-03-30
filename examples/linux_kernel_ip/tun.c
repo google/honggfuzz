@@ -151,8 +151,8 @@ int main(void)
             len -= tlen;
         }
 
+        char b[1024 * 128];
         for (;;) {
-            char b[1024 * 128];
             if (read(fd, b, sizeof(b)) <= 0) {
                 break;
             }
@@ -164,15 +164,12 @@ int main(void)
             tcp_acc_sock = accept4(tcp_sock, (struct sockaddr*)&nsock, &slen, SOCK_NONBLOCK);
         }
         if (tcp_acc_sock != -1) {
-            char b[1024 * 128];
             if (recv(tcp_acc_sock, b, sizeof(b), MSG_DONTWAIT) == 0) {
                 close(tcp_acc_sock);
                 tcp_acc_sock = -1;
             }
             send(tcp_acc_sock, b, 1, MSG_NOSIGNAL | MSG_DONTWAIT);
         }
-
-        char b[1024 * 128];
 
         struct sockaddr_in addr;
         socklen_t slen = sizeof(addr);
