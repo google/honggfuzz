@@ -140,9 +140,9 @@ static bool arch_perfCreate(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t
     memset(&pe, 0, sizeof(struct perf_event_attr));
     pe.size = sizeof(struct perf_event_attr);
     if (hfuzz->linux.kernelOnly) {
-      pe.exclude_user = 1;
+        pe.exclude_user = 1;
     } else {
-      pe.exclude_kernel = 1;
+        pe.exclude_kernel = 1;
     }
     if (hfuzz->linux.pid > 0 || hfuzz->persistent == true) {
         pe.disabled = 0;
@@ -373,14 +373,17 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
         ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(hfuzz, fuzzer);
+        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(hfuzz, fuzzer);
+        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
         ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(hfuzz, fuzzer);
+        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
     }
 
     if (fuzzer->linux.perfMmapBuf != NULL) {
