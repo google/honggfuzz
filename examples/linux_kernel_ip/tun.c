@@ -83,17 +83,21 @@ int main(void)
         pfatal("ioctl(fd, TUNSETOFFLOAD)");
     }
 
-    int udp_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+    int udp_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (udp_sock == -1) {
-        pfatal("socket(AF_INET, SOCK_DGRAM, IPPROTO_IP)");
+        pfatal("socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)");
     }
-    int tcp_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+    int tcp_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (tcp_sock == -1) {
-        pfatal("socket(AF_INET, SOCK_STREAM, IPPROTO_IP)");
+        pfatal("socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)");
     }
     int sctp_sock = socket(AF_INET, SOCK_SEQPACKET, IPPROTO_SCTP);
     if (sctp_sock == -1) {
         pfatal("socket(AF_INET, SOCK_SEQPACKET, IPPROTO_SCTP)");
+    }
+    int udp_lite_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDPLITE);
+    if (udp_lite_sock == -1) {
+        pfatal("socket(AF_INET, SOCK_DGRAM, IPPROTO_UDPLITE)");
     }
 
     int disable = 1;
@@ -105,6 +109,9 @@ int main(void)
     }
     if (setsockopt(sctp_sock, SOL_SOCKET, SO_NO_CHECK, (void*)&disable, sizeof(disable)) == -1) {
         pfatal("setsockopt(sctp_sock, SOL_SOCKET, SO_NO_CHECK)");
+    }
+    if (setsockopt(udp_lite_sock, SOL_SOCKET, SO_NO_CHECK, (void*)&disable, sizeof(disable)) == -1) {
+        pfatal("setsockopt(udp_lite_sock, SOL_SOCKET, SO_NO_CHECK)");
     }
 
     struct sockaddr_in* sa = (struct sockaddr_in*)(&ifr.ifr_addr);
@@ -141,6 +148,9 @@ int main(void)
     if (bind(sctp_sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
         pfatal("bind(sctp)");
     }
+    if (bind(udp_lite_sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+        pfatal("bind(udp_lite)");
+    }
     if (fcntl(fd, F_SETFL, O_NONBLOCK | O_RDWR) == -1) {
         pfatal("fcntl(fd, F_SETFL, O_NONBLOCK|O_RDWR)");
     }
@@ -152,6 +162,9 @@ int main(void)
     }
     if (fcntl(sctp_sock, F_SETFL, O_NONBLOCK | O_RDWR) == -1) {
         pfatal("fcntl(sctp_sock, F_SETFL, O_NONBLOCK|O_RDWR)");
+    }
+    if (fcntl(udp_lite_sock, F_SETFL, O_NONBLOCK | O_RDWR) == -1) {
+        pfatal("fcntl(udp_lite_sock, F_SETFL, O_NONBLOCK|O_RDWR)");
     }
 
     if (listen(tcp_sock, SOMAXCONN) == -1) {
@@ -200,6 +213,11 @@ int main(void)
         slen = sizeof(addr);
         if (recvfrom(sctp_sock, b, sizeof(b), MSG_DONTWAIT, (struct sockaddr*)&addr, &slen) > 0) {
             sendto(sctp_sock, b, 1, MSG_NOSIGNAL | MSG_DONTWAIT, (struct sockaddr*)&addr, slen);
+        }
+
+        slen = sizeof(addr);
+        if (recvfrom(udp_lite_sock, b, sizeof(b), MSG_DONTWAIT, (struct sockaddr*)&addr, &slen) > 0) {
+            sendto(udp_lite_sock, b, 1, MSG_NOSIGNAL | MSG_DONTWAIT, (struct sockaddr*)&addr, slen);
         }
     }
 }
