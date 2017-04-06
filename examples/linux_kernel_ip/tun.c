@@ -7,6 +7,7 @@
 #include <net/if.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <netinet/tcp.h>
 #include <sched.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -17,6 +18,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 #include <unistd.h>
 
 void HF_ITER(uint8_t**, size_t*);
@@ -107,6 +109,8 @@ int main(void)
     if (setsockopt(tcp_sock, SOL_SOCKET, SO_NO_CHECK, (void*)&disable, sizeof(disable)) == -1) {
         pfatal("setsockopt(tcp_sock, SOL_SOCKET, SO_NO_CHECK)");
     }
+    const uint8_t md5s[TCP_MD5SIG_MAXKEYLEN] = { 0 };
+    setsockopt(tcp_sock, SOL_TCP, TCP_MD5SIG, (void*)md5s, sizeof(md5s));
     if (setsockopt(sctp_sock, SOL_SOCKET, SO_NO_CHECK, (void*)&disable, sizeof(disable)) == -1) {
         pfatal("setsockopt(sctp_sock, SOL_SOCKET, SO_NO_CHECK)");
     }
@@ -182,42 +186,51 @@ int main(void)
 
         HF_ITER(&buf, &len);
 
-        write(fd, buf, len);
+        const size_t pkt_size = 1400UL;
+        size_t num_iov = 0;
+        if (len > 0) {
+            num_iov = ((len - 1) / pkt_size) + 1;
+        }
+        for (size_t i = 0; i < num_iov; i++) {
+            size_t off = pkt_size * i;
+            size_t sz = ((len - off) > pkt_size) ? pkt_size : (len - off);
+            write(fd, &buf[off], sz);
 
-        char b[1024 * 128];
-        for (;;) {
-            if (read(fd, b, sizeof(b)) <= 0) {
-                break;
+            char b[1024 * 128];
+            for (;;) {
+                if (read(fd, b, sizeof(b)) <= 0) {
+                    break;
+                }
             }
-        }
 
-        if (tcp_acc_sock == -1) {
-            struct sockaddr_in nsock;
-            socklen_t slen = sizeof(nsock);
-            tcp_acc_sock = accept4(tcp_sock, (struct sockaddr*)&nsock, &slen, SOCK_NONBLOCK);
-        }
-        if (tcp_acc_sock != -1) {
-            if (recv(tcp_acc_sock, b, sizeof(b), MSG_DONTWAIT) == 0) {
-                close(tcp_acc_sock);
-                tcp_acc_sock = -1;
+            if (tcp_acc_sock == -1) {
+                struct sockaddr_in nsock;
+                socklen_t slen = sizeof(nsock);
+                tcp_acc_sock = accept4(tcp_sock, (struct sockaddr*)&nsock, &slen, SOCK_NONBLOCK);
             }
-            send(tcp_acc_sock, b, 1, MSG_NOSIGNAL | MSG_DONTWAIT);
-        }
+            if (tcp_acc_sock != -1) {
+                if (recv(tcp_acc_sock, b, sizeof(b), MSG_DONTWAIT) == 0) {
+                    close(tcp_acc_sock);
+                    tcp_acc_sock = -1;
+                }
+                send(tcp_acc_sock, b, 1, MSG_NOSIGNAL | MSG_DONTWAIT);
+            }
 
-        struct sockaddr_in addr;
-        socklen_t slen = sizeof(addr);
-        if (recvfrom(udp_sock, b, sizeof(b), MSG_DONTWAIT, (struct sockaddr*)&addr, &slen) > 0) {
-            sendto(udp_sock, b, 1, MSG_NOSIGNAL | MSG_DONTWAIT, (struct sockaddr*)&addr, slen);
-        }
+            struct sockaddr_in addr;
+            socklen_t slen = sizeof(addr);
+            if (recvfrom(udp_sock, b, sizeof(b), MSG_DONTWAIT, (struct sockaddr*)&addr, &slen) > 0) {
+                sendto(udp_sock, b, 1, MSG_NOSIGNAL | MSG_DONTWAIT, (struct sockaddr*)&addr, slen);
+            }
 
-        slen = sizeof(addr);
-        if (recvfrom(sctp_sock, b, sizeof(b), MSG_DONTWAIT, (struct sockaddr*)&addr, &slen) > 0) {
-            sendto(sctp_sock, b, 1, MSG_NOSIGNAL | MSG_DONTWAIT, (struct sockaddr*)&addr, slen);
-        }
+            slen = sizeof(addr);
+            if (recvfrom(sctp_sock, b, sizeof(b), MSG_DONTWAIT, (struct sockaddr*)&addr, &slen) > 0) {
+                sendto(sctp_sock, b, 1, MSG_NOSIGNAL | MSG_DONTWAIT, (struct sockaddr*)&addr, slen);
+            }
 
-        slen = sizeof(addr);
-        if (recvfrom(udp_lite_sock, b, sizeof(b), MSG_DONTWAIT, (struct sockaddr*)&addr, &slen) > 0) {
-            sendto(udp_lite_sock, b, 1, MSG_NOSIGNAL | MSG_DONTWAIT, (struct sockaddr*)&addr, slen);
+            slen = sizeof(addr);
+            if (recvfrom(udp_lite_sock, b, sizeof(b), MSG_DONTWAIT, (struct sockaddr*)&addr, &slen) > 0) {
+                sendto(udp_lite_sock, b, 1, MSG_NOSIGNAL | MSG_DONTWAIT, (struct sockaddr*)&addr, slen);
+            }
         }
     }
 }
