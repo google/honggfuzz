@@ -181,6 +181,13 @@ int main(void)
     int tcp_acc_sock = -1;
 
     for (;;) {
+        char b[1024 * 128];
+        for (;;) {
+            if (read(fd, b, sizeof(b)) <= 0) {
+                break;
+            }
+        }
+
         uint8_t* buf;
         size_t len;
 
