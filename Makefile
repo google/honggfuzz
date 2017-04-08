@@ -108,6 +108,14 @@ else ifeq ($(OS),Darwin)
                     -framework Foundation -framework ApplicationServices -framework Symbolication \
                     -framework CoreServices -framework CrashReporterSupport -framework CoreFoundation \
                     -framework CommerceKit $(CRASH_REPORT)
+
+    XCODE_VER := $(shell xcodebuild -version | grep "^Xcode" | cut -d " " -f2)
+    ifeq "8.3" "$(word 1, $(sort 8.3 $(XCODE_VER)))"
+      ARCH_LDFLAGS += -F/Applications/Xcode.app/Contents/SharedFrameworks \
+                      -framework CoreSymbolicationDT \
+                      -Wl,-rpath,/Applications/Xcode.app/Contents/SharedFrameworks
+    endif
+
     MIG_RET := $(shell mig -header mac/mach_exc.h -user mac/mach_excUser.c -sheader mac/mach_excServer.h \
                  -server mac/mach_excServer.c $(SDK)/usr/include/mach/mach_exc.defs &>/dev/null; echo $$?)
     ifeq ($(MIG_RET),1)
