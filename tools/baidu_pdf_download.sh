@@ -1,0 +1,2 @@
+for ((i=0;i<100;i++));do curl -s "http://www.baidu.com/s?wd=filetype%3Apdf&pn="$i"0" |grep -o "{\"title\":.*\"url\":\"http://www.baidu.com/link?url.*\"}'"|awk -F '"' '{print $8}'|xargs wget ;done
+i=0;for f in *;do  i=$[$i+1];mv $f $i.pdf;done 
