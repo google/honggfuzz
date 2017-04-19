@@ -1,2 +1,0 @@
-cd ~/Library/Containers/com.apple.iWork.Pages/data
-honggfuzz -r 0.0001 -f /Volumes/Macintosh/Users/riusksk/bughunt_tools/fuzzdata/samples/pages/ -t5 -n5 -e pages -- /Applications/Pages.app/Contents/MacOS/Pages ___FILE___
