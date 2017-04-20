@@ -68,6 +68,36 @@ struct {
 };
 /*  *INDENT-ON* */
 
+/* Return true if windows GUI app crash */
+bool arch_checkCrash() {
+    char buffer[128];
+    char result[128];
+
+    //LOG_W("enter arch_checkCrash");
+    FILE* pipe = popen("taskkill /F /IM WerFault.exe", "r");
+    if (!pipe){
+          LOG_E("popen执行失败");
+          return 0;
+    }
+
+    while(!feof(pipe)) {
+        if(fgets(buffer, 128, pipe)){
+                strcat(result,buffer);
+        }
+    }
+    //printf("%s\n", result);
+    //if(strstr(result, "成功")){
+    if(strstr(result, "PID")){
+        //printf("crash\n");
+        pclose(pipe);
+        return true;
+    }else{
+        //printf("no crash\n");
+        pclose(pipe);
+        return false;
+    }
+}
+
 /*
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
@@ -106,8 +136,17 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     LOG_D("Process (pid %d) killed by signal %d '%s'", fuzzer->pid, termsig, strsignal(termsig));
     if (!arch_sigs[termsig].important) {
         LOG_D("It's not that important signal, skipping");
-        return true;
+
+        // Check Windows GUI app crash
+        if(arch_checkCrash()){
+            LOG_W("Process (pid %d) may crash because WerFault.exe process was launched", fuzzer->pid);
+        }else{
+            LOG_D("WerFault.exe Process Not Found");
+            return true;
+        }
     }
+
+    LOG_D("Save crash file");
 
     char localtmstr[PATH_MAX];
     util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr), time(NULL));
@@ -203,24 +242,24 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 PLOG_F("poll(fd=%d)", fuzzer->persistentSock);
             }
         }
-		
+
         if (subproc_persistentModeRoundDone(hfuzz, fuzzer) == true) {
             break;
         }
 
         int status;
         int flags = hfuzz->persistent ? WNOHANG : 0;
-        int ret = waitpid(fuzzer->pid, &status, flags);		
-		//printf("fuzzer pid: %d\n",fuzzer->pid);
-		//printf("waitpid ret: %d\n", ret);
+        int ret = waitpid(fuzzer->pid, &status, flags);
+		    //printf("fuzzer pid: %d\n",fuzzer->pid);
+		    //printf("waitpid ret: %d\n", ret);
         if (ret == -1 && errno == EINTR) {
-			if (hfuzz->tmOut) {
+			  if (hfuzz->tmOut) {
 				//printf("Check time1\n");
                 arch_checkTimeLimit(hfuzz, fuzzer);
             }
             continue;
         }
-		
+
         if (ret == -1) {
             printf("waitpid(pid=%d)", fuzzer->pid);
             continue;
@@ -228,7 +267,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (ret != fuzzer->pid) {
             continue;
         }
-		
+
         char strStatus[4096];
         if (hfuzz->persistent && ret == fuzzer->persistentPid
             && (WIFEXITED(status) || WIFSIGNALED(status))) {
