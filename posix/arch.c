@@ -121,10 +121,10 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     if (WIFEXITED(status)) {
         LOG_D("Process (pid %d) exited normally with status %d", fuzzer->pid, WEXITSTATUS(status));
         
-        if( strstr(args[0], "EdgeDbg") ){
-            sleep(2000);    // win10下启动Edge或者图片查看，只能通过其它程序拉起，因此增加延时避免过早退出
+        if( strstr(hfuzz->cmdline[0], "EdgeDbg") ){
+            sleep(2500);    // win10下启动Edge或者图片查看，只能通过其它程序拉起，因此增加延时避免过早退出
         }
-        
+
         return true;
     }
 
