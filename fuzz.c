@@ -515,9 +515,15 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (fuzzer->state == _HF_STATE_DYNAMIC_PRE) {
         fuzzer->flipRate = 0.0f;
-        if (fuzz_prepareFile(hfuzz, fuzzer, false /* rewind */ ) == false) {
-            fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_MAIN);
-            fuzzer->state = fuzz_getState(hfuzz);
+        if (hfuzz->externalCommand) {
+            if (!fuzz_prepareFileExternally(hfuzz, fuzzer)) {
+                LOG_F("fuzz_prepareFileExternally() failed");
+            }
+        } else {
+            if (fuzz_prepareFile(hfuzz, fuzzer, false /* rewind */ ) == false) {
+                fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_MAIN);
+                fuzzer->state = fuzz_getState(hfuzz);
+            }
         }
     }
     if (fuzzer->state == _HF_STATE_DYNAMIC_MAIN) {
