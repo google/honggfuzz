@@ -119,7 +119,13 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
      * Boring, the process just exited
      */
     if (WIFEXITED(status)) {
-        LOG_D("Process (pid %d) exited normally with status %d", fuzzer->pid, WEXITSTATUS(status));
+        LOG_D("Process (pid %d) exited normally with status %d", fuzzer->pid, 
+            
+        if( strstr(args[0], "EdgeDbg") ){
+            sleep(2000);    // win10下启动Edge或者图片查看，只能通过其它程序拉起，因此增加延时避免过早退出
+        }
+
+        WEXITSTATUS(status));
         return true;
     }
 
@@ -225,10 +231,6 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     LOG_D("Launching '%s' on file '%s'", args[0], fileName);
 
     execvp(args[0], args);
-
-    if( strstr(args[0], "EdgeDbg") | strstr(args[0], "explorer")){
-        sleep(2000);    // win10下启动Edge或者图片查看，只能通过其它程序拉起，因此增加延时避免过早退出
-    }
 
     return false;
 }
