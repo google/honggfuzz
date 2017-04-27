@@ -149,8 +149,14 @@ int main(int argc, char **argv)
     }
 
     if (!files_init(&hfuzz)) {
-        LOG_F("Couldn't load input files");
-        exit(EXIT_FAILURE);
+        if (hfuzz.externalCommand) {
+            LOG_I
+                ("No input file corpus loaded, the external command '%s' is responsible for creating the fuzz files",
+                 hfuzz.externalCommand);
+        } else {
+            LOG_F("Couldn't load input files");
+            exit(EXIT_FAILURE);
+        }
     }
 
     if (hfuzz.dictionaryFile && (files_parseDictionary(&hfuzz) == false)) {

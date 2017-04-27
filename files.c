@@ -225,6 +225,10 @@ bool files_getNext(honggfuzz_t * hfuzz, char *fname, bool rewind)
     static pthread_mutex_t files_mutex = PTHREAD_MUTEX_INITIALIZER;
     MX_SCOPED_LOCK(&files_mutex);
 
+    if (hfuzz->fileCnt == 0U) {
+        return false;
+    }
+
     for (;;) {
         errno = 0;
         struct dirent *entry = readdir(hfuzz->inputDirP);
@@ -267,12 +271,7 @@ bool files_getNext(honggfuzz_t * hfuzz, char *fname, bool rewind)
 
 bool files_init(honggfuzz_t * hfuzz)
 {
-    if (hfuzz->externalCommand) {
-        LOG_I
-            ("No input file corpus loaded, the external command '%s' is responsible for creating the fuzz files",
-             hfuzz->externalCommand);
-        return true;
-    }
+    hfuzz->fileCnt = 0U;
 
     if (!hfuzz->inputDir) {
         LOG_W("No input file/dir specified");
@@ -285,6 +284,7 @@ bool files_init(honggfuzz_t * hfuzz)
     }
 
     if (files_getDirStatsAndRewind(hfuzz) == false) {
+        hfuzz->fileCnt = 0U;
         LOG_W("files_getDirStatsAndRewind('%s')", hfuzz->inputDir);
         return false;
     }
@@ -337,33 +337,40 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
  * dstExists argument can be used by caller for cases where existing destination
  * file requires special handling (e.g. save unique crashes)
  */
-bool files_copyFile(const char *source, const char *destination, bool * dstExists)
+bool files_copyFile(const char *source, const char *destination, bool * dstExists, bool try_link,
+                    bool exclusive)
 {
-    if (dstExists)
+    if (dstExists) {
         *dstExists = false;
-    if (link(source, destination) == 0) {
-        return true;
-    } else {
-        if (errno == EEXIST) {
-            // Should kick-in before MAC, so avoid the hassle
-            if (dstExists)
-                *dstExists = true;
-            return false;
-        } else {
-            PLOG_D("Couldn't link '%s' as '%s'", source, destination);
-            /*
-             * Don't fail yet as we might have a running env which doesn't allow
-             * hardlinks (e.g. SELinux)
-             */
-        }
     }
 
+    if (try_link) {
+        if (link(source, destination) == 0) {
+            return true;
+        } else {
+            if (errno == EEXIST) {
+                // Should kick-in before MAC, so avoid the hassle
+                if (dstExists)
+                    *dstExists = true;
+                return false;
+            } else {
+                PLOG_D("Couldn't link '%s' as '%s'", source, destination);
+                /*
+                 * Don't fail yet as we might have a running env which doesn't allow
+                 * hardlinks (e.g. SELinux)
+                 */
+            }
+        }
+    }
     // Now try with a verbose POSIX alternative
     int inFD, outFD, dstOpenFlags;
     mode_t dstFilePerms;
 
     // O_EXCL is important for saving unique crashes
-    dstOpenFlags = O_CREAT | O_WRONLY | O_EXCL | O_CLOEXEC;
+    dstOpenFlags = O_CREAT | O_WRONLY | O_CLOEXEC;
+    if (exclusive) {
+        dstOpenFlags |= O_EXCL;
+    }
     dstFilePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 
     inFD = open(source, O_RDONLY | O_CLOEXEC);
