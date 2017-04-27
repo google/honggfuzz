@@ -130,15 +130,15 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, bool rewind
 
 static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    fuzzer->origFileName = "[EXTERNAL]";
-
     char fname[PATH_MAX];
     if (files_getNext(hfuzz, fname, true /* rewind */ )) {
+        fuzzer->origFileName = files_basename(fname);
         if (files_copyFile(fname, fuzzer->fileName, NULL, false /* try_link */ ) == false) {
             LOG_E("files_copyFile('%s', '%s')", fname, fuzzer->fileName);
             return false;
         }
     } else {
+        fuzzer->origFileName = "[EXTERNAL]";
         int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0644);
         if (dstfd == -1) {
             PLOG_E("Couldn't create a temporary file '%s'", fuzzer->fileName);
