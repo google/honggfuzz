@@ -337,8 +337,7 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
  * dstExists argument can be used by caller for cases where existing destination
  * file requires special handling (e.g. save unique crashes)
  */
-bool files_copyFile(const char *source, const char *destination, bool * dstExists, bool try_link,
-                    bool exclusive)
+bool files_copyFile(const char *source, const char *destination, bool * dstExists, bool try_link)
 {
     if (dstExists) {
         *dstExists = false;
@@ -367,10 +366,7 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
     mode_t dstFilePerms;
 
     // O_EXCL is important for saving unique crashes
-    dstOpenFlags = O_CREAT | O_WRONLY | O_CLOEXEC;
-    if (exclusive) {
-        dstOpenFlags |= O_EXCL;
-    }
+    dstOpenFlags = O_CREAT | O_WRONLY | O_CLOEXEC | O_EXCL;
     dstFilePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 
     inFD = open(source, O_RDONLY | O_CLOEXEC);

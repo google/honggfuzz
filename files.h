@@ -53,7 +53,7 @@ extern const char *files_basename(char *fileName);
 extern bool files_parseDictionary(honggfuzz_t * hfuzz);
 
 extern bool files_copyFile(const char *source, const char *destination, bool * dstExists,
-                           bool try_link, bool exclusive);
+                           bool try_link);
 
 extern bool files_parseBlacklist(honggfuzz_t * hfuzz);
 

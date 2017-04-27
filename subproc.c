@@ -300,6 +300,7 @@ uint8_t subproc_System(const char *const argv[])
         sigset_t sset;
         sigemptyset(&sset);
         sigprocmask(SIG_SETMASK, &sset, NULL);
+        setsid();
         execv(argv[0], (char *const *)&argv[0]);
         PLOG_F("Couldn't execute '%s'", argv[0]);
         return 255;

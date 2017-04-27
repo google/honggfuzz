@@ -1064,8 +1064,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
 
     bool dstFileExists = false;
     if (files_copyFile
-        (fuzzer->fileName, fuzzer->crashFileName, &dstFileExists, true /* try_link */ ,
-         true /* exclusive */ )) {
+        (fuzzer->fileName, fuzzer->crashFileName, &dstFileExists, true /* try_link */ )) {
         LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName,
               fuzzer->crashFileName);
 

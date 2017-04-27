@@ -132,20 +132,19 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     fuzzer->origFileName = "[EXTERNAL]";
 
-    int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0644);
-    if (dstfd == -1) {
-        PLOG_E("Couldn't create a temporary file '%s'", fuzzer->fileName);
-        return false;
-    }
-    close(dstfd);
-
     char fname[PATH_MAX];
     if (files_getNext(hfuzz, fname, true /* rewind */ )) {
-        if (files_copyFile(fname, fuzzer->fileName, NULL, false /* try_link */ ,
-                           false /* exclusive */ ) == false) {
+        if (files_copyFile(fname, fuzzer->fileName, NULL, false /* try_link */ ) == false) {
             LOG_E("files_copyFile('%s', '%s')", fname, fuzzer->fileName);
             return false;
         }
+    } else {
+        int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0644);
+        if (dstfd == -1) {
+            PLOG_E("Couldn't create a temporary file '%s'", fuzzer->fileName);
+            return false;
+        }
+        close(dstfd);
     }
 
     LOG_D("Created '%s' as an input file", fuzzer->fileName);
@@ -324,8 +323,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
 
     /* Copy file with new suffix & remove original copy */
     bool dstFileExists = false;
-    if (files_copyFile(crashedFuzzer->crashFileName, verFile, &dstFileExists, true /* try_link */ ,
-                       true /* exclusive */ )) {
+    if (files_copyFile(crashedFuzzer->crashFileName, verFile, &dstFileExists, true /* try_link */ )) {
         LOG_I("Successfully verified, saving as (%s)", verFile);
         ATOMIC_POST_INC(hfuzz->verifiedCrashesCnt);
         unlink(crashedFuzzer->crashFileName);
