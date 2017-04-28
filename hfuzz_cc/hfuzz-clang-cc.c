@@ -80,16 +80,18 @@ static int ccMode(int argc, char **argv)
 {
     char *args[4096];
 
-    args[0] = getClangCC();
-    args[1] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
-    args[2] = "-funroll-loops";
-    args[3] = "-fno-inline";
+    int j = 0;
+    args[j++] = getClangCC();
+    args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
+    args[j++] = "-funroll-loops";
+    args[j++] = "-fno-inline";
+    args[j++] = "-fno-builtin";
 
     for (int i = 1; i < argc; i++) {
-        args[i + 3] = argv[i];
+        args[j++] = argv[i];
     }
 
-    return execCC(argc + 3, args);
+    return execCC(j, args);
 }
 
 static int ldMode(int argc, char **argv)
@@ -99,18 +101,23 @@ static int ldMode(int argc, char **argv)
     char lHFuzzPath[PATH_MAX];
     snprintf(lHFuzzPath, sizeof(lHFuzzPath), "%s/libhfuzz/libhfuzz.a", _XSTR(_HF_BUILD_DIR));
 
-    args[0] = getClangCC();
-    args[1] = lHFuzzPath;
-    args[2] = "-Wl,--require-defined=__cyg_profile_func_enter";
-    args[3] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
+    int j = 0;
+    args[j++] = getClangCC();
+    args[j++] = "-Wl,--whole-archive";
+    args[j++] = lHFuzzPath;
+    args[j++] = "-Wl,--no-whole-archive";
+    args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
+    args[j++] = "-funroll-loops";
+    args[j++] = "-fno-inline";
+    args[j++] = "-fno-builtin";
 
     int i;
     for (i = 1; i < argc; i++) {
-        args[i + 3] = argv[i];
+        args[j++] = argv[i];
     }
-    args[i + 3] = lHFuzzPath;
+    args[j++] = lHFuzzPath;
 
-    return execCC(argc + 4, args);
+    return execCC(j, args);
 }
 
 int main(int argc, char **argv)
