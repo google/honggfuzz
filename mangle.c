@@ -92,13 +92,13 @@ static void mangle_MemMove(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
 static void mangle_Byte(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
 {
     size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    fuzzer->dynamicFile[off] = (uint8_t) util_rndGet(0, UINT8_MAX);
+    fuzzer->dynamicFile[off] = (uint8_t) util_rnd64();
 }
 
 static void mangle_Bytes(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
 {
     size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    uint32_t val = (uint32_t) util_rndGet(0, UINT32_MAX);
+    uint32_t val = (uint32_t) util_rnd64();
 
     /* Overwrite with random 2,3,4-byte values */
     size_t toCopy = util_rndGet(2, 4);
@@ -402,6 +402,11 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         return;
     }
 
+    /* 25% chance to change the file size */
+    if ((util_rnd64() % 4) == 0) {
+        mangle_Resize(hfuzz, fuzzer);
+    }
+
     static void (*const mangleFuncs[]) (honggfuzz_t * hfuzz, fuzzer_t * fuzzer) = {
     /*  *INDENT-OFF* */
         mangle_Byte,
@@ -427,16 +432,15 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         mangle_Expand,
         mangle_Shrink,
         mangle_InsertRnd,
-        mangle_Resize,
     /* *INDENT-ON* */
     };
 
-    uint64_t changesCnt = fuzzer->dynamicFileSz * fuzzer->flipRate;
-    if (changesCnt < 3ULL) {
-        /* Mini-max number of changes is 3 */
-        changesCnt = 3;
+    uint64_t changesCnt = (double)fuzzer->dynamicFileSz * fuzzer->flipRate;
+    if (changesCnt < 2) {
+        changesCnt = 1;
+    } else {
+        changesCnt = util_rndGet(1, changesCnt);
     }
-    changesCnt = util_rndGet(1, changesCnt);
 
     for (uint64_t x = 0; x < changesCnt; x++) {
         uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);

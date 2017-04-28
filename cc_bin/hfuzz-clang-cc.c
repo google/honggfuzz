@@ -102,14 +102,15 @@ static int ldMode(int argc, char **argv)
     args[0] = getClangCC();
     args[1] = lHFuzzPath;
     args[2] = "-Wl,--require-defined=__cyg_profile_func_enter";
+    args[3] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
 
     int i;
     for (i = 1; i < argc; i++) {
-        args[i + 2] = argv[i];
+        args[i + 3] = argv[i];
     }
-    args[i + 2] = lHFuzzPath;
+    args[i + 3] = lHFuzzPath;
 
-    return execCC(argc + 3, args);
+    return execCC(argc + 4, args);
 }
 
 int main(int argc, char **argv)

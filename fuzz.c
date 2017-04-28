@@ -347,7 +347,7 @@ static void fuzz_addFileToFileQ(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     memcpy(dynfile->data, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
     MX_SCOPED_LOCK(&hfuzz->dynfileq_mutex);
-    TAILQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
+    TAILQ_INSERT_HEAD(&hfuzz->dynfileq, dynfile, pointers);
     hfuzz->dynfileqCnt++;
 
     /* No need to add new coverage if we are supposed to append new coverage-inducing inputs only */
