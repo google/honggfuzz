@@ -527,8 +527,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     }
 
     if (hfuzz->fuzzStdin && hfuzz->persistent) {
-      LOG_E("Stdin fuzzing (-s) and persistent fuzzing (-P) cannot be specified at the same time");
-      return false;
+        LOG_E
+            ("Stdin fuzzing (-s) and persistent fuzzing (-P) cannot be specified at the same time");
+        return false;
     }
 
     if (hfuzz->threadsMax >= _HF_THREAD_MAX) {

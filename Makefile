@@ -24,6 +24,7 @@
 CC ?= gcc
 LD = $(CC)
 BIN := honggfuzz
+CC_BIN := cc_bin/hfuzz-clang-cc
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=131072
 COMMON_LDFLAGS := -lm
 COMMON_SRCS := $(wildcard *.c)
@@ -148,7 +149,7 @@ LIBS_OBJS := $(LIBS_SRCS:.c=.o)
 HFUZZ_ARCH := libhfuzz/libhfuzz.a
 
 # Respect external user defines
-CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH}
+CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH} "-D_HF_BUILD_DIR=`pwd`"
 LDFLAGS += $(COMMON_LDFLAGS) $(ARCH_LDFLAGS)
 
 ifeq ($(DEBUG),true)
@@ -218,7 +219,7 @@ SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
 MAC_GARGBAGE := $(wildcard mac/mach_exc*)
 ANDROID_GARBAGE := obj libs
 
-all: $(BIN) $(HFUZZ_ARCH)
+all: $(BIN) $(CC_BIN) $(HFUZZ_ARCH)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
@@ -240,7 +241,7 @@ $(HFUZZ_ARCH): $(LIBS_OBJS)
 
 .PHONY: clean
 clean:
-	$(RM) -r core $(OBJS) $(BIN) $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
+	$(RM) -r core $(OBJS) $(BIN) $(CC_BIN) $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
 
 .PHONY: indent
 indent:
