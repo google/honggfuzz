@@ -24,7 +24,7 @@
 CC ?= gcc
 LD = $(CC)
 BIN := honggfuzz
-CC_BIN := cc_bin/hfuzz-clang-cc
+CC_BIN := hfuzz_cc/hfuzz-clang-cc
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=131072
 COMMON_LDFLAGS := -lm
 COMMON_SRCS := $(wildcard *.c)
