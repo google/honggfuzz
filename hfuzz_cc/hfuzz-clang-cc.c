@@ -27,15 +27,6 @@ __asm__("\n"
         "	.global lhfuzz_end\n"
         "lhfuzz_start:\n" "	.incbin \"libhfuzz/libhfuzz.a\"\n" "lhfuzz_end:\n" "\n");
 
-static const char *getClangCC()
-{
-    const char *cc_path = getenv("HFUZZ_CC_PATH");
-    if (cc_path != NULL) {
-        return cc_path;
-    }
-    return CLANG_BIN;
-}
-
 static bool useASAN()
 {
     if (getenv("HFUZZ_CC_ASAN") != NULL) {
@@ -87,9 +78,19 @@ static int execCC(int argc, char **argv)
     if (useUBSAN()) {
         argv[argc++] = "-fsanitize=undefined";
     }
-
     argv[argc] = NULL;
-    execvp(argv[0], argv);
+
+    const char *cc_path = getenv("HFUZZ_CC_PATH");
+    if (cc_path != NULL) {
+        execvp(cc_path, argv);
+    }
+
+    execvp("clang-devel", argv);
+    execvp("clang-6.0", argv);
+    execvp("clang-5.0", argv);
+    execvp("clang-4.0", argv);
+    execvp("clang", argv);
+
     PLOG_E("execvp('%s')", argv[0]);
     return EXIT_FAILURE;
 }
@@ -99,7 +100,7 @@ static int ccMode(int argc, char **argv)
     char *args[4096];
 
     int j = 0;
-    args[j++] = (char*)getClangCC();
+    args[j++] = "clang";
     args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
     args[j++] = "-funroll-loops";
     args[j++] = "-fno-inline";
@@ -160,7 +161,7 @@ static int ldMode(int argc, char **argv)
     char *args[4096];
 
     int j = 0;
-    args[j++] = (char*)getClangCC();
+    args[j++] = "clang";
     args[j++] = "-Wl,-z,muldefs";
     args[j++] = "-Wl,--whole-archive";
     args[j++] = LHFUZZ_A_PATH;
@@ -181,6 +182,10 @@ static int ldMode(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+    if (argc <= 1) {
+        LOG_I("No arguments provided");
+        return execCC(argc, argv);
+    }
     if (argc > (ARGS_MAX - 4)) {
         LOG_F("Too many positional arguments: %d", argc);
         return EXIT_FAILURE;
