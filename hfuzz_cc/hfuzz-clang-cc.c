@@ -1,5 +1,4 @@
 #include <errno.h>
-#include <error.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
