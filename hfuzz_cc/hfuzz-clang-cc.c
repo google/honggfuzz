@@ -1,3 +1,5 @@
+#include "../common.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -11,6 +13,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "../files.h"
+#include "../log.h"
+
 #define ARGS_MAX 4096
 #define __XSTR(x) #x
 #define _XSTR(x) __XSTR(x)
@@ -22,13 +27,13 @@ __asm__("\n"
         "	.global lhfuzz_end\n"
         "lhfuzz_start:\n" "	.incbin \"libhfuzz/libhfuzz.a\"\n" "lhfuzz_end:\n" "\n");
 
-static char *getClangCC()
+static const char *getClangCC()
 {
     const char *cc_path = getenv("HFUZZ_CC_PATH");
     if (cc_path != NULL) {
-        return (char *)cc_path;
+        return cc_path;
     }
-    return (char *)CLANG_BIN;
+    return CLANG_BIN;
 }
 
 static bool useASAN()
@@ -85,7 +90,7 @@ static int execCC(int argc, char **argv)
 
     argv[argc] = NULL;
     execvp(argv[0], argv);
-    perror("execv");
+    PLOG_E("execvp('%s')", argv[0]);
     return EXIT_FAILURE;
 }
 
@@ -94,7 +99,7 @@ static int ccMode(int argc, char **argv)
     char *args[4096];
 
     int j = 0;
-    args[j++] = getClangCC();
+    args[j++] = (char*)getClangCC();
     args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
     args[j++] = "-funroll-loops";
     args[j++] = "-fno-inline";
@@ -105,22 +110,6 @@ static int ccMode(int argc, char **argv)
     }
 
     return execCC(j, args);
-}
-
-static bool writeToFd(int fd, const uint8_t * buf, size_t len)
-{
-    size_t writtenSz = 0;
-    while (writtenSz < len) {
-        ssize_t sz = write(fd, &buf[writtenSz], len - writtenSz);
-        if (sz < 0 && errno == EINTR)
-            continue;
-
-        if (sz < 0)
-            return false;
-
-        writtenSz += sz;
-    }
-    return (writtenSz == len);
 }
 
 static bool getLibHfuzz(void)
@@ -141,21 +130,21 @@ static bool getLibHfuzz(void)
     char template[] = "/tmp/libhfuzz.a.XXXXXX";
     int fd = mkostemp(template, O_CLOEXEC);
     if (fd == -1) {
-        perror("mkostemp('/tmp/libhfuzz.a.XXXXXX')");
+        PLOG_E("mkostemp('%s')", template);
         return false;
     }
 
-    bool ret = writeToFd(fd, &lhfuzz_start, len);
-    close(fd);
+    bool ret = files_writeToFd(fd, &lhfuzz_start, len);
     if (!ret) {
-        fprintf(stderr, "Couldn't write to '%s'", template);
+        PLOG_E("Couldn't write to '%s'", template);
         close(fd);
         return false;
     }
+    close(fd);
 
     if (rename(template, LHFUZZ_A_PATH) == -1) {
+        PLOG_E("Couldn't rename('%s', '%s')", template, LHFUZZ_A_PATH);
         unlink(template);
-        fprintf(stderr, "Couldn't rename('%s', '%s')", template, LHFUZZ_A_PATH);
         return false;
     }
 
@@ -171,7 +160,7 @@ static int ldMode(int argc, char **argv)
     char *args[4096];
 
     int j = 0;
-    args[j++] = getClangCC();
+    args[j++] = (char*)getClangCC();
     args[j++] = "-Wl,-z,muldefs";
     args[j++] = "-Wl,--whole-archive";
     args[j++] = LHFUZZ_A_PATH;
@@ -193,7 +182,7 @@ static int ldMode(int argc, char **argv)
 int main(int argc, char **argv)
 {
     if (argc > (ARGS_MAX - 4)) {
-        fprintf(stderr, "Too many positional arguments\n");
+        LOG_F("Too many positional arguments: %d", argc);
         return EXIT_FAILURE;
     }
 
