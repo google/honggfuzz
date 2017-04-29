@@ -172,6 +172,7 @@ static int ldMode(int argc, char **argv)
 
     int j = 0;
     args[j++] = getClangCC();
+    args[j++] = "-Wl,-z,muldefs";
     args[j++] = "-Wl,--whole-archive";
     args[j++] = LHFUZZ_A_PATH;
     args[j++] = "-Wl,--no-whole-archive";
