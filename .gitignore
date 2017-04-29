@@ -4,6 +4,7 @@
 *.dSYM
 *.a
 honggfuzz
+hfuzz_cc/hfuzz-clang-cc
 mac/mach_exc.h
 mac/mach_excUser.c
 mac/mach_excServer.h
