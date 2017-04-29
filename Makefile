@@ -25,6 +25,7 @@ CC ?= gcc
 LD = $(CC)
 BIN := honggfuzz
 CC_BIN := hfuzz_cc/hfuzz-clang-cc
+CC_SRCS := hfuzz_cc/hfuzz-clang-cc.c
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=131072
 COMMON_LDFLAGS := -lm
 COMMON_SRCS := $(wildcard *.c)
@@ -149,7 +150,7 @@ LIBS_OBJS := $(LIBS_SRCS:.c=.o)
 HFUZZ_ARCH := libhfuzz/libhfuzz.a
 
 # Respect external user defines
-CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH} "-D_HF_BUILD_DIR=`pwd`"
+CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH}
 LDFLAGS += $(COMMON_LDFLAGS) $(ARCH_LDFLAGS)
 
 ifeq ($(DEBUG),true)
@@ -232,6 +233,9 @@ all: $(BIN) $(CC_BIN) $(HFUZZ_ARCH)
 
 $(BIN): $(OBJS)
 	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
+
+$(CC_BIN): $(HFUZZ_ARCH) $(CC_SRCS)
+	$(LD) -o $(CC_BIN) $(CFLAGS) $(CC_SRCS)
 
 $(LIBS_OBJS): $(LIBS_SRCS)
 	$(CC) -fPIC -c -fno-builtin $(CFLAGS) -fno-stack-protector -o $@ $(@:.o=.c)
