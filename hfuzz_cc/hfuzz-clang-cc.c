@@ -183,11 +183,11 @@ static int ldMode(int argc, char **argv)
 int main(int argc, char **argv)
 {
     if (argc <= 1) {
-        LOG_I("No arguments provided");
+        LOG_I("'%s': No arguments provided", argv[0]);
         return execCC(argc, argv);
     }
     if (argc > (ARGS_MAX - 4)) {
-        LOG_F("Too many positional arguments: %d", argc);
+        LOG_F("'%s': Too many positional arguments: %d", argv[0], argc);
         return EXIT_FAILURE;
     }
 
