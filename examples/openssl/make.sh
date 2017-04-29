@@ -5,10 +5,15 @@ set -e
 
 TYPE="$1"
 SAN="$2"
-COMMON_FLAGS="-DBORINGSSL_UNSAFE_DETERMINISTIC_MODE -DBORINGSSL_UNSAFE_FUZZER_MODE -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -DBN_DEBUG -O3 -g -DFuzzerInitialize=LLVMFuzzerInitialize -DFuzzerTestOneInput=LLVMFuzzerTestOneInput -ldl -lpthread -lz"
+COMMON_FLAGS="-DBORINGSSL_UNSAFE_DETERMINISTIC_MODE -DBORINGSSL_UNSAFE_FUZZER_MODE -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -DBN_DEBUG -O3 -g -DFuzzerInitialize=LLVMFuzzerInitialize -DFuzzerTestOneInput=LLVMFuzzerTestOneInput -lpthread -lz"
+OS=`uname -s`
 HFUZZ_SRC=~/src/honggfuzz/
 CC="$HFUZZ_SRC/hfuzz_cc/hfuzz-clang-cc"
 CXX="clang++"
+
+if [ "$OS" -eq "Linux" ]; then
+		COMMON_FLAGS="$COMMON_FLAGS -ldl"
+fi
 
 if [ -z "$TYPE" ]; then
 		echo "$0" DIR SANITIZE
