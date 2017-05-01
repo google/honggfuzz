@@ -115,8 +115,8 @@ static int ccMode(int argc, char **argv)
 
 static bool getLibHfuzz(void)
 {
-    extern uint8_t lhfuzz_start __asm__ ("lhfuzz_start");
-    extern uint8_t lhfuzz_end __asm__ ("lhfuzz_end");
+    extern uint8_t lhfuzz_start __asm__("lhfuzz_start");
+    extern uint8_t lhfuzz_end __asm__("lhfuzz_end");
 
     ptrdiff_t len = (uintptr_t) & lhfuzz_end - (uintptr_t) & lhfuzz_start;
 
