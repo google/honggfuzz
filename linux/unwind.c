@@ -162,7 +162,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
             LOG_E("[pid='%d'] [%zd] failed to read IP (%s)", pid, num_frames, UNW_ER[-ret]);
             funcs[num_frames].pc = 0;
         } else {
-            funcs[num_frames].pc = (void *)ip;
+            funcs[num_frames].pc = (void *)(uintptr_t) ip;
         }
         if (mapsCnt > 0 && (mapName = arch_searchMaps(ip, mapsCnt, mapsList)) != NULL) {
             memcpy(funcs[num_frames].mapName, mapName, sizeof(funcs[num_frames].mapName));

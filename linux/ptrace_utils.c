@@ -65,7 +65,7 @@
 #define REG_TYPE uint32_t
 #define REG_PM   PRIx32
 #define REG_PD   "0x%08"
-#elif defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__)
+#elif defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__) || defined(__mips__) || defined(__mips64__)
 #define REG_TYPE uint64_t
 #define REG_PM   PRIx64
 #define REG_PD   "0x%016"
@@ -82,6 +82,8 @@
 #elif defined(__arm__) || defined(__powerpc__) || defined(__powerpc64__)
 #define MAX_INSTR_SZ 4
 #elif defined(__aarch64__)
+#define MAX_INSTR_SZ 8
+#elif defined(__mips__) || defined(__mips64__)
 #define MAX_INSTR_SZ 8
 #endif
 
@@ -215,6 +217,20 @@ struct user_regs_struct_64 {
     uint64_t zero3;
 };
 #endif                          /* defined(__powerpc64__) || defined(__powerpc__) */
+
+#if defined(__mips__) || defined(__mips64__)
+struct user_regs_struct {
+    uint64_t regs[32];
+
+    uint64_t lo;
+    uint64_t hi;
+    uint64_t cp0_epc;
+    uint64_t cp0_badvaddr;
+    uint64_t cp0_status;
+    uint64_t cp0_cause;
+};
+#define HEADERS_STRUCT struct user_regs_struct
+#endif                          /* defined(__mips__) || defined(__mips64__) */
 
 #if defined(__ANDROID__)
 #if defined(__NR_process_vm_readv)
@@ -450,6 +466,11 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg UNUSED)
     LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
     return 0;
 #endif                          /* defined(__powerpc64__) || defined(__powerpc__) */
+
+#if defined(__mips__) || defined(__mips64__)
+    *pc = regs.cp0_epc;
+    return pt_iov.iov_len;
+#endif                          /* defined(__mips__) || defined(__mips64__) */
 
     LOG_D("Unknown/unsupported CPU architecture");
     return 0;
