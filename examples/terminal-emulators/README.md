@@ -43,7 +43,7 @@ $ mkdir IN
 $ echo A >IN/1
 ```
 
-## Step4: Launch it! ##
+## Step 4: Launch it! ##
 
 ```
 $ /home/jagger/src/honggfuzz/honggfuzz -z -P -f IN/ -F1024 -E LD_PRELOAD=/home/jagger/src/honggfuzz/examples/terminal-emulators/libclose.so -- xterm-327/xterm -e /home/jagger/src/honggfuzz/examples/terminal-emulators/terminal-test
