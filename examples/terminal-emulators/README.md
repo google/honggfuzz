@@ -15,7 +15,7 @@ accumulation) will not be closed by the fuzzed binary.
 
 The *terminal-test* program will feed the terminal emulator with data from the
 fuzzing engine, and will try to read back any data that the terminal can produce.
-See _Bonus: term.log_ secion on why it might matter.
+See the _Bonus: term.log_ secion on why it might matter.
 
 ## Step 2: Instrument your terminal emulator ##
 
@@ -51,7 +51,7 @@ $ echo A >IN/1
 ## Step 4: Launch it! ##
 
 ```
-$ /home/jagger/src/honggfuzz/honggfuzz -z -P -f IN/ -F1024 -E LD_PRELOAD=/home/jagger/src/honggfuzz/examples/terminal-emulators/libclose.so -- xterm-327/xterm -e /home/jagger/src/honggfuzz/examples/terminal-emulators/terminal-test
+$ /home/jagger/src/honggfuzz/honggfuzz -z -P -f IN/ -E LD_PRELOAD=/home/jagger/src/honggfuzz/examples/terminal-emulators/libclose.so -- xterm-327/xterm -e /home/jagger/src/honggfuzz/examples/terminal-emulators/terminal-test
 ```
 
 Typical output:
