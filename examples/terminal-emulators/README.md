@@ -79,7 +79,7 @@ The _term.log_ file will contain interesting data which can be fetched from the
 terminal emulator's input buffer. It will typically contains responses to ESC
 sequences requesting info about terminal size, or about the current color map.
 But, if you notice there arbitrary or binary data, basically something that
-a typical terminal shouldn't responsd with, try to investigate as. You might
+a typical terminal shouldn't responsd with, try to investigate it. You might
 have just found and interesting case of RCE, where arbitrary data can
 be pushed into terminal's input buffer, and then read back with whatever runs
 under said emulator (e.g. /bin/bash)
