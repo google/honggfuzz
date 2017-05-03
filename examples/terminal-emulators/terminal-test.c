@@ -54,6 +54,9 @@ static bool isInteresting(const char* s, size_t len)
         if (s[i] == 'R') {
             continue;
         }
+        if (s[i] == '\0') {
+            continue;
+        }
         if (isdigit(s[i])) {
             continue;
         }
