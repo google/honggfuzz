@@ -13,10 +13,10 @@ cc -std=c99  -shared -o libclose.so libclose.c
 prevent filedescriptors 1022 and 1023 (used by honggfuzz for coverage feedback
 accumulation) will not be closed by the fuzzed binary.
 
-**Step2: Prepare your terminal emulator**
+**Step2: Instrument your terminal emulator**
 
 Add compiler-time instrumentation to your fuzzed terminal emulator. Typically it
-would consistent of the following sequence of commands (for xterm):
+would consist of the following sequence of commands (for xterm):
 
 ```
 $ cd xterm-327
@@ -26,8 +26,7 @@ $ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX=$CC ./configure
 $ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX=$CC make -j4
 ```
 
-Alternatively, you might want to compile it with ASAN enabled for better detection of memory problems
-
+Alternatively, you might want to compile it with ASAN enabled, for better detection of memory corruption problems
 
 ```
 $ cd xterm-327
@@ -78,6 +77,7 @@ The _term.log_ file will contain interesting data which can be fetched from the
 terminal emulator's input buffer. It will typically contains responses to ESC
 sequences requesting info about terminal size, or about the current color map.
 But, if you notice there arbitrary or binary data, basically something that
-a typical terminal shouldn't responsd with, try to investigate, as you might
-have just found and interesting case of RCE, where output ESC sequences can push
-arbitrary data into terminal's input buffer.
+a typical terminal shouldn't responsd with, try to investigate as. You might
+have just found and interesting case of RCE, where arbitrary data can
+be pushed into terminal's input buffer, and then read back with whatever runs
+under said emulator (e.g. /bin/bash)
