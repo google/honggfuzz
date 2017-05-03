@@ -15,4 +15,4 @@ $(LIBCLOSE): $(LIBCLOSE:.so=.c)
 	$(CC) $(CFLAGS) $(LDFLAGS) -shared -o $(LIBCLOSE) $<
 
 clean:
-	rm -f $(BIN) $(LIBCLOSE)
+	rm -f -- $(BIN) $(LIBCLOSE)
