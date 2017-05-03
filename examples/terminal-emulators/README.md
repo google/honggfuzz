@@ -9,9 +9,13 @@ $ make
 cc -std=c99  -shared -o libclose.so libclose.c
 ```
 
-*libclose.so* serves one purpose: when preloaded (with LD_PRELOAD) it will
+*libclose.so* serves one purpose one: when preloaded (with LD_PRELOAD) it will
 prevent file-descriptors *1022* and *1023* (used by honggfuzz for coverage feedback
 accumulation) will not be closed by the fuzzed binary.
+
+The *terminal-test* program will feed the terminal emulator with data from the
+fuzzing engine, and will try to read back any data that the terminal can produce.
+See _Bonus: term.log_ secion on why it might matter.
 
 ## Step 2: Instrument your terminal emulator ##
 
@@ -26,7 +30,8 @@ $ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX=$CC ./configure
 $ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX=$CC make -j4
 ```
 
-Alternatively, you might want to compile it with ASAN enabled, for better detection of memory corruption problems
+Alternatively, you might want to compile it with ASAN enabled, for better
+detection of memory corruption problems
 
 ```
 $ cd xterm-327
