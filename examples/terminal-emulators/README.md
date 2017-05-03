@@ -1,6 +1,6 @@
 # Fuzzing terminal emulators #
 
-## Step1: Prepare libclose and terminal-test ##
+## Step 1: Prepare libclose and terminal-test ##
 
 ```
 $ cd /home/jagger/src/honggfuzz/examples/terminal-emulators/
@@ -10,10 +10,10 @@ cc -std=c99  -shared -o libclose.so libclose.c
 ```
 
 *libclose.so* serves one purpose: when preloaded (with LD_PRELOAD) it will
-prevent filedescriptors 1022 and 1023 (used by honggfuzz for coverage feedback
+prevent file-descriptors *1022* and *1023* (used by honggfuzz for coverage feedback
 accumulation) will not be closed by the fuzzed binary.
 
-## Step2: Instrument your terminal emulator ##
+## Step 2: Instrument your terminal emulator ##
 
 Add compiler-time instrumentation to your fuzzed terminal emulator. Typically it
 would consist of the following sequence of commands (for xterm):
@@ -36,7 +36,7 @@ $ HFUZZ_CC_ASAN=1 CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX=$CC 
 $ HFUZZ_CC_ASAN=1 CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX=$CC make -j4
 ```
 
-## Step3: Create the initial input corpus (can consist of a single file) ##
+## Step 3: Create the initial input corpus (can consist of a single file) ##
 
 ```
 $ mkdir IN
