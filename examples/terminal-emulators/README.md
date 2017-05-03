@@ -46,7 +46,7 @@ $ echo A >IN/1
 **Step4: Launch it!**
 
 ```
-$ /home/jagger/src/honggfuzz/honggfuzz -z -P -f IN/ -F1024 -E LD_PRELOAD=/home/jagger/src/honggfuzz/examples/terminal-emulators/libclose.so -- ./xterm -e /home/jagger/src/honggfuzz/examples/terminal-emulators/terminal-test
+$ /home/jagger/src/honggfuzz/honggfuzz -z -P -f IN/ -F1024 -E LD_PRELOAD=/home/jagger/src/honggfuzz/examples/terminal-emulators/libclose.so -- xterm-327/xterm -e /home/jagger/src/honggfuzz/examples/terminal-emulators/terminal-test
 ```
 
 Typical output:
@@ -69,6 +69,8 @@ NEW, size:940 (i,b,sw,hw,cmp): 0/0/1/0/32, Tot:0/0/773/0/32248
 NEW, size:919 (i,b,sw,hw,cmp): 0/0/0/0/9, Tot:0/0/773/0/32257
 NEW, size:1024 (i,b,sw,hw,cmp): 0/0/0/0/2, Tot:0/0/773/0/32259
 NEW, size:1013 (i,b,sw,hw,cmp): 0/0/0/0/1, Tot:0/0/773/0/32260
+...
+...
 ```
 
 **Bonus: term.log**
