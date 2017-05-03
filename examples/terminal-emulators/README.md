@@ -3,11 +3,10 @@
 **Step1: Compile libclose and terminal-test**
 
 ```
-$ cd examples/terminal-emulators/
+$ cd /home/jagger/src/honggfuzz/examples/terminal-emulators/
 $ make
 ../../hfuzz_cc/hfuzz-clang-cc -std=c99  -o terminal-test terminal-test.c
 cc -std=c99  -shared -o libclose.so libclose.c
-$
 ```
 
 *libclose.so* serves one purpose: when preloaded (with LD_PRELOAD) it will
