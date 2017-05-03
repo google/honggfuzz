@@ -35,7 +35,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
 
 static bool isInteresting(const char* s, size_t len)
 {
-    for (size_t i = i; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         if (s[i] == '[') {
             continue;
         }
