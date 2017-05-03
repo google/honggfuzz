@@ -41,7 +41,9 @@ $ HFUZZ_CC_ASAN=1 CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX=$CC 
 $ HFUZZ_CC_ASAN=1 CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX=$CC make -j4
 ```
 
-## Step 3: Create the initial input corpus (can consist of a single file) ##
+## Step 3: Create initial input corpus ##
+
+It can consist even of a single file.
 
 ```
 $ mkdir IN
