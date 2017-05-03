@@ -1,6 +1,6 @@
 # Fuzzing terminal emulators #
 
-**Step1: Compile libclose and terminal-test**
+## Step1: Prepare libclose and terminal-test ##
 
 ```
 $ cd /home/jagger/src/honggfuzz/examples/terminal-emulators/
@@ -13,7 +13,7 @@ cc -std=c99  -shared -o libclose.so libclose.c
 prevent filedescriptors 1022 and 1023 (used by honggfuzz for coverage feedback
 accumulation) will not be closed by the fuzzed binary.
 
-**Step2: Instrument your terminal emulator**
+## Step2: Instrument your terminal emulator ##
 
 Add compiler-time instrumentation to your fuzzed terminal emulator. Typically it
 would consist of the following sequence of commands (for xterm):
@@ -36,14 +36,14 @@ $ HFUZZ_CC_ASAN=1 CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX=$CC 
 $ HFUZZ_CC_ASAN=1 CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX=$CC make -j4
 ```
 
-**Step3: Create the initial input corpus (can consist of a single file)**
+## Step3: Create the initial input corpus (can consist of a single file) ##
 
 ```
 $ mkdir IN
 $ echo A >IN/1
 ```
 
-**Step4: Launch it!**
+## Step4: Launch it! ##
 
 ```
 $ /home/jagger/src/honggfuzz/honggfuzz -z -P -f IN/ -F1024 -E LD_PRELOAD=/home/jagger/src/honggfuzz/examples/terminal-emulators/libclose.so -- xterm-327/xterm -e /home/jagger/src/honggfuzz/examples/terminal-emulators/terminal-test
@@ -73,13 +73,13 @@ NEW, size:1013 (i,b,sw,hw,cmp): 0/0/0/0/1, Tot:0/0/773/0/32260
 ...
 ```
 
-**Bonus: term.log**
+## Bonus: term.log ##
 
-The _term.log_ file will contain interesting data which can be fetched from the
+The *term.log* file will contain interesting data which can be fetched from the
 terminal emulator's input buffer. It will typically contains responses to ESC
 sequences requesting info about terminal size, or about the current color map.
 But, if you notice there arbitrary or binary data, basically something that
 a typical terminal shouldn't responsd with, try to investigate it. You might
 have just found and interesting case of RCE, where arbitrary data can
-be pushed into terminal's input buffer, and then read back with whatever runs
-under said emulator (e.g. /bin/bash)
+be pushed into terminal's input buffer, and then read back (and potentially
+executed) with whatever runs under said emulator (e.g. _/bin/bash_)
