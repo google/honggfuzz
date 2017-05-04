@@ -4,65 +4,56 @@
 
   * honggfuzz
   * clang-4.0, or newer (5.0 works as well)
-  * openssl-1.1.0[a-d].tgz, or newer
+  * openssl (1.1.0, or newer)
 
 **Preparation**
 
 1. Compile honggfuzz
-2. Unpack openssl-1.1.0[a-d].tgz
-3. Patch OpenSSL
-
-  ```
-  $ cd openssl-1.1.0e
-  $ patch -p1 < /tmp/openssl-1.1.0e.honggfuzz.patch
-  ```
-4. Configure and compile OpenSSL
+2. Unpack OpenSSL
+3. Configure and compile OpenSSL
 
   ```
   $ make distclean
-  $ CC=clang-4.0 ./config enable-fuzz-hfuzz
+  $ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc ./config enable-aria enable-heartbeats enable-md2 enable-rc5 enable-ssl3 enable-ssl3-method enable-tls13downgrade enable-tls1_3 enable-weak-ssl-ciphers
   $ make -j4
   ```
-5. Prepare fuzzing binaries
+4. Prepare fuzzing binaries
 
-  ```
-  $ clang-4.0 -o persistent.server.openssl.1.1.0d -I./openssl-1.1.0e/include server.c ./openssl-1.1.0e/libssl.a ./openssl-1.1.0e/libcrypto.a ~/honggfuzz/libhfuzz/libhfuzz.a  -ldl -lpthread
-  $ clang-4.0 -o persistent.client.openssl.1.1.0d -I./openssl-1.1.0e/include client.c ./openssl-1.1.0e/libssl.a ./openssl-1.1.0e/libcrypto.a ~/honggfuzz/libhfuzz/libhfuzz.a  -ldl -lpthread
-  $ clang-4.0 -o persistent.x509.openssl.1.1.0d -I./openssl-1.1.0e/include x509.c ./openssl-1.1.0e/libssl.a ./openssl-1.1.0e/libcrypto.a ~/honggfuzz/libhfuzz/libhfuzz.a  -ldl -lpthread
-  ```
+```
+  $ /home/jagger/src/honggfuzz/examples/openssl/make.sh master
+```
 
 **Fuzzing**
 
   ```
-  $ ~/honggfuzz/honggfuzz -z -P -f corpus_server -q -- ./persistent.server.openssl.1.1.0d
-  $ ~/honggfuzz/honggfuzz -z -P -f corpus_client -q -- ./persistent.client.openssl.1.1.0d
-  $ ~/honggfuzz/honggfuzz -z -P -f corpus_x509 -q -- ./persistent.x509.openssl.1.1.0d
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.server/ -z -P -q -- ./persistent.server.openssl.master
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.client/ -z -P -q -- ./persistent.client.openssl.master
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.cert/ -z -P -q -- ./persistent.x509.openssl.master
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.privkey/ -z -P -q -- ./persistent.privkey.openssl.master
   ```
 
 **Use of sanitizers**
 
 ***ASAN***
-   * Configure OpenSSL
+   * Configure OpenSSL with ASAN
 ```
-$ CC=clang-4.0 ./config enable-fuzz-hfuzz enable-asan
+  $ make distclean
+  $ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc ./config enable-aria enable-heartbeats enable-md2 enable-rc5 enable-ssl3 enable-ssl3-method enable-tls13downgrade enable-tls1_3 enable-weak-ssl-ciphers enable-asan
 ```
-   * Compile the binaries with
+   * Compile binaries with
 
 ```
-$ clang-4.0 ~/honggfuzz/libhfuzz/instrument.o -I./openssl-1.1.0e/include server.c ./openssl-1.1.0e/libssl.a ./openssl-1.1.0e/libcrypto.a -o persistent.server.openssl.1.1.0d.asan ~/honggfuzz/libhfuzz/libhfuzz.a -ldl -lpthread -fsanitize=address
+  $ /home/jagger/src/honggfuzz/examples/openssl/make.sh master address
 ```
-
-PS. Note the additional _instrument.o_ object file at the beginning of the command-line shown above. It's
-requires here, because when _-fsanitize=address_ (or: _memory/undefined_) is in use, clang will
-unconditionally link the final binary with _libFuzzer.a_. This will
-override some important symbols from libhfuzz.a used for coverage counting in honggfuzz.
 
    * Run honggfuzz with the *-S* flag to support the sanitizer exit codes and reporting
 
 ```
-$ ~/honggfuzz/honggfuzz -z -P -f corpus_server -q -S -- ./persistent.server.openssl.1.1.0d.asan
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.server/ -z -P -q -S -- ./persistent.server.openssl.master.address
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.client/ -z -P -q -S -- ./persistent.client.openssl.master.address
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.cert/ -z -P -q -S -- ./persistent.x509.openssl.master.address
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.privkey/ -z -P -q -S -- ./persistent.privkey.openssl.master.address
 ```
-
 ***MSAN/UBSAN***
 
 As with ASAN
@@ -74,7 +65,7 @@ Because some bugs may affect 32-builds only (e.g.: the [CVE-2017-3731](https://w
 1. Configure and compile OpenSSL
 
   ```
-  $ CC=clang-4.0 linux32 ./config enable-fuzz-hfuzz enable-32
+  $ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc linux32 ./config <other_options>
   $ make -j4
   ```
 2. Prepare 32-bit version of libhfuzz.a
@@ -87,10 +78,7 @@ Because some bugs may affect 32-builds only (e.g.: the [CVE-2017-3731](https://w
 3. Link the final binaries
 
   ```
-  $ clang-4.0 -I./openssl-1.1.0e/include server.c ./openssl-1.1.0e/libssl.a ./openssl-1.1.0e/libcrypto.a -o persistent.server.openssl.1.1.0d.32 ~/honggfuzz/libhfuzz/libhfuzz.a  -ldl -lpthread -m32
-  ```
-4. Fuzz it!
+  (patch the CFLAGS make.sh to include -m32), and
 
-  ```
-  $ ~/honggfuzz/honggfuzz -z -P -f IN.server/ -q -- ./persistent.server.openssl.1.1.0d.32
+  $ /home/jagger/src/honggfuzz/examples/openssl/make.sh master address
   ```
