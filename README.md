@@ -4,6 +4,8 @@
 
 A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See [USAGE](docs/USAGE.md) for details
 
+  * Easy-to-use, just provide it with input corpus (can consist of a single file) and it will work to expand it using feedback-based coverage metrics
+  * Has a nice track record of uncovered security bugs: e.g. the only vulnerability in OpenSSL with the 'critical' score mark had been discovered by honggfuzz
   * Supports several hardware-based (CPU: branch/instruction counting, Intel BTS, Intel PT) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) methods
   * It works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md)
   * Supports persistent modes of fuzzing (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)
@@ -11,7 +13,7 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
 **Code**
 
-  * Latest stable version: [0.9](https://github.com/google/honggfuzz/releases/tag/0.9), or simply use the master branch
+  * Latest stable version: [0.9](https://github.com/google/honggfuzz/releases/tag/0.9), but you're encouraged to use the master branch
   * [Changelog](https://github.com/google/honggfuzz/blob/master/CHANGELOG)
 
 **Requirements**
@@ -38,7 +40,7 @@ The tool has been used to find a few interesting security problems in major soft
   * [Remote DoS in Crypto++ • CVE-2016-9939](http://www.openwall.com/lists/oss-security/2016/12/12/7)
   * OpenSSL
     * [Remote OOB read • CVE-2015-1789]( https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-1789)
-    * [Remote Use-after-Free (potential RCE) • CVE-2016-6309](https://www.openssl.org/news/secadv/20160926.txt)
+    * [Remote Use-after-Free (potential RCE, rated as 'critical') • CVE-2016-6309](https://www.openssl.org/news/secadv/20160926.txt)
     * [Remote OOB write • CVE-2016-7054](https://www.openssl.org/news/secadv/20161110.txt)
     * [Remote OOB read • CVE-2017-3731](https://www.openssl.org/news/secadv/20170126.txt)
   * ... and more
