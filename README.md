@@ -5,7 +5,7 @@
 A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See [USAGE](docs/USAGE.md) for details
 
   * Easy-to-use, just provide it with input corpus (can consist of a single file) and it will work to expand it using feedback-based coverage metrics
-  * Has a nice track record of uncovered security bugs: e.g. the only vulnerability in OpenSSL with the 'critical' score mark had been discovered by honggfuzz
+  * Has a nice track record of uncovered security bugs: e.g. the only vulnerability in OpenSSL with the __critical__ score mark had been discovered by honggfuzz
   * Supports several hardware-based (CPU: branch/instruction counting, Intel BTS, Intel PT) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) methods
   * It works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md)
   * Supports persistent modes of fuzzing (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)
