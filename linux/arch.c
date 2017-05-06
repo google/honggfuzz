@@ -196,8 +196,16 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     /*
      * Kill the children when fuzzer dies (e.g. due to Ctrl+C)
      */
-    if (prctl(PR_SET_PDEATHSIG, (long)SIGKILL, 0L, 0L, 0L) == -1) {
+    if (prctl(PR_SET_PDEATHSIG, (long)SIGKILL, 0UL, 0UL, 0UL) == -1) {
         PLOG_E("prctl(PR_SET_PDEATHSIG, SIGKILL) failed");
+        return false;
+    }
+
+    /*
+     * Make it attach-able by ptrace()
+     */
+    if (prctl(PR_SET_DUMPABLE, 1UL, 0UL, 0UL, 0UL) == -1) {
+        PLOG_E("prctl(PR_SET_DUMPABLE, 1)");
         return false;
     }
 
