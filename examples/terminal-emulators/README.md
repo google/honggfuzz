@@ -1,6 +1,6 @@
 # Fuzzing terminal emulators #
 
-## Step 1: Prepare libclose and terminal-test ##
+## Step 1: Prepare libclose.so and terminal-test ##
 
 ```
 $ cd /home/jagger/src/honggfuzz/examples/terminal-emulators/
@@ -9,9 +9,10 @@ $ make
 cc -std=c99  -shared -o libclose.so libclose.c
 ```
 
-*libclose.so* serves one purpose one: when preloaded (with LD_PRELOAD) it will
-prevent file-descriptors *1022* and *1023* (used by honggfuzz for coverage feedback
-accumulation) will not be closed by the fuzzed binary.
+*libclose.so* serves one purpose only: when preloaded (with _LD_PRELOAD=libclose.so_)
+it will prevent file-descriptors *1022* and *1023* (used by honggfuzz for coverage
+feedback accumulation) will not be closed by the fuzzed binary (terminal emulator)
+before passing to the _terminal-test_ binary.
 
 The *terminal-test* program will feed the terminal emulator with data from the
 fuzzing engine, and will try to read back any data that the terminal can produce.
