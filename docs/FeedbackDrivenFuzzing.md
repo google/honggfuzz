@@ -14,7 +14,7 @@ Developers should provide the initial file corpus which will be gradually improv
   * `-fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp` - Clang >= 4.0
   * `-fsanitize-coverage=bb` - Clang >= 3.7
   * `-finstrument-functions` - GCC or Clang
-  * [older, slower variant] `-fsanitize-coverage=trace-pc,indirect-calls,trace-cmp` - Clang >= 4.0 
+  * [older, slower variant] `-fsanitize-coverage=trace-pc,indirect-calls` - Clang >= 3.9 
 
 _Note_: The _-fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp_ set of flags will be automatically added to clang's command-line switches when using [hfuzz-clang-cc](https://github.com/google/honggfuzz/tree/master/hfuzz_cc) binary.
 
@@ -41,7 +41,7 @@ $ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc terminal-test.c -o terminal-
 The implemented strategy is trying to identify files which add new code coverage (or increased instruction/branch counters). Then those inputs are added (dynamically stored in memory) corpus, and reused during following fuzzing rounds
 
 There are 2 phases of feedback-driven the fuzzing:
-  * Honggfuzz goes through each file in the initial corpus directory (-f). It adds files which hit new code coverage to the dynamic input corpus (as well as saving them on the disk, using *COVERAGE_DATA.PID.<pid>.RND.<time>.<rnd>* pattern
+  * Honggfuzz goes through each file in the initial corpus directory (-f). It adds files which hit new code coverage to the dynamic input corpus (as well as saving them on the disk, using *COVERAGE_DATA.PID.pid.RND.time.rnd* pattern
   * Honggfuzz choses randomly files from the dynamic input corpus (in-memory), mutates them, and runs a new fuzzing round (round in persistent mode, exec in non-persistent mode). If the newly created file induces new code path (extends code coverage), it gets added to the dynamic input corpus
 
 # ASAN Code coverage (-C) #
@@ -77,10 +77,13 @@ Here you can use the following:
 
 In both cases you'll have to link your code with `honggfuzz/libhfuzz/libhfuzz.a`
 
-Two persistent modes are available to be used
+_Note_: The _-fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp_ set of flags will be automatically added to clang's command-line switches when using [hfuzz-clang-cc](https://github.com/google/honggfuzz/tree/master/hfuzz_cc) binary. The [hfuzz-clang-cc](https://github.com/google/honggfuzz/tree/master/hfuzz_cc) binary will also link your code with _libhfuzz.a_
+
+Two persistent modes can be used:
+
 ### LLVM-style LLVMFuzzerTestOneInput ###
 
-```
+```c
 $ cat test.c
 #include <inttypes.h>
 #include <testlib.h>  // Our API to test
@@ -94,14 +97,15 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len) {
 ```
 
 ```
-$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp fuzzedlib.c -o fuzzedlib.o
-$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc test.c fuzzedlib.o honggfuzz/libhfuzz/libhfuzz.a -o test
+$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc -c fuzzedlib.c -o fuzzedlib.o
+$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc test.c fuzzedlib.o -o test
 $ [honggfuzz_dir]/honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
 
 `LLVMFuzzerInitialize(int *argc, char **argv)` is supported as well
 
 ### Fetching input with HF_ITER() ###
+
 ```c
 $ cat test.c
 #include <inttypes.h>
@@ -121,8 +125,8 @@ int main(void) {
 }
 ```
 ```
-$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-c -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp fuzzedlib.c -o fuzzedlib.o
-$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-c test.c fuzzedlib.o honggfuzz/libhfuzz/libhfuzz.a -o test
+$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc -c fuzzedlib.c -o fuzzedlib.o
+$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc test.c fuzzedlib.o -o test
 $ [honggfuzz_dir]/honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
 
@@ -144,7 +148,7 @@ $ [honggfuzz_dir]/honggfuzz -z -P -f IN.server/ -- ./persistent.server.openssl.1
 -----------------------------------[ LOGS ]-----------------------------------
 ```
 
-PS. You can also use a non-persistent mode here (without the -P flag), in which case you need to read data either from a file passed at command-line (`___FILE___`), or from the standard input (e.g. with `read(0, buf, sizeof(buf))`. The compile-time instrumentation (-z) will still work in such case.
+PS. You can also use a non-persistent mode here (without the __-P__ flag), in which case you need to read data either from a file passed at command-line (`___FILE___`), or from the standard input (e.g. with `read(0, buf, sizeof(buf))`. The compile-time instrumentation (-z) will still work in such case.
 
 # Hardware-based coverage #
 ## Unique branch points counting (--linux_perf_bts_block) ##
