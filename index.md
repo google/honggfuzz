@@ -2,28 +2,32 @@
 
 **Description**
 
-A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See [USAGE](docs/USAGE.md) for details
+A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See [USAGE](docs/USAGE.md) for more data on the usage.
 
-  * Easy-to-use, just provide it with input corpus (can consist of a single file) and it will work to expand it using feedback-based coverage metrics
-  * Has a nice track record of uncovered security bugs: e.g. the only vulnerability in OpenSSL with the __critical__ score mark had been discovered by honggfuzz
+  * It's multi-threaded and multi-process: no need to run multiple copies of your fuzzer. The file corpus is shared between threads (and fuzzed instances)
+  * It's blazingly fast (esp. in the [persistent fuzzing mode](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)). A simple _LLVMFuzzerTestOneInput_ function can be tested up to 1mo iterations per second on a modern CPU (e.g. i7-6600K)
+  * Has a nice track record of uncovered security bugs: e.g. the only (to the date) vulnerability in OpenSSL with the __critical__ score mark had been discovered by honggfuzz
+  * Uses low-level interfaces to monitor processes (e.g. _ptrace_ under Linux). As opposed to other fuzzers, it will discover and report handled (catched by a signal handlers) signals
+  * Easy-to-use, just provide it with input corpus (can consist of a single file) and it will work its way up expanding it using feedback-based coverage metrics
   * Supports several (more than any other coverage-based feedback-driven fuzzer) hardware-based (CPU: branch/instruction counting, Intel BTS, Intel PT) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) methods
-  * It works (at least) under GNU/Linux, reeBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md)
+  * Works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md)
   * Supports persistent fuzzing mode (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)
   * [Can fuzz remote/standalone long-lasting processes](https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md) (e.g. network servers like Apache's httpd and ISC's bind)
+  * It comes with the [examples](https://github.com/google/honggfuzz/tree/master/examples/openssl) directory, consisting of real world fuzz setups for widely-used software (e.g. Apache and OpenSSL)
 
 **Code**
 
-  * Latest stable version: [0.9](https://github.com/google/honggfuzz/releases/tag/0.9), but you're encouraged to use the master branch
+  * Latest stable version: [0.9](https://github.com/google/honggfuzz/releases/tag/0.9), but using copy of the __master__ branch is highyl encouraged
   * [Changelog](https://github.com/google/honggfuzz/blob/master/CHANGELOG)
 
 **Requirements**
 
-  * **Linux** - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev)
-  * **FreeBSD** - gmake, clang-3.6 or newer
+  * **Linux** - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev), clang-4.0 or higher for software-based coverage modes
+  * **FreeBSD** - gmake, clang-3.6 or newer (clang-devel/4.0 suggested)
   * **Android** - Android SDK/NDK. Also see [this detailed doc](docs/Android.md) on how to build and run it
   * **Windows** - CygWin
   * **Darwin/OS X** - Xcode 10.8+
-  * if **Clang/LLVM** is used - the BlocksRuntime Library (libblocksruntime-dev)
+  * if **Clang/LLVM** is used to compile honggfuzz - link it with the BlocksRuntime Library (libblocksruntime-dev)
 
 **Trophies**
 
