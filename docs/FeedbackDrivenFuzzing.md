@@ -75,11 +75,9 @@ Here you can use the following:
   * clang's (>= 4.0) `-fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp`
     (trace-cmp adds additional comparison map to the instrumentation)
 
-In both cases you'll have to link your code with `honggfuzz/libhfuzz/libhfuzz.a`
-
 _Note_: The _-fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp_ set of flags will be automatically added to clang's command-line switches when using [hfuzz-clang-cc](https://github.com/google/honggfuzz/tree/master/hfuzz_cc) binary. The [hfuzz-clang-cc](https://github.com/google/honggfuzz/tree/master/hfuzz_cc) binary will also link your code with _libhfuzz.a_
 
-Two persistent modes can be used:
+Two persistent modes can be used here:
 
 ### LLVM-style LLVMFuzzerTestOneInput ###
 
