@@ -1,5 +1,6 @@
-2016-   - Version 0.9alpha
+2016-02-14  - Version 0.9 (rev b0d1118)
         - Clang >= 4.0 -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp support
+        - Multiple examples in examples/
         - --pprocess_cmd for input post-processing
 
 2016-09-01 - Version 0.8 (rev 6b9efac)
