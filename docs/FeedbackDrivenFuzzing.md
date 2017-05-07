@@ -1,4 +1,3 @@
----
 # Feedback-driven fuzzing #
 
 Honggfuzz is capable of performing feedback-guided (code coverage driven) fuzzing. It can utilize the following sources of data:
