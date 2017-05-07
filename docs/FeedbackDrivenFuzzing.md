@@ -19,7 +19,7 @@ Developers should provide the initial file corpus which will be gradually improv
 _Note_: The _-fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp_ set of flags will be automatically added to clang's command-line switches when using [hfuzz-clang-cc](https://github.com/google/honggfuzz/tree/master/hfuzz_cc) binary.
 
 ```
-$ ~/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc terminal-test.c -o terminal-test
+$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc terminal-test.c -o terminal-test
 ```
 
 ---
@@ -48,7 +48,7 @@ There are 2 phases of feedback-driven the fuzzing:
 In order to make this mode work, one needs to compile the fuzzed tool (_xmllint_ here) with _-fsanitize=address -fsanitize-coverage=bb_
 
 ```
-$ honggfuzz -C -f IN.corpus/ -- ./xmllint --format --nonet ___FILE___
+$ [honggfuzz_dir]/honggfuzz -C -f IN.corpus/ -- ./xmllint --format --nonet ___FILE___
 ============================== STAT ==============================
 Iterations: 1419
 Start time: 2016-03-15 16:43:57 (16 seconds elapsed)
@@ -94,15 +94,15 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len) {
 ```
 
 ```
-$ clang-4.0 -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp fuzzedlib.c -o fuzzedlib.o
-$ clang-4.0 test.c fuzzedlib.o honggfuzz/libhfuzz/libhfuzz.a -o test
-$ honggfuzz -z -P -f INPUT.corpus -- ./test
+$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp fuzzedlib.c -o fuzzedlib.o
+$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc test.c fuzzedlib.o honggfuzz/libhfuzz/libhfuzz.a -o test
+$ [honggfuzz_dir]/honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
 
 `LLVMFuzzerInitialize(int *argc, char **argv)` is supported as well
 
 ### Fetching input with HF_ITER() ###
-```
+```c
 $ cat test.c
 #include <inttypes.h>
 #include <testlib.h>  // Our API to test
@@ -121,14 +121,14 @@ int main(void) {
 }
 ```
 ```
-$ clang-4.0 -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp fuzzedlib.c -o fuzzedlib.o
-$ clang-4.0 test.c fuzzedlib.o honggfuzz/libhfuzz/libhfuzz.a -o test
-$ honggfuzz -z -P -f INPUT.corpus -- ./test
+$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-c -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp fuzzedlib.c -o fuzzedlib.o
+$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-c test.c fuzzedlib.o honggfuzz/libhfuzz/libhfuzz.a -o test
+$ [honggfuzz_dir]/honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
 
 Example:
 ```
-$ honggfuzz -z -P -f IN.server/ -- ./persistent.server.openssl.1.0.2i.asan
+$ [honggfuzz_dir]/honggfuzz -z -P -f IN.server/ -- ./persistent.server.openssl.1.0.2i.asan
 ------------------------------[ honggfuzz v0.8 ]------------------------------
       Iterations : 3,275,169 [3.28M]
         Run Time : 2 hrs 17 min 16 sec (since: 2016-09-27 07:30:04)
@@ -152,7 +152,7 @@ PS. You can also use a non-persistent mode here (without the -P flag), in which 
 This feedback-driven counting honggfuzz mode utilizes Intel's BTS (Branch Trace Store) feature to record all basic blocks (jump blocks) inside the fuzzed process. Later on, honggfuzz will de-duplicate those entries. The resulting number of branch jump point is a good approximation of how much code of a given tool have been actively executed/used (code coverage).
 
 ```
-$ honggfuzz --linux_perf_bts_block -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
+$ [honggfuzz_dir]/honggfuzz --linux_perf_bts_block -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 0
 Start time: 2016-02-16 18:35:32 (0 seconds elapsed)
@@ -175,7 +175,7 @@ Coverage (max):
 This mode will take into consideration pairs (tuples) of jumps, recording unique from-to jump pairs. The data is taken from the Intel BTS CPU registers.
 
 ```
-$ honggfuzz --linux_perf_bts_edge -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
+$ [honggfuzz_dir]/honggfuzz --linux_perf_bts_edge -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 1
 Start time: 2016-02-16 18:37:08 (1 seconds elapsed)
@@ -197,7 +197,7 @@ Coverage (max):
 This mode will utilize Interl's PT (Process Trace) subsystem, which should be way faster than BTS (Branch Trace Store), but will currently produce less precise results.
 
 ```
-$ honggfuzz --linux_perf_ipt_block -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
+$ [honggfuzz_dir]/honggfuzz --linux_perf_ipt_block -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 0
 Start time: 2016-02-16 18:38:45 (0 seconds elapsed)
@@ -218,7 +218,7 @@ Coverage (max):
 This mode tries to maximize the number of instructions taken during each process iteration. The counters will be taken from the Linux perf subsystems. Intel, AMD and even other CPU architectures are supported for this mode.
 
 ```
-$ honggfuzz --linux_perf_instr -f IN.corpus -- /usr/bin/xmllint -format ___FILE___
+$ [honggfuzz_dir]/honggfuzz --linux_perf_instr -f IN.corpus -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 2776
 Start time: 2016-02-16 18:40:51 (3 seconds elapsed)
@@ -243,7 +243,7 @@ Coverage (max):
 As above, it will try to maximize the number of branches taken by CPU on behalf of the fuzzed process (here: djpeg.static) while performing each fuzzing iteration. Intel, AMD and even other CPU architectures are supported for this mode.
 
 ```
-$ honggfuzz --linux_perf_branch -f IN/ -F 2500 -q -- /usr/bin/xmllint -format ___FILE___
+$ [honggfuzz_dir]/honggfuzz --linux_perf_branch -f IN/ -F 2500 -q -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 0
 Start time: 2016-02-16 18:39:41 (0 seconds elapsed)
