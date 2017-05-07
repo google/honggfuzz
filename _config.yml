@@ -2,7 +2,7 @@ title: Honggfuzz
 description: "An easy-to-use software fuzzer: feedback-driven (hardware and software modes), easy-to-use, security oriented"
 google_analytics: 
 show_downloads: true
-theme: jekyll-theme-minimal
+theme: jekyll-theme-cayman
 
 gems:
   - jekyll-mentions
