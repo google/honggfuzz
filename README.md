@@ -31,7 +31,7 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
 **Trophies**
 
-The tool has been used to find a few interesting security problems in major software packages; Examples:
+Honggfuzz has been used to find a few interesting security problems in major software packages; An incomplete list:
 
   * FreeType 2:
    * [CVE-2010-2497](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2497), [CVE-2010-2498](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2498), [CVE-2010-2499](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2499), [CVE-2010-2500](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2500), [CVE-2010-2519](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2519), [CVE-2010-2520](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2520), [CVE-2010-2527](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2527)
@@ -47,6 +47,7 @@ The tool has been used to find a few interesting security problems in major soft
     * [Remote Use-after-Free (potential RCE, rated as 'critical') • CVE-2016-6309](https://www.openssl.org/news/secadv/20160926.txt)
     * [Remote OOB write • CVE-2016-7054](https://www.openssl.org/news/secadv/20161110.txt)
     * [Remote OOB read • CVE-2017-3731](https://www.openssl.org/news/secadv/20170126.txt)
+  * Multiple bugs in [language interpreters](https://github.com/dyjakan/interpreter-bugs) (PHP/Python/Ruby)
   * ... and more
 
 **Examples**
