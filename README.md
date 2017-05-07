@@ -4,16 +4,16 @@
 
 A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See [USAGE](docs/USAGE.md) for more data on the usage.
 
-  * It's multi-threaded and multi-process: no need to run multiple copies of your fuzzer. The file corpus is shared between threads (and fuzzed instances)
-  * It's blazingly fast (esp. in the [persistent fuzzing mode](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)). A simple _LLVMFuzzerTestOneInput_ function can be tested up to 1mo iterations per second on a modern CPU (e.g. i7-6600K)
+  * It's __multi-threaded__ and __multi-process__: no need to run multiple copies of your fuzzer. The file corpus is shared between threads (and fuzzed instances)
+  * It's blazingly fast (esp. in the [persistent fuzzing mode](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)). A simple _LLVMFuzzerTestOneInput_ function can be tested __up to 1mo iterations per second__ on a modern CPU (e.g. i7-6600K)
   * Has a nice track record of uncovered security bugs: e.g. the only (to the date) vulnerability in OpenSSL with the __critical__ score mark had been discovered by honggfuzz
-  * Uses low-level interfaces to monitor processes (e.g. _ptrace_ under Linux). As opposed to other fuzzers, it will discover and report handled (catched by a signal handlers) signals
-  * Easy-to-use, just provide it with input corpus (can consist of a single file) and it will work its way up expanding it using feedback-based coverage metrics
+  * Uses low-level interfaces to monitor processes (e.g. _ptrace_ under Linux). As opposed to other fuzzers, it will discover and report handled (catched by a signal handlers) or _hidden signals_
+  * Easy-to-use, just provide it with input corpus (__can consist of a single file__) and it will work its way up expanding it using feedback-based coverage metrics
   * Supports several (more than any other coverage-based feedback-driven fuzzer) hardware-based (CPU: branch/instruction counting, Intel BTS, Intel PT) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) methods
   * Works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md)
-  * Supports persistent fuzzing mode (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)
-  * [Can fuzz remote/standalone long-lasting processes](https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md) (e.g. network servers like Apache's httpd and ISC's bind)
-  * It comes with the [examples](https://github.com/google/honggfuzz/tree/master/examples/openssl) directory, consisting of real world fuzz setups for widely-used software (e.g. Apache and OpenSSL)
+  * Supports __persistent fuzzing mode__ (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)
+  * [Can fuzz remote/standalone long-lasting processes](https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md) (e.g. network servers like __Apache's httpd__ and __ISC's bind__)
+  * It comes with the __[examples](https://github.com/google/honggfuzz/tree/master/examples/openssl) directory__, consisting of real world fuzz setups for widely-used software (e.g. Apache and OpenSSL)
 
 **Code**
 
