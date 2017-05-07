@@ -6,7 +6,7 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
   * It's __multi-threaded__ and __multi-process__: no need to run multiple copies of your fuzzer. The file corpus is shared between threads (and fuzzed instances)
   * It's blazingly fast (esp. in the [persistent fuzzing mode](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)). A simple _LLVMFuzzerTestOneInput_ function can be tested __up to 1mo iterations per second__ on a modern CPU (e.g. i7-6600K)
-  * Has a nice track record of uncovered security bugs: e.g. the only (to the date) vulnerability in OpenSSL with the __critical__ score mark had been discovered by honggfuzz
+  * Has a nice track record of uncovered security bugs: e.g. the only (to the date) __vulnerability in OpenSSL with the [critical](https://www.openssl.org/news/secadv/20160926.txt) score mark__ was discovered by honggfuzz
   * Uses low-level interfaces to monitor processes (e.g. _ptrace_ under Linux). As opposed to other fuzzers, it will discover and report handled (catched by a signal handlers) or _hidden signals_
   * Easy-to-use, just provide it with input corpus (__can consist of a single file__) and it will work its way up expanding it using feedback-based coverage metrics
   * Supports several (more than any other coverage-based feedback-driven fuzzer) hardware-based (CPU: branch/instruction counting, Intel BTS, Intel PT) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) methods
