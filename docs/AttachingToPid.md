@@ -1,6 +1,6 @@
 # Introduction #
 
-This page described how to use honggfuzz in batch mode. The simplest example would be Apache Web Server, which cannot be restarted every time we want to send new input, for performance reasons.
+This page described how to use honggfuzz in batch mode. The simplest example would be Apache Web Server, which cannot be restarted every time we want to send new input (for performance reasons).
 
 _Note: This currently works with Linux OS only_
 
@@ -42,7 +42,7 @@ honggfuzz version 0.3 Robert Swiecki <swiecki@google.com>, Copyright 2010 by Goo
 ....
 ```
 
-If Apache crashes we'll see:
+If Apache crashes we will see:
 
 ```
 [INFO] Ok, that's interesting, saved '.honggfuzz.10014.1310049998.834508.645006950.fuzz' as 'SIGSEGV.PC.0x7f45942f1c20.CODE.0.ADDR.0x288d.INSTR.cmp_rax,_0xfffff001.2011-07-07.16.46.38.9378.fuzz'
