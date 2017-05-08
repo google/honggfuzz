@@ -249,7 +249,7 @@ $(HFUZZ_ARCH): $(LIBS_OBJS)
 
 .PHONY: clean
 clean:
-	$(RM) -r core $(OBJS) $(BIN) $(CC_BIN) $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
+	$(RM) -r core $(OBJS) $(BIN) $(CC_BIN) $(CXX_BIN) $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
 
 .PHONY: indent
 indent:
