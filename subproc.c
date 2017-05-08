@@ -26,6 +26,7 @@
 #include "common.h"
 #include "subproc.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <signal.h>
@@ -311,24 +312,34 @@ uint8_t subproc_System(const char *const argv[])
 #if defined(__WNOTHREAD)
     flags |= __WNOTHREAD;
 #endif                          /* defined(__WNOTHREAD) */
-    while (wait4(pid, &status, flags, NULL) != pid) ;
-    if (WIFSIGNALED(status)) {
-        LOG_E("Command '%s' terminated with signal: %d", argv[0], WTERMSIG(status));
-        return (100 + WTERMSIG(status));
-    }
-    if (!WIFEXITED(status)) {
-        LOG_F("Command '%s' terminated abnormally, status: %d", argv[0], status);
-        return 100;
-    }
 
-    LOG_D("Command '%s' exited with: %d", argv[0], WEXITSTATUS(status));
+    for (;;) {
+        int ret = wait4(pid, &status, flags, NULL);
+        if (ret == -1 && errno == EINTR) {
+            continue;
+        }
+        if (ret == -1) {
+            PLOG_E("wait4() for process PID: %d", (int)pid);
+            return 255;
+        }
+        if (ret != pid) {
+            LOG_E("wait4() returned %d, but waited for %d", ret, (int)pid);
+            return 255;
+        }
+        if (WIFSIGNALED(status)) {
+            LOG_E("Command '%s' terminated with signal: %d", argv[0], WTERMSIG(status));
+            return (100 + WTERMSIG(status));
+        }
+        if (WIFEXITED(status)) {
+            if (WEXITSTATUS(status) == 0) {
+                return 0U;
+            }
+            LOG_E("Command '%s' returned with exit code %d", argv[0], WEXITSTATUS(status));
+            return 1U;
+        }
 
-    if (WEXITSTATUS(status)) {
-        LOG_W("Command '%s' exited with code: %d", argv[0], WEXITSTATUS(status));
-        return 1U;
+        LOG_D("wait4() returned with status: %d", status);
     }
-
-    return 0U;
 }
 
 void subproc_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
