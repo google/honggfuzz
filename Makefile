@@ -25,6 +25,7 @@ CC ?= gcc
 LD = $(CC)
 BIN := honggfuzz
 CC_BIN := hfuzz_cc/hfuzz-clang-cc
+CXX_BIN := hfuzz_cc/hfuzz-clang-c++
 CC_SRCS := display.c log.c util.c files.c hfuzz_cc/hfuzz-clang-cc.c
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=131072
 COMMON_LDFLAGS := -lm
@@ -220,7 +221,7 @@ SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
 MAC_GARGBAGE := $(wildcard mac/mach_exc*)
 ANDROID_GARBAGE := obj libs
 
-all: $(BIN) $(CC_BIN) $(HFUZZ_ARCH)
+all: $(BIN) $(CC_BIN) $(CXX_BIN) $(HFUZZ_ARCH)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
@@ -236,6 +237,9 @@ $(BIN): $(OBJS)
 
 $(CC_BIN): $(HFUZZ_ARCH) $(CC_SRCS)
 	$(LD) -o $(CC_BIN) $(CC_SRCS) $(LDFLAGS) $(CFLAGS)
+
+$(CXX_BIN): $(HFUZZ_ARCH) $(CC_SRCS)
+	$(LD) -o $(CXX_BIN) $(CC_SRCS) $(LDFLAGS) $(CFLAGS)
 
 $(LIBS_OBJS): $(LIBS_SRCS)
 	$(CC) -fPIC -c -fno-builtin $(CFLAGS) -fno-stack-protector -o $@ $(@:.o=.c)
