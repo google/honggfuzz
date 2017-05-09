@@ -512,9 +512,9 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         /* Mini-max number of changes is 3 */
         changesCnt = 3;
     }
-    if (changesCnt > 6) {
-        /* Max number of changes is 6 */
-        changesCnt = 6;
+    if (changesCnt > 10) {
+        /* Max number of stacked changes is 10 */
+        changesCnt = 10;
     }
     changesCnt = util_rndGet(1, changesCnt);
 
