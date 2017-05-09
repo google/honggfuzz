@@ -410,32 +410,6 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     static void (*const mangleFuncs[]) (honggfuzz_t * hfuzz, fuzzer_t * fuzzer) = {
     /*  *INDENT-OFF* */
         mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Byte,
-        mangle_Bit,
-        mangle_Bit,
-        mangle_Bit,
-        mangle_Bit,
-        mangle_Bit,
-        mangle_Bit,
-        mangle_Bit,
-        mangle_Bit,
-        mangle_Bit,
-        mangle_Bit,
-        mangle_Bit,
         mangle_Bit,
         mangle_Bytes,
         mangle_Magic,
@@ -457,9 +431,13 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     };
 
     uint64_t changesCnt = fuzzer->dynamicFileSz * fuzzer->flipRate;
-    if (changesCnt < 3ULL) {
+    if (changesCnt < 3) {
         /* Mini-max number of changes is 3 */
         changesCnt = 3;
+    }
+    if (changesCnt > 10) {
+        /* Max number of changes is 10 */
+        changesCnt = 10;
     }
     changesCnt = util_rndGet(1, changesCnt);
 
