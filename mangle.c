@@ -370,7 +370,6 @@ static void mangle_Expand(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
 
     mangle_Inflate(hfuzz, fuzzer, off, len);
     mangle_Move(fuzzer, off, off + len, fuzzer->dynamicFileSz);
-    memset(fuzzer->dynamicFile, '\0', len);
 }
 
 static void mangle_Shrink(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
