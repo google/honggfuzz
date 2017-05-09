@@ -567,8 +567,8 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     /* *INDENT-ON* */
     };
 
-    /* Max number of stacked changes is 10 */
-    uint64_t changesCnt = util_rndGet(1, 10);
+    /* Max number of stacked changes is 6 */
+    uint64_t changesCnt = util_rndGet(1, 6);
 
     for (uint64_t x = 0; x < changesCnt; x++) {
         uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);
