@@ -19,8 +19,9 @@
 #define ARGS_MAX 4096
 #define __XSTR(x) #x
 #define _XSTR(x) __XSTR(x)
-#define CLANG_BIN "clang"
 #define LHFUZZ_A_PATH "/tmp/libhfuzz.a"
+
+static int isCXX = false;
 
 __asm__("\n"
         "	.global lhfuzz_start\n"
@@ -90,11 +91,20 @@ static int execCC(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    execvp("clang-devel", argv);
-    execvp("clang-6.0", argv);
-    execvp("clang-5.0", argv);
-    execvp("clang-4.0", argv);
-    execvp("clang", argv);
+    if (isCXX) {
+        execvp("clang++-devel", argv);
+        execvp("clang++-6.0", argv);
+        execvp("clang++-5.0", argv);
+        execvp("clang++-4.0", argv);
+        execvp("clang++", argv);
+        execvp("clang", argv);
+    } else {
+        execvp("clang-devel", argv);
+        execvp("clang-6.0", argv);
+        execvp("clang-5.0", argv);
+        execvp("clang-4.0", argv);
+        execvp("clang", argv);
+    }
 
     PLOG_E("execvp('%s')", argv[0]);
     return EXIT_FAILURE;
@@ -105,7 +115,11 @@ static int ccMode(int argc, char **argv)
     char *args[4096];
 
     int j = 0;
-    args[j++] = "clang";
+    if (isCXX) {
+        args[j++] = "clang++";
+    } else {
+        args[j++] = "clang";
+    }
     args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
     args[j++] = "-mllvm";
     args[j++] = "-sanitizer-coverage-prune-blocks=0";
@@ -169,7 +183,11 @@ static int ldMode(int argc, char **argv)
     char *args[4096];
 
     int j = 0;
-    args[j++] = "clang";
+    if (isCXX) {
+        args[j++] = "clang++";
+    } else {
+        args[j++] = "clang";
+    }
     args[j++] = "-Wl,-z,muldefs";
     args[j++] = "-Wl,--whole-archive";
     args[j++] = LHFUZZ_A_PATH;
@@ -193,6 +211,9 @@ static int ldMode(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+    if (strstr(argv[0], "++") != NULL) {
+        isCXX = true;
+    }
     if (argc <= 1) {
         LOG_I("'%s': No arguments provided", argv[0]);
         return execCC(argc, argv);
