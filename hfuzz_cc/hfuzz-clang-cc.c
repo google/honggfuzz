@@ -83,6 +83,8 @@ static int execCC(int argc, char **argv)
     const char *cc_path = getenv("HFUZZ_CC_PATH");
     if (cc_path != NULL) {
         execvp(cc_path, argv);
+        PLOG_E("execvp('%s')", cc_path);
+        return EXIT_FAILURE;
     }
 
     execvp("clang-devel", argv);
@@ -102,6 +104,9 @@ static int ccMode(int argc, char **argv)
     int j = 0;
     args[j++] = "clang";
     args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
+    args[j++] = "-mllvm";
+    args[j++] = "-sanitizer-coverage-prune-blocks=0";
+/*    args[j++] = "-sanitizer-coverage-block-threshold=0";  */
     args[j++] = "-funroll-loops";
     args[j++] = "-fno-inline";
     args[j++] = "-fno-builtin";
@@ -167,6 +172,9 @@ static int ldMode(int argc, char **argv)
     args[j++] = LHFUZZ_A_PATH;
     args[j++] = "-Wl,--no-whole-archive";
     args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
+    args[j++] = "-mllvm";
+    args[j++] = "-sanitizer-coverage-prune-blocks=0";
+/*    args[j++] = "-sanitizer-coverage-block-threshold=0";  */
     args[j++] = "-funroll-loops";
     args[j++] = "-fno-inline";
     args[j++] = "-fno-builtin";
