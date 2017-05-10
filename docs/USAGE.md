@@ -8,20 +8,27 @@
 
 # FEATURES #
 
-  * **Easy setup**: No complicated configuration files or setup necessary -- honggfuzz can be run directly from the command line.
-  * **Fast**: Multiple threads can run simultaneously for more efficient fuzzing.
-  * **Powerful analysis capabilities**: honggfuzz will use the most powerful process state analysis (e.g. ptrace) interface under a given OS.
-  * **Powerful code coverage techniques** Uses [hardware- and software- based code coverage](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) techniques to produce more interesting inputs to the fuzzed process
+  * It's __multi-threaded__ and __multi-process__: no need to run multiple copies of your fuzzer. The file corpus is shared between threads (and fuzzed instances)
+  * It's blazingly fast (esp. in the [persistent fuzzing mode](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)). A simple _LLVMFuzzerTestOneInput_ function can be tested with __up to 1mo iterations per second__ on a relatively modern CPU (e.g. i7-6600K)
+  * Has a nice track record of uncovered security bugs: e.g. the only (to the date) __vulnerability in OpenSSL with the [critical](https://www.openssl.org/news/secadv/20160926.txt) score mark__ was discovered by honggfuzz
+  * Uses low-level interfaces to monitor processes (e.g. _ptrace_ under Linux). As opposed to other fuzzers, it __will discover and report hidden signals__ (caught and potentially hidden by signal handlers)
+  * Easy-to-use, feed it a simple input corpus (__can even consist of a single, 1-byte file__) and it will work its way up expanding it utilizing feedback-based coverage metrics
+  * Supports several (more than any other coverage-based feedback-driven fuzzer) hardware-based (CPU: branch/instruction counting, __Intel BTS__, __Intel PT__) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) methods
+  * Works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md)
+  * Supports __persistent fuzzing mode__ (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that can be found [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)
+  * [Can fuzz remote/standalone long-lasting processes](https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md) (e.g. network servers like __Apache's httpd__ and __ISC's bind__)
+  * It comes with the __[examples](https://github.com/google/honggfuzz/tree/master/examples/openssl) directory__, consisting of real world fuzz setups for widely-used software (e.g. Apache and OpenSSL)
 
 # REQUIREMENTS #
 
-  * A POSIX compliant operating system (See the compatibility list for more) for
-    static and ASAN code-coverage (SANCOV) modes
-  * GNU/Linux with modern kernel (e.g. v4.0) for hardware-based code coverage guided fuzzing
+  * A POSIX compliant operating system, [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md) or Windows (CygWin)
+  * GNU/Linux with modern kernel (>= v4.2) for hardware-based code coverage guided fuzzing
 
   * A corpus of input files. Honggfuzz expects a set of files to use and modify as input to the application you're fuzzing. How you get or create these files is up to you, but you might be interested in the following sources:
     * Image formats: Tavis Ormandy's [Image Testuite](http://code.google.com/p/imagetestsuite/) has been effective at finding vulnerabilities in various graphics libraries.
     * PDF: Adobe provides some [test PDF files](http://acroeng.adobe.com/).
+
+_**Note**: With the feedback-driven coverage-based modes, you can start your fuzzing with even a single 1-byte file._
 
 ## Compatibility list ##
 
@@ -32,6 +39,7 @@ It should work under the following operating systems:
 | **GNU/Linux** | Works | ptrace() API (x86, x86-64 disassembly support)|
 | **FreeBSD** | Works | POSIX signal interface |
 | **Mac OS X** | Works | POSIX signal interface/Mac OS X crash reports (x86-64/x86 disassembly support) |
+| **Anddoid** | Works | ptrace() API (x86, x86-64 disassembly support) |
 | **MS Windows** | Works | POSIX signal interface via CygWin |
 | **Other Unices** | Depends`*` | POSIX signal interface |
 
@@ -39,9 +47,7 @@ It should work under the following operating systems:
 
 # USAGE #
 
-[This document](ExternalFuzzerUsage.md) explains how to use an external command to create fuzzing input.
-
-```
+<pre>
 Usage: ./honggfuzz [options] -- path_to_command [args]
 Options:
  --help|-h 
@@ -102,6 +108,14 @@ Options:
 	Report MSAN's UMRS (uninitialized memory access)
  --persistent|-P 
 	Enable persistent fuzzing (link with libhfuzz/libhfuzz.a)
+ --tmout_sigvtalrm|-T 
+	Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)
+ --sanitizers|-S 
+	Enable sanitizers settings (default: false)
+ --monitor_sigabrt VALUE
+	Monitor SIGABRT (default: 'false for Android - 'true for other platforms)
+ --no_fb_timeout VALUE
+	Skip feedback if the process has timeouted (default: 'false')
  --linux_symbols_bl VALUE
 	Symbols blacklist filter file (one entry per line)
  --linux_symbols_wl VALUE
@@ -126,6 +140,14 @@ Options:
 	Use Intel BTS to count unique edges
  --linux_perf_ipt_block 
 	Use Intel Processor Trace to count unique blocks (requires libipt.so)
+ --linux_perf_kernel_only 
+	Gather kernel-only coverage with Intel PT and with Intel BTS
+ --linux_ns_net 
+	Use Linux NET namespace isolation
+ --linux_ns_pid 
+	Use Linux PID namespace isolation
+ --linux_ns_ipc 
+	Use Linux IPC namespace isolation
 
 Examples:
  Run the binary over a mutated file chosen from the directory
@@ -150,7 +172,7 @@ Examples:
   honggfuzz --linux_perf_bts_edge -- /usr/bin/tiffinfo -D ___FILE___
  Run the binary over a dynamic file, maximize unique code blocks via Intel Processor Trace (requires libipt.so):
   honggfuzz --linux_perf_ipt_block -- /usr/bin/tiffinfo -D ___FILE___
-```
+</pre>
 
 # OUTPUT FILES #
 
@@ -177,7 +199,6 @@ Examples:
 
   * Q: **Why isn't there any support for the ptrace() API when compiling under FreeBSD or Mac OS X operating systems**?
   * A: These operating systems lack some specific ptrace() operations, including **PT`_`GETREGS** (Mac OS X) and **PT`_`GETSIGINFO**, both of which honggfuzz depends on. If you have any ideas on how to get around this limitation, send us an email or patch.
-
 
 # LICENSE #
 
