@@ -106,6 +106,7 @@ static int execCC(int argc, char **argv)
         execvp("clang", argv);
     }
 
+    execvp(argv[0], argv);
     PLOG_E("execvp('%s')", argv[0]);
     return EXIT_FAILURE;
 }
