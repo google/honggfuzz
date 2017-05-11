@@ -124,7 +124,8 @@ static int ccMode(int argc, char **argv)
     args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
     args[j++] = "-mllvm";
     args[j++] = "-sanitizer-coverage-prune-blocks=0";
-/*    args[j++] = "-sanitizer-coverage-block-threshold=0";  */
+    args[j++] = "-mllvm";
+    args[j++] = "-sanitizer-coverage-block-threshold=0";
     args[j++] = "-funroll-loops";
     args[j++] = "-fno-inline";
     args[j++] = "-fno-builtin";
@@ -196,7 +197,8 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
     args[j++] = "-mllvm";
     args[j++] = "-sanitizer-coverage-prune-blocks=0";
-/*    args[j++] = "-sanitizer-coverage-block-threshold=0";  */
+    args[j++] = "-mllvm";
+    args[j++] = "-sanitizer-coverage-block-threshold=0";
     args[j++] = "-funroll-loops";
     args[j++] = "-fno-inline";
     args[j++] = "-fno-builtin";

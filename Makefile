@@ -26,7 +26,7 @@ LD = $(CC)
 BIN := honggfuzz
 CC_BIN := hfuzz_cc/hfuzz-clang-cc
 CXX_BIN := hfuzz_cc/hfuzz-clang-c++
-CC_SRCS := display.c log.c util.c files.c hfuzz_cc/hfuzz-clang-cc.c
+CC_SRCS := display.c log.c util.c files.c hfuzz_cc/hfuzz-clang.c
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=131072
 COMMON_LDFLAGS := -lm
 COMMON_SRCS := $(wildcard *.c)
@@ -320,7 +320,7 @@ sanitizers.o: common.h sanitizers.h files.h log.h util.h
 subproc.o: common.h subproc.h arch.h files.h log.h sancov.h sanitizers.h
 subproc.o: util.h
 util.o: common.h util.h files.h log.h
-hfuzz_cc/hfuzz-clang-cc.o: common.h files.h common.h log.h
+hfuzz_cc/hfuzz-clang.o: common.h files.h common.h log.h
 libhfuzz/instrument.o: common.h util.h
 libhfuzz/memorycmp.o: libhfuzz/instrument.h common.h util.h
 libhfuzz/persistent.o: common.h
