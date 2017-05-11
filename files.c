@@ -200,8 +200,8 @@ static bool files_getDirStatsAndRewind(honggfuzz_t * hfuzz)
 
     ATOMIC_SET(hfuzz->fileCnt, fileCnt);
     if (hfuzz->maxFileSz == 0U) {
-        if (maxSize < 128U) {
-            hfuzz->maxFileSz = 128U;
+        if (maxSize < 8192) {
+            hfuzz->maxFileSz = 8192;
         } else {
             hfuzz->maxFileSz = maxSize;
         }
