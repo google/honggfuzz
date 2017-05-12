@@ -98,6 +98,14 @@ bool arch_checkCrash() {
     }
 }
 
+void delay(int seconds)
+{
+   clock_t start = clock();
+   clock_t lay = (clock_t)seconds * CLOCKS_PER_SEC;
+ 
+   while ((clock()-start) < lay) ;
+}
+
 /*
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
@@ -122,7 +130,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
         LOG_D("Process (pid %d) exited normally with status %d", fuzzer->pid, WEXITSTATUS(status));
         
         if( strstr(hfuzz->cmdline[0], "EdgeDbg") ){
-            sleep(3000);    // win10下启动Edge或者图片查看，只能通过其它程序拉起，因此增加延时避免过早退出
+            delay(1);    // 延时1秒，因为win10下启动Edge或者图片查看只能通过其它程序拉起，所以增加延时避免过早退出
         }
 
         return true;
