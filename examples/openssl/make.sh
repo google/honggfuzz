@@ -8,7 +8,7 @@ SAN="$2"
 COMMON_FLAGS="-DBORINGSSL_UNSAFE_DETERMINISTIC_MODE -DBORINGSSL_UNSAFE_FUZZER_MODE -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -DBN_DEBUG -O3 -g -DFuzzerInitialize=LLVMFuzzerInitialize -DFuzzerTestOneInput=LLVMFuzzerTestOneInput -lpthread -lz -Wl,-z,now"
 OS=`uname -s`
 HFUZZ_SRC=~/src/honggfuzz/
-CC="$HFUZZ_SRC/hfuzz_cc/hfuzz-clang-cc"
+CC="$HFUZZ_SRC/hfuzz_cc/hfuzz-clang"
 CXX="clang++"
 
 if [ "$OS" -eq "Linux" ]; then

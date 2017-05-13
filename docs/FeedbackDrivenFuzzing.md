@@ -16,10 +16,10 @@ Developers should provide the initial file corpus which will be gradually improv
   * `-finstrument-functions` - GCC or Clang
   * [older, slower variant] `-fsanitize-coverage=trace-pc,indirect-calls` - Clang >= 3.9 
 
-_Note_: The _-fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp_ set of flags will be automatically added to clang's command-line switches when using [hfuzz-clang-cc](https://github.com/google/honggfuzz/tree/master/hfuzz_cc) binary.
+_Note_: The _-fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp_ set of flags will be automatically added to clang's command-line switches when using [hfuzz-clang](https://github.com/google/honggfuzz/tree/master/hfuzz_cc) binary.
 
 ```
-$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc terminal-test.c -o terminal-test
+$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang terminal-test.c -o terminal-test
 ```
 
 ---
@@ -75,7 +75,7 @@ Here you can use the following:
   * clang's (>= 4.0) `-fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp`
     (trace-cmp adds additional comparison map to the instrumentation)
 
-_Note_: The _-fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp_ set of flags will be automatically added to clang's command-line switches when using [hfuzz-clang-cc](https://github.com/google/honggfuzz/tree/master/hfuzz_cc) binary. The [hfuzz-clang-cc](https://github.com/google/honggfuzz/tree/master/hfuzz_cc) binary will also link your code with _libhfuzz.a_
+_Note_: The _-fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp_ set of flags will be automatically added to clang's command-line switches when using [hfuzz-clang](https://github.com/google/honggfuzz/tree/master/hfuzz_cc) binary. The [hfuzz-clang](https://github.com/google/honggfuzz/tree/master/hfuzz_cc) binary will also link your code with _libhfuzz.a_
 
 Two persistent modes can be used here:
 
@@ -95,8 +95,8 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len) {
 ```
 
 ```
-$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc -c fuzzedlib.c -o fuzzedlib.o
-$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc test.c fuzzedlib.o -o test
+$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang -c fuzzedlib.c -o fuzzedlib.o
+$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang test.c fuzzedlib.o -o test
 $ [honggfuzz_dir]/honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
 
@@ -123,8 +123,8 @@ int main(void) {
 }
 ```
 ```
-$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc -c fuzzedlib.c -o fuzzedlib.o
-$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang-cc test.c fuzzedlib.o -o test
+$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang -c fuzzedlib.c -o fuzzedlib.o
+$ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang test.c fuzzedlib.o -o test
 $ [honggfuzz_dir]/honggfuzz -z -P -f INPUT.corpus -- ./test
 ```
 

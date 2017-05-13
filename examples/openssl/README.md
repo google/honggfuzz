@@ -14,7 +14,7 @@
 
   ```
   $ make distclean
-  $ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc ./config enable-aria enable-heartbeats enable-md2 enable-rc5 enable-ssl3 enable-ssl3-method enable-tls13downgrade enable-tls1_3 enable-weak-ssl-ciphers
+  $ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang ./config enable-aria enable-heartbeats enable-md2 enable-rc5 enable-ssl3 enable-ssl3-method enable-tls13downgrade enable-tls1_3 enable-weak-ssl-ciphers
   $ make -j4
   ```
 4. Prepare fuzzing binaries
@@ -38,7 +38,7 @@
    * Configure OpenSSL with ASAN
 ```
   $ make distclean
-  $ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc ./config enable-aria enable-heartbeats enable-md2 enable-rc5 enable-ssl3 enable-ssl3-method enable-tls13downgrade enable-tls1_3 enable-weak-ssl-ciphers enable-asan
+  $ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang ./config enable-aria enable-heartbeats enable-md2 enable-rc5 enable-ssl3 enable-ssl3-method enable-tls13downgrade enable-tls1_3 enable-weak-ssl-ciphers enable-asan
 ```
    * Compile binaries with
 
@@ -65,7 +65,7 @@ Because some bugs may affect 32-builds only (e.g.: the [CVE-2017-3731](https://w
 1. Configure and compile OpenSSL
 
   ```
-  $ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc linux32 ./config <other_options>
+  $ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang linux32 ./config <other_options>
   $ make -j4
   ```
 2. Prepare 32-bit version of libhfuzz.a

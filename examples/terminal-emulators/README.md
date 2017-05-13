@@ -5,7 +5,7 @@
 ```
 $ cd /home/jagger/src/honggfuzz/examples/terminal-emulators/
 $ make
-../../hfuzz_cc/hfuzz-clang-cc -std=c99  -o terminal-test terminal-test.c
+../../hfuzz_cc/hfuzz-clang -std=c99  -o terminal-test terminal-test.c
 cc -std=c99  -shared -o libclose.so libclose.c
 ```
 
@@ -25,10 +25,10 @@ would consist of the following sequence of commands (for xterm):
 
 ```
 $ cd xterm-327
-$ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX=$CC ./configure
+$ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX=$CC ./configure
 ...
 ...
-$ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX=$CC make -j4
+$ CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX=$CC make -j4
 ```
 
 Alternatively, you might want to compile it with ASAN enabled, for better
@@ -36,10 +36,10 @@ detection of memory corruption problems
 
 ```
 $ cd xterm-327
-$ HFUZZ_CC_ASAN=1 CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX=$CC ./configure
+$ HFUZZ_CC_ASAN=1 CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX=$CC ./configure
 ...
 ...
-$ HFUZZ_CC_ASAN=1 CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX=$CC make -j4
+$ HFUZZ_CC_ASAN=1 CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX=$CC make -j4
 ```
 
 ## Step 3: Create initial input corpus ##

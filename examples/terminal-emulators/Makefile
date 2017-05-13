@@ -1,4 +1,4 @@
-HFUZZ_CC ?= ../../hfuzz_cc/hfuzz-clang-cc
+HFUZZ_CC ?= ../../hfuzz_cc/hfuzz-clang
 CC ?= cc
 
 CFLAGS += -std=c99
