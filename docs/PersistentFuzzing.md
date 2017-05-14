@@ -59,7 +59,7 @@ int main(void) {
 
 Compilation:
 ```
-$ <honggfuzz_dir>/hfuzz_cc/hfuzz_clang test.c -o test ~/honggfuzz/libfuzz/libfuzz.a
+$ hfuzz_cc/hfuzz_clang test.c -o test ~/honggfuzz/libfuzz/libfuzz.a
 ```
 
 Execution:
