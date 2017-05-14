@@ -45,6 +45,8 @@ Example (test.c):
 ```c
 #include <inttypes.h>
 
+extern HF_ITER(uint8_t** buf, size_t* len);
+
 int main(void) {
 	for (;;) {
 		size_t len;
