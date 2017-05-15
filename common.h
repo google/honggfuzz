@@ -239,6 +239,7 @@ typedef struct {
     bool clearEnv;
     char *envs[128];
     bool persistent;
+    bool terminating;
 
     const char *dictionaryFile;
      TAILQ_HEAD(, strings_t) dictq;

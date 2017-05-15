@@ -171,6 +171,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         },
         .persistent = false,
 
+        .terminating = false,
+        
         .dictionaryFile = NULL,
         .dictionaryCnt = 0,
 

@@ -46,4 +46,6 @@ extern uint8_t subproc_System(const char *const argv[]);
 
 extern void subproc_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
 
+extern void subproc_checkTermination(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
+
 #endif

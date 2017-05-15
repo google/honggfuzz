@@ -170,8 +170,11 @@ int main(int argc, char **argv)
     /*
      * So far so good
      */
+    
+    pthread_t threads[hfuzz.threadsMax];
+
     setupSignalsPreThr();
-    fuzz_threads(&hfuzz);
+    fuzz_threadsStart(&hfuzz, threads);
     setupSignalsPostThr();
 
     setupTimer();
@@ -188,10 +191,13 @@ int main(int argc, char **argv)
         pause();
     }
 
-    if (sigReceived > 0) {
-        LOG_I("Signal %d (%s) received, terminating", sigReceived, strsignal(sigReceived));
-        return EXIT_SUCCESS;
+    if (ATOMIC_GET(sigReceived) > 0) {
+        LOG_I("Signal %d (%s) received, terminating", ATOMIC_GET(sigReceived),
+              strsignal(ATOMIC_GET(sigReceived)));
+        ATOMIC_SET(hfuzz.terminating, true);
     }
+
+    fuzz_threadsStop(&hfuzz, threads);
 
     /* Clean-up global buffers */
     if (hfuzz.blacklist) {
