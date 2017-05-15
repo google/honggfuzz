@@ -191,8 +191,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
     display_put(ESC_WHITE "\n    Run Time : " ESC_RESET ESC_BOLD "%s" ESC_RESET " (" ESC_WHITE "since: " ESC_RESET ESC_BOLD "%s" ESC_RESET
                 ")\n", time_elapsed_str, start_time_str);
-    display_put(ESC_WHITE "   Input Dir : " ESC_RESET ESC_BOLD "'%s" ESC_RESET "'\n",
-                hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]");
+    display_put(ESC_WHITE "   Input Dir : " ESC_RESET "[% " _HF_MONETARY_MOD "zu] "  ESC_BOLD "'%s" ESC_RESET "'\n",
+                ATOMIC_GET(hfuzz->fileCnt), hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]");
     display_put(ESC_WHITE "  Fuzzed Cmd : " ESC_RESET ESC_BOLD "'%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
     if (hfuzz->linux.pid > 0) {
         display_put(ESC_WHITE "Remote cmd [" ESC_BOLD "%d" ESC_RESET "]: '" ESC_RESET ESC_BOLD "%s" ESC_RESET
