@@ -130,7 +130,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
         LOG_D("Process (pid %d) exited normally with status %d", fuzzer->pid, WEXITSTATUS(status));
         
         if( strstr(hfuzz->cmdline[0], "EdgeDbg") ){
-            delay(1);    // 延时1秒，因为win10下启动Edge或者图片查看只能通过其它程序拉起，所以增加延时避免过早退出
+            delay(1);    // 延时1秒，因为win10下启动Edge或者图片查看只能通过其它程序拉起，所以增加延时避免过早退出
         }
 
         return true;
