@@ -5,7 +5,7 @@
  *
  * Author: Robert Swiecki <swiecki@google.com>
  *
- * Copyright 2010-2015 by Google Inc. All Rights Reserved.
+ * Copyright 2010-2017 by Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -40,8 +40,7 @@
 #endif
 
 #define PROG_NAME "honggfuzz"
-#define PROG_VERSION "1.0alpha"
-#define PROG_AUTHORS "Robert Swiecki <swiecki@google.com> et al.,\nCopyright 2010-2015 by Google Inc. All Rights Reserved."
+#define PROG_VERSION "1.0 beta"
 
 /* Go-style defer implementation */
 #define __STRMERGE(a, b) a##b
