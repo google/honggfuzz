@@ -32,6 +32,7 @@ COMMON_LDFLAGS := -lm
 COMMON_SRCS := $(wildcard *.c)
 CFLAGS ?= -O3
 LDFLAGS ?=
+LIBS_CFLAGS ?= -fPIC -fno-stack-protector -fno-builtin
 
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
@@ -134,6 +135,10 @@ else
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
                    -U__STRICT_ANSI__ -funroll-loops
     ARCH_LDFLAGS := -lpthread -L/usr/local/include -L/usr/include -lrt
+	# CygWin's gcc doesn't accept -fPIC (all code is position independent)
+	ifeq (Windows,$(findstring Windows,$(OS)))
+		LIBS_CFLAGS = -fno-stack-protector -fno-builtin
+	endif
     # OS Posix
 endif
 
@@ -242,7 +247,7 @@ $(CXX_BIN): $(HFUZZ_ARCH) $(CC_SRCS)
 	$(LD) -o $(CXX_BIN) $(CC_SRCS) $(LDFLAGS) $(CFLAGS)
 
 $(LIBS_OBJS): $(LIBS_SRCS)
-	$(CC) -fPIC -c -fno-builtin $(CFLAGS) -fno-stack-protector -o $@ $(@:.o=.c)
+	$(CC) -c $(LIBS_CFLAGS) $(CFLAGS) -o $@ $(@:.o=.c)
 
 $(HFUZZ_ARCH): $(LIBS_OBJS)
 	$(AR) rcs $(HFUZZ_ARCH) $(LIBS_OBJS)
