@@ -1,3 +1,10 @@
+2017-05-..  - Version 1.0 (rev       )
+        - Multiple stability improvements for most of the supported architectures
+        - More examples in examples/ (e.g. Linux kernel IP for BTS/PT)
+        - Documentation updates
+        - Added honggfuzz compiler wrapper in hfuzz_cc/
+        - Reworked buffer mangling logic
+
 2016-02-14  - Version 0.9 (rev b0d1118)
         - Clang >= 4.0 -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp support
         - Multiple examples in examples/
