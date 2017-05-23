@@ -17,7 +17,7 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
 **Code**
 
-  * Latest stable version: [0.9](https://github.com/google/honggfuzz/releases/tag/0.9), but using copy of the __master__ branch is highyl encouraged
+  * Latest stable version: [1.0](https://github.com/google/honggfuzz/releases), but using the __master__ branch is highly encouraged
   * [Changelog](https://github.com/google/honggfuzz/blob/master/CHANGELOG)
 
 **Requirements**
