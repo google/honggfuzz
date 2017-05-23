@@ -26,10 +26,10 @@
 **Fuzzing**
 
   ```
-  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.server/ -z -P -q -- ./persistent.server.openssl.master
-  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.client/ -z -P -q -- ./persistent.client.openssl.master
-  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.cert/ -z -P -q -- ./persistent.x509.openssl.master
-  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.privkey/ -z -P -q -- ./persistent.privkey.openssl.master
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.server/ -z -P -- ./persistent.server.openssl.master
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.client/ -z -P -- ./persistent.client.openssl.master
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.cert/ -z -P -- ./persistent.x509.openssl.master
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.privkey/ -z -P -- ./persistent.privkey.openssl.master
   ```
 
 **Use of sanitizers**
@@ -49,10 +49,10 @@
    * Run honggfuzz with the *-S* flag to support the sanitizer exit codes and reporting
 
 ```
-  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.server/ -z -P -q -S -- ./persistent.server.openssl.master.address
-  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.client/ -z -P -q -S -- ./persistent.client.openssl.master.address
-  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.cert/ -z -P -q -S -- ./persistent.x509.openssl.master.address
-  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.privkey/ -z -P -q -S -- ./persistent.privkey.openssl.master.address
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.server/ -z -P -S -- ./persistent.server.openssl.master.address
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.client/ -z -P -S -- ./persistent.client.openssl.master.address
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.cert/ -z -P -S -- ./persistent.x509.openssl.master.address
+  $ /home/jagger/src/honggfuzz/honggfuzz -f IN.privkey/ -z -P -S -- ./persistent.privkey.openssl.master.address
 ```
 ***MSAN/UBSAN***
 

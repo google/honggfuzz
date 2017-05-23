@@ -245,7 +245,7 @@ Coverage (max):
 As above, it will try to maximize the number of branches taken by CPU on behalf of the fuzzed process (here: djpeg.static) while performing each fuzzing iteration. Intel, AMD and even other CPU architectures are supported for this mode.
 
 ```
-$ [honggfuzz_dir]/honggfuzz --linux_perf_branch -f IN/ -F 2500 -q -- /usr/bin/xmllint -format ___FILE___
+$ [honggfuzz_dir]/honggfuzz --linux_perf_branch -f IN/ -F 2500 -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 0
 Start time: 2016-02-16 18:39:41 (0 seconds elapsed)

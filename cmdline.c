@@ -148,7 +148,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .inputDirP = NULL,
         .fileCnt = 0,
         .fileCntDone = false,
-        .nullifyStdio = false,
+        .nullifyStdio = true,
         .fuzzStdin = false,
         .saveUnique = true,
         .useScreen = true,
@@ -269,7 +269,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code)"},
         {{"instrument", no_argument, NULL, 'z'}, "Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)"},
         {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
-        {{"nullify_stdio", no_argument, NULL, 'q'}, "Null-ify children's stdin, stdout, stderr; make them quiet"},
+        {{"keep_output", no_argument, NULL, 'Q'}, "Don't close children's stdin, stdout, stderr; can be noisy"},
         {{"timeout", required_argument, NULL, 't'}, "Timeout in seconds (default: '10')"},
         {{"threads", required_argument, NULL, 'n'}, "Number of concurrent fuzzing threads (default: number of CPUs / 2)"},
         {{"stdin_input", no_argument, NULL, 's'}, "Provide fuzzing input on STDIN, instead of ___FILE___"},
@@ -329,7 +329,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     const char *logfile = NULL;
     int opt_index = 0;
     for (;;) {
-        int c = getopt_long(argc, argv, "-?hqvVsuPf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:CzTS", opts,
+        int c = getopt_long(argc, argv, "-?hQvVsuPf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:CzTS", opts,
                             &opt_index);
         if (c < 0)
             break;
@@ -342,8 +342,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         case 'f':
             hfuzz->inputDir = optarg;
             break;
-        case 'q':
-            hfuzz->nullifyStdio = true;
+        case 'Q':
+            hfuzz->nullifyStdio = false;
             break;
         case 'v':
             hfuzz->useScreen = false;

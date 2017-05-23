@@ -54,8 +54,14 @@ Options:
 	Help plz..
  --input|-f VALUE
 	Path to a directory containing initial file corpus
- --nullify_stdio|-q 
-	Null-ify children's stdin, stdout, stderr; make them quiet
+ --persistent|-P 
+	Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code)
+ --instrument|-z 
+	Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)
+ --sancov|-C 
+	Enable sanitizer coverage feedback
+ --keep_output|-Q 
+	Don't close children's stdin, stdout, stderr; can be noisy
  --timeout|-t VALUE
 	Timeout in seconds (default: '10')
  --threads|-n VALUE
@@ -100,14 +106,8 @@ Options:
 	Pass this environment variable, can be used multiple times
  --save_all|-u 
 	Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames
- --sancov|-C 
-	Enable sanitizer coverage feedback
- --instrument|-z 
-	Enable compile-time instrumentation (link with libhfuzz/libhfuzz.a)
  --msan_report_umrs 
 	Report MSAN's UMRS (uninitialized memory access)
- --persistent|-P 
-	Enable persistent fuzzing (link with libhfuzz/libhfuzz.a)
  --tmout_sigvtalrm|-T 
 	Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)
  --sanitizers|-S 
