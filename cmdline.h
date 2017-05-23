@@ -25,7 +25,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-#include "common.h"
+#include "libcommon/common.h"
 
 rlim_t cmdlineParseRLimit(int res, const char *optarg, unsigned long mul);
 

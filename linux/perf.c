@@ -21,7 +21,7 @@
  *
  */
 
-#include "../common.h"
+#include "../libcommon/common.h"
 #include "perf.h"
 
 #include <asm/mman.h>
@@ -41,9 +41,9 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-#include "../files.h"
-#include "../log.h"
-#include "../util.h"
+#include "../libcommon/files.h"
+#include "../libcommon/log.h"
+#include "../libcommon/util.h"
 #include "pt.h"
 
 #define _HF_PERF_MAP_SZ (1024 * 512)

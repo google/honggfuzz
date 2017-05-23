@@ -22,7 +22,7 @@
  *
  */
 
-#include "common.h"
+#include "libcommon/common.h"
 #include "mangle.h"
 
 #include <inttypes.h>
@@ -32,8 +32,8 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "log.h"
-#include "util.h"
+#include "libcommon/log.h"
+#include "libcommon/util.h"
 
 static inline void mangle_Overwrite(fuzzer_t * fuzzer, const uint8_t * src, size_t off, size_t sz)
 {

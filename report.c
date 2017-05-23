@@ -21,7 +21,7 @@
  *
  */
 
-#include "common.h"
+#include "libcommon/common.h"
 #include "report.h"
 
 #include <fcntl.h>
@@ -30,8 +30,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "log.h"
-#include "util.h"
+#include "libcommon/log.h"
+#include "libcommon/util.h"
 
 static int reportFD = -1;
 

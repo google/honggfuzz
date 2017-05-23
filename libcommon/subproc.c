@@ -43,7 +43,7 @@
 #include "arch.h"
 #include "files.h"
 #include "log.h"
-#include "sancov.h"
+#include "sanitizers.h"
 #include "util.h"
 
 extern char **environ;

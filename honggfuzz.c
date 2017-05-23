@@ -32,13 +32,13 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "common.h"
+#include "libcommon/common.h"
+#include "libcommon/display.h"
+#include "libcommon/log.h"
+#include "libcommon/files.h"
+#include "libcommon/util.h"
 #include "cmdline.h"
-#include "display.h"
-#include "log.h"
-#include "files.h"
 #include "fuzz.h"
-#include "util.h"
 
 static int sigReceived = 0;
 

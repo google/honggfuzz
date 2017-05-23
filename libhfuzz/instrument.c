@@ -1,6 +1,6 @@
 #include <unistd.h>
 
-#include "../common.h"
+#include "../libcommon/common.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -15,7 +15,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "../util.h"
+#include "../libcommon/util.h"
 
 /*
  * We require SSE4.2 with x86-(32|64) for the 'popcnt', as it's much faster than the software

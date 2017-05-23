@@ -23,7 +23,7 @@
  *
  */
 
-#include "common.h"
+#include "libcommon/common.h"
 #include "fuzz.h"
 
 #include <errno.h>
@@ -43,15 +43,15 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "arch.h"
-#include "files.h"
-#include "log.h"
+#include "libcommon/arch.h"
+#include "libcommon/files.h"
+#include "libcommon/log.h"
+#include "libcommon/sanitizers.h"
+#include "libcommon/sancov.h"
+#include "libcommon/subproc.h"
+#include "libcommon/util.h"
 #include "mangle.h"
 #include "report.h"
-#include "sanitizers.h"
-#include "sancov.h"
-#include "subproc.h"
-#include "util.h"
 
 static pthread_t fuzz_mainThread;
 

@@ -24,7 +24,7 @@
 #ifndef _HF_LINUX_PT_H_
 #define _HF_LINUX_PT_H_
 
-#include "../common.h"
+#include "../libcommon/common.h"
 
 #include <linux/perf_event.h>
 #include <stdint.h>

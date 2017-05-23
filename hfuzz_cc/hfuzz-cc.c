@@ -1,4 +1,4 @@
-#include "../common.h"
+#include "../libcommon/common.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -13,8 +13,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "../files.h"
-#include "../log.h"
+#include "../libcommon/files.h"
+#include "../libcommon/log.h"
 
 #define ARGS_MAX 4096
 #define __XSTR(x) #x

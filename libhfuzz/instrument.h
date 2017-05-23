@@ -24,8 +24,8 @@
 #ifndef _HF_LIBHFUZZ_INSTRUMENT_H_
 #define _HF_LIBHFUZZ_INSTRUMENT_H_
 
-#include "../common.h"
-#include "../util.h"
+#include "../libcommon/common.h"
+#include "../libcommon/util.h"
 
 extern feedback_t *feedback;
 extern uint32_t my_thread_no;

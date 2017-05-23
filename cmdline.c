@@ -37,10 +37,10 @@
 #include <sys/queue.h>
 #include <unistd.h>
 
-#include "common.h"
-#include "log.h"
-#include "files.h"
-#include "util.h"
+#include "libcommon/common.h"
+#include "libcommon/log.h"
+#include "libcommon/files.h"
+#include "libcommon/util.h"
 
 struct custom_option {
     struct option opt;

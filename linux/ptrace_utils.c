@@ -21,7 +21,7 @@
  *
  */
 
-#include "../common.h"
+#include "../libcommon/common.h"
 #include "ptrace_utils.h"
 
 #include <ctype.h>
@@ -49,11 +49,11 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../files.h"
-#include "../log.h"
-#include "../sancov.h"
-#include "../subproc.h"
-#include "../util.h"
+#include "../libcommon/files.h"
+#include "../libcommon/log.h"
+#include "../libcommon/sancov.h"
+#include "../libcommon/subproc.h"
+#include "../libcommon/util.h"
 #include "bfd.h"
 #include "unwind.h"
 

@@ -21,8 +21,8 @@
  *
  */
 
-#include "../common.h"
-#include "../arch.h"
+#include "../libcommon/common.h"
+#include "../libcommon/arch.h"
 
 #include <arpa/inet.h>
 #include <ctype.h>
@@ -59,11 +59,11 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 
-#include "../files.h"
-#include "../log.h"
-#include "../sancov.h"
-#include "../subproc.h"
-#include "../util.h"
+#include "../libcommon/files.h"
+#include "../libcommon/log.h"
+#include "../libcommon/sancov.h"
+#include "../libcommon/subproc.h"
+#include "../libcommon/util.h"
 #include "perf.h"
 #include "ptrace_utils.h"
 

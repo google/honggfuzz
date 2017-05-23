@@ -21,7 +21,7 @@
  *
  */
 
-#include "../common.h"
+#include "../libcommon/common.h"
 #include "unwind.h"
 
 #include <stdio.h>
@@ -30,7 +30,7 @@
 #include <endian.h>
 #include <libunwind-ptrace.h>
 
-#include "../log.h"
+#include "../libcommon/log.h"
 
 /*
  * WARNING: Ensure that _UPT-info structs are not shared between threads
