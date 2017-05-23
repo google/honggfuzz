@@ -152,7 +152,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     display_put(ESC_NAV(13, 1) ESC_CLEAR_ABOVE ESC_NAV(1, 1));
     display_put("------------------------------[ " ESC_BOLD "%s v%s" ESC_RESET
-                " ]------------------------------\n", PROG_NAME, PROG_VERSION);
+                " ]-------------------------------\n", PROG_NAME, PROG_VERSION);
     display_put("  Iterations : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
     if (hfuzz->mutationsMax) {
