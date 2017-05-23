@@ -21,7 +21,8 @@
 #define _XSTR(x) __XSTR(x)
 #define LHFUZZ_A_PATH "/tmp/libhfuzz.a"
 
-static int isCXX = false;
+static bool isCXX = false;
+static bool isGCC = false;
 
 __asm__("\n"
         "	.global lhfuzz_start\n"
@@ -91,22 +92,38 @@ static int execCC(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    if (isCXX) {
-        execvp("clang++-devel", argv);
-        execvp("clang++-6.0", argv);
-        execvp("clang++-5.0", argv);
-        execvp("clang++-4.0", argv);
-        execvp("clang++", argv);
-        execvp("clang", argv);
+    if (isGCC) {
+        if (isCXX) {
+            execvp("g++-8", argv);
+            execvp("g++-7", argv);
+            execvp("g++-6", argv);
+            execvp("g++-5", argv);
+            execvp("g++", argv);
+            execvp("gcc", argv);
+        } else {
+            execvp("gcc-8", argv);
+            execvp("gcc-7", argv);
+            execvp("gcc-6", argv);
+            execvp("gcc-5", argv);
+            execvp("gcc", argv);
+        }
     } else {
-        execvp("clang-devel", argv);
-        execvp("clang-6.0", argv);
-        execvp("clang-5.0", argv);
-        execvp("clang-4.0", argv);
-        execvp("clang", argv);
+        if (isCXX) {
+            execvp("clang++-devel", argv);
+            execvp("clang++-6.0", argv);
+            execvp("clang++-5.0", argv);
+            execvp("clang++-4.0", argv);
+            execvp("clang++", argv);
+            execvp("clang", argv);
+        } else {
+            execvp("clang-devel", argv);
+            execvp("clang-6.0", argv);
+            execvp("clang-5.0", argv);
+            execvp("clang-4.0", argv);
+            execvp("clang", argv);
+        }
     }
 
-    execvp(argv[0], argv);
     PLOG_E("execvp('%s')", argv[0]);
     return EXIT_FAILURE;
 }
@@ -117,17 +134,23 @@ static int ccMode(int argc, char **argv)
 
     int j = 0;
     if (isCXX) {
-        args[j++] = "clang++";
+        args[j++] = "c++";
     } else {
-        args[j++] = "clang";
+        args[j++] = "cc";
     }
-    args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
-    args[j++] = "-mllvm";
-    args[j++] = "-sanitizer-coverage-prune-blocks=0";
-    args[j++] = "-mllvm";
-    args[j++] = "-sanitizer-coverage-block-threshold=10000000";
-    args[j++] = "-mllvm";
-    args[j++] = "-sanitizer-coverage-level=2";
+    if (!isGCC) {
+        args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
+    } else {
+        args[j++] = "-fsanitize-coverage=trace-pc";
+    }
+    if (!isGCC) {
+        args[j++] = "-mllvm";
+        args[j++] = "-sanitizer-coverage-prune-blocks=0";
+        args[j++] = "-mllvm";
+        args[j++] = "-sanitizer-coverage-block-threshold=10000000";
+        args[j++] = "-mllvm";
+        args[j++] = "-sanitizer-coverage-level=2";
+    }
     args[j++] = "-funroll-loops";
     args[j++] = "-fno-inline";
     args[j++] = "-fno-builtin";
@@ -188,21 +211,27 @@ static int ldMode(int argc, char **argv)
 
     int j = 0;
     if (isCXX) {
-        args[j++] = "clang++";
+        args[j++] = "c++";
     } else {
-        args[j++] = "clang";
+        args[j++] = "cc";
     }
     args[j++] = "-Wl,-z,muldefs";
     args[j++] = "-Wl,--whole-archive";
     args[j++] = LHFUZZ_A_PATH;
     args[j++] = "-Wl,--no-whole-archive";
-    args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
-    args[j++] = "-mllvm";
-    args[j++] = "-sanitizer-coverage-prune-blocks=0";
-    args[j++] = "-mllvm";
-    args[j++] = "-sanitizer-coverage-block-threshold=10000000";
-    args[j++] = "-mllvm";
-    args[j++] = "-sanitizer-coverage-level=2";
+    if (!isGCC) {
+        args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
+    } else {
+        args[j++] = "-fsanitize-coverage=trace-pc";
+    }
+    if (!isGCC) {
+        args[j++] = "-mllvm";
+        args[j++] = "-sanitizer-coverage-prune-blocks=0";
+        args[j++] = "-mllvm";
+        args[j++] = "-sanitizer-coverage-block-threshold=10000000";
+        args[j++] = "-mllvm";
+        args[j++] = "-sanitizer-coverage-level=2";
+    }
     args[j++] = "-funroll-loops";
     args[j++] = "-fno-inline";
     args[j++] = "-fno-builtin";
@@ -220,6 +249,12 @@ int main(int argc, char **argv)
 {
     if (strstr(argv[0], "++") != NULL) {
         isCXX = true;
+    }
+    if (strstr(argv[0], "gcc") != NULL) {
+        isGCC = true;
+    }
+    if (strstr(argv[0], "g++") != NULL) {
+        isGCC = true;
     }
     if (argc <= 1) {
         LOG_I("'%s': No arguments provided", argv[0]);

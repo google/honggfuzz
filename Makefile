@@ -24,9 +24,8 @@
 CC ?= gcc
 LD = $(CC)
 BIN := honggfuzz
-CC_BIN := hfuzz_cc/hfuzz-clang
-CXX_BIN := hfuzz_cc/hfuzz-clang++
-CC_SRCS := display.c log.c util.c files.c hfuzz_cc/hfuzz-clang.c
+HFUZZ_CC_BINS := hfuzz_cc/hfuzz-clang hfuzz_cc/hfuzz-clang++ hfuzz_cc/hfuzz-gcc hfuzz_cc/hfuzz-g++
+HFUZZ_CC_SRCS := display.c log.c util.c files.c hfuzz_cc/hfuzz-cc.c
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=131072
 COMMON_LDFLAGS := -lm
 COMMON_SRCS := $(wildcard *.c)
@@ -226,7 +225,7 @@ SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
 MAC_GARGBAGE := $(wildcard mac/mach_exc*)
 ANDROID_GARBAGE := obj libs
 
-all: $(BIN) $(CC_BIN) $(CXX_BIN) $(HFUZZ_ARCH)
+all: $(BIN) $(HFUZZ_CC_BINS) $(HFUZZ_ARCH)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
@@ -240,11 +239,8 @@ all: $(BIN) $(CC_BIN) $(CXX_BIN) $(HFUZZ_ARCH)
 $(BIN): $(OBJS)
 	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
 
-$(CC_BIN): $(HFUZZ_ARCH) $(CC_SRCS)
-	$(LD) -o $(CC_BIN) $(CC_SRCS) $(LDFLAGS) $(CFLAGS)
-
-$(CXX_BIN): $(HFUZZ_ARCH) $(CC_SRCS)
-	$(LD) -o $(CXX_BIN) $(CC_SRCS) $(LDFLAGS) $(CFLAGS)
+$(HFUZZ_CC_BINS): $(HFUZZ_ARCH) $(HFUZZ_CC_SRCS)
+	$(LD) -o $@ $(HFUZZ_CC_SRCS) $(LDFLAGS) $(CFLAGS)
 
 $(LIBS_OBJS): $(LIBS_SRCS)
 	$(CC) -c $(LIBS_CFLAGS) $(CFLAGS) -o $@ $(@:.o=.c)
@@ -254,7 +250,7 @@ $(HFUZZ_ARCH): $(LIBS_OBJS)
 
 .PHONY: clean
 clean:
-	$(RM) -r core $(OBJS) $(BIN) $(CC_BIN) $(CXX_BIN) $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
+	$(RM) -r core $(OBJS) $(BIN) $(HFUZZ_CC_BINS) $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
 
 .PHONY: indent
 indent:
@@ -325,7 +321,7 @@ sanitizers.o: common.h sanitizers.h files.h log.h util.h
 subproc.o: common.h subproc.h arch.h files.h log.h sancov.h sanitizers.h
 subproc.o: util.h
 util.o: common.h util.h files.h log.h
-hfuzz_cc/hfuzz-clang.o: common.h files.h common.h log.h
+hfuzz_cc/hfuzz-cc.o: common.h files.h common.h log.h
 libhfuzz/instrument.o: common.h util.h
 libhfuzz/memorycmp.o: libhfuzz/instrument.h common.h util.h
 libhfuzz/persistent.o: common.h
