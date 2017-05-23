@@ -1,4 +1,4 @@
-2017-05-23 - Version 1.0 (rev 9a1d226)
+2017-05-23 - Version 1.0 (rev 4332ae9)
         - Multiple stability improvements for most of the supported architectures
         - More examples in examples/ (e.g. Linux kernel IP for BTS/PT)
         - Documentation updates
