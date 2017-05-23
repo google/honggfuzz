@@ -252,8 +252,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put(" #crashes: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET,
                     ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
     }
-    display_put("\n-----------------------------------[ " ESC_BOLD "LOGS" ESC_RESET
-                " ]-----------------------------------\n");
+    display_put("\n-------------------------------------[ " ESC_BOLD "LOGS" ESC_RESET
+                " ]--------------------------------------\n");
     display_put(ESC_SCROLL(14, 999) ESC_NAV(999, 1));
 }
 
