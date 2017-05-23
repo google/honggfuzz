@@ -113,6 +113,7 @@ typedef struct {
     uint64_t bbCnt;
     uint64_t newBBCnt;
     uint64_t softCntPc;
+    uint64_t softCntEdge;
     uint64_t softCntCmp;
 } hwcnt_t;
 
@@ -191,6 +192,7 @@ typedef struct {
     uint8_t bbMapPc[_HF_PERF_BITMAP_SIZE_16M];
     uint8_t bbMapCmp[_HF_PERF_BITMAP_SIZE_16M];
     uint64_t pidFeedbackPc[_HF_THREAD_MAX];
+    uint64_t pidFeedbackEdge[_HF_THREAD_MAX];
     uint64_t pidFeedbackCmp[_HF_THREAD_MAX];
 } feedback_t;
 

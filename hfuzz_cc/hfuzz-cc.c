@@ -138,12 +138,10 @@ static int ccMode(int argc, char **argv)
     } else {
         args[j++] = "cc";
     }
-    if (!isGCC) {
-        args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
-    } else {
+    if (isGCC) {
         args[j++] = "-fsanitize-coverage=trace-pc";
-    }
-    if (!isGCC) {
+    } else {
+        args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
         args[j++] = "-mllvm";
         args[j++] = "-sanitizer-coverage-prune-blocks=0";
         args[j++] = "-mllvm";
@@ -219,12 +217,10 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-Wl,--whole-archive";
     args[j++] = LHFUZZ_A_PATH;
     args[j++] = "-Wl,--no-whole-archive";
-    if (!isGCC) {
-        args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
-    } else {
+    if (isGCC) {
         args[j++] = "-fsanitize-coverage=trace-pc";
-    }
-    if (!isGCC) {
+    } else {
+        args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
         args[j++] = "-mllvm";
         args[j++] = "-sanitizer-coverage-prune-blocks=0";
         args[j++] = "-mllvm";
