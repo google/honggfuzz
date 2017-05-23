@@ -257,7 +257,7 @@ $(UTIL_ARCH): $(UTIL_OBJS)
 
 .PHONY: clean
 clean:
-	$(RM) -r core $(OBJS) $(BIN) $(HFUZZ_CC_BINS) $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
+	$(RM) -r core Makefile.bak $(OBJS) $(BIN) $(HFUZZ_CC_BINS) $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
 
 .PHONY: indent
 indent:
