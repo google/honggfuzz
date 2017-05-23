@@ -151,8 +151,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     MX_SCOPED_LOCK(logMutexGet());
 
     display_put(ESC_NAV(13, 1) ESC_CLEAR_ABOVE ESC_NAV(1, 1));
-    display_put("----------------------------[ " ESC_BOLD "%s v%s" ESC_RESET
-                " ]---------------------------\n", PROG_NAME, PROG_VERSION);
+    display_put("------------------------------[ " ESC_BOLD "%s v%s" ESC_RESET
+                " ]------------------------------\n", PROG_NAME, PROG_VERSION);
     display_put("  Iterations : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
     if (hfuzz->mutationsMax) {
@@ -252,8 +252,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put(" #crashes: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET,
                     ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
     }
-    display_put("\n-------------------------------------[ " ESC_BOLD "LOGS" ESC_RESET
-                " ]--------------------------------------\n");
+    display_put("\n-----------------------------------[ " ESC_BOLD "LOGS" ESC_RESET
+                " ]------------------------------------\n");
     display_put(ESC_SCROLL(14, 999) ESC_NAV(999, 1));
 }
 
