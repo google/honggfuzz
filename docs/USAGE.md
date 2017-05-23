@@ -39,7 +39,7 @@ It should work under the following operating systems:
 | **GNU/Linux** | Works | ptrace() API (x86, x86-64 disassembly support)|
 | **FreeBSD** | Works | POSIX signal interface |
 | **Mac OS X** | Works | POSIX signal interface/Mac OS X crash reports (x86-64/x86 disassembly support) |
-| **Anddoid** | Works | ptrace() API (x86, x86-64 disassembly support) |
+| **Android** | Works | ptrace() API (x86, x86-64 disassembly support) |
 | **MS Windows** | Works | POSIX signal interface via CygWin |
 | **Other Unices** | Depends`*` | POSIX signal interface |
 
