@@ -144,6 +144,12 @@ LOCAL_SRC_FILES := $(wildcard libhfuzz/*.c)
 LOCAL_CFLAGS := -D_HF_ARCH_${ARCH} $(COMMON_CFLAGS) \
   -fPIC -fno-builtin -fno-stack-protector
 
+# libcommon module
+include $(CLEAR_VARS)
+LOCAL_MODULE := common
+LOCAL_SRC_FILES := $(wildcard libcommon/*.c)
+LOCAL_CFLAGS := -D_HF_ARCH_${ARCH} $(COMMON_CFLAGS)
+
 ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
   LOCAL_CFLAGS += -fblocks
   LOCAL_STATIC_LIBRARIES += libblocksruntime
@@ -164,7 +170,8 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
     libunwind \
     libunwind-ptrace \
     libunwind-dwarf-generic \
-    libcapstone
+    libcapstone \
+    common
   LOCAL_CFLAGS += -D__HF_USE_CAPSTONE__
   ifeq ($(ARCH_ABI),arm)
     LOCAL_CFLAGS += -DOPENSSL_ARMCAP_ABI='$(OPENSSL_ARMCAP_ABI)'
