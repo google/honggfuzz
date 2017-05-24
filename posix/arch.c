@@ -44,8 +44,8 @@
 #include "../libcommon/files.h"
 #include "../libcommon/log.h"
 #include "../libcommon/sancov.h"
-#include "../libcommon/subproc.h"
 #include "../libcommon/util.h"
+#include "../subproc.h"
 
 /*  *INDENT-OFF* */
 struct {

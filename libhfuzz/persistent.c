@@ -1,3 +1,5 @@
+#include "../libcommon/common.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -11,7 +13,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "../libcommon/common.h"
+#include "../libcommon/log.h"
 
 int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len) __attribute__ ((weak));
 int LLVMFuzzerInitialize(int *argc, char ***argv) __attribute__ ((weak));
@@ -68,26 +70,22 @@ void HF_ITER(uint8_t ** buf_ptr, size_t * len_ptr)
     if (initialized == true) {
         static const uint8_t readyTag = 'A';
         if (writeToFd(_HF_PERSISTENT_FD, &readyTag, sizeof(readyTag)) == false) {
-            fprintf(stderr, "readFromFdAll() failed\n");
-            _exit(1);
+            LOG_F("readFromFdAll() failed");
         }
     }
     initialized = true;
 
     uint32_t rlen;
     if (readFromFdAll(_HF_PERSISTENT_FD, (uint8_t *) & rlen, sizeof(rlen)) == false) {
-        fprintf(stderr, "readFromFdAll(size) failed\n");
-        _exit(1);
+        LOG_F("readFromFdAll(size) failed");
     }
     size_t len = (size_t) rlen;
     if (len > _HF_PERF_BITMAP_SIZE_16M) {
-        fprintf(stderr, "len (%zu) > buf_size (%zu)\n", len, (size_t) _HF_PERF_BITMAP_SIZE_16M);
-        _exit(1);
+        LOG_F("len (%zu) > buf_size (%zu)\n", len, (size_t) _HF_PERF_BITMAP_SIZE_16M);
     }
 
     if (readFromFdAll(_HF_PERSISTENT_FD, buf, len) == false) {
-        fprintf(stderr, "readFromFdAll(buf) failed\n");
-        _exit(1);
+        LOG_F("readFromFdAll(buf) failed");
     }
 
     *buf_ptr = buf;
@@ -98,8 +96,7 @@ static void runOneInput(uint8_t * buf, size_t len)
 {
     int ret = LLVMFuzzerTestOneInput(buf, len);
     if (ret != 0) {
-        fprintf(stderr, "LLVMFuzzerTestOneInput() returned '%d' instead of '0'\n", ret);
-        exit(1);
+        LOG_F("LLVMFuzzerTestOneInput() returned '%d' instead of '0'", ret);
     }
 }
 
@@ -114,18 +111,17 @@ int main(int argc, char **argv)
         LLVMFuzzerInitialize(&argc, &argv);
     }
     if (LLVMFuzzerTestOneInput == NULL) {
-        fprintf(stderr, "Define 'int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)' in your "
-                "code to make it work\n");
-        exit(1);
+        LOG_F("Define 'int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)' in your "
+              "code to make it work");
     }
 
     if (fcntl(_HF_PERSISTENT_FD, F_GETFD) == -1 && errno == EBADF) {
-        fprintf(stderr, "Accepting input from stdin\n"
-                "Usage for fuzzing: honggfuzz -P [flags] -- %s\n", argv[0]);
+        LOG_I("Accepting input from stdin\n"
+              "Usage for fuzzing: honggfuzz -P [flags] -- %s", argv[0]);
 
         ssize_t len = readFromFd(STDIN_FILENO, buf, sizeof(buf));
         if (len < 0) {
-            fprintf(stderr, "Couldn't read data from stdin: %s\n", strerror(errno));
+            LOG_E("Couldn't read data from stdin: %s", strerror(errno));
             return -1;
         }
 

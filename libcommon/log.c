@@ -46,9 +46,9 @@
 #define __hf_pid()      getpid()
 #endif                          /* defined(_HF_ARCH_LINUX) */
 
-static int log_fd;
-static bool log_fd_isatty;
-enum llevel_t log_level;
+static int log_fd = STDERR_FILENO;
+static bool log_fd_isatty = false;
+enum llevel_t log_level = INFO;
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 __attribute__ ((constructor))

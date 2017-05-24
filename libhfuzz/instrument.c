@@ -16,6 +16,7 @@
 #include <unistd.h>
 
 #include "../libcommon/util.h"
+#include "../libcommon/log.h"
 
 /*
  * We require SSE4.2 with x86-(32|64) for the 'popcnt', as it's much faster than the software
@@ -41,24 +42,20 @@ static void mapBB(void)
     my_thread_no = atoi(my_thread_no_str);
 
     if (my_thread_no >= _HF_THREAD_MAX) {
-        fprintf(stderr, "my_thread_no > _HF_THREAD_MAX (%" PRIu32 " > %d)\n", my_thread_no,
-                _HF_THREAD_MAX);
-        _exit(1);
+        LOG_F("my_thread_no > _HF_THREAD_MAX (%" PRIu32 " > %d)\n", my_thread_no, _HF_THREAD_MAX);
     }
     struct stat st;
     if (fstat(_HF_BITMAP_FD, &st) == -1) {
         return;
     }
     if (st.st_size != sizeof(feedback_t)) {
-        fprintf(stderr, "st.size != sizeof(feedback_t) (%zu != %zu)\n", (size_t) st.st_size,
-                sizeof(feedback_t));
-        _exit(1);
+        LOG_F("st.size != sizeof(feedback_t) (%zu != %zu)\n", (size_t) st.st_size,
+              sizeof(feedback_t));
     }
     if ((feedback =
          mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED, _HF_BITMAP_FD,
               0)) == MAP_FAILED) {
-        fprintf(stderr, "mmap: %s\n", strerror(errno));
-        _exit(1);
+        LOG_F("mmap: %s\n", strerror(errno));
     }
     feedback->pidFeedbackPc[my_thread_no] = 0U;
     feedback->pidFeedbackEdge[my_thread_no] = 0U;
@@ -204,8 +201,8 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(uint32_t * 
     uint32_t n = 1U;
     for (uint32_t * x = start; x < stop; x++, n++) {
         if (n >= _HF_PC_GUARD_MAX) {
-            fprintf(stderr, "This process has too many PC guards\n");
-            exit(1);
+            LOG_F("This process has too many PC guards: %tx\n",
+                  ((uintptr_t) stop - (uintptr_t) start) / sizeof(start));
         }
         /* If the corresponding PC was already hit, map this specific guard as non-interesting (0) */
         *x = ATOMIC_GET(feedback->pcGuardMap[n]) ? 0U : n;
