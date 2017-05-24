@@ -151,7 +151,7 @@ SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
 OBJS := $(SRCS:.c=.o)
 
 LHFUZZ_SRCS := $(wildcard libhfuzz/*.c)
-LHFUZZ_OBJS := $(LIBS_SRCS:.c=.o)
+LHFUZZ_OBJS := $(LHFUZZ_SRCS:.c=.o)
 LHFUZZ_ARCH := libhfuzz/libhfuzz.a
 
 LCOMMON_SRCS := $(wildcard libcommon/*.c)
