@@ -150,13 +150,13 @@ endif
 SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
 OBJS := $(SRCS:.c=.o)
 
-LIBS_SRCS := $(wildcard libhfuzz/*.c)
-LIBS_OBJS := $(LIBS_SRCS:.c=.o)
-HFUZZ_ARCH := libhfuzz/libhfuzz.a
+LHFUZZ_SRCS := $(wildcard libhfuzz/*.c)
+LHFUZZ_OBJS := $(LIBS_SRCS:.c=.o)
+LHFUZZ_ARCH := libhfuzz/libhfuzz.a
 
-UTIL_SRCS := $(wildcard libcommon/*.c)
-UTIL_OBJS := $(UTIL_SRCS:.c=.o)
-UTIL_ARCH := libcommon/libcommon.a
+LCOMMON_SRCS := $(wildcard libcommon/*.c)
+LCOMMON_OBJS := $(LCOMMON_SRCS:.c=.o)
+LCOMMON_ARCH := libcommon/libcommon.a
 
 # Respect external user defines
 CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH}
@@ -229,7 +229,7 @@ SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
 MAC_GARGBAGE := $(wildcard mac/mach_exc*)
 ANDROID_GARBAGE := obj libs
 
-all: $(BIN) $(HFUZZ_CC_BINS) $(HFUZZ_ARCH) $(UTIL_ARCH)
+all: $(BIN) $(HFUZZ_CC_BINS) $(LHFUZZ_ARCH) $(LCOMMON_ARCH)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
@@ -240,27 +240,30 @@ all: $(BIN) $(HFUZZ_CC_BINS) $(HFUZZ_ARCH) $(UTIL_ARCH)
 %.dylib: %.c
 	$(CC) -fPIC -shared $(CFLAGS) -o $@ $<
 
-$(BIN): $(OBJS) $(UTIL_ARCH)
+$(BIN): $(OBJS) $(LCOMMON_ARCH)
 	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
 
-$(HFUZZ_CC_BINS): $(HFUZZ_ARCH) $(UTIL_ARCH) $(HFUZZ_CC_SRCS)
+$(HFUZZ_CC_BINS): $(LHFUZZ_ARCH) $(LCOMMON_ARCH) $(HFUZZ_CC_SRCS)
 	$(LD) -o $@ $(HFUZZ_CC_SRCS) $(LDFLAGS) $(CFLAGS)
 
-$(LIBS_OBJS): $(LIBS_SRCS)
+$(LHFUZZ_OBJS): $(LHFUZZ_SRCS)
 	$(CC) -c $(LIBS_CFLAGS) $(CFLAGS) -o $@ $(@:.o=.c)
 
-$(HFUZZ_ARCH): $(LIBS_OBJS) $(UTIL_ARCH)
-	$(AR) rcs $(HFUZZ_ARCH) $(LIBS_OBJS) $(UTIL_OBJS)
+$(LHFUZZ_ARCH): $(LHFUZZ_OBJS) $(LCOMMON_ARCH)
+	$(AR) rcs $(LHFUZZ_ARCH) $(LHFUZZ_OBJS) $(LCOMMON_OBJS)
 
-$(UTIL_OBJS): $(LIBS_SRCS)
+$(LCOMMON_OBJS): $(LIBS_SRCS)
 	$(CC) -c $(LIBS_CFLAGS) $(CFLAGS) -o $@ $(@:.o=.c)
 
-$(UTIL_ARCH): $(UTIL_OBJS)
-	$(AR) rcs $(UTIL_ARCH) $(UTIL_OBJS)
+$(LCOMMON_ARCH): $(LCOMMON_OBJS)
+	$(AR) rcs $(LCOMMON_ARCH) $(LCOMMON_OBJS)
 
 .PHONY: clean
 clean:
-	$(RM) -r core Makefile.bak $(OBJS) $(BIN) $(HFUZZ_CC_BINS) $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
+	$(RM) -r core Makefile.bak \
+			$(OBJS) $(BIN) $(HFUZZ_CC_BINS) \
+			$(LHFUZZ_ARCH) $(LHFUZZ_OBJS) $(LCOMMON_ARCH) $(LCOMMON_OBJS) \
+			$(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
 
 .PHONY: indent
 indent:

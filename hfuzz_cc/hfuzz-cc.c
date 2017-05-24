@@ -147,7 +147,7 @@ static int ccMode(int argc, char **argv)
         args[j++] = "-mllvm";
         args[j++] = "-sanitizer-coverage-block-threshold=10000000";
         args[j++] = "-mllvm";
-        args[j++] = "-sanitizer-coverage-level=2";
+        args[j++] = "-sanitizer-coverage-level=3";
     }
     args[j++] = "-funroll-loops";
     args[j++] = "-fno-inline";
@@ -226,7 +226,7 @@ static int ldMode(int argc, char **argv)
         args[j++] = "-mllvm";
         args[j++] = "-sanitizer-coverage-block-threshold=10000000";
         args[j++] = "-mllvm";
-        args[j++] = "-sanitizer-coverage-level=2";
+        args[j++] = "-sanitizer-coverage-level=3";
     }
     args[j++] = "-funroll-loops";
     args[j++] = "-fno-inline";
