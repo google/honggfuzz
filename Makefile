@@ -252,6 +252,9 @@ $(LIBS_OBJS): $(LIBS_SRCS)
 $(HFUZZ_ARCH): $(LIBS_OBJS) $(UTIL_ARCH)
 	$(AR) rcs $(HFUZZ_ARCH) $(LIBS_OBJS) $(UTIL_OBJS)
 
+$(UTIL_OBJS): $(LIBS_SRCS)
+	$(CC) -c $(LIBS_CFLAGS) $(CFLAGS) -o $@ $(@:.o=.c)
+
 $(UTIL_ARCH): $(UTIL_OBJS)
 	$(AR) rcs $(UTIL_ARCH) $(UTIL_OBJS)
 
