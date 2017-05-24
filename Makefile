@@ -356,6 +356,7 @@ libhfuzz/instrument.o: libcommon/common.h
 libhfuzz/memorycmp.o: libhfuzz/instrument.h libcommon/common.h
 libhfuzz/memorycmp.o: libcommon/util.h
 libhfuzz/persistent.o: libcommon/common.h libcommon/log.h libcommon/common.h
+libhfuzz/persistent.o: libcommon/files.h
 linux/arch.o: libcommon/common.h libcommon/arch.h libcommon/common.h
 linux/arch.o: libcommon/files.h libcommon/log.h libcommon/sancov.h
 linux/arch.o: libcommon/sanitizers.h libcommon/util.h subproc.h linux/perf.h

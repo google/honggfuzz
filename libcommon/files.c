@@ -89,7 +89,7 @@ bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flag
     return true;
 }
 
-bool files_writeToFd(int fd, uint8_t * buf, size_t fileSz)
+bool files_writeToFd(int fd, const uint8_t * buf, size_t fileSz)
 {
     size_t writtenSz = 0;
     while (writtenSz < fileSz) {
@@ -105,9 +105,9 @@ bool files_writeToFd(int fd, uint8_t * buf, size_t fileSz)
     return true;
 }
 
-bool files_writeStrToFd(int fd, char *str)
+bool files_writeStrToFd(int fd, const char *str)
 {
-    return files_writeToFd(fd, (uint8_t *) str, strlen(str));
+    return files_writeToFd(fd, (const uint8_t *)str, strlen(str));
 }
 
 ssize_t files_readFromFd(int fd, uint8_t * buf, size_t fileSz)

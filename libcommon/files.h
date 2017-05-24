@@ -38,9 +38,9 @@ extern ssize_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t file
 
 extern bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flags);
 
-extern bool files_writeToFd(int fd, uint8_t * buf, size_t fileSz);
+extern bool files_writeToFd(int fd, const uint8_t * buf, size_t fileSz);
 
-extern bool files_writeStrToFd(int fd, char *str);
+extern bool files_writeStrToFd(int fd, const char *str);
 
 extern ssize_t files_readFromFd(int fd, uint8_t * buf, size_t fileSz);
 

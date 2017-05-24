@@ -14,51 +14,17 @@
 #include <unistd.h>
 
 #include "../libcommon/log.h"
+#include "../libcommon/files.h"
 
 int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len) __attribute__ ((weak));
 int LLVMFuzzerInitialize(int *argc, char ***argv) __attribute__ ((weak));
 
-static inline ssize_t readFromFd(int fd, uint8_t * buf, size_t len)
-{
-    size_t readSz = 0;
-    while (readSz < len) {
-        ssize_t sz = read(fd, &buf[readSz], len - readSz);
-        if (sz < 0 && errno == EINTR)
-            continue;
-
-        if (sz == 0)
-            break;
-
-        if (sz < 0)
-            return -1;
-
-        readSz += sz;
-    }
-    return (ssize_t) readSz;
-}
+static uint8_t buf[_HF_PERF_BITMAP_SIZE_16M] = { 0 };
 
 static inline bool readFromFdAll(int fd, uint8_t * buf, size_t len)
 {
-    return (readFromFd(fd, buf, len) == (ssize_t) len);
+    return (files_readFromFd(fd, buf, len) == (ssize_t) len);
 }
-
-static bool writeToFd(int fd, const uint8_t * buf, size_t len)
-{
-    size_t writtenSz = 0;
-    while (writtenSz < len) {
-        ssize_t sz = write(fd, &buf[writtenSz], len - writtenSz);
-        if (sz < 0 && errno == EINTR)
-            continue;
-
-        if (sz < 0)
-            return false;
-
-        writtenSz += sz;
-    }
-    return (writtenSz == len);
-}
-
-static uint8_t buf[_HF_PERF_BITMAP_SIZE_16M] = { 0 };
 
 void HF_ITER(uint8_t ** buf_ptr, size_t * len_ptr)
 {
@@ -69,7 +35,7 @@ void HF_ITER(uint8_t ** buf_ptr, size_t * len_ptr)
 
     if (initialized == true) {
         static const uint8_t readyTag = 'A';
-        if (writeToFd(_HF_PERSISTENT_FD, &readyTag, sizeof(readyTag)) == false) {
+        if (files_writeToFd(_HF_PERSISTENT_FD, &readyTag, sizeof(readyTag)) == false) {
             LOG_F("readFromFdAll() failed");
         }
     }
@@ -119,7 +85,7 @@ int main(int argc, char **argv)
         LOG_I("Accepting input from stdin\n"
               "Usage for fuzzing: honggfuzz -P [flags] -- %s", argv[0]);
 
-        ssize_t len = readFromFd(STDIN_FILENO, buf, sizeof(buf));
+        ssize_t len = files_readFromFd(STDIN_FILENO, buf, sizeof(buf));
         if (len < 0) {
             LOG_E("Couldn't read data from stdin: %s", strerror(errno));
             return -1;
