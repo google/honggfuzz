@@ -36,7 +36,6 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
         perror("open('./term.log')");
         exit(EXIT_FAILURE);
     }
-    setsid();
     return 0;
 }
 
@@ -79,10 +78,13 @@ int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
 {
     write(fd_tty_write, buf, len);
 
-    char read_buf[1024 * 1024];
-    ssize_t sz = read(fd_tty_read, read_buf, sizeof(read_buf));
+    for (;;) {
+        char read_buf[1024 * 1024];
+        ssize_t sz = read(fd_tty_read, read_buf, sizeof(read_buf));
+        if (sz <= 0) {
+            break;
+        }
 
-    if (sz > 0 && isInteresting(read_buf, sz)) {
         static const char msg_in[] = "\n============ IN ============\n";
         static const char msg_out[] = "\n============ OUT ===========\n";
         static const char msg_end[] = "\n============================\n";
