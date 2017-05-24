@@ -15,14 +15,20 @@
 
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
 
-static int fd_tty;
+static int fd_tty_write;
+static int fd_tty_read;
 static int fd_log;
 
 int LLVMFuzzerInitialize(int* argc, char*** argv)
 {
-    fd_tty = open("/dev/tty", O_RDWR | O_NONBLOCK);
-    if (fd_tty == -1) {
-        perror("open('/dev/tty')");
+    fd_tty_write = open("/dev/tty", O_RDWR | O_DSYNC);
+    if (fd_tty_write == -1) {
+        perror("open('/dev/tty'), O_RDWR | O_DSYNC");
+        exit(EXIT_FAILURE);
+    }
+    fd_tty_read = open("/dev/tty", O_RDWR | O_NONBLOCK);
+    if (fd_tty_read == -1) {
+        perror("open('/dev/tty'), O_RDWR | O_NONBLOCK");
         exit(EXIT_FAILURE);
     }
     fd_log = open("./term.log", O_WRONLY | O_CREAT | O_APPEND, 0644);
@@ -30,6 +36,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
         perror("open('./term.log')");
         exit(EXIT_FAILURE);
     }
+    setsid();
     return 0;
 }
 
@@ -57,6 +64,9 @@ static bool isInteresting(const char* s, size_t len)
         if (s[i] == '\0') {
             continue;
         }
+        if (s[i] == '\x1b') {
+            continue;
+        }
         if (isdigit(s[i])) {
             continue;
         }
@@ -67,10 +77,10 @@ static bool isInteresting(const char* s, size_t len)
 
 int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
 {
-    write(fd_tty, buf, len);
+    write(fd_tty_write, buf, len);
 
     char read_buf[1024 * 1024];
-    ssize_t sz = read(fd_tty, read_buf, sizeof(read_buf));
+    ssize_t sz = read(fd_tty_read, read_buf, sizeof(read_buf));
 
     if (sz > 0 && isInteresting(read_buf, sz)) {
         static const char msg_in[] = "\n============ IN ============\n";
