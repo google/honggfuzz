@@ -7,7 +7,6 @@
 set -x
 set -e
 
-
 make clean
 
 export CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang
