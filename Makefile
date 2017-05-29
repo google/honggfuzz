@@ -28,7 +28,7 @@ HFUZZ_CC_BINS := hfuzz_cc/hfuzz-clang hfuzz_cc/hfuzz-clang++ hfuzz_cc/hfuzz-gcc 
 HFUZZ_CC_SRCS := hfuzz_cc/hfuzz-cc.c
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=131072
 COMMON_LDFLAGS := -lm libcommon/libcommon.a
-COMMON_SRCS := $(wildcard *.c)
+COMMON_SRCS := $(sort $(wildcard *.c))
 CFLAGS ?= -O3
 LDFLAGS ?=
 LIBS_CFLAGS ?= -fPIC -fno-stack-protector -fno-builtin
@@ -45,7 +45,7 @@ ifeq ($(OS),Linux)
                    -D_FILE_OFFSET_BITS=64
     ARCH_LDFLAGS := -L/usr/local/include -L/usr/include \
                     -lpthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt
-    ARCH_SRCS := $(wildcard linux/*.c)
+    ARCH_SRCS := $(sort $(wildcard linux/*.c))
 
     ifeq ("$(wildcard /usr/include/bfd.h)","")
         WARN_LIBRARY += binutils-devel
@@ -124,11 +124,11 @@ else ifeq ($(OS),Darwin)
     ifeq ($(MIG_RET),1)
         $(error mig failed to generate RPC code)
     endif
-    ARCH_SRCS := $(wildcard mac/*.c)
+    ARCH_SRCS := $(sort $(wildcard mac/*.c))
     # OS Darwin
 else
     ARCH := POSIX
-    ARCH_SRCS := $(wildcard posix/*.c)
+    ARCH_SRCS := $(sort $(wildcard posix/*.c))
     ARCH_CFLAGS := -std=c11 -I/usr/local/include -I/usr/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
