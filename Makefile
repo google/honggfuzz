@@ -40,8 +40,8 @@ ifeq ($(OS),Linux)
     ARCH := LINUX
 
     ARCH_CFLAGS := -std=c11 -I/usr/local/include -I/usr/include \
-                   -Wextra -Wno-initializer-overrides -Wno-override-init \
-                   -Wno-unknown-warning-option -funroll-loops \
+                   -Wextra -Wno-override-init \
+                   -funroll-loops \
                    -D_FILE_OFFSET_BITS=64
     ARCH_LDFLAGS := -L/usr/local/include -L/usr/include \
                     -lpthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt
@@ -143,6 +143,7 @@ endif
 
 COMPILER = $(shell $(CC) -v 2>&1 | grep -E '(gcc|clang) version' | grep -oE '(clang|gcc)')
 ifeq ($(COMPILER),clang)
+    ARCH_CFLAGS += -Wno-initializer-overrides -Wno-unknown-warning-option
     ARCH_CFLAGS += -fblocks
     ARCH_LDFLAGS += -lBlocksRuntime
 endif
