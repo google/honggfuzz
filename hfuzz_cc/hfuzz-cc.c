@@ -246,10 +246,10 @@ int main(int argc, char **argv)
     if (strstr(argv[0], "++") != NULL) {
         isCXX = true;
     }
-    if (strstr(argv[0], "gcc") != NULL) {
+    if (strstr(argv[0], "-gcc") != NULL) {
         isGCC = true;
     }
-    if (strstr(argv[0], "g++") != NULL) {
+    if (strstr(argv[0], "-g++") != NULL) {
         isGCC = true;
     }
     if (argc <= 1) {
