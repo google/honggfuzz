@@ -625,26 +625,33 @@ static void *fuzz_threadNew(void *arg)
         if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
             if (ATOMIC_POST_INC(hfuzz->mutationsCnt) >= hfuzz->fileCnt) {
                 ATOMIC_POST_INC(hfuzz->threadsFinished);
-                // All files checked, weak-up the main process
-                pthread_kill(fuzz_mainThread, SIGALRM);
-                return NULL;
+                break;
             }
         }
         /* Check for max iterations limit if set */
         else if ((ATOMIC_POST_INC(hfuzz->mutationsCnt) >= hfuzz->mutationsMax)
                  && hfuzz->mutationsMax) {
             ATOMIC_POST_INC(hfuzz->threadsFinished);
-            // Wake-up the main process
-            pthread_kill(fuzz_mainThread, SIGALRM);
-            return NULL;
-        }
-
-        if (ATOMIC_GET(hfuzz->terminating) == true) {
-            return NULL;
+            break;
         }
 
         fuzz_fuzzLoop(hfuzz, &fuzzer);
+
+        if (ATOMIC_GET(hfuzz->terminating) == true) {
+            break;
+        }
+
+        if (hfuzz->exitUponCrash && ATOMIC_GET(hfuzz->crashesCnt) > 0) {
+            LOG_I("Seen a crash. Terminating all fuzzing threads");
+            ATOMIC_SET(hfuzz->terminating, true);
+            break;
+        }
+
     }
+
+    LOG_I("Terminating thread no. #%" PRId32, fuzzNo);
+    ATOMIC_POST_INC(hfuzz->threadsFinished);
+    return NULL;
 }
 
 static void fuzz_runThread(honggfuzz_t * hfuzz, pthread_t * thread, void *(*thread_func) (void *))

@@ -235,6 +235,7 @@ typedef struct {
     uint32_t threadsActiveCnt;
     pid_t mainPid;
     bool terminating;
+    bool exitUponCrash;
 
     const char *dictionaryFile;
      TAILQ_HEAD(strq_t, strings_t) dictq;
