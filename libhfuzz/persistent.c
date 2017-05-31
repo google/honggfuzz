@@ -82,8 +82,19 @@ int main(int argc, char **argv)
     }
 
     if (fcntl(_HF_PERSISTENT_FD, F_GETFD) == -1 && errno == EBADF) {
-        LOG_I("Accepting input from stdin\n"
-              "Usage for fuzzing: honggfuzz -P [flags] -- %s", argv[0]);
+        int in_fd = STDIN_FILENO;
+        const char *fname = "[STDIN]";
+        if (argc > 1) {
+            fname = argv[argc - 1];
+            if ((in_fd = open(argv[argc - 1], O_RDONLY)) == -1) {
+                PLOG_W("Cannot open '%s' as input, using stdin", argv[argc - 1]);
+                in_fd = STDIN_FILENO;
+                fname = "[STDIN]";
+            }
+        }
+
+        LOG_I("Accepting input from '%s'\n"
+              "Usage for fuzzing: honggfuzz -P [flags] -- %s", fname, argv[0]);
 
         ssize_t len = files_readFromFd(STDIN_FILENO, buf, sizeof(buf));
         if (len < 0) {
