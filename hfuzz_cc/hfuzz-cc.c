@@ -217,9 +217,6 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-Wl,--whole-archive";
     args[j++] = LHFUZZ_A_PATH;
     args[j++] = "-Wl,--no-whole-archive";
-#if defined(__clang__)
-    args[j++] = "-lBlocksRuntime";
-#endif                          /*  defined(__clang__) */
     if (isGCC) {
         args[j++] = "-fsanitize-coverage=trace-pc";
     } else {
@@ -234,12 +231,14 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-funroll-loops";
     args[j++] = "-fno-inline";
     args[j++] = "-fno-builtin";
-
     int i;
     for (i = 1; i < argc; i++) {
         args[j++] = argv[i];
     }
     args[j++] = LHFUZZ_A_PATH;
+#if defined(__clang__)
+    args[j++] = "-lBlocksRuntime";
+#endif                          /*  defined(__clang__) */
 
     return execCC(j, args);
 }
