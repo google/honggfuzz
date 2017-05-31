@@ -218,7 +218,9 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     }
 
     /*
-     * Disable ASLR
+     * Disable ASLR:
+     * This might fail in Docker, as Docker blocks __NR_personality. Consequently
+     * it's just a debug warning
      */
     if (hfuzz->linux.disableRandomization && syscall(__NR_personality, ADDR_NO_RANDOMIZE) == -1) {
         PLOG_D("personality(ADDR_NO_RANDOMIZE) failed");
