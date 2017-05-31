@@ -205,6 +205,9 @@ static void fuzz_setState(honggfuzz_t * hfuzz, fuzzState_t state)
         static size_t cnt = 0;
         ATOMIC_PRE_INC(cnt);
         while (ATOMIC_GET(cnt) < hfuzz->threadsMax) {
+            if (ATOMIC_GET(hfuzz->terminating) == true) {
+                return;
+            }
             sleep(1);
         }
     }
@@ -548,6 +551,11 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             }
         }
     }
+
+    if (ATOMIC_GET(hfuzz->terminating) == true) {
+        return;
+    }
+
     if (fuzzer->state == _HF_STATE_DYNAMIC_MAIN) {
         if (!fuzz_prepareFileDynamically(hfuzz, fuzzer)) {
             LOG_F("fuzz_prepareFileDynamically() failed");
