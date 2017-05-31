@@ -111,14 +111,16 @@ static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     return true;
 }
 
-static uint8_t arch_clone_stack[PTHREAD_STACK_MIN * 2];
-
+/*
+ * 128 KiB for the temporary stack
+ */
+static uint8_t arch_clone_stack[128 * 1024];
 static __thread jmp_buf env;
 
 #if defined(__has_feature)
-#if __has_feature(address_sanitizer)
+#if __has_feature(address_sanitizer) || __has_feature(memory_sanitizer)
 __attribute__ ((no_sanitize("address"))) __attribute__ ((no_sanitize("memory")))
-#endif                          /* if __has_feature(address_sanitizer) */
+#endif                          /* if __has_feature(address_sanitizer) || __has_feature(memory_sanitizer) */
 #endif                          /* if defined(__has_feature) */
 static int arch_cloneFunc(void *arg UNUSED)
 {
