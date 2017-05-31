@@ -221,8 +221,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
      * Disable ASLR
      */
     if (hfuzz->linux.disableRandomization && personality(ADDR_NO_RANDOMIZE) == -1) {
-        PLOG_E("personality(ADDR_NO_RANDOMIZE) failed");
-        return false;
+        PLOG_W("personality(ADDR_NO_RANDOMIZE) failed");
     }
 #define ARGS_MAX 512
     char *args[ARGS_MAX + 2];
