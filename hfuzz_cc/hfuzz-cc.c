@@ -141,6 +141,7 @@ static int ccMode(int argc, char **argv)
     if (isGCC) {
         args[j++] = "-fsanitize-coverage=trace-pc";
     } else {
+        args[j++] = "-Wno-unused-command-line-argument";
         args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
         args[j++] = "-mllvm";
         args[j++] = "-sanitizer-coverage-prune-blocks=0";
@@ -220,6 +221,7 @@ static int ldMode(int argc, char **argv)
     if (isGCC) {
         args[j++] = "-fsanitize-coverage=trace-pc";
     } else {
+        args[j++] = "-Wno-unused-command-line-argument";
         args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
         args[j++] = "-mllvm";
         args[j++] = "-sanitizer-coverage-prune-blocks=0";
