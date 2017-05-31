@@ -96,7 +96,7 @@ int main(int argc, char **argv)
         LOG_I("Accepting input from '%s'\n"
               "Usage for fuzzing: honggfuzz -P [flags] -- %s", fname, argv[0]);
 
-        ssize_t len = files_readFromFd(STDIN_FILENO, buf, sizeof(buf));
+        ssize_t len = files_readFromFd(in_fd, buf, sizeof(buf));
         if (len < 0) {
             LOG_E("Couldn't read data from stdin: %s", strerror(errno));
             return -1;
