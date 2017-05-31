@@ -141,7 +141,7 @@ else
     # OS Posix
 endif
 
-COMPILER = $(shell $(CC) -v 2>&1 | grep -E '(gcc|clang) version' | grep -oE '(clang|gcc)')
+COMPILER = $(shell $(CC) -v 2>&1 | grep -oE '(gcc|clang) version' | grep -oE '(clang|gcc)' | head -n1)
 ifeq ($(COMPILER),clang)
     ARCH_CFLAGS += -Wno-initializer-overrides -Wno-unknown-warning-option
     ARCH_CFLAGS += -fblocks
