@@ -217,6 +217,9 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-Wl,--whole-archive";
     args[j++] = LHFUZZ_A_PATH;
     args[j++] = "-Wl,--no-whole-archive";
+#if defined(__clang__)
+    args[j++] = "-lBlocksRuntime";
+#endif                          /*  defined(__clang__) */
     if (isGCC) {
         args[j++] = "-fsanitize-coverage=trace-pc";
     } else {
