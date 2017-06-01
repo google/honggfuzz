@@ -29,36 +29,35 @@
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <locale.h>
 #include <net/if.h>
 #include <net/route.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <setjmp.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
-#include <setjmp.h>
 #include <sys/cdefs.h>
 #include <sys/personality.h>
-#include <sys/ptrace.h>
 #include <sys/prctl.h>
+#include <sys/ptrace.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
-#include <sys/time.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/user.h>
+#include <sys/utsname.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/utsname.h>
 
 #include "../libcommon/files.h"
 #include "../libcommon/log.h"
@@ -371,6 +370,9 @@ static bool arch_checkWait(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 __thread sigset_t sset_io_chld;
 
+#if defined(__ANDROID__)
+int sigtimedwait(const sigset_t *, siginfo_t *, const struct timespec *);
+#endif                          /* defined(__ANDROID__) */
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     static const struct timespec ts = {
@@ -378,7 +380,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         .tv_nsec = 250000000L,
     };
     for (;;) {
-        int sig = syscall(__NR_rt_sigtimedwait, &sset_io_chld, NULL, &ts, _NSIG / 8);
+        int sig = sigtimedwait(&sset_io_chld, NULL, &ts);
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
             PLOG_F("sigtimedwait(SIGIO|SIGCHLD, 0.25s)");
         }
