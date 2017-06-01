@@ -23,7 +23,7 @@
 
 #define _WITH_DPRINTF
 
-#include "common.h"
+#include "libcommon/common.h"
 #include "display.h"
 
 #include <inttypes.h>
@@ -31,10 +31,11 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
-#include "log.h"
-#include "util.h"
+#include "libcommon/log.h"
+#include "libcommon/util.h"
 
 #define ESC_CLEAR_ALL "\033[2J"
 #define ESC_CLEAR_LINE "\033[2K"
@@ -267,12 +268,13 @@ extern void display_display(honggfuzz_t * hfuzz)
     display_displayLocked(hfuzz);
 }
 
-extern void display_init(void)
-{
-    display_put(ESC_NAV(999, 1));
-}
-
 extern void display_fini(void)
 {
     display_put(ESC_SCROLL(1, 999) ESC_NAV(999, 1));
+}
+
+extern void display_init(void)
+{
+    atexit(display_fini);
+    display_put(ESC_NAV(999, 1));
 }

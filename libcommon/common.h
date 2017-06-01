@@ -273,6 +273,7 @@ typedef struct {
 
     /* For the Linux code */
     struct {
+        int exeFd;
         hwcnt_t hwCnts;
         uint64_t dynamicCutOffAddr;
         bool disableRandomization;

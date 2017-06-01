@@ -51,8 +51,8 @@
 
 #include "../libcommon/files.h"
 #include "../libcommon/log.h"
-#include "../libcommon/sancov.h"
 #include "../libcommon/util.h"
+#include "../sancov.h"
 #include "../subproc.h"
 #include "bfd.h"
 #include "unwind.h"
@@ -1353,6 +1353,10 @@ bool arch_ptraceAttach(honggfuzz_t * hfuzz, pid_t pid)
     /* The event is only used with sanitizers */
     if (hfuzz->enableSanitizers) {
         seize_options |= PTRACE_O_TRACEEXIT;
+    }
+
+    if (arch_ptraceWaitForPidStop(pid) == false) {
+        return false;
     }
 
     if (ptrace(PTRACE_SEIZE, pid, NULL, seize_options) == -1) {

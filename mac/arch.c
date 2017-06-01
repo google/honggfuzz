@@ -23,7 +23,7 @@
  */
 
 #include "../libcommon/common.h"
-#include "../libcommon/arch.h"
+#include "../arch.h"
 
 #include <ctype.h>
 #include <dirent.h>
@@ -45,8 +45,8 @@
 
 #include "../libcommon/files.h"
 #include "../libcommon/log.h"
-#include "../libcommon/sancov.h"
 #include "../libcommon/util.h"
+#include "../sancov.h"
 #include "../subproc.h"
 
 #include <servers/bootstrap.h>
@@ -364,7 +364,11 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         return false;
     }
 
+    /* alarm persists across forks, so disable it here */
+    alarm(0);
     execvp(args[0], args);
+    alarm(1);
+
     return false;
 }
 

@@ -41,11 +41,11 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "libcommon/arch.h"
 #include "libcommon/files.h"
 #include "libcommon/log.h"
-#include "libcommon/sanitizers.h"
 #include "libcommon/util.h"
+#include "arch.h"
+#include "sanitizers.h"
 
 extern char **environ;
 
@@ -239,10 +239,31 @@ static bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     fuzzer->pid = arch_fork(hfuzz, fuzzer);
     if (fuzzer->pid == -1) {
-        PLOG_F("Couldn't fork");
+        PLOG_E("Couldn't fork");
+        return false;
     }
-    // Child
+    /* The child process */
     if (!fuzzer->pid) {
+        logMutexReset();
+        /*
+         * Reset sighandlers, and set alarm(1). It's a guarantee against dead-locks
+         * in the child, where we ensure here that the child process will either
+         * execve or get signaled by SIGALRM within 1 second.
+         *
+         * Those deadlocks typically stem from the fact, that malloc() can behave weirdly
+         * when fork()-ing a single thread of a process: e.g. with glibc < 2.24
+         * (or, Ubuntu's 2.23-0ubuntu6). For more see
+         * http://changelogs.ubuntu.com/changelogs/pool/main/g/glibc/glibc_2.23-0ubuntu7/changelog
+         */
+        alarm(1);
+        signal(SIGALRM, SIG_DFL);
+        sigset_t sset;
+        sigemptyset(&sset);
+        if (sigprocmask(SIG_SETMASK, &sset, NULL) == -1) {
+            perror("sigprocmask");
+            _exit(1);
+        }
+
         if (hfuzz->persistent) {
             if (dup2(sv[1], _HF_PERSISTENT_FD) == -1) {
                 PLOG_F("dup2('%d', '%d')", sv[1], _HF_PERSISTENT_FD);
@@ -256,13 +277,14 @@ static bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             exit(EXIT_FAILURE);
         }
         if (!arch_launchChild(hfuzz, fuzzer->fileName)) {
-            LOG_E("Error launching child process");
             kill(hfuzz->mainPid, SIGTERM);
-            exit(EXIT_FAILURE);
+            LOG_E("Error launching child process");
+            _exit(1);
         }
         abort();
     }
-    // Parent
+
+    /* Parent */
     LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
 
     if (hfuzz->persistent) {
@@ -299,6 +321,7 @@ uint8_t subproc_System(const char *const argv[])
     }
 
     if (!pid) {
+        logMutexReset();
         sigset_t sset;
         sigemptyset(&sset);
         sigprocmask(SIG_SETMASK, &sset, NULL);

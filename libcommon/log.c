@@ -36,7 +36,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "display.h"
 #include "util.h"
 
 #if defined(_HF_ARCH_LINUX)
@@ -144,7 +143,6 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
     /* End printing logs */
 
     if (ll == FATAL) {
-        display_fini();
         exit(1);
     }
 }
@@ -167,6 +165,11 @@ void logDirectlyToFD(const char *msg)
 pthread_mutex_t *logMutexGet(void)
 {
     return &log_mutex;
+}
+
+void logMutexReset(void)
+{
+    pthread_mutex_init(&log_mutex, NULL);
 }
 
 bool logIsTTY(void)

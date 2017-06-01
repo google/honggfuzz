@@ -43,14 +43,14 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "libcommon/arch.h"
 #include "libcommon/files.h"
 #include "libcommon/log.h"
-#include "libcommon/sanitizers.h"
-#include "libcommon/sancov.h"
 #include "libcommon/util.h"
+#include "arch.h"
 #include "mangle.h"
 #include "report.h"
+#include "sancov.h"
+#include "sanitizers.h"
 #include "subproc.h"
 
 static pthread_t fuzz_mainThread;
@@ -205,6 +205,9 @@ static void fuzz_setState(honggfuzz_t * hfuzz, fuzzState_t state)
         static size_t cnt = 0;
         ATOMIC_PRE_INC(cnt);
         while (ATOMIC_GET(cnt) < hfuzz->threadsMax) {
+            if (ATOMIC_GET(hfuzz->terminating) == true) {
+                return;
+            }
             sleep(1);
         }
     }
@@ -548,6 +551,11 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             }
         }
     }
+
+    if (ATOMIC_GET(hfuzz->terminating) == true) {
+        return;
+    }
+
     if (fuzzer->state == _HF_STATE_DYNAMIC_MAIN) {
         if (!fuzz_prepareFileDynamically(hfuzz, fuzzer)) {
             LOG_F("fuzz_prepareFileDynamically() failed");
@@ -651,6 +659,7 @@ static void *fuzz_threadNew(void *arg)
 
     LOG_I("Terminating thread no. #%" PRId32, fuzzNo);
     ATOMIC_POST_INC(hfuzz->threadsFinished);
+    pthread_kill(fuzz_mainThread, SIGALRM);
     return NULL;
 }
 

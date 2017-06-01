@@ -256,6 +256,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             .symsWl = NULL,
             .cloneFlags = 0,
             .kernelOnly = false,
+            .exeFd = -1,
         },
     };
     /*  *INDENT-ON* */

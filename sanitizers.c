@@ -1,4 +1,4 @@
-#include "common.h"
+#include "libcommon/common.h"
 #include "sanitizers.h"
 
 #include <ctype.h>
@@ -11,9 +11,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "files.h"
-#include "log.h"
-#include "util.h"
+#include "libcommon/files.h"
+#include "libcommon/log.h"
+#include "libcommon/util.h"
 
 /* Stringify */
 #define XSTR(x)         #x
