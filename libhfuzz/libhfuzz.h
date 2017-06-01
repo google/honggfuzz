@@ -27,7 +27,7 @@ extern "C" {
  */
     void HF_ITER(const uint8_t ** buf_ptr, size_t * len_ptr);
 
-#if defined(_HF_ARCH_LINUX)
+#if defined(__linux__)
 
 /*
  * Enter Linux namespaces
@@ -48,7 +48,7 @@ extern "C" {
  */
     bool linuxMountTmpfs(const char *dst);
 
-#endif                          /* defined(_HF_ARCH_LINUX) */
+#endif                          /* defined(__linux__) */
 
 #ifdef __cplusplus
 }                               /* extern "C" */
