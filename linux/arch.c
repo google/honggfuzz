@@ -121,10 +121,15 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     pid_t pid = fork();
     if (pid == -1) {
-        PLOG_W("Couldn't fork");
         return pid;
     }
     if (pid == 0) {
+        logMutexReset();
+        if (prctl
+            (PR_SET_PDEATHSIG, (unsigned long)SIGKILL, (unsigned long)0, (unsigned long)0,
+             (unsigned long)0) == -1) {
+            PLOG_W("prctl(PR_SET_PDEATHSIG, SIGKILL");
+        }
         if (hfuzz->linux.cloneFlags & CLONE_NEWNET) {
             if (arch_ifaceUp("lo") == false) {
                 LOG_W("Cannot bring interface 'lo' up");
