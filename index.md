@@ -54,6 +54,10 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Double-free in __LibXMP__](https://github.com/cmatsuoka/libxmp/commit/bd1eb5cfcd802820073504c234c3f735e96c3355)
   * ... and more
 
+**Projects utilizing Honggfuzz**
+  * [__QuickFuzz__ by CIFASIS](http://quickfuzz.org)
+  * [__Frog And Fuzz__](https://github.com/warsang/FrogAndFuzz/tree/develop)
+
 **Examples**
 
 The [examples](https://github.com/google/honggfuzz/tree/master/examples/)
