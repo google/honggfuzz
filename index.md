@@ -47,8 +47,9 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * [Remote Use-after-Free (potential RCE, rated as 'critical') • CVE-2016-6309](https://www.openssl.org/news/secadv/20160926.txt)
     * [Remote OOB write • CVE-2016-7054](https://www.openssl.org/news/secadv/20161110.txt)
     * [Remote OOB read • CVE-2017-3731](https://www.openssl.org/news/secadv/20170126.txt)
-    * [Uniitialized mem use](https://github.com/openssl/openssl/commit/bd5d27c1c6d3f83464ddf5124f18a2cac2cbb37f)
+    * [Uninitialized mem use](https://github.com/openssl/openssl/commit/bd5d27c1c6d3f83464ddf5124f18a2cac2cbb37f)
   * Crash in [LibreSSL](https://github.com/openbsd/src/commit/c80d04452814d5b0e397817ce4ed34edb4eb520d)
+  * Uninitialized mem use in [BoringSSL](https://github.com/boringssl/boringssl/commit/7dccc71e08105b100c3acd56fa5f6fc1ba9b71d3)
   * Multiple bugs in [language interpreters](https://github.com/dyjakan/interpreter-bugs) (__PHP/Python/Ruby__)
   * ... and more
 
