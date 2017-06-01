@@ -1,0 +1,138 @@
+diff --git a/modules/http2/config2.m4 b/modules/http2/config2.m4
+index fac130b21..4dbb3a545 100644
+--- a/modules/http2/config2.m4
++++ b/modules/http2/config2.m4
+@@ -122,15 +122,11 @@ AC_DEFUN([APACHE_CHECK_NGHTTP2],[
+ 
+     AC_MSG_CHECKING([for nghttp2 version >= 1.2.1])
+     AC_TRY_COMPILE([#include <nghttp2/nghttp2ver.h>],[
+-#if !defined(NGHTTP2_VERSION_NUM)
+-#error "Missing nghttp2 version"
+-#endif
+-#if NGHTTP2_VERSION_NUM < 0x010201
+-#error "Unsupported nghttp2 version " NGHTTP2_VERSION_TEXT
+ #endif],
+       [AC_MSG_RESULT(OK)
+        ac_cv_nghttp2=yes],
+-      [AC_MSG_RESULT(FAILED)])
++      [AC_MSG_RESULT(FAILED)
++       ac_cv_nghttp2=yes])
+ 
+     if test "x$ac_cv_nghttp2" = "xyes"; then
+       ap_nghttp2_libs="${ap_nghttp2_libs:--lnghttp2} `$apr_config --libs`"
+diff --git a/modules/http2/h2_request.c b/modules/http2/h2_request.c
+index 9811a5cb1..e64a49f33 100644
+--- a/modules/http2/h2_request.c
++++ b/modules/http2/h2_request.c
+@@ -218,7 +218,7 @@ request_rec *h2_request_create_rec(const h2_request *req, conn_rec *c)
+     
+     /* Time to populate r with the data we have. */
+     r->request_time = req->request_time;
+-    r->method = req->method;
++    r->method = req->method ? req->method : "";
+     /* Provide quick information about the request method as soon as known */
+     r->method_number = ap_method_number_of(r->method);
+     if (r->method_number == M_GET && r->method[0] == 'H') {
+diff --git a/server/main.c b/server/main.c
+index bda60827c..a62df4cbf 100644
+--- a/server/main.c
++++ b/server/main.c
+@@ -459,8 +459,83 @@ static void usage(process_rec *process)
+     destroy_and_exit_process(process, 1);
+ }
+ 
+-int main(int argc, const char * const argv[])
+-{
++#include <libhfuzz.h>
++
++static void GETDATA(void *unused) {
++  usleep(100000);
++
++  for (;;) {
++    size_t len;
++    const uint8_t *buf;
++
++    HF_ITER(&buf, &len);
++
++    int myfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
++    if (myfd == -1) {
++      perror("socket");
++      _exit(1);
++    }
++
++    int sz = (1024 * 1024);
++    if (setsockopt(myfd, SOL_SOCKET, SO_SNDBUF, &sz, sizeof(sz)) == -1) {
++      perror("setsockopt");
++      exit(1);
++    }
++
++    struct sockaddr_in saddr;
++    saddr.sin_family = AF_INET;
++    saddr.sin_port = htons(8080);
++    saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
++    if (connect(myfd, &saddr, sizeof(saddr)) == -1) {
++      perror("connect");
++      continue;
++    }
++
++    if (send(myfd, buf, len, MSG_NOSIGNAL) != len) {
++      perror("send() failed 1");
++      exit(1);
++    }
++
++    if (shutdown(myfd, SHUT_WR) == -1) {
++      perror("shutdown");
++      exit(1);
++    }
++
++    char b[1024 * 1024];
++    while (recv(myfd, b, sizeof(b), MSG_WAITALL) > 0) {} ;
++
++    close(myfd);
++  }
++}
++
++static void LAUNCHTHR() {
++  if (linuxEnterNs(CLONE_NEWUSER|CLONE_NEWNET|CLONE_NEWNS) == false) {
++    exit(1);
++  }
++  if (linuxIfaceUp("lo") == false) {
++    exit(1);
++  }
++  if (linuxMountTmpfs("/tmp") == false) {
++    exit(1);
++  }
++
++  pthread_t t;
++  pthread_attr_t attr;
++
++  pthread_attr_init(&attr);
++  pthread_attr_setstacksize(&attr, 1024 * 1024 * 8);
++  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
++
++  pthread_create(&t, &attr, GETDATA,  NULL);
++}
++
++ int main(int argc, const char * const argv[])
++ {
++
++  if (getenv("NO_FUZZ") == NULL) {
++        LAUNCHTHR();
++  }
++
+     char c;
+     int showcompile = 0, showdirectives = 0;
+     const char *confname = SERVER_CONFIG_FILE;
+diff --git a/support/ab.c b/support/ab.c
+index 58769a9c8..ddf141bcc 100644
+--- a/support/ab.c
++++ b/support/ab.c
+@@ -727,7 +727,7 @@ static void ssl_proceed_handshake(struct connection *c)
+             }
+             if (ssl_tmp_key == NULL) {
+                 EVP_PKEY *key;
+-                if (SSL_get_server_tmp_key(c->ssl, &key)) {
++                if (0) {
+                     ssl_tmp_key = xmalloc(128);
+                     switch (EVP_PKEY_id(key)) {
+                     case EVP_PKEY_RSA:

@@ -4,7 +4,7 @@
 
   * honggfuzz
   * clang-4.0, or newer (5.0 works as well)
-  * apache-2.4.x (e.g.: 2.4.25)
+  * apache (e.g.: 2.4.25 or the git master branch)
 
 **Preparation**
 
@@ -15,35 +15,27 @@ version strings of the libraries (e.g. apr-_1.5.2_). These will have to be modif
 2. Prepare (configure and compile) the following packages: apr, apr-util and ngttp2
   * Apr
   ```
-  $ CC=clang-4.0 CFLAGS="-ggdb -fno-builtin -fno-inline -funroll-loops -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp" LDFLAGS="$CFLAGS" ./configure
+  $ CXX=hfuzz_cc/hfuzz-clang++ CC=hfuzz_cc/hfuzz-clang ./configure
   $ make
   ```
   * Apr-Util
   ```
-  $ CC=clang-4.0 CFLAGS="-ggdb -fno-builtin -fno-inline -funroll-loops -fsanitize-coverage=trace-cmp,trace-pc-guard,indirect-calls" LDFLAGS="$CFLAGS" ./configure -with-apr=/home/swiecki/fuzz/apache/apr-1.5.2/
+  $ CXX=hfuzz_cc/hfuzz-clang++ CC=hfuzz_cc/hfuzz-clang ./configure  -with-apr=/home/swiecki/fuzz/apache/apr-1.5.2/
   $ make
   ```
   * NgHttp2
   ```
-  $ CXX=clang++-4.0 CC=clang-4.0 LDFLAGS="$LIBS" CFLAGS="-ggdb -fno-builtin -fno-inline -funroll-loops -fsanitize-coverage=trace-cmp,trace-pc-guard,indirect-calls" CXXFLAGS="$CFLAGS" ./configure
+  $ CXX=hfuzz_cc/hfuzz-clang++ CC=hfuzz_cc/hfuzz-clang ./configure
   $ make
   ```
-3. Unpack apache-2.4.x.tar.bz2
+3. Unpack/lone Apache
 4. Patch Apache
 
   ```
-  $ cd httpd-2.4.25/
-  $ patch -p1 < /tmp/httpd-2.4.25.honggfuzz.patch
+  $ cd httpd-master
+  $ patch -p1 < httpd-master.honggfuzz.patch
   ```
 5. Configure, compile and install Apache
-
-  * edit the _compile.sh_ file first, providing correct paths to libraries, and
-    to the the installation directory (--prefix)
-  ```
-  $ sh compile.sh
-  $ make -j4
-  $ make install
-  ```
 6. Copy the custom configuration files to /home/swiecki/fuzz/apache/apache2/conf/
 
    ```
