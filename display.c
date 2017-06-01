@@ -275,6 +275,6 @@ extern void display_fini(void)
 
 extern void display_init(void)
 {
-	atexit(display_fini);
+    atexit(display_fini);
     display_put(ESC_NAV(999, 1));
 }

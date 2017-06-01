@@ -51,8 +51,8 @@
 
 #include "../libcommon/files.h"
 #include "../libcommon/log.h"
-#include "../libcommon/sancov.h"
 #include "../libcommon/util.h"
+#include "../sancov.h"
 #include "../subproc.h"
 #include "bfd.h"
 #include "unwind.h"

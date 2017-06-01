@@ -44,8 +44,8 @@
 #include "libcommon/arch.h"
 #include "libcommon/files.h"
 #include "libcommon/log.h"
-#include "libcommon/sanitizers.h"
 #include "libcommon/util.h"
+#include "sanitizers.h"
 
 extern char **environ;
 

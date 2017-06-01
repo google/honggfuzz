@@ -38,7 +38,7 @@
  * http://clang.llvm.org/docs/SanitizerCoverage.html
  */
 
-#include "common.h"
+#include "libcommon/common.h"
 #include "sancov.h"
 
 #include <ctype.h>
@@ -51,9 +51,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "files.h"
-#include "log.h"
-#include "util.h"
+#include "libcommon/files.h"
+#include "libcommon/log.h"
+#include "libcommon/util.h"
 
 /* sancov files magic values */
 #define kMagic32 0xC0BFFFFFFFFFFF32

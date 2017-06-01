@@ -62,9 +62,9 @@
 
 #include "../libcommon/files.h"
 #include "../libcommon/log.h"
-#include "../libcommon/sancov.h"
 #include "../libcommon/util.h"
 #include "../subproc.h"
+#include "../sancov.h"
 #include "perf.h"
 #include "ptrace_utils.h"
 

@@ -46,11 +46,11 @@
 #include "libcommon/arch.h"
 #include "libcommon/files.h"
 #include "libcommon/log.h"
-#include "libcommon/sanitizers.h"
-#include "libcommon/sancov.h"
 #include "libcommon/util.h"
 #include "mangle.h"
 #include "report.h"
+#include "sancov.h"
+#include "sanitizers.h"
 #include "subproc.h"
 
 static pthread_t fuzz_mainThread;
