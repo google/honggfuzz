@@ -48,9 +48,10 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * [Remote OOB write • CVE-2016-7054](https://www.openssl.org/news/secadv/20161110.txt)
     * [Remote OOB read • CVE-2017-3731](https://www.openssl.org/news/secadv/20170126.txt)
     * [Uninitialized mem use](https://github.com/openssl/openssl/commit/bd5d27c1c6d3f83464ddf5124f18a2cac2cbb37f)
-  * Crash in [__LibreSSL__](https://github.com/openbsd/src/commit/c80d04452814d5b0e397817ce4ed34edb4eb520d)
-  * Uninitialized mem use in [__BoringSSL__](https://github.com/boringssl/boringssl/commit/7dccc71e08105b100c3acd56fa5f6fc1ba9b71d3)
-  * Multiple bugs in [__PHP/Python/Ruby__](https://github.com/dyjakan/interpreter-bugs)
+  * [Crash in __LibreSSL__](https://github.com/openbsd/src/commit/c80d04452814d5b0e397817ce4ed34edb4eb520d)
+  * [Uninitialized mem use in __BoringSSL__](https://github.com/boringssl/boringssl/commit/7dccc71e08105b100c3acd56fa5f6fc1ba9b71d3)
+  * [Multiple bugs in language interpreters: __PHP/Python/Ruby__](https://github.com/dyjakan/interpreter-bugs)
+  * [Double-free in __LibXMP__](https://github.com/cmatsuoka/libxmp/commit/bd1eb5cfcd802820073504c234c3f735e96c3355)
   * ... and more
 
 **Examples**
