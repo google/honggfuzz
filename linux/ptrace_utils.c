@@ -1355,7 +1355,7 @@ bool arch_ptraceAttach(honggfuzz_t * hfuzz, pid_t pid)
         seize_options |= PTRACE_O_TRACEEXIT;
     }
 
-    if (arch_ptraceWaitForPidStop(pid) == false) {
+    if (hfuzz->linux.pid == 0 && arch_ptraceWaitForPidStop(pid) == false) {
         return false;
     }
 
