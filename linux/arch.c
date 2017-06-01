@@ -31,10 +31,6 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <locale.h>
-#include <net/if.h>
-#include <net/route.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <stdio.h>
@@ -44,7 +40,6 @@
 #include <sys/personality.h>
 #include <sys/prctl.h>
 #include <sys/ptrace.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
@@ -61,44 +56,15 @@
 
 #include "../libcommon/files.h"
 #include "../libcommon/log.h"
+#include "../libcommon/ns.h"
 #include "../libcommon/util.h"
-#include "../subproc.h"
 #include "../sancov.h"
+#include "../subproc.h"
 #include "perf.h"
 #include "ptrace_utils.h"
 
 /* Size of remote pid cmdline char buffer */
 #define _HF_PROC_CMDLINE_SZ 8192
-
-static bool arch_ifaceUp(const char *ifacename)
-{
-    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-    if (sock == -1) {
-        PLOG_E("socket(AF_INET, SOCK_STREAM, IPPROTO_IP)");
-        return false;
-    }
-    defer {
-        close(sock);
-    };
-
-    struct ifreq ifr;
-    memset(&ifr, '\0', sizeof(ifr));
-    snprintf(ifr.ifr_name, IF_NAMESIZE, "%s", ifacename);
-
-    if (ioctl(sock, SIOCGIFFLAGS, &ifr) == -1) {
-        PLOG_E("ioctl(iface='%s', SIOCGIFFLAGS, IFF_UP)", ifacename);
-        return false;
-    }
-
-    ifr.ifr_flags |= (IFF_UP | IFF_RUNNING);
-
-    if (ioctl(sock, SIOCSIFFLAGS, &ifr) == -1) {
-        PLOG_E("ioctl(iface='%s', SIOCSIFFLAGS, IFF_UP|IFF_RUNNING)", ifacename);
-        return false;
-    }
-
-    return true;
-}
 
 static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
@@ -161,10 +127,8 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED)
 
 bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 {
-    if (hfuzz->linux.cloneFlags & CLONE_NEWNET) {
-        if (arch_ifaceUp("lo") == false) {
-            LOG_W("Cannot bring interface 'lo' up");
-        }
+    if ((hfuzz->linux.cloneFlags & CLONE_NEWNET) && (nsIfaceUp("lo") == false)) {
+        LOG_W("Cannot bring interface 'lo' up");
     }
 
     /*

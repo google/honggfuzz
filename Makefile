@@ -346,19 +346,22 @@ hfuzz_cc/hfuzz-cc.o: libcommon/log.h
 libcommon/files.o: libcommon/common.h libcommon/files.h libcommon/log.h
 libcommon/files.o: libcommon/util.h
 libcommon/log.o: libcommon/common.h libcommon/log.h libcommon/util.h
+libcommon/ns.o: libcommon/common.h libcommon/ns.h libcommon/files.h
+libcommon/ns.o: libcommon/log.h
 libcommon/util.o: libcommon/common.h libcommon/util.h libcommon/files.h
 libcommon/util.o: libcommon/log.h
 libhfuzz/instrument.o: libcommon/common.h libcommon/util.h libcommon/log.h
 libhfuzz/instrument.o: libcommon/common.h
-libhfuzz/linux.o: libcommon/common.h libcommon/log.h libcommon/common.h
-libhfuzz/linux.o: libcommon/files.h libhfuzz/libhfuzz.h
+libhfuzz/linux.o: libcommon/common.h libhfuzz/libhfuzz.h libcommon/log.h
+libhfuzz/linux.o: libcommon/common.h libcommon/files.h libcommon/ns.h
 libhfuzz/memorycmp.o: libhfuzz/instrument.h libcommon/common.h
 libhfuzz/memorycmp.o: libcommon/util.h
 libhfuzz/persistent.o: libcommon/common.h libhfuzz/libhfuzz.h libcommon/log.h
 libhfuzz/persistent.o: libcommon/common.h libcommon/files.h
 linux/arch.o: libcommon/common.h arch.h libcommon/common.h libcommon/files.h
-linux/arch.o: libcommon/common.h libcommon/log.h libcommon/util.h subproc.h
-linux/arch.o: sancov.h sanitizers.h linux/perf.h linux/ptrace_utils.h
+linux/arch.o: libcommon/common.h libcommon/log.h libcommon/ns.h
+linux/arch.o: libcommon/util.h sancov.h sanitizers.h subproc.h linux/perf.h
+linux/arch.o: linux/ptrace_utils.h
 linux/bfd.o: libcommon/common.h linux/bfd.h linux/unwind.h libcommon/files.h
 linux/bfd.o: libcommon/common.h libcommon/log.h libcommon/util.h
 linux/perf.o: libcommon/common.h linux/perf.h libcommon/files.h
