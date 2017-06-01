@@ -659,6 +659,7 @@ static void *fuzz_threadNew(void *arg)
 
     LOG_I("Terminating thread no. #%" PRId32, fuzzNo);
     ATOMIC_POST_INC(hfuzz->threadsFinished);
+    pthread_kill(fuzz_mainThread, SIGALRM);
     return NULL;
 }
 

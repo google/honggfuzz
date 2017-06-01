@@ -408,9 +408,8 @@ bool arch_archInit(honggfuzz_t * hfuzz)
         }
         if ((major < 2) || (major == 2 && minor < 24)) {
             LOG_E("Your glibc version:'%s' will most likely result in malloc()-related "
-				  "deadlocks. Min. version 2.24 suggested. See "
-				  "https://bugzilla.redhat.com/show_bug.cgi?id=906468 for explanation",
-                  gversion);
+                  "deadlocks. Min. version 2.24 suggested. See "
+                  "https://bugzilla.redhat.com/show_bug.cgi?id=906468 for explanation", gversion);
             break;
         }
         LOG_D("Glibc version:'%s', OK", gversion);
