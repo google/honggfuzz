@@ -2,6 +2,8 @@
 #include <openssl/evp.h>
 #include <inttypes.h>
 
+#include <libhfuzz.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

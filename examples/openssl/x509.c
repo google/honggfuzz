@@ -11,6 +11,8 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
+#include <libhfuzz.h>
+
 int rand_predictable __attribute__((weak));
 void RAND_reset_for_fuzzing(void) __attribute__((weak));
 

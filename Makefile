@@ -322,3 +322,56 @@ android-clean-deps:
 
 # DO NOT DELETE
 
+cmdline.o: cmdline.h libcommon/common.h libcommon/log.h libcommon/common.h
+cmdline.o: libcommon/files.h libcommon/util.h
+display.o: libcommon/common.h display.h libcommon/log.h libcommon/common.h
+display.o: libcommon/util.h
+fuzz.o: libcommon/common.h fuzz.h libcommon/files.h libcommon/common.h
+fuzz.o: libcommon/log.h libcommon/util.h arch.h mangle.h report.h sancov.h
+fuzz.o: sanitizers.h subproc.h
+honggfuzz.o: libcommon/common.h libcommon/log.h libcommon/common.h
+honggfuzz.o: libcommon/files.h libcommon/util.h cmdline.h display.h fuzz.h
+mangle.o: libcommon/common.h mangle.h libcommon/log.h libcommon/common.h
+mangle.o: libcommon/util.h
+report.o: libcommon/common.h report.h libcommon/log.h libcommon/common.h
+report.o: libcommon/util.h
+sancov.o: libcommon/common.h sancov.h sanitizers.h libcommon/files.h
+sancov.o: libcommon/common.h libcommon/log.h libcommon/util.h
+sanitizers.o: libcommon/common.h sanitizers.h libcommon/files.h
+sanitizers.o: libcommon/common.h libcommon/log.h libcommon/util.h
+subproc.o: libcommon/common.h subproc.h libcommon/files.h libcommon/common.h
+subproc.o: libcommon/log.h libcommon/util.h arch.h sanitizers.h
+hfuzz_cc/hfuzz-cc.o: libcommon/common.h libcommon/files.h libcommon/common.h
+hfuzz_cc/hfuzz-cc.o: libcommon/log.h
+libcommon/files.o: libcommon/common.h libcommon/files.h libcommon/log.h
+libcommon/files.o: libcommon/util.h
+libcommon/log.o: libcommon/common.h libcommon/log.h libcommon/util.h
+libcommon/util.o: libcommon/common.h libcommon/util.h libcommon/files.h
+libcommon/util.o: libcommon/log.h
+libhfuzz/instrument.o: libcommon/common.h libcommon/util.h libcommon/log.h
+libhfuzz/instrument.o: libcommon/common.h
+libhfuzz/memorycmp.o: libhfuzz/instrument.h libcommon/common.h
+libhfuzz/memorycmp.o: libcommon/util.h
+libhfuzz/persistent.o: libcommon/common.h libhfuzz/libhfuzz.h libcommon/log.h
+libhfuzz/persistent.o: libcommon/common.h libcommon/files.h
+linux/arch.o: libcommon/common.h arch.h libcommon/common.h libcommon/files.h
+linux/arch.o: libcommon/common.h libcommon/log.h libcommon/util.h subproc.h
+linux/arch.o: sancov.h sanitizers.h linux/perf.h linux/ptrace_utils.h
+linux/bfd.o: libcommon/common.h linux/bfd.h linux/unwind.h libcommon/files.h
+linux/bfd.o: libcommon/common.h libcommon/log.h libcommon/util.h
+linux/perf.o: libcommon/common.h linux/perf.h libcommon/files.h
+linux/perf.o: libcommon/common.h libcommon/log.h libcommon/util.h linux/pt.h
+linux/pt.o: libcommon/common.h linux/pt.h libcommon/log.h libcommon/common.h
+linux/pt.o: libcommon/util.h
+linux/ptrace_utils.o: libcommon/common.h linux/ptrace_utils.h
+linux/ptrace_utils.o: libcommon/files.h libcommon/common.h libcommon/log.h
+linux/ptrace_utils.o: libcommon/util.h sancov.h sanitizers.h subproc.h
+linux/ptrace_utils.o: linux/bfd.h linux/unwind.h
+linux/unwind.o: libcommon/common.h linux/unwind.h libcommon/log.h
+linux/unwind.o: libcommon/common.h
+mac/arch.o: libcommon/common.h arch.h libcommon/common.h libcommon/files.h
+mac/arch.o: libcommon/common.h libcommon/log.h libcommon/util.h sancov.h
+mac/arch.o: sanitizers.h subproc.h
+posix/arch.o: libcommon/common.h arch.h libcommon/common.h libcommon/files.h
+posix/arch.o: libcommon/common.h libcommon/log.h libcommon/util.h sancov.h
+posix/arch.o: sanitizers.h subproc.h
