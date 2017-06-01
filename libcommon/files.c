@@ -278,11 +278,16 @@ bool files_init(honggfuzz_t * hfuzz)
         return false;
     }
 
-    if ((hfuzz->inputDirP = opendir(hfuzz->inputDir)) == NULL) {
+    int dir_fd = open(hfuzz->inputDir, O_DIRECTORY | O_RDONLY | O_CLOEXEC);
+    if (dir_fd == -1) {
+        PLOG_W("open('%s', O_DIRECTORY|O_RDONLY|O_CLOEXEC)", hfuzz->inputDir);
+        return false;
+    }
+    if ((hfuzz->inputDirP = fdopendir(dir_fd)) == NULL) {
+        close(dir_fd);
         PLOG_W("opendir('%s')", hfuzz->inputDir);
         return false;
     }
-
     if (files_getDirStatsAndRewind(hfuzz) == false) {
         hfuzz->fileCnt = 0U;
         LOG_W("files_getDirStatsAndRewind('%s')", hfuzz->inputDir);
