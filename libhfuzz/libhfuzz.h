@@ -2,6 +2,9 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
+#include <stdint.h>
+
 /*
  * buf: input fuzzing data
  * len: size of the 'buf' data
