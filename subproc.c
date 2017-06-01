@@ -293,6 +293,8 @@ static bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         fuzzer->persistentPid = fuzzer->pid;
     }
 
+    arch_prepareParentAfterFork(hfuzz, fuzzer);
+
     return true;
 }
 
@@ -303,7 +305,7 @@ bool subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         return false;
     }
 
-    arch_prepareChild(hfuzz, fuzzer);
+    arch_prepareParent(hfuzz, fuzzer);
     if (hfuzz->persistent == true && subproc_persistentSendFile(fuzzer) == false) {
         LOG_W("Could not send file contents to the persistent process");
     }
@@ -312,20 +314,15 @@ bool subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     return true;
 }
 
-uint8_t subproc_System(const char *const argv[])
+uint8_t subproc_System(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *const argv[])
 {
-    pid_t pid = fork();
+    pid_t pid = arch_fork(hfuzz, fuzzer);
     if (pid == -1) {
         PLOG_E("Couldn't fork");
         return 255;
     }
-
     if (!pid) {
         logMutexReset();
-        sigset_t sset;
-        sigemptyset(&sset);
-        sigprocmask(SIG_SETMASK, &sset, NULL);
-        setsid();
         execv(argv[0], (char *const *)&argv[0]);
         PLOG_F("Couldn't execute '%s'", argv[0]);
         return 255;

@@ -257,7 +257,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             .symsWl = NULL,
             .cloneFlags = 0,
             .kernelOnly = false,
-            .skipGLibCCheck = false,
+            .useClone = true,
         },
     };
     /*  *INDENT-ON* */
@@ -508,9 +508,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x532:
             hfuzz->linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWIPC);
-            break;
-        case 0x540:
-            hfuzz->linux.skipGLibCCheck = true;
             break;
 #endif                          /* defined(_HF_ARCH_LINUX) */
         default:

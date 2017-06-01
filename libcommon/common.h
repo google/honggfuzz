@@ -290,7 +290,7 @@ typedef struct {
         size_t symsWlCnt;
         uintptr_t cloneFlags;
         bool kernelOnly;
-        bool skipGLibCCheck;
+        bool useClone;
     } linux;
 } honggfuzz_t;
 

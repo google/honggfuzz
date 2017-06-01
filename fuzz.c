@@ -150,7 +150,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     LOG_D("Created '%s' as an input file", fuzzer->fileName);
 
     const char *const argv[] = { hfuzz->externalCommand, fuzzer->fileName, NULL };
-    if (subproc_System(argv) != 0) {
+    if (subproc_System(hfuzz, fuzzer, argv) != 0) {
         LOG_E("Subprocess '%s' returned abnormally", hfuzz->externalCommand);
         return false;
     }
@@ -177,7 +177,7 @@ static bool fuzz_postProcessFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     const char *const argv[] = { hfuzz->postExternalCommand, fuzzer->fileName, NULL };
-    if (subproc_System(argv) != 0) {
+    if (subproc_System(hfuzz, fuzzer, argv) != 0) {
         LOG_E("Subprocess '%s' returned abnormally", hfuzz->postExternalCommand);
         return false;
     }
