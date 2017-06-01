@@ -26,6 +26,7 @@
 
 #include <arpa/inet.h>
 #include <ctype.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <locale.h>
@@ -111,47 +112,16 @@ static inline bool arch_shouldAttach(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     return true;
 }
 
-/*
- * 128 KiB for the temporary stack
- */
-static uint8_t arch_clone_stack[128 * 1024];
-static __thread jmp_buf env;
-
-#if defined(__has_feature)
-#if __has_feature(address_sanitizer) || __has_feature(memory_sanitizer)
-__attribute__ ((no_sanitize("address"))) __attribute__ ((no_sanitize("memory")))
-#endif                          /* if __has_feature(address_sanitizer) || __has_feature(memory_sanitizer) */
-#endif                          /* if defined(__has_feature) */
-static int arch_cloneFunc(void *arg UNUSED)
-{
-    longjmp(env, 1);
-    abort();
-    return 0;
-}
-
-/* Avoid problem with caching of PID/TID in glibc */
-static pid_t arch_clone(uintptr_t flags)
-{
-    if (flags & CLONE_VM) {
-        LOG_E("Cannot use clone(flags & CLONE_VM)");
-        return -1;
-    }
-
-    if (setjmp(env) == 0) {
-        void *stack_mid = &arch_clone_stack[sizeof(arch_clone_stack) / 2];
-        /* Parent */
-        return clone(arch_cloneFunc, stack_mid, flags, NULL, NULL, NULL);
-    }
-    /* Child */
-    return 0;
-}
-
 pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     arch_perfClose(hfuzz, fuzzer);
 
-    pid_t pid = arch_clone(hfuzz->linux.cloneFlags | CLONE_UNTRACED | SIGCHLD);
+    if (hfuzz->linux.cloneFlags && unshare(hfuzz->linux.cloneFlags) == -1) {
+        LOG_E("unshare(%tx)", hfuzz->linux.cloneFlags);
+    }
+    pid_t pid = fork();
     if (pid == -1) {
+        PLOG_W("Couldn't fork");
         return pid;
     }
     if (pid == 0) {
@@ -195,14 +165,6 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 {
-    /*
-     * Kill the children when fuzzer dies (e.g. due to Ctrl+C)
-     */
-    if (prctl(PR_SET_PDEATHSIG, (long)SIGKILL, 0UL, 0UL, 0UL) == -1) {
-        PLOG_E("prctl(PR_SET_PDEATHSIG, SIGKILL) failed");
-        return false;
-    }
-
     /*
      * Make it attach-able by ptrace()
      */
@@ -251,16 +213,23 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 
     LOG_D("Launching '%s' on file '%s'", args[0], hfuzz->persistent ? "PERSISTENT_MODE" : fileName);
 
+    /* alarm persists across forks, so disable it here */
+    alarm(0);
+
     /*
      * Wait for the ptrace to attach
      */
-    if (hfuzz->persistent == false) {
-        syscall(__NR_tkill, syscall(__NR_gettid), (uintptr_t) SIGSTOP);
+    if (kill(syscall(__NR_getpid), SIGSTOP) == -1) {
+        LOG_F("Couldn't stop itself");
     }
+#if defined(__NR_execveat)
+    syscall(__NR_execveat, hfuzz->linux.exeFd, "", args, environ, AT_EMPTY_PATH);
+#endif                          /* defined__NR_execveat) */
+    execve(args[0], args, environ);
+    int errno_cpy = errno;
+    alarm(1);
 
-    execvp(args[0], args);
-
-    PLOG_E("execvp('%s')", args[0]);
+    LOG_E("execve('%s', fd=%d): %s", args[0], hfuzz->linux.exeFd, strerror(errno_cpy));
 
     return false;
 }
@@ -272,7 +241,7 @@ void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (arch_shouldAttach(hfuzz, fuzzer) == true) {
         if (arch_ptraceAttach(hfuzz, ptracePid) == false) {
-            LOG_F("arch_ptraceAttach(pid=%d) failed", ptracePid);
+            LOG_E("arch_ptraceAttach(pid=%d) failed", ptracePid);
         }
         fuzzer->linux.attachedPid = ptracePid;
     }
@@ -300,7 +269,7 @@ void arch_prepareChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     if (arch_perfEnable(hfuzz, fuzzer) == false) {
-        LOG_F("Couldn't enable perf counters for pid %d", ptracePid);
+        LOG_E("Couldn't enable perf counters for pid %d", ptracePid);
     }
     if (childPid != ptracePid) {
         if (arch_ptraceWaitForPidStop(childPid) == false) {
@@ -416,6 +385,37 @@ bool arch_archInit(honggfuzz_t * hfuzz)
 {
     /* Make %'d work */
     setlocale(LC_NUMERIC, "");
+
+    if (access(hfuzz->cmdline[0], X_OK) == -1) {
+        PLOG_E("File '%s' doesn't seem to be executable", hfuzz->cmdline[0]);
+        return false;
+    }
+    if ((hfuzz->linux.exeFd = open(hfuzz->cmdline[0], O_RDONLY | O_CLOEXEC)) == -1) {
+        PLOG_E("Cannot open the executable binary: %s)", hfuzz->cmdline[0]);
+        return false;
+    }
+
+    const char *(*gvs) (void) = dlsym(RTLD_DEFAULT, "gnu_get_libc_version");
+    for (;;) {
+        if (!gvs) {
+            break;
+        }
+        const char *gversion = gvs();
+        int major, minor;
+        if (sscanf(gversion, "%d.%d", &major, &minor) != 2) {
+            LOG_W("Unknown glibc version: '%s'", gversion);
+            break;
+        }
+        if ((major < 2) || (major == 2 && minor < 24)) {
+            LOG_E("Your glibc version:'%s' will most likely result in malloc()-related "
+				  "deadlocks. Min. version 2.24 suggested. See "
+				  "https://bugzilla.redhat.com/show_bug.cgi?id=906468 for explanation",
+                  gversion);
+            break;
+        }
+        LOG_D("Glibc version:'%s', OK", gversion);
+        break;
+    }
 
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         unsigned long major = 0, minor = 0;

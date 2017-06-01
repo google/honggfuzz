@@ -239,10 +239,26 @@ static bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     fuzzer->pid = arch_fork(hfuzz, fuzzer);
     if (fuzzer->pid == -1) {
-        PLOG_F("Couldn't fork");
+        PLOG_E("Couldn't fork");
+        return false;
     }
-    // Child
+    /* The child process */
     if (!fuzzer->pid) {
+        logMutexReset();
+        /*
+         * Reset sighandlers, and set alarm(1). It's a guarantee against dead-locks
+         * in the child, where we ensure here that the child process will either
+         * execve or get signaled by SIGALRM within 1 second.
+         */
+        alarm(1);
+        signal(SIGALRM, SIG_DFL);
+        sigset_t sset;
+        sigemptyset(&sset);
+        if (sigprocmask(SIG_SETMASK, &sset, NULL) == -1) {
+            perror("sigprocmask");
+            _exit(1);
+        }
+
         if (hfuzz->persistent) {
             if (dup2(sv[1], _HF_PERSISTENT_FD) == -1) {
                 PLOG_F("dup2('%d', '%d')", sv[1], _HF_PERSISTENT_FD);
@@ -256,9 +272,9 @@ static bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             exit(EXIT_FAILURE);
         }
         if (!arch_launchChild(hfuzz, fuzzer->fileName)) {
-            LOG_E("Error launching child process");
             kill(hfuzz->mainPid, SIGTERM);
-            exit(EXIT_FAILURE);
+            LOG_E("Error launching child process");
+            _exit(EXIT_FAILURE);
         }
         abort();
     }
@@ -299,6 +315,7 @@ uint8_t subproc_System(const char *const argv[])
     }
 
     if (!pid) {
+        logMutexReset();
         sigset_t sset;
         sigemptyset(&sset);
         sigprocmask(SIG_SETMASK, &sset, NULL);

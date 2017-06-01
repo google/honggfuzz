@@ -50,8 +50,8 @@ honggfuzz_t hfuzz;
 
 void sigHandler(int sig)
 {
-    /* We should not terminate upon SIGALRM or SIGCHLD delivery */
-    if (sig == SIGALRM || sig == SIGCHLD) {
+    /* We should not terminate upon SIGALRM delivery */
+    if (sig == SIGALRM) {
         return;
     }
 
@@ -112,9 +112,6 @@ static void setupSignalsPostThr(void)
     if (sigaction(SIGALRM, &sa, NULL) == -1) {
         PLOG_F("sigaction(SIGQUIT) failed");
     }
-    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-        PLOG_F("sigaction(SIGCHLD) failed");
-    }
     /* Unblock signals which should be handled by the main thread */
     sigset_t ss;
     sigemptyset(&ss);
@@ -122,7 +119,6 @@ static void setupSignalsPostThr(void)
     sigaddset(&ss, SIGINT);
     sigaddset(&ss, SIGQUIT);
     sigaddset(&ss, SIGALRM);
-    sigaddset(&ss, SIGCHLD);
     if (sigprocmask(SIG_UNBLOCK, &ss, NULL) != 0) {
         PLOG_F("pthread_sigmask(SIG_UNBLOCK)");
     }

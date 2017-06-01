@@ -1355,6 +1355,10 @@ bool arch_ptraceAttach(honggfuzz_t * hfuzz, pid_t pid)
         seize_options |= PTRACE_O_TRACEEXIT;
     }
 
+    if (arch_ptraceWaitForPidStop(pid) == false) {
+        return false;
+    }
+
     if (ptrace(PTRACE_SEIZE, pid, NULL, seize_options) == -1) {
         PLOG_W("Couldn't ptrace(PTRACE_SEIZE) to pid: %d", pid);
         return false;

@@ -68,4 +68,6 @@ extern int logFd(void);
 
 extern pthread_mutex_t *logMutexGet(void);
 
+void logMutexReset(void);
+
 #endif                          /* _HF_LOG_H_ */

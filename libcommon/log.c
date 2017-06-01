@@ -169,6 +169,11 @@ pthread_mutex_t *logMutexGet(void)
     return &log_mutex;
 }
 
+void logMutexReset(void)
+{
+    pthread_mutex_init(&log_mutex, NULL);
+}
+
 bool logIsTTY(void)
 {
     return log_fd_isatty;

@@ -178,7 +178,11 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 
     LOG_D("Launching '%s' on file '%s'", args[0], fileName);
 
+    /* alarm persists across forks, so disable it here */
+    alarm(0);
     execvp(args[0], args);
+    alarm(1);
+
     return false;
 }
 

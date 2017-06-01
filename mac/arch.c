@@ -364,7 +364,11 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         return false;
     }
 
+    /* alarm persists across forks, so disable it here */
+    alarm(0);
     execvp(args[0], args);
+    alarm(1);
+
     return false;
 }
 

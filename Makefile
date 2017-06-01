@@ -44,7 +44,7 @@ ifeq ($(OS),Linux)
                    -funroll-loops \
                    -D_FILE_OFFSET_BITS=64
     ARCH_LDFLAGS := -L/usr/local/include -L/usr/include \
-                    -lpthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt
+                    -lpthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt -ldl
     ARCH_SRCS := $(sort $(wildcard linux/*.c))
 
     ifeq ("$(wildcard /usr/include/bfd.h)","")
