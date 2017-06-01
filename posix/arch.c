@@ -22,7 +22,7 @@
  */
 
 #include "../libcommon/common.h"
-#include "../libcommon/arch.h"
+#include "../arch.h"
 
 #include <poll.h>
 #include <ctype.h>

@@ -24,7 +24,7 @@
 #ifndef _HF_ARCH_H_
 #define _HF_ARCH_H_
 
-#include "common.h"
+#include "libcommon/common.h"
 
 extern bool arch_launchChild(honggfuzz_t * fuzz, char *fileName);
 

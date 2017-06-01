@@ -23,7 +23,7 @@
  */
 
 #include "../libcommon/common.h"
-#include "../libcommon/arch.h"
+#include "../arch.h"
 
 #include <ctype.h>
 #include <dirent.h>

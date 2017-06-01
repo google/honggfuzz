@@ -22,7 +22,7 @@
  */
 
 #include "../libcommon/common.h"
-#include "../libcommon/arch.h"
+#include "../arch.h"
 
 #include <arpa/inet.h>
 #include <ctype.h>

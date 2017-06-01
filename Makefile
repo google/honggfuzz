@@ -325,9 +325,9 @@ cmdline.o: cmdline.h libcommon/common.h libcommon/log.h libcommon/common.h
 cmdline.o: libcommon/files.h libcommon/util.h
 display.o: libcommon/common.h display.h libcommon/log.h libcommon/common.h
 display.o: libcommon/util.h
-fuzz.o: libcommon/common.h fuzz.h libcommon/arch.h libcommon/common.h
-fuzz.o: libcommon/files.h libcommon/log.h libcommon/util.h mangle.h report.h
-fuzz.o: sancov.h sanitizers.h subproc.h
+fuzz.o: libcommon/common.h fuzz.h libcommon/files.h libcommon/common.h
+fuzz.o: libcommon/log.h libcommon/util.h arch.h mangle.h report.h sancov.h
+fuzz.o: sanitizers.h subproc.h
 honggfuzz.o: libcommon/common.h libcommon/log.h libcommon/common.h
 honggfuzz.o: libcommon/files.h libcommon/util.h cmdline.h display.h fuzz.h
 mangle.o: libcommon/common.h mangle.h libcommon/log.h libcommon/common.h
@@ -338,8 +338,8 @@ sancov.o: libcommon/common.h sancov.h sanitizers.h libcommon/files.h
 sancov.o: libcommon/common.h libcommon/log.h libcommon/util.h
 sanitizers.o: libcommon/common.h sanitizers.h libcommon/files.h
 sanitizers.o: libcommon/common.h libcommon/log.h libcommon/util.h
-subproc.o: libcommon/common.h subproc.h libcommon/arch.h libcommon/common.h
-subproc.o: libcommon/files.h libcommon/log.h libcommon/util.h sanitizers.h
+subproc.o: libcommon/common.h subproc.h libcommon/files.h libcommon/common.h
+subproc.o: libcommon/log.h libcommon/util.h arch.h sanitizers.h
 hfuzz_cc/hfuzz-cc.o: libcommon/common.h libcommon/files.h libcommon/common.h
 hfuzz_cc/hfuzz-cc.o: libcommon/log.h
 libcommon/files.o: libcommon/common.h libcommon/files.h libcommon/log.h
@@ -353,8 +353,8 @@ libhfuzz/memorycmp.o: libhfuzz/instrument.h libcommon/common.h
 libhfuzz/memorycmp.o: libcommon/util.h
 libhfuzz/persistent.o: libcommon/common.h libcommon/log.h libcommon/common.h
 libhfuzz/persistent.o: libcommon/files.h
-linux/arch.o: libcommon/common.h libcommon/arch.h libcommon/common.h
-linux/arch.o: libcommon/files.h libcommon/log.h libcommon/util.h subproc.h
+linux/arch.o: libcommon/common.h arch.h libcommon/common.h libcommon/files.h
+linux/arch.o: libcommon/common.h libcommon/log.h libcommon/util.h subproc.h
 linux/arch.o: sancov.h sanitizers.h linux/perf.h linux/ptrace_utils.h
 linux/bfd.o: libcommon/common.h linux/bfd.h linux/unwind.h libcommon/files.h
 linux/bfd.o: libcommon/common.h libcommon/log.h libcommon/util.h
@@ -368,7 +368,9 @@ linux/ptrace_utils.o: libcommon/util.h sancov.h sanitizers.h subproc.h
 linux/ptrace_utils.o: linux/bfd.h linux/unwind.h
 linux/unwind.o: libcommon/common.h linux/unwind.h libcommon/log.h
 linux/unwind.o: libcommon/common.h
-mac/arch.o: libcommon/common.h libcommon/arch.h libcommon/common.h
-mac/arch.o: libcommon/files.h libcommon/log.h libcommon/util.h subproc.h
-posix/arch.o: libcommon/common.h libcommon/arch.h libcommon/common.h
-posix/arch.o: libcommon/files.h libcommon/log.h libcommon/util.h subproc.h
+mac/arch.o: libcommon/common.h arch.h libcommon/common.h libcommon/files.h
+mac/arch.o: libcommon/common.h libcommon/log.h libcommon/util.h sancov.h
+mac/arch.o: sanitizers.h subproc.h
+posix/arch.o: libcommon/common.h arch.h libcommon/common.h libcommon/files.h
+posix/arch.o: libcommon/common.h libcommon/log.h libcommon/util.h sancov.h
+posix/arch.o: sanitizers.h subproc.h

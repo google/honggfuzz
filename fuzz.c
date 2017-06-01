@@ -43,10 +43,10 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "libcommon/arch.h"
 #include "libcommon/files.h"
 #include "libcommon/log.h"
 #include "libcommon/util.h"
+#include "arch.h"
 #include "mangle.h"
 #include "report.h"
 #include "sancov.h"
