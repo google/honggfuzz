@@ -27,6 +27,29 @@ extern "C" {
  */
     void HF_ITER(const uint8_t ** buf_ptr, size_t * len_ptr);
 
+#if defined(_HF_ARCH_LINUX)
+
+/*
+ * Enter Linux namespaces
+ *
+ * cloneFlags: see 'man unshare'
+ */
+    bool linuxEnterNs(uintptr_t cloneFlags);
+/*
+ * Bring network interface up
+ *
+ * ifacename: name of the interface, typically "lo"
+ */
+    bool linuxIfaceUp(const char *ifacename);
+/*
+ * Mount tmpfs over a mount point
+ *
+ * dst: mount point for tmfs
+ */
+    bool linuxMountTmpfs(const char *dst);
+
+#endif                          /* defined(_HF_ARCH_LINUX) */
+
 #ifdef __cplusplus
 }                               /* extern "C" */
 #endif

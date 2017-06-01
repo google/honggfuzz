@@ -350,6 +350,8 @@ libcommon/util.o: libcommon/common.h libcommon/util.h libcommon/files.h
 libcommon/util.o: libcommon/log.h
 libhfuzz/instrument.o: libcommon/common.h libcommon/util.h libcommon/log.h
 libhfuzz/instrument.o: libcommon/common.h
+libhfuzz/linux.o: libcommon/common.h libcommon/log.h libcommon/common.h
+libhfuzz/linux.o: libcommon/files.h libhfuzz/libhfuzz.h
 libhfuzz/memorycmp.o: libhfuzz/instrument.h libcommon/common.h
 libhfuzz/memorycmp.o: libcommon/util.h
 libhfuzz/persistent.o: libcommon/common.h libhfuzz/libhfuzz.h libcommon/log.h

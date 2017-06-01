@@ -68,7 +68,7 @@ ssize_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
     return readSz;
 }
 
-bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flags)
+bool files_writeBufToFile(const char *fileName, const uint8_t * buf, size_t fileSz, int flags)
 {
     int fd = open(fileName, flags, 0644);
     if (fd == -1) {
