@@ -13,6 +13,8 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
+#include <libhfuzz.h>
+
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
 
 static int fd_tty_write;
@@ -74,7 +76,7 @@ static bool isInteresting(const char* s, size_t len)
     return false;
 }
 
-int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 {
     write(fd_tty_write, buf, len);
 

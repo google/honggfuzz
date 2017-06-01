@@ -8,6 +8,8 @@ extern "C" {
 #include <libxml/xmlerror.h>
 #include <stdlib.h>
 
+#include <libhfuzz.h>
+
 FILE* null_file = NULL;
 
 int LLVMFuzzerInitialize(int* argc, char*** argv)
@@ -16,7 +18,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
     return 0;
 }
 
-int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 {
     xmlDocPtr p = xmlReadMemory((const char*)buf, len, "http://www.google.com", "UTF-8", XML_PARSE_RECOVER | XML_PARSE_NONET);
     if (!p) {
