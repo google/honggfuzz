@@ -1,5 +1,24 @@
+diff --git a/compile.sh b/compile.sh
+new file mode 100755
+index 0000000..17acaba
+--- /dev/null
++++ b/compile.sh
+@@ -0,0 +1,13 @@
++#!/bin/sh
++
++CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX="$CC" CFLAGS="-O3 -fsanitize=address" ./configure \
++		--prefix=/home/jagger/fuzz/apache/dist \
++		--with-nghttp2=/home/jagger/fuzz/apache/nghttp2-1.23.1/ \
++		--enable-nghttp2-staticlib-deps \
++		--with-mpm=event \
++		--enable-unixd \
++		--disable-pie \
++		--enable-mods-static=few \
++		--enable-http2 \
++		--with-apr=/home/jagger/fuzz/apache/apr-1.5.2/ \
++		--with-apr-util=/home/jagger/fuzz/apache/apr-util-1.5.4/
 diff --git a/modules/http2/config2.m4 b/modules/http2/config2.m4
-index fac130b21..4dbb3a545 100644
+index fac130b..4dbb3a5 100644
 --- a/modules/http2/config2.m4
 +++ b/modules/http2/config2.m4
 @@ -122,15 +122,11 @@ AC_DEFUN([APACHE_CHECK_NGHTTP2],[
@@ -21,7 +40,7 @@ index fac130b21..4dbb3a545 100644
      if test "x$ac_cv_nghttp2" = "xyes"; then
        ap_nghttp2_libs="${ap_nghttp2_libs:--lnghttp2} `$apr_config --libs`"
 diff --git a/modules/http2/h2_request.c b/modules/http2/h2_request.c
-index 9811a5cb1..e64a49f33 100644
+index 9811a5c..e64a49f 100644
 --- a/modules/http2/h2_request.c
 +++ b/modules/http2/h2_request.c
 @@ -218,7 +218,7 @@ request_rec *h2_request_create_rec(const h2_request *req, conn_rec *c)
@@ -34,7 +53,7 @@ index 9811a5cb1..e64a49f33 100644
      r->method_number = ap_method_number_of(r->method);
      if (r->method_number == M_GET && r->method[0] == 'H') {
 diff --git a/server/main.c b/server/main.c
-index bda60827c..a62df4cbf 100644
+index bda6082..a62df4c 100644
 --- a/server/main.c
 +++ b/server/main.c
 @@ -459,8 +459,83 @@ static void usage(process_rec *process)
@@ -124,7 +143,7 @@ index bda60827c..a62df4cbf 100644
      int showcompile = 0, showdirectives = 0;
      const char *confname = SERVER_CONFIG_FILE;
 diff --git a/support/ab.c b/support/ab.c
-index 58769a9c8..ddf141bcc 100644
+index 58769a9..ddf141b 100644
 --- a/support/ab.c
 +++ b/support/ab.c
 @@ -727,7 +727,7 @@ static void ssl_proceed_handshake(struct connection *c)
