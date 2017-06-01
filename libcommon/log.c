@@ -36,7 +36,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "display.h"
 #include "util.h"
 
 #if defined(_HF_ARCH_LINUX)
@@ -144,8 +143,7 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
     /* End printing logs */
 
     if (ll == FATAL) {
-        display_fini();
-        _exit(1);
+        exit(1);
     }
 }
 

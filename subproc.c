@@ -279,7 +279,7 @@ static bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (!arch_launchChild(hfuzz, fuzzer->fileName)) {
             kill(hfuzz->mainPid, SIGTERM);
             LOG_E("Error launching child process");
-            _exit(EXIT_FAILURE);
+            _exit(1);
         }
         abort();
     }

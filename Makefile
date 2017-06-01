@@ -323,13 +323,14 @@ android-clean-deps:
 
 cmdline.o: cmdline.h libcommon/common.h libcommon/log.h libcommon/common.h
 cmdline.o: libcommon/files.h libcommon/util.h
+display.o: libcommon/common.h display.h libcommon/log.h libcommon/common.h
+display.o: libcommon/util.h
 fuzz.o: libcommon/common.h fuzz.h libcommon/arch.h libcommon/common.h
 fuzz.o: libcommon/files.h libcommon/log.h libcommon/sanitizers.h
 fuzz.o: libcommon/sancov.h libcommon/sanitizers.h libcommon/util.h mangle.h
 fuzz.o: report.h subproc.h
-honggfuzz.o: libcommon/common.h libcommon/display.h libcommon/log.h
-honggfuzz.o: libcommon/common.h libcommon/files.h libcommon/util.h cmdline.h
-honggfuzz.o: fuzz.h
+honggfuzz.o: libcommon/common.h libcommon/log.h libcommon/common.h
+honggfuzz.o: libcommon/files.h libcommon/util.h cmdline.h display.h fuzz.h
 mangle.o: libcommon/common.h mangle.h libcommon/log.h libcommon/common.h
 mangle.o: libcommon/util.h
 report.o: libcommon/common.h report.h libcommon/log.h libcommon/common.h
@@ -339,12 +340,9 @@ subproc.o: libcommon/files.h libcommon/log.h libcommon/sanitizers.h
 subproc.o: libcommon/util.h
 hfuzz_cc/hfuzz-cc.o: libcommon/common.h libcommon/files.h libcommon/common.h
 hfuzz_cc/hfuzz-cc.o: libcommon/log.h
-libcommon/display.o: libcommon/common.h libcommon/display.h libcommon/log.h
-libcommon/display.o: libcommon/util.h
 libcommon/files.o: libcommon/common.h libcommon/files.h libcommon/log.h
 libcommon/files.o: libcommon/util.h
-libcommon/log.o: libcommon/common.h libcommon/log.h libcommon/display.h
-libcommon/log.o: libcommon/util.h
+libcommon/log.o: libcommon/common.h libcommon/log.h libcommon/util.h
 libcommon/sancov.o: libcommon/common.h libcommon/sancov.h
 libcommon/sancov.o: libcommon/sanitizers.h libcommon/files.h libcommon/log.h
 libcommon/sancov.o: libcommon/util.h
