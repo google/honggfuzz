@@ -23,7 +23,7 @@
 bool linuxEnterNs(uintptr_t cloneFlags)
 {
     pid_t current_uid = getuid();
-    gid_t current_gid = getuid();
+    gid_t current_gid = getgid();
 
     if (unshare(cloneFlags) == -1) {
         PLOG_E("unshare(%tx)", cloneFlags);
@@ -38,7 +38,7 @@ bool linuxEnterNs(uintptr_t cloneFlags)
     }
 
     char gid_map[4096];
-    snprintf(gid_map, sizeof(gid_map), "%d %d 1\n", (int)current_gid, (int)current_gid);
+    snprintf(gid_map, sizeof(gid_map), "%d %d 1", (int)current_gid, (int)current_gid);
     if (files_writeBufToFile
         ("/proc/self/gid_map", (const uint8_t *)gid_map, strlen(gid_map), O_WRONLY) == false) {
         PLOG_E("Couldn't write to /proc/self/gid_map");
@@ -46,7 +46,7 @@ bool linuxEnterNs(uintptr_t cloneFlags)
     }
 
     char uid_map[4096];
-    snprintf(uid_map, sizeof(uid_map), "%d %d 1\n", (int)current_uid, (int)current_uid);
+    snprintf(uid_map, sizeof(uid_map), "%d %d 1", (int)current_uid, (int)current_uid);
     if (files_writeBufToFile
         ("/proc/self/uid_map", (const uint8_t *)uid_map, strlen(uid_map), O_WRONLY) == false) {
         PLOG_E("Couldn't write to /proc/self/uid_map");
