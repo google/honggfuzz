@@ -17,7 +17,7 @@
 #include "../libcommon/log.h"
 #include "../libcommon/files.h"
 
-int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len) __attribute__ ((weak));
+int LLVMFuzzerTestOneInput(const uint8_t * buf, size_t len) __attribute__ ((weak));
 int LLVMFuzzerInitialize(int *argc, char ***argv) __attribute__ ((weak));
 
 static uint8_t buf[_HF_PERF_BITMAP_SIZE_16M] = { 0 };
@@ -27,7 +27,7 @@ static inline bool readFromFdAll(int fd, uint8_t * buf, size_t len)
     return (files_readFromFd(fd, buf, len) == (ssize_t) len);
 }
 
-void HF_ITER(uint8_t ** buf_ptr, size_t * len_ptr)
+void HF_ITER(const uint8_t ** buf_ptr, size_t * len_ptr)
 {
     /*
      * Send the 'done' marker to the parent
@@ -59,7 +59,7 @@ void HF_ITER(uint8_t ** buf_ptr, size_t * len_ptr)
     *len_ptr = len;
 }
 
-static void runOneInput(uint8_t * buf, size_t len)
+static void runOneInput(const uint8_t * buf, size_t len)
 {
     int ret = LLVMFuzzerTestOneInput(buf, len);
     if (ret != 0) {
@@ -109,7 +109,7 @@ int main(int argc, char **argv)
 
     for (;;) {
         size_t len;
-        uint8_t *buf;
+        const uint8_t *buf;
 
         HF_ITER(&buf, &len);
         runOneInput(buf, len);

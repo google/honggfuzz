@@ -11,6 +11,8 @@ extern "C" {
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <libhfuzz.h>
+
 #include "cderror.h"
 #include "jpeglib.h"
 
@@ -50,7 +52,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
     return 0;
 }
 
-int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 {
     if (setjmp(jerr.setjmp_buffer)) {
         goto out;

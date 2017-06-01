@@ -699,7 +699,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
     return 1;
 }
 
-int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 {
     if (RAND_reset_for_fuzzing) {
         RAND_reset_for_fuzzing();

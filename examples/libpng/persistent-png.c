@@ -12,6 +12,8 @@ extern "C" {
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <libhfuzz.h>
+
 #include "png.h"
 #include "pngpriv.h"
 #include "pngstruct.h"
@@ -33,7 +35,7 @@ void fatal(const char* s, ...)
 }
 
 typedef struct {
-    uint8_t* ptr;
+    const uint8_t* ptr;
     size_t len;
     size_t off;
 } user_file_t;
@@ -66,7 +68,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
     return 0;
 }
 
-int LLVMFuzzerTestOneInput(uint8_t* buf, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 {
     png_structp png_ptr = NULL;
     png_infop info_ptr = NULL;
