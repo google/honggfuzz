@@ -55,13 +55,10 @@
 
 static pthread_t fuzz_mainThread;
 
-static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
+static void fuzz_getFileName(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-
-    snprintf(fileName, PATH_MAX, "%s/.honggfuzz.%d.%lu.%" PRIx64 ".%s", hfuzz->workDir,
-             (int)getpid(), (unsigned long int)tv.tv_sec, util_rnd64(), hfuzz->fileExtn);
+    snprintf(fuzzer->fileName, PATH_MAX, "%s/honggfuzz.input.%" PRIu32 ".%s", hfuzz->workDir,
+             fuzzer->fuzzNo, hfuzz->fileExtn);
 }
 
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
@@ -299,7 +296,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             LOG_F("Could not initialize the thread");
         }
 
-        fuzz_getFileName(hfuzz, vFuzzer.fileName);
+        fuzz_getFileName(hfuzz, &vFuzzer);
         if (files_writeBufToFile
             (vFuzzer.fileName, crashBuf, crashFileSz,
              O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC) == false) {
@@ -535,7 +532,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzer->linux.hwCnts.newBBCnt = 0ULL;
 
     if (hfuzz->persistent == false) {
-        fuzz_getFileName(hfuzz, fuzzer->fileName);
+        fuzz_getFileName(hfuzz, fuzzer);
     }
 
     if (fuzzer->state == _HF_STATE_DYNAMIC_PRE) {
