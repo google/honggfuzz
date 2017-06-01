@@ -47,6 +47,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * [Remote Use-after-Free (potential RCE, rated as 'critical') • CVE-2016-6309](https://www.openssl.org/news/secadv/20160926.txt)
     * [Remote OOB write • CVE-2016-7054](https://www.openssl.org/news/secadv/20161110.txt)
     * [Remote OOB read • CVE-2017-3731](https://www.openssl.org/news/secadv/20170126.txt)
+  * Crash in [LibreSSL](https://github.com/openbsd/src/commit/c80d04452814d5b0e397817ce4ed34edb4eb520d)
   * Multiple bugs in [language interpreters](https://github.com/dyjakan/interpreter-bugs) (__PHP/Python/Ruby__)
   * ... and more
 
