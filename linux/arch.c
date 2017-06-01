@@ -125,9 +125,7 @@ pid_t arch_fork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     if (pid == 0) {
         logMutexReset();
-        if (prctl
-            (PR_SET_PDEATHSIG, (unsigned long)SIGKILL, (unsigned long)0, (unsigned long)0,
-             (unsigned long)0) == -1) {
+        if (prctl(PR_SET_PDEATHSIG, (unsigned long)SIGKILL, 0UL, 0UL, 0UL) == -1) {
             PLOG_W("prctl(PR_SET_PDEATHSIG, SIGKILL)");
         }
         if (hfuzz->linux.cloneFlags & CLONE_NEWNET) {
@@ -403,18 +401,20 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     const char *(*gvs) (void) = dlsym(RTLD_DEFAULT, "gnu_get_libc_version");
     for (;;) {
         if (!gvs) {
+            LOG_D("Unknown libc implementation");
             break;
         }
         const char *gversion = gvs();
         int major, minor;
         if (sscanf(gversion, "%d.%d", &major, &minor) != 2) {
-            LOG_W("Unknown glibc version: '%s'", gversion);
+            LOG_W("Unknown glibc version:'%s'", gversion);
             break;
         }
-        if ((major < 2) || (major == 2 && minor < 24)) {
+        if ((major < 2) || (major == 2 && minor < 23)) {
             LOG_E("Your glibc version:'%s' will most likely result in malloc()-related "
-                  "deadlocks. Min. version 2.24 suggested. See "
-                  "https://bugzilla.redhat.com/show_bug.cgi?id=906468 for explanation", gversion);
+                  "deadlocks. Min. version 2.24 (Or, Ubuntu's 2.23-0ubuntu6) suggested. See "
+                  "See https://sourceware.org/bugzilla/show_bug.cgi?id=19431 for explanation",
+                  gversion);
             break;
         }
         LOG_D("Glibc version:'%s', OK", gversion);

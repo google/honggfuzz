@@ -249,6 +249,11 @@ static bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
          * Reset sighandlers, and set alarm(1). It's a guarantee against dead-locks
          * in the child, where we ensure here that the child process will either
          * execve or get signaled by SIGALRM within 1 second.
+         *
+         * Those deadlocks typically stem from the fact, that malloc() can behave weirdly
+         * when fork()-ing a single thread of a process: e.g. with glibc < 2.24
+         * (or, Ubuntu's 2.23-0ubuntu6). For more see
+         * http://changelogs.ubuntu.com/changelogs/pool/main/g/glibc/glibc_2.23-0ubuntu7/changelog
          */
         alarm(1);
         signal(SIGALRM, SIG_DFL);
@@ -278,7 +283,8 @@ static bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
         abort();
     }
-    // Parent
+
+    /* Parent */
     LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
 
     if (hfuzz->persistent) {
