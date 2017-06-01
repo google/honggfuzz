@@ -1,4 +1,5 @@
 #include "../libcommon/common.h"
+#include "libhfuzz.h"
 
 #include <errno.h>
 #include <fcntl.h>

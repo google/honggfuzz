@@ -154,6 +154,7 @@ OBJS := $(SRCS:.c=.o)
 LHFUZZ_SRCS := $(wildcard libhfuzz/*.c)
 LHFUZZ_OBJS := $(LHFUZZ_SRCS:.c=.o)
 LHFUZZ_ARCH := libhfuzz/libhfuzz.a
+LHFUZZ_INC ?= $(join $(shell pwd), /libhfuzz)
 
 LCOMMON_SRCS := $(wildcard libcommon/*.c)
 LCOMMON_OBJS := $(LCOMMON_SRCS:.c=.o)
@@ -245,7 +246,7 @@ $(BIN): $(OBJS) $(LCOMMON_ARCH)
 	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
 
 $(HFUZZ_CC_BINS): $(LHFUZZ_ARCH) $(LCOMMON_ARCH) $(HFUZZ_CC_SRCS)
-	$(LD) -o $@ $(HFUZZ_CC_SRCS) $(LDFLAGS) $(CFLAGS)
+	$(LD) -o $@ $(HFUZZ_CC_SRCS) $(LDFLAGS) $(CFLAGS) -D_HFUZZ_LHFUZZ_INC_PATH=$(LHFUZZ_INC)
 
 $(LHFUZZ_OBJS): $(LHFUZZ_SRCS)
 	$(CC) -c $(LIBS_CFLAGS) $(CFLAGS) -o $@ $(@:.o=.c)
@@ -356,8 +357,8 @@ libhfuzz/instrument.o: libcommon/common.h libcommon/util.h libcommon/log.h
 libhfuzz/instrument.o: libcommon/common.h
 libhfuzz/memorycmp.o: libhfuzz/instrument.h libcommon/common.h
 libhfuzz/memorycmp.o: libcommon/util.h
-libhfuzz/persistent.o: libcommon/common.h libcommon/log.h libcommon/common.h
-libhfuzz/persistent.o: libcommon/files.h
+libhfuzz/persistent.o: libcommon/common.h libhfuzz/libhfuzz.h libcommon/log.h
+libhfuzz/persistent.o: libcommon/common.h libcommon/files.h
 linux/arch.o: libcommon/common.h libcommon/arch.h libcommon/common.h
 linux/arch.o: libcommon/files.h libcommon/log.h libcommon/sancov.h
 linux/arch.o: libcommon/sanitizers.h libcommon/util.h subproc.h linux/perf.h

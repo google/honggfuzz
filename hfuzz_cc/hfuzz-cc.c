@@ -128,9 +128,20 @@ static int execCC(int argc, char **argv)
     return EXIT_FAILURE;
 }
 
+char *getLibHfuzzIncPath(void)
+{
+#if !defined(_HFUZZ_LHFUZZ_INC_PATH)
+#error "You need to define _HFUZZ_LHFUZZ_INC_PATH"
+#endif
+
+    static char path[PATH_MAX];
+    snprintf(path, sizeof(path), "-I%s", _XSTR(_HFUZZ_LHFUZZ_INC_PATH));
+    return path;
+}
+
 static int ccMode(int argc, char **argv)
 {
-    char *args[4096];
+    char *args[ARGS_MAX];
 
     int j = 0;
     if (isCXX) {
@@ -138,6 +149,7 @@ static int ccMode(int argc, char **argv)
     } else {
         args[j++] = "cc";
     }
+    args[j++] = getLibHfuzzIncPath();
     if (isGCC) {
         args[j++] = "-fsanitize-coverage=trace-pc";
     } else {
@@ -206,7 +218,7 @@ static int ldMode(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    char *args[4096];
+    char *args[ARGS_MAX];
 
     int j = 0;
     if (isCXX) {
@@ -218,6 +230,7 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-Wl,--whole-archive";
     args[j++] = LHFUZZ_A_PATH;
     args[j++] = "-Wl,--no-whole-archive";
+    args[j++] = getLibHfuzzIncPath();
     if (isGCC) {
         args[j++] = "-fsanitize-coverage=trace-pc";
     } else {
@@ -260,7 +273,7 @@ int main(int argc, char **argv)
         LOG_I("'%s': No arguments provided", argv[0]);
         return execCC(argc, argv);
     }
-    if (argc > (ARGS_MAX - 4)) {
+    if (argc > (ARGS_MAX - 128)) {
         LOG_F("'%s': Too many positional arguments: %d", argv[0], argc);
         return EXIT_FAILURE;
     }
