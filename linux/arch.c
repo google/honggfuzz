@@ -411,11 +411,18 @@ bool arch_archInit(honggfuzz_t * hfuzz)
             break;
         }
         if ((major < 2) || (major == 2 && minor < 23)) {
-            LOG_E("Your glibc version:'%s' will most likely result in malloc()-related "
-                  "deadlocks. Min. version 2.24 (Or, Ubuntu's 2.23-0ubuntu6) suggested. See "
-                  "See https://sourceware.org/bugzilla/show_bug.cgi?id=19431 for explanation",
-                  gversion);
-            break;
+            if (hfuzz->linux.skipGLibCCheck) {
+                LOG_W("Your glibc version:'%s' will most likely result in malloc()-related "
+                      "deadlocks. Min. version 2.24 (Or, Ubuntu's 2.23-0ubuntu6) suggested. See "
+                      "See https://sourceware.org/bugzilla/show_bug.cgi?id=19431 for explanation",
+                      gversion);
+                break;
+            } else {
+                LOG_F("Your glibc version:'%s' will most likely result in malloc()-related "
+                      "deadlocks. Min. version 2.24 (Or, Ubuntu's 2.23-0ubuntu6) required. See "
+                      "See https://sourceware.org/bugzilla/show_bug.cgi?id=19431 for explanation. "
+                      "Use --linux_skip_glibc_check to continue despite this check.", gversion);
+            }
         }
         LOG_D("Glibc version:'%s', OK", gversion);
         break;

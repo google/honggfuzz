@@ -233,6 +233,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 
         /* Linux code */
         .linux = {
+            .exeFd = -1,
             .hwCnts = {
                 .cpuInstrCnt = 0ULL,
                 .cpuBranchCnt = 0ULL,
@@ -256,7 +257,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             .symsWl = NULL,
             .cloneFlags = 0,
             .kernelOnly = false,
-            .exeFd = -1,
+            .skipGLibCCheck = false,
         },
     };
     /*  *INDENT-ON* */
@@ -318,6 +319,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"linux_ns_net", no_argument, NULL, 0x0530}, "Use Linux NET namespace isolation"},
         {{"linux_ns_pid", no_argument, NULL, 0x0531}, "Use Linux PID namespace isolation"},
         {{"linux_ns_ipc", no_argument, NULL, 0x0532}, "Use Linux IPC namespace isolation"},
+        {{"linux_skip_glibc_check", no_argument, NULL, 0x0540}, "Don't FAIL() with outdated GLibC version (<2.23)"},
 #endif  // defined(_HF_ARCH_LINUX)
         {{0, 0, 0, 0}, NULL},
     };
@@ -506,6 +508,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x532:
             hfuzz->linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWIPC);
+            break;
+        case 0x540:
+            hfuzz->linux.skipGLibCCheck = true;
             break;
 #endif                          /* defined(_HF_ARCH_LINUX) */
         default:
