@@ -318,7 +318,7 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
     size_t n = 0;
     defer {
         free(lineptr);
-    }
+    };
     for (;;) {
         ssize_t len = getdelim(&lineptr, &n, '\n', fDict);
         if (len == -1) {
