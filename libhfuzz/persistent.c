@@ -20,6 +20,14 @@
 int LLVMFuzzerTestOneInput(const uint8_t * buf, size_t len) __attribute__ ((weak));
 int LLVMFuzzerInitialize(int *argc, char ***argv) __attribute__ ((weak));
 
+/* FIXME(robertswiecki): Make it call mangle_Mangle() */
+__attribute__ ((weak))
+size_t LLVMFuzzerMutate(uint8_t * Data UNUSED, size_t Size UNUSED, size_t MaxSize UNUSED)
+{
+    LOG_F("LLVMFuzzerMutate() is not supported in honggfuzz yet");
+    return 0;
+}
+
 static uint8_t buf[_HF_PERF_BITMAP_SIZE_16M] = { 0 };
 
 static inline bool readFromFdAll(int fd, uint8_t * buf, size_t len)

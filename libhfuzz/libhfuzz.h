@@ -22,6 +22,15 @@ extern "C" {
     int LLVMFuzzerInitialize(int *argc, char ***argv);
 
 /*
+ * Data: data to mutate
+ * Size: size of the data to mutate
+ * MaxSize: maximum size of the destination buffer
+ *
+ * Return value: size of the mutated buffer
+ */
+    size_t LLVMFuzzerMutate(uint8_t * Data, size_t Size, size_t MaxSize);
+
+/*
  *
  * An alternative for LLVMFuzzerTestOneInput()
  *
