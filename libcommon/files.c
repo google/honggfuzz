@@ -314,21 +314,41 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         fclose(fDict);
     };
 
+    char *lineptr = NULL;
+    size_t n = 0;
+    defer {
+        free(lineptr);
+    }
     for (;;) {
-        char *lineptr = NULL;
-        size_t n = 0;
         ssize_t len = getdelim(&lineptr, &n, '\n', fDict);
         if (len == -1) {
             break;
         }
-        if (n > 1 && lineptr[len - 1] == '\n') {
+        if (len > 1 && lineptr[len - 1] == '\n') {
             lineptr[len - 1] = '\0';
             len--;
         }
+        if (lineptr[0] == '#') {
+            continue;
+        }
+        if (lineptr[0] == '\n') {
+            continue;
+        }
+        if (lineptr[0] == '\0') {
+            continue;
+        }
+        char bufn[1025] = { 0 };
+        char bufv[1025] = { 0 };
+        if (sscanf(lineptr, "\"%1024[^\"]\"", bufv) != 1 &&
+            sscanf(lineptr, "%1024[a-zA-Z0-9]=\"%1024[^\"]\"", bufn, bufv) != 2) {
+            LOG_W("Incorrect dictionary entry: '%s'. Skipping", lineptr);
+            continue;
+        }
 
+        char *s = util_StrDup(bufv);
         struct strings_t *str = (struct strings_t *)util_Malloc(sizeof(struct strings_t));
-        str->len = util_decodeCString(lineptr);
-        str->s = lineptr;
+        str->len = util_decodeCString(s);
+        str->s = s;
         hfuzz->dictionaryCnt += 1;
         TAILQ_INSERT_TAIL(&hfuzz->dictq, str, pointers);
 
