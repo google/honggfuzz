@@ -1,6 +1,7 @@
 #include "instrument.h"
 
 extern int tolower(int c);
+size_t strlen(const char *s);
 
 __attribute__ ((always_inline))
 static inline int _strcmp(const char *s1, const char *s2, void *addr)
@@ -44,7 +45,8 @@ int strcasecmp(const char *s1, const char *s2)
     return _strcasecmp(s1, s2, __builtin_return_address(0));
 }
 
-int strncmp(const char *s1, const char *s2, size_t n)
+__attribute__ ((always_inline))
+static inline int _strncmp(const char *s1, const char *s2, size_t n, void *addr)
 {
     if (n == 0) {
         return 0;
@@ -64,11 +66,17 @@ int strncmp(const char *s1, const char *s2, size_t n)
         }
     }
 
-    libhfuzz_instrumentUpdateCmpMap(__builtin_return_address(0), v);
+    libhfuzz_instrumentUpdateCmpMap(addr, v);
     return ret;
 }
 
-int strncasecmp(const char *s1, const char *s2, size_t n)
+int strncmp(const char *s1, const char *s2, size_t n)
+{
+    return _strncmp(s1, s2, n, __builtin_return_address(0));
+}
+
+__attribute__ ((always_inline))
+static inline int _strncasecmp(const char *s1, const char *s2, size_t n, void *addr)
 {
     if (n == 0) {
         return 0;
@@ -88,14 +96,20 @@ int strncasecmp(const char *s1, const char *s2, size_t n)
         }
     }
 
-    libhfuzz_instrumentUpdateCmpMap(__builtin_return_address(0), v);
+    libhfuzz_instrumentUpdateCmpMap(addr, v);
     return ret;
+}
+
+int strncasecmp(const char *s1, const char *s2, size_t n)
+{
+    return _strncasecmp(s1, s2, n, __builtin_return_address(0));
 }
 
 char *strstr(const char *haystack, const char *needle)
 {
+    size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
-        if (_strcmp(&haystack[i], needle, __builtin_return_address(0)) == 0) {
+        if (_strncmp(&haystack[i], needle, needle_len, __builtin_return_address(0)) == 0) {
             return (char *)(&haystack[i]);
         }
     }
@@ -104,8 +118,9 @@ char *strstr(const char *haystack, const char *needle)
 
 char *strcasestr(const char *haystack, const char *needle)
 {
+    size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
-        if (_strcasecmp(&haystack[i], needle, __builtin_return_address(0)) == 0) {
+        if (_strncasecmp(&haystack[i], needle, needle_len, __builtin_return_address(0)) == 0) {
             return (char *)(&haystack[i]);
         }
     }
