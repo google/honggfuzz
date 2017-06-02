@@ -340,7 +340,7 @@ bool files_parseDictionary(honggfuzz_t * hfuzz)
         char bufn[1025] = { 0 };
         char bufv[1025] = { 0 };
         if (sscanf(lineptr, "\"%1024[^\"]\"", bufv) != 1 &&
-            sscanf(lineptr, "%1024[a-zA-Z0-9]=\"%1024[^\"]\"", bufn, bufv) != 2) {
+            sscanf(lineptr, "%1024[a-zA-Z0-9_-]=\"%1024[^\"]\"", bufn, bufv) != 2) {
             LOG_W("Incorrect dictionary entry: '%s'. Skipping", lineptr);
             continue;
         }
