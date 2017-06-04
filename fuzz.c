@@ -90,7 +90,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (hfuzz->persistent == false && files_writeBufToFile
         (fuzzer->fileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-         O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC) == false) {
+         O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC) == false) {
         LOG_E("Couldn't write buffer to file '%s'", fuzzer->fileName);
         return false;
     }
@@ -117,7 +117,7 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, bool rewind
 
     if (hfuzz->persistent == false && files_writeBufToFile
         (fuzzer->fileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-         O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC) == false) {
+         O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC) == false) {
         LOG_E("Couldn't write buffer to file '%s'", fuzzer->fileName);
         return false;
     }
@@ -136,7 +136,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
     } else {
         fuzzer->origFileName = "[EXTERNAL]";
-        int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0644);
+        int dstfd = open(fuzzer->fileName, O_CREAT | O_TRUNC | O_RDWR | O_CLOEXEC, 0644);
         if (dstfd == -1) {
             PLOG_E("Couldn't create a temporary file '%s'", fuzzer->fileName);
             return false;
@@ -299,7 +299,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         fuzz_getFileName(hfuzz, &vFuzzer);
         if (files_writeBufToFile
             (vFuzzer.fileName, crashBuf, crashFileSz,
-             O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC) == false) {
+             O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC) == false) {
             LOG_E("Couldn't write buffer to file '%s'", vFuzzer.fileName);
             return false;
         }
