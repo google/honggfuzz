@@ -152,11 +152,11 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
     return ret;
 }
 
-bool files_sendToSocket(int fd, const uint8_t * buf, size_t fileSz)
+bool files_sendToSocketNB(int fd, const uint8_t * buf, size_t fileSz)
 {
     size_t writtenSz = 0;
     while (writtenSz < fileSz) {
-        ssize_t sz = send(fd, &buf[writtenSz], fileSz - writtenSz, MSG_NOSIGNAL);
+        ssize_t sz = send(fd, &buf[writtenSz], fileSz - writtenSz, MSG_NOSIGNAL | MSG_DONTWAIT);
         if (sz < 0 && errno == EINTR)
             continue;
 
