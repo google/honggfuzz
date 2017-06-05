@@ -142,13 +142,13 @@ bool subproc_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 static bool subproc_persistentSendFile(fuzzer_t * fuzzer)
 {
     uint32_t len = (uint64_t) fuzzer->dynamicFileSz;
-    if (files_sendToSocketNB(fuzzer->persistentSock, (uint8_t *) & len, sizeof(len)) == false) {
-        PLOG_W("files_sendToSocketNB(len=%zu)", sizeof(len));
+    if (files_sendToSocket(fuzzer->persistentSock, (uint8_t *) & len, sizeof(len)) == false) {
+        PLOG_W("files_sendToSocket(len=%zu)", sizeof(len));
         return false;
     }
-    if (files_sendToSocketNB(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) ==
+    if (files_sendToSocket(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) ==
         false) {
-        PLOG_W("files_sendToSocketNB(len=%zu)", fuzzer->dynamicFileSz);
+        PLOG_W("files_sendToSocket(len=%zu)", fuzzer->dynamicFileSz);
         return false;
     }
     return true;
