@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <libgen.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stddef.h>

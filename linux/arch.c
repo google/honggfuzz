@@ -24,7 +24,6 @@
 #include "../libcommon/common.h"
 #include "../arch.h"
 
-#include <arpa/inet.h>
 #include <ctype.h>
 #include <dlfcn.h>
 #include <errno.h>
@@ -43,7 +42,6 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
