@@ -139,6 +139,26 @@ char *getLibHfuzzIncPath(void)
     return path;
 }
 
+static void commonOpts(int *j, char **args)
+{
+    args[(*j)++] = getLibHfuzzIncPath();
+    if (isGCC) {
+        args[(*j)++] = "-fsanitize-coverage=trace-pc";
+    } else {
+        args[(*j)++] = "-Wno-unused-command-line-argument";
+        args[(*j)++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
+        args[(*j)++] = "-mllvm";
+        args[(*j)++] = "-sanitizer-coverage-prune-blocks=0";
+        args[(*j)++] = "-mllvm";
+        args[(*j)++] = "-sanitizer-coverage-block-threshold=10000000";
+        args[(*j)++] = "-mllvm";
+        args[(*j)++] = "-sanitizer-coverage-level=3";
+    }
+    args[(*j)++] = "-funroll-loops";
+    args[(*j)++] = "-fno-inline";
+    args[(*j)++] = "-fno-builtin";
+}
+
 static int ccMode(int argc, char **argv)
 {
     char *args[ARGS_MAX];
@@ -149,22 +169,7 @@ static int ccMode(int argc, char **argv)
     } else {
         args[j++] = "cc";
     }
-    args[j++] = getLibHfuzzIncPath();
-    if (isGCC) {
-        args[j++] = "-fsanitize-coverage=trace-pc";
-    } else {
-        args[j++] = "-Wno-unused-command-line-argument";
-        args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
-        args[j++] = "-mllvm";
-        args[j++] = "-sanitizer-coverage-prune-blocks=0";
-        args[j++] = "-mllvm";
-        args[j++] = "-sanitizer-coverage-block-threshold=10000000";
-        args[j++] = "-mllvm";
-        args[j++] = "-sanitizer-coverage-level=3";
-    }
-    args[j++] = "-funroll-loops";
-    args[j++] = "-fno-inline";
-    args[j++] = "-fno-builtin";
+    commonOpts(&j, args);
 
     for (int i = 1; i < argc; i++) {
         args[j++] = argv[i];
@@ -230,22 +235,18 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-Wl,--whole-archive";
     args[j++] = LHFUZZ_A_PATH;
     args[j++] = "-Wl,--no-whole-archive";
-    args[j++] = getLibHfuzzIncPath();
-    if (isGCC) {
-        args[j++] = "-fsanitize-coverage=trace-pc";
-    } else {
-        args[j++] = "-Wno-unused-command-line-argument";
-        args[j++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
-        args[j++] = "-mllvm";
-        args[j++] = "-sanitizer-coverage-prune-blocks=0";
-        args[j++] = "-mllvm";
-        args[j++] = "-sanitizer-coverage-block-threshold=10000000";
-        args[j++] = "-mllvm";
-        args[j++] = "-sanitizer-coverage-level=3";
-    }
-    args[j++] = "-funroll-loops";
-    args[j++] = "-fno-inline";
-    args[j++] = "-fno-builtin";
+    args[j++] = "-Wl,--wrap=strcmp";
+    args[j++] = "-Wl,--wrap=strcasecmp";
+    args[j++] = "-Wl,--wrap=strncmp";
+    args[j++] = "-Wl,--wrap=strncasecmp";
+    args[j++] = "-Wl,--wrap=strstr";
+    args[j++] = "-Wl,--wrap=strcasestr";
+    args[j++] = "-Wl,--wrap=memcmp";
+    args[j++] = "-Wl,--wrap=bcmp";
+    args[j++] = "-Wl,--wrap=memmem";
+
+    commonOpts(&j, args);
+
     int i;
     for (i = 1; i < argc; i++) {
         args[j++] = argv[i];

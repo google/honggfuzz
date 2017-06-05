@@ -57,8 +57,8 @@ static pthread_t fuzz_mainThread;
 
 static void fuzz_getFileName(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    snprintf(fuzzer->fileName, PATH_MAX, "%s/honggfuzz.input.%" PRIu32 ".%s", hfuzz->workDir,
-             fuzzer->fuzzNo, hfuzz->fileExtn);
+    snprintf(fuzzer->fileName, PATH_MAX, "%s/honggfuzz.input.%" PRIu32 ".%s.%s", hfuzz->workDir,
+             fuzzer->fuzzNo, basename(hfuzz->cmdline[0]), hfuzz->fileExtn);
 }
 
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
@@ -531,10 +531,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzer->linux.hwCnts.bbCnt = 0ULL;
     fuzzer->linux.hwCnts.newBBCnt = 0ULL;
 
-    if (hfuzz->persistent == false) {
-        fuzz_getFileName(hfuzz, fuzzer);
-    }
-
     if (fuzzer->state == _HF_STATE_DYNAMIC_PRE) {
         fuzzer->flipRate = 0.0f;
         if (hfuzz->externalCommand) {
@@ -620,6 +616,7 @@ static void *fuzz_threadNew(void *arg)
     defer {
         free(fuzzer.dynamicFile);
     };
+    fuzz_getFileName(hfuzz, &fuzzer);
 
     if (arch_archThreadInit(hfuzz, &fuzzer) == false) {
         LOG_F("Could not initialize the thread");

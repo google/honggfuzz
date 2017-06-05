@@ -1,7 +1,7 @@
-#include "instrument.h"
+#include <ctype.h>
+#include <string.h>
 
-extern int tolower(int c);
-size_t strlen(const char *s);
+#include "instrument.h"
 
 __attribute__ ((always_inline))
 static inline int _strcmp(const char *s1, const char *s2, void *addr)
@@ -19,7 +19,7 @@ static inline int _strcmp(const char *s1, const char *s2, void *addr)
     return (s1[i] - s2[i]);
 }
 
-int strcmp(const char *s1, const char *s2)
+int __wrap_strcmp(const char *s1, const char *s2)
 {
     return _strcmp(s1, s2, __builtin_return_address(0));
 }
@@ -40,7 +40,7 @@ static inline int _strcasecmp(const char *s1, const char *s2, void *addr)
     return (tolower(s1[i]) - tolower(s2[i]));
 }
 
-int strcasecmp(const char *s1, const char *s2)
+int __wrap_strcasecmp(const char *s1, const char *s2)
 {
     return _strcasecmp(s1, s2, __builtin_return_address(0));
 }
@@ -70,7 +70,7 @@ static inline int _strncmp(const char *s1, const char *s2, size_t n, void *addr)
     return ret;
 }
 
-int strncmp(const char *s1, const char *s2, size_t n)
+int __wrap_strncmp(const char *s1, const char *s2, size_t n)
 {
     return _strncmp(s1, s2, n, __builtin_return_address(0));
 }
@@ -100,12 +100,12 @@ static inline int _strncasecmp(const char *s1, const char *s2, size_t n, void *a
     return ret;
 }
 
-int strncasecmp(const char *s1, const char *s2, size_t n)
+int __wrap_strncasecmp(const char *s1, const char *s2, size_t n)
 {
     return _strncasecmp(s1, s2, n, __builtin_return_address(0));
 }
 
-char *strstr(const char *haystack, const char *needle)
+char *__wrap_strstr(const char *haystack, const char *needle)
 {
     size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
@@ -116,7 +116,7 @@ char *strstr(const char *haystack, const char *needle)
     return NULL;
 }
 
-char *strcasestr(const char *haystack, const char *needle)
+char *__wrap_strcasestr(const char *haystack, const char *needle)
 {
     size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
@@ -152,17 +152,17 @@ static inline int _memcmp(const void *m1, const void *m2, size_t n, void *addr)
     return ret;
 }
 
-int memcmp(const void *m1, const void *m2, size_t n)
+int __wrap_memcmp(const void *m1, const void *m2, size_t n)
 {
     return (_memcmp(m1, m2, n, __builtin_return_address(0)));
 }
 
-int bcmp(const void *m1, const void *m2, size_t n)
+int __wrap_bcmp(const void *m1, const void *m2, size_t n)
 {
     return (_memcmp(m1, m2, n, __builtin_return_address(0)));
 }
 
-void *memmem(const void *haystack, size_t haystacklen, const void *needle, size_t needlelen)
+void *__wrap_memmem(const void *haystack, size_t haystacklen, const void *needle, size_t needlelen)
 {
     if (needlelen > haystacklen) {
         return NULL;
