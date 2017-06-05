@@ -316,6 +316,7 @@ bool subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     arch_prepareParent(hfuzz, fuzzer);
     if (hfuzz->persistent == true && subproc_persistentSendFile(fuzzer) == false) {
         LOG_W("Could not send file contents to the persistent process");
+        kill(fuzzer->persistentPid, SIGKILL);
     }
     arch_reapChild(hfuzz, fuzzer);
 
