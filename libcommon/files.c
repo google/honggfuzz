@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -149,6 +150,22 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
     int ret = files_writeToFd(fd, buf, size);
 
     return ret;
+}
+
+bool files_sendToSocketNB(int fd, const uint8_t * buf, size_t fileSz)
+{
+    size_t writtenSz = 0;
+    while (writtenSz < fileSz) {
+        ssize_t sz = send(fd, &buf[writtenSz], fileSz - writtenSz, MSG_DONTWAIT | MSG_NOSIGNAL);
+        if (sz < 0 && errno == EINTR)
+            continue;
+
+        if (sz < 0)
+            return false;
+
+        writtenSz += sz;
+    }
+    return true;
 }
 
 static bool files_getDirStatsAndRewind(honggfuzz_t * hfuzz)
