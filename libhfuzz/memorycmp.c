@@ -179,3 +179,26 @@ void *__wrap_memmem(const void *haystack, size_t haystacklen, const void *needle
     }
     return NULL;
 }
+
+/*
+ * Better instrumentation of *SSL libs
+ */
+int __wrap_CRYPTO_memcmp(const void *m1, const void *m2, size_t len)
+{
+    return _memcmp(m1, m2, len, __builtin_return_address(0));
+}
+
+int __wrap_OPENSSL_memcmp(const void *m1, const void *m2, size_t len)
+{
+    return _memcmp(m1, m2, len, __builtin_return_address(0));
+}
+
+int __wrap_OPENSSL_strcasecmp(const char *s1, const char *s2)
+{
+    return _strcasecmp(s1, s2, __builtin_return_address(0));
+}
+
+int __wrap_OPENSSL_strncasecmp(const char *s1, const char *s2, size_t len)
+{
+    return _strncasecmp(s1, s2, len, __builtin_return_address(0));
+}

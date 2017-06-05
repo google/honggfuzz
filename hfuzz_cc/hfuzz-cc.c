@@ -235,6 +235,7 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-Wl,--whole-archive";
     args[j++] = LHFUZZ_A_PATH;
     args[j++] = "-Wl,--no-whole-archive";
+
     args[j++] = "-Wl,--wrap=strcmp";
     args[j++] = "-Wl,--wrap=strcasecmp";
     args[j++] = "-Wl,--wrap=strncmp";
@@ -244,6 +245,10 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-Wl,--wrap=memcmp";
     args[j++] = "-Wl,--wrap=bcmp";
     args[j++] = "-Wl,--wrap=memmem";
+    args[j++] = "-Wl,--wrap=CRYPTO_memcmp";
+    args[j++] = "-Wl,--wrap=OPENSSL_memcmp";
+    args[j++] = "-Wl,--wrap=OPENSSL_strcasecmp";
+    args[j++] = "-Wl,--wrap=OPENSSL_strncasecmp";
 
     commonOpts(&j, args);
 
