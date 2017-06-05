@@ -293,6 +293,12 @@ static bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         close(sv[1]);
         LOG_I("Persistent mode: Launched new persistent PID: %d", (int)fuzzer->pid);
         fuzzer->persistentPid = fuzzer->pid;
+
+        int sndbuf = hfuzz->maxFileSz + 256;
+        if (setsockopt(fuzzer->persistentSock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)) ==
+            -1) {
+            LOG_W("Couldn't set FD send buffer to '%d' bytes", sndbuf);
+        }
     }
 
     arch_prepareParentAfterFork(hfuzz, fuzzer);

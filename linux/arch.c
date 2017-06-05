@@ -219,11 +219,6 @@ void arch_prepareParentAfterFork(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if (fcntl(fuzzer->persistentSock, F_SETFL, O_ASYNC) == -1) {
             PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->persistentSock);
         }
-        int sndbuf = (1024 * 1024 * 2); /* 2MiB */
-        if (setsockopt(fuzzer->persistentSock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)) ==
-            -1) {
-            LOG_W("Couldn't set FD send buffer to '%d' bytes", sndbuf);
-        }
     }
 
     pid_t perf_pid = (hfuzz->linux.pid == 0) ? fuzzer->pid : hfuzz->linux.pid;
