@@ -267,16 +267,18 @@ static int ldMode(int argc, char **argv)
     /* Repeat it, just in case anything late needs symbols from libhfuzz.a */
     args[j++] = LHFUZZ_A_PATH;
 
+    /* libcommon.a will use it when compiled with clang */
 #if defined(__clang__)
     args[j++] = "-lBlocksRuntime";
 #endif                          /*  defined(__clang__) */
     args[j++] = "-lpthread";
 
-    return execCC(j, args);
     int i;
     for (i = 1; i < argc; i++) {
         args[j++] = argv[i];
     }
+
+    return execCC(j, args);
 }
 
 int main(int argc, char **argv)
