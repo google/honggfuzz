@@ -30,11 +30,6 @@ size_t LLVMFuzzerMutate(uint8_t * Data UNUSED, size_t Size UNUSED, size_t MaxSiz
 
 static uint8_t buf[_HF_PERF_BITMAP_SIZE_16M] = { 0 };
 
-static inline bool readFromFdAll(int fd, uint8_t * buf, size_t len)
-{
-    return (files_readFromFd(fd, buf, len) == (ssize_t) len);
-}
-
 void HF_ITER(const uint8_t ** buf_ptr, size_t * len_ptr)
 {
     /*
@@ -45,22 +40,23 @@ void HF_ITER(const uint8_t ** buf_ptr, size_t * len_ptr)
     if (initialized == true) {
         static const uint8_t readyTag = 'A';
         if (files_writeToFd(_HF_PERSISTENT_FD, &readyTag, sizeof(readyTag)) == false) {
-            LOG_F("readFromFdAll() failed");
+            LOG_F("writeToFd(size=%zu) failed", sizeof(readyTag));
         }
     }
     initialized = true;
 
     uint32_t rlen;
-    if (readFromFdAll(_HF_PERSISTENT_FD, (uint8_t *) & rlen, sizeof(rlen)) == false) {
-        LOG_F("readFromFdAll(size) failed");
+    if (files_readFromFd(_HF_PERSISTENT_FD, (uint8_t *) & rlen, sizeof(rlen)) !=
+        (ssize_t) sizeof(rlen)) {
+        LOG_F("readFromFd(size=%zu) failed", sizeof(rlen));
     }
     size_t len = (size_t) rlen;
     if (len > _HF_PERF_BITMAP_SIZE_16M) {
         LOG_F("len (%zu) > buf_size (%zu)\n", len, (size_t) _HF_PERF_BITMAP_SIZE_16M);
     }
 
-    if (readFromFdAll(_HF_PERSISTENT_FD, buf, len) == false) {
-        LOG_F("readFromFdAll(buf) failed");
+    if (files_readFromFd(_HF_PERSISTENT_FD, buf, len) != (ssize_t) len) {
+        LOG_F("readFromFd(size=%zu) failed", len);
     }
 
     *buf_ptr = buf;
