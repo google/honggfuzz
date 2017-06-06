@@ -264,7 +264,6 @@ static int ldMode(int argc, char **argv)
 
     commonOpts(&j, args);
 
-    /* Repeat it, just in case anything late needs symbols from libhfuzz.a */
     args[j++] = LHFUZZ_A_PATH;
 
     /* libcommon.a will use it when compiled with clang */
@@ -277,6 +276,9 @@ static int ldMode(int argc, char **argv)
     for (i = 1; i < argc; i++) {
         args[j++] = argv[i];
     }
+
+    /* Repeat it, just in case anything late needs symbols from libhfuzz.a */
+    args[j++] = LHFUZZ_A_PATH;
 
     return execCC(j, args);
 }
