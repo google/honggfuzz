@@ -262,8 +262,6 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-Wl,--wrap=OPENSSL_strcasecmp";
     args[j++] = "-Wl,--wrap=OPENSSL_strncasecmp";
 
-    args[j++] = LHFUZZ_A_PATH;
-
     commonOpts(&j, args);
 
     /* Repeat it, just in case anything late needs symbols from libhfuzz.a */
