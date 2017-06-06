@@ -24,10 +24,16 @@
 static bool isCXX = false;
 static bool isGCC = false;
 
+    /*  *INDENT-OFF* */
+/* Embed libhfuzz.a inside this binary */
 __asm__("\n"
-        "	.global lhfuzz_start\n"
-        "	.global lhfuzz_end\n"
-        "lhfuzz_start:\n" "	.incbin \"libhfuzz/libhfuzz.a\"\n" "lhfuzz_end:\n" "\n");
+        "   .global lhfuzz_start\n"
+        "   .global lhfuzz_end\n"
+        "lhfuzz_start:\n"
+        "   .incbin \"libhfuzz/libhfuzz.a\"\n"
+        "lhfuzz_end:\n"
+		"\n");
+    /*  *INDENT-ON* */
 
 static bool useASAN()
 {
@@ -128,6 +134,7 @@ static int execCC(int argc, char **argv)
     return EXIT_FAILURE;
 }
 
+/* It'll point back to the libhfuzz's source tree */
 char *getLibHfuzzIncPath(void)
 {
 #if !defined(_HFUZZ_LHFUZZ_INC_PATH)
@@ -143,6 +150,7 @@ static void commonOpts(int *j, char **args)
 {
     args[(*j)++] = getLibHfuzzIncPath();
     if (isGCC) {
+        /* That's the best gcc-6/7 currently offers */
         args[(*j)++] = "-fsanitize-coverage=trace-pc";
     } else {
         args[(*j)++] = "-Wno-unused-command-line-argument";
@@ -154,28 +162,14 @@ static void commonOpts(int *j, char **args)
         args[(*j)++] = "-mllvm";
         args[(*j)++] = "-sanitizer-coverage-level=3";
     }
+
+    /*
+     * Make the execution flow more explicit, allowing for more code blocks
+     * (and better code coverage estimates)
+     */
     args[(*j)++] = "-funroll-loops";
     args[(*j)++] = "-fno-inline";
     args[(*j)++] = "-fno-builtin";
-}
-
-static int ccMode(int argc, char **argv)
-{
-    char *args[ARGS_MAX];
-
-    int j = 0;
-    if (isCXX) {
-        args[j++] = "c++";
-    } else {
-        args[j++] = "cc";
-    }
-    commonOpts(&j, args);
-
-    for (int i = 1; i < argc; i++) {
-        args[j++] = argv[i];
-    }
-
-    return execCC(j, args);
 }
 
 static bool getLibHfuzz(void)
@@ -193,6 +187,7 @@ static bool getLibHfuzz(void)
         }
     }
 
+    /* If not, provide it with atomic rename() */
     char template[] = "/tmp/libhfuzz.a.XXXXXX";
     int fd = mkostemp(template, O_CLOEXEC);
     if (fd == -1) {
@@ -217,6 +212,25 @@ static bool getLibHfuzz(void)
     return true;
 }
 
+static int ccMode(int argc, char **argv)
+{
+    char *args[ARGS_MAX];
+
+    int j = 0;
+    if (isCXX) {
+        args[j++] = "c++";
+    } else {
+        args[j++] = "cc";
+    }
+    commonOpts(&j, args);
+
+    for (int i = 1; i < argc; i++) {
+        args[j++] = argv[i];
+    }
+
+    return execCC(j, args);
+}
+
 static int ldMode(int argc, char **argv)
 {
     if (!getLibHfuzz()) {
@@ -231,11 +245,17 @@ static int ldMode(int argc, char **argv)
     } else {
         args[j++] = "cc";
     }
+
+    /*
+     * Include libhfuzz.a before everything else which might hijack
+     * functions we need, i.e. *cmp and LLVMFuzzer*
+     */
     args[j++] = "-Wl,-z,muldefs";
     args[j++] = "-Wl,--whole-archive";
     args[j++] = LHFUZZ_A_PATH;
     args[j++] = "-Wl,--no-whole-archive";
 
+    /* Intercept common *cmp functions */
     args[j++] = "-Wl,--wrap=strcmp";
     args[j++] = "-Wl,--wrap=strcasecmp";
     args[j++] = "-Wl,--wrap=strncmp";
@@ -245,6 +265,7 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-Wl,--wrap=memcmp";
     args[j++] = "-Wl,--wrap=bcmp";
     args[j++] = "-Wl,--wrap=memmem";
+    /* Frequently used time-constant *SSL functions */
     args[j++] = "-Wl,--wrap=CRYPTO_memcmp";
     args[j++] = "-Wl,--wrap=OPENSSL_memcmp";
     args[j++] = "-Wl,--wrap=OPENSSL_strcasecmp";
@@ -252,16 +273,18 @@ static int ldMode(int argc, char **argv)
 
     commonOpts(&j, args);
 
-    int i;
-    for (i = 1; i < argc; i++) {
-        args[j++] = argv[i];
-    }
+    /* Repeat it, just in case anything late needs symbols in libhfuzz.a */
     args[j++] = LHFUZZ_A_PATH;
+
 #if defined(__clang__)
     args[j++] = "-lBlocksRuntime";
 #endif                          /*  defined(__clang__) */
 
     return execCC(j, args);
+    int i;
+    for (i = 1; i < argc; i++) {
+        args[j++] = argv[i];
+    }
 }
 
 int main(int argc, char **argv)
