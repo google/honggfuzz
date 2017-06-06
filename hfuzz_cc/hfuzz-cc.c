@@ -246,6 +246,15 @@ static int ldMode(int argc, char **argv)
         args[j++] = "cc";
     }
 
+    /*
+     * Include libhfuzz.a before everything else which might hijack
+     * functions we need, i.e. *cmp and LLVMFuzzer*
+     */
+    args[j++] = "-Wl,-z,muldefs";
+    args[j++] = "-Wl,--whole-archive";
+    args[j++] = LHFUZZ_A_PATH;
+    args[j++] = "-Wl,--no-whole-archive";
+
     /* Intercept common *cmp functions */
     args[j++] = "-Wl,--wrap=strcmp";
     args[j++] = "-Wl,--wrap=strcasecmp";
@@ -263,8 +272,6 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-Wl,--wrap=OPENSSL_strncasecmp";
 
     commonOpts(&j, args);
-
-    args[j++] = LHFUZZ_A_PATH;
 
     /* libcommon.a will use it when compiled with clang */
 #if defined(__clang__)
