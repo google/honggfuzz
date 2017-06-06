@@ -279,6 +279,7 @@ static int ldMode(int argc, char **argv)
 #if defined(__clang__)
     args[j++] = "-lBlocksRuntime";
 #endif                          /*  defined(__clang__) */
+    args[j++] = "-lpthread";
 
     return execCC(j, args);
     int i;
