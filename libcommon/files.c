@@ -154,25 +154,9 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
 
 bool files_sendToSocketNB(int fd, const uint8_t * buf, size_t fileSz)
 {
-    int flags = 0;
-    flags |= MSG_DONTWAIT;
     size_t writtenSz = 0;
-
-#ifndef MSG_NOSIGNAL
-#ifdef SO_NOSIGPIPE
-    int set = 1;
-    if (setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(set)) < 0) {
-        PLOG_E("setsockopt failed");
-    }
-#else
-#error "SIGPIPE cannot be ignored"
-#endif
-#else
-    flags |= MSG_NOSIGNAL;
-#endif
-
     while (writtenSz < fileSz) {
-        ssize_t sz = send(fd, &buf[writtenSz], fileSz - writtenSz, flags);
+        ssize_t sz = send(fd, &buf[writtenSz], fileSz - writtenSz, MSG_DONTWAIT);
         if (sz < 0 && errno == EINTR)
             continue;
 
