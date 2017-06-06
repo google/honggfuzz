@@ -427,22 +427,15 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         hfuzz->linux.hwCnts.softCntEdge += softCntEdge;
         hfuzz->linux.hwCnts.softCntCmp += softCntCmp;
 
-        if (hfuzz->useScreen) {
-            LOG_I("NEW, size:%zu (i,b,edgs,ips,hw,cmp): %" PRIu64 "/%"
-                  PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
-                  fuzzer->linux.hwCnts.cpuInstrCnt, fuzzer->linux.hwCnts.cpuBranchCnt, softCntEdge,
-                  softCntPc, fuzzer->linux.hwCnts.newBBCnt, softCntCmp);
-        } else {
-            LOG_I("NEW, size:%zu (i,b,edgs,ips,hw,cmp): %" PRIu64 "/%"
-                  PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Tot:%" PRIu64
-                  "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
-                  fuzzer->dynamicFileSz, fuzzer->linux.hwCnts.cpuInstrCnt,
-                  fuzzer->linux.hwCnts.cpuBranchCnt, softCntEdge, softCntPc,
-                  fuzzer->linux.hwCnts.newBBCnt, softCntCmp, hfuzz->linux.hwCnts.cpuInstrCnt,
-                  hfuzz->linux.hwCnts.cpuBranchCnt, hfuzz->linux.hwCnts.softCntEdge,
-                  hfuzz->linux.hwCnts.softCntPc, hfuzz->linux.hwCnts.bbCnt,
-                  hfuzz->linux.hwCnts.softCntCmp);
-        }
+        LOG_I("Size:%zu (i,b,edg,ip,hw,cmp): %" PRIu64 "/%"
+              PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Tot:%" PRIu64
+              "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
+              fuzzer->dynamicFileSz, fuzzer->linux.hwCnts.cpuInstrCnt,
+              fuzzer->linux.hwCnts.cpuBranchCnt, softCntEdge, softCntPc,
+              fuzzer->linux.hwCnts.newBBCnt, softCntCmp, hfuzz->linux.hwCnts.cpuInstrCnt,
+              hfuzz->linux.hwCnts.cpuBranchCnt, hfuzz->linux.hwCnts.softCntEdge,
+              hfuzz->linux.hwCnts.softCntPc, hfuzz->linux.hwCnts.bbCnt,
+              hfuzz->linux.hwCnts.softCntCmp);
 
         fuzz_addFileToFileQ(hfuzz, fuzzer);
     }
