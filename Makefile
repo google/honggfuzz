@@ -134,10 +134,10 @@ else
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
                    -U__STRICT_ANSI__ -funroll-loops
     ARCH_LDFLAGS := -lpthread -L/usr/local/include -L/usr/include -lrt
-	# CygWin's gcc doesn't accept -fPIC (all code is position independent)
-	ifeq (Windows,$(findstring Windows,$(OS)))
-		LIBS_CFLAGS = -fno-stack-protector -fno-builtin
-	endif
+    # CygWin's gcc doesn't accept -fPIC (all code is position independent)
+    ifeq (Windows,$(findstring Windows,$(OS)))
+      LIBS_CFLAGS = -fno-stack-protector -fno-builtin
+    endif
     # OS Posix
 endif
 
@@ -231,6 +231,11 @@ SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
 MAC_GARGBAGE := $(wildcard mac/mach_exc*)
 ANDROID_GARBAGE := obj libs
 
+CLEAN_TARGETS := core Makefile.bak \
+  $(OBJS) $(BIN) $(HFUZZ_CC_BINS) \
+  $(LHFUZZ_ARCH) $(LHFUZZ_OBJS) $(LCOMMON_ARCH) $(LCOMMON_OBJS) \
+  $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
+
 all: $(BIN) $(HFUZZ_CC_BINS) $(LHFUZZ_ARCH) $(LCOMMON_ARCH)
 
 %.o: %.c
@@ -262,10 +267,7 @@ $(LCOMMON_ARCH): $(LCOMMON_OBJS)
 
 .PHONY: clean
 clean:
-	$(RM) -r core Makefile.bak \
-			$(OBJS) $(BIN) $(HFUZZ_CC_BINS) \
-			$(LHFUZZ_ARCH) $(LHFUZZ_OBJS) $(LCOMMON_ARCH) $(LCOMMON_OBJS) \
-			$(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
+	$(RM) -r $(CLEAN_TARGETS)
 
 .PHONY: indent
 indent:
