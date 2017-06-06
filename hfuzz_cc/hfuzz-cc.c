@@ -246,15 +246,6 @@ static int ldMode(int argc, char **argv)
         args[j++] = "cc";
     }
 
-    /*
-     * Include libhfuzz.a before everything else which might hijack
-     * functions we need, i.e. *cmp and LLVMFuzzer*
-     */
-    args[j++] = "-Wl,-z,muldefs";
-    args[j++] = "-Wl,--whole-archive";
-    args[j++] = LHFUZZ_A_PATH;
-    args[j++] = "-Wl,--no-whole-archive";
-
     /* Intercept common *cmp functions */
     args[j++] = "-Wl,--wrap=strcmp";
     args[j++] = "-Wl,--wrap=strcasecmp";
@@ -271,9 +262,11 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-Wl,--wrap=OPENSSL_strcasecmp";
     args[j++] = "-Wl,--wrap=OPENSSL_strncasecmp";
 
+    args[j++] = LHFUZZ_A_PATH;
+
     commonOpts(&j, args);
 
-    /* Repeat it, just in case anything late needs symbols in libhfuzz.a */
+    /* Repeat it, just in case anything late needs symbols from libhfuzz.a */
     args[j++] = LHFUZZ_A_PATH;
 
 #if defined(__clang__)
