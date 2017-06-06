@@ -319,7 +319,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"linux_ns_net", no_argument, NULL, 0x0530}, "Use Linux NET namespace isolation"},
         {{"linux_ns_pid", no_argument, NULL, 0x0531}, "Use Linux PID namespace isolation"},
         {{"linux_ns_ipc", no_argument, NULL, 0x0532}, "Use Linux IPC namespace isolation"},
-        {{"linux_skip_glibc_check", no_argument, NULL, 0x0540}, "Don't FAIL() with outdated GLibC version (<2.23)"},
 #endif  // defined(_HF_ARCH_LINUX)
         {{0, 0, 0, 0}, NULL},
     };
