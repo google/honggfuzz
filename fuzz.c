@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <libgen.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stddef.h>
@@ -55,13 +56,10 @@
 
 static pthread_t fuzz_mainThread;
 
-static void fuzz_getFileName(honggfuzz_t * hfuzz, char *fileName)
+static void fuzz_getFileName(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-
-    snprintf(fileName, PATH_MAX, "%s/.honggfuzz.%d.%lu.%" PRIx64 ".%s", hfuzz->workDir,
-             (int)getpid(), (unsigned long int)tv.tv_sec, util_rnd64(), hfuzz->fileExtn);
+    snprintf(fuzzer->fileName, PATH_MAX, "%s/honggfuzz.input.%" PRIu32 ".%s.%s", hfuzz->workDir,
+             fuzzer->fuzzNo, basename(hfuzz->cmdline[0]), hfuzz->fileExtn);
 }
 
 static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
@@ -93,7 +91,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (hfuzz->persistent == false && files_writeBufToFile
         (fuzzer->fileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-         O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC) == false) {
+         O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC) == false) {
         LOG_E("Couldn't write buffer to file '%s'", fuzzer->fileName);
         return false;
     }
@@ -120,7 +118,7 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, bool rewind
 
     if (hfuzz->persistent == false && files_writeBufToFile
         (fuzzer->fileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-         O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC) == false) {
+         O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC) == false) {
         LOG_E("Couldn't write buffer to file '%s'", fuzzer->fileName);
         return false;
     }
@@ -139,7 +137,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
     } else {
         fuzzer->origFileName = "[EXTERNAL]";
-        int dstfd = open(fuzzer->fileName, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0644);
+        int dstfd = open(fuzzer->fileName, O_CREAT | O_TRUNC | O_RDWR | O_CLOEXEC, 0644);
         if (dstfd == -1) {
             PLOG_E("Couldn't create a temporary file '%s'", fuzzer->fileName);
             return false;
@@ -150,7 +148,7 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     LOG_D("Created '%s' as an input file", fuzzer->fileName);
 
     const char *const argv[] = { hfuzz->externalCommand, fuzzer->fileName, NULL };
-    if (subproc_System(argv) != 0) {
+    if (subproc_System(hfuzz, fuzzer, argv) != 0) {
         LOG_E("Subprocess '%s' returned abnormally", hfuzz->externalCommand);
         return false;
     }
@@ -177,7 +175,7 @@ static bool fuzz_postProcessFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     const char *const argv[] = { hfuzz->postExternalCommand, fuzzer->fileName, NULL };
-    if (subproc_System(argv) != 0) {
+    if (subproc_System(hfuzz, fuzzer, argv) != 0) {
         LOG_E("Subprocess '%s' returned abnormally", hfuzz->postExternalCommand);
         return false;
     }
@@ -299,10 +297,10 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             LOG_F("Could not initialize the thread");
         }
 
-        fuzz_getFileName(hfuzz, vFuzzer.fileName);
+        fuzz_getFileName(hfuzz, &vFuzzer);
         if (files_writeBufToFile
             (vFuzzer.fileName, crashBuf, crashFileSz,
-             O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC) == false) {
+             O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC) == false) {
             LOG_E("Couldn't write buffer to file '%s'", vFuzzer.fileName);
             return false;
         }
@@ -429,22 +427,15 @@ static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         hfuzz->linux.hwCnts.softCntEdge += softCntEdge;
         hfuzz->linux.hwCnts.softCntCmp += softCntCmp;
 
-        if (hfuzz->useScreen) {
-            LOG_I("NEW, size:%zu (insns,brs,edgs,pcs,hw,cmp): %" PRIu64 "/%"
-                  PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
-                  fuzzer->linux.hwCnts.cpuInstrCnt, fuzzer->linux.hwCnts.cpuBranchCnt, softCntEdge,
-                  softCntPc, fuzzer->linux.hwCnts.newBBCnt, softCntCmp);
-        } else {
-            LOG_I("NEW, size:%zu (i,b,sw,hw,cmp): %" PRIu64 "/%"
-                  PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Tot:%" PRIu64
-                  "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
-                  fuzzer->dynamicFileSz, fuzzer->linux.hwCnts.cpuInstrCnt,
-                  fuzzer->linux.hwCnts.cpuBranchCnt, softCntEdge, softCntPc,
-                  fuzzer->linux.hwCnts.newBBCnt, softCntCmp, hfuzz->linux.hwCnts.cpuInstrCnt,
-                  hfuzz->linux.hwCnts.cpuBranchCnt, hfuzz->linux.hwCnts.softCntEdge,
-                  hfuzz->linux.hwCnts.softCntPc, hfuzz->linux.hwCnts.bbCnt,
-                  hfuzz->linux.hwCnts.softCntCmp);
-        }
+        LOG_I("Size:%zu (i,b,edg,ip,hw,cmp): %" PRIu64 "/%"
+              PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Tot:%" PRIu64
+              "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
+              fuzzer->dynamicFileSz, fuzzer->linux.hwCnts.cpuInstrCnt,
+              fuzzer->linux.hwCnts.cpuBranchCnt, softCntEdge, softCntPc,
+              fuzzer->linux.hwCnts.newBBCnt, softCntCmp, hfuzz->linux.hwCnts.cpuInstrCnt,
+              hfuzz->linux.hwCnts.cpuBranchCnt, hfuzz->linux.hwCnts.softCntEdge,
+              hfuzz->linux.hwCnts.softCntPc, hfuzz->linux.hwCnts.bbCnt,
+              hfuzz->linux.hwCnts.softCntCmp);
 
         fuzz_addFileToFileQ(hfuzz, fuzzer);
     }
@@ -534,10 +525,6 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzer->linux.hwCnts.bbCnt = 0ULL;
     fuzzer->linux.hwCnts.newBBCnt = 0ULL;
 
-    if (hfuzz->persistent == false) {
-        fuzz_getFileName(hfuzz, fuzzer->fileName);
-    }
-
     if (fuzzer->state == _HF_STATE_DYNAMIC_PRE) {
         fuzzer->flipRate = 0.0f;
         if (hfuzz->externalCommand) {
@@ -623,6 +610,7 @@ static void *fuzz_threadNew(void *arg)
     defer {
         free(fuzzer.dynamicFile);
     };
+    fuzz_getFileName(hfuzz, &fuzzer);
 
     if (arch_archThreadInit(hfuzz, &fuzzer) == false) {
         LOG_F("Could not initialize the thread");

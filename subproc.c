@@ -142,11 +142,13 @@ bool subproc_persistentModeRoundDone(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 static bool subproc_persistentSendFile(fuzzer_t * fuzzer)
 {
     uint32_t len = (uint64_t) fuzzer->dynamicFileSz;
-    if (files_writeToFd(fuzzer->persistentSock, (uint8_t *) & len, sizeof(len)) == false) {
+    if (files_sendToSocketNB(fuzzer->persistentSock, (uint8_t *) & len, sizeof(len)) == false) {
+        PLOG_W("files_sendToSocketNB(len=%zu)", sizeof(len));
         return false;
     }
-    if (files_writeToFd(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) ==
+    if (files_sendToSocketNB(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) ==
         false) {
+        PLOG_W("files_sendToSocketNB(len=%zu)", fuzzer->dynamicFileSz);
         return false;
     }
     return true;
@@ -291,7 +293,15 @@ static bool subproc_New(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         close(sv[1]);
         LOG_I("Persistent mode: Launched new persistent PID: %d", (int)fuzzer->pid);
         fuzzer->persistentPid = fuzzer->pid;
+
+        int sndbuf = hfuzz->maxFileSz + 256;
+        if (setsockopt(fuzzer->persistentSock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)) ==
+            -1) {
+            LOG_W("Couldn't set FD send buffer to '%d' bytes", sndbuf);
+        }
     }
+
+    arch_prepareParentAfterFork(hfuzz, fuzzer);
 
     return true;
 }
@@ -303,29 +313,25 @@ bool subproc_Run(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         return false;
     }
 
-    arch_prepareChild(hfuzz, fuzzer);
+    arch_prepareParent(hfuzz, fuzzer);
     if (hfuzz->persistent == true && subproc_persistentSendFile(fuzzer) == false) {
         LOG_W("Could not send file contents to the persistent process");
+        kill(fuzzer->persistentPid, SIGKILL);
     }
     arch_reapChild(hfuzz, fuzzer);
 
     return true;
 }
 
-uint8_t subproc_System(const char *const argv[])
+uint8_t subproc_System(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, const char *const argv[])
 {
-    pid_t pid = fork();
+    pid_t pid = arch_fork(hfuzz, fuzzer);
     if (pid == -1) {
         PLOG_E("Couldn't fork");
         return 255;
     }
-
     if (!pid) {
         logMutexReset();
-        sigset_t sset;
-        sigemptyset(&sset);
-        sigprocmask(SIG_SETMASK, &sset, NULL);
-        setsid();
         execv(argv[0], (char *const *)&argv[0]);
         PLOG_F("Couldn't execute '%s'", argv[0]);
         return 255;

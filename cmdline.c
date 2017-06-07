@@ -257,7 +257,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             .symsWl = NULL,
             .cloneFlags = 0,
             .kernelOnly = false,
-            .skipGLibCCheck = false,
+            .useClone = true,
         },
     };
     /*  *INDENT-ON* */
@@ -284,7 +284,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"extension", required_argument, NULL, 'e'}, "Input file extension (e.g. 'swf'), (default: 'fuzz')"},
         {{"workspace", required_argument, NULL, 'W'}, "Workspace directory to save crashes & runtime files (default: '.')"},
         {{"covdir", required_argument, NULL, 0x103}, "New coverage is written to a separate directory (default: use the input directory)"},
-        {{"wordlist", required_argument, NULL, 'w'}, "Wordlist file (tokens delimited by NUL-bytes)"},
+        {{"dict", required_argument, NULL, 'w'}, "Dictionary file. Format:http://llvm.org/docs/LibFuzzer.html#dictionaries"},
         {{"stackhash_bl", required_argument, NULL, 'B'}, "Stackhashes blacklist file (one entry per line)"},
         {{"mutate_cmd", required_argument, NULL, 'c'}, "External command producing fuzz files (instead of internal mutators)"},
         {{"pprocess_cmd", required_argument, NULL, 0x104}, "External command postprocessing files produced by internal mutators"},
@@ -319,7 +319,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"linux_ns_net", no_argument, NULL, 0x0530}, "Use Linux NET namespace isolation"},
         {{"linux_ns_pid", no_argument, NULL, 0x0531}, "Use Linux PID namespace isolation"},
         {{"linux_ns_ipc", no_argument, NULL, 0x0532}, "Use Linux IPC namespace isolation"},
-        {{"linux_skip_glibc_check", no_argument, NULL, 0x0540}, "Don't FAIL() with outdated GLibC version (<2.23)"},
 #endif  // defined(_HF_ARCH_LINUX)
         {{0, 0, 0, 0}, NULL},
     };
@@ -508,9 +507,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x532:
             hfuzz->linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWIPC);
-            break;
-        case 0x540:
-            hfuzz->linux.skipGLibCCheck = true;
             break;
 #endif                          /* defined(_HF_ARCH_LINUX) */
         default:

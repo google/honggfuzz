@@ -3,6 +3,7 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 /*
@@ -20,6 +21,15 @@ extern "C" {
  * Return value: ignored
  */
     int LLVMFuzzerInitialize(int *argc, char ***argv);
+
+/*
+ * Data: data to mutate
+ * Size: size of the data to mutate
+ * MaxSize: maximum size of the destination buffer
+ *
+ * Return value: size of the mutated buffer
+ */
+    size_t LLVMFuzzerMutate(uint8_t * Data, size_t Size, size_t MaxSize);
 
 /*
  *
