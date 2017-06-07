@@ -13,6 +13,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+APP_UNIFIED_HEADERS := true
 LOCAL_PATH := $(abspath $(call my-dir)/..)
 
 # Maintain a local copy since some NDK versions lose LOCAL_PATH scope at POST_BUILD_EVENT

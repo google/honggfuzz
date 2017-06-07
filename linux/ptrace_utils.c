@@ -233,22 +233,6 @@ struct user_regs_struct {
 #endif                          /* defined(__mips__) || defined(__mips64__) */
 
 #if defined(__ANDROID__)
-#if defined(__NR_process_vm_readv)
-static ssize_t honggfuzz_process_vm_readv(pid_t pid,
-                                          const struct iovec *lvec,
-                                          unsigned long liovcnt,
-                                          const struct iovec *rvec,
-                                          unsigned long riovcnt, unsigned long flags)
-{
-    return syscall(__NR_process_vm_readv, (uintptr_t) pid, lvec, (uintptr_t) liovcnt, rvec,
-                   (uintptr_t) riovcnt, (uintptr_t) flags);
-}
-
-#define process_vm_readv honggfuzz_process_vm_readv
-#else                           /* defined(__NR_process_vm_readv) */
-#define process_vm_readv(...) (errno = ENOSYS, -1)
-#endif                          /* !defined(__NR_process_vm_readv) */
-
 /*
  * Some Android ABIs don't implement PTRACE_GETREGS (e.g. aarch64)
  */

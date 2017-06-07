@@ -326,10 +326,6 @@ static bool arch_checkWait(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 }
 
 __thread sigset_t sset_io_chld;
-
-#if defined(__ANDROID__)
-int sigtimedwait(const sigset_t *, siginfo_t *, const struct timespec *);
-#endif                          /* defined(__ANDROID__) */
 void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     static const struct timespec ts = {
