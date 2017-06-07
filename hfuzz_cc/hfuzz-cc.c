@@ -91,11 +91,20 @@ static int execCC(int argc, char **argv)
     }
     argv[argc] = NULL;
 
-    const char *cc_path = getenv("HFUZZ_CC_PATH");
-    if (cc_path != NULL) {
-        execvp(cc_path, argv);
-        PLOG_E("execvp('%s')", cc_path);
-        return EXIT_FAILURE;
+    if (isCXX) {
+        const char *cxx_path = getenv("HFUZZ_CXX_PATH");
+        if (cxx_path != NULL) {
+            execvp(cxx_path, argv);
+            PLOG_E("execvp('%s')", cxx_path);
+            return EXIT_FAILURE;
+        }
+    } else {
+        const char *cc_path = getenv("HFUZZ_CC_PATH");
+        if (cc_path != NULL) {
+            execvp(cc_path, argv);
+            PLOG_E("execvp('%s')", cc_path);
+            return EXIT_FAILURE;
+        }
     }
 
     if (isGCC) {
@@ -291,13 +300,13 @@ static int ldMode(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-    if (strstr(argv[0], "++") != NULL) {
+    if (strstr(basename(argv[0]), "++") != NULL) {
         isCXX = true;
     }
-    if (strstr(argv[0], "-gcc") != NULL) {
+    if (strstr(basename(argv[0]), "-gcc") != NULL) {
         isGCC = true;
     }
-    if (strstr(argv[0], "-g++") != NULL) {
+    if (strstr(basename(argv[0]), "-g++") != NULL) {
         isGCC = true;
     }
     if (argc <= 1) {
