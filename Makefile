@@ -224,7 +224,7 @@ else
   endif
 endif
 
-SUBDIR_ROOTS := linux mac posix libhfuzz
+SUBDIR_ROOTS := linux mac posix libhfuzz libcommon
 DIRS := . $(shell find $(SUBDIR_ROOTS) -type d)
 CLEAN_PATTERNS := *.o *~ core *.a *.dSYM *.la *.so *.dylib
 SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))

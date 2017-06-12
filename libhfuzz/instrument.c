@@ -178,12 +178,16 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp(uint64_t SizeAndType,
     switch (CmpSize) {
     case (sizeof(uint8_t)):
         __sanitizer_cov_trace_cmp1(Arg1, Arg2);
+        return;
     case (sizeof(uint16_t)):
         __sanitizer_cov_trace_cmp2(Arg1, Arg2);
+        return;
     case (sizeof(uint32_t)):
         __sanitizer_cov_trace_cmp4(Arg1, Arg2);
+        return;
     case (sizeof(uint64_t)):
         __sanitizer_cov_trace_cmp8(Arg1, Arg2);
+        return;
     }
 }
 
