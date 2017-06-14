@@ -46,10 +46,10 @@ static void report_printdynFileMethod(honggfuzz_t * hfuzz)
             dprintf(reportFD, "INSTR_COUNT ");
         if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT)
             dprintf(reportFD, "BRANCH_COUNT ");
-        if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK)
-            dprintf(reportFD, "BLOCK_COUNT ");
         if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE)
-            dprintf(reportFD, "EDGE_COUNT ");
+            dprintf(reportFD, "BTS_EDGE_COUNT ");
+        if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK)
+            dprintf(reportFD, "IPT_BLOCK_COUNT ");
 
         dprintf(reportFD, "\n");
     }

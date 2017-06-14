@@ -224,7 +224,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put(" hwb: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET,
                     ATOMIC_GET(hfuzz->linux.hwCnts.cpuBranchCnt));
     }
-    if (hfuzz->dynFileMethod & (_HF_DYNFILE_BTS_BLOCK | _HF_DYNFILE_BTS_EDGE)) {
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         display_put(" bts: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET,
                     ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }

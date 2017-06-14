@@ -79,10 +79,7 @@ static inline void arch_perfBtsCount(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             continue;
         }
 
-        register size_t pos = br->to;
-        if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-            pos = ((br->from << 12) ^ (br->to & 0xFFF));
-        }
+        register size_t pos = ((br->from << 12) ^ (br->to & 0xFFF));
         pos &= _HF_PERF_BITMAP_BITSZ_MASK;
         register uint8_t prev = ATOMIC_BTS(hfuzz->feedback->bbMapPc, pos);
         if (!prev) {
@@ -103,7 +100,7 @@ static inline void arch_perfMmapParse(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuz
         LOG_F("The PERF AUX data has been overwritten. The AUX buffer is too small");
     }
 
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK || hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         arch_perfBtsCount(hfuzz, fuzzer);
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
@@ -128,7 +125,7 @@ static bool arch_perfCreate(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t
         LOG_F("The PERF FD is already initialized, possibly conflicting perf types enabled");
     }
 
-    if (((method & _HF_DYNFILE_BTS_BLOCK) || method & _HF_DYNFILE_BTS_EDGE)
+    if ((method & _HF_DYNFILE_BTS_EDGE)
         && perfIntelBtsPerfType == -1) {
         LOG_F("Intel BTS events (new type) are not supported on this platform");
     }
@@ -165,10 +162,6 @@ static bool arch_perfCreate(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t
         pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
         pe.inherit = 1;
         break;
-    case _HF_DYNFILE_BTS_BLOCK:
-        LOG_D("Using: (Intel BTS) type=%" PRIu32 " for PID: %d", perfIntelBtsPerfType, pid);
-        pe.type = perfIntelBtsPerfType;
-        break;
     case _HF_DYNFILE_BTS_EDGE:
         LOG_D("Using: (Intel BTS) type=%" PRIu32 " for PID: %d", perfIntelBtsPerfType, pid);
         pe.type = perfIntelBtsPerfType;
@@ -193,8 +186,7 @@ static bool arch_perfCreate(honggfuzz_t * hfuzz, fuzzer_t * fuzzer UNUSED, pid_t
         return false;
     }
 
-    if (method != _HF_DYNFILE_BTS_BLOCK && method != _HF_DYNFILE_BTS_EDGE
-        && method != _HF_DYNFILE_IPT_BLOCK) {
+    if (method != _HF_DYNFILE_BTS_EDGE && method != _HF_DYNFILE_IPT_BLOCK) {
         return true;
     }
 #if defined(PERF_ATTR_SIZE_VER5)
@@ -250,13 +242,6 @@ bool arch_perfOpen(pid_t pid, honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             goto out;
         }
     }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        if (arch_perfCreate(hfuzz, fuzzer, pid, _HF_DYNFILE_BTS_BLOCK, &fuzzer->linux.cpuIptBtsFd)
-            == false) {
-            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BTS_BLOCK)", pid);
-            goto out;
-        }
-    }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         if (arch_perfCreate(hfuzz, fuzzer, pid, _HF_DYNFILE_BTS_EDGE, &fuzzer->linux.cpuIptBtsFd) ==
             false) {
@@ -305,10 +290,6 @@ void arch_perfClose(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         close(fuzzer->linux.cpuBranchFd);
         fuzzer->linux.cpuBranchFd = -1;
     }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        close(fuzzer->linux.cpuIptBtsFd);
-        fuzzer->linux.cpuIptBtsFd = -1;
-    }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         close(fuzzer->linux.cpuIptBtsFd);
         fuzzer->linux.cpuIptBtsFd = -1;
@@ -330,9 +311,6 @@ bool arch_perfEnable(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
         ioctl(fuzzer->linux.cpuBranchFd, PERF_EVENT_IOC_ENABLE, 0);
-    }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_ENABLE, 0);
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_ENABLE, 0);
@@ -371,11 +349,6 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         ioctl(fuzzer->linux.cpuBranchFd, PERF_EVENT_IOC_RESET, 0);
     }
 
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) {
-        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
-        arch_perfMmapParse(hfuzz, fuzzer);
-        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
-    }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(hfuzz, fuzzer);

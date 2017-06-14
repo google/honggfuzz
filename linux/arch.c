@@ -429,8 +429,7 @@ bool arch_archInit(honggfuzz_t * hfuzz)
          *  3) Intel's PT and new Intel BTS format require kernel >= 4.1
          */
         unsigned long checkMajor = 3, checkMinor = 7;
-        if ((hfuzz->dynFileMethod & _HF_DYNFILE_BTS_BLOCK) ||
-            (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) ||
+        if ((hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) ||
             (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK)) {
             checkMajor = 4;
             checkMinor = 1;
