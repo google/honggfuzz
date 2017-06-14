@@ -134,8 +134,6 @@ Options:
 	Use PERF_COUNT_HW_INSTRUCTIONS perf
  --linux_perf_branch 
 	Use PERF_COUNT_HW_BRANCH_INSTRUCTIONS perf
- --linux_perf_bts_block 
-	Use Intel BTS to count unique blocks
  --linux_perf_bts_edge 
 	Use Intel BTS to count unique edges
  --linux_perf_ipt_block 
@@ -166,8 +164,6 @@ Examples:
   honggfuzz --linux_perf_instr -- /usr/bin/tiffinfo -D ___FILE___
  Run the binary over a dynamic file, maximize total no. of branches:
   honggfuzz --linux_perf_branch -- /usr/bin/tiffinfo -D ___FILE___
- Run the binary over a dynamic file, maximize unique code blocks via BTS:
-  honggfuzz --linux_perf_bts_block -- /usr/bin/tiffinfo -D ___FILE___
  Run the binary over a dynamic file, maximize unique branches (edges) via BTS:
   honggfuzz --linux_perf_bts_edge -- /usr/bin/tiffinfo -D ___FILE___
  Run the binary over a dynamic file, maximize unique code blocks via Intel Processor Trace (requires libipt.so):

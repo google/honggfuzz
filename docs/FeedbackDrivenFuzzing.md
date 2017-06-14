@@ -149,29 +149,6 @@ $ [honggfuzz_dir]/honggfuzz -z -P -f IN.server/ -- ./persistent.server.openssl.1
 PS. You can also use a non-persistent mode here (without the __-P__ flag), in which case you need to read data either from a file passed at command-line (`___FILE___`), or from the standard input (e.g. with `read(0, buf, sizeof(buf))`. The compile-time instrumentation (-z) will still work in such case.
 
 # Hardware-based coverage #
-## Unique branch points counting (--linux_perf_bts_block) ##
-
-This feedback-driven counting honggfuzz mode utilizes Intel's BTS (Branch Trace Store) feature to record all basic blocks (jump blocks) inside the fuzzed process. Later on, honggfuzz will de-duplicate those entries. The resulting number of branch jump point is a good approximation of how much code of a given tool have been actively executed/used (code coverage).
-
-```
-$ [honggfuzz_dir]/honggfuzz --linux_perf_bts_block -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
-============================== STAT ==============================
-Iterations: 0
-Start time: 2016-02-16 18:35:32 (0 seconds elapsed)
-Input file/dir: 'CURRENT_BEST'
-Fuzzed cmd: '/usr/bin/xmllint -format ___FILE___'
-Fuzzing threads: 2
-Execs per second: 0 (avg: 0)
-Crashes: 0 (unique: 0, blacklist: 0, verified: 0)
-Timeouts: 0
-Number of dynamic files: 251
-Coverage (max):
-  - BTS unique blocks: 2031
-============================== LOGS ==============================
-[2016-02-16T18:35:32+0100][I][14846] fuzz_perfFeedback():420 New: (Size New,Old): 257,257, Perf (Cur,New): 0/0/0/0/0/0,0/0/2030/0/0/0
-[2016-02-16T18:35:32+0100][I][14846] fuzz_perfFeedback():420 New: (Size New,Old): 257,257, Perf (Cur,New): 0/0/2030/0/0/0,0/0/2031/0/0/0
-```
-
 ## Unique branch pair (edges) counting (--linux_perf_bts_edge) ##
 
 This mode will take into consideration pairs (tuples) of jumps, recording unique from-to jump pairs. The data is taken from the Intel BTS CPU registers.
