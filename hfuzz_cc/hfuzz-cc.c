@@ -168,8 +168,6 @@ static void commonOpts(int *j, char **args)
         args[(*j)++] = "-mllvm";
         args[(*j)++] = "-sanitizer-coverage-prune-blocks=0";
         args[(*j)++] = "-mllvm";
-        args[(*j)++] = "-sanitizer-coverage-block-threshold=10000000";
-        args[(*j)++] = "-mllvm";
         args[(*j)++] = "-sanitizer-coverage-level=3";
     }
 
