@@ -93,21 +93,6 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc(void)
 }
 
 /*
- * -fsanitize-coverage=indirect-calls
- */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(void *callee)
-{
-    register size_t pos1 = (uintptr_t) __builtin_return_address(0) << 12;
-    register size_t pos2 = (uintptr_t) callee & 0xFFF;
-    register size_t pos = (pos1 | pos2) & _HF_PERF_BITMAP_BITSZ_MASK;
-
-    register uint8_t prev = ATOMIC_BTS(feedback->bbMapPc, pos);
-    if (!prev) {
-        ATOMIC_PRE_INC_RELAXED(feedback->pidFeedbackPc[my_thread_no]);
-    }
-}
-
-/*
  * -fsanitize-coverage=trace-cmp
  */
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Arg2)
@@ -188,6 +173,34 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp(uint64_t SizeAndType,
     case (sizeof(uint64_t)):
         __sanitizer_cov_trace_cmp8(Arg1, Arg2);
         return;
+    }
+}
+
+/*
+ * -fsanitize-coverage=indirect-calls
+ */
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(void *callee)
+{
+    register size_t pos1 = (uintptr_t) __builtin_return_address(0) << 12;
+    register size_t pos2 = (uintptr_t) callee & 0xFFF;
+    register size_t pos = (pos1 | pos2) & _HF_PERF_BITMAP_BITSZ_MASK;
+
+    register uint8_t prev = ATOMIC_BTS(feedback->bbMapPc, pos);
+    if (!prev) {
+        ATOMIC_PRE_INC_RELAXED(feedback->pidFeedbackPc[my_thread_no]);
+    }
+}
+
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_indir_call16(void *callee,
+                                                              void *callee_cache16[]UNUSED)
+{
+    register size_t pos1 = (uintptr_t) __builtin_return_address(0) << 12;
+    register size_t pos2 = (uintptr_t) callee & 0xFFF;
+    register size_t pos = (pos1 | pos2) & _HF_PERF_BITMAP_BITSZ_MASK;
+
+    register uint8_t prev = ATOMIC_BTS(feedback->bbMapPc, pos);
+    if (!prev) {
+        ATOMIC_PRE_INC_RELAXED(feedback->pidFeedbackPc[my_thread_no]);
     }
 }
 
