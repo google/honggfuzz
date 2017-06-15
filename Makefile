@@ -285,7 +285,7 @@ depend:
 .PHONY: android
 android:
 	$(info ***************************************************************)
-	$(info *            Use Android NDK 15-beta2 or newer                *)
+	$(info *                 Use Android NDK 15 or newer                 *)
 	$(info ***************************************************************)
 	@ANDROID_API=$(ANDROID_API) third_party/android/scripts/compile-libunwind.sh \
 	third_party/android/libunwind $(ANDROID_ARCH_CPU)
