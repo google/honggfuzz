@@ -352,7 +352,7 @@ sanitizers.o: libcommon/common.h libcommon/log.h libcommon/util.h
 subproc.o: libcommon/common.h subproc.h libcommon/files.h libcommon/common.h
 subproc.o: libcommon/log.h libcommon/util.h arch.h sanitizers.h
 hfuzz_cc/hfuzz-cc.o: libcommon/common.h libcommon/files.h libcommon/common.h
-hfuzz_cc/hfuzz-cc.o: libcommon/log.h
+hfuzz_cc/hfuzz-cc.o: libcommon/log.h libcommon/util.h
 libcommon/files.o: libcommon/common.h libcommon/files.h libcommon/log.h
 libcommon/files.o: libcommon/util.h
 libcommon/log.o: libcommon/common.h libcommon/log.h libcommon/util.h

@@ -16,6 +16,7 @@
 
 #include "../libcommon/files.h"
 #include "../libcommon/log.h"
+#include "../libcommon/util.h"
 
 #define ARGS_MAX 4096
 #define __XSTR(x) #x
@@ -299,13 +300,13 @@ static int ldMode(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-    if (strstr(basename(argv[0]), "++") != NULL) {
+    if (strstr(basename(util_StrDup(argv[0])), "++") != NULL) {
         isCXX = true;
     }
-    if (strstr(basename(argv[0]), "-gcc") != NULL) {
+    if (strstr(basename(util_StrDup(argv[0])), "-gcc") != NULL) {
         isGCC = true;
     }
-    if (strstr(basename(argv[0]), "-g++") != NULL) {
+    if (strstr(basename(util_StrDup(argv[0])), "-g++") != NULL) {
         isGCC = true;
     }
     if (argc <= 1) {
