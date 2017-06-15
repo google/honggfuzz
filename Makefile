@@ -141,11 +141,16 @@ else
     # OS Posix
 endif
 
-COMPILER = $(shell $(CC) -v 2>&1 | grep -oE '(gcc|clang) version' | grep -oE '(clang|gcc)' | head -n1)
+COMPILER = $(shell $(CC) -v 2>&1 | \
+  grep -oE '((gcc|clang) version|LLVM version.*clang)' | \
+  grep -oE '(clang|gcc)' | head -n1)
 ifeq ($(COMPILER),clang)
-    ARCH_CFLAGS += -Wno-initializer-overrides -Wno-unknown-warning-option
-    ARCH_CFLAGS += -fblocks
+  ARCH_CFLAGS += -Wno-initializer-overrides -Wno-unknown-warning-option
+  ARCH_CFLAGS += -fblocks
+
+  ifneq ($(OS),Darwin)
     ARCH_LDFLAGS += -lBlocksRuntime
+  endif
 endif
 
 SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
@@ -280,7 +285,7 @@ depend:
 .PHONY: android
 android:
 	$(info ***************************************************************)
-	$(info *            Use Android NDK 15-beta2 or newer                *)
+	$(info *                 Use Android NDK 15 or newer                 *)
 	$(info ***************************************************************)
 	@ANDROID_API=$(ANDROID_API) third_party/android/scripts/compile-libunwind.sh \
 	third_party/android/libunwind $(ANDROID_ARCH_CPU)

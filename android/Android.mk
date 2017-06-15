@@ -136,7 +136,7 @@ COMMON_CFLAGS := -std=c11 -I. \
   -D_GNU_SOURCE \
   -Wall -Wextra -Wno-initializer-overrides -Wno-override-init \
   -Wno-unknown-warning-option -Werror -funroll-loops -O2 \
-  -Wframe-larger-than=51200
+  -Wframe-larger-than=51200 -Wno-format-truncation
 
 ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
   COMMON_CFLAGS += -fblocks
