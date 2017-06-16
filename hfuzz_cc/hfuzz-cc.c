@@ -64,6 +64,9 @@ static bool useUBSAN()
 static bool isLDMode(int argc, char **argv)
 {
     for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--version") == 0) {
+            return false;
+        }
         if (strcmp(argv[i], "-v") == 0) {
             return false;
         }
