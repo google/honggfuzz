@@ -42,6 +42,8 @@ extern "C" {
 
 #if defined(__linux__)
 
+#include <sched.h>
+
 /*
  * Enter Linux namespaces
  *
