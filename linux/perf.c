@@ -350,14 +350,10 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(hfuzz, fuzzer);
-        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(hfuzz, fuzzer);
-        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
     }
 
     if (fuzzer->linux.perfMmapBuf != NULL) {
@@ -368,6 +364,7 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         ATOMIC_SET(pem->aux_head, 0);
         ATOMIC_SET(pem->aux_tail, 0);
 #endif                          /* defined(PERF_ATTR_SIZE_VER5) */
+        wmb();
     }
 
     fuzzer->linux.hwCnts.cpuInstrCnt = instrCount;
