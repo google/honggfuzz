@@ -296,7 +296,11 @@ static const char *arch_sigName(int signo)
 #ifdef __ANDROID__
     return arch_sigs[signo].descr;
 #else
-    snprintf(arch_signame, sizeof(arch_signame), "SIG%s", sys_sigabbrev[signo]);
+    if (sys_sigabbrev[signo] == NULL) {
+        snprintf(arch_signame, sizeof(arch_signame), "SIG%d", signo);
+    } else {
+        snprintf(arch_signame, sizeof(arch_signame), "SIG%s", sys_sigabbrev[signo]);
+    }
     return arch_signame;
 #endif                          /* __ANDROID__ */
 }
