@@ -318,10 +318,13 @@ size_t util_decodeCString(char *s)
 {
     size_t len = strlen(s);
     size_t o = 0;
-    for (size_t i = 0; s[i] != '\0' && i < len; i++, o++) {
+    for (size_t i = 0; s[i] != '\0' && s[i] != '"' && i < len; i++, o++) {
         switch (s[i]) {
         case '\\':{
                 i++;
+                if (i >= len) {
+                    continue;
+                }
                 switch (s[i]) {
                 case 'a':
                     s[o] = '\a';
@@ -346,7 +349,7 @@ size_t util_decodeCString(char *s)
                         break;
                     }
                 default:
-                    s[o] = ' ';
+                    s[o] = s[i];
                     break;
                 }
                 break;
