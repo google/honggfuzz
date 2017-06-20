@@ -94,7 +94,7 @@
                             "wrap_signals=0:print_stats=1"
 
 /* If no sanitzer support was requested, simply make it use abort() on errors */
-#define kSAN_REGULAR		"abort_on_error=1:handle_segv=0:allocator_may_return_null=1:symbolize=0:detect_leaks=0"
+#define kSAN_REGULAR		"abort_on_error=1:handle_segv=0:allocator_may_return_null=1:symbolize=0:detect_leaks=0:disable_coredump=0"
 
 /*
  * If the program ends with a signal that ASan does not handle (or can not
