@@ -1,59 +1,15 @@
 diff --git a/compile.sh b/compile.sh
 new file mode 100755
-index 0000000..17acaba
+index 000000000..edf157719
 --- /dev/null
 +++ b/compile.sh
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,4 @@
 +#!/bin/sh
 +
-+CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX="$CC" CFLAGS="-O3 -fsanitize=address" ./configure \
-+		--prefix=/home/jagger/fuzz/apache/dist \
-+		--with-nghttp2=/home/jagger/fuzz/apache/nghttp2-1.23.1/ \
-+		--enable-nghttp2-staticlib-deps \
-+		--with-mpm=event \
-+		--enable-unixd \
-+		--disable-pie \
-+		--enable-mods-static=few \
-+		--enable-http2 \
-+		--with-apr=/home/jagger/fuzz/apache/apr-1.5.2/ \
-+		--with-apr-util=/home/jagger/fuzz/apache/apr-util-1.5.4/
-diff --git a/modules/http2/config2.m4 b/modules/http2/config2.m4
-index fac130b..4dbb3a5 100644
---- a/modules/http2/config2.m4
-+++ b/modules/http2/config2.m4
-@@ -122,15 +122,11 @@ AC_DEFUN([APACHE_CHECK_NGHTTP2],[
- 
-     AC_MSG_CHECKING([for nghttp2 version >= 1.2.1])
-     AC_TRY_COMPILE([#include <nghttp2/nghttp2ver.h>],[
--#if !defined(NGHTTP2_VERSION_NUM)
--#error "Missing nghttp2 version"
--#endif
--#if NGHTTP2_VERSION_NUM < 0x010201
--#error "Unsupported nghttp2 version " NGHTTP2_VERSION_TEXT
- #endif],
-       [AC_MSG_RESULT(OK)
-        ac_cv_nghttp2=yes],
--      [AC_MSG_RESULT(FAILED)])
-+      [AC_MSG_RESULT(FAILED)
-+       ac_cv_nghttp2=yes])
- 
-     if test "x$ac_cv_nghttp2" = "xyes"; then
-       ap_nghttp2_libs="${ap_nghttp2_libs:--lnghttp2} `$apr_config --libs`"
-diff --git a/modules/http2/h2_request.c b/modules/http2/h2_request.c
-index 9811a5c..e64a49f 100644
---- a/modules/http2/h2_request.c
-+++ b/modules/http2/h2_request.c
-@@ -218,7 +218,7 @@ request_rec *h2_request_create_rec(const h2_request *req, conn_rec *c)
-     
-     /* Time to populate r with the data we have. */
-     r->request_time = req->request_time;
--    r->method = req->method;
-+    r->method = req->method ? req->method : "";
-     /* Provide quick information about the request method as soon as known */
-     r->method_number = ap_method_number_of(r->method);
-     if (r->method_number == M_GET && r->method[0] == 'H') {
++CC=/usr/local/google/home/swiecki/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX=$CC CPP=cpp LIBS="-L/home/swiecki/fuzz/apache/nghttp2-1.23.1/lib/ -fsanitize=address" CFLAGS="-fsanitize=address -I/home/swiecki/fuzz/apache/nghttp2-1.23.1/lib/includes -march=skylake -g -ggdb" LDFLAGS="$CFLAGS -ldl" ./configure --enable-unixd --disable-pie --enable-mods-static=few --prefix=/home/swiecki/fuzz/apache/apache2/ --with-mpm=event --enable-http2 --with-apr=/home/swiecki/fuzz/apache/apr-1.5.2/ --with-apr-util=/home/swiecki/fuzz/apache/apr-util-1.5.4/ --with-nghttp2=/home/swiecki/fuzz/apache/nghttp2-1.23.1 --enable-nghttp2-staticlib-deps
++
 diff --git a/server/main.c b/server/main.c
-index bda6082..a62df4c 100644
+index bda60827c..a62df4cbf 100644
 --- a/server/main.c
 +++ b/server/main.c
 @@ -459,8 +459,83 @@ static void usage(process_rec *process)
@@ -143,7 +99,7 @@ index bda6082..a62df4c 100644
      int showcompile = 0, showdirectives = 0;
      const char *confname = SERVER_CONFIG_FILE;
 diff --git a/support/ab.c b/support/ab.c
-index 58769a9..ddf141b 100644
+index 58769a9c8..ddf141bcc 100644
 --- a/support/ab.c
 +++ b/support/ab.c
 @@ -727,7 +727,7 @@ static void ssl_proceed_handshake(struct connection *c)

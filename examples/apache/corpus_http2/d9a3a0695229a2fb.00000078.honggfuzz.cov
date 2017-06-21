@@ -1,5 +1,0 @@
-GET /cgi-bin/ HTTP/1.1
-User-Agent: Wget/1.15 (linux-gnu)
-Accept: */*
-Host:[20029abcd:abcd::1]nnection: Keep-Alive
-

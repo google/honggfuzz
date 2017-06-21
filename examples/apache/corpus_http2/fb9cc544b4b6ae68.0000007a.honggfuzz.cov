@@ -1,6 +1,0 @@
-GET /indhx.html HTTP/1.1
-Eser-Agent: Wget/1-9223372036854775:08lpt: */*
-Host::8080
-Co1:8080
-Connection: Keep-Alive
-

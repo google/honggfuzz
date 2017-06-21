@@ -1,7 +1,0 @@
-GET ?index.html HTTP/1.1
-Tser-Agent: Wget0.0.1:8080
-Content-Length:*/(
-Host: 127.0.0.1:8080
-If-:8080
-Lonent: Wive
-
