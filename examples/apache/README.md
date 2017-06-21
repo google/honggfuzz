@@ -42,7 +42,7 @@ version strings of the libraries (e.g. apr-_1.5.2_). These will have to be modif
   $ make install
   ```
 
-6. Copy the custom configuration files to /home/swiecki/fuzz/apache/apache2/conf/
+6. Copy the custom configuration files to ```/home/swiecki/fuzz/apache/apache2/conf/``` (i.e. to your apache dist directory)
 
    ```
    $ cp httpd.conf.h1 httpd.conf.h2 /home/swiecki/fuzz/apache/apache2/conf/
