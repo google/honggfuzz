@@ -202,3 +202,82 @@ int __wrap_OPENSSL_strncasecmp(const char *s1, const char *s2, size_t len)
 {
     return _strncasecmp(s1, s2, len, __builtin_return_address(0));
 }
+
+int __wrap_xmlStrncmp(const char *s1, const char *s2, int len)
+{
+    if (len <= 0) {
+        return (0);
+    }
+    if (s1 == s2) {
+        return (0);
+    }
+    if (s1 == NULL) {
+        return (-1);
+    }
+    if (s2 == NULL) {
+        return (1);
+    }
+    return _strncmp(s1, s2, (size_t) len, __builtin_return_address(0));
+}
+
+int __wrap_xmlStrcmp(const char *s1, const char *s2)
+{
+    if (s1 == s2) {
+        return 0;
+    }
+    if (s1 == NULL) {
+        return -1;
+    }
+    if (s2 == NULL) {
+        return 1;
+    }
+    return _strcmp(s1, s2, __builtin_return_address(0));
+}
+
+int __wrap_xmlStrEqual(const char *s1, const char *s2)
+{
+    if (s1 == s2) {
+        return 1;
+    }
+    if (s1 == NULL) {
+        return 0;
+    }
+    if (s2 == NULL) {
+        return 0;
+    }
+    if (_strcmp(s1, s2, __builtin_return_address(0)) == 0) {
+        return 1;
+    }
+    return 0;
+}
+
+int __wrap_xmlStrcasecmp(const char *s1, const char *s2)
+{
+    if (s1 == s2) {
+        return 0;
+    }
+    if (s1 == NULL) {
+        return -1;
+    }
+    if (s2 == NULL) {
+        return 1;
+    }
+    return _strcasecmp(s1, s2, __builtin_return_address(0));
+}
+
+int __wrap_xmlStrncasecmp(const char *s1, const char *s2, int len)
+{
+    if (len <= 0) {
+        return 0;
+    }
+    if (s1 == s2) {
+        return 0;
+    }
+    if (s1 == NULL) {
+        return -1;
+    }
+    if (s2 == NULL) {
+        return 1;
+    }
+    return _strncasecmp(s1, s2, (size_t) len, __builtin_return_address(0));
+}

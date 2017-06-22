@@ -273,6 +273,12 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-Wl,--wrap=OPENSSL_memcmp";
     args[j++] = "-Wl,--wrap=OPENSSL_strcasecmp";
     args[j++] = "-Wl,--wrap=OPENSSL_strncasecmp";
+    /* Frequently used libXML2 functions */
+    args[j++] = "-Wl,--wrap=xmlStrncmp";
+    args[j++] = "-Wl,--wrap=xmlStrcmp";
+    args[j++] = "-Wl,--wrap=xmlStrEqual";
+    args[j++] = "-Wl,--wrap=xmlStrcasecmp";
+    args[j++] = "-Wl,--wrap=xmlStrncasecmp";
 
     commonOpts(&j, args);
 
