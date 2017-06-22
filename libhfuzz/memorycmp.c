@@ -292,7 +292,7 @@ int __wrap_xmlStrncasecmp(const char *s1, const char *s2, int len)
     return _strncasecmp(s1, s2, (size_t) len, __builtin_return_address(0));
 }
 
-const char *xmlStrstr(const char *haystack, const char *needle)
+const char *__wrap_xmlStrstr(const char *haystack, const char *needle)
 {
     if (haystack == NULL) {
         return NULL;
@@ -303,7 +303,7 @@ const char *xmlStrstr(const char *haystack, const char *needle)
     return _strstr(haystack, needle, __builtin_return_address(0));
 }
 
-const char *xmlStrcasestr(const char *haystack, const char *needle)
+const char *__wrap_xmlStrcasestr(const char *haystack, const char *needle)
 {
     if (haystack == NULL) {
         return NULL;
