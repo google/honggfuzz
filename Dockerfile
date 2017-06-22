@@ -10,7 +10,7 @@ RUN apt-get -y update && apt-get install -y \
 	binutils-dev \
 && rm -rf /var/lib/apt/lists/* && rm -rf /honggfuzz
 
-RUN git clone https://github.com/google/honggfuzz.git
+RUN git clone --depth=1 https://github.com/google/honggfuzz.git
 
 WORKDIR /honggfuzz
 
