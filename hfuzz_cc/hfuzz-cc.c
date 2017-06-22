@@ -279,6 +279,8 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-Wl,--wrap=xmlStrEqual";
     args[j++] = "-Wl,--wrap=xmlStrcasecmp";
     args[j++] = "-Wl,--wrap=xmlStrncasecmp";
+    args[j++] = "-Wl,--wrap=xmlStrstr";
+    args[j++] = "-Wl,--wrap=xmlStrcasestr";
 
     commonOpts(&j, args);
 

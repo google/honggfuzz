@@ -105,11 +105,27 @@ int __wrap_strncasecmp(const char *s1, const char *s2, size_t n)
     return _strncasecmp(s1, s2, n, __builtin_return_address(0));
 }
 
-char *__wrap_strstr(const char *haystack, const char *needle)
+static inline char *_strstr(const char *haystack, const char *needle, void *addr)
 {
     size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
-        if (_strncmp(&haystack[i], needle, needle_len, __builtin_return_address(0)) == 0) {
+        if (_strncmp(&haystack[i], needle, needle_len, addr) == 0) {
+            return (char *)(&haystack[i]);
+        }
+    }
+    return NULL;
+}
+
+char *__wrap_strstr(const char *haystack, const char *needle)
+{
+    return _strstr(haystack, needle, __builtin_return_address(0));
+}
+
+static inline char *_strcasestr(const char *haystack, const char *needle, void *addr)
+{
+    size_t needle_len = strlen(needle);
+    for (size_t i = 0; haystack[i]; i++) {
+        if (_strncasecmp(&haystack[i], needle, needle_len, addr) == 0) {
             return (char *)(&haystack[i]);
         }
     }
@@ -118,13 +134,7 @@ char *__wrap_strstr(const char *haystack, const char *needle)
 
 char *__wrap_strcasestr(const char *haystack, const char *needle)
 {
-    size_t needle_len = strlen(needle);
-    for (size_t i = 0; haystack[i]; i++) {
-        if (_strncasecmp(&haystack[i], needle, needle_len, __builtin_return_address(0)) == 0) {
-            return (char *)(&haystack[i]);
-        }
-    }
-    return NULL;
+    return _strcasestr(haystack, needle, __builtin_return_address(0));
 }
 
 __attribute__ ((always_inline))
@@ -280,4 +290,26 @@ int __wrap_xmlStrncasecmp(const char *s1, const char *s2, int len)
         return 1;
     }
     return _strncasecmp(s1, s2, (size_t) len, __builtin_return_address(0));
+}
+
+const char *xmlStrstr(const char *haystack, const char *needle)
+{
+    if (haystack == NULL) {
+        return NULL;
+    }
+    if (needle == NULL) {
+        return NULL;
+    }
+    return _strstr(haystack, needle, __builtin_return_address(0));
+}
+
+const char *xmlStrcasestr(const char *haystack, const char *needle)
+{
+    if (haystack == NULL) {
+        return NULL;
+    }
+    if (needle == NULL) {
+        return NULL;
+    }
+    return _strcasestr(haystack, needle, __builtin_return_address(0));
 }
