@@ -213,6 +213,9 @@ int __wrap_OPENSSL_strncasecmp(const char *s1, const char *s2, size_t len)
     return _strncasecmp(s1, s2, len, __builtin_return_address(0));
 }
 
+/*
+ * Better instrumentation of libXML
+ */
 int __wrap_xmlStrncmp(const char *s1, const char *s2, int len)
 {
     if (len <= 0) {
