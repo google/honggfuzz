@@ -17,7 +17,7 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
 **Code**
 
-  * Latest stable version: [1.0](https://github.com/google/honggfuzz/releases), but using the __master__ branch is highly encouraged
+  * Latest stable version: [1.1](https://github.com/google/honggfuzz/releases), but using the __master__ branch is highly encouraged
   * [Changelog](https://github.com/google/honggfuzz/blob/master/CHANGELOG)
 
 **Requirements**
@@ -52,7 +52,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Uninitialized mem use in __BoringSSL__](https://github.com/boringssl/boringssl/commit/7dccc71e08105b100c3acd56fa5f6fc1ba9b71d3)
   * [Multiple bugs in language interpreters: __PHP/Python/Ruby__](https://github.com/dyjakan/interpreter-bugs)
   * [Double-free in __LibXMP__](https://github.com/cmatsuoka/libxmp/commit/bd1eb5cfcd802820073504c234c3f735e96c3355)
-  * [Remote crash in __Apache__ mod\_http2](http://seclists.org/oss-sec/2017/q2/504)
+  * [Remote crash in __Apache__ mod\_http2 • CVE-2017-7659](http://seclists.org/oss-sec/2017/q2/504)
   * ... and more
 
 **Projects utilizing Honggfuzz**
