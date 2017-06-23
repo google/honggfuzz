@@ -178,6 +178,9 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put("\n    Run Time : " ESC_BOLD "%s" ESC_RESET, time_elapsed_str);
     if (hfuzz->runEndTime > 0) {
         time_t time_left = hfuzz->runEndTime - time(NULL);
+        if (time_left < 0) {
+            time_left = 0;
+        }
         if (time_left > 3600) {
             char end_time_str[512];
             util_getLocalTime("%F %H:%M:%S", end_time_str, sizeof(end_time_str), hfuzz->runEndTime);
