@@ -199,19 +199,22 @@ int main(int argc, char **argv)
             display_display(&hfuzz);
         }
         if (ATOMIC_GET(sigReceived) > 0) {
+            LOG_I("Signal %d (%s) received, terminating", ATOMIC_GET(sigReceived),
+                  strsignal(ATOMIC_GET(sigReceived)));
             break;
         }
         if (ATOMIC_GET(hfuzz.threadsFinished) >= hfuzz.threadsMax) {
             break;
         }
+        if (hfuzz.runEndTime > 0 && (time(NULL) > hfuzz.runEndTime)) {
+            LOG_I("Maximum run time reached, terminating");
+            ATOMIC_SET(hfuzz.terminating, true);
+            break;
+        }
         pause();
     }
 
-    if (ATOMIC_GET(sigReceived) > 0) {
-        LOG_I("Signal %d (%s) received, terminating", ATOMIC_GET(sigReceived),
-              strsignal(ATOMIC_GET(sigReceived)));
-        ATOMIC_SET(hfuzz.terminating, true);
-    }
+    ATOMIC_SET(hfuzz.terminating, true);
 
     fuzz_threadsStop(&hfuzz, threads);
 

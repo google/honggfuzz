@@ -218,6 +218,7 @@ typedef struct {
     uint64_t *blacklist;
     size_t blacklistCnt;
     long tmOut;
+    time_t runEndTime;
     size_t mutationsMax;
     size_t threadsMax;
     size_t threadsFinished;

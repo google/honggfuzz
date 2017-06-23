@@ -162,6 +162,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .blacklist = NULL,
         .maxFileSz = 0UL,
         .tmOut = 10,
+        .runEndTime = 0,
         .mutationsMax = 0,
         .threadsFinished = 0,
         .threadsMax = (sysconf(_SC_NPROCESSORS_ONLN) <= 1) ? 1 : sysconf(_SC_NPROCESSORS_ONLN) / 2,
@@ -183,7 +184,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .threadsActiveCnt = 0,
         .mainPid = getpid(),
         .terminating = false,
-		.exitUponCrash = false,
+        .exitUponCrash = false,
 
         .dictionaryFile = NULL,
         .dictionaryCnt = 0,
@@ -285,6 +286,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"stackhash_bl", required_argument, NULL, 'B'}, "Stackhashes blacklist file (one entry per line)"},
         {{"mutate_cmd", required_argument, NULL, 'c'}, "External command producing fuzz files (instead of internal mutators)"},
         {{"pprocess_cmd", required_argument, NULL, 0x104}, "External command postprocessing files produced by internal mutators"},
+        {{"run_time", required_argument, NULL, 0x109}, "Number of seconds this fuzzing session will last (default: '0' [no limit])"},
         {{"iterations", required_argument, NULL, 'N'}, "Number of fuzzing iterations (default: '0' [no limit])"},
         {{"rlimit_as", required_argument, NULL, 0x100}, "Per process memory limit in MiB (default: '0' [no limit])"},
         {{"report", required_argument, NULL, 'R'}, "Write report to this file (default: '" _HF_REPORT_FILE "')"},
@@ -395,6 +397,14 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 'n':
             hfuzz->threadsMax = atol(optarg);
+            break;
+        case 0x109:
+            {
+                time_t p = atol(optarg);
+                if (p > 0) {
+                    hfuzz->runEndTime = time(NULL) + p;
+                }
+            }
             break;
         case 'N':
             hfuzz->mutationsMax = atol(optarg);
@@ -570,14 +580,14 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     }
 
     LOG_I("PID: %d, inputDir '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, flipRate: %lf, "
-          "externalCommand: '%s', tmOut: %ld, mutationsMax: %zu, threadsMax: %zu, fileExtn: '%s', "
+          "externalCommand: '%s', runEndTime: %d tmOut: %ld, mutationsMax: %zu, threadsMax: %zu, fileExtn: '%s', "
           "memoryLimit: 0x%" PRIx64 "(MiB), fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
           (int)getpid(), hfuzz->inputDir,
           cmdlineYesNo(hfuzz->nullifyStdio), cmdlineYesNo(hfuzz->fuzzStdin),
           cmdlineYesNo(hfuzz->saveUnique), hfuzz->origFlipRate,
-          hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, hfuzz->tmOut,
-          hfuzz->mutationsMax, hfuzz->threadsMax, hfuzz->fileExtn,
-          hfuzz->asLimit, hfuzz->cmdline[0], hfuzz->linux.pid, cmdlineYesNo(hfuzz->monitorSIGABRT));
+          hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, (int)hfuzz->runEndTime,
+          hfuzz->tmOut, hfuzz->mutationsMax, hfuzz->threadsMax, hfuzz->fileExtn, hfuzz->asLimit,
+          hfuzz->cmdline[0], hfuzz->linux.pid, cmdlineYesNo(hfuzz->monitorSIGABRT));
 
     snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->cmdline[0]);
     for (size_t i = 1; hfuzz->cmdline[i]; i++) {
