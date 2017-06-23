@@ -1,3 +1,14 @@
+2017-06-23 - Version 1.1 (rev ee3a530)
+        - Simplified and improved hfuzz_cc compiler
+        - More string instrumentation in libhfuzz
+        - Android: works with Android-NDK 15 and newer only
+        - Dockerfile
+        - Refreshed docs
+        - Linux: Faster BTS/PT due to less PMU state resets
+        - Linux: tests and by-pass for the Linux' fork-when-multithreaded problem
+        - libFuzzer/AFL style dictionaries
+        - Runnable under docker/oss-fuzz
+
 2017-05-23 - Version 1.0 (rev 4332ae9)
         - Multiple stability improvements for most of the supported architectures
         - More examples in examples/ (e.g. Linux kernel IP for BTS/PT)
@@ -5,7 +16,7 @@
         - Added honggfuzz compiler wrapper in hfuzz_cc/
         - Reworked buffer mangling logic
 
-2016-02-14  - Version 0.9 (rev b0d1118)
+2016-02-14 - Version 0.9 (rev b0d1118)
         - Clang >= 4.0 -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp support
         - Multiple examples in examples/
         - --pprocess_cmd for input post-processing
