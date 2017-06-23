@@ -175,8 +175,18 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         break;
     }
 
-    display_put("\n    Run Time : " ESC_BOLD "%s" ESC_RESET "\n", time_elapsed_str);
-    display_put("   Input Dir : [% " _HF_MONETARY_MOD "zu] '" ESC_BOLD "%s" ESC_RESET "'\n",
+    display_put("\n    Run Time : " ESC_BOLD "%s" ESC_RESET, time_elapsed_str);
+    if (hfuzz->runEndTime > 0) {
+        time_t time_left = hfuzz->runEndTime - time(NULL);
+        if (time_left > 3600) {
+            char end_time_str[512];
+            util_getLocalTime("%F %H:%M:%S", end_time_str, sizeof(end_time_str), hfuzz->runEndTime);
+            display_put(", End time: " ESC_BOLD "%s" ESC_RESET, end_time_str);
+        } else {
+            display_put(", Seconds left: " ESC_BOLD "%d" ESC_RESET, time_left);
+        }
+    }
+    display_put("\n   Input Dir : [% " _HF_MONETARY_MOD "zu] '" ESC_BOLD "%s" ESC_RESET "'\n",
                 ATOMIC_GET(hfuzz->fileCnt), hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]");
 
     if (hfuzz->linux.pid > 0) {
