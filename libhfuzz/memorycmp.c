@@ -219,16 +219,16 @@ int __wrap_OPENSSL_strncasecmp(const char *s1, const char *s2, size_t len)
 int __wrap_xmlStrncmp(const char *s1, const char *s2, int len)
 {
     if (len <= 0) {
-        return (0);
+        return 0;
     }
     if (s1 == s2) {
-        return (0);
+        return 0;
     }
     if (s1 == NULL) {
-        return (-1);
+        return -1;
     }
     if (s2 == NULL) {
-        return (1);
+        return 1;
     }
     return _strncmp(s1, s2, (size_t) len, __builtin_return_address(0));
 }
