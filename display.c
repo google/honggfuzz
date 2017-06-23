@@ -183,7 +183,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
             util_getLocalTime("%F %H:%M:%S", end_time_str, sizeof(end_time_str), hfuzz->runEndTime);
             display_put(", end time: " ESC_BOLD "%s" ESC_RESET, end_time_str);
         } else {
-            display_put(", seconds left: " ESC_BOLD "%d" ESC_RESET, time_left);
+            display_put(", left: " ESC_BOLD "%d" ESC_RESET " sec.", time_left);
         }
     }
     display_put("\n   Input Dir : [% " _HF_MONETARY_MOD "zu] '" ESC_BOLD "%s" ESC_RESET "'\n",
