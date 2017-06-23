@@ -3,7 +3,6 @@
 
 #include "instrument.h"
 
-__attribute__ ((always_inline))
 static inline int _strcmp(const char *s1, const char *s2, void *addr)
 {
     unsigned int v = 0;
@@ -24,7 +23,6 @@ int __wrap_strcmp(const char *s1, const char *s2)
     return _strcmp(s1, s2, __builtin_return_address(0));
 }
 
-__attribute__ ((always_inline))
 static inline int _strcasecmp(const char *s1, const char *s2, void *addr)
 {
     unsigned int v = 0;
@@ -45,7 +43,6 @@ int __wrap_strcasecmp(const char *s1, const char *s2)
     return _strcasecmp(s1, s2, __builtin_return_address(0));
 }
 
-__attribute__ ((always_inline))
 static inline int _strncmp(const char *s1, const char *s2, size_t n, void *addr)
 {
     if (n == 0) {
