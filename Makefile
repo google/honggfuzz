@@ -360,8 +360,8 @@ libcommon/ns.o: libcommon/common.h libcommon/ns.h libcommon/files.h
 libcommon/ns.o: libcommon/log.h
 libcommon/util.o: libcommon/common.h libcommon/util.h libcommon/files.h
 libcommon/util.o: libcommon/log.h
-libhfuzz/instrument.o: libcommon/common.h libcommon/util.h libcommon/log.h
-libhfuzz/instrument.o: libcommon/common.h
+libhfuzz/instrument.o: libcommon/common.h libhfuzz/instrument.h
+libhfuzz/instrument.o: libcommon/util.h libcommon/log.h libcommon/common.h
 libhfuzz/linux.o: libcommon/common.h libhfuzz/libhfuzz.h libcommon/log.h
 libhfuzz/linux.o: libcommon/common.h libcommon/files.h libcommon/ns.h
 libhfuzz/memorycmp.o: libhfuzz/instrument.h libcommon/common.h

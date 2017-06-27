@@ -40,6 +40,14 @@ extern "C" {
  */
     void HF_ITER(const uint8_t ** buf_ptr, size_t * len_ptr);
 
+/*
+ * Update comparison map:
+ *
+ * addr: address of original comparison
+ * n: new value (only if better than the old/current value)
+ */
+    void instrumentCmpMap(void *addr, unsigned int new);
+
 #if defined(__linux__)
 
 #include <sched.h>

@@ -14,7 +14,7 @@ static inline int _strcmp(const char *s1, const char *s2, void *addr)
         }
         v++;
     }
-    libhfuzz_instrumentUpdateCmpMap(addr, v);
+    instrumentUpdateCmpMap(addr, v);
     return (s1[i] - s2[i]);
 }
 
@@ -34,7 +34,7 @@ static inline int _strcasecmp(const char *s1, const char *s2, void *addr)
         }
         v++;
     }
-    libhfuzz_instrumentUpdateCmpMap(addr, v);
+    instrumentUpdateCmpMap(addr, v);
     return (tolower(s1[i]) - tolower(s2[i]));
 }
 
@@ -63,7 +63,7 @@ static inline int _strncmp(const char *s1, const char *s2, size_t n, void *addr)
         }
     }
 
-    libhfuzz_instrumentUpdateCmpMap(addr, v);
+    instrumentUpdateCmpMap(addr, v);
     return ret;
 }
 
@@ -93,7 +93,7 @@ static inline int _strncasecmp(const char *s1, const char *s2, size_t n, void *a
         }
     }
 
-    libhfuzz_instrumentUpdateCmpMap(addr, v);
+    instrumentUpdateCmpMap(addr, v);
     return ret;
 }
 
@@ -155,7 +155,7 @@ static inline int _memcmp(const void *m1, const void *m2, size_t n, void *addr)
         }
     }
 
-    libhfuzz_instrumentUpdateCmpMap(addr, v);
+    instrumentUpdateCmpMap(addr, v);
     return ret;
 }
 

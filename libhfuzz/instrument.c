@@ -1,6 +1,7 @@
-#include <unistd.h>
-
 #include "../libcommon/common.h"
+#include "instrument.h"
+
+#include <unistd.h>
 
 #include <ctype.h>
 #include <errno.h>
@@ -238,17 +239,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard(uint32_t * guard
     *guard = 0U;
 }
 
-/*
- * Experimental:
- * export version of libhfuzz_instrumentUpdateCmpMap
- */
-void libhfuzz_CMPM(void *addr, unsigned int new)
+void instrumentCmpMap(void *addr, unsigned int n)
 {
-    uintptr_t pos = (uintptr_t) addr % _HF_PERF_BITMAP_SIZE_16M;
-    uint8_t v = new > 254 ? 254 : new;
-    uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
-    if (prev < v) {
-        ATOMIC_SET(feedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(feedback->pidFeedbackCmp[my_thread_no], v - prev);
-    }
+    instrumentUpdateCmpMap(addr, n);
 }
