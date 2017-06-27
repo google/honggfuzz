@@ -1,4 +1,5 @@
-ServerRoot "/home/swiecki/fuzz/apache/apache2"
+ServerRoot "/home/jagger/fuzz/apache/dist"
+DocumentRoot "/home/jagger/fuzz/apache/dist/htdocs"
 ServerName jag
 Timeout 300
 KeepAlive On
@@ -21,7 +22,7 @@ H2SerializeHeaders on
 	Options FollowSymLinks
 	AllowOverride None
 </Directory>
-<Directory /home/swiecki/fuzz/apache/apache2>
+<Directory /home/jagger/fuzz/apache/dist>
 	Options Indexes FollowSymLinks
 	AllowOverride None
 </Directory>
