@@ -1,6 +1,6 @@
 diff --git a/compile.sh b/compile.sh
 new file mode 100755
-index 000000000..6836df670
+index 000000000..113411154
 --- /dev/null
 +++ b/compile.sh
 @@ -0,0 +1,13 @@
@@ -13,7 +13,7 @@ index 000000000..6836df670
 +		--with-mpm=event \
 +		--enable-unixd \
 +		--disable-pie \
-+		--enable-mods-static=few \
++		--enable-mods-static=most \
 +		--enable-http2 \
 +		--with-apr=/home/jagger/fuzz/apache/apr-1.6.2/ \
 +		--with-apr-util=/home/jagger/fuzz/apache/apr-util-1.6.0/
