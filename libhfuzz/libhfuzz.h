@@ -46,7 +46,7 @@ extern "C" {
  * addr: address of original comparison
  * n: new value (only if better than the old/current value)
  */
-    void instrumentCmpMap(void *addr, unsigned int new);
+    void instrumentCmpMap(void *addr, unsigned int n);
 
 #if defined(__linux__)
 
