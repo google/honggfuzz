@@ -55,6 +55,7 @@ index bda60827c..2e4abccfe 100644
 +    saddr.sin_port = htons(8080);
 +    saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 +    if (connect(myfd, &saddr, sizeof(saddr)) == -1) {
++      close(myfd);
 +      perror("connect");
 +      close(myfd);
 +      continue;
