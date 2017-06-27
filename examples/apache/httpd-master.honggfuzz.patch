@@ -1,15 +1,15 @@
 diff --git a/compile.sh b/compile.sh
 new file mode 100755
-index 000000000..680f34b09
+index 000000000..6836df670
 --- /dev/null
 +++ b/compile.sh
 @@ -0,0 +1,13 @@
 +#!/bin/sh
 +
-+CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX="$CC" CFLAGS="-ggdb -O3 -fsanitize=address -I/home/jagger/fuzz/apache/nghttp2-1.23.1/lib/includes" LDFLAGS="-L/home/jagger/fuzz/apache/nghttp2-1.23.1/lib/.libs" LDFLAGS="-lpthread" ./configure \
++CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX="$CC" CFLAGS="-ggdb -O3 -fsanitize=address -I/home/jagger/fuzz/apache/nghttp2-1.23.1/lib/includes" LIBS="-L/home/jagger/fuzz/apache/nghttp2-1.23.1/lib" LDFLAGS="-lpthread" ./configure \
 +		--prefix=/home/jagger/fuzz/apache/dist \
 +		--enable-nghttp2-staticlib-deps \
-+		--with-nghttp2=/home/jagger/fuzz/apache/nghttp2-1.23.1/lib \
++		--with-nghttp2=/home/jagger/fuzz/apache/nghttp2-1.23.1 \
 +		--with-mpm=event \
 +		--enable-unixd \
 +		--disable-pie \
