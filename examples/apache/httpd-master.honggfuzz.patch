@@ -1,12 +1,12 @@
 diff --git a/compile.sh b/compile.sh
 new file mode 100755
-index 000000000..73d52ecf1
+index 000000000..680f34b09
 --- /dev/null
 +++ b/compile.sh
 @@ -0,0 +1,13 @@
 +#!/bin/sh
 +
-+CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX="$CC" CFLAGS="-ggdb -O3 -fsanitize=address -I/home/jagger/fuzz/apache/nghttp2-1.23.1/lib/includes" LDFLAGS="-L/home/jagger/fuzz/apache/nghttp2-1.23.1/lib" LDFLAGS="-lpthread" ./configure \
++CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX="$CC" CFLAGS="-ggdb -O3 -fsanitize=address -I/home/jagger/fuzz/apache/nghttp2-1.23.1/lib/includes" LDFLAGS="-L/home/jagger/fuzz/apache/nghttp2-1.23.1/lib/.libs" LDFLAGS="-lpthread" ./configure \
 +		--prefix=/home/jagger/fuzz/apache/dist \
 +		--enable-nghttp2-staticlib-deps \
 +		--with-nghttp2=/home/jagger/fuzz/apache/nghttp2-1.23.1/lib \
@@ -55,7 +55,6 @@ index bda60827c..2e4abccfe 100644
 +    saddr.sin_port = htons(8080);
 +    saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 +    if (connect(myfd, &saddr, sizeof(saddr)) == -1) {
-+      close(myfd);
 +      perror("connect");
 +      close(myfd);
 +      continue;
