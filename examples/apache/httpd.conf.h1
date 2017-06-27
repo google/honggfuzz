@@ -9,7 +9,7 @@ ListenBacklog 1023
 KeepAliveTimeout 5
 HostnameLookups Off
 ErrorLog /tmp/error.log
-LogLevel info
+LogLevel crit
 Listen 127.0.0.1:8080
 PidFile /tmp/apache-pid
 Protocols http/1.1
