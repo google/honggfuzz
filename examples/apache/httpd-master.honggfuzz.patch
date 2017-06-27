@@ -1,18 +1,27 @@
 diff --git a/compile.sh b/compile.sh
 new file mode 100755
-index 000000000..edf157719
+index 000000000..73d52ecf1
 --- /dev/null
 +++ b/compile.sh
-@@ -0,0 +1,4 @@
+@@ -0,0 +1,13 @@
 +#!/bin/sh
 +
-+CC=/usr/local/google/home/swiecki/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX=$CC CPP=cpp LIBS="-L/home/swiecki/fuzz/apache/nghttp2-1.23.1/lib/ -fsanitize=address" CFLAGS="-fsanitize=address -I/home/swiecki/fuzz/apache/nghttp2-1.23.1/lib/includes -march=skylake -g -ggdb" LDFLAGS="$CFLAGS -ldl" ./configure --enable-unixd --disable-pie --enable-mods-static=few --prefix=/home/swiecki/fuzz/apache/apache2/ --with-mpm=event --enable-http2 --with-apr=/home/swiecki/fuzz/apache/apr-1.5.2/ --with-apr-util=/home/swiecki/fuzz/apache/apr-util-1.5.4/ --with-nghttp2=/home/swiecki/fuzz/apache/nghttp2-1.23.1 --enable-nghttp2-staticlib-deps
-+
++CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX="$CC" CFLAGS="-ggdb -O3 -fsanitize=address -I/home/jagger/fuzz/apache/nghttp2-1.23.1/lib/includes" LDFLAGS="-L/home/jagger/fuzz/apache/nghttp2-1.23.1/lib" LDFLAGS="-lpthread" ./configure \
++		--prefix=/home/jagger/fuzz/apache/dist \
++		--enable-nghttp2-staticlib-deps \
++		--with-nghttp2=/home/jagger/fuzz/apache/nghttp2-1.23.1/lib \
++		--with-mpm=event \
++		--enable-unixd \
++		--disable-pie \
++		--enable-mods-static=few \
++		--enable-http2 \
++		--with-apr=/home/jagger/fuzz/apache/apr-1.6.2/ \
++		--with-apr-util=/home/jagger/fuzz/apache/apr-util-1.6.0/
 diff --git a/server/main.c b/server/main.c
-index bda60827c..a62df4cbf 100644
+index bda60827c..2e4abccfe 100644
 --- a/server/main.c
 +++ b/server/main.c
-@@ -459,8 +459,83 @@ static void usage(process_rec *process)
+@@ -459,8 +459,84 @@ static void usage(process_rec *process)
      destroy_and_exit_process(process, 1);
  }
  
@@ -47,6 +56,7 @@ index bda60827c..a62df4cbf 100644
 +    saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 +    if (connect(myfd, &saddr, sizeof(saddr)) == -1) {
 +      perror("connect");
++      close(myfd);
 +      continue;
 +    }
 +
@@ -68,7 +78,7 @@ index bda60827c..a62df4cbf 100644
 +}
 +
 +static void LAUNCHTHR() {
-+  if (linuxEnterNs(CLONE_NEWUSER|CLONE_NEWNET|CLONE_NEWNS) == false) {
++  if (linuxEnterNs(CLONE_NEWUSER|CLONE_NEWNET|CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS) == false) {
 +    exit(1);
 +  }
 +  if (linuxIfaceUp("lo") == false) {
