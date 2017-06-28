@@ -36,3 +36,6 @@ ScriptAlias "/cgi-bin/" "/home/jagger/fuzz/apache/dist/cgi-bin/"
 	Options All MultiViews
 	AllowOverride None
 </Directory>
+<Location "/server-status">
+	SetHandler server-status
+</Location>
