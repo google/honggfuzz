@@ -1,24 +1,0 @@
-GET /index.html HTTP/1.1
-If-Modified-Since:uSat- 29 Oct 2994 19:44:39 GMTe:t: */*
-odified-minde:t:06tL
-Host: 124.ve
-
-GET /index.html HTTP/1.1
-If-Modified-Since:uSat-P/1.1
-If-Modified-Since:uSat- 29 èet 2994 19:64:39 GMTe:t: */*
-odified-minde:t:0*/*
-Host: 124.ve
-
-GET /index.html HTTP/1.1
-If-Modified-Sinde:t:0*/*
-Host: 124.ve
-
-GET /index.html HTTP/1.1
-If-Modified-Since:uSat-P/1.1
-If-Modified-Since:uSat- 29 Oct 2994 19:44:39 GMTe:t: */*
-odified-minde:t:/*/*
-Host: URI:ve
-
-GET /index.html HTTP/1.1
-If-Modified-Since:uSat- 29 Oct 2994 19:44:39 GMTd7Î¡²sæ(o»’Ã#¯`§—&óEKÈ!7è¸‰ù_(ñYZ$p\eø&^2›Ş«±jÇäö¦—)§
-:’^çu •,ÂŒ/úa±îüh‰ŞÔH2â„ÇŸT¶Î¦Ç_v–Á½Û<ÏXİZÇµuş„Õı}O>Qÿç_â¨ëm3ì&Yq±é×÷]`óê3Y“,aß•^•AzÑwNâ¦´:ÇÀ(ÂIíiöK%Œ¾î?Jû¿Æ²M-Òîj`uû'_x¹1¹ãÎ$jEKıÇûv’ûv’

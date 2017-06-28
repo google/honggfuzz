@@ -1,6 +1,0 @@
-GET /hndhx.html HTTP/1.1
-Expect:            14 (linˆx-gnu)
-Upgrade: (2
-Host: 127.0.0.1:8880
-Connection: Keep-Alivå
-

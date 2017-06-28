@@ -1,0 +1,6 @@
+GET /index.html HTTP/1.1
+User-Agent: Vget/.0.1:8080
+If-None-Match:""/(
+Host: 127.0.0.1:8080
+If-None-Match:oceú""/(
+
