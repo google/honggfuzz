@@ -268,6 +268,12 @@ static int ldMode(int argc, char **argv)
     args[j++] = "-Wl,--wrap=memcmp";
     args[j++] = "-Wl,--wrap=bcmp";
     args[j++] = "-Wl,--wrap=memmem";
+    /* Apache's httpd mem/str cmp functions */
+    args[j++] = "-Wl,--wrap=ap_cstr_casecmp";
+    args[j++] = "-Wl,--wrap=ap_cstr_casecmpn";
+    args[j++] = "-Wl,--wrap=ap_strcasestr";
+    args[j++] = "-Wl,--wrap=apr_cstr_casecmp";
+    args[j++] = "-Wl,--wrap=apr_cstr_casecmpn";
     /* Frequently used time-constant *SSL functions */
     args[j++] = "-Wl,--wrap=CRYPTO_memcmp";
     args[j++] = "-Wl,--wrap=OPENSSL_memcmp";
