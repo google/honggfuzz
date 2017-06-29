@@ -40,7 +40,7 @@
 #endif
 
 #define PROG_NAME "honggfuzz"
-#define PROG_VERSION "1.0"
+#define PROG_VERSION "1.1"
 
 /* Go-style defer implementation */
 #define __STRMERGE(a, b) a##b
