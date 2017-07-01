@@ -42,6 +42,19 @@ index 0000000..6fbf9e9
 +
 +make -j`nproc`
 +make install
+diff --git a/configure.in b/configure.in
+index ef7bd02..27fca57 100644
+--- a/configure.in
++++ b/configure.in
+@@ -712,7 +712,7 @@ AC_MSG_CHECKING([for Check to enable unit tests])
+ if test "x$PKGCONFIG" != "x" && `$PKGCONFIG --atleast-version='0.9.12' check`; then
+   UNITTEST_CFLAGS=`$PKGCONFIG --cflags check`
+   UNITTEST_LIBS=`$PKGCONFIG --libs check`
+-  other_targets="$other_targets test/httpdunit"
++  other_targets="$other_targets"
+ 
+   AC_MSG_RESULT([yes])
+ else
 diff --git a/server/main.c b/server/main.c
 index bda6082..2e4abcc 100644
 --- a/server/main.c
