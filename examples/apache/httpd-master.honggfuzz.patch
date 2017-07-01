@@ -1,24 +1,49 @@
-diff --git a/compile.sh b/compile.sh
+diff --git a/compile_and_install.sh b/compile_and_install.sh
 new file mode 100755
-index 000000000..113411154
+index 0000000..dd84a65
 --- /dev/null
-+++ b/compile.sh
-@@ -0,0 +1,13 @@
++++ b/compile_and_install.sh
+@@ -0,0 +1,38 @@
 +#!/bin/sh
 +
-+CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX="$CC" CFLAGS="-ggdb -O3 -fsanitize=address -I/home/jagger/fuzz/apache/nghttp2-1.23.1/lib/includes" LIBS="-L/home/jagger/fuzz/apache/nghttp2-1.23.1/lib" LDFLAGS="-lpthread" ./configure \
-+		--prefix=/home/jagger/fuzz/apache/dist \
++set -ex
++
++# Directory with honggfuzz installation
++HFUZZ_DIR="/home/jagger/src/honggfuzz"
++# Change this to a directory where apache should be installed into
++INSTALL_PREFIX="$(realpath "$PWD/../dist")"
++NGHTTP2_VER=1.23.1
++APR_VER=1.6.2
++APR_UTIL_VER=1.6.0
++CFLAGS_SAN=-fsanitize=address
++# Another viable option: few
++APACHE_MODULES=most
++
++NGHTTP2_PATH="$(realpath "$PWD/../nghttp2-$NGHTTP2_VER")"
++APR_PATH="$(realpath "$PWD/../apr-$APR_VER")"
++APR_UTIL_PATH="$(realpath "$PWD/../apr-util-$APR_UTIL_VER")"
++
++echo "Install PATH: $INSTALL_PREFIX"
++
++./buildconf --with-apr="$PWD/../apr-$APR_VER/" --with-apr-util="$PWD/../apr-util-$APR_UTIL_VER/"
++
++CC="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang" CXX="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang++" CFLAGS="$CFLAGS_SAN -ggdb -O3 -I$NGHTTP2_PATH/lib/includes" LIBS="-L$NGHTTP2_PATH/lib" LDFLAGS="-lpthread" \
++./configure \
++		"--prefix=$INSTALL_PREFIX" \
 +		--enable-nghttp2-staticlib-deps \
-+		--with-nghttp2=/home/jagger/fuzz/apache/nghttp2-1.23.1 \
++		"--with-nghttp2=$NGHTTP2_PATH" \
++		--enable-http2 \
 +		--with-mpm=event \
 +		--enable-unixd \
 +		--disable-pie \
-+		--enable-mods-static=most \
-+		--enable-http2 \
-+		--with-apr=/home/jagger/fuzz/apache/apr-1.6.2/ \
-+		--with-apr-util=/home/jagger/fuzz/apache/apr-util-1.6.0/
++		--enable-mods-static=$APACHE_MODULES \
++		"--with-apr=$APR_PATH/" \
++		"--with-apr-util=$APR_UTIL_PATH/"
++
++make -j`nproc`
++make install
 diff --git a/server/main.c b/server/main.c
-index bda60827c..2e4abccfe 100644
+index bda6082..2e4abcc 100644
 --- a/server/main.c
 +++ b/server/main.c
 @@ -459,8 +459,84 @@ static void usage(process_rec *process)
@@ -108,16 +133,3 @@ index bda60827c..2e4abccfe 100644
      char c;
      int showcompile = 0, showdirectives = 0;
      const char *confname = SERVER_CONFIG_FILE;
-diff --git a/support/ab.c b/support/ab.c
-index 58769a9c8..ddf141bcc 100644
---- a/support/ab.c
-+++ b/support/ab.c
-@@ -727,7 +727,7 @@ static void ssl_proceed_handshake(struct connection *c)
-             }
-             if (ssl_tmp_key == NULL) {
-                 EVP_PKEY *key;
--                if (SSL_get_server_tmp_key(c->ssl, &key)) {
-+                if (0) {
-                     ssl_tmp_key = xmalloc(128);
-                     switch (EVP_PKEY_id(key)) {
-                     case EVP_PKEY_RSA:
