@@ -1,6 +1,6 @@
 diff --git a/compile_and_install.sh b/compile_and_install.sh
 new file mode 100755
-index 0000000..dd84a65
+index 0000000..0d1af26
 --- /dev/null
 +++ b/compile_and_install.sh
 @@ -0,0 +1,38 @@
@@ -19,26 +19,26 @@ index 0000000..dd84a65
 +# Another viable option: few
 +APACHE_MODULES=most
 +
-+NGHTTP2_PATH="$(realpath "$PWD/../nghttp2-$NGHTTP2_VER")"
++NGHTTP2_PATH="$(realpath "$PWD/../nghttp2-$NGHTTP2_VER")/"
 +APR_PATH="$(realpath "$PWD/../apr-$APR_VER")"
-+APR_UTIL_PATH="$(realpath "$PWD/../apr-util-$APR_UTIL_VER")"
++APR_UTIL_PATH="$(realpath "$PWD/../apr-util-$APR_UTIL_VER")/"
 +
 +echo "Install PATH: $INSTALL_PREFIX"
 +
-+./buildconf --with-apr="$PWD/../apr-$APR_VER/" --with-apr-util="$PWD/../apr-util-$APR_UTIL_VER/"
++./buildconf --with-apr="$APR_PATH" --with-apr-util="$APR_UTIL_PATH"
 +
-+CC="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang" CXX="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang++" CFLAGS="$CFLAGS_SAN -ggdb -O3 -I$NGHTTP2_PATH/lib/includes" LIBS="-L$NGHTTP2_PATH/lib" LDFLAGS="-lpthread" \
++CC="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang" CXX="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang++" CFLAGS="-I$NGHTTP2_PATH/lib/includes $CFLAGS_SAN -ggdb -O3" LDFLAGS="-L$NGHTTP2_PATH/lib -lpthread" \
 +./configure \
-+		"--prefix=$INSTALL_PREFIX" \
-+		--enable-nghttp2-staticlib-deps \
-+		"--with-nghttp2=$NGHTTP2_PATH" \
++		--prefix="$INSTALL_PREFIX" \
++		--with-nghttp2="$NGHTTP2_PATH/.." \
 +		--enable-http2 \
++		--enable-nghttp2-staticlib-deps \
 +		--with-mpm=event \
 +		--enable-unixd \
 +		--disable-pie \
 +		--enable-mods-static=$APACHE_MODULES \
-+		"--with-apr=$APR_PATH/" \
-+		"--with-apr-util=$APR_UTIL_PATH/"
++		--with-apr="$APR_PATH" \
++		--with-apr-util="$APR_UTIL_PATH"
 +
 +make -j`nproc`
 +make install
