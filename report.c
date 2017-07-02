@@ -125,10 +125,10 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
     char mail_cmd[128] = "mail -s \"【riufuzz】发现";
     char count[32] = {0};
     strcat(mail_cmd, hfuzz->target);
-    strcat(mail_cmd, "存在");
+    strcat(mail_cmd, "存在 ");
     sprintf(count, "%zu", hfuzz->verifiedCrashesCnt);
     strcat(mail_cmd, count);
-    strcat(mail_cmd,"枚漏洞\" riusksk@qq.com \< ./HONGGFUZZ.REPORT.TXT");
+    strcat(mail_cmd," 枚漏洞\" riusksk@qq.com \< ./HONGGFUZZ.REPORT.TXT");
     LOG_I("%s", mail_cmd);
     system(mail_cmd);
 }
