@@ -271,19 +271,6 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     if (files_copyFile(crashedFuzzer->crashFileName, verFile, &dstFileExists)) {
         LOG_I("Successfully verified, saving as (%s)", verFile);
         ATOMIC_POST_INC(hfuzz->verifiedCrashesCnt);
-        /*
-        // 已验证漏洞，发送邮件通知
-        char mail_cmd[128] = "echo 发现漏洞 \| mail -s \"【riufuzz】发现";
-        char count[32] = {0};
-        strcat(mail_cmd,hfuzz->target);
-        //strcat(mail_cmd, "存在漏洞\' riusksk@qq.com \< ./HONGGFUZZ.REPORT.TXT");
-        strcat(mail_cmd, "存在");
-        sprintf(count, "%zu", hfuzz->verifiedCrashesCnt);
-        strcat(mail_cmd, count);
-        strcat(mail_cmd,"枚漏洞\" riusksk@qq.com");
-        LOG_I("%s", mail_cmd);
-        system(mail_cmd);
-        */
         unlink(crashedFuzzer->crashFileName);
     } else {
         if (dstFileExists) {

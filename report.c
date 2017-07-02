@@ -129,6 +129,5 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
     sprintf(count, "%zu", hfuzz->verifiedCrashesCnt);
     strcat(mail_cmd, count);
     strcat(mail_cmd," 枚漏洞\" riusksk@qq.com \< ./HONGGFUZZ.REPORT.TXT");
-    LOG_I("%s", mail_cmd);
     system(mail_cmd);
 }
