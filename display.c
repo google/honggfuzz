@@ -162,6 +162,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }else{
         target = hfuzz->cmdline[0];  // only exec file name
     }
+    hfuzz->target = target;
     
     display_put("%s", ESC_CLEAR);
     display_put("-------------------------[ " ESC_BOLD ESC_YELLOW "%s " ESC_RESET ESC_BOLD"v%s "  ESC_PINK "(%s)" ESC_RESET" ]-------------------------\n",

@@ -207,6 +207,7 @@ typedef struct {
 
 typedef struct {
     char **cmdline;
+    char *target;
     char cmdline_txt[61];
     char *inputDir;
     bool nullifyStdio;

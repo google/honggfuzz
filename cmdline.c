@@ -137,6 +137,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     /*  *INDENT-OFF* */
     (*hfuzz) = (honggfuzz_t) {
         .cmdline = NULL,
+        .target = NULL,
         .cmdline_txt[0] = '\0',
         .inputDir = NULL,
         .nullifyStdio = false,
