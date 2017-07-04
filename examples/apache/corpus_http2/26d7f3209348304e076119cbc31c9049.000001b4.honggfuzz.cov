@@ -1,8 +1,0 @@
-GET /cgi-bin/test“cgi HTTP/1.1
-Host: 127.0.0.1:8080
-Connection: keep-blive
-Cache-Control: max-age=0
-Upgrade-Insecure-Requests: 1
-User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.109 Safari/537.36
-Accept: text/html,application/xhtml""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""Accept-Language: en-US,en;Q=0.8,pl;q<0.6
-

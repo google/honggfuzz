@@ -1,24 +1,86 @@
-diff --git a/compile.sh b/compile.sh
+diff --git a/compile_and_install.sh b/compile_and_install.sh
 new file mode 100755
-index 000000000..113411154
+index 0000000..690d91f
 --- /dev/null
-+++ b/compile.sh
-@@ -0,0 +1,13 @@
++++ b/compile_and_install.sh
+@@ -0,0 +1,62 @@
 +#!/bin/sh
 +
-+CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX="$CC" CFLAGS="-ggdb -O3 -fsanitize=address -I/home/jagger/fuzz/apache/nghttp2-1.23.1/lib/includes" LIBS="-L/home/jagger/fuzz/apache/nghttp2-1.23.1/lib" LDFLAGS="-lpthread" ./configure \
-+		--prefix=/home/jagger/fuzz/apache/dist \
++set -ex
++
++# Directory with honggfuzz installation
++HFUZZ_DIR="/home/jagger/src/honggfuzz"
++# Change this to a directory where apache should be installed into
++INSTALL_PREFIX="$(realpath "$PWD/../dist")"
++NGHTTP2_VER=1.24.0
++APR_VER=1.6.2
++APR_UTIL_VER=1.6.0
++CFLAGS_SAN=-fsanitize=address
++# Another viable option: few
++APACHE_MODULES=most
++
++NGHTTP2_PATH="$(realpath "$PWD/../nghttp2-$NGHTTP2_VER")/"
++APR_PATH="$(realpath "$PWD/../apr-$APR_VER")"
++APR_UTIL_PATH="$(realpath "$PWD/../apr-util-$APR_UTIL_VER")/"
++
++export CC="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang"
++export CXX="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang++"
++
++echo "Compiling APR"
++cd "$APR_PATH"
++CFLAGS="$CFLAGS_SAN" ./configure --disable-shared --enable-static
++make clean
++make -j$(nproc)
++cd -
++
++echo "Compiling APR-UTIL"
++cd "$APR_UTIL_PATH"
++CFLAGS="$CFLAGS_SAN" ./configure --with-apr="$APR_PATH" --disable-shared --enable-static
++make clean
++make -j$(nproc)
++cd -
++
++echo "Compiling NGHTTP2"
++cd "$NGHTTP2_PATH"
++CFLAGS="$CFLAGS_SAN" CXXLAGS="$CFLAGS_SAN" ./configure --disable-shared --enable-static
++make clean
++make -j$(nproc)
++cd -
++
++echo "Install PATH: $INSTALL_PREFIX"
++./buildconf --with-apr="$APR_PATH" --with-apr-util="$APR_UTIL_PATH"
++
++echo "Compiling HTTPD"
++CC="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang" CXX="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang++" CFLAGS="-I$NGHTTP2_PATH/lib/includes $CFLAGS_SAN -ggdb -O3" LDFLAGS="-L$NGHTTP2_PATH/lib -lpthread" \
++./configure \
++		--prefix="$INSTALL_PREFIX" \
++		--with-nghttp2="$NGHTTP2_PATH/" \
++		--enable-http2 \
 +		--enable-nghttp2-staticlib-deps \
-+		--with-nghttp2=/home/jagger/fuzz/apache/nghttp2-1.23.1 \
 +		--with-mpm=event \
 +		--enable-unixd \
 +		--disable-pie \
-+		--enable-mods-static=most \
-+		--enable-http2 \
-+		--with-apr=/home/jagger/fuzz/apache/apr-1.6.2/ \
-+		--with-apr-util=/home/jagger/fuzz/apache/apr-util-1.6.0/
++		--enable-mods-static=$APACHE_MODULES \
++		--with-apr="$APR_PATH" \
++		--with-apr-util="$APR_UTIL_PATH"
++make clean
++make -j$(nproc)
++make install
+diff --git a/configure.in b/configure.in
+index ef7bd02..27fca57 100644
+--- a/configure.in
++++ b/configure.in
+@@ -712,7 +712,7 @@ AC_MSG_CHECKING([for Check to enable unit tests])
+ if test "x$PKGCONFIG" != "x" && `$PKGCONFIG --atleast-version='0.9.12' check`; then
+   UNITTEST_CFLAGS=`$PKGCONFIG --cflags check`
+   UNITTEST_LIBS=`$PKGCONFIG --libs check`
+-  other_targets="$other_targets test/httpdunit"
++  other_targets="$other_targets"
+ 
+   AC_MSG_RESULT([yes])
+ else
 diff --git a/server/main.c b/server/main.c
-index bda60827c..2e4abccfe 100644
+index bda6082..2e4abcc 100644
 --- a/server/main.c
 +++ b/server/main.c
 @@ -459,8 +459,84 @@ static void usage(process_rec *process)
@@ -108,16 +170,3 @@ index bda60827c..2e4abccfe 100644
      char c;
      int showcompile = 0, showdirectives = 0;
      const char *confname = SERVER_CONFIG_FILE;
-diff --git a/support/ab.c b/support/ab.c
-index 58769a9c8..ddf141bcc 100644
---- a/support/ab.c
-+++ b/support/ab.c
-@@ -727,7 +727,7 @@ static void ssl_proceed_handshake(struct connection *c)
-             }
-             if (ssl_tmp_key == NULL) {
-                 EVP_PKEY *key;
--                if (SSL_get_server_tmp_key(c->ssl, &key)) {
-+                if (0) {
-                     ssl_tmp_key = xmalloc(128);
-                     switch (EVP_PKEY_id(key)) {
-                     case EVP_PKEY_RSA:

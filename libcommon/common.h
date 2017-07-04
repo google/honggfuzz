@@ -40,7 +40,7 @@
 #endif
 
 #define PROG_NAME "honggfuzz"
-#define PROG_VERSION "1.0"
+#define PROG_VERSION "1.1"
 
 /* Go-style defer implementation */
 #define __STRMERGE(a, b) a##b
@@ -267,7 +267,6 @@ typedef struct {
     size_t dynFileIterExpire;
     bool useSanCov;
     node_t *covMetadata;
-    bool msanReportUMRS;
 
     pthread_mutex_t report_mutex;
 

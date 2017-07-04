@@ -1,5 +1,0 @@
-GET /cgi-bin/test-cgi HTTP/1.1
-Host: 127.0.0.1:8080
-Connection: keeUNCHECKOUTache-††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††††=BBBBBBBBBBBBBBBBBB&CCCCCCCCCCCCCCCCCC=DDDDDDDDDDDDDDDDעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעעע gzip, deflate, br
-Accept-Language: en-US,en;q=0.8,pl;q=0.6
-

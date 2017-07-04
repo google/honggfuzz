@@ -225,7 +225,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         },
         .useSanCov = false,
         .covMetadata = NULL,
-        .msanReportUMRS = false,
 
         .report_mutex = PTHREAD_MUTEX_INITIALIZER,
 
@@ -294,7 +293,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"clear_env", no_argument, NULL, 0x101}, "Clear all environment variables before executing the binary"},
         {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
         {{"save_all", no_argument, NULL, 'u'}, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames"},
-        {{"msan_report_umrs", no_argument, NULL, 0x102}, "Report MSAN's UMRS (uninitialized memory access)"},
         {{"tmout_sigvtalrm", no_argument, NULL, 'T'}, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)"},
         {{"sanitizers", no_argument, NULL, 'S'}, "Enable sanitizers settings (default: false)"},
         {{"monitor_sigabrt", required_argument, NULL, 0x105}, "Monitor SIGABRT (default: 'false for Android - 'true for other platforms)"},
@@ -414,9 +412,6 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             break;
         case 0x101:
             hfuzz->clearEnv = true;
-            break;
-        case 0x102:
-            hfuzz->msanReportUMRS = true;
             break;
         case 0x103:
             hfuzz->covDir = optarg;

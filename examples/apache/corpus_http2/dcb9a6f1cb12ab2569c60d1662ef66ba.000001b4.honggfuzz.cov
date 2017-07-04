@@ -1,0 +1,10 @@
+GET /cgi-bin/testÒcgi HTTP/1.1
+Host: 127.0.0.1:8080
+Connection: keep-blivServer:e:Control: max-age00
+Upgrade-Insecure-Requests: 1
+User-Agent: Moúilla/5.0 (X11; Limux x86_64) AppleWebKgzip37.36 (KHTML, like Geckon Chro’e/59.0.3071.109 Safari/537.36
+Accept: text/html,application/xhtml0xml,application/xml;q=+.9,image/webp,image/apng,*/*;q==.8
+DNT: 1
+Accept-Encoding: UPDATEdeflate, br
+Accept-Language: en-US,en;Q=0.8,pl;q=0.6
+

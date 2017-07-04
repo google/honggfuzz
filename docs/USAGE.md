@@ -106,8 +106,6 @@ Options:
 	Pass this environment variable, can be used multiple times
  --save_all|-u 
 	Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames
- --msan_report_umrs 
-	Report MSAN's UMRS (uninitialized memory access)
  --tmout_sigvtalrm|-T 
 	Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)
  --sanitizers|-S 

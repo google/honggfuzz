@@ -94,7 +94,7 @@
                             "wrap_signals=0:print_stats=1"
 
 /* If no sanitzer support was requested, simply make it use abort() on errors */
-#define kSAN_REGULAR		"abort_on_error=1:handle_segv=0:allocator_may_return_null=1:symbolize=0:detect_leaks=0:disable_coredump=0"
+#define kSAN_REGULAR		"abort_on_error=1:handle_segv=0:handle_sigbus=0:handle_abort=0:handle_sigill=0:handle_sigfpe=0:allocator_may_return_null=1:symbolize=0:detect_leaks=0:disable_coredump=0"
 
 /*
  * If the program ends with a signal that ASan does not handle (or can not
@@ -185,18 +185,14 @@ bool sanitizers_Init(honggfuzz_t * hfuzz)
 
     /* Memory Sanitizer (MSan) */
     memset(san_opts, 0, bufSz);
-    const char *msan_reports_flag = "report_umrs=0";
-    if (hfuzz->msanReportUMRS) {
-        msan_reports_flag = "report_umrs=1";
-    }
 
     if (hfuzz->useSanCov) {
-        snprintf(san_opts, bufSz, "%s:%s:%s:%s:%s%s/%s:%s%s/%s", kMSAN_OPTS, abortFlag,
-                 msan_reports_flag, kSAN_COV_OPTS, kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR,
-                 kSANLOGDIR, hfuzz->workDir, kLOGPREFIX);
+        snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s:%s%s/%s", kMSAN_OPTS, abortFlag, kSAN_COV_OPTS,
+                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
+                 kLOGPREFIX);
     } else {
-        snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s", kMSAN_OPTS, abortFlag, msan_reports_flag,
-                 kSANLOGDIR, hfuzz->workDir, kLOGPREFIX);
+        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kMSAN_OPTS, abortFlag, kSANLOGDIR,
+                 hfuzz->workDir, kLOGPREFIX);
     }
 
     flagsSz = strlen(san_opts) + 1;
