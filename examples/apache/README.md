@@ -38,7 +38,7 @@ $ cp httpd.conf.h1 httpd.conf.h2 /home/swiecki/fuzz/apache/apache2/conf/
 $ honggfuzz/honggfuzz -z -P -f corpus_http1 -w ./httpd.wordlist -- ./apache2/bin/httpd -X -f  /home/swiecki/fuzz/apache/apache2/conf/httpd.conf.h1
  ```
 
-  * HTTP/1 + HTTP/2
+  * HTTP/2
 
 ```
 $ honggfuzz/honggfuzz -z -P -f corpus_http2 -w ./httpd.wordlist -- ./apache2/bin/httpd -X -f /home/swiecki/fuzz/apache/apache2/conf/httpd.conf.h2
