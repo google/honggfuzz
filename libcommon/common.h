@@ -267,7 +267,6 @@ typedef struct {
     size_t dynFileIterExpire;
     bool useSanCov;
     node_t *covMetadata;
-    bool msanReportUMRS;
 
     pthread_mutex_t report_mutex;
 

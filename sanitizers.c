@@ -185,18 +185,14 @@ bool sanitizers_Init(honggfuzz_t * hfuzz)
 
     /* Memory Sanitizer (MSan) */
     memset(san_opts, 0, bufSz);
-    const char *msan_reports_flag = "report_umrs=0";
-    if (hfuzz->msanReportUMRS) {
-        msan_reports_flag = "report_umrs=1";
-    }
 
     if (hfuzz->useSanCov) {
-        snprintf(san_opts, bufSz, "%s:%s:%s:%s:%s%s/%s:%s%s/%s", kMSAN_OPTS, abortFlag,
-                 msan_reports_flag, kSAN_COV_OPTS, kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR,
-                 kSANLOGDIR, hfuzz->workDir, kLOGPREFIX);
+        snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s:%s%s/%s", kMSAN_OPTS, abortFlag, kSAN_COV_OPTS,
+                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
+                 kLOGPREFIX);
     } else {
-        snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s", kMSAN_OPTS, abortFlag, msan_reports_flag,
-                 kSANLOGDIR, hfuzz->workDir, kLOGPREFIX);
+        snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kMSAN_OPTS, abortFlag, kSANLOGDIR,
+                 hfuzz->workDir, kLOGPREFIX);
     }
 
     flagsSz = strlen(san_opts) + 1;
