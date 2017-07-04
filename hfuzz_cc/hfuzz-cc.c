@@ -114,17 +114,9 @@ static int execCC(int argc, char **argv)
 
     if (isGCC) {
         if (isCXX) {
-            execvp("g++-8", argv);
-            execvp("g++-7", argv);
-            execvp("g++-6", argv);
-            execvp("g++-5", argv);
             execvp("g++", argv);
             execvp("gcc", argv);
         } else {
-            execvp("gcc-8", argv);
-            execvp("gcc-7", argv);
-            execvp("gcc-6", argv);
-            execvp("gcc-5", argv);
             execvp("gcc", argv);
         }
     } else {
