@@ -12,7 +12,7 @@ index 0000000..690d91f
 +HFUZZ_DIR="/home/jagger/src/honggfuzz"
 +# Change this to a directory where apache should be installed into
 +INSTALL_PREFIX="$(realpath "$PWD/../dist")"
-+NGHTTP2_VER=1.23.1
++NGHTTP2_VER=1.24.0
 +APR_VER=1.6.2
 +APR_UTIL_VER=1.6.0
 +CFLAGS_SAN=-fsanitize=address
