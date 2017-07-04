@@ -12,37 +12,19 @@ Note: The examples provided below use hardcoded paths (here to _/home/swiecki/_)
 version strings of the libraries (e.g. apr-_1.5.2_). These will have to be modified, so they reflect your actual build environment.
 
 1. Compile honggfuzz
-2. Prepare (configure and compile) the following packages: apr, apr-util and ngttp2
-  * Apr
-  ```
-  $ CC=honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX="$CC" CFLAGS="-fsanitize=address -ggdb -fno-builtin -fno-inline -funroll-loops" LDFLAGS="$CFLAGS" ./configure
-  $ make
-  ```
-  * Apr-Util
-  ```
-  $ CC=honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX="$CC" CFLAGS="-fsanitize=address -ggdb -fno-builtin -fno-inline -funroll-loops" LDFLAGS="$CFLAGS" ./configure
-  $ make
-  ```
-  * NgHttp2
-  ```
-  CC=honggfuzz/hfuzz_cc/hfuzz-clang-cc CXX="$CC" CFLAGS="-fsanitize=address -ggdb -fno-builtin -fno-inline -funroll-loops" LDFLAGS="$CFLAGS" ./configure
-  $ make
-  ```
-3. Unpack/Clone Apache
-4. Patch Apache
-
+2. Download and unpack the following packages: apr, apr-util, ngttp2, and Apache's httpd
+3. Patch Apache's httpd
   ```
   $ cd httpd-master
   $ patch -p1 < httpd-master.honggfuzz.patch
   ```
-5. Configure, compile and install Apache
+4. Configure, compile and install Apache
+  * edit compile_and_install.sh to contain valid versions/paths
   ```
-  $ <edit compile.sh to point it to your dist directory>
-  $ ./compile.sh
-  $ make install
+  $ ./compile_and_install.sh
   ```
 
-6. Copy the custom configuration files to ```/home/swiecki/fuzz/apache/apache2/conf/``` (i.e. to your apache dist directory)
+5. Copy the custom configuration files to ```/home/swiecki/fuzz/apache/apache2/conf/``` (i.e. to your apache dist directory)
 
    ```
    $ cp httpd.conf.h1 httpd.conf.h2 /home/swiecki/fuzz/apache/apache2/conf/
