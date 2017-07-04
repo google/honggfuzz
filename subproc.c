@@ -390,7 +390,8 @@ void subproc_checkTimeLimit(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         }
         fuzzer->tmOutSignaled = true;
 
-        LOG_W("PID %d took too much time (limit %ld s). Killing it", fuzzer->pid, hfuzz->tmOut);
+        LOG_W("PID %d took too much time (limit %ld s). Killing it with %s", fuzzer->pid,
+              hfuzz->tmOut, hfuzz->tmout_vtalrm ? "SIGVTALRM" : "SIGKILL");
         if (hfuzz->tmout_vtalrm) {
             kill(fuzzer->pid, SIGVTALRM);
         } else {

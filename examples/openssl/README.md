@@ -16,7 +16,7 @@ $ git clone --depth=1 https://github.com/openssl/openssl.git
 $ mv openssl openssl-master
 ```
 
-3. Configure and compile OpenSSL
+3. Edit ```compile_hfuzz_openssl_master.sh``` (e.g. add -fsanitize=address) and configure and compile OpenSSL
 
 ```
 $ cd openssl-master
