@@ -14,29 +14,29 @@ version strings of the libraries (e.g. apr-_1.5.2_). These will have to be modif
 1. Compile honggfuzz
 2. Download and unpack the following packages: apr, apr-util, ngttp2, and Apache's httpd
 3. Patch Apache's httpd
-  ```
-  $ cd httpd-master
-  $ patch -p1 < httpd-master.honggfuzz.patch
-  ```
+ ```
+$ cd httpd-master
+$ patch -p1 < httpd-master.honggfuzz.patch
+ ```
 4. Configure, compile and install Apache
   * edit compile_and_install.sh to contain valid versions/paths
-  ```
-  $ ./compile_and_install.sh
-  ```
+ ```
+$ ./compile_and_install.sh
+ ```
 
 5. Copy the custom configuration files to ```/home/swiecki/fuzz/apache/apache2/conf/``` (i.e. to your apache dist directory)
 
-   ```
-   $ cp httpd.conf.h1 httpd.conf.h2 /home/swiecki/fuzz/apache/apache2/conf/
-   ```
+ ```
+$ cp httpd.conf.h1 httpd.conf.h2 /home/swiecki/fuzz/apache/apache2/conf/
+ ```
 
 **Fuzzing**
 
   * HTTP/1
 
-```
-$ honggfuzz/honggfuzz -z -P -f corpus_http1 -w ./httpd.wordlist -- ./apache2/bin/httpd -X -f /home/swiecki/fuzz/apache/apache2/conf/httpd.conf.h1
-```
+ ```
+$ honggfuzz/honggfuzz -z -P -f corpus_http1 -w ./httpd.wordlist -- ./apache2/bin/httpd -X -f  /home/swiecki/fuzz/apache/apache2/conf/httpd.conf.h1
+ ```
 
   * HTTP/1 + HTTP/2
 
