@@ -1,5 +1,7 @@
 # riufuzz #
 
+![](https://img.shields.io/badge/language-c-brightgreen.svg) ![](https://img.shields.io/badge/platform-%7BmacOS%20%7C%20Android%20%7C%20Linux%20%7C%20FreeBSD%20%7C%20%20Windows%7D-lightgrey.svg) [![](https://img.shields.io/badge/weibo-@riusksk-red.svg)](http://weibo.com/riusksk) [![](https://img.shields.io/badge/twitter-@riusksk-blue.svg)](https://twitter.com/riusksk)
+
 ![](./screen.png)
 
 
