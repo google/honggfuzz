@@ -173,7 +173,7 @@ static bool fuzz_postProcessFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     if (hfuzz->persistent) {
         if (files_writeBufToFile
             (fuzzer->fileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-             O_CREAT | O_TRUNC | O_WRONLY) == false) {
+             O_CREAT | O_TRUNC | O_WRONLY | O_CLOEXEC) == false) {
             LOG_E("Couldn't write file to '%s'", fuzzer->fileName);
             return false;
         }
