@@ -539,6 +539,12 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         return;
     }
 
+    /* Minimum support file size for mangling is 1 */
+    if (fuzzer->dynamicFileSz == 0UL) {
+        fuzzer->dynamicFileSz = 1UL;
+        fuzzer->dynamicFile[0] = '\0';
+    }
+
     /* 20% chance to change the file size */
     if ((util_rnd64() % 5) == 0) {
         mangle_Resize(hfuzz, fuzzer);
