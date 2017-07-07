@@ -568,6 +568,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                 LOG_F("fuzz_prepareFile() failed");
             }
         }
+
         if (hfuzz->postExternalCommand != NULL) {
             if (!fuzz_postProcessFile(hfuzz, fuzzer)) {
                 LOG_F("fuzz_postProcessFile() failed");
