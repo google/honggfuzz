@@ -3,7 +3,7 @@
 
 #include "instrument.h"
 
-static inline int _strcmp(const char *s1, const char *s2, void *addr)
+inline int hfuzz_strcmp(const char *s1, const char *s2, void *addr)
 {
     unsigned int v = 0;
 
@@ -18,7 +18,7 @@ static inline int _strcmp(const char *s1, const char *s2, void *addr)
     return (s1[i] - s2[i]);
 }
 
-static inline int _strcasecmp(const char *s1, const char *s2, void *addr)
+inline int hfuzz_strcasecmp(const char *s1, const char *s2, void *addr)
 {
     unsigned int v = 0;
 
@@ -33,7 +33,7 @@ static inline int _strcasecmp(const char *s1, const char *s2, void *addr)
     return (tolower(s1[i]) - tolower(s2[i]));
 }
 
-static inline int _strncmp(const char *s1, const char *s2, size_t n, void *addr)
+inline int hfuzz_strncmp(const char *s1, const char *s2, size_t n, void *addr)
 {
     if (n == 0) {
         return 0;
@@ -57,8 +57,7 @@ static inline int _strncmp(const char *s1, const char *s2, size_t n, void *addr)
     return ret;
 }
 
-__attribute__ ((always_inline))
-static inline int _strncasecmp(const char *s1, const char *s2, size_t n, void *addr)
+inline int hfuzz_strncasecmp(const char *s1, const char *s2, size_t n, void *addr)
 {
     if (n == 0) {
         return 0;
@@ -82,30 +81,29 @@ static inline int _strncasecmp(const char *s1, const char *s2, size_t n, void *a
     return ret;
 }
 
-static inline char *_strstr(const char *haystack, const char *needle, void *addr)
+inline char *hfuzz_strstr(const char *haystack, const char *needle, void *addr)
 {
     size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
-        if (_strncmp(&haystack[i], needle, needle_len, addr) == 0) {
+        if (hfuzz_strncmp(&haystack[i], needle, needle_len, addr) == 0) {
             return (char *)(&haystack[i]);
         }
     }
     return NULL;
 }
 
-static inline char *_strcasestr(const char *haystack, const char *needle, void *addr)
+inline char *hfuzz_strcasestr(const char *haystack, const char *needle, void *addr)
 {
     size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
-        if (_strncasecmp(&haystack[i], needle, needle_len, addr) == 0) {
+        if (hfuzz_strncasecmp(&haystack[i], needle, needle_len, addr) == 0) {
             return (char *)(&haystack[i]);
         }
     }
     return NULL;
 }
 
-__attribute__ ((always_inline))
-static inline int _memcmp(const void *m1, const void *m2, size_t n, void *addr)
+inline int hfuzz_memcmp(const void *m1, const void *m2, size_t n, void *addr)
 {
     if (n == 0) {
         return 0;
@@ -129,8 +127,8 @@ static inline int _memcmp(const void *m1, const void *m2, size_t n, void *addr)
     return ret;
 }
 
-void *_memmem(const void *haystack, size_t haystacklen, const void *needle, size_t needlelen,
-              void *addr)
+void *hfuzz_memmem(const void *haystack, size_t haystacklen, const void *needle, size_t needlelen,
+                   void *addr)
 {
     if (needlelen > haystacklen) {
         return NULL;
@@ -141,7 +139,7 @@ void *_memmem(const void *haystack, size_t haystacklen, const void *needle, size
 
     const char *h = haystack;
     for (size_t i = 0; i <= (haystacklen - needlelen); i++) {
-        if (_memcmp(&h[i], needle, needlelen, addr) == 0) {
+        if (hfuzz_memcmp(&h[i], needle, needlelen, addr) == 0) {
             return (void *)(&h[i]);
         }
     }
@@ -153,47 +151,47 @@ void *_memmem(const void *haystack, size_t haystacklen, const void *needle, size
  */
 int __wrap_strcmp(const char *s1, const char *s2)
 {
-    return _strcmp(s1, s2, __builtin_return_address(0));
+    return hfuzz_strcmp(s1, s2, __builtin_return_address(0));
 }
 
 int __wrap_strcasecmp(const char *s1, const char *s2)
 {
-    return _strcasecmp(s1, s2, __builtin_return_address(0));
+    return hfuzz_strcasecmp(s1, s2, __builtin_return_address(0));
 }
 
 int __wrap_strncmp(const char *s1, const char *s2, size_t n)
 {
-    return _strncmp(s1, s2, n, __builtin_return_address(0));
+    return hfuzz_strncmp(s1, s2, n, __builtin_return_address(0));
 }
 
 int __wrap_strncasecmp(const char *s1, const char *s2, size_t n)
 {
-    return _strncasecmp(s1, s2, n, __builtin_return_address(0));
+    return hfuzz_strncasecmp(s1, s2, n, __builtin_return_address(0));
 }
 
 char *__wrap_strstr(const char *haystack, const char *needle)
 {
-    return _strstr(haystack, needle, __builtin_return_address(0));
+    return hfuzz_strstr(haystack, needle, __builtin_return_address(0));
 }
 
 char *__wrap_strcasestr(const char *haystack, const char *needle)
 {
-    return _strcasestr(haystack, needle, __builtin_return_address(0));
+    return hfuzz_strcasestr(haystack, needle, __builtin_return_address(0));
 }
 
 int __wrap_memcmp(const void *m1, const void *m2, size_t n)
 {
-    return (_memcmp(m1, m2, n, __builtin_return_address(0)));
+    return hfuzz_memcmp(m1, m2, n, __builtin_return_address(0));
 }
 
 int __wrap_bcmp(const void *m1, const void *m2, size_t n)
 {
-    return (_memcmp(m1, m2, n, __builtin_return_address(0)));
+    return hfuzz_memcmp(m1, m2, n, __builtin_return_address(0));
 }
 
 void *__wrap_memmem(const void *haystack, size_t haystacklen, const void *needle, size_t needlelen)
 {
-    return _memmem(haystack, haystacklen, needle, needlelen, __builtin_return_address(0));
+    return hfuzz_memmem(haystack, haystacklen, needle, needlelen, __builtin_return_address(0));
 }
 
 /*
@@ -201,27 +199,27 @@ void *__wrap_memmem(const void *haystack, size_t haystacklen, const void *needle
  */
 int __wrap_ap_cstr_casecmp(const char *s1, const char *s2)
 {
-    return _strcasecmp(s1, s2, __builtin_return_address(0));
+    return hfuzz_strcasecmp(s1, s2, __builtin_return_address(0));
 }
 
 int __wrap_ap_cstr_casecmpn(const char *s1, const char *s2, size_t n)
 {
-    return _strncasecmp(s1, s2, n, __builtin_return_address(0));
+    return hfuzz_strncasecmp(s1, s2, n, __builtin_return_address(0));
 }
 
 const char *__wrap_ap_strcasestr(const char *s1, const char *s2)
 {
-    return _strcasestr(s1, s2, __builtin_return_address(0));
+    return hfuzz_strcasestr(s1, s2, __builtin_return_address(0));
 }
 
 int __wrap_apr_cstr_casecmp(const char *s1, const char *s2)
 {
-    return _strcasecmp(s1, s2, __builtin_return_address(0));
+    return hfuzz_strcasecmp(s1, s2, __builtin_return_address(0));
 }
 
 int __wrap_apr_cstr_casecmpn(const char *s1, const char *s2, size_t n)
 {
-    return _strncasecmp(s1, s2, n, __builtin_return_address(0));
+    return hfuzz_strncasecmp(s1, s2, n, __builtin_return_address(0));
 }
 
 /*
@@ -229,22 +227,22 @@ int __wrap_apr_cstr_casecmpn(const char *s1, const char *s2, size_t n)
  */
 int __wrap_CRYPTO_memcmp(const void *m1, const void *m2, size_t len)
 {
-    return _memcmp(m1, m2, len, __builtin_return_address(0));
+    return hfuzz_memcmp(m1, m2, len, __builtin_return_address(0));
 }
 
 int __wrap_OPENSSL_memcmp(const void *m1, const void *m2, size_t len)
 {
-    return _memcmp(m1, m2, len, __builtin_return_address(0));
+    return hfuzz_memcmp(m1, m2, len, __builtin_return_address(0));
 }
 
 int __wrap_OPENSSL_strcasecmp(const char *s1, const char *s2)
 {
-    return _strcasecmp(s1, s2, __builtin_return_address(0));
+    return hfuzz_strcasecmp(s1, s2, __builtin_return_address(0));
 }
 
 int __wrap_OPENSSL_strncasecmp(const char *s1, const char *s2, size_t len)
 {
-    return _strncasecmp(s1, s2, len, __builtin_return_address(0));
+    return hfuzz_strncasecmp(s1, s2, len, __builtin_return_address(0));
 }
 
 /*
@@ -264,7 +262,7 @@ int __wrap_xmlStrncmp(const char *s1, const char *s2, int len)
     if (s2 == NULL) {
         return 1;
     }
-    return _strncmp(s1, s2, (size_t) len, __builtin_return_address(0));
+    return hfuzz_strncmp(s1, s2, (size_t) len, __builtin_return_address(0));
 }
 
 int __wrap_xmlStrcmp(const char *s1, const char *s2)
@@ -278,7 +276,7 @@ int __wrap_xmlStrcmp(const char *s1, const char *s2)
     if (s2 == NULL) {
         return 1;
     }
-    return _strcmp(s1, s2, __builtin_return_address(0));
+    return hfuzz_strcmp(s1, s2, __builtin_return_address(0));
 }
 
 int __wrap_xmlStrEqual(const char *s1, const char *s2)
@@ -292,7 +290,7 @@ int __wrap_xmlStrEqual(const char *s1, const char *s2)
     if (s2 == NULL) {
         return 0;
     }
-    if (_strcmp(s1, s2, __builtin_return_address(0)) == 0) {
+    if (hfuzz_strcmp(s1, s2, __builtin_return_address(0)) == 0) {
         return 1;
     }
     return 0;
@@ -309,7 +307,7 @@ int __wrap_xmlStrcasecmp(const char *s1, const char *s2)
     if (s2 == NULL) {
         return 1;
     }
-    return _strcasecmp(s1, s2, __builtin_return_address(0));
+    return hfuzz_strcasecmp(s1, s2, __builtin_return_address(0));
 }
 
 int __wrap_xmlStrncasecmp(const char *s1, const char *s2, int len)
@@ -326,7 +324,7 @@ int __wrap_xmlStrncasecmp(const char *s1, const char *s2, int len)
     if (s2 == NULL) {
         return 1;
     }
-    return _strncasecmp(s1, s2, (size_t) len, __builtin_return_address(0));
+    return hfuzz_strncasecmp(s1, s2, (size_t) len, __builtin_return_address(0));
 }
 
 const char *__wrap_xmlStrstr(const char *haystack, const char *needle)
@@ -337,7 +335,7 @@ const char *__wrap_xmlStrstr(const char *haystack, const char *needle)
     if (needle == NULL) {
         return NULL;
     }
-    return _strstr(haystack, needle, __builtin_return_address(0));
+    return hfuzz_strstr(haystack, needle, __builtin_return_address(0));
 }
 
 const char *__wrap_xmlStrcasestr(const char *haystack, const char *needle)
@@ -348,5 +346,5 @@ const char *__wrap_xmlStrcasestr(const char *haystack, const char *needle)
     if (needle == NULL) {
         return NULL;
     }
-    return _strcasestr(haystack, needle, __builtin_return_address(0));
+    return hfuzz_strcasestr(haystack, needle, __builtin_return_address(0));
 }

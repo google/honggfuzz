@@ -48,6 +48,17 @@ extern "C" {
  */
     void instrumentCmpMap(void *addr, unsigned int n);
 
+/*
+ * Instrumented comparison functions
+ */
+    int hfuzz_strcmp(const char *s1, const char *s2, void *addr);
+    int hfuzz_strcasecmp(const char *s1, const char *s2, void *addr);
+    int hfuzz_strncmp(const char *s1, const char *s2, size_t n, void *addr);
+    int hfuzz_strncasecmp(const char *s1, const char *s2, size_t n, void *addr);
+    char *hfuzz_strstr(const char *haystack, const char *needle, void *addr);
+    char *hfuzz_strcasestr(const char *haystack, const char *needle, void *addr);
+    int hfuzz_memcmp(const void *m1, const void *m2, size_t n, void *addr);
+
 #if defined(__linux__)
 
 #include <sched.h>

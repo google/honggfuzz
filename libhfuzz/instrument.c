@@ -243,3 +243,14 @@ void instrumentCmpMap(void *addr, unsigned int n)
 {
     instrumentUpdateCmpMap(addr, n);
 }
+
+void instrumentUpdateCmpMap(void *addr, unsigned int n)
+{
+    uintptr_t pos = (uintptr_t) addr % _HF_PERF_BITMAP_SIZE_16M;
+    uint8_t v = n > 254 ? 254 : n;
+    uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
+    if (prev < v) {
+        ATOMIC_SET(feedback->bbMapCmp[pos], v);
+        ATOMIC_POST_ADD(feedback->pidFeedbackCmp[my_thread_no], v - prev);
+    }
+}
