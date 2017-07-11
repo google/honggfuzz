@@ -3,7 +3,7 @@
 
 #include "instrument.h"
 
-inline int hfuzz_strcmp(const char *s1, const char *s2, void *addr)
+int hfuzz_strcmp(const char *s1, const char *s2, void *addr)
 {
     unsigned int v = 0;
 
@@ -18,7 +18,7 @@ inline int hfuzz_strcmp(const char *s1, const char *s2, void *addr)
     return (s1[i] - s2[i]);
 }
 
-inline int hfuzz_strcasecmp(const char *s1, const char *s2, void *addr)
+int hfuzz_strcasecmp(const char *s1, const char *s2, void *addr)
 {
     unsigned int v = 0;
 
@@ -33,7 +33,7 @@ inline int hfuzz_strcasecmp(const char *s1, const char *s2, void *addr)
     return (tolower(s1[i]) - tolower(s2[i]));
 }
 
-inline int hfuzz_strncmp(const char *s1, const char *s2, size_t n, void *addr)
+int hfuzz_strncmp(const char *s1, const char *s2, size_t n, void *addr)
 {
     if (n == 0) {
         return 0;
@@ -57,7 +57,7 @@ inline int hfuzz_strncmp(const char *s1, const char *s2, size_t n, void *addr)
     return ret;
 }
 
-inline int hfuzz_strncasecmp(const char *s1, const char *s2, size_t n, void *addr)
+int hfuzz_strncasecmp(const char *s1, const char *s2, size_t n, void *addr)
 {
     if (n == 0) {
         return 0;
@@ -81,7 +81,7 @@ inline int hfuzz_strncasecmp(const char *s1, const char *s2, size_t n, void *add
     return ret;
 }
 
-inline char *hfuzz_strstr(const char *haystack, const char *needle, void *addr)
+char *hfuzz_strstr(const char *haystack, const char *needle, void *addr)
 {
     size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
@@ -92,7 +92,7 @@ inline char *hfuzz_strstr(const char *haystack, const char *needle, void *addr)
     return NULL;
 }
 
-inline char *hfuzz_strcasestr(const char *haystack, const char *needle, void *addr)
+char *hfuzz_strcasestr(const char *haystack, const char *needle, void *addr)
 {
     size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
@@ -103,7 +103,7 @@ inline char *hfuzz_strcasestr(const char *haystack, const char *needle, void *ad
     return NULL;
 }
 
-inline int hfuzz_memcmp(const void *m1, const void *m2, size_t n, void *addr)
+int hfuzz_memcmp(const void *m1, const void *m2, size_t n, void *addr)
 {
     if (n == 0) {
         return 0;
