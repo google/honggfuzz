@@ -37,8 +37,8 @@ $ /home/jagger/src/honggfuzz/examples/openssl/make.sh master address
 **Fuzzing**
 
 ```
-$ /home/jagger/src/honggfuzz/honggfuzz -f IN.server/ -z -P -- ./persistent.server.openssl.master
-$ /home/jagger/src/honggfuzz/honggfuzz -f IN.client/ -z -P -- ./persistent.client.openssl.master
-$ /home/jagger/src/honggfuzz/honggfuzz -f IN.cert/ -z -P -- ./persistent.x509.openssl.master
-$ /home/jagger/src/honggfuzz/honggfuzz -f IN.privkey/ -z -P -- ./persistent.privkey.openssl.master
+$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_server/ -z -P -- ./persistent.server.openssl.master
+$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_client/ -z -P -- ./persistent.client.openssl.master
+$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_x509/ -z -P -- ./persistent.x509.openssl.master
+$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_privkey/ -z -P -- ./persistent.privkey.openssl.master
 ```
