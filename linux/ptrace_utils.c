@@ -273,6 +273,10 @@ static struct {
     /* Is affected from tmout_vtalrm flag */
     [SIGVTALRM].important = false,
     [SIGVTALRM].descr = "SIGVTALRM-TMOUT",
+
+    /* seccomp-bpf kill */
+    [SIGSYS].important = true,
+    [SIGSYS].descr = "SIGSYS",
 };
 /*  *INDENT-ON* */
 
