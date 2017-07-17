@@ -1,0 +1,298 @@
+diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
+--- ORIG.bind-9.11.1-P3/bin/named/main.c	2017-07-07 17:01:52.000000000 +0200
++++ bind-9.11.1-P3/bin/named/main.c	2017-07-17 17:20:46.111302279 +0200
+@@ -1302,10 +1302,203 @@
+ }
+ #endif /* HAVE_LIBSCF */
+ 
++#include <arpa/inet.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <net/if.h>
++#include <net/route.h>
++#include <netinet/ip6.h>
++#include <netinet/tcp.h>
++#include <sys/ioctl.h>
++#include <sys/resource.h>
++#include <sys/socket.h>
++#include <sys/stat.h>
++#include <sys/time.h>
++#include <sys/types.h>
++#include <sys/wait.h>
++#include <unistd.h>
++
++#include <sched.h>
++#include <libhfuzz.h>
++
++static void unsh(void)
++{
++	if (linuxEnterNs(CLONE_NEWUSER|CLONE_NEWNET|CLONE_NEWNS) == false) {
++			exit(1);
++	}
++	if (linuxIfaceUp("lo") == false) {
++			exit(1);
++	}
++	if (linuxMountTmpfs("/tmp") == false) {
++			exit(1);
++	}
++}
++
++#include <pthread.h>
++static size_t rlen = 0;
++static const uint8_t *rbuf = NULL;
++
++__attribute__ ((no_sanitize("memory")))
++static void *GETDATA(void *unused __attribute__((used)))
++{
++    int myfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
++    if (myfd == -1) {
++        perror("socket");
++        exit(1);
++    }
++
++    struct sockaddr_in saddr;
++    saddr.sin_family = AF_INET;
++    saddr.sin_port = htons(5353);
++    saddr.sin_addr.s_addr = inet_addr("127.0.0.2");
++    if (bind(myfd, &saddr, sizeof(saddr)) == -1) {
++        perror("bind");
++        exit(1);
++    }
++
++    if (listen(myfd, SOMAXCONN) == -1) {
++        perror("listen");
++        exit(1);
++    }
++
++    for (;;) {
++        struct sockaddr_in cli;
++        socklen_t cli_len = sizeof(cli);
++
++        int nfd = accept(myfd, &cli, &cli_len);
++        if (nfd == -1) {
++            perror("accept");
++            exit(1);
++        }
++
++        char b[1024 * 1024];
++        ssize_t sz = recv(nfd, b, sizeof(b), 0);
++        if (sz <= 0) {
++            perror("recv");
++            exit(1);
++        }
++        if (sz < 4) {
++            close(nfd);
++            continue;
++        }
++
++        memcpy(rbuf + 2, b + 2, 2);
++		*((uint16_t*)rbuf) = htons(rlen - 2);
++
++        if (send(nfd, rbuf, rlen, MSG_NOSIGNAL) != (ssize_t) rlen) {
++            if (errno != ECONNRESET) {
++                perror("send() failed");
++                exit(1);
++            }
++        }
++	
++        close(nfd);
++    }
++
++    return NULL;
++}
++
++extern void RESET_RND(void);
++
++__attribute__ ((no_sanitize("memory")))
++static void *SENDREQ(void *unused __attribute__((used)))
++{
++    usleep(100000);
++
++    for (;;) {
++        int myfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
++        if (myfd == -1) {
++            perror("socket");
++            exit(1);
++        }
++
++        struct sockaddr_in saddr;
++        saddr.sin_family = AF_INET;
++        saddr.sin_port = htons(53);
++        saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
++        if (connect(myfd, &saddr, sizeof(saddr)) == -1) {
++            close(myfd);
++            continue;
++        }
++
++		RESET_RND();
++
++        const uint8_t *buf;
++        size_t len;
++        HF_ITER(&buf, &len);
++
++        rlen = 0;
++        rbuf = NULL;
++
++        if (len < 32) {
++            close(myfd);
++            continue;
++        }
++
++        uint32_t tmplen = *((const uint32_t *) buf);
++
++        buf += sizeof(uint32_t);
++        len -= sizeof(uint32_t);
++
++        tmplen %= len;
++
++        rlen = len - tmplen;
++        rbuf = buf + tmplen;
++        len = tmplen;
++
++        if (write(myfd, buf, len) == -1) {
++				if (errno != ECONNRESET) {
++            		perror("write");
++            		exit(1);
++				}
++				close(myfd);
++				continue;
++        }
++
++        shutdown(myfd, SHUT_WR);
++
++       	uint8_t b[1024 * 512];
++       	while (recv(myfd, b, sizeof(b), 0) > 0);
++        close(myfd);
++    }
++}
++
++static void LAUNCHTHR(void)
++{
++    usleep(100000);
++
++    pthread_attr_t attr;
++    pthread_attr_init(&attr);
++    pthread_attr_setstacksize(&attr, 1024 * 1024 * 4);
++    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
++
++    pthread_t t;
++    if (pthread_create(&t, &attr, GETDATA, NULL) < 0) {
++        perror("pthread_create(LAUNCHTHR)");
++        exit(1);
++    }
++
++    usleep(100000);
++
++    pthread_attr_init(&attr);
++    pthread_attr_setstacksize(&attr, 1024 * 1024 * 4);
++    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
++    if (pthread_create(&t, &attr, SENDREQ, NULL) < 0) {
++        perror("pthread_create(SENDREQ)");
++        exit(1);
++    }
++}
++
+ /* main entry point, possibly hooked */
+ 
+ int
+ main(int argc, char *argv[]) {
++	
++		if (getenv("NO_FUZZ") == NULL) {
++    		unsh();
++    		LAUNCHTHR();
++		}
++
+ 	isc_result_t result;
+ #ifdef HAVE_LIBSCF
+ 	char *instance = NULL;
+diff -Nur ORIG.bind-9.11.1-P3/compile.sh bind-9.11.1-P3/compile.sh
+--- ORIG.bind-9.11.1-P3/compile.sh	1970-01-01 01:00:00.000000000 +0100
++++ bind-9.11.1-P3/compile.sh	2017-07-17 17:20:46.111302279 +0200
+@@ -0,0 +1,5 @@
++:
++
++CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang++ CFLAGS="-fsanitize=address -Wno-logical-not-parentheses -Wno-shift-negative-value -Wno-logical-not-parentheses -g -ggdb -march=skylake -O3" ./configure --prefix=/home/jagger/fuzz/bind/dist/ --disable-threads --without-gssapi --disable-chroot --disable-linux-caps --disable-seccomp --without-libtool --enable-ipv6 --enable-atomic --enable-epoll --with-openssl=no
++
++#CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang++ CFLAGS="-fsanitize=memory -Wno-logical-not-parentheses -Wno-shift-negative-value -Wno-logical-not-parentheses -g -ggdb -march=skylake" ./configure --prefix=/home/jagger/fuzz/bind/dist/ --enable-threads --without-gssapi --disable-chroot --disable-linux-caps --disable-seccomp --without-libtool --enable-ipv6 --enable-atomic --enable-epoll --with-openssl=no
+diff -Nur ORIG.bind-9.11.1-P3/lib/dns/request.c bind-9.11.1-P3/lib/dns/request.c
+--- ORIG.bind-9.11.1-P3/lib/dns/request.c	2017-07-07 17:01:52.000000000 +0200
++++ bind-9.11.1-P3/lib/dns/request.c	2017-07-17 17:20:46.111302279 +0200
+@@ -808,8 +808,9 @@
+ 		goto cleanup;
+ 	}
+ 
+-	if ((options & DNS_REQUESTOPT_TCP) != 0 || r.length > 512)
++	if ((options & DNS_REQUESTOPT_TCP) != 0 || r.length >= 512)
+ 		tcp = ISC_TRUE;
++	tcp = ISC_TRUE;
+ 	share = ISC_TF((options & DNS_REQUESTOPT_SHARE) != 0);
+ 
+  again:
+@@ -1135,6 +1136,8 @@
+ req_render(dns_message_t *message, isc_buffer_t **bufferp,
+ 	   unsigned int options, isc_mem_t *mctx)
+ {
++		options |= DNS_REQUESTOPT_TCP;
++
+ 	isc_buffer_t *buf1 = NULL;
+ 	isc_buffer_t *buf2 = NULL;
+ 	isc_result_t result;
+@@ -1191,9 +1194,10 @@
+ 	 * Copy rendered message to exact sized buffer.
+ 	 */
+ 	isc_buffer_usedregion(buf1, &r);
++	options |= DNS_REQUESTOPT_TCP;
+ 	if ((options & DNS_REQUESTOPT_TCP) != 0) {
+ 		tcp = ISC_TRUE;
+-	} else if (r.length > 512) {
++	} else if (r.length >= 512) {
+ 		result = DNS_R_USETCP;
+ 		goto cleanup;
+ 	}
+diff -Nur ORIG.bind-9.11.1-P3/lib/dns/resolver.c bind-9.11.1-P3/lib/dns/resolver.c
+--- ORIG.bind-9.11.1-P3/lib/dns/resolver.c	2017-07-07 17:01:52.000000000 +0200
++++ bind-9.11.1-P3/lib/dns/resolver.c	2017-07-17 17:20:46.115302207 +0200
+@@ -1658,6 +1658,7 @@
+ 	}
+ 	query->mctx = fctx->mctx;
+ 	query->options = options;
++	query->options = options | DNS_FETCHOPT_TCP;
+ 	query->attributes = 0;
+ 	query->sends = 0;
+ 	query->connects = 0;
+diff -Nur ORIG.bind-9.11.1-P3/lib/isc/random.c bind-9.11.1-P3/lib/isc/random.c
+--- ORIG.bind-9.11.1-P3/lib/isc/random.c	2017-07-07 17:01:52.000000000 +0200
++++ bind-9.11.1-P3/lib/isc/random.c	2017-07-17 17:20:46.115302207 +0200
+@@ -119,12 +119,22 @@
+ #endif
+ }
+ 
++static isc_uint32_t RND = 0;
++
++void RESET_RND(void) {
++		RND = 0;
++}
++
+ void
+ isc_random_get(isc_uint32_t *val) {
+ 	REQUIRE(val != NULL);
+ 
+ 	initialize();
+ 
++	*val = RND;
++	RND++;
++	return;
++
+ #ifndef HAVE_ARC4RANDOM
+ 	/*
+ 	 * rand()'s lower bits are not random.
+@@ -304,6 +314,9 @@
+ 
+ 	REQUIRE(VALID_RNG(rng));
+ 
++	RND++;
++	return RND;
++
+ 	if (rng->have < sizeof(val))
+ 		chacha_rekey(rng, NULL, 0);
+ 
