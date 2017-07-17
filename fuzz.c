@@ -479,7 +479,12 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     fuzzState_t state = fuzz_getState(hfuzz);
     if (state != _HF_STATE_DYNAMIC_MAIN) {
         fuzzer->origFileName = files_basename(files_getFileFromFileq(hfuzz, rnd_index)->path);
-	    fuzzer->ext = strrchr(fuzzer->origFileName, '.' ) + 1;
+        if(strrchr(fuzzer->origFileName, '.' )){
+            fuzzer->ext = strrchr(fuzzer->origFileName, '.' ) + 1;
+        }else{
+            LOG_W("origFileName have not ext name.");
+            fuzzer->ext=".null"; //无后缀名
+        }
     }
     if(!strcmp(hfuzz->fileExtn, "any")){ 
         hfuzz->keepext = true;
