@@ -207,13 +207,16 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
  	char *instance = NULL;
 diff -Nur ORIG.bind-9.11.1-P3/compile.sh bind-9.11.1-P3/compile.sh
 --- ORIG.bind-9.11.1-P3/compile.sh	1970-01-01 01:00:00.000000000 +0100
-+++ bind-9.11.1-P3/compile.sh	2017-07-17 17:20:46.111302279 +0200
-@@ -0,0 +1,5 @@
-+:
++++ bind-9.11.1-P3/compile.sh	2017-07-17 17:30:15.261088082 +0200
+@@ -0,0 +1,8 @@
++#!/bin/sh
 +
-+CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang++ CFLAGS="-fsanitize=address -Wno-logical-not-parentheses -Wno-shift-negative-value -Wno-logical-not-parentheses -g -ggdb -march=skylake -O3" ./configure --prefix=/home/jagger/fuzz/bind/dist/ --disable-threads --without-gssapi --disable-chroot --disable-linux-caps --disable-seccomp --without-libtool --enable-ipv6 --enable-atomic --enable-epoll --with-openssl=no
++set -ex
 +
-+#CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang++ CFLAGS="-fsanitize=memory -Wno-logical-not-parentheses -Wno-shift-negative-value -Wno-logical-not-parentheses -g -ggdb -march=skylake" ./configure --prefix=/home/jagger/fuzz/bind/dist/ --enable-threads --without-gssapi --disable-chroot --disable-linux-caps --disable-seccomp --without-libtool --enable-ipv6 --enable-atomic --enable-epoll --with-openssl=no
++CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang CXX=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang++ CFLAGS="-fsanitize=address -Wno-logical-not-parentheses -Wno-shift-negative-value -Wno-logical-not-parentheses -g -ggdb -O3" ./configure --prefix=/home/jagger/fuzz/bind/dist/ --disable-threads --without-gssapi --disable-chroot --disable-linux-caps --disable-seccomp --without-libtool --enable-ipv6 --enable-atomic --enable-epoll --with-openssl=no
++
++make clean
++make -j$(nproc)
 diff -Nur ORIG.bind-9.11.1-P3/lib/dns/request.c bind-9.11.1-P3/lib/dns/request.c
 --- ORIG.bind-9.11.1-P3/lib/dns/request.c	2017-07-07 17:01:52.000000000 +0200
 +++ bind-9.11.1-P3/lib/dns/request.c	2017-07-17 17:20:46.111302279 +0200
