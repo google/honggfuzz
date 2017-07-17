@@ -1,1 +1,0 @@
-AdobeCollabSync.CHS
