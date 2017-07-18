@@ -1,7 +1,7 @@
 diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 --- ORIG.bind-9.11.1-P3/bin/named/main.c	2017-07-07 17:01:52.000000000 +0200
-+++ bind-9.11.1-P3/bin/named/main.c	2017-07-17 17:20:46.111302279 +0200
-@@ -1302,10 +1302,203 @@
++++ bind-9.11.1-P3/bin/named/main.c	2017-07-18 14:38:28.002723771 +0200
+@@ -1302,10 +1302,210 @@
  }
  #endif /* HAVE_LIBSCF */
  
@@ -40,6 +40,8 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +#include <pthread.h>
 +static size_t rlen = 0;
 +static const uint8_t *rbuf = NULL;
++
++extern void RESET_RND(void);
 +
 +__attribute__ ((no_sanitize("memory")))
 +static void *GETDATA(void *unused __attribute__((used)))
@@ -101,8 +103,6 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +    return NULL;
 +}
 +
-+extern void RESET_RND(void);
-+
 +__attribute__ ((no_sanitize("memory")))
 +static void *SENDREQ(void *unused __attribute__((used)))
 +{
@@ -123,8 +123,6 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +            close(myfd);
 +            continue;
 +        }
-+
-+		RESET_RND();
 +
 +        const uint8_t *buf;
 +        size_t len;
@@ -149,6 +147,8 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +        rbuf = buf + tmplen;
 +        len = tmplen;
 +
++		RESET_RND();
++
 +        if (write(myfd, buf, len) == -1) {
 +				if (errno != ECONNRESET) {
 +            		perror("write");
@@ -158,10 +158,17 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +				continue;
 +        }
 +
-+        shutdown(myfd, SHUT_WR);
++        if (shutdown(myfd, SHUT_WR)) {
++				if (errno == ENOTCONN) {
++						close(myfd);
++						continue;
++				}
++				perror("shutdown");
++				exit(1);
++		}
 +
 +       	uint8_t b[1024 * 512];
-+       	while (recv(myfd, b, sizeof(b), 0) > 0);
++       	while (recv(myfd, b, sizeof(b), MSG_WAITALL) > 0);
 +        close(myfd);
 +    }
 +}
