@@ -1,7 +1,7 @@
 diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 --- ORIG.bind-9.11.1-P3/bin/named/main.c	2017-07-07 17:01:52.000000000 +0200
-+++ bind-9.11.1-P3/bin/named/main.c	2017-07-18 14:38:28.002723771 +0200
-@@ -1302,10 +1302,210 @@
++++ bind-9.11.1-P3/bin/named/main.c	2017-07-18 15:10:59.768213602 +0200
+@@ -1302,10 +1302,214 @@
  }
  #endif /* HAVE_LIBSCF */
  
@@ -87,8 +87,12 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +            continue;
 +        }
 +
-+        memcpy(rbuf + 2, b + 2, 2);
-+		*((uint16_t*)rbuf) = htons(rlen - 2);
++		if (rlen > 2) {
++			*((uint16_t*)rbuf) = htons(rlen - 2);
++		} else {
++			*((uint16_t*)rbuf) = 0;
++		}
++        memcpy(&rbuf[2], &b[2], 2);
 +
 +        if (send(nfd, rbuf, rlen, MSG_NOSIGNAL) != (ssize_t) rlen) {
 +            if (errno != ECONNRESET) {
@@ -214,7 +218,7 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
  	char *instance = NULL;
 diff -Nur ORIG.bind-9.11.1-P3/compile.sh bind-9.11.1-P3/compile.sh
 --- ORIG.bind-9.11.1-P3/compile.sh	1970-01-01 01:00:00.000000000 +0100
-+++ bind-9.11.1-P3/compile.sh	2017-07-17 17:30:15.261088082 +0200
++++ bind-9.11.1-P3/compile.sh	2017-07-25 12:58:26.112915054 +0200
 @@ -0,0 +1,8 @@
 +#!/bin/sh
 +
@@ -224,6 +228,20 @@ diff -Nur ORIG.bind-9.11.1-P3/compile.sh bind-9.11.1-P3/compile.sh
 +
 +make clean
 +make -j$(nproc)
+diff -Nur ORIG.bind-9.11.1-P3/lib/dns/cache.c bind-9.11.1-P3/lib/dns/cache.c
+--- ORIG.bind-9.11.1-P3/lib/dns/cache.c	2017-07-07 17:01:52.000000000 +0200
++++ bind-9.11.1-P3/lib/dns/cache.c	2017-07-25 12:56:55.202561557 +0200
+@@ -1044,8 +1044,8 @@
+ 	 * Impose a minimum cache size; pathological things happen if there
+ 	 * is too little room.
+ 	 */
+-	if (size != 0U && size < DNS_CACHE_MINSIZE)
+-		size = DNS_CACHE_MINSIZE;
++//	if (size != 0U && size < DNS_CACHE_MINSIZE)
++//		size = DNS_CACHE_MINSIZE;
+ 
+ 	LOCK(&cache->lock);
+ 	cache->size = size;
 diff -Nur ORIG.bind-9.11.1-P3/lib/dns/request.c bind-9.11.1-P3/lib/dns/request.c
 --- ORIG.bind-9.11.1-P3/lib/dns/request.c	2017-07-07 17:01:52.000000000 +0200
 +++ bind-9.11.1-P3/lib/dns/request.c	2017-07-17 17:20:46.111302279 +0200
