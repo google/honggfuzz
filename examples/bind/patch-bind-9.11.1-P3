@@ -1,6 +1,6 @@
 diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 --- ORIG.bind-9.11.1-P3/bin/named/main.c	2017-07-07 17:01:52.000000000 +0200
-+++ bind-9.11.1-P3/bin/named/main.c	2017-07-18 15:10:59.768213602 +0200
++++ bind-9.11.1-P3/bin/named/main.c	2017-07-26 17:22:14.156490756 +0200
 @@ -1302,10 +1302,214 @@
  }
  #endif /* HAVE_LIBSCF */
@@ -24,6 +24,8 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +#include <sched.h>
 +#include <libhfuzz.h>
 +
++extern void RESET_RND(void);
++
 +static void unsh(void)
 +{
 +	if (linuxEnterNs(CLONE_NEWUSER|CLONE_NEWNET|CLONE_NEWNS) == false) {
@@ -41,8 +43,6 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +static size_t rlen = 0;
 +static const uint8_t *rbuf = NULL;
 +
-+extern void RESET_RND(void);
-+
 +__attribute__ ((no_sanitize("memory")))
 +static void *GETDATA(void *unused __attribute__((used)))
 +{
@@ -54,13 +54,17 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +
 +    struct sockaddr_in saddr;
 +    saddr.sin_family = AF_INET;
-+    saddr.sin_port = htons(5353);
++    saddr.sin_port = htons(53);
 +    saddr.sin_addr.s_addr = inet_addr("127.0.0.2");
 +    if (bind(myfd, &saddr, sizeof(saddr)) == -1) {
 +        perror("bind");
 +        exit(1);
 +    }
 +
++    int qlen = 1024 * 128;
++    if (setsockopt(myfd, SOL_TCP, TCP_FASTOPEN, &qlen, sizeof(qlen)) == -1) {
++	    perror("setsockopt(TCP_FASTOPEN)");
++    }
 +    if (listen(myfd, SOMAXCONN) == -1) {
 +        perror("listen");
 +        exit(1);
@@ -87,11 +91,7 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +            continue;
 +        }
 +
-+		if (rlen > 2) {
-+			*((uint16_t*)rbuf) = htons(rlen - 2);
-+		} else {
-+			*((uint16_t*)rbuf) = 0;
-+		}
++	*((uint16_t*)rbuf) = htons(rlen - 2);
 +        memcpy(&rbuf[2], &b[2], 2);
 +
 +        if (send(nfd, rbuf, rlen, MSG_NOSIGNAL) != (ssize_t) rlen) {
@@ -142,37 +142,37 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +
 +        uint32_t tmplen = *((const uint32_t *) buf);
 +
-+        buf += sizeof(uint32_t);
++        buf = &buf[sizeof(uint32_t)];
 +        len -= sizeof(uint32_t);
 +
 +        tmplen %= len;
 +
++        rbuf = &buf[tmplen];
 +        rlen = len - tmplen;
-+        rbuf = buf + tmplen;
 +        len = tmplen;
 +
-+		RESET_RND();
++	RESET_RND();
 +
-+        if (write(myfd, buf, len) == -1) {
-+				if (errno != ECONNRESET) {
-+            		perror("write");
++        if (send(myfd, buf, len, MSG_NOSIGNAL) == -1) {
++		if (errno != ECONNRESET) {
++       			perror("write");
 +            		exit(1);
-+				}
-+				close(myfd);
-+				continue;
++		}
++		close(myfd);
++		continue;
 +        }
 +
-+        if (shutdown(myfd, SHUT_WR)) {
-+				if (errno == ENOTCONN) {
-+						close(myfd);
-+						continue;
-+				}
-+				perror("shutdown");
-+				exit(1);
-+		}
++        if (shutdown(myfd, SHUT_WR) == -1) {
++	       if (errno == ENOTCONN) {
++		       close(myfd);
++		       continue;
++	       }
++	       perror("shutdown");
++		_exit(1);
++	}
 +
 +       	uint8_t b[1024 * 512];
-+       	while (recv(myfd, b, sizeof(b), MSG_WAITALL) > 0);
++       	while (recv(myfd, b, sizeof(b), 0) > 0);
 +        close(myfd);
 +    }
 +}
