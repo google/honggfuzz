@@ -230,7 +230,16 @@ diff -Nur ORIG.bind-9.11.1-P3/compile.sh bind-9.11.1-P3/compile.sh
 +make -j$(nproc)
 diff -Nur ORIG.bind-9.11.1-P3/lib/dns/cache.c bind-9.11.1-P3/lib/dns/cache.c
 --- ORIG.bind-9.11.1-P3/lib/dns/cache.c	2017-07-07 17:01:52.000000000 +0200
-+++ bind-9.11.1-P3/lib/dns/cache.c	2017-07-25 12:56:55.202561557 +0200
++++ bind-9.11.1-P3/lib/dns/cache.c	2017-07-26 14:34:11.153195728 +0200
+@@ -46,7 +46,7 @@
+  * DNS_CACHE_MINSIZE is how many bytes is the floor for dns_cache_setcachesize().
+  * See also DNS_CACHE_CLEANERINCREMENT
+  */
+-#define DNS_CACHE_MINSIZE	2097152U /*%< Bytes.  2097152 = 2 MB */
++#define DNS_CACHE_MINSIZE	1U /*%< Bytes.  2097152 = 2 MB */
+ /*!
+  * Control incremental cleaning.
+  * CLEANERINCREMENT is how many nodes are examined in one pass.
 @@ -1044,8 +1044,8 @@
  	 * Impose a minimum cache size; pathological things happen if there
  	 * is too little room.
@@ -290,15 +299,15 @@ diff -Nur ORIG.bind-9.11.1-P3/lib/dns/resolver.c bind-9.11.1-P3/lib/dns/resolver
  	query->connects = 0;
 diff -Nur ORIG.bind-9.11.1-P3/lib/isc/random.c bind-9.11.1-P3/lib/isc/random.c
 --- ORIG.bind-9.11.1-P3/lib/isc/random.c	2017-07-07 17:01:52.000000000 +0200
-+++ bind-9.11.1-P3/lib/isc/random.c	2017-07-17 17:20:46.115302207 +0200
++++ bind-9.11.1-P3/lib/isc/random.c	2017-07-26 17:14:45.428118342 +0200
 @@ -119,12 +119,22 @@
  #endif
  }
  
-+static isc_uint32_t RND = 0;
++static isc_uint32_t RND = 1;
 +
 +void RESET_RND(void) {
-+		RND = 0;
++		RND = 1;
 +}
 +
  void
@@ -324,3 +333,23 @@ diff -Nur ORIG.bind-9.11.1-P3/lib/isc/random.c bind-9.11.1-P3/lib/isc/random.c
  	if (rng->have < sizeof(val))
  		chacha_rekey(rng, NULL, 0);
  
+@@ -368,6 +381,9 @@
+ 
+ 	REQUIRE(VALID_RNG(rng));
+ 
++	RND++;
++	return RND;
++
+ 	LOCK(&rng->lock);
+ 
+ 	rng->count -= sizeof(isc_uint16_t);
+@@ -389,6 +405,9 @@
+ 	if (upper_bound < 2)
+ 		return (0);
+ 
++	RND++;
++	return RND % upper_bound;
++
+ 	/*
+ 	 * Ensure the range of random numbers [min, 0xffff] be a multiple of
+ 	 * upper_bound and contain at least a half of the 16 bit range.
