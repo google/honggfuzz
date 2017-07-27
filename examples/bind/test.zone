@@ -7,4 +7,8 @@ $TTL 3D
                                 86400)  ; Minimum TTL
                         NS      test.test.
         
-test            IN	A	127.0.0.1
+test            IN      A       127.0.0.1
+*               IN      MX      10 test
+*               IN      MX      20 test2
+*               IN      AAAA    ::1
+test2           IN      CNAME   test
