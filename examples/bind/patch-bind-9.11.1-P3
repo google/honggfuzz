@@ -1,7 +1,7 @@
 diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 --- ORIG.bind-9.11.1-P3/bin/named/main.c	2017-07-07 17:01:52.000000000 +0200
-+++ bind-9.11.1-P3/bin/named/main.c	2017-07-17 17:20:46.111302279 +0200
-@@ -1302,10 +1302,203 @@
++++ bind-9.11.1-P3/bin/named/main.c	2017-07-26 17:22:14.156490756 +0200
+@@ -1302,10 +1302,214 @@
  }
  #endif /* HAVE_LIBSCF */
  
@@ -23,6 +23,8 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +
 +#include <sched.h>
 +#include <libhfuzz.h>
++
++extern void RESET_RND(void);
 +
 +static void unsh(void)
 +{
@@ -52,13 +54,17 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +
 +    struct sockaddr_in saddr;
 +    saddr.sin_family = AF_INET;
-+    saddr.sin_port = htons(5353);
++    saddr.sin_port = htons(53);
 +    saddr.sin_addr.s_addr = inet_addr("127.0.0.2");
 +    if (bind(myfd, &saddr, sizeof(saddr)) == -1) {
 +        perror("bind");
 +        exit(1);
 +    }
 +
++    int qlen = 1024 * 128;
++    if (setsockopt(myfd, SOL_TCP, TCP_FASTOPEN, &qlen, sizeof(qlen)) == -1) {
++	    perror("setsockopt(TCP_FASTOPEN)");
++    }
 +    if (listen(myfd, SOMAXCONN) == -1) {
 +        perror("listen");
 +        exit(1);
@@ -85,8 +91,8 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +            continue;
 +        }
 +
-+        memcpy(rbuf + 2, b + 2, 2);
-+		*((uint16_t*)rbuf) = htons(rlen - 2);
++	*((uint16_t*)rbuf) = htons(rlen - 2);
++        memcpy(&rbuf[2], &b[2], 2);
 +
 +        if (send(nfd, rbuf, rlen, MSG_NOSIGNAL) != (ssize_t) rlen) {
 +            if (errno != ECONNRESET) {
@@ -100,8 +106,6 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +
 +    return NULL;
 +}
-+
-+extern void RESET_RND(void);
 +
 +__attribute__ ((no_sanitize("memory")))
 +static void *SENDREQ(void *unused __attribute__((used)))
@@ -124,8 +128,6 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +            continue;
 +        }
 +
-+		RESET_RND();
-+
 +        const uint8_t *buf;
 +        size_t len;
 +        HF_ITER(&buf, &len);
@@ -140,25 +142,34 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
 +
 +        uint32_t tmplen = *((const uint32_t *) buf);
 +
-+        buf += sizeof(uint32_t);
++        buf = &buf[sizeof(uint32_t)];
 +        len -= sizeof(uint32_t);
 +
 +        tmplen %= len;
 +
++        rbuf = &buf[tmplen];
 +        rlen = len - tmplen;
-+        rbuf = buf + tmplen;
 +        len = tmplen;
 +
-+        if (write(myfd, buf, len) == -1) {
-+				if (errno != ECONNRESET) {
-+            		perror("write");
++	RESET_RND();
++
++        if (send(myfd, buf, len, MSG_NOSIGNAL) == -1) {
++		if (errno != ECONNRESET) {
++       			perror("write");
 +            		exit(1);
-+				}
-+				close(myfd);
-+				continue;
++		}
++		close(myfd);
++		continue;
 +        }
 +
-+        shutdown(myfd, SHUT_WR);
++        if (shutdown(myfd, SHUT_WR) == -1) {
++	       if (errno == ENOTCONN) {
++		       close(myfd);
++		       continue;
++	       }
++	       perror("shutdown");
++		_exit(1);
++	}
 +
 +       	uint8_t b[1024 * 512];
 +       	while (recv(myfd, b, sizeof(b), 0) > 0);
@@ -207,7 +218,7 @@ diff -Nur ORIG.bind-9.11.1-P3/bin/named/main.c bind-9.11.1-P3/bin/named/main.c
  	char *instance = NULL;
 diff -Nur ORIG.bind-9.11.1-P3/compile.sh bind-9.11.1-P3/compile.sh
 --- ORIG.bind-9.11.1-P3/compile.sh	1970-01-01 01:00:00.000000000 +0100
-+++ bind-9.11.1-P3/compile.sh	2017-07-17 17:30:15.261088082 +0200
++++ bind-9.11.1-P3/compile.sh	2017-07-25 12:58:26.112915054 +0200
 @@ -0,0 +1,8 @@
 +#!/bin/sh
 +
@@ -217,6 +228,29 @@ diff -Nur ORIG.bind-9.11.1-P3/compile.sh bind-9.11.1-P3/compile.sh
 +
 +make clean
 +make -j$(nproc)
+diff -Nur ORIG.bind-9.11.1-P3/lib/dns/cache.c bind-9.11.1-P3/lib/dns/cache.c
+--- ORIG.bind-9.11.1-P3/lib/dns/cache.c	2017-07-07 17:01:52.000000000 +0200
++++ bind-9.11.1-P3/lib/dns/cache.c	2017-07-26 14:34:11.153195728 +0200
+@@ -46,7 +46,7 @@
+  * DNS_CACHE_MINSIZE is how many bytes is the floor for dns_cache_setcachesize().
+  * See also DNS_CACHE_CLEANERINCREMENT
+  */
+-#define DNS_CACHE_MINSIZE	2097152U /*%< Bytes.  2097152 = 2 MB */
++#define DNS_CACHE_MINSIZE	1U /*%< Bytes.  2097152 = 2 MB */
+ /*!
+  * Control incremental cleaning.
+  * CLEANERINCREMENT is how many nodes are examined in one pass.
+@@ -1044,8 +1044,8 @@
+ 	 * Impose a minimum cache size; pathological things happen if there
+ 	 * is too little room.
+ 	 */
+-	if (size != 0U && size < DNS_CACHE_MINSIZE)
+-		size = DNS_CACHE_MINSIZE;
++//	if (size != 0U && size < DNS_CACHE_MINSIZE)
++//		size = DNS_CACHE_MINSIZE;
+ 
+ 	LOCK(&cache->lock);
+ 	cache->size = size;
 diff -Nur ORIG.bind-9.11.1-P3/lib/dns/request.c bind-9.11.1-P3/lib/dns/request.c
 --- ORIG.bind-9.11.1-P3/lib/dns/request.c	2017-07-07 17:01:52.000000000 +0200
 +++ bind-9.11.1-P3/lib/dns/request.c	2017-07-17 17:20:46.111302279 +0200
@@ -265,15 +299,15 @@ diff -Nur ORIG.bind-9.11.1-P3/lib/dns/resolver.c bind-9.11.1-P3/lib/dns/resolver
  	query->connects = 0;
 diff -Nur ORIG.bind-9.11.1-P3/lib/isc/random.c bind-9.11.1-P3/lib/isc/random.c
 --- ORIG.bind-9.11.1-P3/lib/isc/random.c	2017-07-07 17:01:52.000000000 +0200
-+++ bind-9.11.1-P3/lib/isc/random.c	2017-07-17 17:20:46.115302207 +0200
++++ bind-9.11.1-P3/lib/isc/random.c	2017-07-26 17:14:45.428118342 +0200
 @@ -119,12 +119,22 @@
  #endif
  }
  
-+static isc_uint32_t RND = 0;
++static isc_uint32_t RND = 1;
 +
 +void RESET_RND(void) {
-+		RND = 0;
++		RND = 1;
 +}
 +
  void
@@ -299,3 +333,23 @@ diff -Nur ORIG.bind-9.11.1-P3/lib/isc/random.c bind-9.11.1-P3/lib/isc/random.c
  	if (rng->have < sizeof(val))
  		chacha_rekey(rng, NULL, 0);
  
+@@ -368,6 +381,9 @@
+ 
+ 	REQUIRE(VALID_RNG(rng));
+ 
++	RND++;
++	return RND;
++
+ 	LOCK(&rng->lock);
+ 
+ 	rng->count -= sizeof(isc_uint16_t);
+@@ -389,6 +405,9 @@
+ 	if (upper_bound < 2)
+ 		return (0);
+ 
++	RND++;
++	return RND % upper_bound;
++
+ 	/*
+ 	 * Ensure the range of random numbers [min, 0xffff] be a multiple of
+ 	 * upper_bound and contain at least a half of the 16 bit range.

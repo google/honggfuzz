@@ -1,0 +1,14 @@
+$TTL 3D
+@               IN      SOA     test. root.test. (
+                                199609203       ; Serial
+                                28800   ; Refresh
+                                7200    ; Retry
+                                604800  ; Expire
+                                86400)  ; Minimum TTL
+                        NS      test.test.
+        
+test            IN      A       127.0.0.1
+*               IN      MX      10 test
+*               IN      MX      20 test2
+*               IN      AAAA    ::1
+test2           IN      CNAME   test

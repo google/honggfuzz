@@ -30,6 +30,7 @@ $ make install
 
 ```
 $ cp honggfuzz/examples/bind/named.conf /home/jagger/fuzz/bind/dist/etc/
+$ cp honggfuzz/examples/bind/test.zone /home/jagger/fuzz/bind/dist/etc/
  ```
 
 6. **Go**
