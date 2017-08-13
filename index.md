@@ -83,6 +83,6 @@ web server.
 
 **Other**
 
-  * User mailing list: (honggfuzz@googlegroups.com)[mailto:honggfuzz@googlegroups.com], sign up with (this link)[https://groups.google.com/forum/#!forum/honggfuzz].
+  * User mailing list: [honggfuzz@googlegroups.com](mailto:honggfuzz@googlegroups.com), sign up with [this link](https://groups.google.com/forum/#!forum/honggfuzz).
 
 __This is NOT an official Google product__
