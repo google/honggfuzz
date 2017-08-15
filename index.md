@@ -52,7 +52,10 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Multiple bugs in the __poppler__ library](http://lists.freedesktop.org/archives/poppler/2010-November/006726.html)
   * [Multiple exploitable bugs in __IDA-Pro__](https://www.hex-rays.com/bugbounty.shtml)
   * [Remote DoS in __Crypto++__ • CVE-2016-9939](http://www.openwall.com/lists/oss-security/2016/12/12/7)
-  * [Multiple bugs in language interpreters: __PHP/Python/Ruby__](https://github.com/dyjakan/interpreter-bugs)
+  * Language interpreters
+    * [__PHP/Python/Ruby__](https://github.com/dyjakan/interpreter-bugs)
+    * [PHP WDDX](https://bugs.php.net/bug.php?id=74145)
+    * [PHP](https://bugs.php.net/bug.php?id=74194)
   * [Double-free in __LibXMP__](https://github.com/cmatsuoka/libxmp/commit/bd1eb5cfcd802820073504c234c3f735e96c3355)
   * [Heap buffer overflow in SAPCAR • CVE-2017-8852](https://www.coresecurity.com/blog/sapcar-heap-buffer-overflow-crash-exploit)
   * __FreeType 2__:
