@@ -1,0 +1,176 @@
+From: "kernel-team@fedoraproject.org" <kernel-team@fedoraproject.org>
+Date: Wed, 30 Jan 2013 10:55:31 -0500
+Subject: [PATCH] net: no_csums
+
+Bugzilla: N/A
+Upstream-status: Fedora mustard
+---
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index cc88cd7..9899b38 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1334,6 +1334,9 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 	skb_reset_network_header(skb);
+ 	skb_probe_transport_header(skb, 0);
+ 
++	skb->ip_summed = CHECKSUM_UNNECESSARY;
++	skb->csum_level = SKB_MAX_CSUM_LEVEL;
++
+ 	rxhash = skb_get_hash(skb);
+ #ifndef CONFIG_4KSTACKS
+ 	tun_rx_batched(tun, tfile, skb, more);
+diff --git a/net/core/datagram.c b/net/core/datagram.c
+index ea63334..a190060 100644
+--- a/net/core/datagram.c
++++ b/net/core/datagram.c
+@@ -764,7 +764,7 @@ int skb_copy_and_csum_datagram_msg(struct sk_buff *skb,
+ 		if (skb_copy_and_csum_datagram(skb, hlen, &msg->msg_iter,
+ 					       chunk, &csum))
+ 			goto fault;
+-		if (csum_fold(csum))
++		if (csum_fold(csum) && skb == NULL)
+ 			goto csum_error;
+ 		if (unlikely(skb->ip_summed == CHECKSUM_COMPLETE))
+ 			netdev_rx_csum_fault(skb->dev);
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 7869ae3..34890e6 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2731,6 +2731,7 @@ EXPORT_SYMBOL(__skb_gso_segment);
+ #ifdef CONFIG_BUG
+ void netdev_rx_csum_fault(struct net_device *dev)
+ {
++	return;
+ 	if (net_ratelimit()) {
+ 		pr_err("%s: hw csum failure\n", dev ? dev->name : "<unknown>");
+ 		dump_stack();
+diff --git a/net/ipv4/icmp.c b/net/ipv4/icmp.c
+index fc310db..59d5221 100644
+--- a/net/ipv4/icmp.c
++++ b/net/ipv4/icmp.c
+@@ -1027,7 +1027,7 @@ int icmp_rcv(struct sk_buff *skb)
+ 
+ 	__ICMP_INC_STATS(net, ICMP_MIB_INMSGS);
+ 
+-	if (skb_checksum_simple_validate(skb))
++	if (skb_checksum_simple_validate(skb) && skb == NULL)
+ 		goto csum_error;
+ 
+ 	if (!pskb_pull(skb, sizeof(*icmph)))
+diff --git a/net/ipv4/ip_input.c b/net/ipv4/ip_input.c
+index d6feabb..be3823c 100644
+--- a/net/ipv4/ip_input.c
++++ b/net/ipv4/ip_input.c
+@@ -456,8 +456,10 @@ int ip_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt,
+ 
+ 	iph = ip_hdr(skb);
+ 
++if (iph->ihl == 0) {
+ 	if (unlikely(ip_fast_csum((u8 *)iph, iph->ihl)))
+ 		goto csum_error;
++}
+ 
+ 	len = ntohs(iph->tot_len);
+ 	if (skb->len < len) {
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index 2c1f593..b860694 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -5458,7 +5458,7 @@ void tcp_rcv_established(struct sock *sk, struct sk_buff *skb,
+ 				}
+ 			}
+ 			if (!eaten) {
+-				if (tcp_checksum_complete(skb))
++				if (tcp_checksum_complete(skb) && skb == NULL)
+ 					goto csum_error;
+ 
+ 				if ((int)skb->truesize > sk->sk_forward_alloc)
+@@ -5502,7 +5502,7 @@ void tcp_rcv_established(struct sock *sk, struct sk_buff *skb,
+ 	}
+ 
+ slow_path:
+-	if (len < (th->doff << 2) || tcp_checksum_complete(skb))
++	if (len < (th->doff << 2) || (tcp_checksum_complete(skb) && skb == NULL))
+ 		goto csum_error;
+ 
+ 	if (!th->ack && !th->rst && !th->syn)
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 575e19d..6fba409 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -96,6 +96,8 @@ EXPORT_SYMBOL(tcp_hashinfo);
+ 
+ static u32 tcp_v4_init_sequence(const struct sk_buff *skb, u32 *tsoff)
+ {
++	return 0x41414141;
++
+ 	return secure_tcp_sequence_number(ip_hdr(skb)->daddr,
+ 					  ip_hdr(skb)->saddr,
+ 					  tcp_hdr(skb)->dest,
+@@ -1414,7 +1416,7 @@ int tcp_v4_do_rcv(struct sock *sk, struct sk_buff *skb)
+ 		return 0;
+ 	}
+ 
+-	if (tcp_checksum_complete(skb))
++	if (tcp_checksum_complete(skb) && skb == NULL)
+ 		goto csum_err;
+ 
+ 	if (sk->sk_state == TCP_LISTEN) {
+@@ -1626,7 +1628,7 @@ int tcp_v4_rcv(struct sk_buff *skb)
+ 	 * provided case of th->doff==0 is eliminated.
+ 	 * So, we defer the checks. */
+ 
+-	if (skb_checksum_init(skb, IPPROTO_TCP, inet_compute_pseudo))
++	if (skb_checksum_init(skb, IPPROTO_TCP, inet_compute_pseudo) && skb == NULL)
+ 		goto csum_error;
+ 
+ 	th = (const struct tcphdr *)skb->data;
+@@ -1765,7 +1767,7 @@ int tcp_v4_rcv(struct sk_buff *skb)
+ 		goto discard_it;
+ 	}
+ 
+-	if (tcp_checksum_complete(skb)) {
++	if (tcp_checksum_complete(skb) && skb == NULL) {
+ 		inet_twsk_put(inet_twsk(sk));
+ 		goto csum_error;
+ 	}
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index ea6e4cf..b0f8f05 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1689,7 +1689,7 @@ int udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+ 			int ret;
+ 
+ 			/* Verify checksum before giving to encap */
+-			if (udp_lib_checksum_complete(skb))
++			if (udp_lib_checksum_complete(skb) && skb == NULL)
+ 				goto csum_error;
+ 
+ 			ret = encap_rcv(sk, skb);
+@@ -1739,7 +1739,7 @@ int udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+ 	}
+ 
+ 	if (rcu_access_pointer(sk->sk_filter) &&
+-	    udp_lib_checksum_complete(skb))
++	    udp_lib_checksum_complete(skb) && skb == NULL)
+ 			goto csum_error;
+ 
+ 	if (sk_filter_trim_cap(sk, skb, sizeof(struct udphdr)))
+@@ -1901,7 +1901,7 @@ int __udp4_lib_rcv(struct sk_buff *skb, struct udp_table *udptable,
+ 		uh = udp_hdr(skb);
+ 	}
+ 
+-	if (udp4_csum_init(skb, uh, proto))
++	if (udp4_csum_init(skb, uh, proto) && skb == NULL)
+ 		goto csum_error;
+ 
+ 	sk = skb_steal_sock(skb);
+@@ -1949,7 +1949,7 @@ int __udp4_lib_rcv(struct sk_buff *skb, struct udp_table *udptable,
+ 	nf_reset(skb);
+ 
+ 	/* No socket. Drop packet silently, if checksum is wrong */
+-	if (udp_lib_checksum_complete(skb))
++	if (udp_lib_checksum_complete(skb) && skb == NULL)
+ 		goto csum_error;
+ 
+ 	__UDP_INC_STATS(net, UDP_MIB_NOPORTS, proto == IPPROTO_UDPLITE);
