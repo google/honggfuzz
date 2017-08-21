@@ -130,8 +130,8 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_ind
 
 static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    char cmd[128];
-    sprintf(cmd, "/bin/cp %s%s %s",hfuzz->inputDir, fuzzer->origFileName, fuzzer->fileName);
+    char cmd[256];
+    sprintf(cmd, "/bin/cp %s%s %s", hfuzz->inputDir, fuzzer->origFileName, fuzzer->fileName);
     system(cmd);
 
     LOG_I("Created '%s' as an input file", fuzzer->fileName);
@@ -597,7 +597,7 @@ static void *fuzz_threadNew(void *arg)
             return NULL;
         }
 
-        fuzz_fuzzLoop(hfuzz, &fuzzer);
+        fuzz_fuzzLoop(hfuzz, &fuzzer);       
     }
 }
 
