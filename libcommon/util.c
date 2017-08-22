@@ -90,11 +90,7 @@ char *util_StrDup(const char *s)
 }
 
 static __thread pthread_once_t rndThreadOnce = PTHREAD_ONCE_INIT;
-static __thread uint64_t rndX;
-
-/* MMIX LCG PRNG */
-static const uint64_t a = 6364136223846793005ULL;
-static const uint64_t c = 1442695040888963407ULL;
+static __thread uint64_t rndState[2];
 
 static void util_rndInitThread(void)
 {
@@ -106,16 +102,35 @@ static void util_rndInitThread(void)
         close(fd);
     };
 
-    if (files_readFromFd(fd, (uint8_t *) & rndX, sizeof(rndX)) != sizeof(rndX)) {
-        PLOG_F("Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndX));
+    if (files_readFromFd(fd, (uint8_t *) rndState, sizeof(rndState)) != sizeof(rndState)) {
+        PLOG_F("Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndState));
     }
+}
+
+/*
+ * xoroshiro128plus by David Blackman and Sebastiano Vigna
+ */
+static inline uint64_t util_RotL(const uint64_t x, int k)
+{
+    return (x << k) | (x >> (64 - k));
+}
+
+static inline uint64_t util_InternalRnd64(void)
+{
+    const uint64_t s0 = rndState[0];
+    uint64_t s1 = rndState[1];
+    const uint64_t result = s0 + s1;
+    s1 ^= s0;
+    rndState[0] = util_RotL(s0, 55) ^ s1 ^ (s1 << 14);
+    rndState[1] = util_RotL(s1, 36);
+
+    return result;
 }
 
 uint64_t util_rnd64(void)
 {
     pthread_once(&rndThreadOnce, util_rndInitThread);
-    rndX = a * rndX + c;
-    return rndX;
+    return util_InternalRnd64();
 }
 
 uint64_t util_rndGet(uint64_t min, uint64_t max)
@@ -133,13 +148,12 @@ uint64_t util_rndGet(uint64_t min, uint64_t max)
 
 void util_rndBuf(uint8_t * buf, size_t sz)
 {
+    pthread_once(&rndThreadOnce, util_rndInitThread);
     if (sz == 0) {
         return;
     }
-    pthread_once(&rndThreadOnce, util_rndInitThread);
     for (size_t i = 0; i < sz; i++) {
-        rndX = a * rndX + c;
-        buf[i] = (uint8_t) (rndX >> 15);
+        buf[i] = (uint8_t) util_InternalRnd64();
     }
 }
 
