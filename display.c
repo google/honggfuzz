@@ -220,10 +220,10 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     /* colored the crash count as red when exist crash */
     display_put(ESC_WHITE "     Crashes : " ESC_RESET ESC_BOLD "%s" "%zu" ESC_RESET " (" ESC_WHITE "unique: " ESC_RESET "%s" ESC_BOLD "%zu"
                 ESC_RESET ", " ESC_WHITE "blacklist: " ESC_RESET ESC_BOLD "%zu" ESC_RESET ", " ESC_WHITE "verified: " ESC_RESET 
-                ESC_BOLD "%s" "%zu" ESC_RESET ")\n", crashesCnt > 0 ? ESC_RED : "",
-                hfuzz->crashesCnt, crashesCnt > 0 ? ESC_RED : "",
+                ESC_BOLD "%s" "%zu" ESC_RESET ")\n", crashesCnt > 0 ? ESC_RED : "", hfuzz->crashesCnt, 
+                ATOMIC_GET(hfuzz->uniqueCrashesCnt) > 0 ? ESC_RED : "",
                 ATOMIC_GET(hfuzz->uniqueCrashesCnt), ATOMIC_GET(hfuzz->blCrashesCnt), 
-                ATOMIC_GET(hfuzz->verifiedCrashesCnt) > 0 ? ESC_RED : "",                
+                ATOMIC_GET(hfuzz->verifiedCrashesCnt) > 0 ? ESC_RED : "",
                 ATOMIC_GET(hfuzz->verifiedCrashesCnt));
     display_put(ESC_WHITE "    Timeouts : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET " [%"
                 _HF_MONETARY_MOD "zu sec]\n", ATOMIC_GET(hfuzz->timeoutedCnt), hfuzz->tmOut);
