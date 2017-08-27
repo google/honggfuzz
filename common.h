@@ -174,8 +174,9 @@ typedef struct {
 typedef enum {
     _HF_STATE_UNSET = 0,
     _HF_STATE_STATIC = 1,
-    _HF_STATE_DYNAMIC_PRE = 2,
-    _HF_STATE_DYNAMIC_MAIN = 3,
+    _HF_STATE_DRY_RUN = 2,
+    _HF_STATE_DYNAMIC_PRE = 3,
+    _HF_STATE_DYNAMIC_MAIN = 4,
 } fuzzState_t;
 
 struct dynfile_t {

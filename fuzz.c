@@ -639,6 +639,8 @@ void fuzz_threadsStart(honggfuzz_t * hfuzz, pthread_t * threads)
 
     if (hfuzz->useSanCov || hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_PRE);
+    } else if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
+        fuzz_setState(hfuzz, _HF_STATE_DRY_RUN);
     } else {
         fuzz_setState(hfuzz, _HF_STATE_STATIC);
     }

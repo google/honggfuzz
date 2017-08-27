@@ -43,6 +43,7 @@
 #define ESC_PINK "\033[35m"
 #define ESC_WHITE "\033[37m"
 #define ESC_YELLOW "\033[33m"
+#define ESC_BLUE "\033[34m"
 #define ESC_RESET "\033[0m"
 
 #if defined(_HF_ARCH_LINUX)
@@ -175,8 +176,11 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     switch (ATOMIC_GET(hfuzz->state)) {
     case _HF_STATE_STATIC:
-        display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BOLD "Dumb Fuzzing" ESC_RESET);
+        display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BLUE ESC_BOLD "Dumb Fuzzing" ESC_RESET);
         break;
+    case _HF_STATE_DRY_RUN:
+        display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BLUE ESC_BOLD "Dry Run Mode" ESC_RESET);
+    break;
     case _HF_STATE_DYNAMIC_PRE:
         display_put(ESC_WHITE "\n       Phase : " ESC_RESET ESC_BOLD "Dynamic Fuzzing" ESC_RESET);
         break;
