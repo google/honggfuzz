@@ -215,11 +215,6 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     display_put(ESC_WHITE "       Speed : " ESC_RESET ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET "/sec"
                 " (" ESC_WHITE "avg: " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n", exec_per_sec,
                 elapsed_second ? (curr_exec_cnt / elapsed_second) : 0);
-    /* If dry run, print also the input file count */
-    if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
-        display_put(ESC_WHITE " Input Files : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",
-                    hfuzz->fileCnt);
-    }
 
     uint64_t crashesCnt = ATOMIC_GET(hfuzz->crashesCnt);
     /* colored the crash count as red when exist crash */
