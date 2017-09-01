@@ -298,8 +298,8 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
             fuzzer->persistentPid = 0;
             if (ATOMIC_GET(hfuzz->terminating) == false) {
-                LOG_W("Persistent mode: PID %d exited with status: %s", ret,
-                      subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
+                //LOG_W("Persistent mode: PID %d exited with status: %s", ret,
+                //      subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
             }
             break;
         }
