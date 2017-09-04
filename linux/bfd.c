@@ -46,6 +46,14 @@ typedef struct {
     asymbol **syms;
 } bfd_t;
 
+/*
+ * This is probably the only define which was added with binutils 2.29, so we us
+ * it, do decide which disassembler() prototype from dis-asm.h to use
+ */
+#if defined(FOR_EACH_DISASSEMBLER_OPTION)
+#define _HF_BFD_GE_2_29
+#endif
+
 static pthread_mutex_t arch_bfd_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool arch_bfdInit(pid_t pid, bfd_t * bfdParams)
@@ -160,8 +168,12 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
         LOG_W("bfd_check_format() failed");
         return;
     }
-
+#if defined(_HF_BFD_GE_2_29)
+    disassembler_ftype disassemble =
+        disassembler(bfd_get_arch(bfdh), bfd_little_endian(bfdh) ? FALSE : TRUE, 0, NULL);
+#else
     disassembler_ftype disassemble = disassembler(bfdh);
+#endif                          // defined(_HD_BFD_GE_2_29)
     if (disassemble == NULL) {
         LOG_W("disassembler() failed");
         return;
