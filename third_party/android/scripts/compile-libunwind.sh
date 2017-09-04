@@ -163,9 +163,20 @@ HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH=$(uname -m)
 
 SYSROOT="$NDK/platforms/$ANDROID_API/arch-$ARCH"
-export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc --sysroot=$SYSROOT"
-export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++ --sysroot=$SYSROOT"
+export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc"
+export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++"
 export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
+
+if [ ! -x "$CC" ]; then
+  echo "[-] gcc doesn't exist: $CC"
+  abort 1
+elif [ ! -x "$CXX" ]; then
+  echo "[-] g++ doesn't exist: $CXX"
+  abort 1
+fi
+
+export CC="$CC --sysroot=$SYSROOT"
+export CXX="$CXX --sysroot=$SYSROOT"
 
 if [ ! -f configure ]; then
   NOCONFIGURE=true ./autogen.sh
