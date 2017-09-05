@@ -122,14 +122,16 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
 
     dprintf(reportFD,
             "%s" "=====================================================================\n", s);
-           
-    // 已发现漏洞，发送邮件通知
-    char mail_cmd[128] = "mail -s \"【riufuzz】发现";
-    char count[32] = {0};
-    strcat(mail_cmd, hfuzz->target);
-    strcat(mail_cmd, "存在 ");
-    sprintf(count, "%zu", hfuzz->verifiedCrashesCnt);
-    strcat(mail_cmd, count);
-    strcat(mail_cmd," 枚漏洞\" riusksk@qq.com \< ./HONGGFUZZ.REPORT.TXT");
-    system(mail_cmd);
+    
+    if(hfuzz->verifiedCrashesCnt > 0){
+        // 存在已验证漏洞，则发送邮件通知
+        char mail_cmd[128] = "mail -s \"【riufuzz】发现";
+        char count[32] = {0};
+        strncat(mail_cmd, hfuzz->target, 128);
+        strncat(mail_cmd, "存在 ", 8);
+        sprintf(count, "%zu", hfuzz->verifiedCrashesCnt);
+        strncat(mail_cmd, count, 32);
+        strncat(mail_cmd," 枚漏洞\" riusksk@qq.com < ./HONGGFUZZ.REPORT.TXT", 128);
+        system(mail_cmd);
+    }
 }
