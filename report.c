@@ -132,6 +132,8 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
         sprintf(count, "%zu", hfuzz->verifiedCrashesCnt);
         strncat(mail_cmd, count, 32);
         strncat(mail_cmd," 枚漏洞\" riusksk@qq.com<./HONGGFUZZ.REPORT.TXT", 128);
-        system(mail_cmd);
+        if(system(mail_cmd) == -1){
+            LOG_E("Send Mail Fail !\n");
+        }
     }
 }
