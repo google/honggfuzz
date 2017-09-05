@@ -458,7 +458,7 @@ bool arch_archInit(honggfuzz_t * hfuzz)
             return false;
         }
     }
-#if defined(__ANDROID__) && defined(__arm__)
+#if defined(__ANDROID__) && defined(__arm__) && defined(OPENSSL_ARMCAP_ABI)
     /*
      * For ARM kernels running Android API <= 21, if fuzzing target links to
      * libcrypto (OpenSSL), OPENSSL_cpuid_setup initialization is triggering a
