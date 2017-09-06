@@ -129,6 +129,7 @@ static char* get_time_elapsed(uint64_t start_time) {
 
 static void display_displayLocked(honggfuzz_t * hfuzz)
 {
+    char *target;
     char *time_elapsed_str;
     unsigned long elapsed_second;
 
@@ -157,12 +158,13 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     /* The lock should be acquired before any output is printed on the screen */
     MX_SCOPED_LOCK(logMutexGet());
 
-    char *target = strrchr(hfuzz->cmdline[0], '/');   
-    if(target){
-        target = target+1; // Get rid of the inclined shoulder
-    }else{
-        target = hfuzz->cmdline[0];  // only exec file name
-    }
+    if(strrchr(hfuzz->cmdline[0], '/')){		
+        target = strrchr(hfuzz->cmdline[0], '/')+1; // Get rid of the inclined shoulder
+    }else if(strrchr(hfuzz->cmdline[0], '\\')){
+		target = strrchr(hfuzz->cmdline[0], '\\')+1;	// cygwin路径中使用'\'
+	}else{
+		target = hfuzz->cmdline[0];  // only exec file name
+	}
     hfuzz->target = target;
     
     display_put("%s", ESC_CLEAR);
