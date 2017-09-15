@@ -300,7 +300,7 @@ android-clean-deps:
     
 .PHONY: install                 
 install:
-	cp ./honggfuzz /usr/bin/riufuzz
+	cp ./honggfuzz /usr/local/bin/riufuzz
 
 # DO NOT DELETE
 
