@@ -1,9 +1,19 @@
 # riufuzz #
 
-![](https://img.shields.io/badge/language-c-brightgreen.svg) ![](https://img.shields.io/badge/platform-%7BmacOS%20%7C%20Android%20%7C%20Linux%20%7C%20FreeBSD%20%7C%20%20Windows%7D-lightgrey.svg) [![](https://img.shields.io/badge/weibo-@riusksk-red.svg)](http://weibo.com/riusksk) [![](https://img.shields.io/badge/twitter-@riusksk-blue.svg)](https://twitter.com/riusksk)
+![](https://img.shields.io/badge/language-c-brightgreen.svg) ![](https://img.shields.io/badge/platform-%7BmacOS%20%7C%20Android%20%7C%20Linux%20%7C%20%20Windows%7D-lightgrey.svg) [![](https://img.shields.io/badge/weibo-@riusksk-red.svg)](http://weibo.com/riusksk) [![](https://img.shields.io/badge/twitter-@riusksk-blue.svg)](https://twitter.com/riusksk)
 
 ![](./screen.png)
 
+**2017-09-15 更新说明**
+1. 修复无样本后缀名的bug
+2. 修复sprintf栈溢出漏洞
+3. 修复cygwin下程序名提取的显示bug
+4. 增加"Dry Run Mode"模式，用于验证漏洞，并不做文件变异处理
+5. 变更界面高亮风格
+6. 仅在漏洞被验证后才会发送邮件通知
+7. 移植新版honggfuzz中的界面固定显示位置的功能
+8. 更换安装目录，免去root权限安装
+9. 添加Windows平台下基于cdb.exe的崩溃监控脚本
 
 **2017-07-02 更新说明**
 1. 修复cygwin下样本路径识别错误的问题

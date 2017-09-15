@@ -41,6 +41,7 @@
 #define ESC_NAV(x,y) "\033["#x";"#y"H"
 #define ESC_BOLD "\033[1m"
 #define ESC_RED "\033[31m"
+#define ESC_GREEN "\033[32m"
 #define ESC_PINK "\033[35m"
 #define ESC_WHITE "\033[37m"
 #define ESC_YELLOW "\033[33m"
@@ -189,19 +190,19 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     switch (ATOMIC_GET(hfuzz->state)) {
     case _HF_STATE_STATIC:
-        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_BLUE ESC_BOLD "Dumb Fuzzing" ESC_RESET);
+        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "Dumb Fuzzing" ESC_RESET);
         break;
     case _HF_STATE_DRY_RUN:
-        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_BLUE ESC_BOLD "Dry Run Mode" ESC_RESET);
+        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "Dry Run Mode" ESC_RESET);
     break;
     case _HF_STATE_DYNAMIC_PRE:
-        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_BLUE ESC_BOLD "Dynamic Fuzzing" ESC_RESET);
+        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "Dynamic Fuzzing" ESC_RESET);
         break;
     case _HF_STATE_DYNAMIC_MAIN:
-        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_BLUE ESC_BOLD "Feedback-driven Fuzzing" ESC_RESET);
+        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "Feedback-driven Fuzzing" ESC_RESET);
         break;
     default:
-        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_BLUE ESC_BOLD "Unknown" ESC_RESET);
+        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "Unknown" ESC_RESET);
         break;
     }
 
