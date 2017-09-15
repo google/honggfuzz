@@ -45,9 +45,9 @@
 #define __hf_pid()      getpid()
 #endif                          /* defined(_HF_ARCH_LINUX) */
 
-static int log_fd;
-static bool log_fd_isatty;
-enum llevel_t log_level;
+static int log_fd = STDERR_FILENO;
+static bool log_fd_isatty = false;
+enum llevel_t log_level = INFO;
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 __attribute__ ((constructor))
@@ -93,15 +93,16 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
         const char *descr;
         const char *prefix;
         const bool print_funcline;
+        const bool print_time;
     };
     static const struct ll_t logLevels[] = {
-        {"F", "\033[7;35m", true},
-        {"E", "\033[1;31m", true},
-        {"W", "\033[0;33m", true},
-        {"I", "\033[1m", true},
-        {"D", "\033[0;4m", true},
-        {"HR", "\033[0m", false},
-        {"HB", "\033[1m", false},
+        {"F", "\033[7;35m", true, true},
+        {"E", "\033[1;31m", true, true},
+        {"W", "\033[0;33m", true, true},
+        {"I", "\033[1m", false, false},
+        {"D", "\033[0;4m", true, true},
+        {"HR", "\033[0m", false, false},
+        {"HB", "\033[1m", false, false},
     };
 
     time_t ltstamp = time(NULL);
@@ -119,9 +120,11 @@ void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt
         if (log_fd_isatty) {
             dprintf(log_fd, "%s", logLevels[ll].prefix);
         }
+        if (logLevels[ll].print_time) {
+            dprintf(log_fd, "[%s][%s][%d] ", timestr, logLevels[ll].descr, __hf_pid());
+        }
         if (logLevels[ll].print_funcline) {
-            dprintf(log_fd, "[%s][%s][%d] %s():%d ", timestr, logLevels[ll].descr, __hf_pid(), fn,
-                    ln);
+            dprintf(log_fd, "%s():%d ", fn, ln);
         }
 
         va_list args;
@@ -162,4 +165,19 @@ void logDirectlyToFD(const char *msg)
 pthread_mutex_t *logMutexGet(void)
 {
     return &log_mutex;
+}
+
+void logMutexReset(void)
+{
+    pthread_mutex_init(&log_mutex, NULL);
+}
+
+bool logIsTTY(void)
+{
+    return log_fd_isatty;
+}
+
+int logFd(void)
+{
+    return log_fd;
 }

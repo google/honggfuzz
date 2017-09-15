@@ -31,6 +31,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "log.h"
@@ -46,6 +47,11 @@
 #define ESC_BLUE "\033[34m"
 #define ESC_RESET "\033[0m"
 
+#define ESC_CLEAR_ALL "\033[2J"
+#define ESC_CLEAR_ABOVE "\033[1J"
+#define ESC_SCROLL(x,y) "\033["#x";"#y"r"
+#define ESC_SCROLL_DISABLE "\033[?7h"
+
 #if defined(_HF_ARCH_LINUX)
 #define _HF_MONETARY_MOD "'"
 #else
@@ -56,9 +62,8 @@ static void display_put(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    vfprintf(stdout, fmt, args);
+    vdprintf(logFd(), fmt, args);
     va_end(args);
-    fflush(stdout);
 }
 
 static void display_printKMG(uint64_t val)
@@ -129,6 +134,12 @@ static char* get_time_elapsed(uint64_t start_time) {
 
 static void display_displayLocked(honggfuzz_t * hfuzz)
 {
+    static bool firstDisplay = true;
+    if (firstDisplay) {
+        display_put(ESC_CLEAR_ALL);
+        firstDisplay = false;
+    }
+
     char *target;
     char *time_elapsed_str;
     unsigned long elapsed_second;
@@ -167,7 +178,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 	}
     hfuzz->target = target;
     
-    display_put("%s", ESC_CLEAR);
+    display_put(ESC_NAV(11, 1) ESC_CLEAR_ABOVE ESC_NAV(1, 1));
     display_put("-------------------------[ " ESC_BOLD ESC_YELLOW "%s " ESC_RESET ESC_BOLD"v%s "  ESC_PINK "(%s)" ESC_RESET" ]-------------------------\n",
                 PROG_NAME, PROG_VERSION, target );
     display_put(ESC_WHITE "  Iterations : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
@@ -285,9 +296,24 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
     display_put("-----------------------------------[ " ESC_BOLD ESC_YELLOW "LOGS" ESC_RESET 
                 " ]-----------------------------------\n");
+    display_put(ESC_SCROLL(12, 999) ESC_NAV(999, 1));
 }
 
 extern void display_display(honggfuzz_t * hfuzz)
 {
+    if (logIsTTY() == false) {
+        return;
+    }
     display_displayLocked(hfuzz);
+}
+
+extern void display_fini(void)
+{
+    display_put(ESC_SCROLL(1, 999) ESC_NAV(999, 1));
+}
+
+extern void display_init(void)
+{
+    atexit(display_fini);
+    display_put(ESC_NAV(999, 1));
 }

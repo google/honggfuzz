@@ -488,7 +488,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         if(strrchr(fuzzer->origFileName, '.' )){
             fuzzer->ext = strrchr(fuzzer->origFileName, '.' ) + 1;
         }else{
-            LOG_W("origFileName have not ext name.");
+            LOG_I("origFileName have not ext name.");
             fuzzer->ext=".null"; //无后缀名
         }
     }
