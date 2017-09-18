@@ -229,6 +229,7 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             .mainWorker = false,
             .fuzzNo = crashedFuzzer->fuzzNo,
             .persistentSock = -1,
+            .tmOutSignaled = false,
 
             .linux = {
                       .hwCnts = {
@@ -334,6 +335,10 @@ static void fuzz_addFileToFileQLocked(honggfuzz_t * hfuzz, uint8_t * data, size_
 
 static void fuzz_perfFeedback(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
+    if (hfuzz->skipFeedbackOnTimeout && fuzzer->tmOutSignaled) {
+        return;
+    }
+
     LOG_D
         ("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 "/%"
          PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
@@ -569,7 +574,7 @@ static void *fuzz_threadNew(void *arg)
         .dynamicFile = util_Malloc(hfuzz->maxFileSz),
         .fuzzNo = fuzzNo,
         .persistentSock = -1,
-
+        .tmOutSignaled = false,
         .linux.attachedPid = 0,
     };
     defer {

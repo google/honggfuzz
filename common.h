@@ -228,6 +228,8 @@ typedef struct {
     uint64_t *blacklist;
     size_t blacklistCnt;
     long tmOut;
+    bool tmout_vtalrm;
+    bool skipFeedbackOnTimeout;
     size_t mutationsMax;
     size_t threadsMax;
     size_t threadsFinished;
@@ -310,6 +312,7 @@ typedef struct {
     size_t dynamicFileSz;
     uint32_t fuzzNo;
     int persistentSock;
+    bool tmOutSignaled;
 #if !defined(_HF_ARCH_DARWIN)
     timer_t timerId;
 #endif                          // !defined(_HF_ARCH_DARWIN)

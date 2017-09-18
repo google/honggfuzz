@@ -171,7 +171,8 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             [0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,
         },
         .persistent = false,
-
+        .tmout_vtalrm = false,
+        .skipFeedbackOnTimeout = false,
         .terminating = false,
         
         .dictionaryFile = NULL,
@@ -385,8 +386,14 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         case 0x104:
             hfuzz->postExternalCommand = optarg;
             break;
+        case 0x106:
+            hfuzz->skipFeedbackOnTimeout = true;
+            break;
         case 'P':
             hfuzz->persistent = true;
+            break;
+        case 'T':
+            hfuzz->tmout_vtalrm = true;
             break;
         case 'p':
             if (util_isANumber(optarg) == false) {
