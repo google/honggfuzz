@@ -35,15 +35,9 @@
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#if defined(_HF_ARCH_LINUX)
-#include <sys/syscall.h>
-#if defined(__NR_memfd_create)
-#include <linux/memfd.h>
-#endif                          /* defined(__NR_memfd_create) */
-#endif                          /* defined(_HF_ARCH_LINUX) */
 
 #include "log.h"
 #include "util.h"
@@ -629,7 +623,12 @@ uint8_t *files_mapFileShared(char *fileName, off_t * fileSz, int *fd)
 
 void *files_mapSharedMem(size_t sz, int *fd, const char *dir)
 {
+    *fd = -1;
 #if defined(_HF_ARCH_LINUX) && defined(__NR_memfd_create)
+#if !defined(MFD_CLOEXEC)       /* It's not defined as we didn't include sys/memfd.h, but it's
+                                   present with some Linux distros only */
+#define MFD_CLOEXEC		0x0001U
+#endif                          /* !defined(MFD_CLOEXEC) */
     *fd = syscall(__NR_memfd_create, "honggfuzz", (uintptr_t) MFD_CLOEXEC);
 #endif                          /* defined(_HF_ARCH_LINUX) && defined(__NR_memfd_create) */
     if (*fd == -1) {
