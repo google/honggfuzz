@@ -26,7 +26,7 @@ LD = $(CC)
 BIN := honggfuzz
 HFUZZ_CC_BINS := hfuzz_cc/hfuzz-clang hfuzz_cc/hfuzz-clang++ hfuzz_cc/hfuzz-gcc hfuzz_cc/hfuzz-g++
 HFUZZ_CC_SRCS := hfuzz_cc/hfuzz-cc.c
-COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=131072 -Wno-format-truncation
+COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=131072 -Wno-format-truncation -Wno-unknown-warning
 COMMON_LDFLAGS := -lm libcommon/libcommon.a
 COMMON_SRCS := $(sort $(wildcard *.c))
 CFLAGS ?= -O3
