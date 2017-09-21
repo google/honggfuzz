@@ -1338,6 +1338,13 @@ bool arch_ptraceWaitForPidStop(pid_t pid)
 #define MAX_THREAD_IN_TASK 4096
 bool arch_ptraceAttach(honggfuzz_t * hfuzz, pid_t pid)
 {
+/*
+ * It should be present since, at least, Linux kernel 3.8, but
+ * not always defined in kernel-headers
+ */
+#if !defined(PTRACE_O_EXITKILL)
+#define PTRACE_O_EXITKILL (1 << 20)
+#endif                          /* !defined(PTRACE_O_EXITKILL) */
     long seize_options = PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK;
     if (hfuzz->linux.pid == 0) {
         seize_options |= PTRACE_O_EXITKILL;
