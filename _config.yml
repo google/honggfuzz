@@ -1,8 +1,0 @@
-title: Honggfuzz
-description: "Security oriented fuzzer with powerful analysis options. Supports evolutionary, feedback-driven fuzzing based on code coverage (software- and hardware-based)"
-google_analytics: 
-show_downloads: true
-theme: jekyll-theme-minimal
-
-gems:
-  - jekyll-mentions
