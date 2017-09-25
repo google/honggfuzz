@@ -42,7 +42,7 @@ index 0000000..690d91f
 +
 +echo "Compiling NGHTTP2"
 +cd "$NGHTTP2_PATH"
-+CFLAGS="$CFLAGS_SAN" CXXLAGS="$CFLAGS_SAN" ./configure --disable-shared --enable-static
++CFLAGS="$CFLAGS_SAN" CXXFLAGS="$CFLAGS_SAN" ./configure --disable-shared --enable-static
 +make clean
 +make -j$(nproc)
 +cd -
