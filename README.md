@@ -77,6 +77,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__riufuzz__: honggfuzz with AFL-like UI](https://github.com/riusksk/riufuzz)
   * [__h2fuzz__: fuzzing of Apache's HTTP/2 implementation](https://github.com/icing/h2fuzz)
   * [__honggfuzz-dharma__: honggfuzz with dharma grammar fuzzer](https://github.com/Sbouber/honggfuzz-dharma)
+  * [__Owl__: a system for finding concurrency attacks](https://github.com/hku-systems/owl)
 
 **Examples**
 
