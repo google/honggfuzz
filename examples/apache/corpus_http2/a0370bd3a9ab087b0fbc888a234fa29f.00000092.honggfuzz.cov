@@ -1,7 +1,0 @@
-GET /hndhx.html HTTP/1.1
-Eser-Agent::Wget/1.15 (linux-gnu)
-Upgrade: h2
-Host:       0.1:8080
-Connection: Keep-Alive
-
-ð
