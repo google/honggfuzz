@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <linux/ptrace.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>

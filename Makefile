@@ -39,7 +39,7 @@ MARCH ?= $(shell uname -m)
 ifeq ($(OS),Linux)
     ARCH := LINUX
 
-    ARCH_CFLAGS := -std=c11 -I/usr/local/include -I/usr/include \
+    ARCH_CFLAGS := -std=c11 -I/usr/local/include \
                    -Wextra -Wno-override-init \
                    -funroll-loops \
                    -D_FILE_OFFSET_BITS=64
@@ -129,11 +129,11 @@ else ifeq ($(OS),Darwin)
 else
     ARCH := POSIX
     ARCH_SRCS := $(sort $(wildcard posix/*.c))
-    ARCH_CFLAGS := -std=c11 -I/usr/local/include -I/usr/include \
+    ARCH_CFLAGS := -std=c11 -I/usr/local/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
                    -U__STRICT_ANSI__ -funroll-loops
-    ARCH_LDFLAGS := -lpthread -L/usr/local/include -L/usr/include -lrt
+    ARCH_LDFLAGS := -lpthread -L/usr/local/include -lrt
     # CygWin's gcc doesn't accept -fPIC (all code is position independent)
     ifeq (Windows,$(findstring Windows,$(OS)))
       LIBS_CFLAGS = -fno-stack-protector -fno-builtin
