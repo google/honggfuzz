@@ -1,6 +1,6 @@
 diff --git a/compile_and_install.sh b/compile_and_install.sh
 new file mode 100755
-index 0000000..690d91f
+index 000000000..e5d519e03
 --- /dev/null
 +++ b/compile_and_install.sh
 @@ -0,0 +1,62 @@
@@ -15,7 +15,7 @@ index 0000000..690d91f
 +NGHTTP2_VER=1.24.0
 +APR_VER=1.6.2
 +APR_UTIL_VER=1.6.0
-+CFLAGS_SAN=-fsanitize=address
++CFLAGS_SAN="-fsanitize=address"
 +# Another viable option: few
 +APACHE_MODULES=most
 +
@@ -42,7 +42,7 @@ index 0000000..690d91f
 +
 +echo "Compiling NGHTTP2"
 +cd "$NGHTTP2_PATH"
-+CFLAGS="$CFLAGS_SAN" CXXLAGS="$CFLAGS_SAN" ./configure --disable-shared --enable-static
++CFLAGS="$CFLAGS_SAN" CXXFLAGS="$CFLAGS_SAN" ./configure --disable-shared --enable-static
 +make clean
 +make -j$(nproc)
 +cd -
@@ -67,7 +67,7 @@ index 0000000..690d91f
 +make -j$(nproc)
 +make install
 diff --git a/configure.in b/configure.in
-index ef7bd02..27fca57 100644
+index ef7bd0248..27fca57df 100644
 --- a/configure.in
 +++ b/configure.in
 @@ -712,7 +712,7 @@ AC_MSG_CHECKING([for Check to enable unit tests])
@@ -80,7 +80,7 @@ index ef7bd02..27fca57 100644
    AC_MSG_RESULT([yes])
  else
 diff --git a/server/main.c b/server/main.c
-index bda6082..2e4abcc 100644
+index 5196903ce..3a5e57b58 100644
 --- a/server/main.c
 +++ b/server/main.c
 @@ -459,8 +459,84 @@ static void usage(process_rec *process)
