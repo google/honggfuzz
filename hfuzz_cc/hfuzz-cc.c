@@ -199,7 +199,7 @@ static bool getLibHfuzz(void)
     }
     defer {
         close(fd);
-    }
+    };
 
     bool ret = files_writeToFd(fd, &lhfuzz_start, len);
     if (!ret) {
