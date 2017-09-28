@@ -21,8 +21,8 @@
  *
  */
 
-#include "common.h"
 #include "files.h"
+#include "common.h"
 
 #include <dirent.h>
 #include <errno.h>
@@ -306,9 +306,9 @@ size_t files_parseSymbolFilter(const char *srcFile, char ***filterList)
             return 0;
         }
 
-        if ((*filterList =
-             (char **)util_Realloc(*filterList,
-                                   (symbolsRead + 1) * sizeof((*filterList)[0]))) == NULL) {
+        if ((*filterList = (char **)util_Realloc(*filterList,
+                                                 (symbolsRead + 1) * sizeof((*filterList)[0])))
+            == NULL) {
             PLOG_W("realloc failed (sz=%zu)", (symbolsRead + 1) * sizeof((*filterList)[0]));
             return 0;
         }
@@ -384,9 +384,9 @@ void *files_mapSharedMem(size_t sz, int *fd, const char *dir)
 {
     *fd = -1;
 #if defined(_HF_ARCH_LINUX) && defined(__NR_memfd_create)
-#if !defined(MFD_CLOEXEC)       /* It's not defined as we didn't include sys/memfd.h, but it's
+#if !defined(MFD_CLOEXEC)       /* It's not defined as we didn't include sys/memfd.h, but it's \
                                    present with some Linux distros only */
-#define MFD_CLOEXEC		0x0001U
+#define MFD_CLOEXEC 0x0001U
 #endif                          /* !defined(MFD_CLOEXEC) */
     *fd = syscall(__NR_memfd_create, "honggfuzz", (uintptr_t) MFD_CLOEXEC);
 #endif                          /* defined(_HF_ARCH_LINUX) && defined(__NR_memfd_create) */

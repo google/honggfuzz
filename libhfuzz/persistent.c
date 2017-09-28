@@ -3,11 +3,11 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -15,8 +15,8 @@
 
 #include "honggfuzz.h"
 #include "libcommon/common.h"
-#include "libcommon/log.h"
 #include "libcommon/files.h"
+#include "libcommon/log.h"
 
 int LLVMFuzzerTestOneInput(const uint8_t * buf, size_t len) __attribute__ ((weak));
 int LLVMFuzzerInitialize(int *argc, char ***argv) __attribute__ ((weak));

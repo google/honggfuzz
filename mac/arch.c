@@ -34,11 +34,11 @@
 #include <string.h>
 #include <sys/cdefs.h>
 #include <sys/mman.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/resource.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -49,13 +49,13 @@
 #include "sancov.h"
 #include "subproc.h"
 
-#include <servers/bootstrap.h>
-#include <mach/mach.h>
-#include <mach/mach_vm.h>
-#include <mach/mach_types.h>
 #include <mach/i386/thread_status.h>
+#include <mach/mach.h>
+#include <mach/mach_types.h>
+#include <mach/mach_vm.h>
 #include <mach/task_info.h>
 #include <pthread.h>
+#include <servers/bootstrap.h>
 
 #include "mach_exc.h"
 #include "mach_excServer.h"
@@ -66,14 +66,22 @@
  * Interface to third_party/CrashReport_*.o
  */
 /*  *INDENT-OFF* */
-@interface CrashReport : NSObject - (id) initWithTask:(task_t)
-    task exceptionType:(exception_type_t)
-    anExceptionType exceptionCode:(mach_exception_data_t)
-    anExceptionCode exceptionCodeCount:(mach_msg_type_number_t)
-    anExceptionCodeCount thread:(thread_t)
-    thread threadStateFlavor:(thread_state_flavor_t)
-    aThreadStateFlavor threadState:(thread_state_data_t)
-    aThreadState threadStateCount:(mach_msg_type_number_t) aThreadStateCount;
+@interface CrashReport : NSObject
+- (id)initWithTask:(task_t)
+                       task
+         exceptionType:(exception_type_t)
+                           anExceptionType
+         exceptionCode:(mach_exception_data_t)
+                           anExceptionCode
+    exceptionCodeCount:(mach_msg_type_number_t)
+                           anExceptionCodeCount
+                thread:(thread_t)
+                           thread
+     threadStateFlavor:(thread_state_flavor_t)
+                           aThreadStateFlavor
+           threadState:(thread_state_data_t)
+                           aThreadState
+      threadStateCount:(mach_msg_type_number_t)aThreadStateCount;
 @end
 /*  *INDENT-ON* */
 
@@ -288,9 +296,9 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
         return true;
     }
 
-    if (files_writeBufToFile
-        (fuzzer->crashFileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-         O_CREAT | O_EXCL | O_WRONLY) == false) {
+    if (files_writeBufToFile(fuzzer->crashFileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+                             O_CREAT | O_EXCL | O_WRONLY)
+        == false) {
         LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
         return true;
     }
@@ -359,8 +367,9 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     if (task_set_exception_ports(mach_task_self(),
                                  EXC_MASK_CRASH,
                                  exception_port,
-                                 EXCEPTION_STATE_IDENTITY |
-                                 MACH_EXCEPTION_CODES, MACHINE_THREAD_STATE) != KERN_SUCCESS) {
+                                 EXCEPTION_STATE_IDENTITY | MACH_EXCEPTION_CODES,
+                                 MACHINE_THREAD_STATE)
+        != KERN_SUCCESS) {
         return false;
     }
 
@@ -446,9 +455,9 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     /*
      * Insert exception receive port.
      */
-    if (mach_port_insert_right
-        (mach_task_self(), g_exception_port, g_exception_port,
-         MACH_MSG_TYPE_MAKE_SEND) != KERN_SUCCESS) {
+    if (mach_port_insert_right(mach_task_self(), g_exception_port, g_exception_port,
+                               MACH_MSG_TYPE_MAKE_SEND)
+        != KERN_SUCCESS) {
         return false;
     }
 
@@ -512,17 +521,17 @@ write_crash_report(thread_port_t thread,
 
     /*  *INDENT-OFF* */
     _crashReport = [[CrashReport alloc] initWithTask:task
-                    exceptionType:exception
-                    exceptionCode:code
-                    exceptionCodeCount:code_count
-                    thread:thread
-                    threadStateFlavor:*flavor
-                    threadState:(thread_state_t)in_state
-                    threadStateCount:in_state_count];
+                                       exceptionType:exception
+                                       exceptionCode:code
+                                  exceptionCodeCount:code_count
+                                              thread:thread
+                                   threadStateFlavor:*flavor
+                                         threadState:(thread_state_t)in_state
+                                    threadStateCount:in_state_count];
     /*  *INDENT-OFF* */
 
-    NSString *crashDescription =[_crashReport description];
-    char *description = (char *)[crashDescription UTF8String];
+    NSString* crashDescription = [_crashReport description];
+    char* description = (char*)[crashDescription UTF8String];
 
     LOG_D("CrashReport: %s", description);
 
@@ -534,27 +543,27 @@ write_crash_report(thread_port_t thread,
 /* Hash the callstack in an unique way */
 static uint64_t
 hash_callstack(thread_port_t thread,
-               task_port_t task,
-               exception_type_t exception,
-               mach_exception_data_t code,
-               mach_msg_type_number_t code_count,
-               int *flavor,
-               thread_state_t in_state,
-               mach_msg_type_number_t in_state_count)
+    task_port_t task,
+    exception_type_t exception,
+    mach_exception_data_t code,
+    mach_msg_type_number_t code_count,
+    int* flavor,
+    thread_state_t in_state,
+    mach_msg_type_number_t in_state_count)
 {
 
-    NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
-    CrashReport *_crashReport = nil;
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+    CrashReport* _crashReport = nil;
 
     /*  *INDENT-OFF* */
     _crashReport = [[CrashReport alloc] initWithTask:task
-                    exceptionType:exception
-                    exceptionCode:code
-                    exceptionCodeCount:code_count
-                    thread:thread
-                    threadStateFlavor:*flavor
-                    threadState:(thread_state_t)in_state
-                    threadStateCount:in_state_count];
+                                       exceptionType:exception
+                                       exceptionCode:code
+                                  exceptionCodeCount:code_count
+                                              thread:thread
+                                   threadStateFlavor:*flavor
+                                         threadState:(thread_state_t)in_state
+                                    threadStateCount:in_state_count];
     /*  *INDENT-ON* */
 
     NSString *crashDescription =[_crashReport description];
@@ -731,7 +740,8 @@ kern_return_t catch_mach_exception_raise_state_identity( __attribute__ ((unused)
                                                         exception_type_t exception,
                                                         mach_exception_data_t code,
                                                         mach_msg_type_number_t
-                                                        code_count, int *flavor,
+                                                        code_count,
+                                                        int *flavor,
                                                         thread_state_t in_state,
                                                         mach_msg_type_number_t
                                                         in_state_count,

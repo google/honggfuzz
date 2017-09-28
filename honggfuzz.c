@@ -23,8 +23,8 @@
  *
  */
 
-#include <inttypes.h>
 #include <getopt.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,14 +33,14 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "libcommon/common.h"
-#include "libcommon/log.h"
-#include "libcommon/files.h"
-#include "libcommon/util.h"
 #include "cmdline.h"
 #include "display.h"
 #include "fuzz.h"
 #include "input.h"
+#include "libcommon/common.h"
+#include "libcommon/files.h"
+#include "libcommon/log.h"
+#include "libcommon/util.h"
 
 static int sigReceived = 0;
 
@@ -169,13 +169,13 @@ int main(int argc, char **argv)
         LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.blacklistFile);
     }
 #define hfuzzl hfuzz.linux
-    if (hfuzzl.symsBlFile &&
-        ((hfuzzl.symsBlCnt = files_parseSymbolFilter(hfuzzl.symsBlFile, &hfuzzl.symsBl)) == 0)) {
+    if (hfuzzl.symsBlFile
+        && ((hfuzzl.symsBlCnt = files_parseSymbolFilter(hfuzzl.symsBlFile, &hfuzzl.symsBl)) == 0)) {
         LOG_F("Couldn't parse symbols blacklist file ('%s')", hfuzzl.symsBlFile);
     }
 
-    if (hfuzzl.symsWlFile &&
-        ((hfuzzl.symsWlCnt = files_parseSymbolFilter(hfuzzl.symsWlFile, &hfuzzl.symsWl)) == 0)) {
+    if (hfuzzl.symsWlFile
+        && ((hfuzzl.symsWlCnt = files_parseSymbolFilter(hfuzzl.symsWlFile, &hfuzzl.symsWl)) == 0)) {
         LOG_F("Couldn't parse symbols whitelist file ('%s')", hfuzzl.symsWlFile);
     }
 

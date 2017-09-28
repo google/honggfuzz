@@ -27,10 +27,10 @@
 
 #include <inttypes.h>
 #include <math.h>
-#include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "libcommon/common.h"
@@ -41,11 +41,11 @@
 #define ESC_CLEAR_LINE "\033[2K"
 #define ESC_CLEAR_ABOVE "\033[1J"
 #define ESC_TERM_RESET "\033c"
-#define ESC_NAV(x,y) "\033["#x";"#y"H"
+#define ESC_NAV(x, y) "\033[" #x ";" #y "H"
 #define ESC_BOLD "\033[1m"
 #define ESC_RED "\033[31m"
 #define ESC_RESET "\033[0m"
-#define ESC_SCROLL(x,y) "\033["#x";"#y"r"
+#define ESC_SCROLL(x, y) "\033[" #x ";" #y "r"
 #define ESC_SCROLL_DISABLE "\033[?7h"
 
 #if defined(_HF_ARCH_LINUX)
@@ -85,9 +85,9 @@ static unsigned getCpuUse(long num_cpu)
         fclose(f);
     };
     uint64_t userT, niceT, systemT, idleT;
-    if (fscanf
-        (f, "cpu  %" PRIu64 "%" PRIu64 "%" PRIu64 "%" PRIu64, &userT, &niceT, &systemT,
-         &idleT) != 4) {
+    if (fscanf(f, "cpu  %" PRIu64 "%" PRIu64 "%" PRIu64 "%" PRIu64, &userT, &niceT, &systemT,
+               &idleT)
+        != 4) {
         LOG_W("fscanf('/proc/stat') != 4");
         return 0;
     }
@@ -209,15 +209,15 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                 hfuzz->threadsMax, num_cpu, cpuUse, cpuUse / num_cpu);
 
     display_put("       Speed : " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET "/sec"
-                " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n", exec_per_sec,
-                elapsed_second ? (curr_exec_cnt / elapsed_second) : 0);
+                " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n",
+                exec_per_sec, elapsed_second ? (curr_exec_cnt / elapsed_second) : 0);
 
     uint64_t crashesCnt = ATOMIC_GET(hfuzz->crashesCnt);
     /* colored the crash count as red when exist crash */
-    display_put("     Crashes : " ESC_BOLD "%s" "%zu" ESC_RESET " (unique: %s" ESC_BOLD "%zu"
-                ESC_RESET ", blacklist: " ESC_BOLD "%zu" ESC_RESET ", verified: "
-                ESC_BOLD "%zu" ESC_RESET ")\n", crashesCnt > 0 ? ESC_RED : "",
-                hfuzz->crashesCnt, crashesCnt > 0 ? ESC_RED : "",
+    display_put("     Crashes : " ESC_BOLD "%s"
+                "%zu" ESC_RESET " (unique: %s" ESC_BOLD "%zu" ESC_RESET ", blacklist: " ESC_BOLD
+                "%zu" ESC_RESET ", verified: " ESC_BOLD "%zu" ESC_RESET ")\n",
+                crashesCnt > 0 ? ESC_RED : "", hfuzz->crashesCnt, crashesCnt > 0 ? ESC_RED : "",
                 ATOMIC_GET(hfuzz->uniqueCrashesCnt), ATOMIC_GET(hfuzz->blCrashesCnt),
                 ATOMIC_GET(hfuzz->verifiedCrashesCnt));
     display_put("    Timeouts : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET " [%"

@@ -23,10 +23,10 @@
 #include "honggfuzz.h"
 
 /* Exit code is common for all sanitizers */
-#define HF_SAN_EXIT_CODE   103
+#define HF_SAN_EXIT_CODE 103
 
 /* Prefix for sanitizer report files */
-#define kLOGPREFIX          "HF.sanitizer.log"
+#define kLOGPREFIX "HF.sanitizer.log"
 
 /* Directory in workspace to store sanitizer coverage data */
 #define _HF_SANCOV_DIR "HF_SANCOV"

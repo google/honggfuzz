@@ -25,9 +25,9 @@
 #define _HF_HONGGFUZZ_H_
 
 #include <dirent.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <pthread.h>
-#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/param.h>
@@ -51,7 +51,7 @@
 #define _HF_THREAD_NO_ENV "HFUZZ_THREAD_NO"
 
 /* Number of crash verifier iterations before tag crash as stable */
-#define _HF_VERIFIER_ITER   5
+#define _HF_VERIFIER_ITER 5
 
 /* Size (in bytes) for report data to be stored in stack before written to file */
 #define _HF_REPORT_SIZE 8192
@@ -145,13 +145,15 @@ typedef enum {
 struct dynfile_t {
     uint8_t *data;
     size_t size;
-     TAILQ_ENTRY(dynfile_t) pointers;
+     TAILQ_ENTRY(dynfile_t)
+     pointers;
 };
 
 struct strings_t {
     char *s;
     size_t len;
-     TAILQ_ENTRY(strings_t) pointers;
+     TAILQ_ENTRY(strings_t)
+     pointers;
 };
 
 /* Maximum number of active fuzzing threads */
@@ -208,7 +210,8 @@ typedef struct {
     bool exitUponCrash;
 
     const char *dictionaryFile;
-     TAILQ_HEAD(strq_t, strings_t) dictq;
+     TAILQ_HEAD(strq_t, strings_t)
+     dictq;
     size_t dictionaryCnt;
     struct strings_t *dictqCurrent;
 
@@ -218,7 +221,8 @@ typedef struct {
 
     size_t dynfileqCnt;
     pthread_mutex_t dynfileq_mutex;
-     TAILQ_HEAD(dictq_t, dynfile_t) dynfileq;
+     TAILQ_HEAD(dictq_t, dynfile_t)
+     dynfileq;
     struct dynfile_t *dynfileqCurrent;
 
     pthread_mutex_t feedback_mutex;

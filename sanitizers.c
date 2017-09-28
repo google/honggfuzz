@@ -16,8 +16,8 @@
 #include "libcommon/util.h"
 
 /* Stringify */
-#define XSTR(x)         #x
-#define STR(x)          XSTR(x)
+#define XSTR(x) #x
+#define STR(x) XSTR(x)
 
 /*
  * All clang sanitizers, except ASan, can be activated for target binaries
@@ -50,53 +50,52 @@
  */
 
 /* 'log_path' output directory for sanitizer reports */
-#define kSANLOGDIR          "log_path="
+#define kSANLOGDIR "log_path="
 
 /* 'coverage_dir' output directory for coverage data files is set dynamically */
-#define kSANCOVDIR          "coverage_dir="
+#define kSANCOVDIR "coverage_dir="
 
 /* Raise SIGABRT on error or continue with exitcode logic */
-#define kABORT_ENABLED      "abort_on_error=1"
-#define kABORT_DISABLED     "abort_on_error=0"
+#define kABORT_ENABLED "abort_on_error=1"
+#define kABORT_DISABLED "abort_on_error=0"
 
 /*
  * Common sanitizer flags
  *
  * symbolize: Disable symbolication since it changes logs (which are parsed) format
  */
-#define kSAN_COMMON         "symbolize=0"
+#define kSAN_COMMON "symbolize=0"
 
 /* --{ ASan }-- */
 /*
  *Sanitizer specific flags (notice that if enabled 'abort_on_error' has priority
  * over exitcode')
  */
-#define kASAN_COMMON_OPTS   "allow_user_segv_handler=1:"\
-                            "handle_segv=0:"\
-                            "allocator_may_return_null=1:"\
-                            kSAN_COMMON":exitcode=" STR(HF_SAN_EXIT_CODE)
+#define kASAN_COMMON_OPTS "allow_user_segv_handler=1:" \
+                          "handle_segv=0:"             \
+                          "allocator_may_return_null=1:" kSAN_COMMON ":exitcode=" STR(HF_SAN_EXIT_CODE)
 /* Platform specific flags */
 #if defined(__ANDROID__)
 /*
  * start_deactivated: Enable on Android to reduce memory usage (useful when not all
  *                    target's DSOs are compiled with sanitizer enabled
  */
-#define kASAN_OPTS          kASAN_COMMON_OPTS":start_deactivated=1"
+#define kASAN_OPTS kASAN_COMMON_OPTS ":start_deactivated=1"
 #else
-#define kASAN_OPTS          kASAN_COMMON_OPTS
+#define kASAN_OPTS kASAN_COMMON_OPTS
 #endif
 
 /* --{ UBSan }-- */
-#define kUBSAN_OPTS         kSAN_COMMON":exitcode=" STR(HF_SAN_EXIT_CODE)
+#define kUBSAN_OPTS kSAN_COMMON ":exitcode=" STR(HF_SAN_EXIT_CODE)
 
 /* --{ MSan }-- */
-#define kMSAN_OPTS          kSAN_COMMON":exit_code=" STR(HF_SAN_EXIT_CODE) ":"\
-                            "wrap_signals=0:print_stats=1"
+#define kMSAN_OPTS kSAN_COMMON ":exit_code=" STR(HF_SAN_EXIT_CODE) ":" \
+                                                                   "wrap_signals=0:print_stats=1"
 
 /* If no sanitzer support was requested, simply make it use abort() on errors */
-#define kSAN_REGULAR        "abort_on_error=1:handle_segv=0:handle_sigbus=0:handle_abort=0:" \
-                            "handle_sigill=0:handle_sigfpe=0:allocator_may_return_null=1:" \
-                            "symbolize=1:detect_leaks=0:disable_coredump=0:log_path=stderr"
+#define kSAN_REGULAR "abort_on_error=1:handle_segv=0:handle_sigbus=0:handle_abort=0:" \
+                     "handle_sigill=0:handle_sigfpe=0:allocator_may_return_null=1:"   \
+                     "symbolize=1:detect_leaks=0:disable_coredump=0:log_path=stderr"
 
 /*
  * If the program ends with a signal that ASan does not handle (or can not
@@ -106,7 +105,7 @@
  * memory-mapped file as soon as it collected. Non-Android targets can disable
  * coverage direct when more coverage data collection methods are implemented.
  */
-#define kSAN_COV_OPTS  "coverage=1:coverage_direct=1"
+#define kSAN_COV_OPTS "coverage=1:coverage_direct=1"
 
 static bool sanitizers_Regular(void)
 {

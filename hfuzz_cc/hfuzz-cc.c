@@ -25,7 +25,7 @@
 static bool isCXX = false;
 static bool isGCC = false;
 
-    /*  *INDENT-OFF* */
+/*  *INDENT-OFF* */
 /* Embed libhfuzz.a inside this binary */
 __asm__("\n"
         "   .global lhfuzz_start\n"
@@ -33,8 +33,8 @@ __asm__("\n"
         "lhfuzz_start:\n"
         "   .incbin \"libhfuzz/libhfuzz.a\"\n"
         "lhfuzz_end:\n"
-		"\n");
-    /*  *INDENT-ON* */
+        "\n");
+/*  *INDENT-ON* */
 
 static bool useASAN()
 {

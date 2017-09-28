@@ -312,7 +312,6 @@ static int sancov_qsortCmp(const void *a, const void *b)
         LOG_W("Duplicate map start addr detected");
         return 0;
     }
-
 }
 
 static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
@@ -509,9 +508,8 @@ static bool sancov_sanCovParseRaw(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                     {
                         MX_SCOPED_LOCK(&hfuzz->sanCov_mutex);
 
-                        curMap =
-                            sancov_trieSearch(hfuzz->covMetadata->children,
-                                              mapsBuf[bestFit].mapName);
+                        curMap = sancov_trieSearch(hfuzz->covMetadata->children,
+                                                   mapsBuf[bestFit].mapName);
                         if (curMap == NULL) {
                             LOG_E("Corrupted Trie - '%s' not found", mapsBuf[bestFit].mapName);
                             continue;

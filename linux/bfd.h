@@ -24,8 +24,8 @@
 #ifndef _HF_LINUX_BFD_H_
 #define _HF_LINUX_BFD_H_
 
-#include <limits.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <sys/types.h>
 
 #include "linux/unwind.h"

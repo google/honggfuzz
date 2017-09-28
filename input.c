@@ -84,8 +84,8 @@ static bool input_getDirStatsAndRewind(honggfuzz_t * hfuzz)
             continue;
         }
         if (hfuzz->maxFileSz != 0UL && st.st_size > (off_t) hfuzz->maxFileSz) {
-            LOG_W("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %"
-                  PRId64, fname, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
+            LOG_W("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %" PRId64,
+                  fname, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
         }
         if (st.st_size == 0U) {
             LOG_W("File '%s' is empty", fname);
@@ -236,8 +236,8 @@ bool input_parseDictionary(honggfuzz_t * hfuzz)
         }
         char bufn[1025] = { 0 };
         char bufv[1025] = { 0 };
-        if (sscanf(lineptr, "\"%1024s", bufv) != 1 &&
-            sscanf(lineptr, "%1024[^=]=\"%1024s", bufn, bufv) != 2) {
+        if (sscanf(lineptr, "\"%1024s", bufv) != 1
+            && sscanf(lineptr, "%1024[^=]=\"%1024s", bufn, bufv) != 2) {
             LOG_W("Incorrect dictionary entry: '%s'. Skipping", lineptr);
             continue;
         }
@@ -277,9 +277,10 @@ bool input_parseBlacklist(honggfuzz_t * hfuzz)
             break;
         }
 
-        if ((hfuzz->blacklist =
-             util_Realloc(hfuzz->blacklist,
-                          (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]))) == NULL) {
+        if ((hfuzz->blacklist = util_Realloc(hfuzz->blacklist,
+                                             (hfuzz->blacklistCnt +
+                                              1) * sizeof(hfuzz->blacklist[0])))
+            == NULL) {
             PLOG_W("realloc failed (sz=%zu)",
                    (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]));
             return false;

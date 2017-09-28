@@ -31,15 +31,15 @@
 #include <sched.h>
 #endif                          /* defined(_HF_ARCH_LINUX) */
 #include <signal.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/queue.h>
 #include <unistd.h>
 
 #include "libcommon/common.h"
-#include "libcommon/log.h"
 #include "libcommon/files.h"
+#include "libcommon/log.h"
 #include "libcommon/util.h"
 
 struct custom_option {
@@ -138,7 +138,8 @@ rlim_t cmdlineParseRLimit(int res, const char *optarg, unsigned long mul)
 bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 {
     /*  *INDENT-OFF* */
-    (*hfuzz) = (honggfuzz_t) {
+    (*hfuzz) = (honggfuzz_t)
+    {
         .cmdline = NULL,
         .cmdline_txt[0] = '\0',
         .inputDir = NULL,
@@ -169,9 +170,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .reportFile = NULL,
         .asLimit = 0ULL,
         .clearEnv = false,
-        .envs = {
-            [0 ... (ARRAYSIZE(hfuzz->envs) - 1)] = NULL,
-        },
+        .envs[0] = NULL,
         .persistent = false,
         .tmout_vtalrm = false,
         .skipFeedbackOnTimeout = false,
@@ -217,45 +216,43 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
             .crashesCnt = 0ULL,
         },
 
-        .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER,
-        .sanOpts = {
+        .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER, .sanOpts = {
             .asanOpts = NULL,
             .msanOpts = NULL,
             .ubsanOpts = NULL,
         },
-        .useSanCov = false,
-        .covMetadata = NULL,
+        .useSanCov = false, .covMetadata = NULL,
 
         .report_mutex = PTHREAD_MUTEX_INITIALIZER,
 
         /* Linux code */
-        .linux = {
-            .exeFd = -1,
-            .hwCnts = {
-                .cpuInstrCnt = 0ULL,
-                .cpuBranchCnt = 0ULL,
-                .bbCnt = 0ULL,
-                .newBBCnt = 0ULL,
-                .softCntPc = 0ULL,
-                .softCntCmp = 0ULL,
+            .linux = {
+                .exeFd = -1,
+                .hwCnts = {
+                    .cpuInstrCnt = 0ULL,
+                    .cpuBranchCnt = 0ULL,
+                    .bbCnt = 0ULL,
+                    .newBBCnt = 0ULL,
+                    .softCntPc = 0ULL,
+                    .softCntCmp = 0ULL,
+                },
+                .dynamicCutOffAddr = ~(0ULL),
+                .disableRandomization = true,
+                .ignoreAddr = NULL,
+                .numMajorFrames = 7,
+                .pid = 0,
+                .pidFile = NULL,
+                .pidCmd = NULL,
+                .symsBlFile = NULL,
+                .symsBlCnt = 0,
+                .symsBl = NULL,
+                .symsWlFile = NULL,
+                .symsWlCnt = 0,
+                .symsWl = NULL,
+                .cloneFlags = 0,
+                .kernelOnly = false,
+                .useClone = true,
             },
-            .dynamicCutOffAddr = ~(0ULL),
-            .disableRandomization = true,
-            .ignoreAddr = NULL,
-            .numMajorFrames = 7,
-            .pid = 0,
-            .pidFile = NULL,
-            .pidCmd = NULL,
-            .symsBlFile = NULL,
-            .symsBlCnt = 0,
-            .symsBl = NULL,
-            .symsWlFile = NULL,
-            .symsWlCnt = 0,
-            .symsWl = NULL,
-            .cloneFlags = 0,
-            .kernelOnly = false,
-            .useClone = true,
-        },
     };
     /*  *INDENT-ON* */
 
@@ -264,59 +261,59 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 
     /*  *INDENT-OFF* */
     struct custom_option custom_opts[] = {
-        {{"help", no_argument, NULL, 'h'}, "Help plz.."},
-        {{"input", required_argument, NULL, 'f'}, "Path to a directory containing initial file corpus"},
-        {{"persistent", no_argument, NULL, 'P'}, "Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code)"},
-        {{"instrument", no_argument, NULL, 'z'}, "Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)"},
-        {{"sancov", no_argument, NULL, 'C'}, "Enable sanitizer coverage feedback"},
-        {{"keep_output", no_argument, NULL, 'Q'}, "Don't close children's stdin, stdout, stderr; can be noisy"},
-        {{"timeout", required_argument, NULL, 't'}, "Timeout in seconds (default: '10')"},
-        {{"threads", required_argument, NULL, 'n'}, "Number of concurrent fuzzing threads (default: number of CPUs / 2)"},
-        {{"stdin_input", no_argument, NULL, 's'}, "Provide fuzzing input on STDIN, instead of ___FILE___"},
-        {{"mutation_rate", required_argument, NULL, 'r'}, "Maximal mutation rate in relation to the file size, (default: '0.001')"},
-        {{"logfile", required_argument, NULL, 'l'}, "Log file"},
-        {{"verbose", no_argument, NULL, 'v'}, "Disable ANSI console; use simple log output"},
-        {{"verifier", no_argument, NULL, 'V'}, "Enable crashes verifier"},
-        {{"debug_level", required_argument, NULL, 'd'}, "Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])"},
-        {{"extension", required_argument, NULL, 'e'}, "Input file extension (e.g. 'swf'), (default: 'fuzz')"},
-        {{"workspace", required_argument, NULL, 'W'}, "Workspace directory to save crashes & runtime files (default: '.')"},
-        {{"covdir", required_argument, NULL, 0x103}, "New coverage is written to a separate directory (default: use the input directory)"},
-        {{"dict", required_argument, NULL, 'w'}, "Dictionary file. Format:http://llvm.org/docs/LibFuzzer.html#dictionaries"},
-        {{"stackhash_bl", required_argument, NULL, 'B'}, "Stackhashes blacklist file (one entry per line)"},
-        {{"mutate_cmd", required_argument, NULL, 'c'}, "External command producing fuzz files (instead of internal mutators)"},
-        {{"pprocess_cmd", required_argument, NULL, 0x104}, "External command postprocessing files produced by internal mutators"},
-        {{"run_time", required_argument, NULL, 0x109}, "Number of seconds this fuzzing session will last (default: '0' [no limit])"},
-        {{"iterations", required_argument, NULL, 'N'}, "Number of fuzzing iterations (default: '0' [no limit])"},
-        {{"rlimit_as", required_argument, NULL, 0x100}, "Per process memory limit in MiB (default: '0' [no limit])"},
-        {{"report", required_argument, NULL, 'R'}, "Write report to this file (default: '" _HF_REPORT_FILE "')"},
-        {{"max_file_size", required_argument, NULL, 'F'}, "Maximal size of files processed by the fuzzer in bytes (default: '1048576')"},
-        {{"clear_env", no_argument, NULL, 0x101}, "Clear all environment variables before executing the binary"},
-        {{"env", required_argument, NULL, 'E'}, "Pass this environment variable, can be used multiple times"},
-        {{"save_all", no_argument, NULL, 'u'}, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames"},
-        {{"tmout_sigvtalrm", no_argument, NULL, 'T'}, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)"},
-        {{"sanitizers", no_argument, NULL, 'S'}, "Enable sanitizers settings (default: false)"},
-        {{"monitor_sigabrt", required_argument, NULL, 0x105}, "Monitor SIGABRT (default: 'false for Android - 'true for other platforms)"},
-        {{"no_fb_timeout", required_argument, NULL, 0x106}, "Skip feedback if the process has timeouted (default: 'false')"},
-        {{"exit_upon_crash", no_argument, NULL, 0x107}, "Exit upon seeing the first crash (default: 'false')"},
+        { { "help", no_argument, NULL, 'h' }, "Help plz.." },
+        { { "input", required_argument, NULL, 'f' }, "Path to a directory containing initial file corpus" },
+        { { "persistent", no_argument, NULL, 'P' }, "Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code)" },
+        { { "instrument", no_argument, NULL, 'z' }, "Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)" },
+        { { "sancov", no_argument, NULL, 'C' }, "Enable sanitizer coverage feedback" },
+        { { "keep_output", no_argument, NULL, 'Q' }, "Don't close children's stdin, stdout, stderr; can be noisy" },
+        { { "timeout", required_argument, NULL, 't' }, "Timeout in seconds (default: '10')" },
+        { { "threads", required_argument, NULL, 'n' }, "Number of concurrent fuzzing threads (default: number of CPUs / 2)" },
+        { { "stdin_input", no_argument, NULL, 's' }, "Provide fuzzing input on STDIN, instead of ___FILE___" },
+        { { "mutation_rate", required_argument, NULL, 'r' }, "Maximal mutation rate in relation to the file size, (default: '0.001')" },
+        { { "logfile", required_argument, NULL, 'l' }, "Log file" },
+        { { "verbose", no_argument, NULL, 'v' }, "Disable ANSI console; use simple log output" },
+        { { "verifier", no_argument, NULL, 'V' }, "Enable crashes verifier" },
+        { { "debug_level", required_argument, NULL, 'd' }, "Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])" },
+        { { "extension", required_argument, NULL, 'e' }, "Input file extension (e.g. 'swf'), (default: 'fuzz')" },
+        { { "workspace", required_argument, NULL, 'W' }, "Workspace directory to save crashes & runtime files (default: '.')" },
+        { { "covdir", required_argument, NULL, 0x103 }, "New coverage is written to a separate directory (default: use the input directory)" },
+        { { "dict", required_argument, NULL, 'w' }, "Dictionary file. Format:http://llvm.org/docs/LibFuzzer.html#dictionaries" },
+        { { "stackhash_bl", required_argument, NULL, 'B' }, "Stackhashes blacklist file (one entry per line)" },
+        { { "mutate_cmd", required_argument, NULL, 'c' }, "External command producing fuzz files (instead of internal mutators)" },
+        { { "pprocess_cmd", required_argument, NULL, 0x104 }, "External command postprocessing files produced by internal mutators" },
+        { { "run_time", required_argument, NULL, 0x109 }, "Number of seconds this fuzzing session will last (default: '0' [no limit])" },
+        { { "iterations", required_argument, NULL, 'N' }, "Number of fuzzing iterations (default: '0' [no limit])" },
+        { { "rlimit_as", required_argument, NULL, 0x100 }, "Per process memory limit in MiB (default: '0' [no limit])" },
+        { { "report", required_argument, NULL, 'R' }, "Write report to this file (default: '" _HF_REPORT_FILE "')" },
+        { { "max_file_size", required_argument, NULL, 'F' }, "Maximal size of files processed by the fuzzer in bytes (default: '1048576')" },
+        { { "clear_env", no_argument, NULL, 0x101 }, "Clear all environment variables before executing the binary" },
+        { { "env", required_argument, NULL, 'E' }, "Pass this environment variable, can be used multiple times" },
+        { { "save_all", no_argument, NULL, 'u' }, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames" },
+        { { "tmout_sigvtalrm", no_argument, NULL, 'T' }, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)" },
+        { { "sanitizers", no_argument, NULL, 'S' }, "Enable sanitizers settings (default: false)" },
+        { { "monitor_sigabrt", required_argument, NULL, 0x105 }, "Monitor SIGABRT (default: 'false for Android - 'true for other platforms)" },
+        { { "no_fb_timeout", required_argument, NULL, 0x106 }, "Skip feedback if the process has timeouted (default: 'false')" },
+        { { "exit_upon_crash", no_argument, NULL, 0x107 }, "Exit upon seeing the first crash (default: 'false')" },
 
 #if defined(_HF_ARCH_LINUX)
-        {{"linux_symbols_bl", required_argument, NULL, 0x504}, "Symbols blacklist filter file (one entry per line)"},
-        {{"linux_symbols_wl", required_argument, NULL, 0x505}, "Symbols whitelist filter file (one entry per line)"},
-        {{"linux_pid", required_argument, NULL, 'p'}, "Attach to a pid (and its thread group)"},
-        {{"linux_file_pid", required_argument, NULL, 0x502}, "Attach to pid (and its thread group) read from file"},
-        {{"linux_addr_low_limit", required_argument, NULL, 0x500}, "Address limit (from si.si_addr) below which crashes are not reported, (default: '0')"},
-        {{"linux_keep_aslr", no_argument, NULL, 0x501}, "Don't disable ASLR randomization, might be useful with MSAN"},
-        {{"linux_perf_ignore_above", required_argument, NULL, 0x503}, "Ignore perf events which report IPs above this address"},
-        {{"linux_perf_instr", no_argument, NULL, 0x510}, "Use PERF_COUNT_HW_INSTRUCTIONS perf"},
-        {{"linux_perf_branch", no_argument, NULL, 0x511}, "Use PERF_COUNT_HW_BRANCH_INSTRUCTIONS perf"},
-        {{"linux_perf_bts_edge", no_argument, NULL, 0x513}, "Use Intel BTS to count unique edges"},
-        {{"linux_perf_ipt_block", no_argument, NULL, 0x514}, "Use Intel Processor Trace to count unique blocks (requires libipt.so)"},
-        {{"linux_perf_kernel_only", no_argument, NULL, 0x515}, "Gather kernel-only coverage with Intel PT and with Intel BTS"},
-        {{"linux_ns_net", no_argument, NULL, 0x0530}, "Use Linux NET namespace isolation"},
-        {{"linux_ns_pid", no_argument, NULL, 0x0531}, "Use Linux PID namespace isolation"},
-        {{"linux_ns_ipc", no_argument, NULL, 0x0532}, "Use Linux IPC namespace isolation"},
-#endif  // defined(_HF_ARCH_LINUX)
-        {{0, 0, 0, 0}, NULL},
+        { { "linux_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blacklist filter file (one entry per line)" },
+        { { "linux_symbols_wl", required_argument, NULL, 0x505 }, "Symbols whitelist filter file (one entry per line)" },
+        { { "linux_pid", required_argument, NULL, 'p' }, "Attach to a pid (and its thread group)" },
+        { { "linux_file_pid", required_argument, NULL, 0x502 }, "Attach to pid (and its thread group) read from file" },
+        { { "linux_addr_low_limit", required_argument, NULL, 0x500 }, "Address limit (from si.si_addr) below which crashes are not reported, (default: '0')" },
+        { { "linux_keep_aslr", no_argument, NULL, 0x501 }, "Don't disable ASLR randomization, might be useful with MSAN" },
+        { { "linux_perf_ignore_above", required_argument, NULL, 0x503 }, "Ignore perf events which report IPs above this address" },
+        { { "linux_perf_instr", no_argument, NULL, 0x510 }, "Use PERF_COUNT_HW_INSTRUCTIONS perf" },
+        { { "linux_perf_branch", no_argument, NULL, 0x511 }, "Use PERF_COUNT_HW_BRANCH_INSTRUCTIONS perf" },
+        { { "linux_perf_bts_edge", no_argument, NULL, 0x513 }, "Use Intel BTS to count unique edges" },
+        { { "linux_perf_ipt_block", no_argument, NULL, 0x514 }, "Use Intel Processor Trace to count unique blocks (requires libipt.so)" },
+        { { "linux_perf_kernel_only", no_argument, NULL, 0x515 }, "Gather kernel-only coverage with Intel PT and with Intel BTS" },
+        { { "linux_ns_net", no_argument, NULL, 0x0530 }, "Use Linux NET namespace isolation" },
+        { { "linux_ns_pid", no_argument, NULL, 0x0531 }, "Use Linux PID namespace isolation" },
+        { { "linux_ns_ipc", no_argument, NULL, 0x0532 }, "Use Linux IPC namespace isolation" },
+#endif // defined(_HF_ARCH_LINUX)
+        { { 0, 0, 0, 0 }, NULL },
     };
     /*  *INDENT-ON* */
 
@@ -396,8 +393,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         case 'n':
             hfuzz->threadsMax = atol(optarg);
             break;
-        case 0x109:
-            {
+        case 0x109:{
                 time_t p = atol(optarg);
                 if (p > 0) {
                     hfuzz->runEndTime = time(NULL) + p;

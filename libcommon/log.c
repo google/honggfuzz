@@ -19,8 +19,8 @@
 
 */
 
-#include "common.h"
 #include "log.h"
+#include "common.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -40,9 +40,9 @@
 
 #if defined(_HF_ARCH_LINUX)
 #include <sys/syscall.h>
-#define __hf_pid()      (pid_t) syscall(__NR_gettid)
+#define __hf_pid() (pid_t) syscall(__NR_gettid)
 #else                           /* defined(_HF_ARCH_LINUX) */
-#define __hf_pid()      getpid()
+#define __hf_pid() getpid()
 #endif                          /* defined(_HF_ARCH_LINUX) */
 
 static int log_fd = STDERR_FILENO;

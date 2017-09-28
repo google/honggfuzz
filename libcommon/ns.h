@@ -26,6 +26,9 @@
 
 #if defined(_HF_ARCH_LINUX)
 
+#include <inttypes.h>
+#include <stdbool.h>
+
 bool nsEnter(uintptr_t cloneFlags);
 bool nsIfaceUp(const char *ifacename);
 bool nsMountTmpfs(const char *dst);

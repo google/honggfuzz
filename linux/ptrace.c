@@ -29,11 +29,11 @@
 #include <endian.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
 #include <sys/cdefs.h>
 #include <sys/personality.h>
 #include <sys/ptrace.h>
@@ -64,19 +64,19 @@
 
 #if defined(__i386__) || defined(__arm__) || defined(__powerpc__)
 #define REG_TYPE uint32_t
-#define REG_PM   PRIx32
-#define REG_PD   "0x%08"
+#define REG_PM PRIx32
+#define REG_PD "0x%08"
 #elif defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__) || defined(__mips__) || defined(__mips64__)
 #define REG_TYPE uint64_t
-#define REG_PM   PRIx64
-#define REG_PD   "0x%016"
+#define REG_PM PRIx64
+#define REG_PD "0x%016"
 #endif
 
 /*
  * Size in characters required to store a string representation of a
  * register value (0xdeadbeef style))
  */
-#define REGSIZEINCHAR   (2 * sizeof(REG_TYPE) + 3)
+#define REGSIZEINCHAR (2 * sizeof(REG_TYPE) + 3)
 
 #if defined(__i386__) || defined(__x86_64__)
 #define MAX_INSTR_SZ 16
@@ -246,11 +246,11 @@ struct user_regs_struct {
 
 /*  *INDENT-OFF* */
 static struct {
-    const char *descr;
+    const char* descr;
     bool important;
 } arch_sigs[_NSIG + 1] = {
-    [0 ... (_NSIG)].important = false,
-    [0 ... (_NSIG)].descr = "UNKNOWN",
+    [0 ...(_NSIG)].important = false,
+    [0 ...(_NSIG)].descr = "UNKNOWN",
 
     [SIGTRAP].important = false,
     [SIGTRAP].descr = "SIGTRAP",
@@ -282,7 +282,7 @@ static struct {
 /*  *INDENT-ON* */
 
 #ifndef SI_FROMUSER
-#define SI_FROMUSER(siptr)      ((siptr)->si_code <= 0)
+#define SI_FROMUSER(siptr) ((siptr)->si_code <= 0)
 #endif                          /* SI_FROMUSER */
 
 extern const char *sys_sigabbrev[];
@@ -678,8 +678,8 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
 
     arch_getInstrStr(pid, &pc, instr);
 
-    LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %"
-          REG_PM ", instr: '%s'", pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
+    LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %" REG_PM ", instr: '%s'", pid,
+          si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
 
     if (!SI_FROMUSER(&si) && pc && si.si_addr < hfuzz->linux.ignoreAddr) {
         LOG_I("'%s' is interesting (%s), but the si.si_addr is %p (below %p), skipping",
@@ -840,9 +840,9 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
         return;
     }
 
-    if (files_writeBufToFile
-        (fuzzer->crashFileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-         O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC) == false) {
+    if (files_writeBufToFile(fuzzer->crashFileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+                             O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC)
+        == false) {
         LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
         return;
     }
@@ -1172,8 +1172,7 @@ static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status,
 {
     LOG_D("PID: %d, Ptrace event: %d", pid, __WEVENT(status));
     switch (__WEVENT(status)) {
-    case PTRACE_EVENT_EXIT:
-        {
+    case PTRACE_EVENT_EXIT:{
             unsigned long event_msg;
             if (ptrace(PTRACE_GETEVENTMSG, pid, NULL, &event_msg) == -1) {
                 PLOG_E("ptrace(PTRACE_GETEVENTMSG,%d) failed", pid);

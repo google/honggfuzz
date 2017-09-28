@@ -276,6 +276,7 @@ clean:
 
 .PHONY: indent
 indent:
+	clang-format -style=WebKit -sort-includes -i *.c *.h */*.c */*.h
 	indent -linux -l100 -lc100 -nut -i4 *.c *.h */*.c */*.h; rm -f *~ */*~
 
 .PHONY: depend

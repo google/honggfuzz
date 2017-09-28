@@ -21,8 +21,8 @@
  *
  */
 
-#include "common.h"
 #include "ns.h"
+#include "common.h"
 
 #include "files.h"
 #include "log.h"
@@ -32,11 +32,11 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <net/if.h>
+#include <sched.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <sched.h>
 #include <sys/ioctl.h>
 #include <sys/mount.h>
 #include <sys/socket.h>

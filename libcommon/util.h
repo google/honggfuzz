@@ -35,7 +35,9 @@
 
 #define MX_LOCK(m) util_mutexLock(m, __func__, __LINE__)
 #define MX_UNLOCK(m) util_mutexUnlock(m, __func__, __LINE__)
-#define MX_SCOPED_LOCK(m) MX_LOCK(m); defer { MX_UNLOCK(m); }
+#define MX_SCOPED_LOCK(m) \
+    MX_LOCK(m);           \
+    defer { MX_UNLOCK(m); }
 
 /* Atomics */
 #define ATOMIC_GET(x) __atomic_load_n(&(x), __ATOMIC_SEQ_CST)
@@ -73,9 +75,8 @@ static inline uint8_t ATOMIC_BTS(uint8_t * addr, size_t offset)
     /*  *INDENT-OFF* */
     __asm__("lock btsq %2, %1\n"
             "sbb %0, %0\n"
-            :"=r"(oldbit), "+m"(*addr)
-            :"Ir"(offset % 8)
-    );
+            : "=r"(oldbit), "+m"(*addr)
+            : "Ir"(offset % 8));
     /*  *INDENT-ON* */
 #else
     oldbit = ATOMIC_POST_OR(*addr, ((uint8_t) 1U << (offset % 8)));

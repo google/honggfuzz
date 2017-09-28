@@ -23,11 +23,11 @@
 
 #include "unwind.h"
 
+#include <endian.h>
+#include <libunwind-ptrace.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <endian.h>
-#include <libunwind-ptrace.h>
 
 #include "libcommon/common.h"
 #include "libcommon/log.h"

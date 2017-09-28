@@ -23,12 +23,12 @@
 
 #include "libcommon/common.h"
 
-#include <linux/perf_event.h>
 #include <inttypes.h>
+#include <linux/perf_event.h>
 
-#include "pt.h"
 #include "libcommon/log.h"
 #include "libcommon/util.h"
+#include "pt.h"
 
 #ifdef _HF_LINUX_INTEL_PT_LIB
 
