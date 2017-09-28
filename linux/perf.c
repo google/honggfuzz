@@ -322,6 +322,18 @@ bool arch_perfEnable(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     return true;
 }
 
+static void arch_perfMmapReset(fuzzer_t * fuzzer)
+{
+    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
+    ATOMIC_SET(pem->data_head, 0);
+    ATOMIC_SET(pem->data_tail, 0);
+#if defined(PERF_ATTR_SIZE_VER5)
+    ATOMIC_SET(pem->aux_head, 0);
+    ATOMIC_SET(pem->aux_tail, 0);
+#endif                          /* defined(PERF_ATTR_SIZE_VER5) */
+    wmb();
+}
+
 void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
@@ -351,20 +363,11 @@ void arch_perfAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         arch_perfMmapParse(hfuzz, fuzzer);
+        arch_perfMmapReset(fuzzer);
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
         arch_perfMmapParse(hfuzz, fuzzer);
-    }
-
-    if (fuzzer->linux.perfMmapBuf != NULL) {
-        struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
-        ATOMIC_SET(pem->data_head, 0);
-        ATOMIC_SET(pem->data_tail, 0);
-#if defined(PERF_ATTR_SIZE_VER5)
-        ATOMIC_SET(pem->aux_head, 0);
-        ATOMIC_SET(pem->aux_tail, 0);
-#endif                          /* defined(PERF_ATTR_SIZE_VER5) */
-        wmb();
+        arch_perfMmapReset(fuzzer);
     }
 
     fuzzer->linux.hwCnts.cpuInstrCnt = instrCount;
