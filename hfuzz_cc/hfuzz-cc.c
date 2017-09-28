@@ -1,5 +1,3 @@
-#include "libcommon/common.h"
-
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -14,6 +12,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "libcommon/common.h"
 #include "libcommon/files.h"
 #include "libcommon/log.h"
 #include "libcommon/util.h"
@@ -141,20 +140,20 @@ static int execCC(int argc, char **argv)
 }
 
 /* It'll point back to the libhfuzz's source tree */
-char *getLibHfuzzIncPath(void)
+char *getIncPaths(void)
 {
-#if !defined(_HFUZZ_LHFUZZ_INC_PATH)
-#error "You need to define _HFUZZ_LHFUZZ_INC_PATH"
+#if !defined(_HFUZZ_INC_PATH)
+#error "You need to define _HFUZZ_INC_PATH"
 #endif
 
     static char path[PATH_MAX];
-    snprintf(path, sizeof(path), "-I%s", _XSTR(_HFUZZ_LHFUZZ_INC_PATH));
+    snprintf(path, sizeof(path), "-I%s", _XSTR(_HFUZZ_INC_PATH));
     return path;
 }
 
 static void commonOpts(int *j, char **args)
 {
-    args[(*j)++] = getLibHfuzzIncPath();
+    args[(*j)++] = getIncPaths();
     if (isGCC) {
         /* That's the best gcc-6/7 currently offers */
         args[(*j)++] = "-fsanitize-coverage=trace-pc";
@@ -198,14 +197,15 @@ static bool getLibHfuzz(void)
         PLOG_E("mkostemp('%s')", template);
         return false;
     }
+    defer {
+        close(fd);
+    }
 
     bool ret = files_writeToFd(fd, &lhfuzz_start, len);
     if (!ret) {
         PLOG_E("Couldn't write to '%s'", template);
-        close(fd);
         return false;
     }
-    close(fd);
 
     if (rename(template, LHFUZZ_A_PATH) == -1) {
         PLOG_E("Couldn't rename('%s', '%s')", template, LHFUZZ_A_PATH);

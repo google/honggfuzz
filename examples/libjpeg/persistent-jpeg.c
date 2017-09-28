@@ -11,7 +11,7 @@ extern "C" {
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <libhfuzz.h>
+#include <libhfuzz/libhfuzz.h>
 
 #include "cderror.h"
 #include "jpeglib.h"

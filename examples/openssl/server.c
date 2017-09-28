@@ -12,7 +12,7 @@ extern "C" {
 #include <string.h>
 #include <unistd.h>
 
-#include <libhfuzz.h>
+#include <libhfuzz/libhfuzz.h>
 
 static const uint8_t kCertificateDER[] = {
     0x30, 0x82, 0x05, 0x65, 0x30, 0x82, 0x03, 0x4d, 0x02, 0x09, 0x00, 0xe8,

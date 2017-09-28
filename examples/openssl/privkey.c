@@ -2,7 +2,7 @@
 #include <openssl/evp.h>
 #include <inttypes.h>
 
-#include <libhfuzz.h>
+#include <libhfuzz/libhfuzz.h>
 
 #ifdef __cplusplus
 extern "C" {

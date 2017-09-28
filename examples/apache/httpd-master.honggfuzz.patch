@@ -89,7 +89,7 @@ index 5196903ce..3a5e57b58 100644
  
 -int main(int argc, const char * const argv[])
 -{
-+#include <libhfuzz.h>
++#include <libhfuzz/libhfuzz.h>
 +
 +static void GETDATA(void *unused) {
 +  usleep(100000);

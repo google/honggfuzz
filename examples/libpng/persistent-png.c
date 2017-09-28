@@ -12,7 +12,7 @@ extern "C" {
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <libhfuzz.h>
+#include <libhfuzz/libhfuzz.h>
 
 #include "png.h"
 #include "pngpriv.h"

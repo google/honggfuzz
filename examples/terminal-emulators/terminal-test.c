@@ -13,7 +13,7 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
-#include <libhfuzz.h>
+#include <libhfuzz/libhfuzz.h>
 
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
 
