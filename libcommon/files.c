@@ -162,6 +162,22 @@ bool files_sendToSocketNB(int fd, const uint8_t * buf, size_t fileSz)
     return true;
 }
 
+bool files_sendToSocket(int fd, const uint8_t * buf, size_t fileSz)
+{
+    size_t writtenSz = 0;
+    while (writtenSz < fileSz) {
+        ssize_t sz = send(fd, &buf[writtenSz], fileSz - writtenSz, MSG_NOSIGNAL);
+        if (sz < 0 && errno == EINTR)
+            continue;
+
+        if (sz < 0)
+            return false;
+
+        writtenSz += sz;
+    }
+    return true;
+}
+
 const char *files_basename(char *path)
 {
     const char *base = strrchr(path, '/');

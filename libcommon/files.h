@@ -44,6 +44,8 @@ extern bool files_writePatternToFd(int fd, off_t size, unsigned char p);
 
 bool files_sendToSocketNB(int fd, const uint8_t * buf, size_t fileSz);
 
+bool files_sendToSocket(int fd, const uint8_t * buf, size_t fileSz);
+
 extern bool files_exists(char *fileName);
 
 extern const char *files_basename(char *fileName);
