@@ -333,16 +333,16 @@ android-clean-deps:
 
 # DO NOT DELETE
 
-cmdline.o: cmdline.h honggfuzz.h libcommon/common.h libcommon/log.h
-cmdline.o: libcommon/common.h libcommon/files.h libcommon/util.h
+cmdline.o: cmdline.h honggfuzz.h libcommon/common.h libcommon/files.h
+cmdline.o: libcommon/common.h libcommon/log.h libcommon/util.h
 display.o: display.h honggfuzz.h libcommon/common.h libcommon/log.h
 display.o: libcommon/common.h libcommon/util.h
-fuzz.o: fuzz.h honggfuzz.h libcommon/common.h libcommon/files.h
-fuzz.o: libcommon/common.h libcommon/log.h libcommon/util.h arch.h input.h
+fuzz.o: fuzz.h honggfuzz.h arch.h input.h libcommon/common.h
+fuzz.o: libcommon/files.h libcommon/common.h libcommon/log.h libcommon/util.h
 fuzz.o: mangle.h report.h sancov.h sanitizers.h subproc.h
-honggfuzz.o: libcommon/common.h libcommon/log.h libcommon/common.h
-honggfuzz.o: libcommon/files.h libcommon/util.h cmdline.h honggfuzz.h
-honggfuzz.o: display.h fuzz.h input.h
+honggfuzz.o: cmdline.h honggfuzz.h libcommon/common.h display.h fuzz.h
+honggfuzz.o: input.h libcommon/files.h libcommon/common.h libcommon/log.h
+honggfuzz.o: libcommon/util.h
 input.o: input.h honggfuzz.h libcommon/common.h libcommon/files.h
 input.o: libcommon/common.h libcommon/log.h libcommon/util.h
 mangle.o: mangle.h honggfuzz.h libcommon/common.h libcommon/log.h
@@ -353,25 +353,24 @@ sancov.o: sancov.h honggfuzz.h libcommon/common.h libcommon/files.h
 sancov.o: libcommon/common.h libcommon/log.h libcommon/util.h sanitizers.h
 sanitizers.o: sanitizers.h honggfuzz.h libcommon/common.h libcommon/files.h
 sanitizers.o: libcommon/common.h libcommon/log.h libcommon/util.h
-subproc.o: subproc.h honggfuzz.h libcommon/common.h libcommon/files.h
-subproc.o: libcommon/common.h libcommon/log.h libcommon/util.h arch.h
-subproc.o: sanitizers.h
+subproc.o: subproc.h honggfuzz.h arch.h libcommon/common.h libcommon/files.h
+subproc.o: libcommon/common.h libcommon/log.h libcommon/util.h sanitizers.h
 hfuzz_cc/hfuzz-cc.o: libcommon/common.h libcommon/files.h libcommon/common.h
 hfuzz_cc/hfuzz-cc.o: libcommon/log.h libcommon/util.h
-libcommon/files.o: libcommon/common.h libcommon/files.h libcommon/log.h
+libcommon/files.o: libcommon/files.h libcommon/common.h libcommon/log.h
 libcommon/files.o: libcommon/util.h
-libcommon/log.o: libcommon/common.h libcommon/log.h libcommon/util.h
-libcommon/ns.o: libcommon/common.h libcommon/ns.h libcommon/files.h
+libcommon/log.o: libcommon/log.h libcommon/common.h libcommon/util.h
+libcommon/ns.o: libcommon/ns.h libcommon/common.h libcommon/files.h
 libcommon/ns.o: libcommon/log.h
-libcommon/util.o: libcommon/common.h libcommon/util.h libcommon/files.h
+libcommon/util.o: libcommon/util.h libcommon/common.h libcommon/files.h
 libcommon/util.o: libcommon/log.h
 libhfuzz/instrument.o: libhfuzz/instrument.h honggfuzz.h libcommon/common.h
-libhfuzz/instrument.o: libcommon/util.h libcommon/log.h libcommon/common.h
-libhfuzz/linux.o: libcommon/common.h libhfuzz/libhfuzz.h libcommon/log.h
-libhfuzz/linux.o: libcommon/common.h libcommon/files.h libcommon/ns.h
+libhfuzz/instrument.o: libcommon/log.h libcommon/common.h libcommon/util.h
+libhfuzz/linux.o: libcommon/common.h libhfuzz/libhfuzz.h libcommon/files.h
+libhfuzz/linux.o: libcommon/common.h libcommon/log.h libcommon/ns.h
 libhfuzz/memorycmp.o: libhfuzz/instrument.h
 libhfuzz/persistent.o: libhfuzz/libhfuzz.h honggfuzz.h libcommon/common.h
-libhfuzz/persistent.o: libcommon/log.h libcommon/common.h libcommon/files.h
+libhfuzz/persistent.o: libcommon/files.h libcommon/common.h libcommon/log.h
 linux/arch.o: arch.h honggfuzz.h libcommon/common.h libcommon/files.h
 linux/arch.o: libcommon/common.h libcommon/log.h libcommon/ns.h
 linux/arch.o: libcommon/util.h linux/perf.h linux/ptrace.h sancov.h
@@ -380,8 +379,8 @@ linux/bfd.o: linux/bfd.h linux/unwind.h libcommon/common.h libcommon/files.h
 linux/bfd.o: libcommon/common.h libcommon/log.h libcommon/util.h
 linux/perf.o: linux/perf.h honggfuzz.h libcommon/common.h libcommon/files.h
 linux/perf.o: libcommon/common.h libcommon/log.h libcommon/util.h linux/pt.h
-linux/pt.o: libcommon/common.h linux/pt.h honggfuzz.h libcommon/log.h
-linux/pt.o: libcommon/common.h libcommon/util.h
+linux/pt.o: libcommon/common.h libcommon/log.h libcommon/common.h
+linux/pt.o: libcommon/util.h linux/pt.h honggfuzz.h
 linux/ptrace.o: linux/ptrace.h honggfuzz.h libcommon/common.h
 linux/ptrace.o: libcommon/files.h libcommon/common.h libcommon/log.h
 linux/ptrace.o: libcommon/util.h linux/bfd.h linux/unwind.h sancov.h
