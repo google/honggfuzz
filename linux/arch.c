@@ -37,11 +37,6 @@
 #include <sys/cdefs.h>
 #include <sys/personality.h>
 #include <sys/prctl.h>
-#include <sys/ptrace.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -57,7 +52,7 @@
 #include "libcommon/ns.h"
 #include "libcommon/util.h"
 #include "linux/perf.h"
-#include "linux/ptrace_utils.h"
+#include "linux/ptrace.h"
 #include "sancov.h"
 #include "sanitizers.h"
 #include "subproc.h"

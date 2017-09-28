@@ -21,7 +21,7 @@
  *
  */
 
-#include "linux/ptrace_utils.h"
+#include "linux/ptrace.h"
 
 #include <ctype.h>
 #include <dirent.h>

@@ -21,8 +21,7 @@
  *
  */
 
-#include "libcommon/common.h"
-#include "bfd.h"
+#include "linux/bfd.h"
 
 #include <bfd.h>
 #include <dis-asm.h>
@@ -36,6 +35,7 @@
 #include <inttypes.h>
 #include <unistd.h>
 
+#include "libcommon/common.h"
 #include "libcommon/files.h"
 #include "libcommon/log.h"
 #include "libcommon/util.h"

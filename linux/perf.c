@@ -21,7 +21,6 @@
  *
  */
 
-#include "libcommon/common.h"
 #include "perf.h"
 
 #include <asm/mman.h>
@@ -41,6 +40,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
+#include "libcommon/common.h"
 #include "libcommon/files.h"
 #include "libcommon/log.h"
 #include "libcommon/util.h"

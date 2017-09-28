@@ -21,7 +21,6 @@
  *
  */
 
-#include "libcommon/common.h"
 #include "unwind.h"
 
 #include <stdio.h>
@@ -30,6 +29,7 @@
 #include <endian.h>
 #include <libunwind-ptrace.h>
 
+#include "libcommon/common.h"
 #include "libcommon/log.h"
 
 /*
