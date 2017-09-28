@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -39,6 +40,7 @@
 #include "cmdline.h"
 #include "display.h"
 #include "fuzz.h"
+#include "input.h"
 
 static int sigReceived = 0;
 
@@ -148,7 +150,7 @@ int main(int argc, char **argv)
         display_init();
     }
 
-    if (!files_init(&hfuzz)) {
+    if (!input_init(&hfuzz)) {
         if (hfuzz.externalCommand) {
             LOG_I
                 ("No input file corpus loaded, the external command '%s' is responsible for creating the fuzz files",
@@ -159,11 +161,11 @@ int main(int argc, char **argv)
         }
     }
 
-    if (hfuzz.dictionaryFile && (files_parseDictionary(&hfuzz) == false)) {
+    if (hfuzz.dictionaryFile && (input_parseDictionary(&hfuzz) == false)) {
         LOG_F("Couldn't parse dictionary file ('%s')", hfuzz.dictionaryFile);
     }
 
-    if (hfuzz.blacklistFile && (files_parseBlacklist(&hfuzz) == false)) {
+    if (hfuzz.blacklistFile && (input_parseBlacklist(&hfuzz) == false)) {
         LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.blacklistFile);
     }
 #define hfuzzl hfuzz.linux

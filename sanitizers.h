@@ -20,6 +20,8 @@
 #ifndef _HF_SANITIZERS_H_
 #define _HF_SANITIZERS_H_
 
+#include "honggfuzz.h"
+
 /* Exit code is common for all sanitizers */
 #define HF_SAN_EXIT_CODE   103
 

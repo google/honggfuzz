@@ -24,6 +24,10 @@
 #ifndef _HF_LINUX_PTRACE_UTILS_H_
 #define _HF_LINUX_PTRACE_UTILS_H_
 
+#include <inttypes.h>
+
+#include "honggfuzz.h"
+
 #define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
 
 /* Constant prefix used for single frame crashes stackhash masking */

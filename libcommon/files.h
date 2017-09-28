@@ -27,12 +27,7 @@
 #include "common.h"
 
 #include <stdint.h>
-#include <sys/mman.h>
 #include <unistd.h>
-
-extern bool files_init(honggfuzz_t * hfuzz);
-
-extern bool files_getNext(honggfuzz_t * hfuzz, char *fname, bool rewind);
 
 extern ssize_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz);
 
@@ -53,12 +48,8 @@ extern bool files_exists(char *fileName);
 
 extern const char *files_basename(char *fileName);
 
-extern bool files_parseDictionary(honggfuzz_t * hfuzz);
-
 extern bool files_copyFile(const char *source, const char *destination, bool * dstExists,
                            bool try_link);
-
-extern bool files_parseBlacklist(honggfuzz_t * hfuzz);
 
 extern uint8_t *files_mapFile(char *fileName, off_t * fileSz, int *fd, bool isWritable);
 

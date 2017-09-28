@@ -20,7 +20,7 @@
 #ifndef _HF_SANCOV_H_
 #define _HF_SANCOV_H_
 
-#include "sanitizers.h"
+#include "honggfuzz.h"
 
 /* Bitmap size */
 #define _HF_SANCOV_BITMAP_SIZE 0x3FFFFFF

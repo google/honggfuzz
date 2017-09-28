@@ -23,7 +23,6 @@
 
 #define _WITH_DPRINTF
 
-#include "libcommon/common.h"
 #include "display.h"
 
 #include <inttypes.h>
@@ -34,6 +33,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "libcommon/common.h"
 #include "libcommon/log.h"
 #include "libcommon/util.h"
 

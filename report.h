@@ -24,6 +24,8 @@
 #ifndef _HF_REPORT_H_
 #define _HF_REPORT_H_
 
+#include "honggfuzz.h"
+
 extern void report_Report(honggfuzz_t * hfuzz, char *s);
 
 #endif

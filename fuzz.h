@@ -26,6 +26,8 @@
 
 #include <pthread.h>
 
+#include "honggfuzz.h"
+
 extern void fuzz_threadsStart(honggfuzz_t * fuzz, pthread_t * threads);
 extern void fuzz_threadsStop(honggfuzz_t * fuzz, pthread_t * threads);
 

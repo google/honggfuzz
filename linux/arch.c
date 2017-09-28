@@ -21,8 +21,7 @@
  *
  */
 
-#include "../libcommon/common.h"
-#include "../arch.h"
+#include "arch.h"
 
 #include <ctype.h>
 #include <dlfcn.h>
@@ -52,14 +51,16 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../libcommon/files.h"
-#include "../libcommon/log.h"
-#include "../libcommon/ns.h"
-#include "../libcommon/util.h"
-#include "../sancov.h"
-#include "../subproc.h"
-#include "perf.h"
-#include "ptrace_utils.h"
+#include "libcommon/common.h"
+#include "libcommon/files.h"
+#include "libcommon/log.h"
+#include "libcommon/ns.h"
+#include "libcommon/util.h"
+#include "linux/perf.h"
+#include "linux/ptrace_utils.h"
+#include "sancov.h"
+#include "sanitizers.h"
+#include "subproc.h"
 
 /* Size of remote pid cmdline char buffer */
 #define _HF_PROC_CMDLINE_SZ 8192

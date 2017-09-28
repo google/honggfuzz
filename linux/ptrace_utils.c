@@ -21,8 +21,7 @@
  *
  */
 
-#include "../libcommon/common.h"
-#include "ptrace_utils.h"
+#include "linux/ptrace_utils.h"
 
 #include <ctype.h>
 #include <dirent.h>
@@ -49,13 +48,15 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../libcommon/files.h"
-#include "../libcommon/log.h"
-#include "../libcommon/util.h"
-#include "../sancov.h"
-#include "../subproc.h"
-#include "bfd.h"
-#include "unwind.h"
+#include "libcommon/common.h"
+#include "libcommon/files.h"
+#include "libcommon/log.h"
+#include "libcommon/util.h"
+#include "linux/bfd.h"
+#include "linux/unwind.h"
+#include "sancov.h"
+#include "sanitizers.h"
+#include "subproc.h"
 
 #if defined(__ANDROID__)
 #include "capstone.h"

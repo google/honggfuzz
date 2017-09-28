@@ -22,8 +22,7 @@
  *
  */
 
-#include "../libcommon/common.h"
-#include "../arch.h"
+#include "arch.h"
 
 #include <ctype.h>
 #include <dirent.h>
@@ -43,11 +42,12 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../libcommon/files.h"
-#include "../libcommon/log.h"
-#include "../libcommon/util.h"
-#include "../sancov.h"
-#include "../subproc.h"
+#include "libcommon/common.h"
+#include "libcommon/files.h"
+#include "libcommon/log.h"
+#include "libcommon/util.h"
+#include "sancov.h"
+#include "subproc.h"
 
 #include <servers/bootstrap.h>
 #include <mach/mach.h>

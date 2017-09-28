@@ -1,4 +1,3 @@
-#include "libcommon/common.h"
 #include "sanitizers.h"
 
 #include <ctype.h>
@@ -11,6 +10,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "libcommon/common.h"
 #include "libcommon/files.h"
 #include "libcommon/log.h"
 #include "libcommon/util.h"

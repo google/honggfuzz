@@ -23,7 +23,6 @@
  *
  */
 
-#include "libcommon/common.h"
 #include "fuzz.h"
 
 #include <errno.h>
@@ -37,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -44,10 +44,13 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "libcommon/common.h"
 #include "libcommon/files.h"
 #include "libcommon/log.h"
 #include "libcommon/util.h"
 #include "arch.h"
+#include "honggfuzz.h"
+#include "input.h"
 #include "mangle.h"
 #include "report.h"
 #include "sancov.h"
@@ -102,7 +105,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, bool rewind)
 {
     char fname[PATH_MAX];
-    if (files_getNext(hfuzz, fname, rewind) == false) {
+    if (input_getNext(hfuzz, fname, rewind) == false) {
         return false;
     }
     fuzzer->origFileName = files_basename(fname);
@@ -129,7 +132,7 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, bool rewind
 static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
     char fname[PATH_MAX];
-    if (files_getNext(hfuzz, fname, true /* rewind */ )) {
+    if (input_getNext(hfuzz, fname, true /* rewind */ )) {
         fuzzer->origFileName = files_basename(fname);
         if (files_copyFile(fname, fuzzer->fileName, NULL, false /* try_link */ ) == false) {
             LOG_E("files_copyFile('%s', '%s')", fname, fuzzer->fileName);

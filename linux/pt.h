@@ -24,10 +24,7 @@
 #ifndef _HF_LINUX_PT_H_
 #define _HF_LINUX_PT_H_
 
-#include "../libcommon/common.h"
-
-#include <linux/perf_event.h>
-#include <stdint.h>
+#include "honggfuzz.h"
 
 extern void arch_ptAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
 

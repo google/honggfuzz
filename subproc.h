@@ -24,8 +24,7 @@
 #ifndef _HF_SUBPROC_H_
 #define _HF_SUBPROC_H_
 
-#include <signal.h>
-#include <sys/wait.h>
+#include "honggfuzz.h"
 
 /* Missing WIFCONTINUED in Android */
 #ifndef WIFCONTINUED

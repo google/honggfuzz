@@ -22,7 +22,6 @@
  *
  */
 
-#include "libcommon/common.h"
 #include "mangle.h"
 
 #include <inttypes.h>
@@ -32,6 +31,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "libcommon/common.h"
 #include "libcommon/log.h"
 #include "libcommon/util.h"
 

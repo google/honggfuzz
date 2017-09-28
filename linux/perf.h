@@ -24,6 +24,8 @@
 #ifndef _HF_LINUX_PERF_H_
 #define _HF_LINUX_PERF_H_
 
+#include "honggfuzz.h"
+
 extern bool arch_perfInit(honggfuzz_t * hfuzz);
 extern bool arch_perfOpen(pid_t pid, honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
 extern void arch_perfClose(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
