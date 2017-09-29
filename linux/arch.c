@@ -52,7 +52,7 @@
 #include "libcommon/ns.h"
 #include "libcommon/util.h"
 #include "linux/perf.h"
-#include "linux/ptrace_utils.h"
+#include "linux/trace.h"
 #include "sancov.h"
 #include "sanitizers.h"
 #include "subproc.h"
@@ -227,8 +227,8 @@ void arch_prepareParent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     pid_t childPid = fuzzer->pid;
 
     if (arch_shouldAttach(hfuzz, fuzzer) == true) {
-        if (arch_ptraceAttach(hfuzz, ptracePid) == false) {
-            LOG_E("arch_ptraceAttach(pid=%d) failed", ptracePid);
+        if (arch_traceAttach(hfuzz, ptracePid) == false) {
+            LOG_E("arch_traceAttach(pid=%d) failed", ptracePid);
             kill(ptracePid, SIGKILL);
         }
         fuzzer->linux.attachedPid = ptracePid;
@@ -260,7 +260,7 @@ void arch_prepareParent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_E("Couldn't enable perf counters for pid %d", ptracePid);
     }
     if (childPid != ptracePid) {
-        if (arch_ptraceWaitForPidStop(childPid) == false) {
+        if (arch_traceWaitForPidStop(childPid) == false) {
             LOG_F("PID: %d not in a stopped state", childPid);
         }
         if (kill(childPid, SIGCONT) == -1) {
@@ -298,7 +298,7 @@ static bool arch_checkWait(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
         if (hfuzz->persistent && pid == fuzzer->persistentPid
             && (WIFEXITED(status) || WIFSIGNALED(status))) {
-            arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
+            arch_traceAnalyze(hfuzz, status, pid, fuzzer);
             fuzzer->persistentPid = 0;
             if (ATOMIC_GET(hfuzz->terminating) == false) {
                 LOG_W("Persistent mode: PID %d exited with status: %s", pid,
@@ -307,7 +307,7 @@ static bool arch_checkWait(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             return true;
         }
         if (ptracePid == childPid) {
-            arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
+            arch_traceAnalyze(hfuzz, status, pid, fuzzer);
             continue;
         }
         if (pid == childPid && (WIFEXITED(status) || WIFSIGNALED(status))) {
@@ -317,7 +317,7 @@ static bool arch_checkWait(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             continue;
         }
 
-        arch_ptraceAnalyze(hfuzz, status, pid, fuzzer);
+        arch_traceAnalyze(hfuzz, status, pid, fuzzer);
     }
 }
 
@@ -359,7 +359,7 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
                      crashReport, fuzzer->fileName);
 
                 /* Try to parse report file */
-                arch_ptraceExitAnalyze(hfuzz, ptracePid, fuzzer);
+                arch_traceExitAnalyze(hfuzz, ptracePid, fuzzer);
             }
         }
     }
@@ -504,7 +504,7 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     }
 
     /* Updates the important signal array based on input args */
-    arch_ptraceSignalsInit(hfuzz);
+    arch_traceSignalsInit(hfuzz);
 
     /*
      * If sanitizer fuzzing enabled and SIGABRT is monitored (abort_on_error=1),

@@ -1,11 +1,11 @@
 /*
  *
- * honggfuzz - architecture dependent code
+ * honggfuzz - tracing processes with ptrace()
  * -----------------------------------------
  *
  * Author: Robert Swiecki <swiecki@google.com>
  *
- * Copyright 2010-2015 by Google Inc. All Rights Reserved.
+ * Copyright 2010-2017 by Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _HF_LINUX_PTRACE_UTILS_H_
-#define _HF_LINUX_PTRACE_UTILS_H_
+#ifndef _HF_LINUX_TRACE_H_
+#define _HF_LINUX_TRACE_H_
 
 #include <inttypes.h>
 
@@ -33,14 +33,14 @@
 /* Constant prefix used for single frame crashes stackhash masking */
 #define _HF_SINGLE_FRAME_MASK 0xBADBAD0000000000
 
-extern bool arch_ptraceWaitForPidStop(pid_t pid);
-extern bool arch_ptraceEnable(honggfuzz_t * hfuzz);
-extern void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer);
-extern void arch_ptraceExitAnalyze(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer);
-extern bool arch_ptraceAttach(honggfuzz_t * hfuzz, pid_t pid);
-extern void arch_ptraceDetach(pid_t pid);
-extern void arch_ptraceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt);
-extern void arch_ptraceSetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t cnt);
-extern void arch_ptraceSignalsInit(honggfuzz_t * hfuzz);
+extern bool arch_traceWaitForPidStop(pid_t pid);
+extern bool arch_traceEnable(honggfuzz_t * hfuzz);
+extern void arch_traceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer);
+extern void arch_traceExitAnalyze(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer);
+extern bool arch_traceAttach(honggfuzz_t * hfuzz, pid_t pid);
+extern void arch_traceDetach(pid_t pid);
+extern void arch_traceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt);
+extern void arch_traceSetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t cnt);
+extern void arch_traceSignalsInit(honggfuzz_t * hfuzz);
 
 #endif

@@ -21,7 +21,7 @@
  *
  */
 
-#include "linux/ptrace_utils.h"
+#include "linux/trace.h"
 
 #include <ctype.h>
 #include <dirent.h>
@@ -572,8 +572,8 @@ static void arch_hashCallstack(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, funcs_t *
 }
 
 static void
-arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCnt,
-                          siginfo_t * si, const char *instr)
+arch_traceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCnt,
+                         siginfo_t * si, const char *instr)
 {
     fuzzer->report[0] = '\0';
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n",
@@ -616,7 +616,7 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
     return;
 }
 
-static void arch_ptraceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
+static void arch_traceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
     REG_TYPE pc = 0, status_reg = 0;
     size_t pcRegSz = arch_getPC(pid, &pc, &status_reg);
@@ -661,7 +661,7 @@ static void arch_ptraceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fu
     arch_hashCallstack(hfuzz, fuzzer, funcs, funcCnt, false);
 }
 
-static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
+static void arch_traceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
     REG_TYPE pc = 0;
 
@@ -853,7 +853,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
     /* If unique crash found, reset dynFile counter */
     ATOMIC_CLEAR(hfuzz->dynFileIterExpire);
 
-    arch_ptraceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr);
+    arch_traceGenerateReport(pid, fuzzer, funcs, funcCnt, &si, instr);
 }
 
 /* TODO: Add report parsing support for other sanitizers too */
@@ -985,7 +985,7 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
  * a raised signal. Such case is the ASan fuzzing for Android. Crash file name maintains
  * the same format for compatibility with post campaign tools.
  */
-static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
+static void arch_traceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
     REG_TYPE pc = 0;
     void *crashAddr = 0;
@@ -1129,7 +1129,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
     }
 }
 
-static void arch_ptraceExitAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
+static void arch_traceExitAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
     void *crashAddr = 0;
     char *op = "UNKNOWN";
@@ -1156,19 +1156,19 @@ static void arch_ptraceExitAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t 
     arch_hashCallstack(hfuzz, fuzzer, funcs, funcCnt, false);
 }
 
-void arch_ptraceExitAnalyze(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
+void arch_traceExitAnalyze(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 {
     if (fuzzer->mainWorker) {
         /* Main fuzzing threads */
-        arch_ptraceExitSaveData(hfuzz, pid, fuzzer);
+        arch_traceExitSaveData(hfuzz, pid, fuzzer);
     } else {
         /* Post crash analysis (e.g. crashes verifier) */
-        arch_ptraceExitAnalyzeData(hfuzz, pid, fuzzer);
+        arch_traceExitAnalyzeData(hfuzz, pid, fuzzer);
     }
 }
 
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)
-static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status, pid_t pid)
+static void arch_traceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status, pid_t pid)
 {
     LOG_D("PID: %d, Ptrace event: %d", pid, __WEVENT(status));
     switch (__WEVENT(status)) {
@@ -1183,7 +1183,7 @@ static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status,
                 LOG_D("PID: %d exited with exit_code: %lu", pid,
                       (unsigned long)WEXITSTATUS(event_msg));
                 if (WEXITSTATUS(event_msg) == (unsigned long)HF_SAN_EXIT_CODE) {
-                    arch_ptraceExitAnalyze(hfuzz, pid, fuzzer);
+                    arch_traceExitAnalyze(hfuzz, pid, fuzzer);
                 }
             } else if (WIFSIGNALED(event_msg)) {
                 LOG_D("PID: %d terminated with signal: %lu", pid,
@@ -1200,13 +1200,13 @@ static void arch_ptraceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status,
     ptrace(PTRACE_CONT, pid, 0, 0);
 }
 
-void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer)
+void arch_traceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer)
 {
     /*
      * It's a ptrace event, deal with it elsewhere
      */
     if (WIFSTOPPED(status) && __WEVENT(status)) {
-        return arch_ptraceEvent(hfuzz, fuzzer, status, pid);
+        return arch_traceEvent(hfuzz, fuzzer, status, pid);
     }
 
     if (WIFSTOPPED(status)) {
@@ -1219,9 +1219,9 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
              * analysis. Otherwise just unwind and get stack hash signature.
              */
             if (fuzzer->mainWorker) {
-                arch_ptraceSaveData(hfuzz, pid, fuzzer);
+                arch_traceSaveData(hfuzz, pid, fuzzer);
             } else {
-                arch_ptraceAnalyzeData(hfuzz, pid, fuzzer);
+                arch_traceAnalyzeData(hfuzz, pid, fuzzer);
             }
         }
         /* Do not deliver SIGSTOP, as we don't support PTRACE_LISTEN anyway */
@@ -1245,7 +1245,7 @@ void arch_ptraceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * f
          * Target exited with sanitizer defined exitcode (used when SIGABRT is not monitored)
          */
         if (WEXITSTATUS(status) == (unsigned long)HF_SAN_EXIT_CODE) {
-            arch_ptraceExitAnalyze(hfuzz, pid, fuzzer);
+            arch_traceExitAnalyze(hfuzz, pid, fuzzer);
         }
         return;
     }
@@ -1315,7 +1315,7 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
     return true;
 }
 
-bool arch_ptraceWaitForPidStop(pid_t pid)
+bool arch_traceWaitForPidStop(pid_t pid)
 {
     for (;;) {
         int status;
@@ -1336,7 +1336,7 @@ bool arch_ptraceWaitForPidStop(pid_t pid)
 }
 
 #define MAX_THREAD_IN_TASK 4096
-bool arch_ptraceAttach(honggfuzz_t * hfuzz, pid_t pid)
+bool arch_traceAttach(honggfuzz_t * hfuzz, pid_t pid)
 {
 /*
  * It should be present since, at least, Linux kernel 3.8, but
@@ -1354,7 +1354,7 @@ bool arch_ptraceAttach(honggfuzz_t * hfuzz, pid_t pid)
         seize_options |= PTRACE_O_TRACEEXIT;
     }
 
-    if (hfuzz->linux.pid == 0 && arch_ptraceWaitForPidStop(pid) == false) {
+    if (hfuzz->linux.pid == 0 && arch_traceWaitForPidStop(pid) == false) {
         return false;
     }
 
@@ -1389,7 +1389,7 @@ bool arch_ptraceAttach(honggfuzz_t * hfuzz, pid_t pid)
     return true;
 }
 
-void arch_ptraceDetach(pid_t pid)
+void arch_traceDetach(pid_t pid)
 {
     if (syscall(__NR_kill, pid, 0) == -1 && errno == ESRCH) {
         LOG_D("PID: %d no longer exists", pid);
@@ -1404,12 +1404,12 @@ void arch_ptraceDetach(pid_t pid)
 
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
         ptrace(PTRACE_INTERRUPT, tasks[i], NULL, NULL);
-        arch_ptraceWaitForPidStop(tasks[i]);
+        arch_traceWaitForPidStop(tasks[i]);
         ptrace(PTRACE_DETACH, tasks[i], NULL, NULL);
     }
 }
 
-void arch_ptraceSignalsInit(honggfuzz_t * hfuzz)
+void arch_traceSignalsInit(honggfuzz_t * hfuzz)
 {
     /* Default is true for all platforms except Android */
     arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
