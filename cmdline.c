@@ -217,9 +217,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         },
 
         .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER, .sanOpts = {
-            .asanOpts = NULL,
-            .msanOpts = NULL,
-            .ubsanOpts = NULL,
+            .asanOpts = NULL, .msanOpts = NULL, .ubsanOpts = NULL,
         },
         .useSanCov = false, .covMetadata = NULL,
 
@@ -227,15 +225,9 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
 
         /* Linux code */
             .linux = {
-                .exeFd = -1,
-                .hwCnts = {
-                    .cpuInstrCnt = 0ULL,
-                    .cpuBranchCnt = 0ULL,
-                    .bbCnt = 0ULL,
-                    .newBBCnt = 0ULL,
-                    .softCntPc = 0ULL,
-                    .softCntCmp = 0ULL,
-                },
+                .exeFd = -1, .hwCnts = {
+                                 .cpuInstrCnt = 0ULL, .cpuBranchCnt = 0ULL, .bbCnt = 0ULL, .newBBCnt = 0ULL, .softCntPc = 0ULL, .softCntCmp = 0ULL,
+                             },
                 .dynamicCutOffAddr = ~(0ULL),
                 .disableRandomization = true,
                 .ignoreAddr = NULL,

@@ -605,7 +605,7 @@ hash_callstack(thread_port_t thread,
         LOG_F("Malformed callstack: %s", description);
     }
 
-    /*
+/*
      * Check for too large callstack.
      */
 #define MAX_CALLSTACK_SIZE 4096

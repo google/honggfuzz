@@ -77,7 +77,7 @@ static inline uint8_t ATOMIC_BTS(uint8_t * addr, size_t offset)
             "sbb %0, %0\n"
             : "=r"(oldbit), "+m"(*addr)
             : "Ir"(offset % 8));
-    /*  *INDENT-ON* */
+/*  *INDENT-ON* */
 #else
     oldbit = ATOMIC_POST_OR(*addr, ((uint8_t) 1U << (offset % 8)));
 #endif

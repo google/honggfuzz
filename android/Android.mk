@@ -132,7 +132,7 @@ else
   $(info $(shell (echo "********************************************************************")))
 endif
 
-COMMON_CFLAGS := -std=c11 -I. \
+COMMON_CFLAGS := -std=c11 \
   -D_GNU_SOURCE \
   -Wall -Wextra -Wno-initializer-overrides -Wno-override-init \
   -Wno-unknown-warning-option -Werror -funroll-loops -O2 \

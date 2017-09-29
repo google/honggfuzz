@@ -21,7 +21,7 @@
  *
  */
 
-#include "linux/ptrace.h"
+#include "linux/ptrace_utils.h"
 
 #include <ctype.h>
 #include <dirent.h>
@@ -30,7 +30,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
-#include <linux/ptrace.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -250,7 +249,7 @@ static struct {
     const char* descr;
     bool important;
 } arch_sigs[_NSIG + 1] = {
-    [0 ...(_NSIG)].important = false,
+        [0 ...(_NSIG)].important = false,
     [0 ...(_NSIG)].descr = "UNKNOWN",
 
     [SIGTRAP].important = false,
@@ -354,7 +353,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
 
 static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg UNUSED)
 {
-    /*
+/*
      * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
      * the correct register values if struct size is bigger than expected. As such the
      * 32/64-bit multiplexing trick is not working for them in case PTRACE_GETREGSET
@@ -374,7 +373,7 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg UNUSED)
     if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
         PLOG_D("ptrace(PTRACE_GETREGSET) failed");
 
-        // If PTRACE_GETREGSET fails, try PTRACE_GETREGS if available
+// If PTRACE_GETREGSET fails, try PTRACE_GETREGS if available
 #if PTRACE_GETREGS_AVAILABLE
         if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
             PLOG_D("ptrace(PTRACE_GETREGS) failed");
@@ -606,7 +605,7 @@ arch_ptraceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t 
 #endif
     }
 
-    // libunwind is not working for 32bit targets in 64bit systems
+// libunwind is not working for 32bit targets in 64bit systems
 #if defined(__aarch64__)
     if (funcCnt == 0) {
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " !ERROR: If 32bit fuzz target"

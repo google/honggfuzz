@@ -295,7 +295,7 @@ static int ldMode(int argc, char **argv)
     args[j++] = LHFUZZ_A_PATH;
     args[j++] = "-Wl,--no-whole-archive";
 
-    /* libcommon.a will use it when compiled with clang */
+/* libcommon.a will use it when compiled with clang */
 #if defined(__clang__)
     args[j++] = "-lBlocksRuntime";
 #endif                          /*  defined(__clang__) */

@@ -52,7 +52,7 @@ struct {
     bool important;
     const char* descr;
 } arch_sigs[NSIG] = {
-    [0 ...(NSIG - 1)].important = false,
+        [0 ...(NSIG - 1)].important = false,
     [0 ...(NSIG - 1)].descr = "UNKNOWN",
 
     [SIGILL].important = true,

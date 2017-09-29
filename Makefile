@@ -373,7 +373,7 @@ libhfuzz/persistent.o: libhfuzz/libhfuzz.h honggfuzz.h libcommon/common.h
 libhfuzz/persistent.o: libcommon/files.h libcommon/common.h libcommon/log.h
 linux/arch.o: arch.h honggfuzz.h libcommon/common.h libcommon/files.h
 linux/arch.o: libcommon/common.h libcommon/log.h libcommon/ns.h
-linux/arch.o: libcommon/util.h linux/perf.h linux/ptrace.h sancov.h
+linux/arch.o: libcommon/util.h linux/perf.h linux/ptrace_utils.h sancov.h
 linux/arch.o: sanitizers.h subproc.h
 linux/bfd.o: linux/bfd.h linux/unwind.h libcommon/common.h libcommon/files.h
 linux/bfd.o: libcommon/common.h libcommon/log.h libcommon/util.h
@@ -381,10 +381,10 @@ linux/perf.o: linux/perf.h honggfuzz.h libcommon/common.h libcommon/files.h
 linux/perf.o: libcommon/common.h libcommon/log.h libcommon/util.h linux/pt.h
 linux/pt.o: libcommon/common.h libcommon/log.h libcommon/common.h
 linux/pt.o: libcommon/util.h linux/pt.h honggfuzz.h
-linux/ptrace.o: linux/ptrace.h honggfuzz.h libcommon/common.h
-linux/ptrace.o: libcommon/files.h libcommon/common.h libcommon/log.h
-linux/ptrace.o: libcommon/util.h linux/bfd.h linux/unwind.h sancov.h
-linux/ptrace.o: sanitizers.h subproc.h
+linux/ptrace_utils.o: linux/ptrace_utils.h honggfuzz.h libcommon/common.h
+linux/ptrace_utils.o: libcommon/files.h libcommon/common.h libcommon/log.h
+linux/ptrace_utils.o: libcommon/util.h linux/bfd.h linux/unwind.h sancov.h
+linux/ptrace_utils.o: sanitizers.h subproc.h
 linux/unwind.o: linux/unwind.h libcommon/common.h libcommon/log.h
 linux/unwind.o: libcommon/common.h
 mac/arch.o: arch.h honggfuzz.h libcommon/common.h libcommon/files.h

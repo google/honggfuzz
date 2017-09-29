@@ -52,7 +52,7 @@
 #include "libcommon/ns.h"
 #include "libcommon/util.h"
 #include "linux/perf.h"
-#include "linux/ptrace.h"
+#include "linux/ptrace_utils.h"
 #include "sancov.h"
 #include "sanitizers.h"
 #include "subproc.h"

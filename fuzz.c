@@ -291,13 +291,8 @@ static bool fuzz_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
 
             .linux = {
                       .hwCnts = {
-                                 .cpuInstrCnt = 0ULL,
-                                 .cpuBranchCnt = 0ULL,
-                                 .bbCnt = 0ULL,
-                                 .newBBCnt = 0ULL,
-                                 .softCntPc = 0ULL,
-                                 .softCntEdge = 0ULL,
-                                 .softCntCmp = 0ULL,
+                                 .cpuInstrCnt = 0ULL,.cpuBranchCnt = 0ULL,.bbCnt = 0ULL,.newBBCnt =
+                                 0ULL,.softCntPc = 0ULL,.softCntEdge = 0ULL,.softCntCmp = 0ULL,
                                  },
                       .attachedPid = 0,
                       },
