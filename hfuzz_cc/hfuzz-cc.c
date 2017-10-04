@@ -20,7 +20,8 @@
 #define ARGS_MAX 4096
 #define __XSTR(x) #x
 #define _XSTR(x) __XSTR(x)
-#define LHFUZZ_A_PATH "/tmp/libhfuzz.a"
+
+static char lhfuzzPath[PATH_MAX] = { 0 };
 
 static bool isCXX = false;
 static bool isGCC = false;
@@ -177,6 +178,10 @@ static void commonOpts(int *j, char **args)
 
 static bool getLibHfuzz(void)
 {
+    if (lhfuzzPath[0] == 0) {
+        snprintf(lhfuzzPath, sizeof(lhfuzzPath), "/tmp/libhfuzz.%d.a", geteuid());
+    }
+
     extern uint8_t lhfuzz_start __asm__("lhfuzz_start");
     extern uint8_t lhfuzz_end __asm__("lhfuzz_end");
 
@@ -184,7 +189,7 @@ static bool getLibHfuzz(void)
 
     /* Does the library exist and is of the expected size */
     struct stat st;
-    if (stat(LHFUZZ_A_PATH, &st) != -1) {
+    if (stat(lhfuzzPath, &st) != -1) {
         if (st.st_size == len) {
             return true;
         }
@@ -207,8 +212,8 @@ static bool getLibHfuzz(void)
         return false;
     }
 
-    if (rename(template, LHFUZZ_A_PATH) == -1) {
-        PLOG_E("Couldn't rename('%s', '%s')", template, LHFUZZ_A_PATH);
+    if (rename(template, lhfuzzPath) == -1) {
+        PLOG_E("Couldn't rename('%s', '%s')", template, lhfuzzPath);
         unlink(template);
         return false;
     }
@@ -292,7 +297,7 @@ static int ldMode(int argc, char **argv)
      */
     args[j++] = "-Wl,-z,muldefs";
     args[j++] = "-Wl,--whole-archive";
-    args[j++] = LHFUZZ_A_PATH;
+    args[j++] = lhfuzzPath;
     args[j++] = "-Wl,--no-whole-archive";
 
 /* libcommon.a will use it when compiled with clang */
