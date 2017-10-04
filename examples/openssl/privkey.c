@@ -1,6 +1,7 @@
+#include <inttypes.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
-#include <inttypes.h>
+#include <openssl/ssl.h>
 
 #include <libhfuzz/libhfuzz.h>
 
@@ -8,12 +9,23 @@
 extern "C" {
 #endif
 
+extern void ResetRand(void);
+
+int LLVMFuzzerInitialize(int* argc, char*** argv)
+{
+    SSL_library_init();
+    OpenSSL_add_ssl_algorithms();
+    ERR_load_crypto_strings();
+    ResetRand();
+
+    return 1;
+}
+
 int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 {
     EVP_PKEY_free(d2i_AutoPrivateKey(NULL, &buf, len));
     return 0;
 }
-
 #ifdef __cplusplus
 }
 #endif

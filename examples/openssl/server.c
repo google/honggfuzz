@@ -573,9 +573,6 @@ static const uint8_t kDSACertDER[] = {
 
 static SSL_CTX* ctx = NULL;
 
-int rand_predictable __attribute__((weak));
-void RAND_reset_for_fuzzing(void) __attribute__((weak));
-
 unsigned int psk_callback(SSL* ssl, const char* identity, unsigned char* psk,
     unsigned int max_psk_len)
 {
@@ -616,16 +613,14 @@ static int npn_callback(SSL* ssl, const uint8_t** out, unsigned* out_len, void* 
     return SSL_TLSEXT_ERR_OK;
 }
 
+extern void ResetRand(void);
+
 int LLVMFuzzerInitialize(int* argc, char*** argv)
 {
-    rand_predictable = 1;
-
     SSL_library_init();
     OpenSSL_add_ssl_algorithms();
     ERR_load_crypto_strings();
-
-    if (RAND_reset_for_fuzzing)
-        RAND_reset_for_fuzzing();
+    ResetRand();
 
     ctx = SSL_CTX_new(SSLv23_method());
     const uint8_t* bufp = kRSAPrivateKeyDER;
@@ -701,10 +696,6 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
 
 int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 {
-    if (RAND_reset_for_fuzzing) {
-        RAND_reset_for_fuzzing();
-    }
-
     SSL* server = SSL_new(ctx);
 
     BIO* in = BIO_new(BIO_s_mem());

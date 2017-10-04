@@ -25,7 +25,7 @@ if [ -n "$SAN" ]; then
 		SAN=".$SAN"
 fi
 
-$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/server.c" "-I./openssl-$TYPE/include" -o "persistent.server.openssl.$TYPE$SAN" "./openssl-$TYPE/libssl.a" "./openssl-$TYPE/libcrypto.a" $SAN_COMPILE
-$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/client.c" "-I./openssl-$TYPE/include" -o "persistent.client.openssl.$TYPE$SAN" "./openssl-$TYPE/libssl.a" "./openssl-$TYPE/libcrypto.a" $SAN_COMPILE
-$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/x509.c" "-I./openssl-$TYPE/include" -o "persistent.x509.openssl.$TYPE$SAN" "./openssl-$TYPE/libssl.a" "./openssl-$TYPE/libcrypto.a" $SAN_COMPILE
-$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/privkey.c" "-I./openssl-$TYPE/include" -o "persistent.privkey.openssl.$TYPE$SAN" "./openssl-$TYPE/libssl.a" "./openssl-$TYPE/libcrypto.a" $SAN_COMPILE
+$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/server.c" "$HFUZZ_SRC/examples/openssl/rand.c" "-I./openssl-$TYPE/include" -o "persistent.server.openssl.$TYPE$SAN" "./openssl-$TYPE/libssl.a" "./openssl-$TYPE/libcrypto.a" $SAN_COMPILE
+$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/client.c" "$HFUZZ_SRC/examples/openssl/rand.c" "-I./openssl-$TYPE/include" -o "persistent.client.openssl.$TYPE$SAN" "./openssl-$TYPE/libssl.a" "./openssl-$TYPE/libcrypto.a" $SAN_COMPILE
+$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/x509.c" "$HFUZZ_SRC/examples/openssl/rand.c" "-I./openssl-$TYPE/include" -o "persistent.x509.openssl.$TYPE$SAN" "./openssl-$TYPE/libssl.a" "./openssl-$TYPE/libcrypto.a" $SAN_COMPILE
+$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/privkey.c" "$HFUZZ_SRC/examples/openssl/rand.c" "-I./openssl-$TYPE/include" -o "persistent.privkey.openssl.$TYPE$SAN" "./openssl-$TYPE/libssl.a" "./openssl-$TYPE/libcrypto.a" $SAN_COMPILE
