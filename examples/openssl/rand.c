@@ -13,16 +13,16 @@ static int stat(void)
     return 1;
 }
 
-static RAND_METHOD fuzz_rand_method = {
+static RAND_METHOD method = {
     NULL,
     rnd,
     NULL,
     NULL,
     rnd,
-    stat
+    stat,
 };
 
 void ResetRand(void)
 {
-    RAND_set_rand_method(&fuzz_rand_method);
+    RAND_set_rand_method(&method);
 }

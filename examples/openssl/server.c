@@ -694,8 +694,13 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
     return 1;
 }
 
+void RAND_reset_for_fuzzing(void) __attribute__((weak));
 int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 {
+    if (RAND_reset_for_fuzzing) {
+        RAND_reset_for_fuzzing();
+    }
+
     SSL* server = SSL_new(ctx);
 
     BIO* in = BIO_new(BIO_s_mem());
