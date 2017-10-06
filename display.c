@@ -119,7 +119,7 @@ static char* get_time_elapsed(uint64_t start_time) {
         hour = elapsed_second / 3600;
         min = (elapsed_second - 3600 * hour) / 60;
         second = elapsed_second - hour * 3600 - min * 60;
-        snprintf(str_time_elapsed, sizeof(str_time_elapsed), "%u hrs %u min %u sec", hour,
+        snprintf(str_time_elapsed, sizeof(str_time_elapsed), "%02u:%02u:%02u", hour,
                  min, second);
     } else {
         day = elapsed_second / 24 / 3600;
@@ -128,7 +128,7 @@ static char* get_time_elapsed(uint64_t start_time) {
         min = (elapsed_second - 3600 * hour) / 60;
         second = elapsed_second - hour * 3600 - min * 60;
         snprintf(str_time_elapsed, sizeof(str_time_elapsed),
-                 "%u days %u hrs %u min %u sec", day, hour, min, second);
+                 "%u days %02u:%02u:%02u", day, hour, min, second);
     }
     return str_time_elapsed;
 }    
