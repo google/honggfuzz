@@ -317,6 +317,8 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 
 bool arch_archInit(honggfuzz_t * hfuzz UNUSED)
 {
+    /* Default is false */
+    arch_sigs[SIGVTALRM].important = hfuzz->tmout_vtalrm;
     return true;
 }
 

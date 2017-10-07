@@ -71,11 +71,12 @@ bool files_writeBufToFile(char *fileName, uint8_t * buf, size_t fileSz, int flag
         if (fd == -1) {
             PLOG_W("Couldn't open '%s' for R/O", fileName);
             if(errno == ENOSPC){
-                PLOG_E("Please Clean Your Disk Space !!!");
+                PLOG_E("No Space, Please Clean Your Disk Space !!!");
+                /*
                 PLOG_E("Clean Finish(y/n): ");
                 if(getchar() == 'y'){
                     continue;
-                }
+                }*/
             }
             return false;
         }
