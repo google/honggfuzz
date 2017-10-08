@@ -11,13 +11,12 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
+#include <hf_rand_lib.h>
 #include <libhfuzz/libhfuzz.h>
-
-extern void ResetRand(void);
 
 int LLVMFuzzerInitialize(int* argc, char*** argv)
 {
-    ResetRand();
+    HFResetRand();
     return 1;
 }
 

@@ -12,6 +12,7 @@ extern "C" {
 #include <string.h>
 #include <unistd.h>
 
+#include <hf_rand_lib.h>
 #include <libhfuzz/libhfuzz.h>
 
 static const uint8_t kCertificateDER[] = {
@@ -613,14 +614,12 @@ static int npn_callback(SSL* ssl, const uint8_t** out, unsigned* out_len, void* 
     return SSL_TLSEXT_ERR_OK;
 }
 
-extern void ResetRand(void);
-
 int LLVMFuzzerInitialize(int* argc, char*** argv)
 {
     SSL_library_init();
     OpenSSL_add_ssl_algorithms();
     ERR_load_crypto_strings();
-    ResetRand();
+    HFResetRand();
 
     ctx = SSL_CTX_new(SSLv23_method());
     const uint8_t* bufp = kRSAPrivateKeyDER;
