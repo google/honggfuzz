@@ -42,5 +42,5 @@ if [ -n "$SAN" ]; then
 fi
 
 for x in x509 privkey client server; do
-	$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "$x.$TYPE$SAN" "$LIBSSL" "$LIBCRYPTO" $SAN_COMPILE
+	$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "$TYPE$SAN.$x" "$LIBSSL" "$LIBCRYPTO" $SAN_COMPILE
 done
