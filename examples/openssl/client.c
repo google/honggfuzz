@@ -678,6 +678,9 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 #if !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
     SSL_set_dh_auto(client, 1);
     SSL_set_max_early_data(client, 128);
+    static const uint8_t edata_buf[128] = { 1, 0 };
+    size_t written = 0;
+    SSL_write_early_data(client, edata_buf, sizeof(edata_buf), &written);
 #endif // !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
 
 #if !defined(LIBRESSL_VERSION_NUMBER)
@@ -686,13 +689,17 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 #endif // !defined(LIBRESSL_VERSION_NUMBER)
 
     if (SSL_connect(client) == 1) {
+        uint8_t tmp[1024 * 1024];
+#if !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
+        size_t readbytes = 0;
+        SSL_read_early_data(client, tmp, sizeof(tmp), &readbytes);
+#endif // !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
         X509* peer;
         if ((peer = SSL_get_peer_certificate(client)) != NULL) {
             SSL_get_verify_result(client);
             X509_free(peer);
         }
         // Keep reading application data until error or EOF.
-        uint8_t tmp[1024 * 1024];
         for (;;) {
             ssize_t r = SSL_read(client, tmp, sizeof(tmp));
             if (r <= 0) {
