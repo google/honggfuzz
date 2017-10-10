@@ -675,6 +675,15 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
     BIO_set_fd(out, 1, BIO_NOCLOSE);
 
     SSL_set_bio(client, in, out);
+#if !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
+    SSL_set_dh_auto(client, 1);
+    SSL_set_max_early_data(client, 128);
+#endif // !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
+
+#if !defined(LIBRESSL_VERSION_NUMBER)
+    SSL_set_min_proto_version(client, SSL3_VERSION);
+    SSL_set_max_proto_version(client, TLS1_3_VERSION);
+#endif // !defined(LIBRESSL_VERSION_NUMBER)
 
     if (SSL_connect(client) == 1) {
         X509* peer;
@@ -695,6 +704,7 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
                 break;
             }
             SSL_renegotiate(client);
+            SSL_set_mtu(client, 8);
 #ifndef OPENSSL_NO_HEARTBEATS
             SSL_heartbeat(client);
 #endif
