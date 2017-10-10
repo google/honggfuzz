@@ -694,7 +694,7 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
                 SSL_shutdown(client);
                 break;
             }
-            SSL_renegotiate(server);
+            SSL_renegotiate(client);
 #ifndef OPENSSL_NO_HEARTBEATS
             SSL_heartbeat(client);
 #endif
