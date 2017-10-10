@@ -690,6 +690,12 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
     SSL_CTX_set_next_protos_advertised_cb(ctx, npn_callback, NULL);
     SSL_CTX_set_ecdh_auto(ctx, 1);
 
+    long opts = SSL_CTX_get_options(ctx);
+    opts |= SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION;
+    opts |= SSL_OP_LEGACY_SERVER_CONNECT;
+    opts |= SSL_OP_ALL;
+    SSL_CTX_set_options(ctx, opts);
+
     return 1;
 }
 
