@@ -703,6 +703,7 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
         ERR_print_errors_fp(stderr);
     }
 
+    SSL_shutdown(client);
     SSL_clear(client);
     SSL_free(client);
 
