@@ -58,7 +58,7 @@ void sigHandler(int sig)
     }
 
     if (ATOMIC_GET(sigReceived) != 0) {
-        static const char *const sigMsg = "Repeated termination signal caugth\n";
+        static const char* const sigMsg = "Repeated termination signal caugth\n";
         if (write(STDERR_FILENO, sigMsg, strlen(sigMsg) + 1) == -1) {
         };
         _exit(EXIT_FAILURE);
@@ -70,8 +70,8 @@ void sigHandler(int sig)
 static void setupTimer(void)
 {
     struct itimerval it = {
-        .it_value = {.tv_sec = 1,.tv_usec = 0},
-        .it_interval = {.tv_sec = 1,.tv_usec = 0},
+        .it_value = { .tv_sec = 1, .tv_usec = 0 },
+        .it_interval = { .tv_sec = 1, .tv_usec = 0 },
     };
     if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
         PLOG_F("setitimer(ITIMER_REAL)");
@@ -126,13 +126,14 @@ static void setupSignalsPostThr(void)
     }
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     /*
      * Work around CygWin/MinGW
      */
-    char **myargs = (char **)util_Malloc(sizeof(char *) * (argc + 1));
-    defer {
+    char** myargs = (char**)util_Malloc(sizeof(char*) * (argc + 1));
+    defer
+    {
         free(myargs);
     };
 
@@ -152,9 +153,8 @@ int main(int argc, char **argv)
 
     if (!input_init(&hfuzz)) {
         if (hfuzz.externalCommand) {
-            LOG_I
-                ("No input file corpus loaded, the external command '%s' is responsible for creating the fuzz files",
-                 hfuzz.externalCommand);
+            LOG_I("No input file corpus loaded, the external command '%s' is responsible for creating the fuzz files",
+                hfuzz.externalCommand);
         } else {
             LOG_F("Couldn't load input files");
             exit(EXIT_FAILURE);
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
         }
         if (ATOMIC_GET(sigReceived) > 0) {
             LOG_I("Signal %d (%s) received, terminating", ATOMIC_GET(sigReceived),
-                  strsignal(ATOMIC_GET(sigReceived)));
+                strsignal(ATOMIC_GET(sigReceived)));
             break;
         }
         if (ATOMIC_GET(hfuzz.threadsFinished) >= hfuzz.threadsMax) {

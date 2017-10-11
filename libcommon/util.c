@@ -44,25 +44,25 @@
 #include "files.h"
 #include "log.h"
 
-void *util_Malloc(size_t sz)
+void* util_Malloc(size_t sz)
 {
-    void *p = malloc(sz);
+    void* p = malloc(sz);
     if (p == NULL) {
         LOG_F("malloc(size='%zu')", sz);
     }
     return p;
 }
 
-void *util_Calloc(size_t sz)
+void* util_Calloc(size_t sz)
 {
-    void *p = util_Malloc(sz);
+    void* p = util_Malloc(sz);
     memset(p, '\0', sz);
     return p;
 }
 
-extern void *util_Realloc(void *ptr, size_t sz)
+extern void* util_Realloc(void* ptr, size_t sz)
 {
-    void *ret = realloc(ptr, sz);
+    void* ret = realloc(ptr, sz);
     if (ret == NULL) {
         PLOG_W("realloc(%p, %zu)", ptr, sz);
         free(ptr);
@@ -71,18 +71,18 @@ extern void *util_Realloc(void *ptr, size_t sz)
     return ret;
 }
 
-void *util_MMap(size_t sz)
+void* util_MMap(size_t sz)
 {
-    void *p = mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    void* p = mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
     if (p == MAP_FAILED) {
         LOG_F("mmap(size='%zu')", sz);
     }
     return p;
 }
 
-char *util_StrDup(const char *s)
+char* util_StrDup(const char* s)
 {
-    char *ret = strdup(s);
+    char* ret = strdup(s);
     if (ret == NULL) {
         LOG_F("strdup(size=%zu)", strlen(s));
     }
@@ -98,11 +98,12 @@ static void util_rndInitThread(void)
     if (fd == -1) {
         PLOG_F("Couldn't open /dev/urandom for reading");
     }
-    defer {
+    defer
+    {
         close(fd);
     };
 
-    if (files_readFromFd(fd, (uint8_t *) rndState, sizeof(rndState)) != sizeof(rndState)) {
+    if (files_readFromFd(fd, (uint8_t*)rndState, sizeof(rndState)) != sizeof(rndState)) {
         PLOG_F("Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndState));
     }
 }
@@ -146,14 +147,14 @@ uint64_t util_rndGet(uint64_t min, uint64_t max)
     return ((util_rnd64() % (max - min + 1)) + min);
 }
 
-void util_rndBuf(uint8_t * buf, size_t sz)
+void util_rndBuf(uint8_t* buf, size_t sz)
 {
     pthread_once(&rndThreadOnce, util_rndInitThread);
     if (sz == 0) {
         return;
     }
     for (size_t i = 0; i < sz; i++) {
-        buf[i] = (uint8_t) util_InternalRnd64();
+        buf[i] = (uint8_t)util_InternalRnd64();
     }
 }
 
@@ -163,7 +164,7 @@ void util_rndBuf(uint8_t * buf, size_t sz)
  */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wframe-larger-than="
-int util_vssnprintf(char *str, size_t size, const char *format, va_list ap)
+int util_vssnprintf(char* str, size_t size, const char* format, va_list ap)
 {
     char buf1[size];
     char buf2[size];
@@ -175,7 +176,7 @@ int util_vssnprintf(char *str, size_t size, const char *format, va_list ap)
     return snprintf(str, size, "%s%s", buf1, buf2);
 }
 
-int util_ssnprintf(char *str, size_t size, const char *format, ...)
+int util_ssnprintf(char* str, size_t size, const char* format, ...)
 {
     char buf1[size];
     char buf2[size];
@@ -190,9 +191,9 @@ int util_ssnprintf(char *str, size_t size, const char *format, ...)
     return snprintf(str, size, "%s%s", buf1, buf2);
 }
 
-#pragma GCC diagnostic pop      /* EOF diagnostic ignored "-Wstack-usage=" */
+#pragma GCC diagnostic pop /* EOF diagnostic ignored "-Wstack-usage=" */
 
-void util_getLocalTime(const char *fmt, char *buf, size_t len, time_t tm)
+void util_getLocalTime(const char* fmt, char* buf, size_t len, time_t tm)
 {
     struct tm ltime;
     localtime_r(&tm, &ltime);
@@ -219,7 +220,7 @@ void util_nullifyStdio(void)
     }
 }
 
-bool util_redirectStdin(const char *inputFile)
+bool util_redirectStdin(const char* inputFile)
 {
     int fd = open(inputFile, O_RDONLY);
 
@@ -239,7 +240,7 @@ bool util_redirectStdin(const char *inputFile)
 /*
  * This is not a cryptographically secure hash
  */
-uint64_t util_hash(const char *buf, size_t len)
+uint64_t util_hash(const char* buf, size_t len)
 {
     uint64_t ret = 0;
 
@@ -259,38 +260,38 @@ int64_t util_timeNowMillis(void)
         PLOG_F("gettimeofday()");
     }
 
-    return (((int64_t) tv.tv_sec * 1000LL) + ((int64_t) tv.tv_usec / 1000LL));
+    return (((int64_t)tv.tv_sec * 1000LL) + ((int64_t)tv.tv_usec / 1000LL));
 }
 
-uint64_t util_getUINT32(const uint8_t * buf)
+uint64_t util_getUINT32(const uint8_t* buf)
 {
     uint32_t r;
     memcpy(&r, buf, sizeof(r));
-    return (uint64_t) r;
+    return (uint64_t)r;
 }
 
-uint64_t util_getUINT64(const uint8_t * buf)
+uint64_t util_getUINT64(const uint8_t* buf)
 {
     uint64_t r;
     memcpy(&r, buf, sizeof(r));
     return r;
 }
 
-void util_mutexLock(pthread_mutex_t * mutex, const char *func, int line)
+void util_mutexLock(pthread_mutex_t* mutex, const char* func, int line)
 {
     if (pthread_mutex_lock(mutex)) {
-        PLOG_F("%s():%d pthread_mutex_lock(%p)", func, line, (void *)mutex);
+        PLOG_F("%s():%d pthread_mutex_lock(%p)", func, line, (void*)mutex);
     }
 }
 
-void util_mutexUnlock(pthread_mutex_t * mutex, const char *func, int line)
+void util_mutexUnlock(pthread_mutex_t* mutex, const char* func, int line)
 {
     if (pthread_mutex_unlock(mutex)) {
-        PLOG_F("%s():%d pthread_mutex_unlock(%p)", func, line, (void *)mutex);
+        PLOG_F("%s():%d pthread_mutex_unlock(%p)", func, line, (void*)mutex);
     }
 }
 
-int64_t fastArray64Search(uint64_t * array, size_t arraySz, uint64_t key)
+int64_t fastArray64Search(uint64_t* array, size_t arraySz, uint64_t key)
 {
     size_t low = 0;
     size_t high = arraySz - 1;
@@ -315,7 +316,7 @@ int64_t fastArray64Search(uint64_t * array, size_t arraySz, uint64_t key)
     }
 }
 
-bool util_isANumber(const char *s)
+bool util_isANumber(const char* s)
 {
     if (!isdigit(s[0])) {
         return false;
@@ -328,50 +329,50 @@ bool util_isANumber(const char *s)
     return true;
 }
 
-size_t util_decodeCString(char *s)
+size_t util_decodeCString(char* s)
 {
     size_t len = strlen(s);
     size_t o = 0;
     for (size_t i = 0; s[i] != '\0' && s[i] != '"' && i < len; i++, o++) {
         switch (s[i]) {
-        case '\\':{
-                i++;
-                if (i >= len) {
-                    continue;
-                }
-                switch (s[i]) {
-                case 'a':
-                    s[o] = '\a';
-                    break;
-                case 'r':
-                    s[o] = '\r';
-                    break;
-                case 'n':
-                    s[o] = '\n';
-                    break;
-                case 't':
-                    s[o] = '\t';
-                    break;
-                case '0':
-                    s[o] = '\0';
-                    break;
-                case 'x':{
-                        /* Yup, this can overflow */
-                        char hex[] = { s[i + 1], s[i + 2], 0 };
-                        s[o] = strtoul(hex, NULL, 16);
-                        i += 2;
-                        break;
-                    }
-                default:
-                    s[o] = s[i];
-                    break;
-                }
+        case '\\': {
+            i++;
+            if (i >= len) {
+                continue;
+            }
+            switch (s[i]) {
+            case 'a':
+                s[o] = '\a';
+                break;
+            case 'r':
+                s[o] = '\r';
+                break;
+            case 'n':
+                s[o] = '\n';
+                break;
+            case 't':
+                s[o] = '\t';
+                break;
+            case '0':
+                s[o] = '\0';
+                break;
+            case 'x': {
+                /* Yup, this can overflow */
+                char hex[] = { s[i + 1], s[i + 2], 0 };
+                s[o] = strtoul(hex, NULL, 16);
+                i += 2;
                 break;
             }
-        default:{
+            default:
                 s[o] = s[i];
                 break;
             }
+            break;
+        }
+        default: {
+            s[o] = s[i];
+            break;
+        }
         }
     }
     s[o] = '\0';
@@ -638,23 +639,23 @@ static const uint64_t util_CRC64ISOPoly[] = {
     0x9090000000000000ULL,
 };
 
-uint64_t util_CRC64(uint8_t * buf, size_t len)
+uint64_t util_CRC64(uint8_t* buf, size_t len)
 {
     uint64_t res = 0ULL;
 
     for (size_t i = 0; i < len; i++) {
-        res = util_CRC64ISOPoly[(uint8_t) res ^ buf[i]] ^ (res >> 8);
+        res = util_CRC64ISOPoly[(uint8_t)res ^ buf[i]] ^ (res >> 8);
     }
 
     return res;
 }
 
-uint64_t util_CRC64Rev(uint8_t * buf, size_t len)
+uint64_t util_CRC64Rev(uint8_t* buf, size_t len)
 {
     uint64_t res = 0ULL;
 
-    for (ssize_t i = (ssize_t) len - 1; i >= 0; i--) {
-        res = util_CRC64ISOPoly[(uint8_t) res ^ buf[i]] ^ (res >> 8);
+    for (ssize_t i = (ssize_t)len - 1; i >= 0; i--) {
+        res = util_CRC64ISOPoly[(uint8_t)res ^ buf[i]] ^ (res >> 8);
     }
 
     return res;

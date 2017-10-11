@@ -36,7 +36,7 @@
 static int reportFD = -1;
 
 #if defined(_HF_ARCH_LINUX)
-static void report_printdynFileMethod(honggfuzz_t * hfuzz)
+static void report_printdynFileMethod(honggfuzz_t* hfuzz)
 {
     dprintf(reportFD, " dynFileMethod: ");
     if (hfuzz->dynFileMethod == 0)
@@ -56,7 +56,7 @@ static void report_printdynFileMethod(honggfuzz_t * hfuzz)
 }
 #endif
 
-static void report_printTargetCmd(honggfuzz_t * hfuzz)
+static void report_printTargetCmd(honggfuzz_t* hfuzz)
 {
     dprintf(reportFD, " fuzzTarget   : ");
     for (int x = 0; hfuzz->cmdline[x]; x++) {
@@ -65,7 +65,7 @@ static void report_printTargetCmd(honggfuzz_t * hfuzz)
     dprintf(reportFD, "\n");
 }
 
-void report_Report(honggfuzz_t * hfuzz, char *s)
+void report_Report(honggfuzz_t* hfuzz, char* s)
 {
     if (s == NULL || s[0] == '\0') {
         return;
@@ -91,28 +91,28 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
     util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
 
     dprintf(reportFD,
-            "=====================================================================\n"
-            "TIME: %s\n"
-            "=====================================================================\n"
-            "FUZZER ARGS:\n"
-            " flipRate     : %lf\n"
-            " externalCmd  : %s\n"
-            " fuzzStdin    : %s\n"
-            " timeout      : %ld (sec)\n"
-            " ignoreAddr   : %p\n"
-            " memoryLimit  : %" PRIu64 " (MiB)\n"
-            " targetPid    : %d\n"
-            " targetCmd    : %s\n"
-            " wordlistFile : %s\n",
-            localtmstr,
-            hfuzz->origFlipRate,
-            hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand,
-            hfuzz->fuzzStdin ? "TRUE" : "FALSE",
-            hfuzz->tmOut,
-            hfuzz->linux.ignoreAddr,
-            hfuzz->asLimit,
-            hfuzz->linux.pid,
-            hfuzz->linux.pidCmd, hfuzz->dictionaryFile == NULL ? "NULL" : hfuzz->dictionaryFile);
+        "=====================================================================\n"
+        "TIME: %s\n"
+        "=====================================================================\n"
+        "FUZZER ARGS:\n"
+        " flipRate     : %lf\n"
+        " externalCmd  : %s\n"
+        " fuzzStdin    : %s\n"
+        " timeout      : %ld (sec)\n"
+        " ignoreAddr   : %p\n"
+        " memoryLimit  : %" PRIu64 " (MiB)\n"
+        " targetPid    : %d\n"
+        " targetCmd    : %s\n"
+        " wordlistFile : %s\n",
+        localtmstr,
+        hfuzz->origFlipRate,
+        hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand,
+        hfuzz->fuzzStdin ? "TRUE" : "FALSE",
+        hfuzz->tmOut,
+        hfuzz->linux.ignoreAddr,
+        hfuzz->asLimit,
+        hfuzz->linux.pid,
+        hfuzz->linux.pidCmd, hfuzz->dictionaryFile == NULL ? "NULL" : hfuzz->dictionaryFile);
 
 #if defined(_HF_ARCH_LINUX)
     report_printdynFileMethod(hfuzz);
@@ -121,5 +121,7 @@ void report_Report(honggfuzz_t * hfuzz, char *s)
     report_printTargetCmd(hfuzz);
 
     dprintf(reportFD,
-            "%s" "=====================================================================\n", s);
+        "%s"
+        "=====================================================================\n",
+        s);
 }

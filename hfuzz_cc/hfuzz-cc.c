@@ -61,7 +61,7 @@ static bool useUBSAN()
     return false;
 }
 
-static bool isLDMode(int argc, char **argv)
+static bool isLDMode(int argc, char** argv)
 {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--version") == 0) {
@@ -83,7 +83,7 @@ static bool isLDMode(int argc, char **argv)
     return true;
 }
 
-static int execCC(int argc, char **argv)
+static int execCC(int argc, char** argv)
 {
     if (useASAN()) {
         argv[argc++] = "-fsanitize=address";
@@ -97,14 +97,14 @@ static int execCC(int argc, char **argv)
     argv[argc] = NULL;
 
     if (isCXX) {
-        const char *cxx_path = getenv("HFUZZ_CXX_PATH");
+        const char* cxx_path = getenv("HFUZZ_CXX_PATH");
         if (cxx_path != NULL) {
             execvp(cxx_path, argv);
             PLOG_E("execvp('%s')", cxx_path);
             return EXIT_FAILURE;
         }
     } else {
-        const char *cc_path = getenv("HFUZZ_CC_PATH");
+        const char* cc_path = getenv("HFUZZ_CC_PATH");
         if (cc_path != NULL) {
             execvp(cc_path, argv);
             PLOG_E("execvp('%s')", cc_path);
@@ -141,7 +141,7 @@ static int execCC(int argc, char **argv)
 }
 
 /* It'll point back to the libhfuzz's source tree */
-char *getIncPaths(void)
+char* getIncPaths(void)
 {
 #if !defined(_HFUZZ_INC_PATH)
 #error "You need to define _HFUZZ_INC_PATH"
@@ -152,7 +152,7 @@ char *getIncPaths(void)
     return path;
 }
 
-static void commonOpts(int *j, char **args)
+static void commonOpts(int* j, char** args)
 {
     args[(*j)++] = getIncPaths();
     if (isGCC) {
@@ -185,7 +185,7 @@ static bool getLibHfuzz(void)
     extern uint8_t lhfuzz_start __asm__("lhfuzz_start");
     extern uint8_t lhfuzz_end __asm__("lhfuzz_end");
 
-    ptrdiff_t len = (uintptr_t) & lhfuzz_end - (uintptr_t) & lhfuzz_start;
+    ptrdiff_t len = (uintptr_t)&lhfuzz_end - (uintptr_t)&lhfuzz_start;
 
     /* Does the library exist and is of the expected size */
     struct stat st;
@@ -202,7 +202,8 @@ static bool getLibHfuzz(void)
         PLOG_E("mkostemp('%s')", template);
         return false;
     }
-    defer {
+    defer
+    {
         close(fd);
     };
 
@@ -221,9 +222,9 @@ static bool getLibHfuzz(void)
     return true;
 }
 
-static int ccMode(int argc, char **argv)
+static int ccMode(int argc, char** argv)
 {
-    char *args[ARGS_MAX];
+    char* args[ARGS_MAX];
 
     int j = 0;
     if (isCXX) {
@@ -240,13 +241,13 @@ static int ccMode(int argc, char **argv)
     return execCC(j, args);
 }
 
-static int ldMode(int argc, char **argv)
+static int ldMode(int argc, char** argv)
 {
     if (!getLibHfuzz()) {
         return EXIT_FAILURE;
     }
 
-    char *args[ARGS_MAX];
+    char* args[ARGS_MAX];
 
     int j = 0;
     if (isCXX) {
@@ -303,13 +304,13 @@ static int ldMode(int argc, char **argv)
 /* libcommon.a will use it when compiled with clang */
 #if defined(__clang__)
     args[j++] = "-lBlocksRuntime";
-#endif                          /*  defined(__clang__) */
+#endif /*  defined(__clang__) */
     args[j++] = "-lpthread";
 
     return execCC(j, args);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     if (strstr(basename(util_StrDup(argv[0])), "++") != NULL) {
         isCXX = true;

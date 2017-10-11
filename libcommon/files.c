@@ -42,14 +42,15 @@
 #include "log.h"
 #include "util.h"
 
-ssize_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
+ssize_t files_readFileToBufMax(char* fileName, uint8_t* buf, size_t fileMaxSz)
 {
     int fd = open(fileName, O_RDONLY | O_CLOEXEC);
     if (fd == -1) {
         PLOG_W("Couldn't open '%s' for R/O", fileName);
         return -1;
     }
-    defer {
+    defer
+    {
         close(fd);
     };
 
@@ -63,14 +64,15 @@ ssize_t files_readFileToBufMax(char *fileName, uint8_t * buf, size_t fileMaxSz)
     return readSz;
 }
 
-bool files_writeBufToFile(const char *fileName, const uint8_t * buf, size_t fileSz, int flags)
+bool files_writeBufToFile(const char* fileName, const uint8_t* buf, size_t fileSz, int flags)
 {
     int fd = open(fileName, flags, 0644);
     if (fd == -1) {
         PLOG_W("Couldn't open '%s' for R/W", fileName);
         return false;
     }
-    defer {
+    defer
+    {
         close(fd);
     };
 
@@ -84,7 +86,7 @@ bool files_writeBufToFile(const char *fileName, const uint8_t * buf, size_t file
     return true;
 }
 
-bool files_writeToFd(int fd, const uint8_t * buf, size_t fileSz)
+bool files_writeToFd(int fd, const uint8_t* buf, size_t fileSz)
 {
     size_t writtenSz = 0;
     while (writtenSz < fileSz) {
@@ -100,12 +102,12 @@ bool files_writeToFd(int fd, const uint8_t * buf, size_t fileSz)
     return true;
 }
 
-bool files_writeStrToFd(int fd, const char *str)
+bool files_writeStrToFd(int fd, const char* str)
 {
-    return files_writeToFd(fd, (const uint8_t *)str, strlen(str));
+    return files_writeToFd(fd, (const uint8_t*)str, strlen(str));
 }
 
-ssize_t files_readFromFd(int fd, uint8_t * buf, size_t fileSz)
+ssize_t files_readFromFd(int fd, uint8_t* buf, size_t fileSz)
 {
     size_t readSz = 0;
     while (readSz < fileSz) {
@@ -121,32 +123,33 @@ ssize_t files_readFromFd(int fd, uint8_t * buf, size_t fileSz)
 
         readSz += sz;
     }
-    return (ssize_t) readSz;
+    return (ssize_t)readSz;
 }
 
-bool files_exists(char *fileName)
+bool files_exists(char* fileName)
 {
     return (access(fileName, F_OK) != -1);
 }
 
 bool files_writePatternToFd(int fd, off_t size, unsigned char p)
 {
-    void *buf = malloc(size);
+    void* buf = malloc(size);
     if (!buf) {
         PLOG_W("Couldn't allocate memory");
         return false;
     }
-    defer {
+    defer
+    {
         free(buf);
     };
 
-    memset(buf, p, (size_t) size);
+    memset(buf, p, (size_t)size);
     int ret = files_writeToFd(fd, buf, size);
 
     return ret;
 }
 
-bool files_sendToSocketNB(int fd, const uint8_t * buf, size_t fileSz)
+bool files_sendToSocketNB(int fd, const uint8_t* buf, size_t fileSz)
 {
     size_t writtenSz = 0;
     while (writtenSz < fileSz) {
@@ -162,7 +165,7 @@ bool files_sendToSocketNB(int fd, const uint8_t * buf, size_t fileSz)
     return true;
 }
 
-bool files_sendToSocket(int fd, const uint8_t * buf, size_t fileSz)
+bool files_sendToSocket(int fd, const uint8_t* buf, size_t fileSz)
 {
     size_t writtenSz = 0;
     while (writtenSz < fileSz) {
@@ -178,9 +181,9 @@ bool files_sendToSocket(int fd, const uint8_t * buf, size_t fileSz)
     return true;
 }
 
-const char *files_basename(char *path)
+const char* files_basename(char* path)
 {
-    const char *base = strrchr(path, '/');
+    const char* base = strrchr(path, '/');
     return base ? base + 1 : path;
 }
 
@@ -188,7 +191,7 @@ const char *files_basename(char *path)
  * dstExists argument can be used by caller for cases where existing destination
  * file requires special handling (e.g. save unique crashes)
  */
-bool files_copyFile(const char *source, const char *destination, bool * dstExists, bool try_link)
+bool files_copyFile(const char* source, const char* destination, bool* dstExists, bool try_link)
 {
     if (dstExists) {
         *dstExists = false;
@@ -225,7 +228,8 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
         PLOG_D("Couldn't open '%s' source", source);
         return false;
     }
-    defer {
+    defer
+    {
         close(inFD);
     };
 
@@ -244,28 +248,30 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
         PLOG_D("Couldn't open '%s' destination", destination);
         return false;
     }
-    defer {
+    defer
+    {
         close(outFD);
     };
 
-    uint8_t *inFileBuf = malloc(inSt.st_size);
+    uint8_t* inFileBuf = malloc(inSt.st_size);
     if (!inFileBuf) {
-        PLOG_W("malloc(%zu) failed", (size_t) inSt.st_size);
+        PLOG_W("malloc(%zu) failed", (size_t)inSt.st_size);
         return false;
     }
-    defer {
+    defer
+    {
         free(inFileBuf);
     };
 
-    ssize_t readSz = files_readFromFd(inFD, inFileBuf, (size_t) inSt.st_size);
+    ssize_t readSz = files_readFromFd(inFD, inFileBuf, (size_t)inSt.st_size);
     if (readSz < 0) {
         PLOG_W("Couldn't read '%s' to a buf", source);
         return false;
     }
 
     if (files_writeToFd(outFD, inFileBuf, readSz) == false) {
-        PLOG_W("Couldn't write '%zu' bytes to file '%s' (fd='%d')", (size_t) readSz,
-               destination, outFD);
+        PLOG_W("Couldn't write '%zu' bytes to file '%s' (fd='%d')", (size_t)readSz,
+            destination, outFD);
         unlink(destination);
         return false;
     }
@@ -279,19 +285,21 @@ bool files_copyFile(const char *source, const char *destination, bool * dstExist
  *
  * Simple wildcard strings are also supported (e.g. mem*)
  */
-size_t files_parseSymbolFilter(const char *srcFile, char ***filterList)
+size_t files_parseSymbolFilter(const char* srcFile, char*** filterList)
 {
-    FILE *f = fopen(srcFile, "rb");
+    FILE* f = fopen(srcFile, "rb");
     if (f == NULL) {
         PLOG_W("Couldn't open '%s' - R/O mode", srcFile);
         return 0;
     }
-    defer {
+    defer
+    {
         fclose(f);
     };
 
-    char *lineptr = NULL;
-    defer {
+    char* lineptr = NULL;
+    defer
+    {
         free(lineptr);
     };
 
@@ -306,8 +314,8 @@ size_t files_parseSymbolFilter(const char *srcFile, char ***filterList)
             return 0;
         }
 
-        if ((*filterList = (char **)util_Realloc(*filterList,
-                                                 (symbolsRead + 1) * sizeof((*filterList)[0])))
+        if ((*filterList = (char**)util_Realloc(*filterList,
+                 (symbolsRead + 1) * sizeof((*filterList)[0])))
             == NULL) {
             PLOG_W("realloc failed (sz=%zu)", (symbolsRead + 1) * sizeof((*filterList)[0]));
             return 0;
@@ -325,7 +333,7 @@ size_t files_parseSymbolFilter(const char *srcFile, char ***filterList)
     return symbolsRead;
 }
 
-uint8_t *files_mapFile(char *fileName, off_t * fileSz, int *fd, bool isWritable)
+uint8_t* files_mapFile(char* fileName, off_t* fileSz, int* fd, bool isWritable)
 {
     int mmapProt = PROT_READ;
     if (isWritable) {
@@ -344,7 +352,7 @@ uint8_t *files_mapFile(char *fileName, off_t * fileSz, int *fd, bool isWritable)
         return NULL;
     }
 
-    uint8_t *buf;
+    uint8_t* buf;
     if ((buf = mmap(NULL, st.st_size, mmapProt, MAP_PRIVATE, *fd, 0)) == MAP_FAILED) {
         PLOG_W("Couldn't mmap() the '%s' file", fileName);
         close(*fd);
@@ -355,7 +363,7 @@ uint8_t *files_mapFile(char *fileName, off_t * fileSz, int *fd, bool isWritable)
     return buf;
 }
 
-uint8_t *files_mapFileShared(char *fileName, off_t * fileSz, int *fd)
+uint8_t* files_mapFileShared(char* fileName, off_t* fileSz, int* fd)
 {
     if ((*fd = open(fileName, O_RDONLY)) == -1) {
         PLOG_W("Couldn't open() '%s' file in R/O mode", fileName);
@@ -369,7 +377,7 @@ uint8_t *files_mapFileShared(char *fileName, off_t * fileSz, int *fd)
         return NULL;
     }
 
-    uint8_t *buf;
+    uint8_t* buf;
     if ((buf = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, *fd, 0)) == MAP_FAILED) {
         PLOG_W("Couldn't mmap() the '%s' file", fileName);
         close(*fd);
@@ -380,16 +388,16 @@ uint8_t *files_mapFileShared(char *fileName, off_t * fileSz, int *fd)
     return buf;
 }
 
-void *files_mapSharedMem(size_t sz, int *fd, const char *dir)
+void* files_mapSharedMem(size_t sz, int* fd, const char* dir)
 {
     *fd = -1;
 #if defined(_HF_ARCH_LINUX) && defined(__NR_memfd_create)
-#if !defined(MFD_CLOEXEC)       /* It's not defined as we didn't include sys/memfd.h, but it's \
-                                   present with some Linux distros only */
+#if !defined(MFD_CLOEXEC) /* It's not defined as we didn't include sys/memfd.h, but it's \
+                             present with some Linux distros only */
 #define MFD_CLOEXEC 0x0001U
-#endif                          /* !defined(MFD_CLOEXEC) */
-    *fd = syscall(__NR_memfd_create, "honggfuzz", (uintptr_t) MFD_CLOEXEC);
-#endif                          /* defined(_HF_ARCH_LINUX) && defined(__NR_memfd_create) */
+#endif /* !defined(MFD_CLOEXEC) */
+    *fd = syscall(__NR_memfd_create, "honggfuzz", (uintptr_t)MFD_CLOEXEC);
+#endif /* defined(_HF_ARCH_LINUX) && defined(__NR_memfd_create) */
     if (*fd == -1) {
         char template[PATH_MAX];
         snprintf(template, sizeof(template), "%s/hfuzz.XXXXXX", dir);
@@ -405,7 +413,7 @@ void *files_mapSharedMem(size_t sz, int *fd, const char *dir)
         *fd = -1;
         return MAP_FAILED;
     }
-    void *ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_SHARED, *fd, 0);
+    void* ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_SHARED, *fd, 0);
     if (ret == MAP_FAILED) {
         PLOG_W("mmap(sz=%zu, fd=%d)", sz, *fd);
         *fd = -1;
@@ -415,20 +423,22 @@ void *files_mapSharedMem(size_t sz, int *fd, const char *dir)
     return ret;
 }
 
-bool files_readPidFromFile(const char *fileName, pid_t * pidPtr)
+bool files_readPidFromFile(const char* fileName, pid_t* pidPtr)
 {
-    FILE *fPID = fopen(fileName, "rbe");
+    FILE* fPID = fopen(fileName, "rbe");
     if (fPID == NULL) {
         PLOG_W("Couldn't open '%s' - R/O mode", fileName);
         return false;
     }
-    defer {
+    defer
+    {
         fclose(fPID);
     };
 
-    char *lineptr = NULL;
+    char* lineptr = NULL;
     size_t lineSz = 0;
-    defer {
+    defer
+    {
         free(lineptr);
     };
     if (getline(&lineptr, &lineSz, fPID) == -1) {

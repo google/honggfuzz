@@ -98,41 +98,41 @@ typedef struct {
 
 typedef struct {
     uint32_t capacity;
-    uint32_t *pChunks;
+    uint32_t* pChunks;
     uint32_t nChunks;
 } bitmap_t;
 
 /* Memory map struct */
-typedef struct __attribute__ ((packed)) {
-    uint64_t start;             // region start addr
-    uint64_t end;               // region end addr
-    uint64_t base;              // region base addr
-    char mapName[NAME_MAX];     // bin/DSO name
+typedef struct __attribute__((packed)) {
+    uint64_t start; // region start addr
+    uint64_t end; // region end addr
+    uint64_t base; // region base addr
+    char mapName[NAME_MAX]; // bin/DSO name
     uint64_t bbCnt;
     uint64_t newBBCnt;
 } memMap_t;
 
 /* Trie node data struct */
-typedef struct __attribute__ ((packed)) {
-    bitmap_t *pBM;
+typedef struct __attribute__((packed)) {
+    bitmap_t* pBM;
 } trieData_t;
 
 /* Trie node struct */
 typedef struct node {
     char key;
     trieData_t data;
-    struct node *next;
-    struct node *prev;
-    struct node *children;
-    struct node *parent;
+    struct node* next;
+    struct node* prev;
+    struct node* children;
+    struct node* parent;
 } node_t;
 
 /* EOF Sanitizer coverage specific data structures */
 
 typedef struct {
-    char *asanOpts;
-    char *msanOpts;
-    char *ubsanOpts;
+    char* asanOpts;
+    char* msanOpts;
+    char* ubsanOpts;
 } sanOpts_t;
 
 typedef enum {
@@ -143,17 +143,17 @@ typedef enum {
 } fuzzState_t;
 
 struct dynfile_t {
-    uint8_t *data;
+    uint8_t* data;
     size_t size;
-     TAILQ_ENTRY(dynfile_t)
-     pointers;
+    TAILQ_ENTRY(dynfile_t)
+    pointers;
 };
 
 struct strings_t {
-    char *s;
+    char* s;
     size_t len;
-     TAILQ_ENTRY(strings_t)
-     pointers;
+    TAILQ_ENTRY(strings_t)
+    pointers;
 };
 
 /* Maximum number of active fuzzing threads */
@@ -168,10 +168,10 @@ typedef struct {
 } feedback_t;
 
 typedef struct {
-    char **cmdline;
+    char** cmdline;
     char cmdline_txt[61];
-    char *inputDir;
-    DIR *inputDirP;
+    char* inputDir;
+    DIR* inputDirP;
     size_t fileCnt;
     bool fileCntDone;
     bool nullifyStdio;
@@ -180,14 +180,14 @@ typedef struct {
     bool useScreen;
     bool useVerifier;
     time_t timeStart;
-    char *fileExtn;
-    char *workDir;
-    char *covDir;
+    char* fileExtn;
+    char* workDir;
+    char* covDir;
     double origFlipRate;
-    char *externalCommand;
-    char *postExternalCommand;
-    const char *blacklistFile;
-    uint64_t *blacklist;
+    char* externalCommand;
+    char* postExternalCommand;
+    const char* blacklistFile;
+    uint64_t* blacklist;
     size_t blacklistCnt;
     long tmOut;
     time_t runEndTime;
@@ -195,10 +195,10 @@ typedef struct {
     size_t threadsMax;
     size_t threadsFinished;
     size_t maxFileSz;
-    char *reportFile;
+    char* reportFile;
     uint64_t asLimit;
     bool clearEnv;
-    char *envs[128];
+    char* envs[128];
     bool persistent;
     bool tmout_vtalrm;
     bool skipFeedbackOnTimeout;
@@ -209,21 +209,21 @@ typedef struct {
     bool terminating;
     bool exitUponCrash;
 
-    const char *dictionaryFile;
-     TAILQ_HEAD(strq_t, strings_t)
-     dictq;
+    const char* dictionaryFile;
+    TAILQ_HEAD(strq_t, strings_t)
+    dictq;
     size_t dictionaryCnt;
-    struct strings_t *dictqCurrent;
+    struct strings_t* dictqCurrent;
 
     fuzzState_t state;
-    feedback_t *feedback;
+    feedback_t* feedback;
     int bbFd;
 
     size_t dynfileqCnt;
     pthread_mutex_t dynfileq_mutex;
-     TAILQ_HEAD(dictq_t, dynfile_t)
-     dynfileq;
-    struct dynfile_t *dynfileqCurrent;
+    TAILQ_HEAD(dictq_t, dynfile_t)
+    dynfileq;
+    struct dynfile_t* dynfileqCurrent;
 
     pthread_mutex_t feedback_mutex;
 
@@ -240,7 +240,7 @@ typedef struct {
     sanOpts_t sanOpts;
     size_t dynFileIterExpire;
     bool useSanCov;
-    node_t *covMetadata;
+    node_t* covMetadata;
 
     pthread_mutex_t report_mutex;
 
@@ -250,16 +250,16 @@ typedef struct {
         hwcnt_t hwCnts;
         uint64_t dynamicCutOffAddr;
         bool disableRandomization;
-        void *ignoreAddr;
+        void* ignoreAddr;
         size_t numMajorFrames;
         pid_t pid;
-        const char *pidFile;
-        char *pidCmd;
-        const char *symsBlFile;
-        char **symsBl;
+        const char* pidFile;
+        char* pidCmd;
+        const char* symsBlFile;
+        char** symsBl;
         size_t symsBlCnt;
-        const char *symsWlFile;
-        char **symsWl;
+        const char* symsWlFile;
+        char** symsWl;
         size_t symsWlCnt;
         uintptr_t cloneFlags;
         bool kernelOnly;
@@ -272,7 +272,7 @@ typedef struct {
     pid_t persistentPid;
     fuzzState_t state;
     int64_t timeStartedMillis;
-    const char *origFileName;
+    const char* origFileName;
     char fileName[PATH_MAX];
     char crashFileName[PATH_MAX];
     uint64_t pc;
@@ -282,21 +282,21 @@ typedef struct {
     char report[_HF_REPORT_SIZE];
     bool mainWorker;
     float flipRate;
-    uint8_t *dynamicFile;
+    uint8_t* dynamicFile;
     size_t dynamicFileSz;
     uint32_t fuzzNo;
     int persistentSock;
     bool tmOutSignaled;
 #if !defined(_HF_ARCH_DARWIN)
     timer_t timerId;
-#endif                          // !defined(_HF_ARCH_DARWIN)
+#endif // !defined(_HF_ARCH_DARWIN)
 
     sancovcnt_t sanCovCnts;
 
     struct {
         /* For Linux code */
-        uint8_t *perfMmapBuf;
-        uint8_t *perfMmapAux;
+        uint8_t* perfMmapBuf;
+        uint8_t* perfMmapAux;
         hwcnt_t hwCnts;
         pid_t attachedPid;
         int cpuInstrFd;

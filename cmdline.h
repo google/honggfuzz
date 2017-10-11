@@ -28,8 +28,8 @@
 #include "honggfuzz.h"
 #include "libcommon/common.h"
 
-rlim_t cmdlineParseRLimit(int res, const char *optarg, unsigned long mul);
+rlim_t cmdlineParseRLimit(int res, const char* optarg, unsigned long mul);
 
-bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz);
+bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz);
 
-#endif                          /* _HF_CMDLINE_H_ */
+#endif /* _HF_CMDLINE_H_ */

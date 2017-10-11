@@ -85,10 +85,10 @@ extern enum llevel_t log_level;
         logLog(FATAL, __FUNCTION__, __LINE__, true, __VA_ARGS__); \
     }
 
-extern bool logInitLogFile(const char *logfile, enum llevel_t ll);
+extern bool logInitLogFile(const char* logfile, enum llevel_t ll);
 
-extern void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt, ...)
-    __attribute__ ((format(printf, 5, 6)));
+extern void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt, ...)
+    __attribute__((format(printf, 5, 6)));
 
 extern void logStop(int sig);
 
@@ -96,8 +96,8 @@ extern bool logIsTTY(void);
 
 extern int logFd(void);
 
-extern pthread_mutex_t *logMutexGet(void);
+extern pthread_mutex_t* logMutexGet(void);
 
 void logMutexReset(void);
 
-#endif                          /* _HF_LOG_H_ */
+#endif /* _HF_LOG_H_ */

@@ -28,19 +28,19 @@
 
 #include "honggfuzz.h"
 
-#define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
+#define _HF_DYNFILE_SUB_MASK 0xFFFUL // Zero-set two MSB
 
 /* Constant prefix used for single frame crashes stackhash masking */
 #define _HF_SINGLE_FRAME_MASK 0xBADBAD0000000000
 
 extern bool arch_traceWaitForPidStop(pid_t pid);
-extern bool arch_traceEnable(honggfuzz_t * hfuzz);
-extern void arch_traceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer);
-extern void arch_traceExitAnalyze(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer);
-extern bool arch_traceAttach(honggfuzz_t * hfuzz, pid_t pid);
+extern bool arch_traceEnable(honggfuzz_t* hfuzz);
+extern void arch_traceAnalyze(honggfuzz_t* hfuzz, int status, pid_t pid, fuzzer_t* fuzzer);
+extern void arch_traceExitAnalyze(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzzer);
+extern bool arch_traceAttach(honggfuzz_t* hfuzz, pid_t pid);
 extern void arch_traceDetach(pid_t pid);
-extern void arch_traceGetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t * cnt);
-extern void arch_traceSetCustomPerf(honggfuzz_t * hfuzz, pid_t pid, uint64_t cnt);
-extern void arch_traceSignalsInit(honggfuzz_t * hfuzz);
+extern void arch_traceGetCustomPerf(honggfuzz_t* hfuzz, pid_t pid, uint64_t* cnt);
+extern void arch_traceSetCustomPerf(honggfuzz_t* hfuzz, pid_t pid, uint64_t cnt);
+extern void arch_traceSignalsInit(honggfuzz_t* hfuzz);
 
 #endif

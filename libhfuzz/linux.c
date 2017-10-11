@@ -12,14 +12,14 @@ bool linuxEnterNs(uintptr_t cloneFlags)
     return nsEnter(cloneFlags);
 }
 
-bool linuxIfaceUp(const char *ifacename)
+bool linuxIfaceUp(const char* ifacename)
 {
     return nsIfaceUp(ifacename);
 }
 
-bool linuxMountTmpfs(const char *dst)
+bool linuxMountTmpfs(const char* dst)
 {
     return nsMountTmpfs(dst);
 }
 
-#endif                          /* defined(_HF_ARCH_LINUX) */
+#endif /* defined(_HF_ARCH_LINUX) */

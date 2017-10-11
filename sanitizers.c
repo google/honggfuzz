@@ -124,7 +124,7 @@ static bool sanitizers_Regular(void)
     return true;
 }
 
-bool sanitizers_Init(honggfuzz_t * hfuzz)
+bool sanitizers_Init(honggfuzz_t* hfuzz)
 {
     if (hfuzz->linux.pid > 0) {
         return true;
@@ -138,15 +138,14 @@ bool sanitizers_Init(honggfuzz_t * hfuzz)
     size_t flagsSz = 0;
 
     /* Larger constant combination + 2 dynamic paths */
-    size_t bufSz =
-        sizeof(kASAN_OPTS) + 1 + sizeof(kABORT_ENABLED) + 1 + sizeof(kSANLOGDIR) + PATH_MAX + 1 +
-        sizeof(kSANCOVDIR) + PATH_MAX + 1;
-    char *san_opts = util_Calloc(bufSz);
-    defer {
+    size_t bufSz = sizeof(kASAN_OPTS) + 1 + sizeof(kABORT_ENABLED) + 1 + sizeof(kSANLOGDIR) + PATH_MAX + 1 + sizeof(kSANCOVDIR) + PATH_MAX + 1;
+    char* san_opts = util_Calloc(bufSz);
+    defer
+    {
         free(san_opts);
     };
 
-    char *abortFlag;
+    char* abortFlag;
     if (hfuzz->monitorSIGABRT) {
         abortFlag = kABORT_ENABLED;
     } else {
@@ -156,11 +155,11 @@ bool sanitizers_Init(honggfuzz_t * hfuzz)
     /* Address Sanitizer (ASan) */
     if (hfuzz->useSanCov) {
         snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s:%s%s/%s", kASAN_OPTS, abortFlag, kSAN_COV_OPTS,
-                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
-                 kLOGPREFIX);
+            kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
+            kLOGPREFIX);
     } else {
         snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kASAN_OPTS, abortFlag, kSANLOGDIR,
-                 hfuzz->workDir, kLOGPREFIX);
+            hfuzz->workDir, kLOGPREFIX);
     }
 
     flagsSz = strlen(san_opts) + 1;
@@ -172,11 +171,11 @@ bool sanitizers_Init(honggfuzz_t * hfuzz)
     memset(san_opts, 0, bufSz);
     if (hfuzz->useSanCov) {
         snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s:%s%s/%s", kUBSAN_OPTS, abortFlag, kSAN_COV_OPTS,
-                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
-                 kLOGPREFIX);
+            kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
+            kLOGPREFIX);
     } else {
         snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kUBSAN_OPTS, abortFlag, kSANLOGDIR,
-                 hfuzz->workDir, kLOGPREFIX);
+            hfuzz->workDir, kLOGPREFIX);
     }
 
     flagsSz = strlen(san_opts) + 1;
@@ -189,11 +188,11 @@ bool sanitizers_Init(honggfuzz_t * hfuzz)
 
     if (hfuzz->useSanCov) {
         snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s:%s%s/%s", kMSAN_OPTS, abortFlag, kSAN_COV_OPTS,
-                 kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
-                 kLOGPREFIX);
+            kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
+            kLOGPREFIX);
     } else {
         snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kMSAN_OPTS, abortFlag, kSANLOGDIR,
-                 hfuzz->workDir, kLOGPREFIX);
+            hfuzz->workDir, kLOGPREFIX);
     }
 
     flagsSz = strlen(san_opts) + 1;
@@ -204,7 +203,7 @@ bool sanitizers_Init(honggfuzz_t * hfuzz)
     return true;
 }
 
-bool sanitizers_prepareExecve(honggfuzz_t * hfuzz)
+bool sanitizers_prepareExecve(honggfuzz_t* hfuzz)
 {
     /* Address Sanitizer (ASan) */
     if (hfuzz->sanOpts.asanOpts) {

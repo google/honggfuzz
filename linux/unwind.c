@@ -38,18 +38,18 @@
  */
 
 // libunwind error codes used for debugging
-static const char *UNW_ER[] = {
-    "UNW_ESUCCESS",             /* no error */
-    "UNW_EUNSPEC",              /* unspecified (general) error */
-    "UNW_ENOMEM",               /* out of memory */
-    "UNW_EBADREG",              /* bad register number */
-    "UNW_EREADONLYREG",         /* attempt to write read-only register */
-    "UNW_ESTOPUNWIND",          /* stop unwinding */
-    "UNW_EINVALIDIP",           /* invalid IP */
-    "UNW_EBADFRAME",            /* bad frame */
-    "UNW_EINVAL",               /* unsupported operation or bad value */
-    "UNW_EBADVERSION",          /* unwind info has unsupported version */
-    "UNW_ENOINFO"               /* no unwind info found */
+static const char* UNW_ER[] = {
+    "UNW_ESUCCESS", /* no error */
+    "UNW_EUNSPEC", /* unspecified (general) error */
+    "UNW_ENOMEM", /* out of memory */
+    "UNW_EBADREG", /* bad register number */
+    "UNW_EREADONLYREG", /* attempt to write read-only register */
+    "UNW_ESTOPUNWIND", /* stop unwinding */
+    "UNW_EINVALIDIP", /* invalid IP */
+    "UNW_EBADFRAME", /* bad frame */
+    "UNW_EINVAL", /* unsupported operation or bad value */
+    "UNW_EBADVERSION", /* unwind info has unsupported version */
+    "UNW_ENOINFO" /* no unwind info found */
 };
 
 typedef struct {
@@ -62,9 +62,9 @@ typedef struct {
     char name[PATH_MAX];
 } procMap_t;
 
-static procMap_t *arch_parsePidMaps(pid_t pid, size_t * mapsCount)
+static procMap_t* arch_parsePidMaps(pid_t pid, size_t* mapsCount)
 {
-    FILE *f = NULL;
+    FILE* f = NULL;
     char fProcMaps[PATH_MAX] = { 0 };
     snprintf(fProcMaps, PATH_MAX, "/proc/%d/maps", pid);
 
@@ -72,12 +72,13 @@ static procMap_t *arch_parsePidMaps(pid_t pid, size_t * mapsCount)
         PLOG_E("Couldn't open '%s' - R/O mode", fProcMaps);
         return 0;
     }
-    defer {
+    defer
+    {
         fclose(f);
     };
 
     *mapsCount = 0;
-    procMap_t *mapsList = malloc(sizeof(procMap_t));
+    procMap_t* mapsList = malloc(sizeof(procMap_t));
     if (mapsList == NULL) {
         PLOG_W("malloc(size='%zu')", sizeof(procMap_t));
         return NULL;
@@ -91,8 +92,8 @@ static procMap_t *arch_parsePidMaps(pid_t pid, size_t * mapsCount)
 
         mapsList[*mapsCount].name[0] = '\0';
         sscanf(buf, "%lx-%lx %5s %lx %7s %ld %s", &mapsList[*mapsCount].start,
-               &mapsList[*mapsCount].end, mapsList[*mapsCount].perms, &mapsList[*mapsCount].offset,
-               mapsList[*mapsCount].dev, &mapsList[*mapsCount].inode, mapsList[*mapsCount].name);
+            &mapsList[*mapsCount].end, mapsList[*mapsCount].perms, &mapsList[*mapsCount].offset,
+            mapsList[*mapsCount].dev, &mapsList[*mapsCount].inode, mapsList[*mapsCount].name);
 
         *mapsCount += 1;
         if ((mapsList = realloc(mapsList, (*mapsCount + 1) * sizeof(procMap_t))) == NULL) {
@@ -105,7 +106,7 @@ static procMap_t *arch_parsePidMaps(pid_t pid, size_t * mapsCount)
     return mapsList;
 }
 
-static char *arch_searchMaps(unsigned long addr, size_t mapsCnt, procMap_t * mapsList)
+static char* arch_searchMaps(unsigned long addr, size_t mapsCnt, procMap_t* mapsList)
 {
     for (size_t i = 0; i < mapsCnt; i++) {
         if (addr >= mapsList[i].start && addr <= mapsList[i].end) {
@@ -121,11 +122,12 @@ static char *arch_searchMaps(unsigned long addr, size_t mapsCnt, procMap_t * map
 }
 
 #ifndef __ANDROID__
-size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
+size_t arch_unwindStack(pid_t pid, funcs_t* funcs)
 {
     size_t num_frames = 0, mapsCnt = 0;
-    procMap_t *mapsList = arch_parsePidMaps(pid, &mapsCnt);
-    defer {
+    procMap_t* mapsList = arch_parsePidMaps(pid, &mapsCnt);
+    defer
+    {
         free(mapsList);
     };
 
@@ -134,16 +136,18 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
         LOG_E("[pid='%d'] unw_create_addr_space failed", pid);
         return num_frames;
     }
-    defer {
+    defer
+    {
         unw_destroy_addr_space(as);
     };
 
-    void *ui = _UPT_create(pid);
+    void* ui = _UPT_create(pid);
     if (ui == NULL) {
         LOG_E("[pid='%d'] _UPT_create failed", pid);
         return num_frames;
     }
-    defer {
+    defer
+    {
         _UPT_destroy(ui);
     };
 
@@ -156,13 +160,13 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
 
     for (num_frames = 0; unw_step(&c) > 0 && num_frames < _HF_MAX_FUNCS; num_frames++) {
         unw_word_t ip;
-        char *mapName = NULL;
+        char* mapName = NULL;
         ret = unw_get_reg(&c, UNW_REG_IP, &ip);
         if (ret < 0) {
             LOG_E("[pid='%d'] [%zd] failed to read IP (%s)", pid, num_frames, UNW_ER[-ret]);
             funcs[num_frames].pc = 0;
         } else {
-            funcs[num_frames].pc = (void *)(uintptr_t) ip;
+            funcs[num_frames].pc = (void*)(uintptr_t)ip;
         }
         if (mapsCnt > 0 && (mapName = arch_searchMaps(ip, mapsCnt, mapsList)) != NULL) {
             memcpy(funcs[num_frames].mapName, mapName, sizeof(funcs[num_frames].mapName));
@@ -174,12 +178,13 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
     return num_frames;
 }
 
-#else                           /* !defined(__ANDROID__) */
-size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
+#else /* !defined(__ANDROID__) */
+size_t arch_unwindStack(pid_t pid, funcs_t* funcs)
 {
     size_t num_frames = 0, mapsCnt = 0;
-    procMap_t *mapsList = arch_parsePidMaps(pid, &mapsCnt);
-    defer {
+    procMap_t* mapsList = arch_parsePidMaps(pid, &mapsCnt);
+    defer
+    {
         free(mapsList);
     };
 
@@ -188,16 +193,18 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
         LOG_E("[pid='%d'] unw_create_addr_space failed", pid);
         return num_frames;
     }
-    defer {
+    defer
+    {
         unw_destroy_addr_space(as);
     };
 
-    struct UPT_info *ui = (struct UPT_info *)_UPT_create(pid);
+    struct UPT_info* ui = (struct UPT_info*)_UPT_create(pid);
     if (ui == NULL) {
         LOG_E("[pid='%d'] _UPT_create failed", pid);
         return num_frames;
     }
-    defer {
+    defer
+    {
         _UPT_destroy(ui);
     };
 
@@ -209,7 +216,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
     }
 
     do {
-        char *mapName = NULL;
+        char* mapName = NULL;
         unw_word_t pc = 0, offset = 0;
         char buf[_HF_FUNC_NAME_SZ] = { 0 };
 
@@ -232,15 +239,15 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
         ret = unw_get_proc_name(&cursor, buf, sizeof(buf), &offset);
         if (ret < 0) {
             LOG_D("[pid='%d'] [%zd] unw_get_proc_name() failed (%s)", pid, num_frames,
-                  UNW_ER[-ret]);
+                UNW_ER[-ret]);
             buf[0] = '\0';
         }
 
- skip_frame_info:
+    skip_frame_info:
         // Compared to bfd, line var plays the role of offset from func_name
         // Reports format is adjusted accordingly to reflect in saved file
         funcs[num_frames].line = offset;
-        funcs[num_frames].pc = (void *)pc;
+        funcs[num_frames].pc = (void*)pc;
         memcpy(funcs[num_frames].func, buf, sizeof(funcs[num_frames].func));
         if (mapsCnt > 0 && (mapName = arch_searchMaps(pc, mapsCnt, mapsList)) != NULL) {
             memcpy(funcs[num_frames].mapName, mapName, sizeof(funcs[num_frames].mapName));
@@ -255,14 +262,14 @@ size_t arch_unwindStack(pid_t pid, funcs_t * funcs)
 
     return num_frames;
 }
-#endif                          /* defined(__ANDROID__) */
+#endif /* defined(__ANDROID__) */
 
 /*
  * Nested loop not most efficient approach, although it's assumed that list is
  * usually target specific and thus small.
  */
-char *arch_btContainsSymbol(size_t symbolsListSz, char **symbolsList, size_t num_frames,
-                            funcs_t * funcs)
+char* arch_btContainsSymbol(size_t symbolsListSz, char** symbolsList, size_t num_frames,
+    funcs_t* funcs)
 {
     for (size_t frame = 0; frame < num_frames; frame++) {
         size_t len = strlen(funcs[frame].func);
@@ -271,7 +278,7 @@ char *arch_btContainsSymbol(size_t symbolsListSz, char **symbolsList, size_t num
         if (strlen(funcs[frame].func) > 0) {
             for (size_t i = 0; i < symbolsListSz; i++) {
                 /* Wildcard symbol string special case */
-                char *wOff = strchr(symbolsList[i], '*');
+                char* wOff = strchr(symbolsList[i], '*');
                 if (wOff) {
                     /* Length always > 3 as checked at input file parsing step */
                     len = wOff - symbolsList[i] - 1;

@@ -139,23 +139,23 @@ struct user_regs_struct_64 {
     uint64_t gs;
 };
 #define HEADERS_STRUCT struct user_regs_struct_64
-#endif                          /* defined(__i386__) || defined(__x86_64__) */
+#endif /* defined(__i386__) || defined(__x86_64__) */
 
 #if defined(__arm__) || defined(__aarch64__)
 #ifndef ARM_pc
-#ifdef __ANDROID__              /* Building with NDK headers */
+#ifdef __ANDROID__ /* Building with NDK headers */
 #define ARM_pc uregs[15]
-#else                           /* Building with glibc headers */
+#else /* Building with glibc headers */
 #define ARM_pc 15
 #endif
-#endif                          /* ARM_pc */
+#endif /* ARM_pc */
 #ifndef ARM_cpsr
-#ifdef __ANDROID__              /* Building with NDK headers */
+#ifdef __ANDROID__ /* Building with NDK headers */
 #define ARM_cpsr uregs[16]
-#else                           /* Building with glibc headers */
+#else /* Building with glibc headers */
 #define ARM_cpsr 16
 #endif
-#endif                          /* ARM_cpsr */
+#endif /* ARM_cpsr */
 struct user_regs_struct_32 {
     uint32_t uregs[18];
 };
@@ -167,7 +167,7 @@ struct user_regs_struct_64 {
     uint64_t pstate;
 };
 #define HEADERS_STRUCT struct user_regs_struct_64
-#endif                          /* defined(__arm__) || defined(__aarch64__) */
+#endif /* defined(__arm__) || defined(__aarch64__) */
 
 #if defined(__powerpc64__) || defined(__powerpc__)
 #define HEADERS_STRUCT struct pt_regs
@@ -217,7 +217,7 @@ struct user_regs_struct_64 {
     uint64_t zero2;
     uint64_t zero3;
 };
-#endif                          /* defined(__powerpc64__) || defined(__powerpc__) */
+#endif /* defined(__powerpc64__) || defined(__powerpc__) */
 
 #if defined(__mips__) || defined(__mips64__)
 struct user_regs_struct {
@@ -231,7 +231,7 @@ struct user_regs_struct {
     uint64_t cp0_cause;
 };
 #define HEADERS_STRUCT struct user_regs_struct
-#endif                          /* defined(__mips__) || defined(__mips64__) */
+#endif /* defined(__mips__) || defined(__mips64__) */
 
 #if defined(__ANDROID__)
 /*
@@ -241,15 +241,15 @@ struct user_regs_struct {
 #define PTRACE_GETREGS_AVAILABLE 1
 #else
 #define PTRACE_GETREGS_AVAILABLE 0
-#endif                          /* defined(PTRACE_GETREGS) */
-#endif                          /* defined(__ANDROID__) */
+#endif /* defined(PTRACE_GETREGS) */
+#endif /* defined(__ANDROID__) */
 
 /*  *INDENT-OFF* */
 static struct {
     const char* descr;
     bool important;
 } arch_sigs[_NSIG + 1] = {
-        [0 ...(_NSIG)].important = false,
+    [0 ...(_NSIG)].important = false,
     [0 ...(_NSIG)].descr = "UNKNOWN",
 
     [SIGTRAP].important = false,
@@ -283,12 +283,12 @@ static struct {
 
 #ifndef SI_FROMUSER
 #define SI_FROMUSER(siptr) ((siptr)->si_code <= 0)
-#endif                          /* SI_FROMUSER */
+#endif /* SI_FROMUSER */
 
-extern const char *sys_sigabbrev[];
+extern const char* sys_sigabbrev[];
 
 static __thread char arch_signame[32];
-static const char *arch_sigName(int signo)
+static const char* arch_sigName(int signo)
 {
     if (signo < 0 || signo > _NSIG) {
         snprintf(arch_signame, sizeof(arch_signame), "UNKNOWN-%d", signo);
@@ -307,10 +307,10 @@ static const char *arch_sigName(int signo)
         snprintf(arch_signame, sizeof(arch_signame), "SIG%s", sys_sigabbrev[signo]);
     }
     return arch_signame;
-#endif                          /* __ANDROID__ */
+#endif /* __ANDROID__ */
 }
 
-static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
+static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, REG_TYPE pc)
 {
     /*
      * Let's try process_vm_readv first
@@ -320,10 +320,10 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
         .iov_len = len,
     };
     const struct iovec remote_iov = {
-        .iov_base = (void *)(uintptr_t) pc,
+        .iov_base = (void*)(uintptr_t)pc,
         .iov_len = len,
     };
-    if (process_vm_readv(pid, &local_iov, 1, &remote_iov, 1, 0) == (ssize_t) len) {
+    if (process_vm_readv(pid, &local_iov, 1, &remote_iov, 1, 0) == (ssize_t)len) {
         return len;
     }
     // Debug if failed since it shouldn't happen very often
@@ -337,7 +337,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
     size_t memsz = 0;
 
     for (int x = 0; x < cnt; x++) {
-        uint8_t *addr = (uint8_t *) (uintptr_t) pc + (int)(x * sizeof(long));
+        uint8_t* addr = (uint8_t*)(uintptr_t)pc + (int)(x * sizeof(long));
         long ret = ptrace(PTRACE_PEEKDATA, pid, addr, NULL);
 
         if (errno != 0) {
@@ -351,7 +351,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t * buf, size_t len, REG_TYPE pc)
     return memsz;
 }
 
-static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg UNUSED)
+static size_t arch_getPC(pid_t pid, REG_TYPE* pc, REG_TYPE* status_reg UNUSED)
 {
 /*
      * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
@@ -389,7 +389,7 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg UNUSED)
      * 32-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)&regs;
+        struct user_regs_struct_32* r32 = (struct user_regs_struct_32*)&regs;
         *pc = r32->eip;
         *status_reg = r32->eflags;
         return pt_iov.iov_len;
@@ -399,21 +399,21 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg UNUSED)
      * 64-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)&regs;
+        struct user_regs_struct_64* r64 = (struct user_regs_struct_64*)&regs;
         *pc = r64->ip;
         *status_reg = r64->flags;
         return pt_iov.iov_len;
     }
     LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
     return 0;
-#endif                          /* defined(__i386__) || defined(__x86_64__) */
+#endif /* defined(__i386__) || defined(__x86_64__) */
 
 #if defined(__arm__) || defined(__aarch64__)
     /*
      * 32-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)&regs;
+        struct user_regs_struct_32* r32 = (struct user_regs_struct_32*)&regs;
 #ifdef __ANDROID__
         *pc = r32->ARM_pc;
         *status_reg = r32->ARM_cpsr;
@@ -428,21 +428,21 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg UNUSED)
      * 64-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)&regs;
+        struct user_regs_struct_64* r64 = (struct user_regs_struct_64*)&regs;
         *pc = r64->pc;
         *status_reg = r64->pstate;
         return pt_iov.iov_len;
     }
     LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
     return 0;
-#endif                          /* defined(__arm__) || defined(__aarch64__) */
+#endif /* defined(__arm__) || defined(__aarch64__) */
 
 #if defined(__powerpc64__) || defined(__powerpc__)
     /*
      * 32-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32 *r32 = (struct user_regs_struct_32 *)&regs;
+        struct user_regs_struct_32* r32 = (struct user_regs_struct_32*)&regs;
         *pc = r32->nip;
         return pt_iov.iov_len;
     }
@@ -451,25 +451,25 @@ static size_t arch_getPC(pid_t pid, REG_TYPE * pc, REG_TYPE * status_reg UNUSED)
      * 64-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64 *r64 = (struct user_regs_struct_64 *)&regs;
+        struct user_regs_struct_64* r64 = (struct user_regs_struct_64*)&regs;
         *pc = r64->nip;
         return pt_iov.iov_len;
     }
 
     LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
     return 0;
-#endif                          /* defined(__powerpc64__) || defined(__powerpc__) */
+#endif /* defined(__powerpc64__) || defined(__powerpc__) */
 
 #if defined(__mips__) || defined(__mips64__)
     *pc = regs.cp0_epc;
     return pt_iov.iov_len;
-#endif                          /* defined(__mips__) || defined(__mips64__) */
+#endif /* defined(__mips__) || defined(__mips64__) */
 
     LOG_D("Unknown/unsupported CPU architecture");
     return 0;
 }
 
-static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
+static void arch_getInstrStr(pid_t pid, REG_TYPE* pc, char* instr)
 {
     /*
      * We need a value aligned to 8
@@ -517,12 +517,12 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
         return;
     }
 
-    cs_insn *insn;
+    cs_insn* insn;
     size_t count = cs_disasm(handle, buf, sizeof(buf), *pc, 0, &insn);
 
     if (count < 1) {
         LOG_W("Couldn't disassemble the assembler instructions' stream: '%s'",
-              cs_strerror(cs_errno(handle)));
+            cs_strerror(cs_errno(handle)));
         cs_close(&handle);
         return;
     }
@@ -530,7 +530,7 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
     snprintf(instr, _HF_INSTR_SZ, "%s %s", insn[0].mnemonic, insn[0].op_str);
     cs_free(insn, count);
     cs_close(&handle);
-#endif                          /* defined(__ANDROID__) */
+#endif /* defined(__ANDROID__) */
 
     for (int x = 0; instr[x] && x < _HF_INSTR_SZ; x++) {
         if (instr[x] == '/' || instr[x] == '\\' || isspace(instr[x])
@@ -542,8 +542,8 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE * pc, char *instr)
     return;
 }
 
-static void arch_hashCallstack(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, funcs_t * funcs,
-                               size_t funcCnt, bool enableMasking)
+static void arch_hashCallstack(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, funcs_t* funcs,
+    size_t funcCnt, bool enableMasking)
 {
     uint64_t hash = 0;
     for (size_t i = 0; i < funcCnt && i < hfuzz->linux.numMajorFrames; i++) {
@@ -551,7 +551,7 @@ static void arch_hashCallstack(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, funcs_t *
          * Convert PC to char array to be compatible with hash function
          */
         char pcStr[REGSIZEINCHAR] = { 0 };
-        snprintf(pcStr, REGSIZEINCHAR, REG_PD REG_PM, (REG_TYPE) (long)funcs[i].pc);
+        snprintf(pcStr, REGSIZEINCHAR, REG_PD REG_PM, (REG_TYPE)(long)funcs[i].pc);
 
         /*
          * Hash the last three nibbles
@@ -572,36 +572,36 @@ static void arch_hashCallstack(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, funcs_t *
 }
 
 static void
-arch_traceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t funcCnt,
-                         siginfo_t * si, const char *instr)
+arch_traceGenerateReport(pid_t pid, fuzzer_t* fuzzer, funcs_t* funcs, size_t funcCnt,
+    siginfo_t* si, const char* instr)
 {
     fuzzer->report[0] = '\0';
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n",
-                   fuzzer->origFileName);
+        fuzzer->origFileName);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n",
-                   fuzzer->crashFileName);
+        fuzzer->crashFileName);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "PID: %d\n", pid);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "SIGNAL: %s (%d)\n",
-                   arch_sigName(si->si_signo), si->si_signo);
+        arch_sigName(si->si_signo), si->si_signo);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FAULT ADDRESS: %p\n",
-                   SI_FROMUSER(si) ? NULL : si->si_addr);
+        SI_FROMUSER(si) ? NULL : si->si_addr);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "INSTRUCTION: %s\n", instr);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK HASH: %016llx\n",
-                   fuzzer->backtrace);
+        fuzzer->backtrace);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK:\n");
     for (size_t i = 0; i < funcCnt; i++) {
 #ifdef __HF_USE_CAPSTONE__
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <" REG_PD REG_PM "> ",
-                       (REG_TYPE) (long)funcs[i].pc);
+            (REG_TYPE)(long)funcs[i].pc);
         if (funcs[i].func[0] != '\0')
             util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[%s() + 0x%x at %s]\n",
-                           funcs[i].func, funcs[i].line, funcs[i].mapName);
+                funcs[i].func, funcs[i].line, funcs[i].mapName);
         else
             util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[]\n");
 #else
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report),
-                       " <" REG_PD REG_PM "> [%s():%u at %s]\n", (REG_TYPE) (long)funcs[i].pc,
-                       funcs[i].func, funcs[i].line, funcs[i].mapName);
+            " <" REG_PD REG_PM "> [%s():%u at %s]\n", (REG_TYPE)(long)funcs[i].pc,
+            funcs[i].func, funcs[i].line, funcs[i].mapName);
 #endif
     }
 
@@ -609,14 +609,14 @@ arch_traceGenerateReport(pid_t pid, fuzzer_t * fuzzer, funcs_t * funcs, size_t f
 #if defined(__aarch64__)
     if (funcCnt == 0) {
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " !ERROR: If 32bit fuzz target"
-                       " in aarch64 system, try ARM 32bit build\n");
+                                                               " in aarch64 system, try ARM 32bit build\n");
     }
 #endif
 
     return;
 }
 
-static void arch_traceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
+static void arch_traceAnalyzeData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzzer)
 {
     REG_TYPE pc = 0, status_reg = 0;
     size_t pcRegSz = arch_getPC(pid, &pc, &status_reg);
@@ -628,8 +628,9 @@ static void arch_traceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuz
     /*
      * Unwind and resolve symbols
      */
-    funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
-    defer {
+    funcs_t* funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
+    defer
+    {
         free(funcs);
     };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
@@ -648,7 +649,7 @@ static void arch_traceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuz
     if (funcCnt == 0) {
         if (pc) {
             /* Manually update major frame PC & frames counter */
-            funcs[0].pc = (void *)(uintptr_t) pc;
+            funcs[0].pc = (void*)(uintptr_t)pc;
             funcCnt = 1;
         } else {
             return;
@@ -661,7 +662,7 @@ static void arch_traceAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuz
     arch_hashCallstack(hfuzz, fuzzer, funcs, funcCnt, false);
 }
 
-static void arch_traceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
+static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzzer)
 {
     REG_TYPE pc = 0;
 
@@ -679,19 +680,20 @@ static void arch_traceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer
     arch_getInstrStr(pid, &pc, instr);
 
     LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %" REG_PM ", instr: '%s'", pid,
-          si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
+        si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
 
     if (!SI_FROMUSER(&si) && pc && si.si_addr < hfuzz->linux.ignoreAddr) {
         LOG_I("'%s' is interesting (%s), but the si.si_addr is %p (below %p), skipping",
-              fuzzer->fileName, arch_sigName(si.si_signo), si.si_addr, hfuzz->linux.ignoreAddr);
+            fuzzer->fileName, arch_sigName(si.si_signo), si.si_addr, hfuzz->linux.ignoreAddr);
         return;
     }
 
     /*
      * Unwind and resolve symbols
      */
-    funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
-    defer {
+    funcs_t* funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
+    defer
+    {
         free(funcs);
     };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
@@ -711,7 +713,7 @@ static void arch_traceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer
     if (funcCnt == 0) {
         if (pc) {
             /* Manually update major frame PC & frames counter */
-            funcs[0].pc = (void *)(uintptr_t) pc;
+            funcs[0].pc = (void*)(uintptr_t)pc;
             funcCnt = 1;
         } else {
             saveUnique = false;
@@ -771,8 +773,8 @@ static void arch_traceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer
      * of the status of uniqueness flag.
      */
     if (hfuzz->linux.symsWl) {
-        char *wlSymbol = arch_btContainsSymbol(hfuzz->linux.symsWlCnt, hfuzz->linux.symsWl,
-                                               funcCnt, funcs);
+        char* wlSymbol = arch_btContainsSymbol(hfuzz->linux.symsWlCnt, hfuzz->linux.symsWl,
+            funcCnt, funcs);
         if (wlSymbol != NULL) {
             saveUnique = false;
             LOG_D("Whitelisted symbol '%s' found, skipping blacklist checks", wlSymbol);
@@ -782,8 +784,7 @@ static void arch_traceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer
          * Check if stackhash is blacklisted
          */
         if (hfuzz->blacklist
-            && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) !=
-                -1)) {
+            && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) != -1)) {
             LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
             ATOMIC_POST_INC(hfuzz->blCrashesCnt);
             return;
@@ -792,8 +793,8 @@ static void arch_traceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer
         /*
          * Check if backtrace contains blacklisted symbol
          */
-        char *blSymbol = arch_btContainsSymbol(hfuzz->linux.symsBlCnt, hfuzz->linux.symsBl,
-                                               funcCnt, funcs);
+        char* blSymbol = arch_btContainsSymbol(hfuzz->linux.symsBlCnt, hfuzz->linux.symsBl,
+            funcCnt, funcs);
         if (blSymbol != NULL) {
             LOG_I("Blacklisted symbol '%s' found, skipping", blSymbol);
             ATOMIC_POST_INC(hfuzz->blCrashesCnt);
@@ -804,7 +805,7 @@ static void arch_traceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer
     /* If non-blacklisted crash detected, zero set two MSB */
     ATOMIC_POST_ADD(hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
-    void *sig_addr = si.si_addr;
+    void* sig_addr = si.si_addr;
     if (hfuzz->linux.disableRandomization == false) {
         pc = 0UL;
         sig_addr = NULL;
@@ -818,19 +819,19 @@ static void arch_traceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer
     /* If dry run mode, copy file with same name into workspace */
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s",
-                 hfuzz->workDir, fuzzer->origFileName);
+            hfuzz->workDir, fuzzer->origFileName);
     } else if (saveUnique) {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
-                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
-                 hfuzz->workDir, arch_sigName(si.si_signo), pc, fuzzer->backtrace,
-                 si.si_code, sig_addr, instr, hfuzz->fileExtn);
+            "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
+            hfuzz->workDir, arch_sigName(si.si_signo), pc, fuzzer->backtrace,
+            si.si_code, sig_addr, instr, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
-                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
-                 hfuzz->workDir, arch_sigName(si.si_signo), pc, fuzzer->backtrace,
-                 si.si_code, sig_addr, instr, localtmstr, pid, hfuzz->fileExtn);
+            "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
+            hfuzz->workDir, arch_sigName(si.si_signo), pc, fuzzer->backtrace,
+            si.si_code, sig_addr, instr, localtmstr, pid, hfuzz->fileExtn);
     }
 
     if (files_exists(fuzzer->crashFileName)) {
@@ -841,7 +842,7 @@ static void arch_traceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer
     }
 
     if (files_writeBufToFile(fuzzer->crashFileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-                             O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC)
+            O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC)
         == false) {
         LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
         return;
@@ -857,22 +858,24 @@ static void arch_traceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer
 }
 
 /* TODO: Add report parsing support for other sanitizers too */
-static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs, void **crashAddr,
-                                char **op)
+static int arch_parseAsanReport(honggfuzz_t* hfuzz, pid_t pid, funcs_t* funcs, void** crashAddr,
+    char** op)
 {
     char crashReport[PATH_MAX] = { 0 };
-    const char *const crashReportCpy = crashReport;
+    const char* const crashReportCpy = crashReport;
     snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX, pid);
 
-    FILE *fReport = fopen(crashReport, "rb");
+    FILE* fReport = fopen(crashReport, "rb");
     if (fReport == NULL) {
         PLOG_D("Couldn't open '%s' - R/O mode", crashReport);
         return -1;
     }
-    defer {
+    defer
+    {
         fclose(fReport);
     };
-    defer {
+    defer
+    {
         unlink(crashReportCpy);
     };
 
@@ -887,7 +890,8 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
 
     char *lineptr = NULL, *cAddr = NULL;
     size_t n = 0;
-    defer {
+    defer
+    {
         free(lineptr);
     };
     for (;;) {
@@ -904,16 +908,16 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
                 cAddr = strstr(lineptr, "address 0x");
                 if (cAddr) {
                     cAddr = cAddr + strlen("address ");
-                    char *endOff = strchr(cAddr, ' ');
+                    char* endOff = strchr(cAddr, ' ');
                     cAddr[endOff - cAddr] = '\0';
-                    *crashAddr = (void *)((size_t) strtoull(cAddr, NULL, 16));
+                    *crashAddr = (void*)((size_t)strtoull(cAddr, NULL, 16));
                 } else {
                     *crashAddr = 0x0;
                 }
             }
             continue;
         } else {
-            char *pLineLC = lineptr;
+            char* pLineLC = lineptr;
             /* Trim leading spaces */
             while (*pLineLC != '\0' && isspace(*pLineLC)) {
                 ++pLineLC;
@@ -950,24 +954,22 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
                  * Frames have following format:
                  #0 0xaa860177  (/system/lib/libc.so+0x196177)
                  */
-                char *savePtr = NULL;
+                char* savePtr = NULL;
                 strtok_r(pLineLC, " ", &savePtr);
-                funcs[frameIdx].pc =
-                    (void *)((size_t) strtoull(strtok_r(NULL, " ", &savePtr), NULL, 16));
+                funcs[frameIdx].pc = (void*)((size_t)strtoull(strtok_r(NULL, " ", &savePtr), NULL, 16));
 
                 /* DSO & code offset parsing */
-                char *targetStr = strtok_r(NULL, " ", &savePtr);
-                char *startOff = strchr(targetStr, '(') + 1;
-                char *plusOff = strchr(targetStr, '+');
-                char *endOff = strrchr(targetStr, ')');
+                char* targetStr = strtok_r(NULL, " ", &savePtr);
+                char* startOff = strchr(targetStr, '(') + 1;
+                char* plusOff = strchr(targetStr, '+');
+                char* endOff = strrchr(targetStr, ')');
                 targetStr[endOff - startOff] = '\0';
                 if ((startOff == NULL) || (endOff == NULL) || (plusOff == NULL)) {
                     LOG_D("Invalid ASan report entry (%s)", lineptr);
                 } else {
-                    size_t dsoSz =
-                        MIN(sizeof(funcs[frameIdx].mapName), (size_t) (plusOff - startOff));
+                    size_t dsoSz = MIN(sizeof(funcs[frameIdx].mapName), (size_t)(plusOff - startOff));
                     memcpy(funcs[frameIdx].mapName, startOff, dsoSz);
-                    char *codeOff = targetStr + (plusOff - startOff) + 1;
+                    char* codeOff = targetStr + (plusOff - startOff) + 1;
                     funcs[frameIdx].line = strtoull(codeOff, NULL, 16);
                 }
 
@@ -985,11 +987,11 @@ static int arch_parseAsanReport(honggfuzz_t * hfuzz, pid_t pid, funcs_t * funcs,
  * a raised signal. Such case is the ASan fuzzing for Android. Crash file name maintains
  * the same format for compatibility with post campaign tools.
  */
-static void arch_traceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
+static void arch_traceExitSaveData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzzer)
 {
     REG_TYPE pc = 0;
-    void *crashAddr = 0;
-    char *op = "UNKNOWN";
+    void* crashAddr = 0;
+    char* op = "UNKNOWN";
     pid_t targetPid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
 
     /* Save only the first hit for each worker */
@@ -1011,8 +1013,9 @@ static void arch_traceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fu
 
     /* If sanitizer produces reports with stack traces (e.g. ASan), they're parsed manually */
     int funcCnt = 0;
-    funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
-    defer {
+    funcs_t* funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
+    defer
+    {
         free(funcs);
     };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
@@ -1036,13 +1039,13 @@ static void arch_traceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fu
     /* Since crash address is available, apply ignoreAddr filters */
     if (crashAddr < hfuzz->linux.ignoreAddr) {
         LOG_I("'%s' is interesting, but the crash addr is %p (below %p), skipping",
-              fuzzer->fileName, crashAddr, hfuzz->linux.ignoreAddr);
+            fuzzer->fileName, crashAddr, hfuzz->linux.ignoreAddr);
         return;
     }
 
     /* If frames successfully recovered, calculate stack hash & populate crash PC */
     arch_hashCallstack(hfuzz, fuzzer, funcs, funcCnt, false);
-    pc = (uintptr_t) funcs[0].pc;
+    pc = (uintptr_t)funcs[0].pc;
 
     /*
      * Check if stackhash is blacklisted
@@ -1057,30 +1060,29 @@ static void arch_traceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fu
     /* If dry run mode, copy file with same name into workspace */
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s",
-                 hfuzz->workDir, fuzzer->origFileName);
+            hfuzz->workDir, fuzzer->origFileName);
     } else {
         /* Keep the crashes file name format identical */
         if (fuzzer->backtrace != 0ULL && hfuzz->saveUnique) {
             snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
-                     "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s",
-                     hfuzz->workDir, "SAN", pc, fuzzer->backtrace,
-                     op, crashAddr, "[UNKNOWN]", hfuzz->fileExtn);
+                "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s",
+                hfuzz->workDir, "SAN", pc, fuzzer->backtrace,
+                op, crashAddr, "[UNKNOWN]", hfuzz->fileExtn);
         } else {
             /* If no stack hash available, all crashes treated as unique */
             char localtmstr[PATH_MAX];
             util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
             snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
-                     "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s.%s",
-                     hfuzz->workDir, "SAN", pc, fuzzer->backtrace,
-                     op, crashAddr, "[UNKNOWN]", localtmstr, hfuzz->fileExtn);
+                "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s.%s",
+                hfuzz->workDir, "SAN", pc, fuzzer->backtrace,
+                op, crashAddr, "[UNKNOWN]", localtmstr, hfuzz->fileExtn);
         }
     }
 
     bool dstFileExists = false;
-    if (files_copyFile
-        (fuzzer->fileName, fuzzer->crashFileName, &dstFileExists, true /* try_link */ )) {
+    if (files_copyFile(fuzzer->fileName, fuzzer->crashFileName, &dstFileExists, true /* try_link */)) {
         LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName,
-              fuzzer->crashFileName);
+            fuzzer->crashFileName);
 
         /* Increase unique crashes counters */
         ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
@@ -1106,22 +1108,22 @@ static void arch_traceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fu
     fuzzer->report[0] = '\0';
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "EXIT_CODE: %s\n", HF_SAN_EXIT_CODE);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n",
-                   fuzzer->origFileName);
+        fuzzer->origFileName);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n",
-                   fuzzer->crashFileName);
+        fuzzer->crashFileName);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "PID: %d\n", pid);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "OPERATION: %s\n", op);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FAULT ADDRESS: %p\n", crashAddr);
     if (funcCnt > 0) {
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK HASH: %016llx\n",
-                       fuzzer->backtrace);
+            fuzzer->backtrace);
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK:\n");
         for (int i = 0; i < funcCnt; i++) {
             util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <" REG_PD REG_PM "> ",
-                           (REG_TYPE) (long)funcs[i].pc);
+                (REG_TYPE)(long)funcs[i].pc);
             if (funcs[i].mapName[0] != '\0') {
                 util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[%s + 0x%x]\n",
-                               funcs[i].mapName, funcs[i].line);
+                    funcs[i].mapName, funcs[i].line);
             } else {
                 util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[]\n");
             }
@@ -1129,13 +1131,14 @@ static void arch_traceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fu
     }
 }
 
-static void arch_traceExitAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
+static void arch_traceExitAnalyzeData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzzer)
 {
-    void *crashAddr = 0;
-    char *op = "UNKNOWN";
+    void* crashAddr = 0;
+    char* op = "UNKNOWN";
     int funcCnt = 0;
-    funcs_t *funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
-    defer {
+    funcs_t* funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
+    defer
+    {
         free(funcs);
     };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
@@ -1156,7 +1159,7 @@ static void arch_traceExitAnalyzeData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t *
     arch_hashCallstack(hfuzz, fuzzer, funcs, funcCnt, false);
 }
 
-void arch_traceExitAnalyze(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
+void arch_traceExitAnalyze(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzzer)
 {
     if (fuzzer->mainWorker) {
         /* Main fuzzing threads */
@@ -1168,31 +1171,30 @@ void arch_traceExitAnalyze(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzzer)
 }
 
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)
-static void arch_traceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status, pid_t pid)
+static void arch_traceEvent(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, int status, pid_t pid)
 {
     LOG_D("PID: %d, Ptrace event: %d", pid, __WEVENT(status));
     switch (__WEVENT(status)) {
-    case PTRACE_EVENT_EXIT:{
-            unsigned long event_msg;
-            if (ptrace(PTRACE_GETEVENTMSG, pid, NULL, &event_msg) == -1) {
-                PLOG_E("ptrace(PTRACE_GETEVENTMSG,%d) failed", pid);
-                return;
-            }
-
-            if (WIFEXITED(event_msg)) {
-                LOG_D("PID: %d exited with exit_code: %lu", pid,
-                      (unsigned long)WEXITSTATUS(event_msg));
-                if (WEXITSTATUS(event_msg) == (unsigned long)HF_SAN_EXIT_CODE) {
-                    arch_traceExitAnalyze(hfuzz, pid, fuzzer);
-                }
-            } else if (WIFSIGNALED(event_msg)) {
-                LOG_D("PID: %d terminated with signal: %lu", pid,
-                      (unsigned long)WTERMSIG(event_msg));
-            } else {
-                LOG_D("PID: %d exited with unknown status: %lu", pid, event_msg);
-            }
+    case PTRACE_EVENT_EXIT: {
+        unsigned long event_msg;
+        if (ptrace(PTRACE_GETEVENTMSG, pid, NULL, &event_msg) == -1) {
+            PLOG_E("ptrace(PTRACE_GETEVENTMSG,%d) failed", pid);
+            return;
         }
-        break;
+
+        if (WIFEXITED(event_msg)) {
+            LOG_D("PID: %d exited with exit_code: %lu", pid,
+                (unsigned long)WEXITSTATUS(event_msg));
+            if (WEXITSTATUS(event_msg) == (unsigned long)HF_SAN_EXIT_CODE) {
+                arch_traceExitAnalyze(hfuzz, pid, fuzzer);
+            }
+        } else if (WIFSIGNALED(event_msg)) {
+            LOG_D("PID: %d terminated with signal: %lu", pid,
+                (unsigned long)WTERMSIG(event_msg));
+        } else {
+            LOG_D("PID: %d exited with unknown status: %lu", pid, event_msg);
+        }
+    } break;
     default:
         break;
     }
@@ -1200,7 +1202,7 @@ static void arch_traceEvent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int status, 
     ptrace(PTRACE_CONT, pid, 0, 0);
 }
 
-void arch_traceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fuzzer)
+void arch_traceAnalyze(honggfuzz_t* hfuzz, int status, pid_t pid, fuzzer_t* fuzzer)
 {
     /*
      * It's a ptrace event, deal with it elsewhere
@@ -1254,7 +1256,7 @@ void arch_traceAnalyze(honggfuzz_t * hfuzz, int status, pid_t pid, fuzzer_t * fu
         return;
     }
 
-    abort();                    /* NOTREACHED */
+    abort(); /* NOTREACHED */
 }
 
 static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
@@ -1273,18 +1275,19 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
     }
 
     size_t count = 0;
-    DIR *dir = opendir(path);
+    DIR* dir = opendir(path);
     if (!dir) {
         PLOG_E("Couldn't open dir '%s'", path);
         return false;
     }
-    defer {
+    defer
+    {
         closedir(dir);
     };
 
     for (;;) {
         errno = 0;
-        struct dirent *res = readdir(dir);
+        struct dirent* res = readdir(dir);
         if (res == NULL && errno != 0) {
             PLOG_E("Couldn't read contents of '%s'", path);
             return false;
@@ -1294,7 +1297,7 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
             break;
         }
 
-        pid_t pid = (pid_t) strtol(res->d_name, (char **)NULL, 10);
+        pid_t pid = (pid_t)strtol(res->d_name, (char**)NULL, 10);
         if (pid == 0) {
             LOG_D("The following dir entry couldn't be converted to pid_t '%s'", res->d_name);
             continue;
@@ -1336,7 +1339,7 @@ bool arch_traceWaitForPidStop(pid_t pid)
 }
 
 #define MAX_THREAD_IN_TASK 4096
-bool arch_traceAttach(honggfuzz_t * hfuzz, pid_t pid)
+bool arch_traceAttach(honggfuzz_t* hfuzz, pid_t pid)
 {
 /*
  * It should be present since, at least, Linux kernel 3.8, but
@@ -1344,7 +1347,7 @@ bool arch_traceAttach(honggfuzz_t * hfuzz, pid_t pid)
  */
 #if !defined(PTRACE_O_EXITKILL)
 #define PTRACE_O_EXITKILL (1 << 20)
-#endif                          /* !defined(PTRACE_O_EXITKILL) */
+#endif /* !defined(PTRACE_O_EXITKILL) */
     long seize_options = PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK;
     if (hfuzz->linux.pid == 0) {
         seize_options |= PTRACE_O_EXITKILL;
@@ -1409,7 +1412,7 @@ void arch_traceDetach(pid_t pid)
     }
 }
 
-void arch_traceSignalsInit(honggfuzz_t * hfuzz)
+void arch_traceSignalsInit(honggfuzz_t* hfuzz)
 {
     /* Default is true for all platforms except Android */
     arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;

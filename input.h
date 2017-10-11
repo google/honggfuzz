@@ -26,12 +26,12 @@
 
 #include "honggfuzz.h"
 
-extern bool input_getNext(honggfuzz_t * hfuzz, char *fname, bool rewind);
+extern bool input_getNext(honggfuzz_t* hfuzz, char* fname, bool rewind);
 
-extern bool input_init(honggfuzz_t * hfuzz);
+extern bool input_init(honggfuzz_t* hfuzz);
 
-extern bool input_parseDictionary(honggfuzz_t * hfuzz);
+extern bool input_parseDictionary(honggfuzz_t* hfuzz);
 
-extern bool input_parseBlacklist(honggfuzz_t * hfuzz);
+extern bool input_parseBlacklist(honggfuzz_t* hfuzz);
 
-#endif                          /* ifndef _HF_INPUT_H_ */
+#endif /* ifndef _HF_INPUT_H_ */

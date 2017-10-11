@@ -26,6 +26,6 @@
 
 #include "honggfuzz.h"
 
-extern void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
+extern void mangle_mangleContent(honggfuzz_t* hfuzz, fuzzer_t* fuzzer);
 
 #endif

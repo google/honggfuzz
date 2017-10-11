@@ -26,6 +26,6 @@
 
 #include "honggfuzz.h"
 
-extern void arch_ptAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
+extern void arch_ptAnalyze(honggfuzz_t* hfuzz, fuzzer_t* fuzzer);
 
-#endif                          /* _HF_LINUX_INTEL_PT_LIB */
+#endif /* _HF_LINUX_INTEL_PT_LIB */

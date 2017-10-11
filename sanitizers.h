@@ -31,8 +31,8 @@
 /* Directory in workspace to store sanitizer coverage data */
 #define _HF_SANCOV_DIR "HF_SANCOV"
 
-extern bool sanitizers_Init(honggfuzz_t * hfuzz);
+extern bool sanitizers_Init(honggfuzz_t* hfuzz);
 
-extern bool sanitizers_prepareExecve(honggfuzz_t * hfuzz);
+extern bool sanitizers_prepareExecve(honggfuzz_t* hfuzz);
 
-#endif                          /* _HF_SANITIZERS_H_ */
+#endif /* _HF_SANITIZERS_H_ */

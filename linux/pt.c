@@ -71,12 +71,12 @@ struct pt_last_ip {
      *
      * - we have seen an IP update.
      */
-    uint32_t have_ip:1;
+    uint32_t have_ip : 1;
     /* - the IP has been suppressed in the last update. */
-    uint32_t suppressed:1;
+    uint32_t suppressed : 1;
 };
 
-inline static void pt_last_ip_init(struct pt_last_ip *last_ip)
+inline static void pt_last_ip_init(struct pt_last_ip* last_ip)
 {
     if (!last_ip)
         return;
@@ -86,7 +86,7 @@ inline static void pt_last_ip_init(struct pt_last_ip *last_ip)
     last_ip->suppressed = 0;
 }
 
-inline static int pt_last_ip_query(uint64_t * ip, const struct pt_last_ip *last_ip)
+inline static int pt_last_ip_query(uint64_t* ip, const struct pt_last_ip* last_ip)
 {
     if (!last_ip)
         return -pte_invalid;
@@ -120,9 +120,9 @@ inline static uint64_t sext(uint64_t val, uint8_t sign)
     return val & signbit ? val | mask : val & ~mask;
 }
 
-inline static int pt_last_ip_update_ip(struct pt_last_ip *last_ip,
-                                       const struct pt_packet_ip *packet,
-                                       const struct pt_config *config)
+inline static int pt_last_ip_update_ip(struct pt_last_ip* last_ip,
+    const struct pt_packet_ip* packet,
+    const struct pt_config* config)
 {
     (void)config;
 
@@ -171,9 +171,9 @@ inline static int pt_last_ip_update_ip(struct pt_last_ip *last_ip,
     return -pte_bad_packet;
 }
 
-inline static void perf_ptAnalyzePkt(honggfuzz_t * hfuzz, fuzzer_t * fuzzer,
-                                     struct pt_packet *packet, struct pt_config *ptc,
-                                     struct pt_last_ip *last_ip)
+inline static void perf_ptAnalyzePkt(honggfuzz_t* hfuzz, fuzzer_t* fuzzer,
+    struct pt_packet* packet, struct pt_config* ptc,
+    struct pt_last_ip* last_ip)
 {
     switch (packet->type) {
     case ppt_tip:
@@ -205,9 +205,9 @@ inline static void perf_ptAnalyzePkt(honggfuzz_t * hfuzz, fuzzer_t * fuzzer,
     return;
 }
 
-void arch_ptAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
+void arch_ptAnalyze(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
 {
-    struct perf_event_mmap_page *pem = (struct perf_event_mmap_page *)fuzzer->linux.perfMmapBuf;
+    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)fuzzer->linux.perfMmapBuf;
 
     uint64_t aux_tail = ATOMIC_GET(pem->aux_tail);
     uint64_t aux_head = ATOMIC_GET(pem->aux_head);
@@ -222,11 +222,12 @@ void arch_ptAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         LOG_F("pt_errata() failed: %s", pt_errstr(errcode));
     }
 
-    struct pt_packet_decoder *ptd = pt_pkt_alloc_decoder(&ptc);
+    struct pt_packet_decoder* ptd = pt_pkt_alloc_decoder(&ptc);
     if (ptd == NULL) {
         LOG_F("pt_pkt_alloc_decoder() failed");
     }
-    defer {
+    defer
+    {
         pt_pkt_free_decoder(ptd);
     };
 
@@ -252,12 +253,11 @@ void arch_ptAnalyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     }
 }
 
-#else                           /* _HF_LINUX_INTEL_PT_LIB */
+#else /* _HF_LINUX_INTEL_PT_LIB */
 
-void arch_ptAnalyze(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
+void arch_ptAnalyze(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED)
 {
-    LOG_F
-        ("The program has not been linked against the Intel's Processor Trace Library (libipt.so)");
+    LOG_F("The program has not been linked against the Intel's Processor Trace Library (libipt.so)");
 }
 
-#endif                          /* _HF_LINUX_INTEL_PT_LIB */
+#endif /* _HF_LINUX_INTEL_PT_LIB */

@@ -44,23 +44,23 @@
 #define _STRMERGE(a, b) __STRMERGE(a, b)
 #ifdef __clang__
 #if __has_extension(blocks)
-static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
+static void __attribute__((unused)) __clang_cleanup_func(void (^*dfunc)(void))
 {
-    (*dfunc) ();
+    (*dfunc)();
 }
 
 #define defer void (^_STRMERGE(__defer_f_, __COUNTER__))(void) __attribute__((cleanup(__clang_cleanup_func))) __attribute__((unused)) = ^
-#else                           /* __has_extension(blocks) */
+#else /* __has_extension(blocks) */
 #define defer UNIMPLEMENTED - NO - SUPPORT - FOR - BLOCKS - IN - YOUR - CLANG - ENABLED
-#endif                          /*  __has_extension(blocks) */
-#else                           /* __clang */
+#endif /*  __has_extension(blocks) */
+#else /* __clang */
 #define __block
 #define _DEFER(a, count)                                                                                               \
     auto void _STRMERGE(__defer_f_, count)(void* _defer_arg __attribute__((unused)));                                  \
     int _STRMERGE(__defer_var_, count) __attribute__((cleanup(_STRMERGE(__defer_f_, count)))) __attribute__((unused)); \
     void _STRMERGE(__defer_f_, count)(void* _defer_arg __attribute__((unused)))
 #define defer _DEFER(a, __COUNTER__)
-#endif                          /* __clang */
+#endif /* __clang */
 
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
 
@@ -69,4 +69,4 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
                                        : "memory")
 #define wmb() __sync_synchronize()
 
-#endif                          /* ifndef _HF_COMMON_H_ */
+#endif /* ifndef _HF_COMMON_H_ */

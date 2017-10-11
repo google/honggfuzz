@@ -44,13 +44,13 @@
 #include <sys/syscall.h>
 #if defined(__NR_memfd_create)
 #include <linux/memfd.h>
-#endif                          /* defined(__NR_memfd_create) */
-#endif                          /* defined(_HF_ARCH_LINUX) */
+#endif /* defined(__NR_memfd_create) */
+#endif /* defined(_HF_ARCH_LINUX) */
 
 #include "libcommon/log.h"
 #include "libcommon/util.h"
 
-static bool input_getDirStatsAndRewind(honggfuzz_t * hfuzz)
+static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz)
 {
     rewinddir(hfuzz->inputDirP);
 
@@ -58,7 +58,7 @@ static bool input_getDirStatsAndRewind(honggfuzz_t * hfuzz)
     size_t fileCnt = 0U;
     for (;;) {
         errno = 0;
-        struct dirent *entry = readdir(hfuzz->inputDirP);
+        struct dirent* entry = readdir(hfuzz->inputDirP);
         if (entry == NULL && errno == EINTR) {
             continue;
         }
@@ -83,15 +83,15 @@ static bool input_getDirStatsAndRewind(honggfuzz_t * hfuzz)
             LOG_D("'%s' is not a regular file, skipping", fname);
             continue;
         }
-        if (hfuzz->maxFileSz != 0UL && st.st_size > (off_t) hfuzz->maxFileSz) {
+        if (hfuzz->maxFileSz != 0UL && st.st_size > (off_t)hfuzz->maxFileSz) {
             LOG_W("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %" PRId64,
-                  fname, (int64_t) st.st_size, (int64_t) hfuzz->maxFileSz);
+                fname, (int64_t)st.st_size, (int64_t)hfuzz->maxFileSz);
         }
         if (st.st_size == 0U) {
             LOG_W("File '%s' is empty", fname);
             continue;
         }
-        if ((size_t) st.st_size > maxSize) {
+        if ((size_t)st.st_size > maxSize) {
             maxSize = st.st_size;
         }
         fileCnt++;
@@ -116,14 +116,14 @@ static bool input_getDirStatsAndRewind(honggfuzz_t * hfuzz)
     }
 
     LOG_D("Re-read the '%s', maxFileSz:%zu, number of usable files:%zu", hfuzz->inputDir,
-          hfuzz->maxFileSz, hfuzz->fileCnt);
+        hfuzz->maxFileSz, hfuzz->fileCnt);
 
     rewinddir(hfuzz->inputDirP);
 
     return true;
 }
 
-bool input_getNext(honggfuzz_t * hfuzz, char *fname, bool rewind)
+bool input_getNext(honggfuzz_t* hfuzz, char* fname, bool rewind)
 {
     static pthread_mutex_t input_mutex = PTHREAD_MUTEX_INITIALIZER;
     MX_SCOPED_LOCK(&input_mutex);
@@ -134,7 +134,7 @@ bool input_getNext(honggfuzz_t * hfuzz, char *fname, bool rewind)
 
     for (;;) {
         errno = 0;
-        struct dirent *entry = readdir(hfuzz->inputDirP);
+        struct dirent* entry = readdir(hfuzz->inputDirP);
         if (entry == NULL && errno == EINTR) {
             continue;
         }
@@ -172,7 +172,7 @@ bool input_getNext(honggfuzz_t * hfuzz, char *fname, bool rewind)
     }
 }
 
-bool input_init(honggfuzz_t * hfuzz)
+bool input_init(honggfuzz_t* hfuzz)
 {
     hfuzz->fileCnt = 0U;
 
@@ -200,20 +200,22 @@ bool input_init(honggfuzz_t * hfuzz)
     return true;
 }
 
-bool input_parseDictionary(honggfuzz_t * hfuzz)
+bool input_parseDictionary(honggfuzz_t* hfuzz)
 {
-    FILE *fDict = fopen(hfuzz->dictionaryFile, "rb");
+    FILE* fDict = fopen(hfuzz->dictionaryFile, "rb");
     if (fDict == NULL) {
         PLOG_W("Couldn't open '%s' - R/O mode", hfuzz->dictionaryFile);
         return false;
     }
-    defer {
+    defer
+    {
         fclose(fDict);
     };
 
-    char *lineptr = NULL;
+    char* lineptr = NULL;
     size_t n = 0;
-    defer {
+    defer
+    {
         free(lineptr);
     };
     for (;;) {
@@ -242,8 +244,8 @@ bool input_parseDictionary(honggfuzz_t * hfuzz)
             continue;
         }
 
-        char *s = util_StrDup(bufv);
-        struct strings_t *str = (struct strings_t *)util_Malloc(sizeof(struct strings_t));
+        char* s = util_StrDup(bufv);
+        struct strings_t* str = (struct strings_t*)util_Malloc(sizeof(struct strings_t));
         str->len = util_decodeCString(s);
         str->s = s;
         hfuzz->dictionaryCnt += 1;
@@ -255,20 +257,22 @@ bool input_parseDictionary(honggfuzz_t * hfuzz)
     return true;
 }
 
-bool input_parseBlacklist(honggfuzz_t * hfuzz)
+bool input_parseBlacklist(honggfuzz_t* hfuzz)
 {
-    FILE *fBl = fopen(hfuzz->blacklistFile, "rb");
+    FILE* fBl = fopen(hfuzz->blacklistFile, "rb");
     if (fBl == NULL) {
         PLOG_W("Couldn't open '%s' - R/O mode", hfuzz->blacklistFile);
         return false;
     }
-    defer {
+    defer
+    {
         fclose(fBl);
     };
 
-    char *lineptr = NULL;
+    char* lineptr = NULL;
     /* lineptr can be NULL, but it's fine for free() */
-    defer {
+    defer
+    {
         free(lineptr);
     };
     size_t n = 0;
@@ -278,11 +282,10 @@ bool input_parseBlacklist(honggfuzz_t * hfuzz)
         }
 
         if ((hfuzz->blacklist = util_Realloc(hfuzz->blacklist,
-                                             (hfuzz->blacklistCnt +
-                                              1) * sizeof(hfuzz->blacklist[0])))
+                 (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0])))
             == NULL) {
             PLOG_W("realloc failed (sz=%zu)",
-                   (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]));
+                (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]));
             return false;
         }
 
@@ -292,8 +295,7 @@ bool input_parseBlacklist(honggfuzz_t * hfuzz)
         // Verify entries are sorted so we can use interpolation search
         if (hfuzz->blacklistCnt > 1) {
             if (hfuzz->blacklist[hfuzz->blacklistCnt - 1] > hfuzz->blacklist[hfuzz->blacklistCnt]) {
-                LOG_F
-                    ("Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort records");
+                LOG_F("Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort records");
                 return false;
             }
         }
