@@ -594,7 +594,8 @@ static int srp_callback(SSL* s, int* ad, void* arg)
     }
     return SSL_ERROR_NONE;
 }
-#endif /* !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION) */
+#endif /* !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION) \
+          */
 
 int alpn_callback(SSL* ssl, const unsigned char** out, unsigned char* outlen,
     const unsigned char* in, unsigned int inlen, void* arg)
@@ -604,7 +605,8 @@ int alpn_callback(SSL* ssl, const unsigned char** out, unsigned char* outlen,
     return SSL_TLSEXT_ERR_OK;
 }
 
-static int npn_callback(SSL* ssl, const uint8_t** out, unsigned* out_len, void* arg)
+static int npn_callback(SSL* ssl, const uint8_t** out, unsigned* out_len,
+    void* arg)
 {
     static const uint8_t kProtocols[] = {
         0x01, 'a', 0x02, 'a', 'a', 0x03, 'a', 'a', 'a',
@@ -684,7 +686,8 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
     assert(ret == 1);
     ret = SSL_CTX_set_srp_cb_arg(ctx, NULL);
     assert(ret == 1);
-#endif /* !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION) */
+#endif /* !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION) \
+          */
 
     SSL_CTX_set_alpn_select_cb(ctx, alpn_callback, NULL);
     SSL_CTX_set_next_protos_advertised_cb(ctx, npn_callback, NULL);
@@ -716,13 +719,32 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 
     SSL_set_bio(server, in, out);
 
+#if !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
+    SSL_set_dh_auto(server, 1);
+    SSL_set_max_early_data(server, 128);
+    static const uint8_t edata_buf[128] = { 1, 0 };
+    size_t written = 0;
+    SSL_write_early_data(server, edata_buf, sizeof(edata_buf), &written);
+#endif // !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
+
+#if !defined(LIBRESSL_VERSION_NUMBER)
+    SSL_set_min_proto_version(server, SSL3_VERSION);
+    SSL_set_max_proto_version(server, TLS1_3_VERSION);
+#endif // !defined(LIBRESSL_VERSION_NUMBER)
+
     if (SSL_accept(server) == 1) {
+        uint8_t tmp[1024 * 1024];
+#if !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
+        static const uint8_t early_data_buf[128] = { 1, 0 };
+        size_t readbytes = 0;
+        SSL_read_early_data(server, tmp, sizeof(tmp), &readbytes);
+#endif // !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
+
         X509* peer;
         if ((peer = SSL_get_peer_certificate(server)) != NULL) {
             SSL_get_verify_result(server);
             X509_free(peer);
         }
-        uint8_t tmp[1024 * 1024];
         for (;;) {
             ssize_t r = SSL_read(server, tmp, sizeof(tmp));
             if (r <= 0) {
@@ -734,6 +756,7 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
                 break;
             }
             SSL_renegotiate(server);
+            SSL_set_mtu(server, 8);
 #ifndef OPENSSL_NO_HEARTBEATS
             SSL_heartbeat(server);
 #endif /* ifndef OPENSSL_NO_HEARTBEATS */
