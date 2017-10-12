@@ -604,7 +604,11 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
     ret = SSL_CTX_use_certificate(ctx, cert);
     assert(ret == 1);
     X509_free(cert);
-    ret = SSL_CTX_set_cipher_list(ctx, "ALL:eNULL:aNULL:DSS");
+#if defined(BORINGSSL_API_VERSION)
+    ret = SSL_CTX_set_cipher_list(ctx, "ALL");
+#else
+    ret = SSL_CTX_set_cipher_list(ctx, "ALL:COMPLEMENTOFALL");
+#endif  // defined(BORINGSSL_API_VERSION)
     assert(ret == 1);
 
     X509_STORE* store = X509_STORE_new();
