@@ -608,7 +608,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
     ret = SSL_CTX_set_cipher_list(ctx, "ALL");
 #else
     ret = SSL_CTX_set_cipher_list(ctx, "ALL:COMPLEMENTOFALL");
-#endif  // defined(BORINGSSL_API_VERSION)
+#endif // defined(BORINGSSL_API_VERSION)
     assert(ret == 1);
 
     X509_STORE* store = X509_STORE_new();
@@ -680,6 +680,7 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 
     SSL_set_bio(client, in, out);
 #if !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
+    SSL_enable_ct(client, SSL_CT_VALIDATION_PERMISSIVE);
     SSL_set_dh_auto(client, 1);
     SSL_set_max_early_data(client, 128);
     static const uint8_t edata_buf[128] = { 1, 0 };
