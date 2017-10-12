@@ -11,7 +11,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
-#include <hf_rand_lib.h>
+#include <hf_ssl_lib.h>
 #include <libhfuzz/libhfuzz.h>
 
 int LLVMFuzzerInitialize(int* argc, char*** argv)

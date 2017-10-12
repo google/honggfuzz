@@ -12,7 +12,7 @@ extern "C" {
 #include <string.h>
 #include <unistd.h>
 
-#include <hf_rand_lib.h>
+#include <hf_ssl_lib.h>
 #include <libhfuzz/libhfuzz.h>
 
 static const uint8_t kCertificateDER[] = {
@@ -688,40 +688,43 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
     SSL_set_max_proto_version(client, TLS1_3_VERSION);
 #endif // !defined(LIBRESSL_VERSION_NUMBER)
 
-    if (SSL_connect(client) == 1) {
-        uint8_t tmp[1024 * 1024];
+    /* Try it two times to test SSL_clear() */
+    for (unsigned i = 0; i < 2; i++) {
+        if (SSL_connect(client) == 1) {
+            uint8_t tmp[1024 * 1024];
 #if !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
-        size_t readbytes = 0;
-        SSL_read_early_data(client, tmp, sizeof(tmp), &readbytes);
+            size_t readbytes = 0;
+            SSL_read_early_data(client, tmp, sizeof(tmp), &readbytes);
 #endif // !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
-        X509* peer;
-        if ((peer = SSL_get_peer_certificate(client)) != NULL) {
-            SSL_get_verify_result(client);
-            X509_free(peer);
-        }
-        // Keep reading application data until error or EOF.
-        for (;;) {
-            ssize_t r = SSL_read(client, tmp, sizeof(tmp));
-            if (r <= 0) {
-                SSL_shutdown(client);
-                break;
+            X509* peer;
+            if ((peer = SSL_get_peer_certificate(client)) != NULL) {
+                SSL_get_verify_result(client);
+                X509_free(peer);
             }
-            if (SSL_write(client, tmp, r) <= 0) {
-                SSL_shutdown(client);
-                break;
-            }
-            SSL_renegotiate(client);
-            SSL_set_mtu(client, 8);
+            // Keep reading application data until error or EOF.
+            for (;;) {
+                ssize_t r = SSL_read(client, tmp, sizeof(tmp));
+                if (r <= 0) {
+                    SSL_shutdown(client);
+                    break;
+                }
+                if (SSL_write(client, tmp, r) <= 0) {
+                    SSL_shutdown(client);
+                    break;
+                }
+                SSL_renegotiate(client);
+                SSL_set_mtu(client, 8);
 #ifndef OPENSSL_NO_HEARTBEATS
-            SSL_heartbeat(client);
+                SSL_heartbeat(client);
 #endif
+            }
+        } else {
+            ERR_print_errors_fp(stderr);
         }
-    } else {
-        ERR_print_errors_fp(stderr);
-    }
 
-    SSL_shutdown(client);
-    SSL_clear(client);
+        SSL_shutdown(client);
+        SSL_clear(client);
+    }
     SSL_free(client);
 
     return 0;

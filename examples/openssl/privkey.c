@@ -3,7 +3,7 @@
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
 
-#include <hf_rand_lib.h>
+#include <hf_ssl_lib.h>
 #include <libhfuzz/libhfuzz.h>
 
 #ifdef __cplusplus
