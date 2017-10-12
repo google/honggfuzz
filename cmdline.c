@@ -251,7 +251,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
     TAILQ_INIT(&hfuzz->dynfileq);
     TAILQ_INIT(&hfuzz->dictq);
 
-//  clang-format off
+    //  clang-format off
     struct custom_option custom_opts[] = {
         { { "help", no_argument, NULL, 'h' }, "Help plz.." },
         { { "input", required_argument, NULL, 'f' }, "Path to a directory containing initial file corpus" },
@@ -307,7 +307,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
 #endif // defined(_HF_ARCH_LINUX)
         { { 0, 0, 0, 0 }, NULL },
     };
-//  clang-format on
+    //  clang-format on
 
     struct option opts[ARRAYSIZE(custom_opts)];
     for (unsigned i = 0; i < ARRAYSIZE(custom_opts); i++) {
