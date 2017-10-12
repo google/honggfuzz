@@ -47,7 +47,6 @@
 #include "sancov.h"
 #include "subproc.h"
 
-/*  *INDENT-OFF* */
 struct {
     bool important;
     const char* descr;
@@ -75,7 +74,6 @@ struct {
     [SIGVTALRM].important = false,
     [SIGVTALRM].descr = "SIGVTALRM-TMOUT",
 };
-/*  *INDENT-ON* */
 
 /*
  * Returns true if a process exited (so, presumably, we can delete an input

@@ -65,7 +65,6 @@
 /*
  * Interface to third_party/CrashReport_*.o
  */
-/*  *INDENT-OFF* */
 @interface CrashReport : NSObject
 - (id)initWithTask:(task_t)
                        task
@@ -83,7 +82,6 @@
                            aThreadState
       threadStateCount:(mach_msg_type_number_t)aThreadStateCount;
 @end
-/*  *INDENT-ON* */
 
 /*
  * Global to have exception port available in the collection thread
@@ -517,7 +515,6 @@ write_crash_report(thread_port_t thread,
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
     CrashReport* _crashReport = nil;
 
-    /*  *INDENT-OFF* */
     _crashReport = [[CrashReport alloc] initWithTask:task
                                        exceptionType:exception
                                        exceptionCode:code
@@ -526,7 +523,6 @@ write_crash_report(thread_port_t thread,
                                    threadStateFlavor:*flavor
                                          threadState:(thread_state_t)in_state
                                     threadStateCount:in_state_count];
-    /*  *INDENT-OFF* */
 
     NSString* crashDescription = [_crashReport description];
     char* description = (char*)[crashDescription UTF8String];
@@ -553,7 +549,6 @@ hash_callstack(thread_port_t thread,
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
     CrashReport* _crashReport = nil;
 
-    /*  *INDENT-OFF* */
     _crashReport = [[CrashReport alloc] initWithTask:task
                                        exceptionType:exception
                                        exceptionCode:code
@@ -562,7 +557,6 @@ hash_callstack(thread_port_t thread,
                                    threadStateFlavor:*flavor
                                          threadState:(thread_state_t)in_state
                                     threadStateCount:in_state_count];
-    /*  *INDENT-ON* */
 
     NSString* crashDescription = [_crashReport description];
     char* description = (char*)[crashDescription UTF8String];

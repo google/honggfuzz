@@ -26,7 +26,6 @@ static char lhfuzzPath[PATH_MAX] = { 0 };
 static bool isCXX = false;
 static bool isGCC = false;
 
-/*  *INDENT-OFF* */
 /* Embed libhfuzz.a inside this binary */
 __asm__("\n"
         "   .global lhfuzz_start\n"
@@ -35,7 +34,6 @@ __asm__("\n"
         "   .incbin \"libhfuzz/libhfuzz.a\"\n"
         "lhfuzz_end:\n"
         "\n");
-/*  *INDENT-ON* */
 
 static bool useASAN()
 {

@@ -150,7 +150,6 @@ static void mangle_Dictionary(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
 
 static void mangle_Magic(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer)
 {
-    /*  *INDENT-OFF* */
     static const struct {
         const uint8_t val[8];
         const size_t size;
@@ -387,7 +386,6 @@ static void mangle_Magic(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer)
         { "\x01\x00\x00\x00\x00\x00\x00\x80", 8 },
         { "\xFE\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 8 },
     };
-    /*  *INDENT-ON* */
 
     size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
     uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleMagicVals) - 1);
@@ -547,7 +545,6 @@ void mangle_mangleContent(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     }
 
     static void (*const mangleFuncs[])(honggfuzz_t * hfuzz, fuzzer_t * fuzzer) = {
-        /*  *INDENT-OFF* */
         mangle_Byte,
         mangle_Bit,
         mangle_Bytes,
@@ -566,7 +563,6 @@ void mangle_mangleContent(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
         mangle_Shrink,
         mangle_InsertRnd,
         mangle_Resize,
-        /* *INDENT-ON* */
     };
 
     /* Max number of stacked changes is 6 */

@@ -244,7 +244,6 @@ struct user_regs_struct {
 #endif /* defined(PTRACE_GETREGS) */
 #endif /* defined(__ANDROID__) */
 
-/*  *INDENT-OFF* */
 static struct {
     const char* descr;
     bool important;
@@ -279,7 +278,6 @@ static struct {
     [SIGSYS].important = true,
     [SIGSYS].descr = "SIGSYS",
 };
-/*  *INDENT-ON* */
 
 #ifndef SI_FROMUSER
 #define SI_FROMUSER(siptr) ((siptr)->si_code <= 0)
