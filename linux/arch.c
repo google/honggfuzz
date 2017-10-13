@@ -141,6 +141,10 @@ bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
         PLOG_E("setenv(MALLOC_CHECK_=7) failed");
         return false;
     }
+    if (setenv("MALLOC_PERTURB_", "85", 0) == -1) {
+        PLOG_E("setenv(MALLOC_PERTURB_=85) failed");
+        return false;
+    }
 
     /*
      * Disable ASLR:
