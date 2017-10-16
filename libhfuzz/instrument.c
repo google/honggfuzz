@@ -215,7 +215,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(uint32_t* s
     }
     inited = true;
     uint32_t n = 1U;
-    for (uint32_t *x = start; x < stop; x++, n++) {
+    for (uint32_t* x = start; x < stop; x++, n++) {
         if (n >= _HF_PC_GUARD_MAX) {
             LOG_F("This process has too many PC guards: %tx\n",
                 ((uintptr_t)stop - (uintptr_t)start) / sizeof(start));
