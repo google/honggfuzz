@@ -66,7 +66,8 @@
 #define REG_TYPE uint32_t
 #define REG_PM PRIx32
 #define REG_PD "0x%08"
-#elif defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__) || defined(__mips__) || defined(__mips64__)
+#elif defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__) || defined(__mips__)   \
+    || defined(__mips64__)
 #define REG_TYPE uint64_t
 #define REG_PM PRIx64
 #define REG_PD "0x%016"
@@ -352,12 +353,12 @@ static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, REG_TYPE pc)
 static size_t arch_getPC(pid_t pid, REG_TYPE* pc, REG_TYPE* status_reg UNUSED)
 {
 /*
-     * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
-     * the correct register values if struct size is bigger than expected. As such the
-     * 32/64-bit multiplexing trick is not working for them in case PTRACE_GETREGSET
-     * fails or is not implemented. To cover such cases we explicitly define
-     * the struct size to 32bit version for arm CPU.
-     */
+ * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
+ * the correct register values if struct size is bigger than expected. As such the
+ * 32/64-bit multiplexing trick is not working for them in case PTRACE_GETREGSET
+ * fails or is not implemented. To cover such cases we explicitly define
+ * the struct size to 32bit version for arm CPU.
+ */
 #if defined(__arm__)
     struct user_regs_struct_32 regs;
 #else
@@ -531,8 +532,7 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE* pc, char* instr)
 #endif /* defined(__ANDROID__) */
 
     for (int x = 0; instr[x] && x < _HF_INSTR_SZ; x++) {
-        if (instr[x] == '/' || instr[x] == '\\' || isspace(instr[x])
-            || !isprint(instr[x])) {
+        if (instr[x] == '/' || instr[x] == '\\' || isspace(instr[x]) || !isprint(instr[x])) {
             instr[x] = '_';
         }
     }
@@ -540,8 +540,8 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE* pc, char* instr)
     return;
 }
 
-static void arch_hashCallstack(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, funcs_t* funcs,
-    size_t funcCnt, bool enableMasking)
+static void arch_hashCallstack(
+    honggfuzz_t* hfuzz, fuzzer_t* fuzzer, funcs_t* funcs, size_t funcCnt, bool enableMasking)
 {
     uint64_t hash = 0;
     for (size_t i = 0; i < funcCnt && i < hfuzz->linux.numMajorFrames; i++) {
@@ -569,23 +569,22 @@ static void arch_hashCallstack(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, funcs_t* fu
     fuzzer->backtrace = hash;
 }
 
-static void
-arch_traceGenerateReport(pid_t pid, fuzzer_t* fuzzer, funcs_t* funcs, size_t funcCnt,
-    siginfo_t* si, const char* instr)
+static void arch_traceGenerateReport(
+    pid_t pid, fuzzer_t* fuzzer, funcs_t* funcs, size_t funcCnt, siginfo_t* si, const char* instr)
 {
     fuzzer->report[0] = '\0';
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n",
-        fuzzer->origFileName);
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n",
-        fuzzer->crashFileName);
+    util_ssnprintf(
+        fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n", fuzzer->origFileName);
+    util_ssnprintf(
+        fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n", fuzzer->crashFileName);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "PID: %d\n", pid);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "SIGNAL: %s (%d)\n",
         arch_sigName(si->si_signo), si->si_signo);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FAULT ADDRESS: %p\n",
         SI_FROMUSER(si) ? NULL : si->si_addr);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "INSTRUCTION: %s\n", instr);
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK HASH: %016llx\n",
-        fuzzer->backtrace);
+    util_ssnprintf(
+        fuzzer->report, sizeof(fuzzer->report), "STACK HASH: %016llx\n", fuzzer->backtrace);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK:\n");
     for (size_t i = 0; i < funcCnt; i++) {
 #ifdef __HF_USE_CAPSTONE__
@@ -598,16 +597,17 @@ arch_traceGenerateReport(pid_t pid, fuzzer_t* fuzzer, funcs_t* funcs, size_t fun
             util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "[]\n");
 #else
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report),
-            " <" REG_PD REG_PM "> [%s():%u at %s]\n", (REG_TYPE)(long)funcs[i].pc,
-            funcs[i].func, funcs[i].line, funcs[i].mapName);
+            " <" REG_PD REG_PM "> [%s():%u at %s]\n", (REG_TYPE)(long)funcs[i].pc, funcs[i].func,
+            funcs[i].line, funcs[i].mapName);
 #endif
     }
 
 // libunwind is not working for 32bit targets in 64bit systems
 #if defined(__aarch64__)
     if (funcCnt == 0) {
-        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " !ERROR: If 32bit fuzz target"
-                                                               " in aarch64 system, try ARM 32bit build\n");
+        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report),
+            " !ERROR: If 32bit fuzz target"
+            " in aarch64 system, try ARM 32bit build\n");
     }
 #endif
 
@@ -627,10 +627,7 @@ static void arch_traceAnalyzeData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzze
      * Unwind and resolve symbols
      */
     funcs_t* funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
-    defer
-    {
-        free(funcs);
-    };
+    defer { free(funcs); };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
 #if !defined(__ANDROID__)
@@ -690,10 +687,7 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzzer)
      * Unwind and resolve symbols
      */
     funcs_t* funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
-    defer
-    {
-        free(funcs);
-    };
+    defer { free(funcs); };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
 #if !defined(__ANDROID__)
@@ -771,8 +765,8 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzzer)
      * of the status of uniqueness flag.
      */
     if (hfuzz->linux.symsWl) {
-        char* wlSymbol = arch_btContainsSymbol(hfuzz->linux.symsWlCnt, hfuzz->linux.symsWl,
-            funcCnt, funcs);
+        char* wlSymbol
+            = arch_btContainsSymbol(hfuzz->linux.symsWlCnt, hfuzz->linux.symsWl, funcCnt, funcs);
         if (wlSymbol != NULL) {
             saveUnique = false;
             LOG_D("Whitelisted symbol '%s' found, skipping blacklist checks", wlSymbol);
@@ -782,7 +776,8 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzzer)
          * Check if stackhash is blacklisted
          */
         if (hfuzz->blacklist
-            && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) != -1)) {
+            && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace)
+                   != -1)) {
             LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
             ATOMIC_POST_INC(hfuzz->blCrashesCnt);
             return;
@@ -791,8 +786,8 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzzer)
         /*
          * Check if backtrace contains blacklisted symbol
          */
-        char* blSymbol = arch_btContainsSymbol(hfuzz->linux.symsBlCnt, hfuzz->linux.symsBl,
-            funcCnt, funcs);
+        char* blSymbol
+            = arch_btContainsSymbol(hfuzz->linux.symsBlCnt, hfuzz->linux.symsBl, funcCnt, funcs);
         if (blSymbol != NULL) {
             LOG_I("Blacklisted symbol '%s' found, skipping", blSymbol);
             ATOMIC_POST_INC(hfuzz->blCrashesCnt);
@@ -816,20 +811,20 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzzer)
 
     /* If dry run mode, copy file with same name into workspace */
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
-        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s",
-            hfuzz->workDir, fuzzer->origFileName);
+        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s", hfuzz->workDir,
+            fuzzer->origFileName);
     } else if (saveUnique) {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
-            "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
-            hfuzz->workDir, arch_sigName(si.si_signo), pc, fuzzer->backtrace,
-            si.si_code, sig_addr, instr, hfuzz->fileExtn);
+            "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s", hfuzz->workDir,
+            arch_sigName(si.si_signo), pc, fuzzer->backtrace, si.si_code, sig_addr, instr,
+            hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
             "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
-            hfuzz->workDir, arch_sigName(si.si_signo), pc, fuzzer->backtrace,
-            si.si_code, sig_addr, instr, localtmstr, pid, hfuzz->fileExtn);
+            hfuzz->workDir, arch_sigName(si.si_signo), pc, fuzzer->backtrace, si.si_code, sig_addr,
+            instr, localtmstr, pid, hfuzz->fileExtn);
     }
 
     if (files_exists(fuzzer->crashFileName)) {
@@ -856,8 +851,8 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzzer)
 }
 
 /* TODO: Add report parsing support for other sanitizers too */
-static int arch_parseAsanReport(honggfuzz_t* hfuzz, pid_t pid, funcs_t* funcs, void** crashAddr,
-    char** op)
+static int arch_parseAsanReport(
+    honggfuzz_t* hfuzz, pid_t pid, funcs_t* funcs, void** crashAddr, char** op)
 {
     char crashReport[PATH_MAX] = { 0 };
     const char* const crashReportCpy = crashReport;
@@ -868,14 +863,8 @@ static int arch_parseAsanReport(honggfuzz_t* hfuzz, pid_t pid, funcs_t* funcs, v
         PLOG_D("Couldn't open '%s' - R/O mode", crashReport);
         return -1;
     }
-    defer
-    {
-        fclose(fReport);
-    };
-    defer
-    {
-        unlink(crashReportCpy);
-    };
+    defer { fclose(fReport); };
+    defer { unlink(crashReportCpy); };
 
     char header[35] = { 0 };
     snprintf(header, sizeof(header), "==%d==ERROR: AddressSanitizer:", pid);
@@ -888,10 +877,7 @@ static int arch_parseAsanReport(honggfuzz_t* hfuzz, pid_t pid, funcs_t* funcs, v
 
     char *lineptr = NULL, *cAddr = NULL;
     size_t n = 0;
-    defer
-    {
-        free(lineptr);
-    };
+    defer { free(lineptr); };
     for (;;) {
         if (getline(&lineptr, &n, fReport) == -1) {
             break;
@@ -954,7 +940,8 @@ static int arch_parseAsanReport(honggfuzz_t* hfuzz, pid_t pid, funcs_t* funcs, v
                  */
                 char* savePtr = NULL;
                 strtok_r(pLineLC, " ", &savePtr);
-                funcs[frameIdx].pc = (void*)((size_t)strtoull(strtok_r(NULL, " ", &savePtr), NULL, 16));
+                funcs[frameIdx].pc
+                    = (void*)((size_t)strtoull(strtok_r(NULL, " ", &savePtr), NULL, 16));
 
                 /* DSO & code offset parsing */
                 char* targetStr = strtok_r(NULL, " ", &savePtr);
@@ -965,7 +952,8 @@ static int arch_parseAsanReport(honggfuzz_t* hfuzz, pid_t pid, funcs_t* funcs, v
                 if ((startOff == NULL) || (endOff == NULL) || (plusOff == NULL)) {
                     LOG_D("Invalid ASan report entry (%s)", lineptr);
                 } else {
-                    size_t dsoSz = MIN(sizeof(funcs[frameIdx].mapName), (size_t)(plusOff - startOff));
+                    size_t dsoSz
+                        = MIN(sizeof(funcs[frameIdx].mapName), (size_t)(plusOff - startOff));
                     memcpy(funcs[frameIdx].mapName, startOff, dsoSz);
                     char* codeOff = targetStr + (plusOff - startOff) + 1;
                     funcs[frameIdx].line = strtoull(codeOff, NULL, 16);
@@ -1012,10 +1000,7 @@ static void arch_traceExitSaveData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzz
     /* If sanitizer produces reports with stack traces (e.g. ASan), they're parsed manually */
     int funcCnt = 0;
     funcs_t* funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
-    defer
-    {
-        free(funcs);
-    };
+    defer { free(funcs); };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
     /* Sanitizers save reports against parent PID */
@@ -1057,30 +1042,31 @@ static void arch_traceExitSaveData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzz
 
     /* If dry run mode, copy file with same name into workspace */
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
-        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s",
-            hfuzz->workDir, fuzzer->origFileName);
+        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s", hfuzz->workDir,
+            fuzzer->origFileName);
     } else {
         /* Keep the crashes file name format identical */
         if (fuzzer->backtrace != 0ULL && hfuzz->saveUnique) {
             snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s",
-                hfuzz->workDir, "SAN", pc, fuzzer->backtrace,
-                op, crashAddr, "[UNKNOWN]", hfuzz->fileExtn);
+                hfuzz->workDir, "SAN", pc, fuzzer->backtrace, op, crashAddr, "[UNKNOWN]",
+                hfuzz->fileExtn);
         } else {
             /* If no stack hash available, all crashes treated as unique */
             char localtmstr[PATH_MAX];
             util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
             snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s.%s",
-                hfuzz->workDir, "SAN", pc, fuzzer->backtrace,
-                op, crashAddr, "[UNKNOWN]", localtmstr, hfuzz->fileExtn);
+                hfuzz->workDir, "SAN", pc, fuzzer->backtrace, op, crashAddr, "[UNKNOWN]",
+                localtmstr, hfuzz->fileExtn);
         }
     }
 
     bool dstFileExists = false;
-    if (files_copyFile(fuzzer->fileName, fuzzer->crashFileName, &dstFileExists, true /* try_link */)) {
-        LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName,
-            fuzzer->crashFileName);
+    if (files_copyFile(
+            fuzzer->fileName, fuzzer->crashFileName, &dstFileExists, true /* try_link */)) {
+        LOG_I(
+            "Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, fuzzer->crashFileName);
 
         /* Increase unique crashes counters */
         ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
@@ -1094,7 +1080,8 @@ static void arch_traceExitSaveData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzz
         } else {
             LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
 
-            /* In case of write error, clear crashFileName to so that other monitored TIDs can retry */
+            /* In case of write error, clear crashFileName to so that other monitored TIDs can retry
+             */
             memset(fuzzer->crashFileName, 0, sizeof(fuzzer->crashFileName));
         }
 
@@ -1105,16 +1092,16 @@ static void arch_traceExitSaveData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzz
     /* Generate report */
     fuzzer->report[0] = '\0';
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "EXIT_CODE: %s\n", HF_SAN_EXIT_CODE);
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n",
-        fuzzer->origFileName);
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n",
-        fuzzer->crashFileName);
+    util_ssnprintf(
+        fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n", fuzzer->origFileName);
+    util_ssnprintf(
+        fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n", fuzzer->crashFileName);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "PID: %d\n", pid);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "OPERATION: %s\n", op);
     util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FAULT ADDRESS: %p\n", crashAddr);
     if (funcCnt > 0) {
-        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK HASH: %016llx\n",
-            fuzzer->backtrace);
+        util_ssnprintf(
+            fuzzer->report, sizeof(fuzzer->report), "STACK HASH: %016llx\n", fuzzer->backtrace);
         util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK:\n");
         for (int i = 0; i < funcCnt; i++) {
             util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), " <" REG_PD REG_PM "> ",
@@ -1135,10 +1122,7 @@ static void arch_traceExitAnalyzeData(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* f
     char* op = "UNKNOWN";
     int funcCnt = 0;
     funcs_t* funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
-    defer
-    {
-        free(funcs);
-    };
+    defer { free(funcs); };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
     funcCnt = arch_parseAsanReport(hfuzz, pid, funcs, &crashAddr, &op);
@@ -1181,14 +1165,12 @@ static void arch_traceEvent(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, int status, pi
         }
 
         if (WIFEXITED(event_msg)) {
-            LOG_D("PID: %d exited with exit_code: %lu", pid,
-                (unsigned long)WEXITSTATUS(event_msg));
+            LOG_D("PID: %d exited with exit_code: %lu", pid, (unsigned long)WEXITSTATUS(event_msg));
             if (WEXITSTATUS(event_msg) == (unsigned long)HF_SAN_EXIT_CODE) {
                 arch_traceExitAnalyze(hfuzz, pid, fuzzer);
             }
         } else if (WIFSIGNALED(event_msg)) {
-            LOG_D("PID: %d terminated with signal: %lu", pid,
-                (unsigned long)WTERMSIG(event_msg));
+            LOG_D("PID: %d terminated with signal: %lu", pid, (unsigned long)WTERMSIG(event_msg));
         } else {
             LOG_D("PID: %d exited with unknown status: %lu", pid, event_msg);
         }
@@ -1278,10 +1260,7 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
         PLOG_E("Couldn't open dir '%s'", path);
         return false;
     }
-    defer
-    {
-        closedir(dir);
-    };
+    defer { closedir(dir); };
 
     for (;;) {
         errno = 0;

@@ -22,9 +22,8 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) __attribute__((weak))
 int LLVMFuzzerInitialize(int* argc, char*** argv) __attribute__((weak));
 
 /* FIXME(robertswiecki): Make it call mangle_Mangle() */
-__attribute__((weak))
-size_t
-LLVMFuzzerMutate(uint8_t* Data UNUSED, size_t Size UNUSED, size_t MaxSize UNUSED)
+__attribute__((weak)) size_t LLVMFuzzerMutate(
+    uint8_t* Data UNUSED, size_t Size UNUSED, size_t MaxSize UNUSED)
 {
     LOG_F("LLVMFuzzerMutate() is not supported in honggfuzz yet");
     return 0;
@@ -48,7 +47,8 @@ void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr)
     initialized = true;
 
     uint32_t rlen;
-    if (files_readFromFd(_HF_PERSISTENT_FD, (uint8_t*)&rlen, sizeof(rlen)) != (ssize_t)sizeof(rlen)) {
+    if (files_readFromFd(_HF_PERSISTENT_FD, (uint8_t*)&rlen, sizeof(rlen))
+        != (ssize_t)sizeof(rlen)) {
         LOG_F("readFromFd(size=%zu) failed", sizeof(rlen));
     }
     size_t len = (size_t)rlen;

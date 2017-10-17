@@ -132,10 +132,7 @@ int main(int argc, char** argv)
      * Work around CygWin/MinGW
      */
     char** myargs = (char**)util_Malloc(sizeof(char*) * (argc + 1));
-    defer
-    {
-        free(myargs);
-    };
+    defer { free(myargs); };
 
     int i;
     for (i = 0U; i < argc; i++) {
@@ -153,7 +150,8 @@ int main(int argc, char** argv)
 
     if (!input_init(&hfuzz)) {
         if (hfuzz.externalCommand) {
-            LOG_I("No input file corpus loaded, the external command '%s' is responsible for creating the fuzz files",
+            LOG_I("No input file corpus loaded, the external command '%s' is responsible for "
+                  "creating the fuzz files",
                 hfuzz.externalCommand);
         } else {
             LOG_F("Couldn't load input files");

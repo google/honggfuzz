@@ -31,8 +31,8 @@
 
 extern ssize_t files_readFileToBufMax(char* fileName, uint8_t* buf, size_t fileMaxSz);
 
-extern bool files_writeBufToFile(const char* fileName, const uint8_t* buf, size_t fileSz,
-    int flags);
+extern bool files_writeBufToFile(
+    const char* fileName, const uint8_t* buf, size_t fileSz, int flags);
 
 extern bool files_writeToFd(int fd, const uint8_t* buf, size_t fileSz);
 
@@ -50,8 +50,8 @@ extern bool files_exists(char* fileName);
 
 extern const char* files_basename(char* fileName);
 
-extern bool files_copyFile(const char* source, const char* destination, bool* dstExists,
-    bool try_link);
+extern bool files_copyFile(
+    const char* source, const char* destination, bool* dstExists, bool try_link);
 
 extern uint8_t* files_mapFile(char* fileName, off_t* fileSz, int* fd, bool isWritable);
 

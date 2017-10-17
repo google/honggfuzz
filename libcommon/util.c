@@ -98,10 +98,7 @@ static void util_rndInitThread(void)
     if (fd == -1) {
         PLOG_F("Couldn't open /dev/urandom for reading");
     }
-    defer
-    {
-        close(fd);
-    };
+    defer { close(fd); };
 
     if (files_readFromFd(fd, (uint8_t*)rndState, sizeof(rndState)) != sizeof(rndState)) {
         PLOG_F("Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndState));
@@ -111,10 +108,7 @@ static void util_rndInitThread(void)
 /*
  * xoroshiro128plus by David Blackman and Sebastiano Vigna
  */
-static inline uint64_t util_RotL(const uint64_t x, int k)
-{
-    return (x << k) | (x >> (64 - k));
-}
+static inline uint64_t util_RotL(const uint64_t x, int k) { return (x << k) | (x >> (64 - k)); }
 
 static inline uint64_t util_InternalRnd64(void)
 {

@@ -120,9 +120,8 @@ inline static uint64_t sext(uint64_t val, uint8_t sign)
     return val & signbit ? val | mask : val & ~mask;
 }
 
-inline static int pt_last_ip_update_ip(struct pt_last_ip* last_ip,
-    const struct pt_packet_ip* packet,
-    const struct pt_config* config)
+inline static int pt_last_ip_update_ip(
+    struct pt_last_ip* last_ip, const struct pt_packet_ip* packet, const struct pt_config* config)
 {
     (void)config;
 
@@ -141,22 +140,19 @@ inline static int pt_last_ip_update_ip(struct pt_last_ip* last_ip,
         return 0;
 
     case pt_ipc_update_16:
-        last_ip->ip = (last_ip->ip & ~0xffffull)
-            | (packet->ip & 0xffffull);
+        last_ip->ip = (last_ip->ip & ~0xffffull) | (packet->ip & 0xffffull);
         last_ip->have_ip = 1;
         last_ip->suppressed = 0;
         return 0;
 
     case pt_ipc_update_32:
-        last_ip->ip = (last_ip->ip & ~0xffffffffull)
-            | (packet->ip & 0xffffffffull);
+        last_ip->ip = (last_ip->ip & ~0xffffffffull) | (packet->ip & 0xffffffffull);
         last_ip->have_ip = 1;
         last_ip->suppressed = 0;
         return 0;
 
     case pt_ipc_update_48:
-        last_ip->ip = (last_ip->ip & ~0xffffffffffffull)
-            | (packet->ip & 0xffffffffffffull);
+        last_ip->ip = (last_ip->ip & ~0xffffffffffffull) | (packet->ip & 0xffffffffffffull);
         last_ip->have_ip = 1;
         last_ip->suppressed = 0;
         return 0;
@@ -171,9 +167,8 @@ inline static int pt_last_ip_update_ip(struct pt_last_ip* last_ip,
     return -pte_bad_packet;
 }
 
-inline static void perf_ptAnalyzePkt(honggfuzz_t* hfuzz, fuzzer_t* fuzzer,
-    struct pt_packet* packet, struct pt_config* ptc,
-    struct pt_last_ip* last_ip)
+inline static void perf_ptAnalyzePkt(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, struct pt_packet* packet,
+    struct pt_config* ptc, struct pt_last_ip* last_ip)
 {
     switch (packet->type) {
     case ppt_tip:
@@ -226,10 +221,7 @@ void arch_ptAnalyze(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     if (ptd == NULL) {
         LOG_F("pt_pkt_alloc_decoder() failed");
     }
-    defer
-    {
-        pt_pkt_free_decoder(ptd);
-    };
+    defer { pt_pkt_free_decoder(ptd); };
 
     errcode = pt_pkt_sync_forward(ptd);
     if (errcode < 0) {
@@ -257,7 +249,8 @@ void arch_ptAnalyze(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
 
 void arch_ptAnalyze(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED)
 {
-    LOG_F("The program has not been linked against the Intel's Processor Trace Library (libipt.so)");
+    LOG_F(
+        "The program has not been linked against the Intel's Processor Trace Library (libipt.so)");
 }
 
 #endif /* _HF_LINUX_INTEL_PT_LIB */

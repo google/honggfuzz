@@ -56,8 +56,8 @@ const char* subproc_StatusToStr(int status, char* str, size_t len)
     }
 
     if (WIFSIGNALED(status)) {
-        snprintf(str, len, "SIGNALED, signal: %d (%s)", WTERMSIG(status),
-            strsignal(WTERMSIG(status)));
+        snprintf(
+            str, len, "SIGNALED, signal: %d (%s)", WTERMSIG(status), strsignal(WTERMSIG(status)));
         return str;
     }
     if (WIFCONTINUED(status)) {
@@ -120,8 +120,8 @@ const char* subproc_StatusToStr(int status, char* str, size_t len)
     }
 #endif /*  defined(PTRACE_EVENT_STOP)  */
 
-    snprintf(str, len, "STOPPED with signal: %d (%s)", WSTOPSIG(status),
-        strsignal(WSTOPSIG(status)));
+    snprintf(
+        str, len, "STOPPED with signal: %d (%s)", WSTOPSIG(status), strsignal(WSTOPSIG(status)));
     return str;
 }
 
@@ -145,7 +145,8 @@ static bool subproc_persistentSendFile(fuzzer_t* fuzzer)
         PLOG_W("files_sendToSocketNB(len=%zu)", sizeof(len));
         return false;
     }
-    if (files_sendToSocketNB(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz) == false) {
+    if (files_sendToSocketNB(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz)
+        == false) {
         PLOG_W("files_sendToSocketNB(len=%zu)", fuzzer->dynamicFileSz);
         return false;
     }
@@ -293,7 +294,8 @@ static bool subproc_New(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
         fuzzer->persistentPid = fuzzer->pid;
 
         int sndbuf = hfuzz->maxFileSz + 256;
-        if (setsockopt(fuzzer->persistentSock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)) == -1) {
+        if (setsockopt(fuzzer->persistentSock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf))
+            == -1) {
             LOG_W("Couldn't set FD send buffer to '%d' bytes", sndbuf);
         }
     }

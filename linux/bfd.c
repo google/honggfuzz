@@ -113,10 +113,7 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num)
     if (arch_bfdInit(pid, &bfdParams) == false) {
         return;
     }
-    defer
-    {
-        arch_bfdDestroy(&bfdParams);
-    };
+    defer { arch_bfdDestroy(&bfdParams); };
 
     const char* func;
     const char* file;
@@ -130,7 +127,8 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num)
         if ((offset < 0 || (unsigned long)offset > bfdParams.section->size)) {
             continue;
         }
-        if (bfd_find_nearest_line(bfdParams.bfdh, bfdParams.section, bfdParams.syms, offset, &file, &func, &line)) {
+        if (bfd_find_nearest_line(
+                bfdParams.bfdh, bfdParams.section, bfdParams.syms, offset, &file, &func, &line)) {
             snprintf(funcs[i].func, sizeof(funcs->func), "%s", func);
             funcs[i].line = line;
         }
@@ -160,17 +158,15 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr)
         LOG_W("bfd_openr('/proc/%d/exe') failed", pid);
         return;
     }
-    defer
-    {
-        bfd_close(bfdh);
-    };
+    defer { bfd_close(bfdh); };
 
     if (!bfd_check_format(bfdh, bfd_object)) {
         LOG_W("bfd_check_format() failed");
         return;
     }
 #if defined(_HF_BFD_GE_2_29)
-    disassembler_ftype disassemble = disassembler(bfd_get_arch(bfdh), bfd_little_endian(bfdh) ? FALSE : TRUE, 0, NULL);
+    disassembler_ftype disassemble
+        = disassembler(bfd_get_arch(bfdh), bfd_little_endian(bfdh) ? FALSE : TRUE, 0, NULL);
 #else
     disassembler_ftype disassemble = disassembler(bfdh);
 #endif // defined(_HD_BFD_GE_2_29)

@@ -56,10 +56,7 @@ static bool checkFor_FILE_PLACEHOLDER(char** args)
     return false;
 }
 
-static const char* cmdlineYesNo(bool yes)
-{
-    return (yes ? "true" : "false");
-}
+static const char* cmdlineYesNo(bool yes) { return (yes ? "true" : "false"); }
 
 static void cmdlineHelp(const char* pname, struct custom_option* opts)
 {
@@ -67,8 +64,7 @@ static void cmdlineHelp(const char* pname, struct custom_option* opts)
     LOG_HELP_BOLD("Options:");
     for (int i = 0; opts[i].opt.name; i++) {
         if (isprint(opts[i].opt.val) && opts[i].opt.val < 0x80) {
-            LOG_HELP_BOLD(" --%s%s%c %s", opts[i].opt.name,
-                "|-", opts[i].opt.val,
+            LOG_HELP_BOLD(" --%s%s%c %s", opts[i].opt.name, "|-", opts[i].opt.val,
                 opts[i].opt.has_arg == required_argument ? "VALUE" : "");
         } else {
             LOG_HELP_BOLD(" --%s %s", opts[i].opt.name,
@@ -87,17 +83,23 @@ static void cmdlineHelp(const char* pname, struct custom_option* opts)
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -z -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" Use persistent mode (libhfuzz/persistent.c):");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -- /usr/bin/tiffinfo_persistent");
-    LOG_HELP(" Use persistent mode (libhfuzz/persistent.c) and compile-time instrumentation (libhfuzz/instrument.c):");
+    LOG_HELP(" Use persistent mode (libhfuzz/persistent.c) and compile-time instrumentation "
+             "(libhfuzz/instrument.c):");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -z -- /usr/bin/tiffinfo_persistent");
 #if defined(_HF_ARCH_LINUX)
     LOG_HELP(" Run the binary over a dynamic file, maximize total no. of instructions:");
-    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_instr -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP_BOLD(
+        "  " PROG_NAME " --linux_perf_instr -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" Run the binary over a dynamic file, maximize total no. of branches:");
-    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_branch -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP_BOLD(
+        "  " PROG_NAME " --linux_perf_branch -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" Run the binary over a dynamic file, maximize unique branches (edges) via BTS:");
-    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_bts_edge -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
-    LOG_HELP(" Run the binary over a dynamic file, maximize unique code blocks via Intel Processor Trace (requires libipt.so):");
-    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_ipt_block -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP_BOLD(
+        "  " PROG_NAME " --linux_perf_bts_edge -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP(" Run the binary over a dynamic file, maximize unique code blocks via Intel Processor "
+             "Trace (requires libipt.so):");
+    LOG_HELP_BOLD(
+        "  " PROG_NAME " --linux_perf_ipt_block -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
 #endif /* defined(_HF_ARCH_LINUX) */
 }
 
@@ -251,7 +253,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
     TAILQ_INIT(&hfuzz->dynfileq);
     TAILQ_INIT(&hfuzz->dictq);
 
-    //  clang-format off
+    // clang-format off
     struct custom_option custom_opts[] = {
         { { "help", no_argument, NULL, 'h' }, "Help plz.." },
         { { "input", required_argument, NULL, 'f' }, "Path to a directory containing initial file corpus" },
@@ -307,7 +309,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
 #endif // defined(_HF_ARCH_LINUX)
         { { 0, 0, 0, 0 }, NULL },
     };
-    //  clang-format on
+    // clang-format on
 
     struct option opts[ARRAYSIZE(custom_opts)];
     for (unsigned i = 0; i < ARRAYSIZE(custom_opts); i++) {
@@ -318,8 +320,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
     const char* logfile = NULL;
     int opt_index = 0;
     for (;;) {
-        int c = getopt_long(argc, argv, "-?hQvVsuPf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:CzTS", opts,
-            &opt_index);
+        int c = getopt_long(
+            argc, argv, "-?hQvVsuPf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:CzTS", opts, &opt_index);
         if (c < 0)
             break;
 
@@ -519,7 +521,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
     }
 
     if (hfuzz->fuzzStdin && hfuzz->persistent) {
-        LOG_E("Stdin fuzzing (-s) and persistent fuzzing (-P) cannot be specified at the same time");
+        LOG_E(
+            "Stdin fuzzing (-s) and persistent fuzzing (-P) cannot be specified at the same time");
         return false;
     }
 
@@ -561,11 +564,11 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
     }
 
     LOG_I("PID: %d, inputDir '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, flipRate: %lf, "
-          "externalCommand: '%s', runEndTime: %d tmOut: %ld, mutationsMax: %zu, threadsMax: %zu, fileExtn: '%s', "
+          "externalCommand: '%s', runEndTime: %d tmOut: %ld, mutationsMax: %zu, threadsMax: %zu, "
+          "fileExtn: '%s', "
           "memoryLimit: 0x%" PRIx64 "(MiB), fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
-        (int)getpid(), hfuzz->inputDir,
-        cmdlineYesNo(hfuzz->nullifyStdio), cmdlineYesNo(hfuzz->fuzzStdin),
-        cmdlineYesNo(hfuzz->saveUnique), hfuzz->origFlipRate,
+        (int)getpid(), hfuzz->inputDir, cmdlineYesNo(hfuzz->nullifyStdio),
+        cmdlineYesNo(hfuzz->fuzzStdin), cmdlineYesNo(hfuzz->saveUnique), hfuzz->origFlipRate,
         hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, (int)hfuzz->runEndTime,
         hfuzz->tmOut, hfuzz->mutationsMax, hfuzz->threadsMax, hfuzz->fileExtn, hfuzz->asLimit,
         hfuzz->cmdline[0], hfuzz->linux.pid, cmdlineYesNo(hfuzz->monitorSIGABRT));

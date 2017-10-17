@@ -201,10 +201,7 @@ static bool fuzz_postProcessFile(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     return true;
 }
 
-static fuzzState_t fuzz_getState(honggfuzz_t* hfuzz)
-{
-    return ATOMIC_GET(hfuzz->state);
-}
+static fuzzState_t fuzz_getState(honggfuzz_t* hfuzz) { return ATOMIC_GET(hfuzz->state); }
 
 static void fuzz_setState(honggfuzz_t* hfuzz, fuzzState_t state)
 {
@@ -309,8 +306,8 @@ static bool fuzz_runVerifier(honggfuzz_t* hfuzz, fuzzer_t* crashedFuzzer)
         }
 
         fuzz_getFileName(hfuzz, &vFuzzer);
-        if (files_writeBufToFile(vFuzzer.fileName, crashBuf, crashFileSz,
-                O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC)
+        if (files_writeBufToFile(
+                vFuzzer.fileName, crashBuf, crashFileSz, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC)
             == false) {
             LOG_E("Couldn't write buffer to file '%s'", vFuzzer.fileName);
             return false;
@@ -336,7 +333,8 @@ static bool fuzz_runVerifier(honggfuzz_t* hfuzz, fuzzer_t* crashedFuzzer)
 
     /* Copy file with new suffix & remove original copy */
     bool dstFileExists = false;
-    if (files_copyFile(crashedFuzzer->crashFileName, verFile, &dstFileExists, true /* try_link */)) {
+    if (files_copyFile(
+            crashedFuzzer->crashFileName, verFile, &dstFileExists, true /* try_link */)) {
         LOG_I("Successfully verified, saving as (%s)", verFile);
         ATOMIC_POST_INC(hfuzz->verifiedCrashesCnt);
         unlink(crashedFuzzer->crashFileName);
@@ -396,8 +394,9 @@ static void fuzz_perfFeedback(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
         return;
     }
 
-    LOG_D("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64, fuzzer->dynamicFileSz,
-        fuzzer->linux.hwCnts.cpuInstrCnt, hfuzz->linux.hwCnts.cpuInstrCnt,
+    LOG_D("New file size: %zu, Perf feedback new/cur (instr,branch): %" PRIu64 "/%" PRIu64
+          "/%" PRIu64 "/%" PRIu64 ", BBcnt new/total: %" PRIu64 "/%" PRIu64,
+        fuzzer->dynamicFileSz, fuzzer->linux.hwCnts.cpuInstrCnt, hfuzz->linux.hwCnts.cpuInstrCnt,
         fuzzer->linux.hwCnts.cpuBranchCnt, hfuzz->linux.hwCnts.cpuBranchCnt,
         fuzzer->linux.hwCnts.newBBCnt, hfuzz->linux.hwCnts.bbCnt);
 
@@ -436,8 +435,9 @@ static void fuzz_perfFeedback(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
         hfuzz->linux.hwCnts.softCntEdge += softCntEdge;
         hfuzz->linux.hwCnts.softCntCmp += softCntCmp;
 
-        LOG_I("Size:%zu (i,b,edg,ip,hw,cmp): %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Tot:%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
-              "/%" PRIu64,
+        LOG_I("Size:%zu (i,b,edg,ip,hw,cmp): %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
+              "/%" PRIu64 "/%" PRIu64 ", Tot:%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
+              "/%" PRIu64 "/%" PRIu64,
             fuzzer->dynamicFileSz, fuzzer->linux.hwCnts.cpuInstrCnt,
             fuzzer->linux.hwCnts.cpuBranchCnt, softCntEdge, softCntPc,
             fuzzer->linux.hwCnts.newBBCnt, softCntCmp, hfuzz->linux.hwCnts.cpuInstrCnt,
@@ -455,11 +455,10 @@ static void fuzz_sanCovFeedback(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
         return;
     }
 
-    LOG_D("File size (Best/New): %zu, SanCov feedback (bb,dso): Best: [%" PRIu64
-          ",%" PRIu64 "] / New: [%" PRIu64 ",%" PRIu64 "], newBBs:%" PRIu64,
-        fuzzer->dynamicFileSz, hfuzz->sanCovCnts.hitBBCnt,
-        hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitBBCnt, fuzzer->sanCovCnts.iDsoCnt,
-        fuzzer->sanCovCnts.newBBCnt);
+    LOG_D("File size (Best/New): %zu, SanCov feedback (bb,dso): Best: [%" PRIu64 ",%" PRIu64
+          "] / New: [%" PRIu64 ",%" PRIu64 "], newBBs:%" PRIu64,
+        fuzzer->dynamicFileSz, hfuzz->sanCovCnts.hitBBCnt, hfuzz->sanCovCnts.iDsoCnt,
+        fuzzer->sanCovCnts.hitBBCnt, fuzzer->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.newBBCnt);
 
     MX_SCOPED_LOCK(&hfuzz->feedback_mutex);
 
@@ -481,11 +480,10 @@ static void fuzz_sanCovFeedback(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
         || hfuzz->sanCovCnts.iDsoCnt < fuzzer->sanCovCnts.iDsoCnt);
 
     if (newCov || (diff0 < 0 || diff1 < 0)) {
-        LOG_I("SanCov Update: fsize:%zu, newBBs:%" PRIu64
-              ", (Cur,New): %" PRIu64 "/%" PRIu64 ",%" PRIu64 "/%" PRIu64,
-            fuzzer->dynamicFileSz, fuzzer->sanCovCnts.newBBCnt,
-            hfuzz->sanCovCnts.hitBBCnt, hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitBBCnt,
-            fuzzer->sanCovCnts.iDsoCnt);
+        LOG_I("SanCov Update: fsize:%zu, newBBs:%" PRIu64 ", (Cur,New): %" PRIu64 "/%" PRIu64
+              ",%" PRIu64 "/%" PRIu64,
+            fuzzer->dynamicFileSz, fuzzer->sanCovCnts.newBBCnt, hfuzz->sanCovCnts.hitBBCnt,
+            hfuzz->sanCovCnts.iDsoCnt, fuzzer->sanCovCnts.hitBBCnt, fuzzer->sanCovCnts.iDsoCnt);
 
         hfuzz->sanCovCnts.hitBBCnt += fuzzer->sanCovCnts.newBBCnt;
         hfuzz->sanCovCnts.dsoCnt = fuzzer->sanCovCnts.dsoCnt;
@@ -619,10 +617,7 @@ static void* fuzz_threadNew(void* arg)
 
         .linux.attachedPid = 0,
     };
-    defer
-    {
-        free(fuzzer.dynamicFile);
-    };
+    defer { free(fuzzer.dynamicFile); };
     fuzz_getFileName(hfuzz, &fuzzer);
 
     if (arch_archThreadInit(hfuzz, &fuzzer) == false) {

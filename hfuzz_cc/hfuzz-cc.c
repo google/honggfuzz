@@ -200,10 +200,7 @@ static bool getLibHfuzz(void)
         PLOG_E("mkostemp('%s')", template);
         return false;
     }
-    defer
-    {
-        close(fd);
-    };
+    defer { close(fd); };
 
     bool ret = files_writeToFd(fd, &lhfuzz_start, len);
     if (!ret) {

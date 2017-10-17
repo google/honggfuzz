@@ -127,8 +127,8 @@ static inline int _memcmp(const void* m1, const void* m2, size_t n, void* addr)
     return ret;
 }
 
-static inline void* _memmem(const void* haystack, size_t haystacklen, const void* needle,
-    size_t needlelen, void* addr)
+static inline void* _memmem(
+    const void* haystack, size_t haystacklen, const void* needle, size_t needlelen, void* addr)
 {
     if (needlelen > haystacklen) {
         return NULL;
@@ -149,10 +149,7 @@ static inline void* _memmem(const void* haystack, size_t haystacklen, const void
 /*
  *  Exported wrappers taking return address as an argument
  */
-int hfuzz_strcmp(const char* s1, const char* s2, void* addr)
-{
-    return _strcmp(s1, s2, addr);
-}
+int hfuzz_strcmp(const char* s1, const char* s2, void* addr) { return _strcmp(s1, s2, addr); }
 
 int hfuzz_strcasecmp(const char* s1, const char* s2, void* addr)
 {
@@ -184,8 +181,8 @@ int hfuzz_memcmp(const void* m1, const void* m2, size_t n, void* addr)
     return _memcmp(m1, m2, n, addr);
 }
 
-void* hfuzz_memmem(const void* haystack, size_t haystacklen, const void* needle, size_t needlelen,
-    void* addr)
+void* hfuzz_memmem(
+    const void* haystack, size_t haystacklen, const void* needle, size_t needlelen, void* addr)
 {
     return _memmem(haystack, haystacklen, needle, needlelen, addr);
 }

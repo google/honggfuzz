@@ -146,37 +146,16 @@ void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt
     }
 }
 
-void logStop(int sig)
-{
-    LOG_I("Server stops due to fatal signal (%d) caught. Exiting", sig);
-}
+void logStop(int sig) { LOG_I("Server stops due to fatal signal (%d) caught. Exiting", sig); }
 
-void logRedirectLogFD(int fd)
-{
-    log_fd = fd;
-}
+void logRedirectLogFD(int fd) { log_fd = fd; }
 
-void logDirectlyToFD(const char* msg)
-{
-    dprintf(log_fd, "%s", msg);
-}
+void logDirectlyToFD(const char* msg) { dprintf(log_fd, "%s", msg); }
 
-pthread_mutex_t* logMutexGet(void)
-{
-    return &log_mutex;
-}
+pthread_mutex_t* logMutexGet(void) { return &log_mutex; }
 
-void logMutexReset(void)
-{
-    pthread_mutex_init(&log_mutex, NULL);
-}
+void logMutexReset(void) { pthread_mutex_init(&log_mutex, NULL); }
 
-bool logIsTTY(void)
-{
-    return log_fd_isatty;
-}
+bool logIsTTY(void) { return log_fd_isatty; }
 
-int logFd(void)
-{
-    return log_fd;
-}
+int logFd(void) { return log_fd; }

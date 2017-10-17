@@ -71,9 +71,10 @@
  *Sanitizer specific flags (notice that if enabled 'abort_on_error' has priority
  * over exitcode')
  */
-#define kASAN_COMMON_OPTS "allow_user_segv_handler=1:" \
-                          "handle_segv=0:"             \
-                          "allocator_may_return_null=1:" kSAN_COMMON ":exitcode=" STR(HF_SAN_EXIT_CODE)
+#define kASAN_COMMON_OPTS                                                                          \
+    "allow_user_segv_handler=1:"                                                                   \
+    "handle_segv=0:"                                                                               \
+    "allocator_may_return_null=1:" kSAN_COMMON ":exitcode=" STR(HF_SAN_EXIT_CODE)
 /* Platform specific flags */
 #if defined(__ANDROID__)
 /*
@@ -89,13 +90,15 @@
 #define kUBSAN_OPTS kSAN_COMMON ":exitcode=" STR(HF_SAN_EXIT_CODE)
 
 /* --{ MSan }-- */
-#define kMSAN_OPTS kSAN_COMMON ":exit_code=" STR(HF_SAN_EXIT_CODE) ":" \
-                                                                   "wrap_signals=0:print_stats=1"
+#define kMSAN_OPTS                                                                                 \
+    kSAN_COMMON ":exit_code=" STR(HF_SAN_EXIT_CODE) ":"                                            \
+                                                    "wrap_signals=0:print_stats=1"
 
 /* If no sanitzer support was requested, simply make it use abort() on errors */
-#define kSAN_REGULAR "abort_on_error=1:handle_segv=0:handle_sigbus=0:handle_abort=0:" \
-                     "handle_sigill=0:handle_sigfpe=0:allocator_may_return_null=1:"   \
-                     "symbolize=1:detect_leaks=0:disable_coredump=0:log_path=stderr"
+#define kSAN_REGULAR                                                                               \
+    "abort_on_error=1:handle_segv=0:handle_sigbus=0:handle_abort=0:"                               \
+    "handle_sigill=0:handle_sigfpe=0:allocator_may_return_null=1:"                                 \
+    "symbolize=1:detect_leaks=0:disable_coredump=0:log_path=stderr"
 
 /*
  * If the program ends with a signal that ASan does not handle (or can not
@@ -138,12 +141,10 @@ bool sanitizers_Init(honggfuzz_t* hfuzz)
     size_t flagsSz = 0;
 
     /* Larger constant combination + 2 dynamic paths */
-    size_t bufSz = sizeof(kASAN_OPTS) + 1 + sizeof(kABORT_ENABLED) + 1 + sizeof(kSANLOGDIR) + PATH_MAX + 1 + sizeof(kSANCOVDIR) + PATH_MAX + 1;
+    size_t bufSz = sizeof(kASAN_OPTS) + 1 + sizeof(kABORT_ENABLED) + 1 + sizeof(kSANLOGDIR)
+        + PATH_MAX + 1 + sizeof(kSANCOVDIR) + PATH_MAX + 1;
     char* san_opts = util_Calloc(bufSz);
-    defer
-    {
-        free(san_opts);
-    };
+    defer { free(san_opts); };
 
     char* abortFlag;
     if (hfuzz->monitorSIGABRT) {
@@ -155,8 +156,7 @@ bool sanitizers_Init(honggfuzz_t* hfuzz)
     /* Address Sanitizer (ASan) */
     if (hfuzz->useSanCov) {
         snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s:%s%s/%s", kASAN_OPTS, abortFlag, kSAN_COV_OPTS,
-            kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
-            kLOGPREFIX);
+            kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir, kLOGPREFIX);
     } else {
         snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kASAN_OPTS, abortFlag, kSANLOGDIR,
             hfuzz->workDir, kLOGPREFIX);
@@ -171,8 +171,7 @@ bool sanitizers_Init(honggfuzz_t* hfuzz)
     memset(san_opts, 0, bufSz);
     if (hfuzz->useSanCov) {
         snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s:%s%s/%s", kUBSAN_OPTS, abortFlag, kSAN_COV_OPTS,
-            kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
-            kLOGPREFIX);
+            kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir, kLOGPREFIX);
     } else {
         snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kUBSAN_OPTS, abortFlag, kSANLOGDIR,
             hfuzz->workDir, kLOGPREFIX);
@@ -188,8 +187,7 @@ bool sanitizers_Init(honggfuzz_t* hfuzz)
 
     if (hfuzz->useSanCov) {
         snprintf(san_opts, bufSz, "%s:%s:%s:%s%s/%s:%s%s/%s", kMSAN_OPTS, abortFlag, kSAN_COV_OPTS,
-            kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir,
-            kLOGPREFIX);
+            kSANCOVDIR, hfuzz->workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->workDir, kLOGPREFIX);
     } else {
         snprintf(san_opts, bufSz, "%s:%s:%s%s/%s", kMSAN_OPTS, abortFlag, kSANLOGDIR,
             hfuzz->workDir, kLOGPREFIX);

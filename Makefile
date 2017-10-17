@@ -276,7 +276,7 @@ clean:
 
 .PHONY: indent
 indent:
-	clang-format -style="{BasedOnStyle: webkit, IndentWidth: 4}" -i -sort-includes  *.c *.h */*.c */*.h
+	clang-format -style="{BasedOnStyle: webkit, IndentWidth: 4, ColumnLimit: 100}" -i -sort-includes  *.c *.h */*.c */*.h
 
 .PHONY: depend
 depend:

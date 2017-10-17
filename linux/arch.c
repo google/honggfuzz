@@ -166,8 +166,8 @@ bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
         } else if (!hfuzz->fuzzStdin && !hfuzz->persistent
             && strstr(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER)) {
             const char* off = strstr(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER);
-            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - hfuzz->cmdline[x]),
-                hfuzz->cmdline[x], fileName);
+            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - hfuzz->cmdline[x]), hfuzz->cmdline[x],
+                fileName);
             args[x] = argData;
         } else {
             args[x] = hfuzz->cmdline[x];
@@ -251,8 +251,8 @@ void arch_prepareParent(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
                 LOG_F("Failed to read new PID from file - abort");
             } else {
                 if (kill(hfuzz->linux.pid, 0) == -1) {
-                    PLOG_F("Liveness of PID %d read from file questioned - abort",
-                        hfuzz->linux.pid);
+                    PLOG_F(
+                        "Liveness of PID %d read from file questioned - abort", hfuzz->linux.pid);
                 } else {
                     LOG_D("Monitor PID has been updated (pid=%d)", hfuzz->linux.pid);
                     ptracePid = hfuzz->linux.pid;
@@ -353,13 +353,14 @@ void arch_reapChild(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     if (hfuzz->enableSanitizers) {
         pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
         char crashReport[PATH_MAX];
-        snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX,
-            ptracePid);
+        snprintf(
+            crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX, ptracePid);
         if (files_exists(crashReport)) {
             if (fuzzer->backtrace) {
                 unlink(crashReport);
             } else {
-                LOG_W("Un-handled ASan report due to compiler-rt internal error - retry with '%s' (%s)",
+                LOG_W("Un-handled ASan report due to compiler-rt internal error - retry with '%s' "
+                      "(%s)",
                     crashReport, fuzzer->fileName);
 
                 /* Try to parse report file */
@@ -491,8 +492,8 @@ bool arch_archInit(honggfuzz_t* hfuzz)
             return false;
         }
 
-        ssize_t sz = files_readFileToBufMax(procCmd, (uint8_t*)hfuzz->linux.pidCmd,
-            _HF_PROC_CMDLINE_SZ - 1);
+        ssize_t sz = files_readFileToBufMax(
+            procCmd, (uint8_t*)hfuzz->linux.pidCmd, _HF_PROC_CMDLINE_SZ - 1);
         if (sz < 1) {
             LOG_E("Couldn't read '%s'", procCmd);
             free(hfuzz->linux.pidCmd);

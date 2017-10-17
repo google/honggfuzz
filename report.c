@@ -104,15 +104,11 @@ void report_Report(honggfuzz_t* hfuzz, char* s)
         " targetPid    : %d\n"
         " targetCmd    : %s\n"
         " wordlistFile : %s\n",
-        localtmstr,
-        hfuzz->origFlipRate,
+        localtmstr, hfuzz->origFlipRate,
         hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand,
-        hfuzz->fuzzStdin ? "TRUE" : "FALSE",
-        hfuzz->tmOut,
-        hfuzz->linux.ignoreAddr,
-        hfuzz->asLimit,
-        hfuzz->linux.pid,
-        hfuzz->linux.pidCmd, hfuzz->dictionaryFile == NULL ? "NULL" : hfuzz->dictionaryFile);
+        hfuzz->fuzzStdin ? "TRUE" : "FALSE", hfuzz->tmOut, hfuzz->linux.ignoreAddr, hfuzz->asLimit,
+        hfuzz->linux.pid, hfuzz->linux.pidCmd,
+        hfuzz->dictionaryFile == NULL ? "NULL" : hfuzz->dictionaryFile);
 
 #if defined(_HF_ARCH_LINUX)
     report_printdynFileMethod(hfuzz);

@@ -35,8 +35,8 @@
 
 #define MX_LOCK(m) util_mutexLock(m, __func__, __LINE__)
 #define MX_UNLOCK(m) util_mutexUnlock(m, __func__, __LINE__)
-#define MX_SCOPED_LOCK(m) \
-    MX_LOCK(m);           \
+#define MX_SCOPED_LOCK(m)                                                                          \
+    MX_LOCK(m);                                                                                    \
     defer { MX_UNLOCK(m); }
 
 /* Atomics */

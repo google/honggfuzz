@@ -125,9 +125,8 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
         snprintf(newname, sizeof(newname), "%s", fuzzer->origFileName);
     } else {
-        snprintf(newname, sizeof(newname), "%s/%s.PID.%d.TIME.%s.%s",
-            hfuzz->workDir, arch_sigs[termsig].descr, fuzzer->pid, localtmstr,
-            hfuzz->fileExtn);
+        snprintf(newname, sizeof(newname), "%s/%s.PID.%d.TIME.%s.%s", hfuzz->workDir,
+            arch_sigs[termsig].descr, fuzzer->pid, localtmstr, hfuzz->fileExtn);
     }
 
     LOG_I("Ok, that's interesting, saving the '%s' as '%s'", fuzzer->fileName, newname);
@@ -138,8 +137,8 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
     ATOMIC_POST_INC(hfuzz->crashesCnt);
     ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
 
-    if (files_writeBufToFile(newname, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-            O_CREAT | O_EXCL | O_WRONLY)
+    if (files_writeBufToFile(
+            newname, fuzzer->dynamicFile, fuzzer->dynamicFileSz, O_CREAT | O_EXCL | O_WRONLY)
         == false) {
         LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
     }
@@ -147,10 +146,7 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
     return true;
 }
 
-pid_t arch_fork(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED)
-{
-    return fork();
-}
+pid_t arch_fork(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED) { return fork(); }
 
 bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
 {
@@ -184,13 +180,9 @@ bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
     return false;
 }
 
-void arch_prepareParent(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED)
-{
-}
+void arch_prepareParent(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED) {}
 
-void arch_prepareParentAfterFork(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED)
-{
-}
+void arch_prepareParentAfterFork(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED) {}
 
 void arch_reapChild(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
 {
@@ -261,12 +253,6 @@ bool arch_archInit(honggfuzz_t* hfuzz)
     return true;
 }
 
-void arch_sigFunc(int sig UNUSED)
-{
-    return;
-}
+void arch_sigFunc(int sig UNUSED) { return; }
 
-bool arch_archThreadInit(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED)
-{
-    return true;
-}
+bool arch_archThreadInit(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED) { return true; }
