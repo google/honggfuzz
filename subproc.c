@@ -258,12 +258,6 @@ static bool subproc_New(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
          */
         alarm(1);
         signal(SIGALRM, SIG_DFL);
-        sigset_t sset;
-        sigemptyset(&sset);
-        if (sigprocmask(SIG_SETMASK, &sset, NULL) == -1) {
-            perror("sigprocmask");
-            _exit(1);
-        }
 
         if (hfuzz->persistent) {
             if (dup2(sv[1], _HF_PERSISTENT_FD) == -1) {
@@ -331,6 +325,13 @@ uint8_t subproc_System(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, const char* const a
     }
     if (!pid) {
         logMutexReset();
+
+        sigset_t sset;
+        sigemptyset(&sset);
+        if (sigprocmask(SIG_SETMASK, &sset, NULL) == -1) {
+            PLOG_W("sigprocmask(empty_set)");
+        }
+
         execv(argv[0], (char* const*)&argv[0]);
         PLOG_F("Couldn't execute '%s'", argv[0]);
         return 255;
