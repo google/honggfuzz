@@ -127,7 +127,7 @@ const char* subproc_StatusToStr(int status, char* str, size_t len)
 
 bool subproc_persistentModeRoundDone(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
 {
-    if (hfuzz->persistent == false) {
+    if (!hfuzz->persistent) {
         return false;
     }
     char z;
@@ -141,12 +141,11 @@ bool subproc_persistentModeRoundDone(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
 static bool subproc_persistentSendFile(fuzzer_t* fuzzer)
 {
     uint32_t len = (uint64_t)fuzzer->dynamicFileSz;
-    if (files_sendToSocketNB(fuzzer->persistentSock, (uint8_t*)&len, sizeof(len)) == false) {
+    if (!files_sendToSocketNB(fuzzer->persistentSock, (uint8_t*)&len, sizeof(len))) {
         PLOG_W("files_sendToSocketNB(len=%zu)", sizeof(len));
         return false;
     }
-    if (files_sendToSocketNB(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz)
-        == false) {
+    if (!files_sendToSocketNB(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz)) {
         PLOG_W("files_sendToSocketNB(len=%zu)", fuzzer->dynamicFileSz);
         return false;
     }
@@ -184,7 +183,7 @@ bool subproc_PrepareExecv(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, const char* file
     if (hfuzz->clearEnv) {
         environ = NULL;
     }
-    if (sanitizers_prepareExecve(hfuzz) == false) {
+    if (!sanitizers_prepareExecve(hfuzz)) {
         LOG_E("sanitizers_prepareExecve() failed");
         return false;
     }
@@ -301,13 +300,13 @@ static bool subproc_New(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
 
 bool subproc_Run(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
 {
-    if (subproc_New(hfuzz, fuzzer) == false) {
+    if (!subproc_New(hfuzz, fuzzer)) {
         LOG_E("subproc_New()");
         return false;
     }
 
     arch_prepareParent(hfuzz, fuzzer);
-    if (hfuzz->persistent == true && subproc_persistentSendFile(fuzzer) == false) {
+    if (hfuzz->persistent && !subproc_persistentSendFile(fuzzer)) {
         LOG_W("Could not send file contents to the persistent process");
         kill(fuzzer->persistentPid, SIGKILL);
     }
@@ -389,7 +388,7 @@ void subproc_checkTimeLimit(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
         return;
     }
 
-    if ((diffMillis > (hfuzz->tmOut * 1000)) && fuzzer->tmOutSignaled == false) {
+    if ((diffMillis > (hfuzz->tmOut * 1000)) && !fuzzer->tmOutSignaled) {
         fuzzer->tmOutSignaled = true;
         LOG_W("PID %d took too much time (limit %ld s). Killing it with %s", fuzzer->pid,
             hfuzz->tmOut, hfuzz->tmout_vtalrm ? "SIGVTALRM" : "SIGKILL");
