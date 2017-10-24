@@ -37,7 +37,7 @@
 #include <sys/stat.h>
 #if defined(_HF_ARCH_LINUX)
 #include <sys/syscall.h>
-#endif  /* defined(_HF_ARCH_LINUX) */
+#endif /* defined(_HF_ARCH_LINUX) */
 #include <sys/types.h>
 #include <unistd.h>
 

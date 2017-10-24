@@ -68,7 +68,7 @@ Coverage (max):
 [2016-03-15T16:49:00+0100][I][2094] fuzz_sanCovFeedback():463 SanCov Update: file size (Cur): 2141, newBBs:9, counters (Cur,New): 8569/1,1666/1
 ```
 
-# Compile-time instrumentation with clang/gcc -z #
+# Compile-time instrumentation with clang/gcc (default mode) #
 
 Here you can use the following:
   * gcc/clang `-finstrument-functions` (less-precise)
@@ -97,7 +97,7 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len) {
 ```
 $ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang -c fuzzedlib.c -o fuzzedlib.o
 $ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang test.c fuzzedlib.o -o test
-$ [honggfuzz_dir]/honggfuzz -z -P -f INPUT.corpus -- ./test
+$ [honggfuzz_dir]/honggfuzz -P -f INPUT.corpus -- ./test
 ```
 
 `LLVMFuzzerInitialize(int *argc, char **argv)` is supported as well
@@ -125,12 +125,12 @@ int main(void) {
 ```
 $ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang -c fuzzedlib.c -o fuzzedlib.o
 $ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang test.c fuzzedlib.o -o test
-$ [honggfuzz_dir]/honggfuzz -z -P -f INPUT.corpus -- ./test
+$ [honggfuzz_dir]/honggfuzz -P -f INPUT.corpus -- ./test
 ```
 
 Example:
 ```
-$ [honggfuzz_dir]/honggfuzz -z -P -f IN.server/ -- ./persistent.server.openssl.1.0.2i.asan
+$ [honggfuzz_dir]/honggfuzz -P -f IN.server/ -- ./persistent.server.openssl.1.0.2i.asan
 ------------------------------[ honggfuzz v0.8 ]------------------------------
       Iterations : 3,275,169 [3.28M]
         Run Time : 2 hrs 17 min 16 sec (since: 2016-09-27 07:30:04)
@@ -146,7 +146,7 @@ $ [honggfuzz_dir]/honggfuzz -z -P -f IN.server/ -- ./persistent.server.openssl.1
 -----------------------------------[ LOGS ]-----------------------------------
 ```
 
-PS. You can also use a non-persistent mode here (without the __-P__ flag), in which case you need to read data either from a file passed at command-line (`___FILE___`), or from the standard input (e.g. with `read(0, buf, sizeof(buf))`. The compile-time instrumentation (-z) will still work in such case.
+PS. You can also use a non-persistent mode here (without the __-P__ flag), in which case you need to read data either from a file passed at command-line (`___FILE___`), or from the standard input (e.g. with `read(0, buf, sizeof(buf))`. The compile-time instrumentation will still work in such case.
 
 # Hardware-based coverage #
 ## Unique branch pair (edges) counting (--linux_perf_bts_edge) ##

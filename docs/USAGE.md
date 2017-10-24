@@ -4,20 +4,25 @@
 
 # OBJECTIVE #
 
-  Honggfuzz is a general-purpose fuzzing tool. Given an input corpus files, honggfuzz modifies input to a test program and utilize the **ptrace() API**/**POSIX signal interface** to detect and log crashes. It can also use software or hardware-based code coverage techniques to produce more and more interesting inputs
+Honggfuzz is a security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options.
 
 # FEATURES #
 
-  * It's __multi-threaded__ and __multi-process__: no need to run multiple copies of your fuzzer. The file corpus is shared between threads (and fuzzed instances)
-  * It's blazingly fast (esp. in the [persistent fuzzing mode](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)). A simple _LLVMFuzzerTestOneInput_ function can be tested with __up to 1mo iterations per second__ on a relatively modern CPU (e.g. i7-6600K)
-  * Has a nice track record of uncovered security bugs: e.g. the only (to the date) __vulnerability in OpenSSL with the [critical](https://www.openssl.org/news/secadv/20160926.txt) score mark__ was discovered by honggfuzz
+  * It's __multi-threaded__ and __multi-process__: no need to run multiple copies of your fuzzer, as honggfuzz can unlock potential of all your available CPU cores. The file corpus is shared between threads (and
+ fuzzed instances)
+  * It's blazingly fast (esp. in the [persistent fuzzing mode](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)). A simple _LLVMFuzzerTestOneInput_ function can be tested with __up to 1
+mo iterations per second__ on a relatively modern CPU (e.g. i7-6600K)
+  * Has a nice track record of uncovered security bugs: e.g. the __only__ (to the date) __vulnerability in OpenSSL with the [critical](https://www.openssl.org/news/secadv/20160926.txt) score mark__ was discovere
+d by honggfuzz
   * Uses low-level interfaces to monitor processes (e.g. _ptrace_ under Linux). As opposed to other fuzzers, it __will discover and report hidden signals__ (caught and potentially hidden by signal handlers)
   * Easy-to-use, feed it a simple input corpus (__can even consist of a single, 1-byte file__) and it will work its way up expanding it utilizing feedback-based coverage metrics
-  * Supports several (more than any other coverage-based feedback-driven fuzzer) hardware-based (CPU: branch/instruction counting, __Intel BTS__, __Intel PT__) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) methods
+  * Supports several (more than any other coverage-based feedback-driven fuzzer) hardware-based (CPU: branch/instruction counting, __Intel BTS__, __Intel PT__) and software-based [feedback-driven fuzzing](https:
+//github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) methods known from other fuzzers (libfuzzer, afl)
   * Works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md)
-  * Supports __persistent fuzzing mode__ (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that can be found [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)
+  * Supports __persistent fuzzing mode__ (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that can be found [here](https://github.com/google/honggfuzz/blob/master/docs/Persi
+stentFuzzing.md)
   * [Can fuzz remote/standalone long-lasting processes](https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md) (e.g. network servers like __Apache's httpd__ and __ISC's bind__)
-  * It comes with the __[examples](https://github.com/google/honggfuzz/tree/master/examples/openssl) directory__, consisting of real world fuzz setups for widely-used software (e.g. Apache and OpenSSL)
+  * It comes with the __[examples](https://github.com/google/honggfuzz/tree/master/examples) directory__, consisting of real world fuzz setups for widely-used software (e.g. Apache and OpenSSL)
 
 # REQUIREMENTS #
 
@@ -47,7 +52,8 @@ It should work under the following operating systems:
 
 # USAGE #
 
-<pre>
+```
+Usage: ./honggfuzz [options] -- path_to_command [args]
 Usage: ./honggfuzz [options] -- path_to_command [args]
 Options:
  --help|-h 
@@ -57,7 +63,9 @@ Options:
  --persistent|-P 
 	Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code)
  --instrument|-z 
-	Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)
+	*DEFAULT-MODE-BY-DEFAULT* Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)
+ --noinst|-x 
+	Static mode (dry-mode), disable any instrumentation (hw/sw)
  --sancov|-C 
 	Enable sanitizer coverage feedback
  --keep_output|-Q 
@@ -84,14 +92,16 @@ Options:
 	Workspace directory to save crashes & runtime files (default: '.')
  --covdir VALUE
 	New coverage is written to a separate directory (default: use the input directory)
- --wordlist|-w VALUE
-	Wordlist file (tokens delimited by NUL-bytes)
+ --dict|-w VALUE
+	Dictionary file. Format:http://llvm.org/docs/LibFuzzer.html#dictionaries
  --stackhash_bl|-B VALUE
 	Stackhashes blacklist file (one entry per line)
  --mutate_cmd|-c VALUE
 	External command producing fuzz files (instead of internal mutators)
  --pprocess_cmd VALUE
 	External command postprocessing files produced by internal mutators
+ --run_time VALUE
+	Number of seconds this fuzzing session will last (default: '0' [no limit])
  --iterations|-N VALUE
 	Number of fuzzing iterations (default: '0' [no limit])
  --rlimit_as VALUE
@@ -114,6 +124,8 @@ Options:
 	Monitor SIGABRT (default: 'false for Android - 'true for other platforms)
  --no_fb_timeout VALUE
 	Skip feedback if the process has timeouted (default: 'false')
+ --exit_upon_crash 
+	Exit upon seeing the first crash (default: 'false')
  --linux_symbols_bl VALUE
 	Symbols blacklist filter file (one entry per line)
  --linux_symbols_wl VALUE
@@ -153,11 +165,11 @@ Examples:
  Use SANCOV to maximize code coverage:
   honggfuzz -f input_dir -C -- /usr/bin/tiffinfo -D ___FILE___
  Use compile-time instrumentation (libhfuzz/instrument.c):
-  honggfuzz -f input_dir -z -- /usr/bin/tiffinfo -D ___FILE___
+  honggfuzz -f input_dir -- /usr/bin/tiffinfo -D ___FILE___
  Use persistent mode (libhfuzz/persistent.c):
   honggfuzz -f input_dir -P -- /usr/bin/tiffinfo_persistent
  Use persistent mode (libhfuzz/persistent.c) and compile-time instrumentation (libhfuzz/instrument.c):
-  honggfuzz -f input_dir -P -z -- /usr/bin/tiffinfo_persistent
+  honggfuzz -f input_dir -P -- /usr/bin/tiffinfo_persistent
  Run the binary over a dynamic file, maximize total no. of instructions:
   honggfuzz --linux_perf_instr -- /usr/bin/tiffinfo -D ___FILE___
  Run the binary over a dynamic file, maximize total no. of branches:
@@ -166,7 +178,7 @@ Examples:
   honggfuzz --linux_perf_bts_edge -- /usr/bin/tiffinfo -D ___FILE___
  Run the binary over a dynamic file, maximize unique code blocks via Intel Processor Trace (requires libipt.so):
   honggfuzz --linux_perf_ipt_block -- /usr/bin/tiffinfo -D ___FILE___
-</pre>
+```
 
 # OUTPUT FILES #
 

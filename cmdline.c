@@ -73,31 +73,32 @@ static void cmdlineHelp(const char* pname, struct custom_option* opts)
         LOG_HELP("\t%s", opts[i].descr);
     }
     LOG_HELP_BOLD("\nExamples:");
-    LOG_HELP(" Run the binary over a mutated file chosen from the directory");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP(" Run the binary over a mutated file chosen from the directory. Disable fuzzing "
+             "feedback (dry/static mode)");
+    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -x -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" As above, provide input over STDIN:");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -s -- /usr/bin/djpeg");
-    LOG_HELP(" Use SANCOV to maximize code coverage:");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -C -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -x -s -- /usr/bin/djpeg");
     LOG_HELP(" Use compile-time instrumentation (libhfuzz/instrument.c):");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -z -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
-    LOG_HELP(" Use persistent mode (libhfuzz/persistent.c):");
+    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP(" Use SANCOV instrumentation:");
+    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -C -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP(" Use persistent mode (libhfuzz/persistent.c) w/o instrumentation:");
+    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -x -- /usr/bin/tiffinfo_persistent");
+    LOG_HELP(" Use persistent mode (libhfuzz/persistent.c) and compile-time instrumentation:");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -- /usr/bin/tiffinfo_persistent");
-    LOG_HELP(" Use persistent mode (libhfuzz/persistent.c) and compile-time instrumentation "
-             "(libhfuzz/instrument.c):");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -z -- /usr/bin/tiffinfo_persistent");
 #if defined(_HF_ARCH_LINUX)
-    LOG_HELP(" Run the binary over a dynamic file, maximize total no. of instructions:");
+    LOG_HELP(
+        " Run the binary with dynamically generate inputs, maximize total no. of instructions:");
     LOG_HELP_BOLD(
         "  " PROG_NAME " --linux_perf_instr -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
-    LOG_HELP(" Run the binary over a dynamic file, maximize total no. of branches:");
+    LOG_HELP(" As above, maximize total no. of branches:");
     LOG_HELP_BOLD(
         "  " PROG_NAME " --linux_perf_branch -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
-    LOG_HELP(" Run the binary over a dynamic file, maximize unique branches (edges) via BTS:");
+    LOG_HELP(" As above, maximize unique branches (edges) via Intel BTS:");
     LOG_HELP_BOLD(
         "  " PROG_NAME " --linux_perf_bts_edge -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
-    LOG_HELP(" Run the binary over a dynamic file, maximize unique code blocks via Intel Processor "
-             "Trace (requires libipt.so):");
+    LOG_HELP(
+        " As above, maximize unique code blocks via Intel Processor Trace (requires libipt.so):");
     LOG_HELP_BOLD(
         "  " PROG_NAME " --linux_perf_ipt_block -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
 #endif /* defined(_HF_ARCH_LINUX) */
@@ -201,7 +202,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
         .blCrashesCnt = 0,
         .timeoutedCnt = 0,
 
-        .dynFileMethod = _HF_DYNFILE_NONE,
+        .dynFileMethod = _HF_DYNFILE_SOFT,
         .sanCovCnts = {
             .hitBBCnt = 0ULL,
             .totalBBCnt = 0ULL,
@@ -258,7 +259,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
         { { "help", no_argument, NULL, 'h' }, "Help plz.." },
         { { "input", required_argument, NULL, 'f' }, "Path to a directory containing initial file corpus" },
         { { "persistent", no_argument, NULL, 'P' }, "Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code)" },
-        { { "instrument", no_argument, NULL, 'z' }, "Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)" },
+        { { "instrument", no_argument, NULL, 'z' }, "*DEFAULT-MODE-BY-DEFAULT* Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)" },
+        { { "noinst", no_argument, NULL, 'x' }, "Static mode (dry-mode), disable any instrumentation (hw/sw)" },
         { { "sancov", no_argument, NULL, 'C' }, "Enable sanitizer coverage feedback" },
         { { "keep_output", no_argument, NULL, 'Q' }, "Don't close children's stdin, stdout, stderr; can be noisy" },
         { { "timeout", required_argument, NULL, 't' }, "Timeout in seconds (default: '10')" },
@@ -321,7 +323,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
     int opt_index = 0;
     for (;;) {
         int c = getopt_long(
-            argc, argv, "-?hQvVsuPf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:CzTS", opts, &opt_index);
+            argc, argv, "-?hQvVsuPxf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:CzTS", opts, &opt_index);
         if (c < 0)
             break;
 
@@ -332,6 +334,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
             break;
         case 'f':
             hfuzz->inputDir = optarg;
+            break;
+        case 'x':
+            hfuzz->dynFileMethod = _HF_DYNFILE_NONE;
             break;
         case 'Q':
             hfuzz->nullifyStdio = false;
