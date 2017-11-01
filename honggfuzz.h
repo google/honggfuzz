@@ -36,7 +36,7 @@
 #include <time.h>
 
 #define PROG_NAME "honggfuzz"
-#define PROG_VERSION "1.1"
+#define PROG_VERSION "1.2"
 
 /* Name of the template which will be replaced with the proper name of the file */
 #define _HF_FILE_PLACEHOLDER "___FILE___"
