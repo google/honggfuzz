@@ -98,11 +98,10 @@ static void util_rndInitThread(void)
     if (fd == -1) {
         PLOG_F("Couldn't open /dev/urandom for reading");
     }
-    defer { close(fd); };
-
     if (files_readFromFd(fd, (uint8_t*)rndState, sizeof(rndState)) != sizeof(rndState)) {
         PLOG_F("Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndState));
     }
+    close(fd);
 }
 
 /*

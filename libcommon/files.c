@@ -51,13 +51,12 @@ ssize_t files_readFileToBufMax(char* fileName, uint8_t* buf, size_t fileMaxSz)
         PLOG_W("Couldn't open '%s' for R/O", fileName);
         return -1;
     }
-    defer { close(fd); };
 
     ssize_t readSz = files_readFromFd(fd, buf, fileMaxSz);
     if (readSz < 0) {
         LOG_W("Couldn't read '%s' to a buf", fileName);
-        return -1;
     }
+    close(fd);
 
     LOG_D("Read '%zu' bytes from '%s'", readSz, fileName);
     return readSz;
@@ -70,16 +69,17 @@ bool files_writeBufToFile(const char* fileName, const uint8_t* buf, size_t fileS
         PLOG_W("Couldn't open '%s' for R/W", fileName);
         return false;
     }
-    defer { close(fd); };
 
-    if (files_writeToFd(fd, buf, fileSz) == false) {
+    bool ret = files_writeToFd(fd, buf, fileSz);
+    if (ret == false) {
         PLOG_W("Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName, fd);
         unlink(fileName);
-        return false;
+    } else {
+        LOG_D("Written '%zu' bytes to '%s'", fileSz, fileName);
     }
 
-    LOG_D("Written '%zu' bytes to '%s'", fileSz, fileName);
-    return true;
+    close(fd);
+    return ret;
 }
 
 bool files_writeToFd(int fd, const uint8_t* buf, size_t fileSz)
@@ -131,10 +131,10 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p)
         PLOG_W("Couldn't allocate memory");
         return false;
     }
-    defer { free(buf); };
 
     memset(buf, p, (size_t)size);
     int ret = files_writeToFd(fd, buf, size);
+    free(buf);
 
     return ret;
 }
@@ -218,11 +218,11 @@ bool files_copyFile(const char* source, const char* destination, bool* dstExists
         PLOG_D("Couldn't open '%s' source", source);
         return false;
     }
-    defer { close(inFD); };
 
     struct stat inSt;
     if (fstat(inFD, &inSt) == -1) {
         PLOG_W("Couldn't fstat(fd='%d' fileName='%s')", inFD, source);
+        close(inFD);
         return false;
     }
 
@@ -233,20 +233,25 @@ bool files_copyFile(const char* source, const char* destination, bool* dstExists
                 *dstExists = true;
         }
         PLOG_D("Couldn't open '%s' destination", destination);
+        close(inFD);
         return false;
     }
-    defer { close(outFD); };
+    close(outFD);
 
     uint8_t* inFileBuf = malloc(inSt.st_size);
     if (!inFileBuf) {
         PLOG_W("malloc(%zu) failed", (size_t)inSt.st_size);
+        close(inFD);
+        close(outFD);
         return false;
     }
-    defer { free(inFileBuf); };
 
     ssize_t readSz = files_readFromFd(inFD, inFileBuf, (size_t)inSt.st_size);
     if (readSz < 0) {
         PLOG_W("Couldn't read '%s' to a buf", source);
+        free(inFileBuf);
+        close(inFD);
+        close(outFD);
         return false;
     }
 
@@ -254,9 +259,15 @@ bool files_copyFile(const char* source, const char* destination, bool* dstExists
         PLOG_W("Couldn't write '%zu' bytes to file '%s' (fd='%d')", (size_t)readSz, destination,
             outFD);
         unlink(destination);
+        free(inFileBuf);
+        close(inFD);
+        close(outFD);
         return false;
     }
 
+    free(inFileBuf);
+    close(inFD);
+    close(outFD);
     return true;
 }
 
@@ -273,11 +284,8 @@ size_t files_parseSymbolFilter(const char* srcFile, char*** filterList)
         PLOG_W("Couldn't open '%s' - R/O mode", srcFile);
         return 0;
     }
-    defer { fclose(f); };
 
     char* lineptr = NULL;
-    defer { free(lineptr); };
-
     size_t symbolsRead = 0, n = 0;
     for (;;) {
         if (getline(&lineptr, &n, f) == -1) {
@@ -286,25 +294,29 @@ size_t files_parseSymbolFilter(const char* srcFile, char*** filterList)
 
         if (strlen(lineptr) < 3) {
             LOG_F("Input symbol '%s' too short (strlen < 3)", lineptr);
-            return 0;
+            symbolsRead = 0;
+            break;
         }
-
         if ((*filterList
                 = (char**)util_Realloc(*filterList, (symbolsRead + 1) * sizeof((*filterList)[0])))
             == NULL) {
             PLOG_W("realloc failed (sz=%zu)", (symbolsRead + 1) * sizeof((*filterList)[0]));
-            return 0;
+            symbolsRead = 0;
+            break;
         }
         (*filterList)[symbolsRead] = malloc(strlen(lineptr));
         if (!(*filterList)[symbolsRead]) {
             PLOG_E("malloc(%zu) failed", strlen(lineptr));
-            return 0;
+            symbolsRead = 0;
+            break;
         }
         strncpy((*filterList)[symbolsRead], lineptr, strlen(lineptr));
         symbolsRead++;
     }
 
     LOG_I("%zu filter symbols added to list", symbolsRead);
+    fclose(f);
+    free(lineptr);
     return symbolsRead;
 }
 
@@ -405,19 +417,22 @@ bool files_readPidFromFile(const char* fileName, pid_t* pidPtr)
         PLOG_W("Couldn't open '%s' - R/O mode", fileName);
         return false;
     }
-    defer { fclose(fPID); };
 
     char* lineptr = NULL;
     size_t lineSz = 0;
-    defer { free(lineptr); };
-    if (getline(&lineptr, &lineSz, fPID) == -1) {
+    ssize_t ret = getline(&lineptr, &lineSz, fPID);
+    fclose(fPID);
+    if (ret == -1) {
         if (lineSz == 0) {
             LOG_W("Empty PID file (%s)", fileName);
+            fclose(fPID);
+            free(lineptr);
             return false;
         }
     }
 
     *pidPtr = atoi(lineptr);
+    free(lineptr);
     if (*pidPtr < 1) {
         LOG_W("Invalid PID read from '%s' file", fileName);
         return false;
