@@ -1,3 +1,12 @@
+2017-11-01 - Version 1.2
+        - Software-based coverage feedback (-z) is now enabled by default, can be disabled with (-x)
+        - Better sigprocmask manipulation before executing a process
+        - Updated fuzzing corpora for ssl packages
+        - Updated Apache HTTPD compilation script/patch, corpora, config and string instrumentation
+        - Updated ISC Bind config and fuzzing corpora
+        - Fixes for the Android build (thanks to Zach Riggle and Anestis Bechtsoudis)
+        - Indentation fixes, now clang-format is used
+
 2017-06-23 - Version 1.1 (rev ee3a530)
         - Simplified and improved hfuzz_cc compiler
         - More string instrumentation in libhfuzz
