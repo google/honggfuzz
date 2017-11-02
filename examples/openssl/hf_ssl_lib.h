@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <openssl/rand.h>
 
 #ifdef __cplusplus
