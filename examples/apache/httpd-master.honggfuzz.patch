@@ -1,8 +1,6 @@
-diff --git a/compile_and_install.sh b/compile_and_install.sh
-new file mode 100755
-index 000000000..e5d519e03
---- /dev/null
-+++ b/compile_and_install.sh
+diff -Nur httpd/compile_and_install.sh httpd.new/compile_and_install.sh
+--- httpd/compile_and_install.sh	1970-01-01 01:00:00.000000000 +0100
++++ httpd.new/compile_and_install.sh	2017-11-02 23:48:05.049844778 +0100
 @@ -0,0 +1,62 @@
 +#!/bin/sh
 +
@@ -12,9 +10,9 @@ index 000000000..e5d519e03
 +HFUZZ_DIR="/home/jagger/src/honggfuzz"
 +# Change this to a directory where apache should be installed into
 +INSTALL_PREFIX="$(realpath "$PWD/../dist")"
-+NGHTTP2_VER=1.24.0
-+APR_VER=1.6.2
-+APR_UTIL_VER=1.6.0
++NGHTTP2_VER=1.27.0
++APR_VER=1.6.3
++APR_UTIL_VER=1.6.1
 +CFLAGS_SAN="-fsanitize=address"
 +# Another viable option: few
 +APACHE_MODULES=most
@@ -66,11 +64,10 @@ index 000000000..e5d519e03
 +make clean
 +make -j$(nproc)
 +make install
-diff --git a/configure.in b/configure.in
-index ef7bd0248..27fca57df 100644
---- a/configure.in
-+++ b/configure.in
-@@ -712,7 +712,7 @@ AC_MSG_CHECKING([for Check to enable unit tests])
+diff -Nur httpd/configure.in httpd.new/configure.in
+--- httpd/configure.in	2017-11-02 23:48:27.717470876 +0100
++++ httpd.new/configure.in	2017-11-02 23:48:05.053844712 +0100
+@@ -721,7 +721,7 @@
  if test "x$PKGCONFIG" != "x" && `$PKGCONFIG --atleast-version='0.9.12' check`; then
    UNITTEST_CFLAGS=`$PKGCONFIG --cflags check`
    UNITTEST_LIBS=`$PKGCONFIG --libs check`
@@ -79,11 +76,10 @@ index ef7bd0248..27fca57df 100644
  
    AC_MSG_RESULT([yes])
  else
-diff --git a/server/main.c b/server/main.c
-index 5196903ce..3a5e57b58 100644
---- a/server/main.c
-+++ b/server/main.c
-@@ -459,8 +459,84 @@ static void usage(process_rec *process)
+diff -Nur httpd/server/main.c httpd.new/server/main.c
+--- httpd/server/main.c	2017-11-02 23:48:27.913467639 +0100
++++ httpd.new/server/main.c	2017-11-02 23:48:05.053844712 +0100
+@@ -484,8 +484,84 @@
      destroy_and_exit_process(process, 1);
  }
  
