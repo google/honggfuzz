@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <openssl/rand.h>
 
 #ifdef __cplusplus
@@ -27,9 +26,9 @@ static RAND_METHOD hf_method = {
     hf_stat,
 };
 
-void HFResetRand(void)
+static void HFResetRand(void)
 {
-    assert(RAND_set_rand_method(&hf_method) == 1);
+    RAND_set_rand_method(&hf_method);
 }
 
 #ifdef __cplusplus
