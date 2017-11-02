@@ -85,8 +85,8 @@ Honggfuzz has been used to find a few interesting security problems in major sof
 The [examples](https://github.com/google/honggfuzz/tree/master/examples/)
 directory contains code demonstrating (among others) how to use honggfuzz to find bugs in the
 [OpenSSL](https://github.com/google/honggfuzz/tree/master/examples/openssl)
-library and in the [Apache](https://github.com/google/honggfuzz/tree/master/examples/apache)
-web server.
+library and in the [Apache](https://github.com/google/honggfuzz/tree/master/examples/apache-httpd)
+HTTPD web server.
 
 **Other**
 
