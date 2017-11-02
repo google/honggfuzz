@@ -28,7 +28,7 @@ static RAND_METHOD hf_method = {
 
 void HFResetRand(void)
 {
-    RAND_set_rand_method(&hf_method);
+    assert(RAND_set_rand_method(&hf_method) == 1);
 }
 
 #ifdef __cplusplus
