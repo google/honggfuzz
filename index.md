@@ -59,6 +59,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * [PHP](https://bugs.php.net/bug.php?id=74194)
   * [Double-free in __LibXMP__](https://github.com/cmatsuoka/libxmp/commit/bd1eb5cfcd802820073504c234c3f735e96c3355)
   * [Heap buffer overflow in SAPCAR • CVE-2017-8852](https://www.coresecurity.com/blog/sapcar-heap-buffer-overflow-crash-exploit)
+  * [Crashes in __libbass__](http://seclists.org/oss-sec/2017/q4/185)
   * __FreeType 2__:
     * [CVE-2010-2497](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2497)
     * [CVE-2010-2498](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2498)
