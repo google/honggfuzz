@@ -151,7 +151,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
         .fileExtn = "fuzz",
         .workDir = ".",
         .covDir = NULL,
-        .origFlipRate = 0.001f,
+        .mutationsPerRun = 6U,
         .externalCommand = NULL,
         .postExternalCommand = NULL,
         .blacklistFile = NULL,
@@ -266,7 +266,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
         { { "timeout", required_argument, NULL, 't' }, "Timeout in seconds (default: '10')" },
         { { "threads", required_argument, NULL, 'n' }, "Number of concurrent fuzzing threads (default: number of CPUs / 2)" },
         { { "stdin_input", no_argument, NULL, 's' }, "Provide fuzzing input on STDIN, instead of ___FILE___" },
-        { { "mutation_rate", required_argument, NULL, 'r' }, "Maximal mutation rate in relation to the file size, (default: '0.001')" },
+        { { "mutations_per_run", required_argument, NULL, 'r' }, "Maximal number of mutations per one run, (default: '6')" },
         { { "logfile", required_argument, NULL, 'l' }, "Log file" },
         { { "verbose", no_argument, NULL, 'v' }, "Disable ANSI console; use simple log output" },
         { { "verifier", no_argument, NULL, 'V' }, "Enable crashes verifier" },
@@ -366,7 +366,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
             hfuzz->workDir = optarg;
             break;
         case 'r':
-            hfuzz->origFlipRate = strtod(optarg, NULL);
+            hfuzz->mutationsPerRun = strtoul(optarg, NULL, 10);
             break;
         case 'c':
             hfuzz->externalCommand = optarg;
@@ -555,8 +555,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
         hfuzz->threadsMax = 1;
     }
 
-    if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
-        LOG_I("Verifier enabled with 0.0 flipRate, activating dry run mode");
+    if (hfuzz->mutationsPerRun == 0.0L && hfuzz->useVerifier) {
+        LOG_I("Verifier enabled with mutationsPerRun == 0, activating the dry run mode");
     }
 
     /*
@@ -568,12 +568,13 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
         return false;
     }
 
-    LOG_I("PID: %d, inputDir '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, flipRate: %lf, "
+    LOG_I("PID: %d, inputDir '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, "
+          "mutationsPerRun: %u, "
           "externalCommand: '%s', runEndTime: %d tmOut: %ld, mutationsMax: %zu, threadsMax: %zu, "
           "fileExtn: '%s', "
           "memoryLimit: 0x%" PRIx64 "(MiB), fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
         (int)getpid(), hfuzz->inputDir, cmdlineYesNo(hfuzz->nullifyStdio),
-        cmdlineYesNo(hfuzz->fuzzStdin), cmdlineYesNo(hfuzz->saveUnique), hfuzz->origFlipRate,
+        cmdlineYesNo(hfuzz->fuzzStdin), cmdlineYesNo(hfuzz->saveUnique), hfuzz->mutationsPerRun,
         hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, (int)hfuzz->runEndTime,
         hfuzz->tmOut, hfuzz->mutationsMax, hfuzz->threadsMax, hfuzz->fileExtn, hfuzz->asLimit,
         hfuzz->cmdline[0], hfuzz->linux.pid, cmdlineYesNo(hfuzz->monitorSIGABRT));

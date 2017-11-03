@@ -529,7 +529,7 @@ static void mangle_InsertRnd(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer)
 
 void mangle_mangleContent(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
 {
-    if (fuzzer->flipRate == 0.0f) {
+    if (fuzzer->mutationsPerRun == 0U) {
         return;
     }
 
@@ -566,7 +566,7 @@ void mangle_mangleContent(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     };
 
     /* Max number of stacked changes is 6 */
-    uint64_t changesCnt = util_rndGet(1, 6);
+    uint64_t changesCnt = util_rndGet(1, hfuzz->mutationsPerRun);
 
     for (uint64_t x = 0; x < changesCnt; x++) {
         uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);

@@ -516,7 +516,7 @@ static void fuzz_fuzzLoop(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     fuzzer->report[0] = '\0';
     fuzzer->mainWorker = true;
     fuzzer->origFileName = "DYNAMIC";
-    fuzzer->flipRate = hfuzz->origFlipRate;
+    fuzzer->mutationsPerRun = hfuzz->mutationsPerRun;
     fuzzer->dynamicFileSz = 0;
 
     fuzzer->sanCovCnts.hitBBCnt = 0ULL;
@@ -531,7 +531,7 @@ static void fuzz_fuzzLoop(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     fuzzer->linux.hwCnts.newBBCnt = 0ULL;
 
     if (fuzzer->state == _HF_STATE_DYNAMIC_PRE) {
-        fuzzer->flipRate = 0.0f;
+        fuzzer->mutationsPerRun = 0U;
         if (fuzz_prepareFile(hfuzz, fuzzer, false /* rewind */) == false) {
             fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_MAIN);
             fuzzer->state = fuzz_getState(hfuzz);
@@ -626,7 +626,7 @@ static void* fuzz_threadNew(void* arg)
 
     for (;;) {
         /* Check if dry run mode with verifier enabled */
-        if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
+        if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
             if (ATOMIC_POST_INC(hfuzz->mutationsCnt) >= hfuzz->fileCnt) {
                 ATOMIC_POST_INC(hfuzz->threadsFinished);
                 break;

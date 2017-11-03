@@ -260,7 +260,7 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
     }
 
     /* If dry run mode, copy file with same name into workspace */
-    if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
+    if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s", hfuzz->workDir,
             fuzzer->origFileName);
     } else if (hfuzz->saveUnique) {

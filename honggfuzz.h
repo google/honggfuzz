@@ -183,7 +183,7 @@ typedef struct {
     char* fileExtn;
     char* workDir;
     char* covDir;
-    double origFlipRate;
+    unsigned mutationsPerRun;
     char* externalCommand;
     char* postExternalCommand;
     const char* blacklistFile;
@@ -281,7 +281,7 @@ typedef struct {
     int exception;
     char report[_HF_REPORT_SIZE];
     bool mainWorker;
-    float flipRate;
+    unsigned mutationsPerRun;
     uint8_t* dynamicFile;
     size_t dynamicFileSz;
     uint32_t fuzzNo;

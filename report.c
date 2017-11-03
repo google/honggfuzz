@@ -95,16 +95,16 @@ void report_Report(honggfuzz_t* hfuzz, char* s)
         "TIME: %s\n"
         "=====================================================================\n"
         "FUZZER ARGS:\n"
-        " flipRate     : %lf\n"
-        " externalCmd  : %s\n"
-        " fuzzStdin    : %s\n"
-        " timeout      : %ld (sec)\n"
-        " ignoreAddr   : %p\n"
-        " memoryLimit  : %" PRIu64 " (MiB)\n"
-        " targetPid    : %d\n"
-        " targetCmd    : %s\n"
-        " wordlistFile : %s\n",
-        localtmstr, hfuzz->origFlipRate,
+        " mutationsPerRun : %u\n"
+        " externalCmd     : %s\n"
+        " fuzzStdin       : %s\n"
+        " timeout         : %ld (sec)\n"
+        " ignoreAddr      : %p\n"
+        " memoryLimit     : %" PRIu64 " (MiB)\n"
+        " targetPid       : %d\n"
+        " targetCmd       : %s\n"
+        " wordlistFile    : %s\n",
+        localtmstr, hfuzz->mutationsPerRun,
         hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand,
         hfuzz->fuzzStdin ? "TRUE" : "FALSE", hfuzz->tmOut, hfuzz->linux.ignoreAddr, hfuzz->asLimit,
         hfuzz->linux.pid, hfuzz->linux.pidCmd,

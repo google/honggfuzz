@@ -122,7 +122,7 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
     char newname[PATH_MAX];
 
     /* If dry run mode, copy file with same name into workspace */
-    if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
+    if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
         snprintf(newname, sizeof(newname), "%s", fuzzer->origFileName);
     } else {
         snprintf(newname, sizeof(newname), "%s/%s.PID.%d.TIME.%s.%s", hfuzz->workDir,
