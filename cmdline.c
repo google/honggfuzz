@@ -555,7 +555,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
         hfuzz->threadsMax = 1;
     }
 
-    if (hfuzz->mutationsPerRun == 0.0L && hfuzz->useVerifier) {
+    if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
         LOG_I("Verifier enabled with mutationsPerRun == 0, activating the dry run mode");
     }
 
