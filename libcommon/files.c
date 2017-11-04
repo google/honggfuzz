@@ -157,9 +157,16 @@ bool files_sendToSocketNB(int fd, const uint8_t* buf, size_t fileSz)
 
 bool files_sendToSocket(int fd, const uint8_t* buf, size_t fileSz)
 {
+    int sendFlags = 0;
+#ifdef _HF_ARCH_DARWIN
+    sendFlags |= SO_NOSIGPIPE;
+#else
+    sendFlags |= MSG_NOSIGNAL;
+#endif
+
     size_t writtenSz = 0;
     while (writtenSz < fileSz) {
-        ssize_t sz = send(fd, &buf[writtenSz], fileSz - writtenSz, MSG_NOSIGNAL);
+        ssize_t sz = send(fd, &buf[writtenSz], fileSz - writtenSz, sendFlags);
         if (sz < 0 && errno == EINTR)
             continue;
 
