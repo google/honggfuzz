@@ -266,7 +266,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
         { { "timeout", required_argument, NULL, 't' }, "Timeout in seconds (default: '10')" },
         { { "threads", required_argument, NULL, 'n' }, "Number of concurrent fuzzing threads (default: number of CPUs / 2)" },
         { { "stdin_input", no_argument, NULL, 's' }, "Provide fuzzing input on STDIN, instead of ___FILE___" },
-        { { "mutations_per_run", required_argument, NULL, 'r' }, "Maximal number of mutations per one run, (default: '6')" },
+        { { "mutations_per_run", required_argument, NULL, 'r' }, "Maximal number of mutations per one run (default: '6')" },
         { { "logfile", required_argument, NULL, 'l' }, "Log file" },
         { { "verbose", no_argument, NULL, 'v' }, "Disable ANSI console; use simple log output" },
         { { "verifier", no_argument, NULL, 'V' }, "Enable crashes verifier" },
