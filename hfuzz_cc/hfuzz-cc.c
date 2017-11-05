@@ -120,6 +120,7 @@ static int execCC(int argc, char** argv)
     } else {
         if (isCXX) {
             execvp("clang++-devel", argv);
+            execvp("clang++-7.0", argv);
             execvp("clang++-6.0", argv);
             execvp("clang++-5.0", argv);
             execvp("clang++-4.0", argv);
@@ -127,6 +128,7 @@ static int execCC(int argc, char** argv)
             execvp("clang", argv);
         } else {
             execvp("clang-devel", argv);
+            execvp("clang-7.0", argv);
             execvp("clang-6.0", argv);
             execvp("clang-5.0", argv);
             execvp("clang-4.0", argv);
@@ -283,8 +285,7 @@ static int ldMode(int argc, char** argv)
 
     commonOpts(&j, args);
 
-    int i;
-    for (i = 1; i < argc; i++) {
+    for (int i = 1; i < argc; i++) {
         args[j++] = argv[i];
     }
 
