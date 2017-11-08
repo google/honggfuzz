@@ -71,7 +71,7 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     struct dynfile_t* dynfile;
 
     {
-        MX_SCOPED_LOCK(&hfuzz->dynfileq_mutex);
+        MX_SCOPED_RWLOCK_READ(&hfuzz->dynfileq_mutex);
 
         if (hfuzz->dynfileqCnt == 0) {
             LOG_F("The dynamic file corpus is empty. Apparently, the initial fuzzing of the "
@@ -79,12 +79,13 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
                   "coverage and/or CPU counters");
         }
 
-        if (hfuzz->dynfileqCurrent == NULL
-            || hfuzz->dynfileqCurrent == TAILQ_LAST(&hfuzz->dynfileq, dictq_t)) {
-            hfuzz->dynfileqCurrent = TAILQ_FIRST(&hfuzz->dynfileq);
+        if (fuzzer->dynfileqCurrent == NULL) {
+            fuzzer->dynfileqCurrent = CIRCLEQ_FIRST(&hfuzz->dynfileq);
         }
-        dynfile = hfuzz->dynfileqCurrent;
-        hfuzz->dynfileqCurrent = TAILQ_NEXT(hfuzz->dynfileqCurrent, pointers);
+
+        dynfile = fuzzer->dynfileqCurrent;
+        fuzzer->dynfileqCurrent
+            = CIRCLEQ_LOOP_NEXT(&hfuzz->dynfileq, fuzzer->dynfileqCurrent, pointers);
     }
 
     memcpy(fuzzer->dynamicFile, dynfile->data, dynfile->size);
@@ -271,6 +272,7 @@ static bool fuzz_runVerifier(honggfuzz_t* hfuzz, fuzzer_t* crashedFuzzer)
             .backtrace = 0ULL,
             .access = 0ULL,
             .exception = 0,
+            .dynfileqCurrent = NULL,
             .dynamicFileSz = 0,
             .dynamicFile = NULL,
             .sanCovCnts = {
@@ -357,8 +359,8 @@ static void fuzz_addFileToFileQ(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     dynfile->data = (uint8_t*)util_Malloc(fuzzer->dynamicFileSz);
     memcpy(dynfile->data, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
-    MX_SCOPED_LOCK(&hfuzz->dynfileq_mutex);
-    TAILQ_INSERT_HEAD(&hfuzz->dynfileq, dynfile, pointers);
+    MX_SCOPED_RWLOCK_WRITE(&hfuzz->dynfileq_mutex);
+    CIRCLEQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
     hfuzz->dynfileqCnt++;
 
     /* No need to add new coverage if we are supposed to append new coverage-inducing inputs only */
@@ -609,6 +611,7 @@ static void* fuzz_threadNew(void* arg)
     fuzzer_t fuzzer = {
         .pid = 0,
         .persistentPid = 0,
+        .dynfileqCurrent = NULL,
         .dynamicFile = util_Calloc(hfuzz->maxFileSz),
         .fuzzNo = fuzzNo,
         .persistentSock = -1,

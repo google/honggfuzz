@@ -189,9 +189,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
         .feedback = NULL,
         .bbFd = -1,
 
-        .dynfileq_mutex = PTHREAD_MUTEX_INITIALIZER,
         .dynfileqCnt = 0U,
-        .dynfileqCurrent = NULL,
+        .dynfileq_mutex = PTHREAD_RWLOCK_INITIALIZER,
 
         .feedback_mutex = PTHREAD_MUTEX_INITIALIZER,
 
@@ -251,7 +250,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
             },
     };
 
-    TAILQ_INIT(&hfuzz->dynfileq);
+    CIRCLEQ_INIT(&hfuzz->dynfileq);
     TAILQ_INIT(&hfuzz->dictq);
 
     // clang-format off
