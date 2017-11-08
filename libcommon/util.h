@@ -70,14 +70,7 @@ __attribute__((always_inline)) static inline uint8_t ATOMIC_BTS(uint8_t* addr, s
 {
     uint8_t oldbit;
     addr += (offset / 8);
-#if defined(__x86_64__)
-    __asm__("lock btsq %2, %1\n"
-            "sbb %0, %0\n"
-            : "=r"(oldbit), "+m"(*addr)
-            : "Ir"(offset % 8));
-#else
-    oldbit = ATOMIC_POST_OR(*addr, ((uint8_t)1U << (offset % 8)));
-#endif
+    oldbit = ATOMIC_POST_OR_RELAXED(*addr, ((uint8_t)1U << (offset % 8)));
     return oldbit;
 }
 
