@@ -44,9 +44,9 @@ if [ -n "$SAN" ]; then
 fi
 
 for x in x509 privkey client server; do
-	$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "$TYPE$SAN.$x" "$LIBSSL" "$LIBCRYPTO" "$COMMON_LDFLAGS" $SAN_COMPILE
+	$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "$TYPE$SAN.$x" "$LIBSSL" "$LIBCRYPTO" $COMMON_LDFLAGS $SAN_COMPILE
 done
 
 for x in x509 privkey client server; do
-	clang++$CLANG_VER -DHF_NO_INC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "libfuzzer.$TYPE$SAN.$x" "$LIBSSL" "$LIBCRYPTO" "$COMMON_LDFLAGS" $SAN_COMPILE -lFuzzer
+	clang++$CLANG_VER -DHF_NO_INC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "libfuzzer.$TYPE$SAN.$x" "$LIBSSL" "$LIBCRYPTO" $COMMON_LDFLAGS $SAN_COMPILE -lFuzzer
 done
