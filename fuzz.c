@@ -79,13 +79,12 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
                   "coverage and/or CPU counters");
         }
 
-        if (fuzzer->dynfileqCurrent == NULL) {
-            fuzzer->dynfileqCurrent = CIRCLEQ_FIRST(&hfuzz->dynfileq);
+        if (fuzzer->dynfileqCurrent == NULL
+            || fuzzer->dynfileqCurrent == TAILQ_LAST(&hfuzz->dynfileq, dyns_t)) {
+            fuzzer->dynfileqCurrent = TAILQ_FIRST(&hfuzz->dynfileq);
         }
-
         dynfile = fuzzer->dynfileqCurrent;
-        fuzzer->dynfileqCurrent
-            = CIRCLEQ_LOOP_NEXT(&hfuzz->dynfileq, fuzzer->dynfileqCurrent, pointers);
+        fuzzer->dynfileqCurrent = TAILQ_NEXT(fuzzer->dynfileqCurrent, pointers);
     }
 
     memcpy(fuzzer->dynamicFile, dynfile->data, dynfile->size);
@@ -360,7 +359,7 @@ static void fuzz_addFileToFileQ(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     memcpy(dynfile->data, fuzzer->dynamicFile, fuzzer->dynamicFileSz);
 
     MX_SCOPED_RWLOCK_WRITE(&hfuzz->dynfileq_mutex);
-    CIRCLEQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
+    TAILQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
     hfuzz->dynfileqCnt++;
 
     /* No need to add new coverage if we are supposed to append new coverage-inducing inputs only */

@@ -250,7 +250,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
             },
     };
 
-    CIRCLEQ_INIT(&hfuzz->dynfileq);
+    TAILQ_INIT(&hfuzz->dynfileq);
     TAILQ_INIT(&hfuzz->dictq);
 
     // clang-format off

@@ -145,7 +145,7 @@ typedef enum {
 struct dynfile_t {
     uint8_t* data;
     size_t size;
-    CIRCLEQ_ENTRY(dynfile_t)
+    TAILQ_ENTRY(dynfile_t)
     pointers;
 };
 
@@ -219,7 +219,7 @@ typedef struct {
     int bbFd;
 
     size_t dynfileqCnt;
-    CIRCLEQ_HEAD(dyns_t, dynfile_t) dynfileq;
+    TAILQ_HEAD(dyns_t, dynfile_t) dynfileq;
     pthread_rwlock_t dynfileq_mutex;
 
     pthread_mutex_t feedback_mutex;
