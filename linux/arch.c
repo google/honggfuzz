@@ -376,7 +376,7 @@ void arch_reapChild(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
 bool arch_archInit(honggfuzz_t* hfuzz)
 {
     /* Make %'d work */
-    setlocale(LC_NUMERIC, "");
+    setlocale(LC_NUMERIC, "en_US");
 
     if (access(hfuzz->cmdline[0], X_OK) == -1) {
         PLOG_E("File '%s' doesn't seem to be executable", hfuzz->cmdline[0]);

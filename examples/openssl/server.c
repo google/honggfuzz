@@ -13,9 +13,7 @@ extern "C" {
 #include <unistd.h>
 
 #include <hf_ssl_lib.h>
-#if !defined(HF_NO_INC)
 #include <libhfuzz/libhfuzz.h>
-#endif /* !defined(HF_NO_INC) */
 
 static const uint8_t kCertificateDER[] = { 0x30, 0x82, 0x05, 0x65, 0x30, 0x82, 0x03, 0x4d, 0x02,
     0x09, 0x00, 0xe8, 0x66, 0xed, 0xc9, 0x66, 0xa7, 0xd1, 0xac, 0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86,
@@ -440,7 +438,7 @@ unsigned int psk_callback(
     return max_psk_len;
 }
 
-#if defined(HF_SSL_IS_OPENSSL)
+#if defined(HF_SSL_IS_OPENSSL_GE_1_1)
 static int srp_callback(SSL* s, int* ad, void* arg)
 {
     if (strcmp(SSL_get_srp_username(s), "USER") != 0) {
@@ -453,7 +451,7 @@ static int srp_callback(SSL* s, int* ad, void* arg)
     }
     return SSL_ERROR_NONE;
 }
-#endif /* defined(HF_SSL_IS_OPENSSL) */
+#endif /* defined(HF_SSL_IS_OPENSSL_GE_1_1) */
 
 int alpn_callback(SSL* ssl, const unsigned char** out, unsigned char* outlen,
     const unsigned char* in, unsigned int inlen, void* arg)
@@ -550,12 +548,12 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
     assert(ret == 1);
 #endif /* !defined(HF_SSL_IS_LIBRESSL) */
 
-#if defined(HF_SSL_IS_OPENSSL)
+#if defined(HF_SSL_IS_OPENSSL_GE_1_1)
     ret = SSL_CTX_set_srp_username_callback(ctx, srp_callback);
     assert(ret == 1);
     ret = SSL_CTX_set_srp_cb_arg(ctx, NULL);
     assert(ret == 1);
-#endif /* defined(HF_SSL_IS_OPENSSL) */
+#endif /* defined(HF_SSL_IS_OPENSSL_GE_1_1) */
 
     SSL_CTX_set_alpn_select_cb(ctx, alpn_callback, NULL);
     SSL_CTX_set_next_protos_advertised_cb(ctx, npn_callback, NULL);
@@ -579,37 +577,42 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 
     SSL* server = SSL_new(ctx);
 
+#if defined(HF_SSL_FROM_STDIN)
+    BIO* in = BIO_new(BIO_s_fd());
+    BIO_set_fd(in, 0, BIO_NOCLOSE);
+#else /* defined(HF_SSL_FROM_STDIN) */
     BIO* in = BIO_new(BIO_s_mem());
     BIO_write(in, buf, len);
+#endif /* defined(HF_SSL_FROM_STDIN) */
 
     BIO* out = BIO_new(BIO_s_fd());
     BIO_set_fd(out, 1, BIO_NOCLOSE);
 
     SSL_set_bio(server, in, out);
 
-#if defined(HF_SSL_IS_OPENSSL)
+#if defined(HF_SSL_IS_OPENSSL_GE_1_1)
     SSL_enable_ct(server, SSL_CT_VALIDATION_STRICT);
     SSL_set_dh_auto(server, 1);
     SSL_set_max_early_data(server, 128);
     static const uint8_t edata_buf[128] = { 1, 0 };
     size_t written = 0;
     SSL_write_early_data(server, edata_buf, sizeof(edata_buf), &written);
-#endif // defined(HF_SSL_IS_OPENSSL)
+#endif // defined(HF_SSL_IS_OPENSSL_GE_1_1)
 
-#if !defined(HF_SSL_IS_LIBRESSL)
+#if defined(HF_SSL_IS_OPENSSL_GE_1_1) || defined(HF_SSL_IS_BORINGSSL)
     SSL_set_min_proto_version(server, SSL3_VERSION);
     SSL_set_max_proto_version(server, TLS1_3_VERSION);
-#endif // !defined(HF_SSL_IS_LIBRESSL)
+#endif // defined(HF_SSL_IS_OPENSSL_GE_1_1) || defined(HF_SSL_IS_BORINGSSL)
 
     /* Try it two times to test SSL_clear() */
     for (unsigned i = 0; i < 2; i++) {
         if (SSL_accept(server) == 1) {
             uint8_t tmp[1024 * 1024];
-#if defined(HF_SSL_IS_OPENSSL)
+#if defined(HF_SSL_IS_OPENSSL_GE_1_1)
             static const uint8_t early_data_buf[128] = { 1, 0 };
             size_t readbytes = 0;
             SSL_read_early_data(server, tmp, sizeof(tmp), &readbytes);
-#endif // defined(HF_SSL_IS_OPENSSL)
+#endif // defined(HF_SSL_IS_OPENSSL_GE_1_1)
 
             X509* peer;
             if ((peer = SSL_get_peer_certificate(server)) != NULL) {

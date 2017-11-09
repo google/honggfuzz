@@ -284,6 +284,27 @@ void util_mutexUnlock(pthread_mutex_t* mutex, const char* func, int line)
     }
 }
 
+void util_mutexRWLockRead(pthread_rwlock_t* mutex, const char* func, int line)
+{
+    if (pthread_rwlock_rdlock(mutex)) {
+        PLOG_F("%s():%d pthread_rwlock_rdlock(%p)", func, line, (void*)mutex);
+    }
+}
+
+void util_mutexRWLockWrite(pthread_rwlock_t* mutex, const char* func, int line)
+{
+    if (pthread_rwlock_wrlock(mutex)) {
+        PLOG_F("%s():%d pthread_rwlock_wrlock(%p)", func, line, (void*)mutex);
+    }
+}
+
+void util_mutexRWUnlock(pthread_rwlock_t* mutex, const char* func, int line)
+{
+    if (pthread_rwlock_unlock(mutex)) {
+        PLOG_F("%s():%d pthread_rwlock_unlock(%p)", func, line, (void*)mutex);
+    }
+}
+
 int64_t fastArray64Search(uint64_t* array, size_t arraySz, uint64_t key)
 {
     size_t low = 0;

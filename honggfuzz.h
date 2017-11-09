@@ -210,8 +210,7 @@ typedef struct {
     bool exitUponCrash;
 
     const char* dictionaryFile;
-    TAILQ_HEAD(strq_t, strings_t)
-    dictq;
+    TAILQ_HEAD(strq_t, strings_t) dictq;
     size_t dictionaryCnt;
     struct strings_t* dictqCurrent;
 
@@ -220,10 +219,8 @@ typedef struct {
     int bbFd;
 
     size_t dynfileqCnt;
-    pthread_mutex_t dynfileq_mutex;
-    TAILQ_HEAD(dictq_t, dynfile_t)
-    dynfileq;
-    struct dynfile_t* dynfileqCurrent;
+    TAILQ_HEAD(dyns_t, dynfile_t) dynfileq;
+    pthread_rwlock_t dynfileq_mutex;
 
     pthread_mutex_t feedback_mutex;
 
@@ -282,6 +279,7 @@ typedef struct {
     char report[_HF_REPORT_SIZE];
     bool mainWorker;
     unsigned mutationsPerRun;
+    struct dynfile_t* dynfileqCurrent;
     uint8_t* dynamicFile;
     size_t dynamicFileSz;
     uint32_t fuzzNo;
