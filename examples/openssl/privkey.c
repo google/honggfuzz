@@ -4,9 +4,7 @@
 #include <openssl/ssl.h>
 
 #include <hf_ssl_lib.h>
-#if !defined(HF_NO_INC)
 #include <libhfuzz/libhfuzz.h>
-#endif /* !defined(HF_NO_INC) */
 
 #ifdef __cplusplus
 extern "C" {

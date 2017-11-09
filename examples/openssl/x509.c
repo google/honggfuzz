@@ -12,9 +12,7 @@ extern "C" {
 #include <stdio.h>
 
 #include <hf_ssl_lib.h>
-#if !defined(HF_NO_INC)
 #include <libhfuzz/libhfuzz.h>
-#endif /* !defined(HF_NO_INC) */
 
 int LLVMFuzzerInitialize(int* argc, char*** argv)
 {

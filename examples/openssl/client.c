@@ -13,9 +13,7 @@ extern "C" {
 #include <unistd.h>
 
 #include <hf_ssl_lib.h>
-#if !defined(HF_NO_INC)
 #include <libhfuzz/libhfuzz.h>
-#endif /* !defined(HF_NO_INC) */
 
 static const uint8_t kCertificateDER[] = { 0x30, 0x82, 0x05, 0x65, 0x30, 0x82, 0x03, 0x4d, 0x02,
     0x09, 0x00, 0xe8, 0x66, 0xed, 0xc9, 0x66, 0xa7, 0xd1, 0xac, 0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86,
@@ -530,8 +528,13 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
     SSL* client = SSL_new(ctx);
     SSL_set_tlsext_host_name(client, "localhost");
 
+#if defined(HF_SSL_FROM_STDIN)
+    BIO* in = BIO_new(BIO_s_fd());
+    BIO_set_fd(in, 0, BIO_NOCLOSE);
+#else /* defined(HF_SSL_FROM_STDIN) */
     BIO* in = BIO_new(BIO_s_mem());
     BIO_write(in, buf, len);
+#endif /* defined(HF_SSL_FROM_STDIN) */
 
     BIO* out = BIO_new(BIO_s_fd());
     BIO_set_fd(out, 1, BIO_NOCLOSE);
