@@ -27,18 +27,18 @@ $ /home/jagger/src/honggfuzz/examples/openssl/compile_hfuzz_openssl_master.sh
 
 The _make.sh_ script will compile honggfuzz and libFuzzer binaries. Syntax:
 
-__make.sh <directory-suffix> [address|memory|undefined]__
+__make.sh <directory-with-open/libre/boring-ssl> [address|memory|undefined]__
 
 ```
 $ cd ..
-$ /home/jagger/src/honggfuzz/examples/openssl/make.sh master address
+$ /home/jagger/src/honggfuzz/examples/openssl/make.sh openssl-master address
 ```
 
 **Fuzzing**
 
 ```
-$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_server/ -z -P -- ./persistent.server.openssl.master
-$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_client/ -z -P -- ./persistent.client.openssl.master
-$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_x509/ -z -P -- ./persistent.x509.openssl.master
-$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_privkey/ -z -P -- ./persistent.privkey.openssl.master
+$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_server/ -P -- ./persistent.server.openssl.master
+$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_client/ -P -- ./persistent.client.openssl.master
+$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_x509/ -P -- ./persistent.x509.openssl.master
+$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_privkey/ -P -- ./persistent.privkey.openssl.master
 ```
