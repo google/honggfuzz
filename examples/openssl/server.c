@@ -627,13 +627,7 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
                 if (SSL_write(server, tmp, r) <= 0) {
                     break;
                 }
-                if (SSL_renegotiate(server) != 1) {
-                    break;
-                }
                 SSL_set_mtu(server, 8);
-#ifndef OPENSSL_NO_HEARTBEATS
-                SSL_heartbeat(server);
-#endif /* ifndef OPENSSL_NO_HEARTBEATS */
             }
         } else {
             ERR_print_errors_fp(stderr);
