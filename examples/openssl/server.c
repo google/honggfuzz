@@ -622,11 +622,9 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
             for (;;) {
                 ssize_t r = SSL_read(server, tmp, sizeof(tmp));
                 if (r <= 0) {
-                    SSL_shutdown(server);
                     break;
                 }
                 if (SSL_write(server, tmp, r) <= 0) {
-                    SSL_shutdown(server);
                     break;
                 }
                 SSL_renegotiate(server);
@@ -637,10 +635,15 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
             }
         } else {
             ERR_print_errors_fp(stderr);
+            break;
         }
 
-        SSL_shutdown(server);
-        SSL_clear(server);
+        if (SSL_shutdown(server) != 1) {
+            break;
+        }
+        if (SSL_clear(server) != 1) {
+            break;
+        }
     }
     SSL_free(server);
 
