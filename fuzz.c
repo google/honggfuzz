@@ -68,7 +68,6 @@ static void fuzz_getFileName(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
 static bool fuzz_prepareFileDynamically(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
 {
     fuzzer->origFileName = "[DYNAMIC]";
-    struct dynfile_t* dynfile;
 
     {
         MX_SCOPED_RWLOCK_READ(&hfuzz->dynfileq_mutex);
@@ -79,16 +78,19 @@ static bool fuzz_prepareFileDynamically(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
                   "coverage and/or CPU counters");
         }
 
-        if (fuzzer->dynfileqCurrent == NULL
-            || fuzzer->dynfileqCurrent == TAILQ_LAST(&hfuzz->dynfileq, dyns_t)) {
+        if (fuzzer->dynfileqCurrent == NULL) {
             fuzzer->dynfileqCurrent = TAILQ_FIRST(&hfuzz->dynfileq);
+        } else {
+            if (fuzzer->dynfileqCurrent == TAILQ_LAST(&hfuzz->dynfileq, dyns_t)) {
+                fuzzer->dynfileqCurrent = TAILQ_FIRST(&hfuzz->dynfileq);
+            } else {
+                fuzzer->dynfileqCurrent = TAILQ_NEXT(fuzzer->dynfileqCurrent, pointers);
+            }
         }
-        dynfile = fuzzer->dynfileqCurrent;
-        fuzzer->dynfileqCurrent = TAILQ_NEXT(fuzzer->dynfileqCurrent, pointers);
     }
 
-    memcpy(fuzzer->dynamicFile, dynfile->data, dynfile->size);
-    fuzzer->dynamicFileSz = dynfile->size;
+    memcpy(fuzzer->dynamicFile, fuzzer->dynfileqCurrent->data, fuzzer->dynfileqCurrent->size);
+    fuzzer->dynamicFileSz = fuzzer->dynfileqCurrent->size;
 
     mangle_mangleContent(hfuzz, fuzzer);
 
