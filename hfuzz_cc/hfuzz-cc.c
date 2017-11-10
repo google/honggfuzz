@@ -178,6 +178,12 @@ static void commonOpts(int* j, char** args)
 
 static bool getLibHfuzz(void)
 {
+    const char* lhfuzzEnvLoc = getenv("HFUZZ_LHFUZZ_PATH");
+    if (lhfuzzEnvLoc) {
+        snprintf(lhfuzzPath, sizeof(lhfuzzPath), "%s", lhfuzzEnvLoc);
+        return true;
+    }
+
     if (lhfuzzPath[0] == 0) {
         snprintf(lhfuzzPath, sizeof(lhfuzzPath), "/tmp/libhfuzz.%d.a", geteuid());
     }
