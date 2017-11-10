@@ -616,6 +616,9 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 
             X509* peer;
             if ((peer = SSL_get_peer_certificate(server)) != NULL) {
+                if (getenv("HFUZZ_SSL_ABORT_ON_VERIFY")) {
+                    abort();
+                }
                 SSL_get_verify_result(server);
                 X509_free(peer);
             }

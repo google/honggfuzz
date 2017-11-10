@@ -564,6 +564,9 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
 #endif //  defined(HF_SSL_IS_OPENSSL_GE_1_1)
             X509* peer;
             if ((peer = SSL_get_peer_certificate(client)) != NULL) {
+                if (getenv("HFUZZ_SSL_ABORT_ON_VERIFY")) {
+                    abort();
+                }
                 SSL_get_verify_result(client);
                 X509_free(peer);
             }
