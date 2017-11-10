@@ -171,6 +171,10 @@ static void commonOpts(int* j, char** args)
     args[(*j)++] = "-funroll-loops";
     args[(*j)++] = "-fno-inline";
     args[(*j)++] = "-fno-builtin";
+
+    if (getenv("HFUZZ_FORCE_M32")) {
+        args[(*j)++] = "-m32";
+    }
 }
 
 static bool getLibHfuzz(void)
