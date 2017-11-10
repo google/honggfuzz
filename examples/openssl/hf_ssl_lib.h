@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 #if defined(HF_SSL_IS_BORINGSSL)
-static int hf_rnd(unsigned char* buf, unsigned long num)
+static int hf_rnd(unsigned char* buf, size_t num)
 #else /* defined(HF_SSL_IS_OPENSSL) */
 static int hf_rnd(unsigned char* buf, int num)
 #endif /* defined(HF_SSL_IS_OPENSSL) */
