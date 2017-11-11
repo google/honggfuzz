@@ -79,7 +79,7 @@ struct {
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
-static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
+static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, run_t* run)
 {
     /*
      * Resumed by delivery of SIGCONT
@@ -89,14 +89,14 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
     }
 
     if (WIFEXITED(status) || WIFSIGNALED(status)) {
-        sancov_Analyze(hfuzz, fuzzer);
+        sancov_Analyze(hfuzz, run);
     }
 
     /*
      * Boring, the process just exited
      */
     if (WIFEXITED(status)) {
-        LOG_D("Process (pid %d) exited normally with status %d", fuzzer->pid, WEXITSTATUS(status));
+        LOG_D("Process (pid %d) exited normally with status %d", run->pid, WEXITSTATUS(status));
         return true;
     }
 
@@ -105,12 +105,12 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
      */
     if (!WIFSIGNALED(status)) {
         LOG_E("Process (pid %d) exited with the following status %d, please report that as a bug",
-            fuzzer->pid, status);
+            run->pid, status);
         return true;
     }
 
     int termsig = WTERMSIG(status);
-    LOG_D("Process (pid %d) killed by signal %d '%s'", fuzzer->pid, termsig, strsignal(termsig));
+    LOG_D("Process (pid %d) killed by signal %d '%s'", run->pid, termsig, strsignal(termsig));
     if (!arch_sigs[termsig].important) {
         LOG_D("It's not that important signal, skipping");
         return true;
@@ -123,13 +123,13 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
 
     /* If dry run mode, copy file with same name into workspace */
     if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
-        snprintf(newname, sizeof(newname), "%s", fuzzer->origFileName);
+        snprintf(newname, sizeof(newname), "%s", run->origFileName);
     } else {
         snprintf(newname, sizeof(newname), "%s/%s.PID.%d.TIME.%s.%s", hfuzz->workDir,
-            arch_sigs[termsig].descr, fuzzer->pid, localtmstr, hfuzz->fileExtn);
+            arch_sigs[termsig].descr, run->pid, localtmstr, hfuzz->fileExtn);
     }
 
-    LOG_I("Ok, that's interesting, saving the '%s' as '%s'", fuzzer->fileName, newname);
+    LOG_I("Ok, that's interesting, saving the '%s' as '%s'", run->fileName, newname);
 
     /*
      * All crashes are marked as unique due to lack of information in POSIX arch
@@ -138,15 +138,15 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
     ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
 
     if (files_writeBufToFile(
-            newname, fuzzer->dynamicFile, fuzzer->dynamicFileSz, O_CREAT | O_EXCL | O_WRONLY)
+            newname, run->dynamicFile, run->dynamicFileSz, O_CREAT | O_EXCL | O_WRONLY)
         == false) {
-        LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
+        LOG_E("Couldn't copy '%s' to '%s'", run->fileName, run->crashFileName);
     }
 
     return true;
 }
 
-pid_t arch_fork(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED) { return fork(); }
+pid_t arch_fork(honggfuzz_t* hfuzz UNUSED, run_t* fuzzer UNUSED) { return fork(); }
 
 bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
 {
@@ -180,63 +180,63 @@ bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
     return false;
 }
 
-void arch_prepareParent(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED) {}
+void arch_prepareParent(honggfuzz_t* hfuzz UNUSED, run_t* fuzzer UNUSED) {}
 
-void arch_prepareParentAfterFork(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED) {}
+void arch_prepareParentAfterFork(honggfuzz_t* hfuzz UNUSED, run_t* fuzzer UNUSED) {}
 
-void arch_reapChild(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+void arch_reapChild(honggfuzz_t* hfuzz, run_t* run)
 {
     for (;;) {
         if (hfuzz->persistent) {
             struct pollfd pfd = {
-                .fd = fuzzer->persistentSock,
+                .fd = run->persistentSock,
                 .events = POLLIN,
             };
             int r = poll(&pfd, 1, 250 /* 0.25s */);
             if (r == 0 || (r == -1 && errno == EINTR)) {
-                subproc_checkTimeLimit(hfuzz, fuzzer);
-                subproc_checkTermination(hfuzz, fuzzer);
+                subproc_checkTimeLimit(hfuzz, run);
+                subproc_checkTermination(hfuzz, run);
             }
             if (r == -1 && errno != EINTR) {
-                PLOG_F("poll(fd=%d)", fuzzer->persistentSock);
+                PLOG_F("poll(fd=%d)", run->persistentSock);
             }
         }
-        if (subproc_persistentModeRoundDone(hfuzz, fuzzer) == true) {
+        if (subproc_persistentModeRoundDone(hfuzz, run) == true) {
             break;
         }
 
         int status;
         int flags = hfuzz->persistent ? WNOHANG : 0;
-        int ret = waitpid(fuzzer->pid, &status, flags);
+        int ret = waitpid(run->pid, &status, flags);
         if (ret == 0) {
             continue;
         }
         if (ret == -1 && errno == EINTR) {
-            subproc_checkTimeLimit(hfuzz, fuzzer);
+            subproc_checkTimeLimit(hfuzz, run);
             continue;
         }
         if (ret == -1) {
-            PLOG_W("waitpid(pid=%d)", fuzzer->pid);
+            PLOG_W("waitpid(pid=%d)", run->pid);
             continue;
         }
-        if (ret != fuzzer->pid) {
+        if (ret != run->pid) {
             continue;
         }
 
         char strStatus[4096];
-        if (hfuzz->persistent && ret == fuzzer->persistentPid
+        if (hfuzz->persistent && ret == run->persistentPid
             && (WIFEXITED(status) || WIFSIGNALED(status))) {
-            fuzzer->persistentPid = 0;
+            run->persistentPid = 0;
             if (ATOMIC_GET(hfuzz->terminating) == false) {
                 LOG_W("Persistent mode: PID %d exited with status: %s", ret,
                     subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
             }
         }
 
-        LOG_D("Process (pid %d) came back with status: %s", fuzzer->pid,
+        LOG_D("Process (pid %d) came back with status: %s", run->pid,
             subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
 
-        if (arch_analyzeSignal(hfuzz, status, fuzzer)) {
+        if (arch_analyzeSignal(hfuzz, status, run)) {
             break;
         }
     }
@@ -255,4 +255,4 @@ bool arch_archInit(honggfuzz_t* hfuzz)
 
 void arch_sigFunc(int sig UNUSED) { return; }
 
-bool arch_archThreadInit(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED) { return true; }
+bool arch_archThreadInit(honggfuzz_t* hfuzz UNUSED, run_t* fuzzer UNUSED) { return true; }

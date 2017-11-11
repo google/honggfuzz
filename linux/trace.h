@@ -35,8 +35,8 @@
 
 extern bool arch_traceWaitForPidStop(pid_t pid);
 extern bool arch_traceEnable(honggfuzz_t* hfuzz);
-extern void arch_traceAnalyze(honggfuzz_t* hfuzz, int status, pid_t pid, fuzzer_t* fuzzer);
-extern void arch_traceExitAnalyze(honggfuzz_t* hfuzz, pid_t pid, fuzzer_t* fuzzer);
+extern void arch_traceAnalyze(honggfuzz_t* hfuzz, int status, pid_t pid, run_t* run);
+extern void arch_traceExitAnalyze(honggfuzz_t* hfuzz, pid_t pid, run_t* run);
 extern bool arch_traceAttach(honggfuzz_t* hfuzz, pid_t pid);
 extern void arch_traceDetach(pid_t pid);
 extern void arch_traceGetCustomPerf(honggfuzz_t* hfuzz, pid_t pid, uint64_t* cnt);

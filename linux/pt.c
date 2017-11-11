@@ -167,7 +167,7 @@ inline static int pt_last_ip_update_ip(
     return -pte_bad_packet;
 }
 
-inline static void perf_ptAnalyzePkt(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, struct pt_packet* packet,
+inline static void perf_ptAnalyzePkt(honggfuzz_t* hfuzz, run_t* run, struct pt_packet* packet,
     struct pt_config* ptc, struct pt_last_ip* last_ip)
 {
     switch (packet->type) {
@@ -193,24 +193,24 @@ inline static void perf_ptAnalyzePkt(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, struc
             ip &= _HF_PERF_BITMAP_BITSZ_MASK;
             register uint8_t prev = ATOMIC_BTS(hfuzz->feedback->bbMapPc, ip);
             if (!prev) {
-                fuzzer->linux.hwCnts.newBBCnt++;
+                run->linux.hwCnts.newBBCnt++;
             }
         }
     }
     return;
 }
 
-void arch_ptAnalyze(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+void arch_ptAnalyze(honggfuzz_t* hfuzz, run_t* run)
 {
-    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)fuzzer->linux.perfMmapBuf;
+    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
 
     uint64_t aux_tail = ATOMIC_GET(pem->aux_tail);
     uint64_t aux_head = ATOMIC_GET(pem->aux_head);
 
     struct pt_config ptc;
     pt_config_init(&ptc);
-    ptc.begin = &fuzzer->linux.perfMmapAux[aux_tail];
-    ptc.end = &fuzzer->linux.perfMmapAux[aux_head - 1];
+    ptc.begin = &run->linux.perfMmapAux[aux_tail];
+    ptc.end = &run->linux.perfMmapAux[aux_head - 1];
 
     int errcode = pt_cpu_errata(&ptc.errata, &ptc.cpu);
     if (errcode < 0) {
@@ -241,13 +241,13 @@ void arch_ptAnalyze(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
             LOG_W("pt_pkt_next() failed: %s", pt_errstr(errcode));
             break;
         }
-        perf_ptAnalyzePkt(hfuzz, fuzzer, &packet, &ptc, &last_ip);
+        perf_ptAnalyzePkt(hfuzz, run, &packet, &ptc, &last_ip);
     }
 }
 
 #else /* _HF_LINUX_INTEL_PT_LIB */
 
-void arch_ptAnalyze(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED)
+void arch_ptAnalyze(honggfuzz_t* hfuzz UNUSED, run_t* fuzzer UNUSED)
 {
     LOG_F(
         "The program has not been linked against the Intel's Processor Trace Library (libipt.so)");

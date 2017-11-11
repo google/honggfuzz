@@ -27,9 +27,9 @@
 #include "honggfuzz.h"
 
 extern bool arch_perfInit(honggfuzz_t* hfuzz);
-extern bool arch_perfOpen(pid_t pid, honggfuzz_t* hfuzz, fuzzer_t* fuzzer);
-extern void arch_perfClose(honggfuzz_t* hfuzz, fuzzer_t* fuzzer);
-extern bool arch_perfEnable(honggfuzz_t* hfuzz, fuzzer_t* fuzzer);
-extern void arch_perfAnalyze(honggfuzz_t* hfuzz, fuzzer_t* fuzzer);
+extern bool arch_perfOpen(pid_t pid, honggfuzz_t* hfuzz, run_t* run);
+extern void arch_perfClose(honggfuzz_t* hfuzz, run_t* run);
+extern bool arch_perfEnable(honggfuzz_t* hfuzz, run_t* run);
+extern void arch_perfAnalyze(honggfuzz_t* hfuzz, run_t* run);
 
 #endif

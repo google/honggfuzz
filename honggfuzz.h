@@ -66,6 +66,8 @@
 #define _HF_BITMAP_FD 1022
 /* FD used to pass data to a persistent process */
 #define _HF_PERSISTENT_FD 1023
+/* Maximum number of active fuzzing threads */
+#define _HF_THREAD_MAX 1024U
 
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
@@ -156,8 +158,6 @@ struct strings_t {
     pointers;
 };
 
-/* Maximum number of active fuzzing threads */
-#define _HF_THREAD_MAX 1024U
 typedef struct {
     bool pcGuardMap[_HF_PC_GUARD_MAX];
     uint8_t bbMapPc[_HF_PERF_BITMAP_SIZE_16M];
@@ -301,6 +301,6 @@ typedef struct {
         int cpuBranchFd;
         int cpuIptBtsFd;
     } linux;
-} fuzzer_t;
+} run_t;
 
 #endif

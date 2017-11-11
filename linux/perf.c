@@ -53,9 +53,9 @@ static int32_t perfIntelPtPerfType = -1;
 static int32_t perfIntelBtsPerfType = -1;
 
 #if defined(PERF_ATTR_SIZE_VER5)
-static inline void arch_perfBtsCount(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+static inline void arch_perfBtsCount(honggfuzz_t* hfuzz, run_t* run)
 {
-    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)fuzzer->linux.perfMmapBuf;
+    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
     struct bts_branch {
         uint64_t from;
         uint64_t to;
@@ -63,8 +63,8 @@ static inline void arch_perfBtsCount(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     };
 
     uint64_t aux_head = ATOMIC_GET(pem->aux_head);
-    struct bts_branch* br = (struct bts_branch*)fuzzer->linux.perfMmapAux;
-    for (; br < ((struct bts_branch*)(fuzzer->linux.perfMmapAux + aux_head)); br++) {
+    struct bts_branch* br = (struct bts_branch*)run->linux.perfMmapAux;
+    for (; br < ((struct bts_branch*)(run->linux.perfMmapAux + aux_head)); br++) {
         /*
          * Kernel sometimes reports branches from the kernel (iret), we are not interested in that
          * as it makes the whole concept of unique branch counting less predictable
@@ -84,16 +84,16 @@ static inline void arch_perfBtsCount(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
         pos &= _HF_PERF_BITMAP_BITSZ_MASK;
         register uint8_t prev = ATOMIC_BTS(hfuzz->feedback->bbMapPc, pos);
         if (!prev) {
-            fuzzer->linux.hwCnts.newBBCnt++;
+            run->linux.hwCnts.newBBCnt++;
         }
     }
 }
 #endif /* defined(PERF_ATTR_SIZE_VER5) */
 
-static inline void arch_perfMmapParse(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED)
+static inline void arch_perfMmapParse(honggfuzz_t* hfuzz UNUSED, run_t* run UNUSED)
 {
 #if defined(PERF_ATTR_SIZE_VER5)
-    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)fuzzer->linux.perfMmapBuf;
+    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
     if (pem->aux_head == pem->aux_tail) {
         return;
     }
@@ -102,10 +102,10 @@ static inline void arch_perfMmapParse(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzze
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        arch_perfBtsCount(hfuzz, fuzzer);
+        arch_perfBtsCount(hfuzz, run);
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        arch_ptAnalyze(hfuzz, fuzzer);
+        arch_ptAnalyze(hfuzz, run);
     }
 #endif /* defined(PERF_ATTR_SIZE_VER5) */
 }
@@ -118,7 +118,7 @@ static long perf_event_open(
 }
 
 static bool arch_perfCreate(
-    honggfuzz_t* hfuzz, fuzzer_t* fuzzer UNUSED, pid_t pid, dynFileMethod_t method, int* perfFd)
+    honggfuzz_t* hfuzz, run_t* run, pid_t pid, dynFileMethod_t method, int* perfFd)
 {
     LOG_D("Enabling PERF for PID=%d method=%x", pid, method);
 
@@ -189,10 +189,10 @@ static bool arch_perfCreate(
         return true;
     }
 #if defined(PERF_ATTR_SIZE_VER5)
-    fuzzer->linux.perfMmapBuf = mmap(
+    run->linux.perfMmapBuf = mmap(
         NULL, _HF_PERF_MAP_SZ + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
-    if (fuzzer->linux.perfMmapBuf == MAP_FAILED) {
-        fuzzer->linux.perfMmapBuf = NULL;
+    if (run->linux.perfMmapBuf == MAP_FAILED) {
+        run->linux.perfMmapBuf = NULL;
         PLOG_W("mmap(mmapBuf) failed, sz=%zu, try increasing the kernel.perf_event_mlock_kb "
                "sysctl (up to even 300000000)",
             (size_t)_HF_PERF_MAP_SZ + getpagesize());
@@ -200,15 +200,15 @@ static bool arch_perfCreate(
         return false;
     }
 
-    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)fuzzer->linux.perfMmapBuf;
+    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
     pem->aux_offset = pem->data_offset + pem->data_size;
     pem->aux_size = _HF_PERF_AUX_SZ;
-    fuzzer->linux.perfMmapAux
+    run->linux.perfMmapAux
         = mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
 
-    if (fuzzer->linux.perfMmapAux == MAP_FAILED) {
-        munmap(fuzzer->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
-        fuzzer->linux.perfMmapBuf = NULL;
+    if (run->linux.perfMmapAux == MAP_FAILED) {
+        munmap(run->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
+        run->linux.perfMmapBuf = NULL;
         PLOG_W("mmap(mmapAuxBuf) failed, try increasing the kernel.perf_event_mlock_kb "
                "sysctl (up to even 300000000)");
         close(*perfFd);
@@ -221,36 +221,35 @@ static bool arch_perfCreate(
     return true;
 }
 
-bool arch_perfOpen(pid_t pid, honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+bool arch_perfOpen(pid_t pid, honggfuzz_t* hfuzz, run_t* run)
 {
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return true;
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        if (arch_perfCreate(hfuzz, fuzzer, pid, _HF_DYNFILE_INSTR_COUNT, &fuzzer->linux.cpuInstrFd)
+        if (arch_perfCreate(hfuzz, run, pid, _HF_DYNFILE_INSTR_COUNT, &run->linux.cpuInstrFd)
             == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_INSTR_COUNT)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        if (arch_perfCreate(
-                hfuzz, fuzzer, pid, _HF_DYNFILE_BRANCH_COUNT, &fuzzer->linux.cpuBranchFd)
+        if (arch_perfCreate(hfuzz, run, pid, _HF_DYNFILE_BRANCH_COUNT, &run->linux.cpuBranchFd)
             == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BRANCH_COUNT)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        if (arch_perfCreate(hfuzz, fuzzer, pid, _HF_DYNFILE_BTS_EDGE, &fuzzer->linux.cpuIptBtsFd)
+        if (arch_perfCreate(hfuzz, run, pid, _HF_DYNFILE_BTS_EDGE, &run->linux.cpuIptBtsFd)
             == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BTS_EDGE)", pid);
             goto out;
         }
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        if (arch_perfCreate(hfuzz, fuzzer, pid, _HF_DYNFILE_IPT_BLOCK, &fuzzer->linux.cpuIptBtsFd)
+        if (arch_perfCreate(hfuzz, run, pid, _HF_DYNFILE_IPT_BLOCK, &run->linux.cpuIptBtsFd)
             == false) {
             LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_IPT_BLOCK)", pid);
             goto out;
@@ -260,71 +259,71 @@ bool arch_perfOpen(pid_t pid, honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     return true;
 
 out:
-    close(fuzzer->linux.cpuInstrFd);
-    close(fuzzer->linux.cpuBranchFd);
-    close(fuzzer->linux.cpuIptBtsFd);
+    close(run->linux.cpuInstrFd);
+    close(run->linux.cpuBranchFd);
+    close(run->linux.cpuIptBtsFd);
 
     return false;
 }
 
-void arch_perfClose(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+void arch_perfClose(honggfuzz_t* hfuzz, run_t* run)
 {
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return;
     }
 
-    if (fuzzer->linux.perfMmapAux != NULL) {
-        munmap(fuzzer->linux.perfMmapAux, _HF_PERF_AUX_SZ);
-        fuzzer->linux.perfMmapAux = NULL;
+    if (run->linux.perfMmapAux != NULL) {
+        munmap(run->linux.perfMmapAux, _HF_PERF_AUX_SZ);
+        run->linux.perfMmapAux = NULL;
     }
-    if (fuzzer->linux.perfMmapBuf != NULL) {
-        munmap(fuzzer->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
-        fuzzer->linux.perfMmapBuf = NULL;
+    if (run->linux.perfMmapBuf != NULL) {
+        munmap(run->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
+        run->linux.perfMmapBuf = NULL;
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        close(fuzzer->linux.cpuInstrFd);
-        fuzzer->linux.cpuInstrFd = -1;
+        close(run->linux.cpuInstrFd);
+        run->linux.cpuInstrFd = -1;
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        close(fuzzer->linux.cpuBranchFd);
-        fuzzer->linux.cpuBranchFd = -1;
+        close(run->linux.cpuBranchFd);
+        run->linux.cpuBranchFd = -1;
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        close(fuzzer->linux.cpuIptBtsFd);
-        fuzzer->linux.cpuIptBtsFd = -1;
+        close(run->linux.cpuIptBtsFd);
+        run->linux.cpuIptBtsFd = -1;
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        close(fuzzer->linux.cpuIptBtsFd);
-        fuzzer->linux.cpuIptBtsFd = -1;
+        close(run->linux.cpuIptBtsFd);
+        run->linux.cpuIptBtsFd = -1;
     }
 }
 
-bool arch_perfEnable(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+bool arch_perfEnable(honggfuzz_t* hfuzz, run_t* run)
 {
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return true;
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        ioctl(fuzzer->linux.cpuInstrFd, PERF_EVENT_IOC_ENABLE, 0);
+        ioctl(run->linux.cpuInstrFd, PERF_EVENT_IOC_ENABLE, 0);
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        ioctl(fuzzer->linux.cpuBranchFd, PERF_EVENT_IOC_ENABLE, 0);
+        ioctl(run->linux.cpuBranchFd, PERF_EVENT_IOC_ENABLE, 0);
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_ENABLE, 0);
+        ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_ENABLE, 0);
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        ioctl(fuzzer->linux.cpuIptBtsFd, PERF_EVENT_IOC_ENABLE, 0);
+        ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_ENABLE, 0);
     }
 
     return true;
 }
 
-static void arch_perfMmapReset(fuzzer_t* fuzzer)
+static void arch_perfMmapReset(run_t* run)
 {
-    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)fuzzer->linux.perfMmapBuf;
+    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
     ATOMIC_SET(pem->data_head, 0);
     ATOMIC_SET(pem->data_tail, 0);
 #if defined(PERF_ATTR_SIZE_VER5)
@@ -334,7 +333,7 @@ static void arch_perfMmapReset(fuzzer_t* fuzzer)
     wmb();
 }
 
-void arch_perfAnalyze(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+void arch_perfAnalyze(honggfuzz_t* hfuzz, run_t* run)
 {
     if (hfuzz->dynFileMethod == _HF_DYNFILE_NONE) {
         return;
@@ -342,35 +341,35 @@ void arch_perfAnalyze(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
 
     uint64_t instrCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        ioctl(fuzzer->linux.cpuInstrFd, PERF_EVENT_IOC_DISABLE, 0);
-        if (files_readFromFd(fuzzer->linux.cpuInstrFd, (uint8_t*)&instrCount, sizeof(instrCount))
+        ioctl(run->linux.cpuInstrFd, PERF_EVENT_IOC_DISABLE, 0);
+        if (files_readFromFd(run->linux.cpuInstrFd, (uint8_t*)&instrCount, sizeof(instrCount))
             != sizeof(instrCount)) {
-            PLOG_E("read(perfFd='%d') failed", fuzzer->linux.cpuInstrFd);
+            PLOG_E("read(perfFd='%d') failed", run->linux.cpuInstrFd);
         }
-        ioctl(fuzzer->linux.cpuInstrFd, PERF_EVENT_IOC_RESET, 0);
+        ioctl(run->linux.cpuInstrFd, PERF_EVENT_IOC_RESET, 0);
     }
 
     uint64_t branchCount = 0;
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        ioctl(fuzzer->linux.cpuBranchFd, PERF_EVENT_IOC_DISABLE, 0);
-        if (files_readFromFd(fuzzer->linux.cpuBranchFd, (uint8_t*)&branchCount, sizeof(branchCount))
+        ioctl(run->linux.cpuBranchFd, PERF_EVENT_IOC_DISABLE, 0);
+        if (files_readFromFd(run->linux.cpuBranchFd, (uint8_t*)&branchCount, sizeof(branchCount))
             != sizeof(branchCount)) {
-            PLOG_E("read(perfFd='%d') failed", fuzzer->linux.cpuBranchFd);
+            PLOG_E("read(perfFd='%d') failed", run->linux.cpuBranchFd);
         }
-        ioctl(fuzzer->linux.cpuBranchFd, PERF_EVENT_IOC_RESET, 0);
+        ioctl(run->linux.cpuBranchFd, PERF_EVENT_IOC_RESET, 0);
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        arch_perfMmapParse(hfuzz, fuzzer);
-        arch_perfMmapReset(fuzzer);
+        arch_perfMmapParse(hfuzz, run);
+        arch_perfMmapReset(run);
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        arch_perfMmapParse(hfuzz, fuzzer);
-        arch_perfMmapReset(fuzzer);
+        arch_perfMmapParse(hfuzz, run);
+        arch_perfMmapReset(run);
     }
 
-    fuzzer->linux.hwCnts.cpuInstrCnt = instrCount;
-    fuzzer->linux.hwCnts.cpuBranchCnt = branchCount;
+    run->linux.hwCnts.cpuInstrCnt = instrCount;
+    run->linux.hwCnts.cpuBranchCnt = branchCount;
 }
 
 bool arch_perfInit(honggfuzz_t* hfuzz UNUSED)

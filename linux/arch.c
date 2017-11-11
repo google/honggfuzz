@@ -60,12 +60,12 @@
 /* Size of remote pid cmdline char buffer */
 #define _HF_PROC_CMDLINE_SZ 8192
 
-static inline bool arch_shouldAttach(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+static inline bool arch_shouldAttach(honggfuzz_t* hfuzz, run_t* run)
 {
-    if (hfuzz->persistent && fuzzer->linux.attachedPid == fuzzer->pid) {
+    if (hfuzz->persistent && run->linux.attachedPid == run->pid) {
         return false;
     }
-    if (hfuzz->linux.pid > 0 && fuzzer->linux.attachedPid == hfuzz->linux.pid) {
+    if (hfuzz->linux.pid > 0 && run->linux.attachedPid == hfuzz->linux.pid) {
         return false;
     }
     return true;
@@ -104,7 +104,7 @@ static pid_t arch_clone(uintptr_t flags)
     return 0;
 }
 
-pid_t arch_fork(honggfuzz_t* hfuzz, fuzzer_t* fuzzer UNUSED)
+pid_t arch_fork(honggfuzz_t* hfuzz, run_t* fuzzer UNUSED)
 {
     pid_t pid = hfuzz->linux.useClone ? arch_clone(CLONE_UNTRACED | SIGCHLD) : fork();
     if (pid == -1) {
@@ -199,9 +199,9 @@ bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
     return false;
 }
 
-void arch_prepareParentAfterFork(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+void arch_prepareParentAfterFork(honggfuzz_t* hfuzz, run_t* run)
 {
-    arch_perfClose(hfuzz, fuzzer);
+    arch_perfClose(hfuzz, run);
 
     /* Parent */
     if (hfuzz->persistent) {
@@ -209,34 +209,34 @@ void arch_prepareParentAfterFork(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
             .type = F_OWNER_TID,
             .pid = syscall(__NR_gettid),
         };
-        if (fcntl(fuzzer->persistentSock, F_SETOWN_EX, &fown)) {
-            PLOG_F("fcntl(%d, F_SETOWN_EX)", fuzzer->persistentSock);
+        if (fcntl(run->persistentSock, F_SETOWN_EX, &fown)) {
+            PLOG_F("fcntl(%d, F_SETOWN_EX)", run->persistentSock);
         }
-        if (fcntl(fuzzer->persistentSock, F_SETSIG, SIGIO) == -1) {
-            PLOG_F("fcntl(%d, F_SETSIG, SIGIO)", fuzzer->persistentSock);
+        if (fcntl(run->persistentSock, F_SETSIG, SIGIO) == -1) {
+            PLOG_F("fcntl(%d, F_SETSIG, SIGIO)", run->persistentSock);
         }
-        if (fcntl(fuzzer->persistentSock, F_SETFL, O_ASYNC) == -1) {
-            PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", fuzzer->persistentSock);
+        if (fcntl(run->persistentSock, F_SETFL, O_ASYNC) == -1) {
+            PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", run->persistentSock);
         }
     }
 
-    pid_t perf_pid = (hfuzz->linux.pid == 0) ? fuzzer->pid : hfuzz->linux.pid;
-    if (arch_perfOpen(perf_pid, hfuzz, fuzzer) == false) {
+    pid_t perf_pid = (hfuzz->linux.pid == 0) ? run->pid : hfuzz->linux.pid;
+    if (arch_perfOpen(perf_pid, hfuzz, run) == false) {
         LOG_F("arch_perfOpen(pid=%d)", (int)perf_pid);
     }
 }
 
-void arch_prepareParent(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+void arch_prepareParent(honggfuzz_t* hfuzz, run_t* run)
 {
-    pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
-    pid_t childPid = fuzzer->pid;
+    pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : run->pid;
+    pid_t childPid = run->pid;
 
-    if (arch_shouldAttach(hfuzz, fuzzer) == true) {
+    if (arch_shouldAttach(hfuzz, run) == true) {
         if (arch_traceAttach(hfuzz, ptracePid) == false) {
             LOG_E("arch_traceAttach(pid=%d) failed", ptracePid);
             kill(ptracePid, SIGKILL);
         }
-        fuzzer->linux.attachedPid = ptracePid;
+        run->linux.attachedPid = ptracePid;
     }
 
     /* A long-lived process could have already exited, and we wouldn't know */
@@ -261,7 +261,7 @@ void arch_prepareParent(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
         }
     }
 
-    if (arch_perfEnable(hfuzz, fuzzer) == false) {
+    if (arch_perfEnable(hfuzz, run) == false) {
         LOG_E("Couldn't enable perf counters for pid %d", ptracePid);
     }
     if (childPid != ptracePid) {
@@ -274,10 +274,10 @@ void arch_prepareParent(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     }
 }
 
-static bool arch_checkWait(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+static bool arch_checkWait(honggfuzz_t* hfuzz, run_t* run)
 {
-    pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
-    pid_t childPid = fuzzer->pid;
+    pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : run->pid;
+    pid_t childPid = run->pid;
 
     /* All queued wait events must be tested */
     for (;;) {
@@ -301,10 +301,10 @@ static bool arch_checkWait(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
         LOG_D("PID '%d' returned with status: %s", pid,
             subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
 
-        if (hfuzz->persistent && pid == fuzzer->persistentPid
+        if (hfuzz->persistent && pid == run->persistentPid
             && (WIFEXITED(status) || WIFSIGNALED(status))) {
-            arch_traceAnalyze(hfuzz, status, pid, fuzzer);
-            fuzzer->persistentPid = 0;
+            arch_traceAnalyze(hfuzz, status, pid, run);
+            run->persistentPid = 0;
             if (ATOMIC_GET(hfuzz->terminating) == false) {
                 LOG_W("Persistent mode: PID %d exited with status: %s", pid,
                     subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
@@ -312,7 +312,7 @@ static bool arch_checkWait(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
             return true;
         }
         if (ptracePid == childPid) {
-            arch_traceAnalyze(hfuzz, status, pid, fuzzer);
+            arch_traceAnalyze(hfuzz, status, pid, run);
             continue;
         }
         if (pid == childPid && (WIFEXITED(status) || WIFSIGNALED(status))) {
@@ -322,12 +322,12 @@ static bool arch_checkWait(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
             continue;
         }
 
-        arch_traceAnalyze(hfuzz, status, pid, fuzzer);
+        arch_traceAnalyze(hfuzz, status, pid, run);
     }
 }
 
 __thread sigset_t sset_io_chld;
-void arch_reapChild(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+void arch_reapChild(honggfuzz_t* hfuzz, run_t* run)
 {
     static const struct timespec ts = {
         .tv_sec = 0L,
@@ -339,38 +339,38 @@ void arch_reapChild(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
             PLOG_F("sigtimedwait(SIGIO|SIGCHLD, 0.25s)");
         }
         if (sig == -1) {
-            subproc_checkTimeLimit(hfuzz, fuzzer);
-            subproc_checkTermination(hfuzz, fuzzer);
+            subproc_checkTimeLimit(hfuzz, run);
+            subproc_checkTermination(hfuzz, run);
         }
-        if (subproc_persistentModeRoundDone(hfuzz, fuzzer)) {
+        if (subproc_persistentModeRoundDone(hfuzz, run)) {
             break;
         }
-        if (arch_checkWait(hfuzz, fuzzer)) {
+        if (arch_checkWait(hfuzz, run)) {
             break;
         }
     }
 
     if (hfuzz->enableSanitizers) {
-        pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
+        pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : run->pid;
         char crashReport[PATH_MAX];
         snprintf(
             crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX, ptracePid);
         if (files_exists(crashReport)) {
-            if (fuzzer->backtrace) {
+            if (run->backtrace) {
                 unlink(crashReport);
             } else {
                 LOG_W("Un-handled ASan report due to compiler-rt internal error - retry with '%s' "
                       "(%s)",
-                    crashReport, fuzzer->fileName);
+                    crashReport, run->fileName);
 
                 /* Try to parse report file */
-                arch_traceExitAnalyze(hfuzz, ptracePid, fuzzer);
+                arch_traceExitAnalyze(hfuzz, ptracePid, run);
             }
         }
     }
 
-    arch_perfAnalyze(hfuzz, fuzzer);
-    sancov_Analyze(hfuzz, fuzzer);
+    arch_perfAnalyze(hfuzz, run);
+    sancov_Analyze(hfuzz, run);
 }
 
 bool arch_archInit(honggfuzz_t* hfuzz)
@@ -529,13 +529,13 @@ bool arch_archInit(honggfuzz_t* hfuzz)
     return true;
 }
 
-bool arch_archThreadInit(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED)
+bool arch_archThreadInit(honggfuzz_t* hfuzz UNUSED, run_t* run)
 {
-    fuzzer->linux.perfMmapBuf = NULL;
-    fuzzer->linux.perfMmapAux = NULL;
-    fuzzer->linux.cpuInstrFd = -1;
-    fuzzer->linux.cpuBranchFd = -1;
-    fuzzer->linux.cpuIptBtsFd = -1;
+    run->linux.perfMmapBuf = NULL;
+    run->linux.perfMmapAux = NULL;
+    run->linux.cpuInstrFd = -1;
+    run->linux.cpuBranchFd = -1;
+    run->linux.cpuIptBtsFd = -1;
 
     sigemptyset(&sset_io_chld);
     sigaddset(&sset_io_chld, SIGIO);

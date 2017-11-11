@@ -315,14 +315,14 @@ static int sancov_qsortCmp(const void* a, const void* b)
     }
 }
 
-static bool sancov_sanCovParseRaw(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+static bool sancov_sanCovParseRaw(honggfuzz_t* hfuzz, run_t* run)
 {
     int dataFd = -1;
     uint8_t* dataBuf = NULL;
     off_t dataFileSz = 0, pos = 0;
     bool is32bit = true;
     char covFile[PATH_MAX] = { 0 };
-    pid_t targetPid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
+    pid_t targetPid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : run->pid;
 
     /* Fuzzer local runtime data structs - need free() before exit */
     uint64_t* startMapsIndex = NULL;
@@ -559,17 +559,17 @@ static bool sancov_sanCovParseRaw(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     /* Finally iterate over all instrumented maps to sum-up the number of newly met BB addresses */
     for (uint64_t i = 0; i < mapsNum; i++) {
         if (mapsBuf[i].bbCnt > 0) {
-            fuzzer->sanCovCnts.newBBCnt += mapsBuf[i].newBBCnt;
+            run->sanCovCnts.newBBCnt += mapsBuf[i].newBBCnt;
         } else {
             noCovMapsNum++;
         }
     }
 
     /* Successful parsing - update fuzzer worker's counters */
-    fuzzer->sanCovCnts.hitBBCnt = nBBs;
-    fuzzer->sanCovCnts.totalBBCnt = nBBs + nZeroBBs;
-    fuzzer->sanCovCnts.dsoCnt = mapsNum;
-    fuzzer->sanCovCnts.iDsoCnt = mapsNum - noCovMapsNum; /* Instrumented DSOs */
+    run->sanCovCnts.hitBBCnt = nBBs;
+    run->sanCovCnts.totalBBCnt = nBBs + nZeroBBs;
+    run->sanCovCnts.dsoCnt = mapsNum;
+    run->sanCovCnts.iDsoCnt = mapsNum - noCovMapsNum; /* Instrumented DSOs */
 
     if (hfuzz->linux.pid == 0 && hfuzz->persistent == false) {
         unlink(covFile);
@@ -577,7 +577,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     return true;
 }
 
-static bool sancov_sanCovParse(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+static bool sancov_sanCovParse(honggfuzz_t* hfuzz, run_t* run)
 {
     int dataFd = -1;
     uint8_t* dataBuf = NULL;
@@ -585,7 +585,7 @@ static bool sancov_sanCovParse(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     bool is32bit = true;
     char covFile[PATH_MAX] = { 0 };
     DIR* pSanCovDir = NULL;
-    pid_t targetPid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : fuzzer->pid;
+    pid_t targetPid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : run->pid;
 
     snprintf(covFile, sizeof(covFile), "%s/%s/%s.%d.sancov", hfuzz->workDir, _HF_SANCOV_DIR,
         files_basename(hfuzz->cmdline[0]), targetPid);
@@ -670,7 +670,7 @@ static bool sancov_sanCovParse(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     }
 
     /* Successful parsing - update fuzzer worker counters */
-    fuzzer->sanCovCnts.hitBBCnt = nBBs;
+    run->sanCovCnts.hitBBCnt = nBBs;
 
     if (hfuzz->linux.pid == 0 && hfuzz->persistent == false) {
         unlink(covFile);
@@ -687,7 +687,7 @@ static bool sancov_sanCovParse(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
  *
  * Enabled methods are controlled from sanitizer flags in arch.c
  */
-void sancov_Analyze(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+void sancov_Analyze(honggfuzz_t* hfuzz, run_t* run)
 {
     if (!hfuzz->useSanCov) {
         return;
@@ -696,8 +696,8 @@ void sancov_Analyze(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
      * For now supported methods are implemented in fail-over nature. This will
      * change in the future when best method is concluded.
      */
-    if (sancov_sanCovParseRaw(hfuzz, fuzzer) == false) {
-        sancov_sanCovParse(hfuzz, fuzzer);
+    if (sancov_sanCovParseRaw(hfuzz, run) == false) {
+        sancov_sanCovParse(hfuzz, run);
     }
 }
 

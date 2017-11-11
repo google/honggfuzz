@@ -125,34 +125,34 @@ const char* subproc_StatusToStr(int status, char* str, size_t len)
     return str;
 }
 
-bool subproc_persistentModeRoundDone(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+bool subproc_persistentModeRoundDone(honggfuzz_t* hfuzz, run_t* run)
 {
     if (!hfuzz->persistent) {
         return false;
     }
     char z;
-    if (recv(fuzzer->persistentSock, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
+    if (recv(run->persistentSock, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
         LOG_D("Persistent mode round finished");
         return true;
     }
     return false;
 }
 
-static bool subproc_persistentSendFile(fuzzer_t* fuzzer)
+static bool subproc_persistentSendFile(run_t* run)
 {
-    uint32_t len = (uint64_t)fuzzer->dynamicFileSz;
-    if (!files_sendToSocketNB(fuzzer->persistentSock, (uint8_t*)&len, sizeof(len))) {
+    uint32_t len = (uint64_t)run->dynamicFileSz;
+    if (!files_sendToSocketNB(run->persistentSock, (uint8_t*)&len, sizeof(len))) {
         PLOG_W("files_sendToSocketNB(len=%zu)", sizeof(len));
         return false;
     }
-    if (!files_sendToSocketNB(fuzzer->persistentSock, fuzzer->dynamicFile, fuzzer->dynamicFileSz)) {
-        PLOG_W("files_sendToSocketNB(len=%zu)", fuzzer->dynamicFileSz);
+    if (!files_sendToSocketNB(run->persistentSock, run->dynamicFile, run->dynamicFileSz)) {
+        PLOG_W("files_sendToSocketNB(len=%zu)", run->dynamicFileSz);
         return false;
     }
     return true;
 }
 
-bool subproc_PrepareExecv(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, const char* fileName)
+bool subproc_PrepareExecv(honggfuzz_t* hfuzz, run_t* run, const char* fileName)
 {
     /*
      * The address space limit. If big enough - roughly the size of RAM used
@@ -191,7 +191,7 @@ bool subproc_PrepareExecv(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, const char* file
         putenv(hfuzz->envs[i]);
     }
     char fuzzNo[128];
-    snprintf(fuzzNo, sizeof(fuzzNo), "%" PRId32, fuzzer->fuzzNo);
+    snprintf(fuzzNo, sizeof(fuzzNo), "%" PRId32, run->fuzzNo);
     setenv(_HF_THREAD_NO_ENV, fuzzNo, 1);
 
     setsid();
@@ -212,18 +212,18 @@ bool subproc_PrepareExecv(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, const char* file
     return true;
 }
 
-static bool subproc_New(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+static bool subproc_New(honggfuzz_t* hfuzz, run_t* run)
 {
-    fuzzer->pid = fuzzer->persistentPid;
-    if (fuzzer->pid != 0) {
+    run->pid = run->persistentPid;
+    if (run->pid != 0) {
         return true;
     }
-    fuzzer->tmOutSignaled = false;
+    run->tmOutSignaled = false;
 
     int sv[2];
     if (hfuzz->persistent) {
-        if (fuzzer->persistentSock != -1) {
-            close(fuzzer->persistentSock);
+        if (run->persistentSock != -1) {
+            close(run->persistentSock);
         }
 
         int sock_type = SOCK_STREAM;
@@ -234,16 +234,16 @@ static bool subproc_New(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
             PLOG_W("socketpair(AF_UNIX, SOCK_STREAM, 0, sv)");
             return false;
         }
-        fuzzer->persistentSock = sv[0];
+        run->persistentSock = sv[0];
     }
 
-    fuzzer->pid = arch_fork(hfuzz, fuzzer);
-    if (fuzzer->pid == -1) {
+    run->pid = arch_fork(hfuzz, run);
+    if (run->pid == -1) {
         PLOG_E("Couldn't fork");
         return false;
     }
     /* The child process */
-    if (!fuzzer->pid) {
+    if (!run->pid) {
         logMutexReset();
         /*
          * Reset sighandlers, and set alarm(1). It's a guarantee against dead-locks
@@ -266,11 +266,11 @@ static bool subproc_New(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
             close(sv[1]);
         }
 
-        if (!subproc_PrepareExecv(hfuzz, fuzzer, fuzzer->fileName)) {
+        if (!subproc_PrepareExecv(hfuzz, run, run->fileName)) {
             LOG_E("subproc_PrepareExecv() failed");
             exit(EXIT_FAILURE);
         }
-        if (!arch_launchChild(hfuzz, fuzzer->fileName)) {
+        if (!arch_launchChild(hfuzz, run->fileName)) {
             kill(hfuzz->mainPid, SIGTERM);
             LOG_E("Error launching child process");
             _exit(1);
@@ -279,45 +279,44 @@ static bool subproc_New(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
     }
 
     /* Parent */
-    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", fuzzer->pid, hfuzz->threadsMax);
+    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", run->pid, hfuzz->threadsMax);
 
     if (hfuzz->persistent) {
         close(sv[1]);
-        LOG_I("Persistent mode: Launched new persistent PID: %d", (int)fuzzer->pid);
-        fuzzer->persistentPid = fuzzer->pid;
+        LOG_I("Persistent mode: Launched new persistent PID: %d", (int)run->pid);
+        run->persistentPid = run->pid;
 
         int sndbuf = hfuzz->maxFileSz + 256;
-        if (setsockopt(fuzzer->persistentSock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf))
-            == -1) {
+        if (setsockopt(run->persistentSock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)) == -1) {
             LOG_W("Couldn't set FD send buffer to '%d' bytes", sndbuf);
         }
     }
 
-    arch_prepareParentAfterFork(hfuzz, fuzzer);
+    arch_prepareParentAfterFork(hfuzz, run);
 
     return true;
 }
 
-bool subproc_Run(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+bool subproc_Run(honggfuzz_t* hfuzz, run_t* run)
 {
-    if (!subproc_New(hfuzz, fuzzer)) {
+    if (!subproc_New(hfuzz, run)) {
         LOG_E("subproc_New()");
         return false;
     }
 
-    arch_prepareParent(hfuzz, fuzzer);
-    if (hfuzz->persistent && !subproc_persistentSendFile(fuzzer)) {
+    arch_prepareParent(hfuzz, run);
+    if (hfuzz->persistent && !subproc_persistentSendFile(run)) {
         LOG_W("Could not send file contents to the persistent process");
-        kill(fuzzer->persistentPid, SIGKILL);
+        kill(run->persistentPid, SIGKILL);
     }
-    arch_reapChild(hfuzz, fuzzer);
+    arch_reapChild(hfuzz, run);
 
     return true;
 }
 
-uint8_t subproc_System(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, const char* const argv[])
+uint8_t subproc_System(honggfuzz_t* hfuzz, run_t* run, const char* const argv[])
 {
-    pid_t pid = arch_fork(hfuzz, fuzzer);
+    pid_t pid = arch_fork(hfuzz, run);
     if (pid == -1) {
         PLOG_E("Couldn't fork");
         return 255;
@@ -371,40 +370,39 @@ uint8_t subproc_System(honggfuzz_t* hfuzz, fuzzer_t* fuzzer, const char* const a
     }
 }
 
-void subproc_checkTimeLimit(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+void subproc_checkTimeLimit(honggfuzz_t* hfuzz, run_t* run)
 {
     if (hfuzz->tmOut == 0) {
         return;
     }
 
     int64_t curMillis = util_timeNowMillis();
-    int64_t diffMillis = curMillis - fuzzer->timeStartedMillis;
+    int64_t diffMillis = curMillis - run->timeStartedMillis;
 
-    if (fuzzer->tmOutSignaled && (diffMillis > ((hfuzz->tmOut + 1) * 1000))) {
+    if (run->tmOutSignaled && (diffMillis > ((hfuzz->tmOut + 1) * 1000))) {
         /* Has this instance been already signaled due to timeout? Just, SIGKILL it */
-        LOG_W("PID %d has already been signaled due to timeout. Killing it with SIGKILL",
-            fuzzer->pid);
-        kill(fuzzer->pid, SIGKILL);
+        LOG_W("PID %d has already been signaled due to timeout. Killing it with SIGKILL", run->pid);
+        kill(run->pid, SIGKILL);
         return;
     }
 
-    if ((diffMillis > (hfuzz->tmOut * 1000)) && !fuzzer->tmOutSignaled) {
-        fuzzer->tmOutSignaled = true;
-        LOG_W("PID %d took too much time (limit %ld s). Killing it with %s", fuzzer->pid,
-            hfuzz->tmOut, hfuzz->tmout_vtalrm ? "SIGVTALRM" : "SIGKILL");
+    if ((diffMillis > (hfuzz->tmOut * 1000)) && !run->tmOutSignaled) {
+        run->tmOutSignaled = true;
+        LOG_W("PID %d took too much time (limit %ld s). Killing it with %s", run->pid, hfuzz->tmOut,
+            hfuzz->tmout_vtalrm ? "SIGVTALRM" : "SIGKILL");
         if (hfuzz->tmout_vtalrm) {
-            kill(fuzzer->pid, SIGVTALRM);
+            kill(run->pid, SIGVTALRM);
         } else {
-            kill(fuzzer->pid, SIGKILL);
+            kill(run->pid, SIGKILL);
         }
         ATOMIC_POST_INC(hfuzz->timeoutedCnt);
     }
 }
 
-void subproc_checkTermination(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+void subproc_checkTermination(honggfuzz_t* hfuzz, run_t* run)
 {
     if (ATOMIC_GET(hfuzz->terminating)) {
-        LOG_D("Killing PID: %d", (int)fuzzer->pid);
-        kill(fuzzer->pid, SIGKILL);
+        LOG_D("Killing PID: %d", (int)run->pid);
+        kill(run->pid, SIGKILL);
     }
 }

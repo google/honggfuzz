@@ -89,7 +89,7 @@ static mach_port_t g_exception_port = MACH_PORT_NULL;
 /*
  * Global to store crash info in exception handler thread
  */
-fuzzer_t g_fuzzer_crash_information[PID_MAX + 1];
+run_t g_fuzzer_crash_information[PID_MAX + 1];
 
 /*
  * Global to store the CrashWrangler generated callstack from
@@ -157,28 +157,24 @@ const char* exception_to_string(int exception)
     return "UNKNOWN";
 }
 
-static void arch_generateReport(fuzzer_t* fuzzer, int termsig)
+static void arch_generateReport(run_t* run, int termsig)
 {
-    fuzzer->report[0] = '\0';
+    run->report[0] = '\0';
+    util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->origFileName);
+    util_ssnprintf(run->report, sizeof(run->report), "FUZZ_FNAME: %s\n", run->crashFileName);
+    util_ssnprintf(run->report, sizeof(run->report), "PID: %d\n", run->pid);
     util_ssnprintf(
-        fuzzer->report, sizeof(fuzzer->report), "ORIG_FNAME: %s\n", fuzzer->origFileName);
+        run->report, sizeof(run->report), "SIGNAL: %s (%d)\n", arch_sigs[termsig].descr, termsig);
     util_ssnprintf(
-        fuzzer->report, sizeof(fuzzer->report), "FUZZ_FNAME: %s\n", fuzzer->crashFileName);
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "PID: %d\n", fuzzer->pid);
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "SIGNAL: %s (%d)\n",
-        arch_sigs[termsig].descr, termsig);
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "EXCEPTION: %s\n",
-        exception_to_string(fuzzer->exception));
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "FAULT ADDRESS: %p\n", fuzzer->access);
-    util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "CRASH FRAME PC: %p\n", fuzzer->pc);
-    util_ssnprintf(
-        fuzzer->report, sizeof(fuzzer->report), "STACK HASH: %016llx\n", fuzzer->backtrace);
-    if (g_fuzzer_crash_callstack[fuzzer->pid]) {
-        util_ssnprintf(fuzzer->report, sizeof(fuzzer->report), "STACK: \n%s\n",
-            g_fuzzer_crash_callstack[fuzzer->pid]);
-    } else {
+        run->report, sizeof(run->report), "EXCEPTION: %s\n", exception_to_string(run->exception));
+    util_ssnprintf(run->report, sizeof(run->report), "FAULT ADDRESS: %p\n", run->access);
+    util_ssnprintf(run->report, sizeof(run->report), "CRASH FRAME PC: %p\n", run->pc);
+    util_ssnprintf(run->report, sizeof(run->report), "STACK HASH: %016llx\n", run->backtrace);
+    if (g_fuzzer_crash_callstack[run->pid]) {
         util_ssnprintf(
-            fuzzer->report, sizeof(fuzzer->report), "STACK: \n Callstack not available.\n");
+            run->report, sizeof(run->report), "STACK: \n%s\n", g_fuzzer_crash_callstack[run->pid]);
+    } else {
+        util_ssnprintf(run->report, sizeof(run->report), "STACK: \n Callstack not available.\n");
     }
 
     return;
@@ -188,7 +184,7 @@ static void arch_generateReport(fuzzer_t* fuzzer, int termsig)
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
-static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
+static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, run_t* run)
 {
     /*
      * Resumed by delivery of SIGCONT
@@ -198,14 +194,14 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
     }
 
     if (WIFEXITED(status) || WIFSIGNALED(status)) {
-        sancov_Analyze(hfuzz, fuzzer);
+        sancov_Analyze(hfuzz, run);
     }
 
     /*
      * Boring, the process just exited
      */
     if (WIFEXITED(status)) {
-        LOG_D("Process (pid %d) exited normally with status %d", fuzzer->pid, WEXITSTATUS(status));
+        LOG_D("Process (pid %d) exited normally with status %d", run->pid, WEXITSTATUS(status));
         return true;
     }
 
@@ -214,12 +210,12 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
      */
     if (!WIFSIGNALED(status)) {
         LOG_E("Process (pid %d) exited with the following status %d, please report that as a bug",
-            fuzzer->pid, status);
+            run->pid, status);
         return true;
     }
 
     int termsig = WTERMSIG(status);
-    LOG_D("Process (pid %d) killed by signal %d '%s'", fuzzer->pid, termsig, strsignal(termsig));
+    LOG_D("Process (pid %d) killed by signal %d '%s'", run->pid, termsig, strsignal(termsig));
     if (!arch_sigs[termsig].important) {
         LOG_D("It's not that important signal, skipping");
         return true;
@@ -236,16 +232,16 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
     /*
      * Get data from exception handler
      */
-    fuzzer->pc = g_fuzzer_crash_information[fuzzer->pid].pc;
-    fuzzer->exception = g_fuzzer_crash_information[fuzzer->pid].exception;
-    fuzzer->access = g_fuzzer_crash_information[fuzzer->pid].access;
-    fuzzer->backtrace = g_fuzzer_crash_information[fuzzer->pid].backtrace;
+    run->pc = g_fuzzer_crash_information[run->pid].pc;
+    run->exception = g_fuzzer_crash_information[run->pid].exception;
+    run->access = g_fuzzer_crash_information[run->pid].access;
+    run->backtrace = g_fuzzer_crash_information[run->pid].backtrace;
 
     defer
     {
-        if (g_fuzzer_crash_callstack[fuzzer->pid]) {
-            free(g_fuzzer_crash_callstack[fuzzer->pid]);
-            g_fuzzer_crash_callstack[fuzzer->pid] = NULL;
+        if (g_fuzzer_crash_callstack[run->pid]) {
+            free(g_fuzzer_crash_callstack[run->pid]);
+            g_fuzzer_crash_callstack[run->pid] = NULL;
         }
     };
 
@@ -253,57 +249,57 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, fuzzer_t* fuzzer)
      * Check if stackhash is blacklisted
      */
     if (hfuzz->blacklist
-        && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, fuzzer->backtrace) != -1)) {
-        LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", fuzzer->backtrace);
+        && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, run->backtrace) != -1)) {
+        LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
         ATOMIC_POST_INC(hfuzz->blCrashesCnt);
         return true;
     }
 
     /* If dry run mode, copy file with same name into workspace */
     if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
-        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s", hfuzz->workDir,
-            fuzzer->origFileName);
+        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", hfuzz->workDir,
+            run->origFileName);
     } else if (hfuzz->saveUnique) {
-        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
+        snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s", hfuzz->workDir,
-            arch_sigs[termsig].descr, exception_to_string(fuzzer->exception), fuzzer->pc,
-            fuzzer->backtrace, fuzzer->access, hfuzz->fileExtn);
+            arch_sigs[termsig].descr, exception_to_string(run->exception), run->pc, run->backtrace,
+            run->access, hfuzz->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr), time(NULL));
 
-        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName),
+        snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s", hfuzz->workDir,
-            arch_sigs[termsig].descr, exception_to_string(fuzzer->exception), fuzzer->pc,
-            fuzzer->backtrace, fuzzer->access, localtmstr, fuzzer->pid, hfuzz->fileExtn);
+            arch_sigs[termsig].descr, exception_to_string(run->exception), run->pc, run->backtrace,
+            run->access, localtmstr, run->pid, hfuzz->fileExtn);
     }
 
-    if (files_exists(fuzzer->crashFileName)) {
-        LOG_I("It seems that '%s' already exists, skipping", fuzzer->crashFileName);
+    if (files_exists(run->crashFileName)) {
+        LOG_I("It seems that '%s' already exists, skipping", run->crashFileName);
         // Clear filename so that verifier can understand we hit a duplicate
-        memset(fuzzer->crashFileName, 0, sizeof(fuzzer->crashFileName));
+        memset(run->crashFileName, 0, sizeof(run->crashFileName));
         return true;
     }
 
-    if (files_writeBufToFile(fuzzer->crashFileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
-            O_CREAT | O_EXCL | O_WRONLY)
+    if (files_writeBufToFile(
+            run->crashFileName, run->dynamicFile, run->dynamicFileSz, O_CREAT | O_EXCL | O_WRONLY)
         == false) {
-        LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
+        LOG_E("Couldn't copy '%s' to '%s'", run->fileName, run->crashFileName);
         return true;
     }
 
-    LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, fuzzer->crashFileName);
+    LOG_I("Ok, that's interesting, saved '%s' as '%s'", run->fileName, run->crashFileName);
 
     ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
     ATOMIC_CLEAR(hfuzz->dynFileIterExpire);
 
-    arch_generateReport(fuzzer, termsig);
+    arch_generateReport(run, termsig);
 
     return true;
 }
 
-pid_t arch_fork(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED) { return fork(); }
+pid_t arch_fork(honggfuzz_t* hfuzz UNUSED, run_t* run UNUSED) { return fork(); }
 
 bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
 {
@@ -363,16 +359,16 @@ bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
     return false;
 }
 
-void arch_prepareParent(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED) {}
+void arch_prepareParent(honggfuzz_t* hfuzz UNUSED, run_t* run UNUSED) {}
 
-void arch_prepareParentAfterFork(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED) {}
+void arch_prepareParentAfterFork(honggfuzz_t* hfuzz UNUSED, run_t* run UNUSED) {}
 
-void arch_reapChild(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
+void arch_reapChild(honggfuzz_t* hfuzz, run_t* run)
 {
     /*
      * First check manually if we have expired children
      */
-    subproc_checkTimeLimit(hfuzz, fuzzer);
+    subproc_checkTimeLimit(hfuzz, run);
 
     /*
      * Now check for signals using wait4
@@ -384,18 +380,18 @@ void arch_reapChild(honggfuzz_t* hfuzz, fuzzer_t* fuzzer)
 
     for (;;) {
         int status = 0;
-        while (wait4(fuzzer->pid, &status, options, NULL) != fuzzer->pid) {
+        while (wait4(run->pid, &status, options, NULL) != run->pid) {
             if (hfuzz->tmOut) {
-                subproc_checkTimeLimit(hfuzz, fuzzer);
+                subproc_checkTimeLimit(hfuzz, run);
                 usleep(0.20 * 1000000);
             }
         }
 
         char strStatus[4096];
-        LOG_D("Process (pid %d) came back with status: %s", fuzzer->pid,
+        LOG_D("Process (pid %d) came back with status: %s", run->pid,
             subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
 
-        if (arch_analyzeSignal(hfuzz, status, fuzzer)) {
+        if (arch_analyzeSignal(hfuzz, status, run)) {
             return;
         }
     }
@@ -706,7 +702,7 @@ kern_return_t catch_mach_exception_raise_state_identity(
     pid_for_task(task, &pid);
     LOG_D("Crash of pid %d", pid);
 
-    fuzzer_t* fuzzer = &g_fuzzer_crash_information[pid];
+    run_t* run = &g_fuzzer_crash_information[pid];
 
     /*
      * Get program counter.
@@ -715,9 +711,9 @@ kern_return_t catch_mach_exception_raise_state_identity(
     x86_thread_state_t* platform_in_state = ((x86_thread_state_t*)(void*)in_state);
 
     if (x86_THREAD_STATE32 == platform_in_state->tsh.flavor) {
-        fuzzer->pc = platform_in_state->uts.ts32.__eip;
+        run->pc = platform_in_state->uts.ts32.__eip;
     } else {
-        fuzzer->pc = platform_in_state->uts.ts64.__rip;
+        run->pc = platform_in_state->uts.ts64.__rip;
     }
 
     /*
@@ -727,7 +723,7 @@ kern_return_t catch_mach_exception_raise_state_identity(
     if (exception_type == 0) {
         exception_type = EXC_CRASH;
     }
-    fuzzer->exception = exception_type;
+    run->exception = exception_type;
 
     /*
      * Get the access address.
@@ -738,14 +734,14 @@ kern_return_t catch_mach_exception_raise_state_identity(
     exception_data[1] = code[1];
 
     mach_exception_data_type_t access_address = exception_data[1];
-    fuzzer->access = (uint64_t)access_address;
+    run->access = (uint64_t)access_address;
 
     /*
      * Get a hash of the callstack
      */
     uint64_t hash = hash_callstack(
         thread, task, exception, code, code_count, flavor, in_state, in_state_count);
-    fuzzer->backtrace = hash;
+    run->backtrace = hash;
 
 #ifdef DEBUG
     write_crash_report(thread, task, exception, code, code_count, flavor, in_state, in_state_count);
@@ -769,4 +765,4 @@ kern_return_t catch_mach_exception_raise_state_identity(
     return KERN_SUCCESS;
 }
 
-bool arch_archThreadInit(honggfuzz_t* hfuzz UNUSED, fuzzer_t* fuzzer UNUSED) { return true; }
+bool arch_archThreadInit(honggfuzz_t* hfuzz UNUSED, run_t* run UNUSED) { return true; }
