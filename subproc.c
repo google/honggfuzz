@@ -279,7 +279,7 @@ static bool subproc_New(honggfuzz_t* hfuzz, run_t* run)
     }
 
     /* Parent */
-    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", run->pid, hfuzz->threadsMax);
+    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", run->pid, hfuzz->threads.threadsMax);
 
     if (hfuzz->persistent) {
         close(sv[1]);

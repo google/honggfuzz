@@ -161,8 +161,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
         .tmOut = 10,
         .runEndTime = 0,
         .mutationsMax = 0,
-        .threadsFinished = 0,
-        .threadsMax = (sysconf(_SC_NPROCESSORS_ONLN) <= 1) ? 1 : sysconf(_SC_NPROCESSORS_ONLN) / 2,
         .reportFile = NULL,
         .asLimit = 0ULL,
         .clearEnv = false,
@@ -176,10 +174,15 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
 #else
         .monitorSIGABRT = true,
 #endif
-        .threadsActiveCnt = 0,
         .mainPid = getpid(),
         .terminating = false,
         .exitUponCrash = false,
+
+        .threads = {
+            .threadsFinished = 0,
+            .threadsMax = (sysconf(_SC_NPROCESSORS_ONLN) <= 1) ? 1 : sysconf(_SC_NPROCESSORS_ONLN) / 2,
+            .threadsActiveCnt = 0,
+        },
 
         .dictionaryFile = NULL,
         .dictionaryCnt = 0,
@@ -211,12 +214,14 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
             .crashesCnt = 0ULL,
         },
 
-        .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER, .sanOpts = {
+        .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER,
+		.sanOpts = {
             .asanOpts = NULL,
             .msanOpts = NULL,
             .ubsanOpts = NULL,
         },
-        .useSanCov = false, .covMetadata = NULL,
+        .useSanCov = false,
+        .covMetadata = NULL,
 
         .report_mutex = PTHREAD_MUTEX_INITIALIZER,
 
@@ -389,7 +394,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
             hfuzz->reportFile = optarg;
             break;
         case 'n':
-            hfuzz->threadsMax = atol(optarg);
+            hfuzz->threads.threadsMax = atol(optarg);
             break;
         case 0x109: {
             time_t p = atol(optarg);
@@ -530,9 +535,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
         return false;
     }
 
-    if (hfuzz->threadsMax >= _HF_THREAD_MAX) {
-        LOG_E("Too many fuzzing threads specified %zu (>= _HF_THREAD_MAX (%u))", hfuzz->threadsMax,
-            _HF_THREAD_MAX);
+    if (hfuzz->threads.threadsMax >= _HF_THREAD_MAX) {
+        LOG_E("Too many fuzzing threads specified %zu (>= _HF_THREAD_MAX (%u))",
+            hfuzz->threads.threadsMax, _HF_THREAD_MAX);
         return false;
     }
 
@@ -551,7 +556,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
     if (hfuzz->linux.pid > 0 || hfuzz->linux.pidFile) {
         LOG_I("PID=%d specified, lowering maximum number of concurrent threads to 1",
             hfuzz->linux.pid);
-        hfuzz->threadsMax = 1;
+        hfuzz->threads.threadsMax = 1;
     }
 
     if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
@@ -569,14 +574,15 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
 
     LOG_I("PID: %d, inputDir '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, "
           "mutationsPerRun: %u, "
-          "externalCommand: '%s', runEndTime: %d tmOut: %ld, mutationsMax: %zu, threadsMax: %zu, "
+          "externalCommand: '%s', runEndTime: %d tmOut: %ld, mutationsMax: %zu, "
+          "threads.threadsMax: %zu, "
           "fileExtn: '%s', "
           "memoryLimit: 0x%" PRIx64 "(MiB), fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
         (int)getpid(), hfuzz->inputDir, cmdlineYesNo(hfuzz->nullifyStdio),
         cmdlineYesNo(hfuzz->fuzzStdin), cmdlineYesNo(hfuzz->saveUnique), hfuzz->mutationsPerRun,
         hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, (int)hfuzz->runEndTime,
-        hfuzz->tmOut, hfuzz->mutationsMax, hfuzz->threadsMax, hfuzz->fileExtn, hfuzz->asLimit,
-        hfuzz->cmdline[0], hfuzz->linux.pid, cmdlineYesNo(hfuzz->monitorSIGABRT));
+        hfuzz->tmOut, hfuzz->mutationsMax, hfuzz->threads.threadsMax, hfuzz->fileExtn,
+        hfuzz->asLimit, hfuzz->cmdline[0], hfuzz->linux.pid, cmdlineYesNo(hfuzz->monitorSIGABRT));
 
     snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->cmdline[0]);
     for (size_t i = 1; hfuzz->cmdline[i]; i++) {

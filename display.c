@@ -206,7 +206,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz)
     unsigned cpuUse = getCpuUse(num_cpu);
     display_put("     Threads : " ESC_BOLD "%zu" ESC_RESET ", CPUs: " ESC_BOLD "%ld" ESC_RESET
                 ", CPU%: " ESC_BOLD "%u" ESC_RESET "%% (" ESC_BOLD "%u" ESC_RESET "%%/CPU)\n",
-        hfuzz->threadsMax, num_cpu, cpuUse, cpuUse / num_cpu);
+        hfuzz->threads.threadsMax, num_cpu, cpuUse, cpuUse / num_cpu);
 
     display_put("       Speed : " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET "/sec"
                 " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n",

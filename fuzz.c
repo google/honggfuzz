@@ -211,7 +211,7 @@ static void fuzz_setState(honggfuzz_t* hfuzz, fuzzState_t state)
     if (state == _HF_STATE_DYNAMIC_MAIN) {
         static size_t cnt = 0;
         ATOMIC_PRE_INC(cnt);
-        while (ATOMIC_GET(cnt) < hfuzz->threadsMax) {
+        while (ATOMIC_GET(cnt) < hfuzz->threads.threadsMax) {
             if (ATOMIC_GET(hfuzz->terminating) == true) {
                 return;
             }
@@ -605,7 +605,7 @@ static void fuzz_fuzzLoop(honggfuzz_t* hfuzz, run_t* run)
 static void* fuzz_threadNew(void* arg)
 {
     honggfuzz_t* hfuzz = (honggfuzz_t*)arg;
-    unsigned int fuzzNo = ATOMIC_POST_INC(hfuzz->threadsActiveCnt);
+    unsigned int fuzzNo = ATOMIC_POST_INC(hfuzz->threads.threadsActiveCnt);
     LOG_I("Launched new fuzzing thread, no. #%" PRId32, fuzzNo);
 
     run_t run = {
@@ -631,14 +631,14 @@ static void* fuzz_threadNew(void* arg)
         /* Check if dry run mode with verifier enabled */
         if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
             if (ATOMIC_POST_INC(hfuzz->mutationsCnt) >= hfuzz->fileCnt) {
-                ATOMIC_POST_INC(hfuzz->threadsFinished);
+                ATOMIC_POST_INC(hfuzz->threads.threadsFinished);
                 break;
             }
         }
         /* Check for max iterations limit if set */
         else if ((ATOMIC_POST_INC(hfuzz->mutationsCnt) >= hfuzz->mutationsMax)
             && hfuzz->mutationsMax) {
-            ATOMIC_POST_INC(hfuzz->threadsFinished);
+            ATOMIC_POST_INC(hfuzz->threads.threadsFinished);
             break;
         }
 
@@ -656,7 +656,7 @@ static void* fuzz_threadNew(void* arg)
     }
 
     LOG_I("Terminating thread no. #%" PRId32, fuzzNo);
-    ATOMIC_POST_INC(hfuzz->threadsFinished);
+    ATOMIC_POST_INC(hfuzz->threads.threadsFinished);
     pthread_kill(fuzz_mainThread, SIGALRM);
     return NULL;
 }
@@ -699,14 +699,14 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads)
         fuzz_setState(hfuzz, _HF_STATE_STATIC);
     }
 
-    for (size_t i = 0; i < hfuzz->threadsMax; i++) {
+    for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
         fuzz_runThread(hfuzz, &threads[i], fuzz_threadNew);
     }
 }
 
 void fuzz_threadsStop(honggfuzz_t* hfuzz, pthread_t* threads)
 {
-    for (size_t i = 0; i < hfuzz->threadsMax; i++) {
+    for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
         void* retval;
         if (pthread_join(threads[i], &retval) != 0) {
             PLOG_F("Couldn't pthread_join() thread: %zu", i);

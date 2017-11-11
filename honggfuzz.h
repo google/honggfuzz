@@ -192,8 +192,6 @@ typedef struct {
     long tmOut;
     time_t runEndTime;
     size_t mutationsMax;
-    size_t threadsMax;
-    size_t threadsFinished;
     size_t maxFileSz;
     char* reportFile;
     uint64_t asLimit;
@@ -204,10 +202,15 @@ typedef struct {
     bool skipFeedbackOnTimeout;
     bool enableSanitizers;
     bool monitorSIGABRT;
-    uint32_t threadsActiveCnt;
     pid_t mainPid;
     bool terminating;
     bool exitUponCrash;
+
+    struct {
+        size_t threadsMax;
+        size_t threadsFinished;
+        uint32_t threadsActiveCnt;
+    } threads;
 
     const char* dictionaryFile;
     TAILQ_HEAD(strq_t, strings_t) dictq;

@@ -187,7 +187,7 @@ int main(int argc, char** argv)
     /*
      * So far, so good
      */
-    pthread_t threads[hfuzz.threadsMax];
+    pthread_t threads[hfuzz.threads.threadsMax];
 
     setupSignalsPreThr();
     fuzz_threadsStart(&hfuzz, threads);
@@ -203,7 +203,7 @@ int main(int argc, char** argv)
                 strsignal(ATOMIC_GET(sigReceived)));
             break;
         }
-        if (ATOMIC_GET(hfuzz.threadsFinished) >= hfuzz.threadsMax) {
+        if (ATOMIC_GET(hfuzz.threads.threadsFinished) >= hfuzz.threads.threadsMax) {
             break;
         }
         if (hfuzz.runEndTime > 0 && (time(NULL) > hfuzz.runEndTime)) {
