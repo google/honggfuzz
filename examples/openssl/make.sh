@@ -16,12 +16,6 @@ COMMON_FLAGS="-DBORINGSSL_UNSAFE_DETERMINISTIC_MODE -DBORINGSSL_UNSAFE_FUZZER_MO
 	-I./$DIR/include -I$HFUZZ_SRC/examples/openssl -I$HFUZZ_SRC"
 COMMON_LDFLAGS="-lpthread -lz -Wl,-z,now"
 
-SUFFIX=
-if [ -n "$HF_SSL_FROM_STDIN" ]; then
-		SUFFIX=".stdin"
-		COMMON_FLAGS="$COMMON_FLAGS -DHF_SSL_FROM_STDIN"
-fi
-
 if [ -z "$DIR" ]; then
 	echo "$0" DIR SANITIZE
 	exit 1
@@ -54,5 +48,10 @@ for x in x509 privkey client server; do
 done
 
 for x in x509 privkey client server; do
+	$CC $COMMON_FLAGS -DHF_SSL_FROM_STDIN -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "stdin.$TYPE$SAN.$x" "$LIBSSL" "$LIBCRYPTO" $COMMON_LDFLAGS $SAN_COMPILE
+done
+
+for x in x509 privkey client server; do
 	clang++$CLANG_VER $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "libfuzzer.$TYPE$SAN.$x$SUFFIX" "$LIBSSL" "$LIBCRYPTO" $COMMON_LDFLAGS $SAN_COMPILE -lFuzzer
 done
+
