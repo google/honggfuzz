@@ -201,27 +201,27 @@ bool sanitizers_Init(honggfuzz_t* hfuzz)
     return true;
 }
 
-bool sanitizers_prepareExecve(honggfuzz_t* hfuzz)
+bool sanitizers_prepareExecve(run_t* run)
 {
     /* Address Sanitizer (ASan) */
-    if (hfuzz->sanOpts.asanOpts) {
-        if (setenv("ASAN_OPTIONS", hfuzz->sanOpts.asanOpts, 1) == -1) {
+    if (run->global->sanOpts.asanOpts) {
+        if (setenv("ASAN_OPTIONS", run->global->sanOpts.asanOpts, 1) == -1) {
             PLOG_E("setenv(ASAN_OPTIONS) failed");
             return false;
         }
     }
 
     /* Memory Sanitizer (MSan) */
-    if (hfuzz->sanOpts.msanOpts) {
-        if (setenv("MSAN_OPTIONS", hfuzz->sanOpts.msanOpts, 1) == -1) {
+    if (run->global->sanOpts.msanOpts) {
+        if (setenv("MSAN_OPTIONS", run->global->sanOpts.msanOpts, 1) == -1) {
             PLOG_E("setenv(MSAN_OPTIONS) failed");
             return false;
         }
     }
 
     /* Undefined Behavior Sanitizer (UBSan) */
-    if (hfuzz->sanOpts.ubsanOpts) {
-        if (setenv("UBSAN_OPTIONS", hfuzz->sanOpts.ubsanOpts, 1) == -1) {
+    if (run->global->sanOpts.ubsanOpts) {
+        if (setenv("UBSAN_OPTIONS", run->global->sanOpts.ubsanOpts, 1) == -1) {
             PLOG_E("setenv(UBSAN_OPTIONS) failed");
             return false;
         }

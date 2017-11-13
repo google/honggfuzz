@@ -167,8 +167,8 @@ inline static int pt_last_ip_update_ip(
     return -pte_bad_packet;
 }
 
-inline static void perf_ptAnalyzePkt(honggfuzz_t* hfuzz, run_t* run, struct pt_packet* packet,
-    struct pt_config* ptc, struct pt_last_ip* last_ip)
+inline static void perf_ptAnalyzePkt(
+    run_t* run, struct pt_packet* packet, struct pt_config* ptc, struct pt_last_ip* last_ip)
 {
     switch (packet->type) {
     case ppt_tip:
@@ -191,7 +191,7 @@ inline static void perf_ptAnalyzePkt(honggfuzz_t* hfuzz, run_t* run, struct pt_p
         errcode = pt_last_ip_query(&ip, last_ip);
         if (errcode == 0) {
             ip &= _HF_PERF_BITMAP_BITSZ_MASK;
-            register uint8_t prev = ATOMIC_BTS(hfuzz->feedback->bbMapPc, ip);
+            register uint8_t prev = ATOMIC_BTS(run->global->feedback->bbMapPc, ip);
             if (!prev) {
                 run->linux.hwCnts.newBBCnt++;
             }
@@ -200,7 +200,7 @@ inline static void perf_ptAnalyzePkt(honggfuzz_t* hfuzz, run_t* run, struct pt_p
     return;
 }
 
-void arch_ptAnalyze(honggfuzz_t* hfuzz, run_t* run)
+void arch_ptAnalyze(run_t* run)
 {
     struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
 
@@ -241,13 +241,13 @@ void arch_ptAnalyze(honggfuzz_t* hfuzz, run_t* run)
             LOG_W("pt_pkt_next() failed: %s", pt_errstr(errcode));
             break;
         }
-        perf_ptAnalyzePkt(hfuzz, run, &packet, &ptc, &last_ip);
+        perf_ptAnalyzePkt(run, &packet, &ptc, &last_ip);
     }
 }
 
 #else /* _HF_LINUX_INTEL_PT_LIB */
 
-void arch_ptAnalyze(honggfuzz_t* hfuzz UNUSED, run_t* fuzzer UNUSED)
+void arch_ptAnalyze(run_t* fuzzer UNUSED)
 {
     LOG_F(
         "The program has not been linked against the Intel's Processor Trace Library (libipt.so)");

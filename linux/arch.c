@@ -60,12 +60,12 @@
 /* Size of remote pid cmdline char buffer */
 #define _HF_PROC_CMDLINE_SZ 8192
 
-static inline bool arch_shouldAttach(honggfuzz_t* hfuzz, run_t* run)
+static inline bool arch_shouldAttach(run_t* run)
 {
-    if (hfuzz->persistent && run->linux.attachedPid == run->pid) {
+    if (run->global->persistent && run->linux.attachedPid == run->pid) {
         return false;
     }
-    if (hfuzz->linux.pid > 0 && run->linux.attachedPid == hfuzz->linux.pid) {
+    if (run->global->linux.pid > 0 && run->linux.attachedPid == run->global->linux.pid) {
         return false;
     }
     return true;
@@ -104,9 +104,9 @@ static pid_t arch_clone(uintptr_t flags)
     return 0;
 }
 
-pid_t arch_fork(honggfuzz_t* hfuzz, run_t* fuzzer UNUSED)
+pid_t arch_fork(run_t* run)
 {
-    pid_t pid = hfuzz->linux.useClone ? arch_clone(CLONE_UNTRACED | SIGCHLD) : fork();
+    pid_t pid = run->global->linux.useClone ? arch_clone(CLONE_UNTRACED | SIGCHLD) : fork();
     if (pid == -1) {
         return pid;
     }
@@ -120,9 +120,9 @@ pid_t arch_fork(honggfuzz_t* hfuzz, run_t* fuzzer UNUSED)
     return pid;
 }
 
-bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
+bool arch_launchChild(run_t* run)
 {
-    if ((hfuzz->linux.cloneFlags & CLONE_NEWNET) && (nsIfaceUp("lo") == false)) {
+    if ((run->global->linux.cloneFlags & CLONE_NEWNET) && (nsIfaceUp("lo") == false)) {
         LOG_W("Cannot bring interface 'lo' up");
     }
 
@@ -151,7 +151,8 @@ bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
      * This might fail in Docker, as Docker blocks __NR_personality. Consequently
      * it's just a debug warning
      */
-    if (hfuzz->linux.disableRandomization && syscall(__NR_personality, ADDR_NO_RANDOMIZE) == -1) {
+    if (run->global->linux.disableRandomization
+        && syscall(__NR_personality, ADDR_NO_RANDOMIZE) == -1) {
         PLOG_D("personality(ADDR_NO_RANDOMIZE) failed");
     }
 #define ARGS_MAX 512
@@ -159,24 +160,25 @@ bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
     char argData[PATH_MAX] = { 0 };
     int x = 0;
 
-    for (x = 0; x < ARGS_MAX && hfuzz->cmdline[x]; x++) {
-        if (!hfuzz->fuzzStdin && !hfuzz->persistent
-            && strcmp(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
-            args[x] = (char*)fileName;
-        } else if (!hfuzz->fuzzStdin && !hfuzz->persistent
-            && strstr(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER)) {
-            const char* off = strstr(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER);
-            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - hfuzz->cmdline[x]), hfuzz->cmdline[x],
-                fileName);
+    for (x = 0; x < ARGS_MAX && run->global->cmdline[x]; x++) {
+        if (!run->global->fuzzStdin && !run->global->persistent
+            && strcmp(run->global->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
+            args[x] = (char*)run->fileName;
+        } else if (!run->global->fuzzStdin && !run->global->persistent
+            && strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER)) {
+            const char* off = strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER);
+            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - run->global->cmdline[x]),
+                run->global->cmdline[x], run->fileName);
             args[x] = argData;
         } else {
-            args[x] = hfuzz->cmdline[x];
+            args[x] = run->global->cmdline[x];
         }
     }
 
     args[x++] = NULL;
 
-    LOG_D("Launching '%s' on file '%s'", args[0], hfuzz->persistent ? "PERSISTENT_MODE" : fileName);
+    LOG_D("Launching '%s' on file '%s'", args[0],
+        run->global->persistent ? "PERSISTENT_MODE" : run->fileName);
 
     /* alarm persists across forks, so disable it here */
     alarm(0);
@@ -188,23 +190,23 @@ bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
         LOG_F("Couldn't stop itself");
     }
 #if defined(__NR_execveat)
-    syscall(__NR_execveat, hfuzz->linux.exeFd, "", args, environ, AT_EMPTY_PATH);
+    syscall(__NR_execveat, run->global->linux.exeFd, "", args, environ, AT_EMPTY_PATH);
 #endif /* defined__NR_execveat) */
     execve(args[0], args, environ);
     int errno_cpy = errno;
     alarm(1);
 
-    LOG_E("execve('%s', fd=%d): %s", args[0], hfuzz->linux.exeFd, strerror(errno_cpy));
+    LOG_E("execve('%s', fd=%d): %s", args[0], run->global->linux.exeFd, strerror(errno_cpy));
 
     return false;
 }
 
-void arch_prepareParentAfterFork(honggfuzz_t* hfuzz, run_t* run)
+void arch_prepareParentAfterFork(run_t* run)
 {
-    arch_perfClose(hfuzz, run);
+    arch_perfClose(run);
 
     /* Parent */
-    if (hfuzz->persistent) {
+    if (run->global->persistent) {
         const struct f_owner_ex fown = {
             .type = F_OWNER_TID,
             .pid = syscall(__NR_gettid),
@@ -220,19 +222,19 @@ void arch_prepareParentAfterFork(honggfuzz_t* hfuzz, run_t* run)
         }
     }
 
-    pid_t perf_pid = (hfuzz->linux.pid == 0) ? run->pid : hfuzz->linux.pid;
-    if (arch_perfOpen(perf_pid, hfuzz, run) == false) {
+    pid_t perf_pid = (run->global->linux.pid == 0) ? run->pid : run->global->linux.pid;
+    if (arch_perfOpen(perf_pid, run) == false) {
         LOG_F("arch_perfOpen(pid=%d)", (int)perf_pid);
     }
 }
 
-void arch_prepareParent(honggfuzz_t* hfuzz, run_t* run)
+void arch_prepareParent(run_t* run)
 {
-    pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : run->pid;
+    pid_t ptracePid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
     pid_t childPid = run->pid;
 
-    if (arch_shouldAttach(hfuzz, run) == true) {
-        if (arch_traceAttach(hfuzz, ptracePid) == false) {
+    if (arch_shouldAttach(run) == true) {
+        if (arch_traceAttach(run, ptracePid) == false) {
             LOG_E("arch_traceAttach(pid=%d) failed", ptracePid);
             kill(ptracePid, SIGKILL);
         }
@@ -241,27 +243,28 @@ void arch_prepareParent(honggfuzz_t* hfuzz, run_t* run)
 
     /* A long-lived process could have already exited, and we wouldn't know */
     if (childPid != ptracePid && kill(ptracePid, 0) == -1) {
-        if (hfuzz->linux.pidFile) {
+        if (run->global->linux.pidFile) {
             /* If pid from file, check again for cases of auto-restart daemons that update it */
             /*
              * TODO: Investigate if we need to delay here, so that target process has
              * enough time to restart. Tricky to answer since is target dependent.
              */
-            if (files_readPidFromFile(hfuzz->linux.pidFile, &hfuzz->linux.pid) == false) {
+            if (files_readPidFromFile(run->global->linux.pidFile, &run->global->linux.pid)
+                == false) {
                 LOG_F("Failed to read new PID from file - abort");
             } else {
-                if (kill(hfuzz->linux.pid, 0) == -1) {
-                    PLOG_F(
-                        "Liveness of PID %d read from file questioned - abort", hfuzz->linux.pid);
+                if (kill(run->global->linux.pid, 0) == -1) {
+                    PLOG_F("Liveness of PID %d read from file questioned - abort",
+                        run->global->linux.pid);
                 } else {
-                    LOG_D("Monitor PID has been updated (pid=%d)", hfuzz->linux.pid);
-                    ptracePid = hfuzz->linux.pid;
+                    LOG_D("Monitor PID has been updated (pid=%d)", run->global->linux.pid);
+                    ptracePid = run->global->linux.pid;
                 }
             }
         }
     }
 
-    if (arch_perfEnable(hfuzz, run) == false) {
+    if (arch_perfEnable(run) == false) {
         LOG_E("Couldn't enable perf counters for pid %d", ptracePid);
     }
     if (childPid != ptracePid) {
@@ -274,9 +277,9 @@ void arch_prepareParent(honggfuzz_t* hfuzz, run_t* run)
     }
 }
 
-static bool arch_checkWait(honggfuzz_t* hfuzz, run_t* run)
+static bool arch_checkWait(run_t* run)
 {
-    pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : run->pid;
+    pid_t ptracePid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
     pid_t childPid = run->pid;
 
     /* All queued wait events must be tested */
@@ -301,18 +304,18 @@ static bool arch_checkWait(honggfuzz_t* hfuzz, run_t* run)
         LOG_D("PID '%d' returned with status: %s", pid,
             subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
 
-        if (hfuzz->persistent && pid == run->persistentPid
+        if (run->global->persistent && pid == run->persistentPid
             && (WIFEXITED(status) || WIFSIGNALED(status))) {
-            arch_traceAnalyze(hfuzz, status, pid, run);
+            arch_traceAnalyze(run, status, pid);
             run->persistentPid = 0;
-            if (ATOMIC_GET(hfuzz->terminating) == false) {
+            if (ATOMIC_GET(run->global->terminating) == false) {
                 LOG_W("Persistent mode: PID %d exited with status: %s", pid,
                     subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
             }
             return true;
         }
         if (ptracePid == childPid) {
-            arch_traceAnalyze(hfuzz, status, pid, run);
+            arch_traceAnalyze(run, status, pid);
             continue;
         }
         if (pid == childPid && (WIFEXITED(status) || WIFSIGNALED(status))) {
@@ -322,12 +325,12 @@ static bool arch_checkWait(honggfuzz_t* hfuzz, run_t* run)
             continue;
         }
 
-        arch_traceAnalyze(hfuzz, status, pid, run);
+        arch_traceAnalyze(run, status, pid);
     }
 }
 
 __thread sigset_t sset_io_chld;
-void arch_reapChild(honggfuzz_t* hfuzz, run_t* run)
+void arch_reapChild(run_t* run)
 {
     static const struct timespec ts = {
         .tv_sec = 0L,
@@ -339,22 +342,22 @@ void arch_reapChild(honggfuzz_t* hfuzz, run_t* run)
             PLOG_F("sigtimedwait(SIGIO|SIGCHLD, 0.25s)");
         }
         if (sig == -1) {
-            subproc_checkTimeLimit(hfuzz, run);
-            subproc_checkTermination(hfuzz, run);
+            subproc_checkTimeLimit(run);
+            subproc_checkTermination(run);
         }
-        if (subproc_persistentModeRoundDone(hfuzz, run)) {
+        if (subproc_persistentModeRoundDone(run)) {
             break;
         }
-        if (arch_checkWait(hfuzz, run)) {
+        if (arch_checkWait(run)) {
             break;
         }
     }
 
-    if (hfuzz->enableSanitizers) {
-        pid_t ptracePid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : run->pid;
+    if (run->global->enableSanitizers) {
+        pid_t ptracePid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
         char crashReport[PATH_MAX];
-        snprintf(
-            crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX, ptracePid);
+        snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", run->global->workDir, kLOGPREFIX,
+            ptracePid);
         if (files_exists(crashReport)) {
             if (run->backtrace) {
                 unlink(crashReport);
@@ -364,13 +367,13 @@ void arch_reapChild(honggfuzz_t* hfuzz, run_t* run)
                     crashReport, run->fileName);
 
                 /* Try to parse report file */
-                arch_traceExitAnalyze(hfuzz, ptracePid, run);
+                arch_traceExitAnalyze(run, ptracePid);
             }
         }
     }
 
-    arch_perfAnalyze(hfuzz, run);
-    sancov_Analyze(hfuzz, run);
+    arch_perfAnalyze(run);
+    sancov_Analyze(run);
 }
 
 bool arch_archInit(honggfuzz_t* hfuzz)
@@ -529,7 +532,7 @@ bool arch_archInit(honggfuzz_t* hfuzz)
     return true;
 }
 
-bool arch_archThreadInit(honggfuzz_t* hfuzz UNUSED, run_t* run)
+bool arch_archThreadInit(run_t* run)
 {
     run->linux.perfMmapBuf = NULL;
     run->linux.perfMmapAux = NULL;

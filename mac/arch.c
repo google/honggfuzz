@@ -184,7 +184,7 @@ static void arch_generateReport(run_t* run, int termsig)
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
-static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, run_t* run)
+static bool arch_analyzeSignal(run_t* run, int status)
 {
     /*
      * Resumed by delivery of SIGCONT
@@ -194,7 +194,7 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, run_t* run)
     }
 
     if (WIFEXITED(status) || WIFSIGNALED(status)) {
-        sancov_Analyze(hfuzz, run);
+        sancov_Analyze(run);
     }
 
     /*
@@ -227,7 +227,7 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, run_t* run)
     /*
      * Increase crashes counter presented by ASCII display
      */
-    ATOMIC_POST_INC(hfuzz->crashesCnt);
+    ATOMIC_POST_INC(run->global->crashesCnt);
 
     /*
      * Get data from exception handler
@@ -248,30 +248,31 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, run_t* run)
     /*
      * Check if stackhash is blacklisted
      */
-    if (hfuzz->blacklist
-        && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, run->backtrace) != -1)) {
+    if (run->global->blacklist
+        && (fastArray64Search(run->global->blacklist, run->global->blacklistCnt, run->backtrace)
+               != -1)) {
         LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
-        ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+        ATOMIC_POST_INC(run->global->blCrashesCnt);
         return true;
     }
 
     /* If dry run mode, copy file with same name into workspace */
-    if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
-        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", hfuzz->workDir,
+    if (run->global->mutationsPerRun == 0U && run->global->useVerifier) {
+        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->workDir,
             run->origFileName);
-    } else if (hfuzz->saveUnique) {
+    } else if (run->global->saveUnique) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
-            "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s", hfuzz->workDir,
+            "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s", run->global->workDir,
             arch_sigs[termsig].descr, exception_to_string(run->exception), run->pc, run->backtrace,
-            run->access, hfuzz->fileExtn);
+            run->access, run->global->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr), time(NULL));
 
         snprintf(run->crashFileName, sizeof(run->crashFileName),
-            "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s", hfuzz->workDir,
-            arch_sigs[termsig].descr, exception_to_string(run->exception), run->pc, run->backtrace,
-            run->access, localtmstr, run->pid, hfuzz->fileExtn);
+            "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s",
+            run->global->workDir, arch_sigs[termsig].descr, exception_to_string(run->exception),
+            run->pc, run->backtrace, run->access, localtmstr, run->pid, run->global->fileExtn);
     }
 
     if (files_exists(run->crashFileName)) {
@@ -290,40 +291,41 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, run_t* run)
 
     LOG_I("Ok, that's interesting, saved '%s' as '%s'", run->fileName, run->crashFileName);
 
-    ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
+    ATOMIC_POST_INC(run->global->uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
-    ATOMIC_CLEAR(hfuzz->dynFileIterExpire);
+    ATOMIC_CLEAR(run->global->dynFileIterExpire);
 
     arch_generateReport(run, termsig);
 
     return true;
 }
 
-pid_t arch_fork(honggfuzz_t* hfuzz UNUSED, run_t* run UNUSED) { return fork(); }
+pid_t arch_fork(run_t* run UNUSED) { return fork(); }
 
-bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
+bool arch_launchChild(run_t* run)
 {
 #define ARGS_MAX 512
     char* args[ARGS_MAX + 2];
     char argData[PATH_MAX] = { 0 };
     int x;
 
-    for (x = 0; x < ARGS_MAX && hfuzz->cmdline[x]; x++) {
-        if (!hfuzz->fuzzStdin && strcmp(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
-            args[x] = fileName;
-        } else if (!hfuzz->fuzzStdin && strstr(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER)) {
-            const char* off = strstr(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER);
-            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - hfuzz->cmdline[x]), hfuzz->cmdline[x],
-                fileName);
+    for (x = 0; x < ARGS_MAX && run->global->cmdline[x]; x++) {
+        if (!run->global->fuzzStdin && strcmp(run->global->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
+            args[x] = run->fileName;
+        } else if (!run->global->fuzzStdin
+            && strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER)) {
+            const char* off = strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER);
+            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - run->global->cmdline[x]),
+                run->global->cmdline[x], run->fileName);
             args[x] = argData;
         } else {
-            args[x] = hfuzz->cmdline[x];
+            args[x] = run->global->cmdline[x];
         }
     }
 
     args[x++] = NULL;
 
-    LOG_D("Launching '%s' on file '%s'", args[0], fileName);
+    LOG_D("Launching '%s' on file '%s'", args[0], run->fileName);
 
     /*
      * Get child's bootstrap port.
@@ -359,30 +361,30 @@ bool arch_launchChild(honggfuzz_t* hfuzz, char* fileName)
     return false;
 }
 
-void arch_prepareParent(honggfuzz_t* hfuzz UNUSED, run_t* run UNUSED) {}
+void arch_prepareParent(run_t* run UNUSED) {}
 
-void arch_prepareParentAfterFork(honggfuzz_t* hfuzz UNUSED, run_t* run UNUSED) {}
+void arch_prepareParentAfterFork(run_t* run UNUSED) {}
 
-void arch_reapChild(honggfuzz_t* hfuzz, run_t* run)
+void arch_reapChild(run_t* run)
 {
     /*
      * First check manually if we have expired children
      */
-    subproc_checkTimeLimit(hfuzz, run);
+    subproc_checkTimeLimit(run);
 
     /*
      * Now check for signals using wait4
      */
     int options = WUNTRACED;
-    if (hfuzz->tmOut) {
+    if (run->global->tmOut) {
         options |= WNOHANG;
     }
 
     for (;;) {
         int status = 0;
         while (wait4(run->pid, &status, options, NULL) != run->pid) {
-            if (hfuzz->tmOut) {
-                subproc_checkTimeLimit(hfuzz, run);
+            if (run->global->tmOut) {
+                subproc_checkTimeLimit(run);
                 usleep(0.20 * 1000000);
             }
         }
@@ -391,7 +393,7 @@ void arch_reapChild(honggfuzz_t* hfuzz, run_t* run)
         LOG_D("Process (pid %d) came back with status: %s", run->pid,
             subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
 
-        if (arch_analyzeSignal(hfuzz, status, run)) {
+        if (arch_analyzeSignal(run, status)) {
             return;
         }
     }

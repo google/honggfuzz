@@ -268,6 +268,7 @@ typedef struct {
 } honggfuzz_t;
 
 typedef struct {
+    honggfuzz_t* global;
     pid_t pid;
     pid_t persistentPid;
     fuzzState_t state;

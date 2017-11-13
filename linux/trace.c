@@ -540,11 +540,10 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE* pc, char* instr)
     return;
 }
 
-static void arch_hashCallstack(
-    honggfuzz_t* hfuzz, run_t* run, funcs_t* funcs, size_t funcCnt, bool enableMasking)
+static void arch_hashCallstack(run_t* run, funcs_t* funcs, size_t funcCnt, bool enableMasking)
 {
     uint64_t hash = 0;
-    for (size_t i = 0; i < funcCnt && i < hfuzz->linux.numMajorFrames; i++) {
+    for (size_t i = 0; i < funcCnt && i < run->global->linux.numMajorFrames; i++) {
         /*
          * Convert PC to char array to be compatible with hash function
          */
@@ -610,7 +609,7 @@ static void arch_traceGenerateReport(
     return;
 }
 
-static void arch_traceAnalyzeData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
+static void arch_traceAnalyzeData(run_t* run, pid_t pid)
 {
     REG_TYPE pc = 0, status_reg = 0;
     size_t pcRegSz = arch_getPC(pid, &pc, &status_reg);
@@ -650,15 +649,15 @@ static void arch_traceAnalyzeData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
     /*
      * Calculate backtrace callstack hash signature
      */
-    arch_hashCallstack(hfuzz, run, funcs, funcCnt, false);
+    arch_hashCallstack(run, funcs, funcCnt, false);
 }
 
-static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
+static void arch_traceSaveData(run_t* run, pid_t pid)
 {
     REG_TYPE pc = 0;
 
     /* Local copy since flag is overridden for some crashes */
-    bool saveUnique = hfuzz->saveUnique;
+    bool saveUnique = run->global->saveUnique;
 
     char instr[_HF_INSTR_SZ] = "\x00";
     siginfo_t si;
@@ -673,9 +672,9 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
     LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %" REG_PM ", instr: '%s'", pid,
         si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
 
-    if (!SI_FROMUSER(&si) && pc && si.si_addr < hfuzz->linux.ignoreAddr) {
+    if (!SI_FROMUSER(&si) && pc && si.si_addr < run->global->linux.ignoreAddr) {
         LOG_I("'%s' is interesting (%s), but the si.si_addr is %p (below %p), skipping",
-            run->fileName, arch_sigName(si.si_signo), si.si_addr, hfuzz->linux.ignoreAddr);
+            run->fileName, arch_sigName(si.si_signo), si.si_addr, run->global->linux.ignoreAddr);
         return;
     }
 
@@ -717,13 +716,13 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
     /*
      * Calculate backtrace callstack hash signature
      */
-    arch_hashCallstack(hfuzz, run, funcs, funcCnt, saveUnique);
+    arch_hashCallstack(run, funcs, funcCnt, saveUnique);
 
     /*
      * If fuzzing with sanitizer coverage feedback increase crashes counter used
      * as metric for dynFile evolution
      */
-    if (hfuzz->useSanCov) {
+    if (run->global->useSanCov) {
         run->sanCovCnts.crashesCnt++;
     }
 
@@ -753,16 +752,16 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
     }
 
     /* Increase global crashes counter */
-    ATOMIC_POST_INC(hfuzz->crashesCnt);
+    ATOMIC_POST_INC(run->global->crashesCnt);
 
     /*
      * Check if backtrace contains whitelisted symbol. Whitelist overrides
      * both stackhash and symbol blacklist. Crash is always kept regardless
      * of the status of uniqueness flag.
      */
-    if (hfuzz->linux.symsWl) {
-        char* wlSymbol
-            = arch_btContainsSymbol(hfuzz->linux.symsWlCnt, hfuzz->linux.symsWl, funcCnt, funcs);
+    if (run->global->linux.symsWl) {
+        char* wlSymbol = arch_btContainsSymbol(
+            run->global->linux.symsWlCnt, run->global->linux.symsWl, funcCnt, funcs);
         if (wlSymbol != NULL) {
             saveUnique = false;
             LOG_D("Whitelisted symbol '%s' found, skipping blacklist checks", wlSymbol);
@@ -771,30 +770,31 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
         /*
          * Check if stackhash is blacklisted
          */
-        if (hfuzz->blacklist
-            && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, run->backtrace) != -1)) {
+        if (run->global->blacklist
+            && (fastArray64Search(run->global->blacklist, run->global->blacklistCnt, run->backtrace)
+                   != -1)) {
             LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
-            ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+            ATOMIC_POST_INC(run->global->blCrashesCnt);
             return;
         }
 
         /*
          * Check if backtrace contains blacklisted symbol
          */
-        char* blSymbol
-            = arch_btContainsSymbol(hfuzz->linux.symsBlCnt, hfuzz->linux.symsBl, funcCnt, funcs);
+        char* blSymbol = arch_btContainsSymbol(
+            run->global->linux.symsBlCnt, run->global->linux.symsBl, funcCnt, funcs);
         if (blSymbol != NULL) {
             LOG_I("Blacklisted symbol '%s' found, skipping", blSymbol);
-            ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+            ATOMIC_POST_INC(run->global->blCrashesCnt);
             return;
         }
     }
 
     /* If non-blacklisted crash detected, zero set two MSB */
-    ATOMIC_POST_ADD(hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
+    ATOMIC_POST_ADD(run->global->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
     void* sig_addr = si.si_addr;
-    if (hfuzz->linux.disableRandomization == false) {
+    if (run->global->linux.disableRandomization == false) {
         pc = 0UL;
         sig_addr = NULL;
     }
@@ -805,21 +805,21 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
     }
 
     /* If dry run mode, copy file with same name into workspace */
-    if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
-        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", hfuzz->workDir,
+    if (run->global->mutationsPerRun == 0U && run->global->useVerifier) {
+        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->workDir,
             run->origFileName);
     } else if (saveUnique) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
-            "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s", hfuzz->workDir,
-            arch_sigName(si.si_signo), pc, run->backtrace, si.si_code, sig_addr, instr,
-            hfuzz->fileExtn);
+            "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
+            run->global->workDir, arch_sigName(si.si_signo), pc, run->backtrace, si.si_code,
+            sig_addr, instr, run->global->fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
-            hfuzz->workDir, arch_sigName(si.si_signo), pc, run->backtrace, si.si_code, sig_addr,
-            instr, localtmstr, pid, hfuzz->fileExtn);
+            run->global->workDir, arch_sigName(si.si_signo), pc, run->backtrace, si.si_code,
+            sig_addr, instr, localtmstr, pid, run->global->fileExtn);
     }
 
     if (files_exists(run->crashFileName)) {
@@ -838,20 +838,19 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
 
     LOG_I("Ok, that's interesting, saved '%s' as '%s'", run->fileName, run->crashFileName);
 
-    ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
+    ATOMIC_POST_INC(run->global->uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
-    ATOMIC_CLEAR(hfuzz->dynFileIterExpire);
+    ATOMIC_CLEAR(run->global->dynFileIterExpire);
 
     arch_traceGenerateReport(pid, run, funcs, funcCnt, &si, instr);
 }
 
 /* TODO: Add report parsing support for other sanitizers too */
-static int arch_parseAsanReport(
-    honggfuzz_t* hfuzz, pid_t pid, funcs_t* funcs, void** crashAddr, char** op)
+static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, void** crashAddr, char** op)
 {
     char crashReport[PATH_MAX] = { 0 };
     const char* const crashReportCpy = crashReport;
-    snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", hfuzz->workDir, kLOGPREFIX, pid);
+    snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", run->global->workDir, kLOGPREFIX, pid);
 
     FILE* fReport = fopen(crashReport, "rb");
     if (fReport == NULL) {
@@ -968,12 +967,12 @@ static int arch_parseAsanReport(
  * a raised signal. Such case is the ASan fuzzing for Android. Crash file name maintains
  * the same format for compatibility with post campaign tools.
  */
-static void arch_traceExitSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
+static void arch_traceExitSaveData(run_t* run, pid_t pid)
 {
     REG_TYPE pc = 0;
     void* crashAddr = 0;
     char* op = "UNKNOWN";
-    pid_t targetPid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : run->pid;
+    pid_t targetPid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
 
     /* Save only the first hit for each worker */
     if (run->crashFileName[0] != '\0') {
@@ -981,14 +980,14 @@ static void arch_traceExitSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
     }
 
     /* Increase global crashes counter */
-    ATOMIC_POST_INC(hfuzz->crashesCnt);
-    ATOMIC_POST_AND(hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
+    ATOMIC_POST_INC(run->global->crashesCnt);
+    ATOMIC_POST_AND(run->global->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
     /*
      * If fuzzing with sanitizer coverage feedback increase crashes counter used
      * as metric for dynFile evolution
      */
-    if (hfuzz->useSanCov) {
+    if (run->global->useSanCov) {
         run->sanCovCnts.crashesCnt++;
     }
 
@@ -1002,7 +1001,7 @@ static void arch_traceExitSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
     if (targetPid != pid) {
         return;
     }
-    funcCnt = arch_parseAsanReport(hfuzz, pid, funcs, &crashAddr, &op);
+    funcCnt = arch_parseAsanReport(run, pid, funcs, &crashAddr, &op);
 
     /*
      * -1 error indicates a file not found for report. This is expected to happen often since
@@ -1015,45 +1014,46 @@ static void arch_traceExitSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
     }
 
     /* Since crash address is available, apply ignoreAddr filters */
-    if (crashAddr < hfuzz->linux.ignoreAddr) {
+    if (crashAddr < run->global->linux.ignoreAddr) {
         LOG_I("'%s' is interesting, but the crash addr is %p (below %p), skipping", run->fileName,
-            crashAddr, hfuzz->linux.ignoreAddr);
+            crashAddr, run->global->linux.ignoreAddr);
         return;
     }
 
     /* If frames successfully recovered, calculate stack hash & populate crash PC */
-    arch_hashCallstack(hfuzz, run, funcs, funcCnt, false);
+    arch_hashCallstack(run, funcs, funcCnt, false);
     pc = (uintptr_t)funcs[0].pc;
 
     /*
      * Check if stackhash is blacklisted
      */
-    if (hfuzz->blacklist
-        && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, run->backtrace) != -1)) {
+    if (run->global->blacklist
+        && (fastArray64Search(run->global->blacklist, run->global->blacklistCnt, run->backtrace)
+               != -1)) {
         LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
-        ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+        ATOMIC_POST_INC(run->global->blCrashesCnt);
         return;
     }
 
     /* If dry run mode, copy file with same name into workspace */
-    if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
-        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", hfuzz->workDir,
+    if (run->global->mutationsPerRun == 0U && run->global->useVerifier) {
+        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->workDir,
             run->origFileName);
     } else {
         /* Keep the crashes file name format identical */
-        if (run->backtrace != 0ULL && hfuzz->saveUnique) {
+        if (run->backtrace != 0ULL && run->global->saveUnique) {
             snprintf(run->crashFileName, sizeof(run->crashFileName),
                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s",
-                hfuzz->workDir, "SAN", pc, run->backtrace, op, crashAddr, "[UNKNOWN]",
-                hfuzz->fileExtn);
+                run->global->workDir, "SAN", pc, run->backtrace, op, crashAddr, "[UNKNOWN]",
+                run->global->fileExtn);
         } else {
             /* If no stack hash available, all crashes treated as unique */
             char localtmstr[PATH_MAX];
             util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
             snprintf(run->crashFileName, sizeof(run->crashFileName),
                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s.%s",
-                hfuzz->workDir, "SAN", pc, run->backtrace, op, crashAddr, "[UNKNOWN]", localtmstr,
-                hfuzz->fileExtn);
+                run->global->workDir, "SAN", pc, run->backtrace, op, crashAddr, "[UNKNOWN]",
+                localtmstr, run->global->fileExtn);
         }
     }
 
@@ -1062,8 +1062,8 @@ static void arch_traceExitSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
         LOG_I("Ok, that's interesting, saved '%s' as '%s'", run->fileName, run->crashFileName);
 
         /* Increase unique crashes counters */
-        ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
-        ATOMIC_CLEAR(hfuzz->dynFileIterExpire);
+        ATOMIC_POST_INC(run->global->uniqueCrashesCnt);
+        ATOMIC_CLEAR(run->global->dynFileIterExpire);
     } else {
         if (dstFileExists) {
             LOG_I("It seems that '%s' already exists, skipping", run->crashFileName);
@@ -1106,7 +1106,7 @@ static void arch_traceExitSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
     }
 }
 
-static void arch_traceExitAnalyzeData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
+static void arch_traceExitAnalyzeData(run_t* run, pid_t pid)
 {
     void* crashAddr = 0;
     char* op = "UNKNOWN";
@@ -1115,7 +1115,7 @@ static void arch_traceExitAnalyzeData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
     defer { free(funcs); };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
-    funcCnt = arch_parseAsanReport(hfuzz, pid, funcs, &crashAddr, &op);
+    funcCnt = arch_parseAsanReport(run, pid, funcs, &crashAddr, &op);
 
     /*
      * -1 error indicates a file not found for report. This is expected to happen often since
@@ -1128,22 +1128,22 @@ static void arch_traceExitAnalyzeData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
     }
 
     /* If frames successfully recovered, calculate stack hash & populate crash PC */
-    arch_hashCallstack(hfuzz, run, funcs, funcCnt, false);
+    arch_hashCallstack(run, funcs, funcCnt, false);
 }
 
-void arch_traceExitAnalyze(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
+void arch_traceExitAnalyze(run_t* run, pid_t pid)
 {
     if (run->mainWorker) {
         /* Main fuzzing threads */
-        arch_traceExitSaveData(hfuzz, pid, run);
+        arch_traceExitSaveData(run, pid);
     } else {
         /* Post crash analysis (e.g. crashes verifier) */
-        arch_traceExitAnalyzeData(hfuzz, pid, run);
+        arch_traceExitAnalyzeData(run, pid);
     }
 }
 
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)
-static void arch_traceEvent(honggfuzz_t* hfuzz, run_t* run, int status, pid_t pid)
+static void arch_traceEvent(run_t* run, int status, pid_t pid)
 {
     LOG_D("PID: %d, Ptrace event: %d", pid, __WEVENT(status));
     switch (__WEVENT(status)) {
@@ -1157,7 +1157,7 @@ static void arch_traceEvent(honggfuzz_t* hfuzz, run_t* run, int status, pid_t pi
         if (WIFEXITED(event_msg)) {
             LOG_D("PID: %d exited with exit_code: %lu", pid, (unsigned long)WEXITSTATUS(event_msg));
             if (WEXITSTATUS(event_msg) == (unsigned long)HF_SAN_EXIT_CODE) {
-                arch_traceExitAnalyze(hfuzz, pid, run);
+                arch_traceExitAnalyze(run, pid);
             }
         } else if (WIFSIGNALED(event_msg)) {
             LOG_D("PID: %d terminated with signal: %lu", pid, (unsigned long)WTERMSIG(event_msg));
@@ -1172,13 +1172,13 @@ static void arch_traceEvent(honggfuzz_t* hfuzz, run_t* run, int status, pid_t pi
     ptrace(PTRACE_CONT, pid, 0, 0);
 }
 
-void arch_traceAnalyze(honggfuzz_t* hfuzz, int status, pid_t pid, run_t* run)
+void arch_traceAnalyze(run_t* run, int status, pid_t pid)
 {
     /*
      * It's a ptrace event, deal with it elsewhere
      */
     if (WIFSTOPPED(status) && __WEVENT(status)) {
-        return arch_traceEvent(hfuzz, run, status, pid);
+        return arch_traceEvent(run, status, pid);
     }
 
     if (WIFSTOPPED(status)) {
@@ -1191,9 +1191,9 @@ void arch_traceAnalyze(honggfuzz_t* hfuzz, int status, pid_t pid, run_t* run)
              * analysis. Otherwise just unwind and get stack hash signature.
              */
             if (run->mainWorker) {
-                arch_traceSaveData(hfuzz, pid, run);
+                arch_traceSaveData(run, pid);
             } else {
-                arch_traceAnalyzeData(hfuzz, pid, run);
+                arch_traceAnalyzeData(run, pid);
             }
         }
         /* Do not deliver SIGSTOP, as we don't support PTRACE_LISTEN anyway */
@@ -1217,7 +1217,7 @@ void arch_traceAnalyze(honggfuzz_t* hfuzz, int status, pid_t pid, run_t* run)
          * Target exited with sanitizer defined exitcode (used when SIGABRT is not monitored)
          */
         if (WEXITSTATUS(status) == (unsigned long)HF_SAN_EXIT_CODE) {
-            arch_traceExitAnalyze(hfuzz, pid, run);
+            arch_traceExitAnalyze(run, pid);
         }
         return;
     }
@@ -1306,7 +1306,7 @@ bool arch_traceWaitForPidStop(pid_t pid)
 }
 
 #define MAX_THREAD_IN_TASK 4096
-bool arch_traceAttach(honggfuzz_t* hfuzz, pid_t pid)
+bool arch_traceAttach(run_t* run, pid_t pid)
 {
 /*
  * It should be present since, at least, Linux kernel 3.8, but
@@ -1316,15 +1316,15 @@ bool arch_traceAttach(honggfuzz_t* hfuzz, pid_t pid)
 #define PTRACE_O_EXITKILL (1 << 20)
 #endif /* !defined(PTRACE_O_EXITKILL) */
     long seize_options = PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK;
-    if (hfuzz->linux.pid == 0) {
+    if (run->global->linux.pid == 0) {
         seize_options |= PTRACE_O_EXITKILL;
     }
     /* The event is only used with sanitizers */
-    if (hfuzz->enableSanitizers) {
+    if (run->global->enableSanitizers) {
         seize_options |= PTRACE_O_TRACEEXIT;
     }
 
-    if (hfuzz->linux.pid == 0 && arch_traceWaitForPidStop(pid) == false) {
+    if (run->global->linux.pid == 0 && arch_traceWaitForPidStop(pid) == false) {
         return false;
     }
 
@@ -1336,7 +1336,7 @@ bool arch_traceAttach(honggfuzz_t* hfuzz, pid_t pid)
     LOG_D("Attached to PID: %d", pid);
 
     /* It only makes sense to attach to threads with -p */
-    if (hfuzz->linux.pid == 0) {
+    if (run->global->linux.pid == 0) {
         return true;
     }
 

@@ -34,13 +34,13 @@
 #define _HF_SINGLE_FRAME_MASK 0xBADBAD0000000000
 
 extern bool arch_traceWaitForPidStop(pid_t pid);
-extern bool arch_traceEnable(honggfuzz_t* hfuzz);
-extern void arch_traceAnalyze(honggfuzz_t* hfuzz, int status, pid_t pid, run_t* run);
-extern void arch_traceExitAnalyze(honggfuzz_t* hfuzz, pid_t pid, run_t* run);
-extern bool arch_traceAttach(honggfuzz_t* hfuzz, pid_t pid);
+extern bool arch_traceEnable(run_t* run);
+extern void arch_traceAnalyze(run_t* run, int status, pid_t pid);
+extern void arch_traceExitAnalyze(run_t* run, pid_t pid);
+extern bool arch_traceAttach(run_t* run, pid_t pid);
 extern void arch_traceDetach(pid_t pid);
-extern void arch_traceGetCustomPerf(honggfuzz_t* hfuzz, pid_t pid, uint64_t* cnt);
-extern void arch_traceSetCustomPerf(honggfuzz_t* hfuzz, pid_t pid, uint64_t cnt);
+extern void arch_traceGetCustomPerf(run_t* run, pid_t pid, uint64_t* cnt);
+extern void arch_traceSetCustomPerf(run_t* run, pid_t pid, uint64_t cnt);
 extern void arch_traceSignalsInit(honggfuzz_t* hfuzz);
 
 #endif

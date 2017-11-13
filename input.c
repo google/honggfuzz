@@ -123,37 +123,37 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz)
     return true;
 }
 
-bool input_getNext(honggfuzz_t* hfuzz, char* fname, bool rewind)
+bool input_getNext(run_t* run, char* fname, bool rewind)
 {
     static pthread_mutex_t input_mutex = PTHREAD_MUTEX_INITIALIZER;
     MX_SCOPED_LOCK(&input_mutex);
 
-    if (hfuzz->fileCnt == 0U) {
+    if (run->global->fileCnt == 0U) {
         return false;
     }
 
     for (;;) {
         errno = 0;
-        struct dirent* entry = readdir(hfuzz->inputDirP);
+        struct dirent* entry = readdir(run->global->inputDirP);
         if (entry == NULL && errno == EINTR) {
             continue;
         }
         if (entry == NULL && errno != 0) {
-            PLOG_W("readdir_r('%s')", hfuzz->inputDir);
+            PLOG_W("readdir_r('%s')", run->global->inputDir);
             return false;
         }
         if (entry == NULL && rewind == false) {
             return false;
         }
         if (entry == NULL && rewind == true) {
-            if (input_getDirStatsAndRewind(hfuzz) == false) {
-                LOG_E("input_getDirStatsAndRewind('%s')", hfuzz->inputDir);
+            if (input_getDirStatsAndRewind(run->global) == false) {
+                LOG_E("input_getDirStatsAndRewind('%s')", run->global->inputDir);
                 return false;
             }
             continue;
         }
 
-        snprintf(fname, PATH_MAX, "%s/%s", hfuzz->inputDir, entry->d_name);
+        snprintf(fname, PATH_MAX, "%s/%s", run->global->inputDir, entry->d_name);
 
         struct stat st;
         if (stat(fname, &st) == -1) {

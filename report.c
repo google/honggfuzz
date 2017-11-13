@@ -36,19 +36,19 @@
 static int reportFD = -1;
 
 #if defined(_HF_ARCH_LINUX)
-static void report_printdynFileMethod(honggfuzz_t* hfuzz)
+static void report_printdynFileMethod(run_t* run)
 {
     dprintf(reportFD, " dynFileMethod: ");
-    if (hfuzz->dynFileMethod == 0)
+    if (run->global->dynFileMethod == 0)
         dprintf(reportFD, "NONE\n");
     else {
-        if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT)
+        if (run->global->dynFileMethod & _HF_DYNFILE_INSTR_COUNT)
             dprintf(reportFD, "INSTR_COUNT ");
-        if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT)
+        if (run->global->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT)
             dprintf(reportFD, "BRANCH_COUNT ");
-        if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE)
+        if (run->global->dynFileMethod & _HF_DYNFILE_BTS_EDGE)
             dprintf(reportFD, "BTS_EDGE_COUNT ");
-        if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK)
+        if (run->global->dynFileMethod & _HF_DYNFILE_IPT_BLOCK)
             dprintf(reportFD, "IPT_BLOCK_COUNT ");
 
         dprintf(reportFD, "\n");
@@ -56,29 +56,30 @@ static void report_printdynFileMethod(honggfuzz_t* hfuzz)
 }
 #endif
 
-static void report_printTargetCmd(honggfuzz_t* hfuzz)
+static void report_printTargetCmd(run_t* run)
 {
     dprintf(reportFD, " fuzzTarget   : ");
-    for (int x = 0; hfuzz->cmdline[x]; x++) {
-        dprintf(reportFD, "%s ", hfuzz->cmdline[x]);
+    for (int x = 0; run->global->cmdline[x]; x++) {
+        dprintf(reportFD, "%s ", run->global->cmdline[x]);
     }
     dprintf(reportFD, "\n");
 }
 
-void report_Report(honggfuzz_t* hfuzz, char* s)
+void report_Report(run_t* run)
 {
-    if (s == NULL || s[0] == '\0') {
+    if (run->report == NULL || run->report[0] == '\0') {
         return;
     }
 
-    MX_SCOPED_LOCK(&hfuzz->report_mutex);
+    MX_SCOPED_LOCK(&run->global->report_mutex);
 
     if (reportFD == -1) {
         char reportFName[PATH_MAX];
-        if (hfuzz->reportFile == NULL) {
-            snprintf(reportFName, sizeof(reportFName), "%s/%s", hfuzz->workDir, _HF_REPORT_FILE);
+        if (run->global->reportFile == NULL) {
+            snprintf(
+                reportFName, sizeof(reportFName), "%s/%s", run->global->workDir, _HF_REPORT_FILE);
         } else {
-            snprintf(reportFName, sizeof(reportFName), "%s", hfuzz->reportFile);
+            snprintf(reportFName, sizeof(reportFName), "%s", run->global->reportFile);
         }
 
         reportFD = open(reportFName, O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0644);
@@ -104,20 +105,21 @@ void report_Report(honggfuzz_t* hfuzz, char* s)
         " targetPid       : %d\n"
         " targetCmd       : %s\n"
         " wordlistFile    : %s\n",
-        localtmstr, hfuzz->mutationsPerRun,
-        hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand,
-        hfuzz->fuzzStdin ? "TRUE" : "FALSE", hfuzz->tmOut, hfuzz->linux.ignoreAddr, hfuzz->asLimit,
-        hfuzz->linux.pid, hfuzz->linux.pidCmd,
-        hfuzz->dictionaryFile == NULL ? "NULL" : hfuzz->dictionaryFile);
+        localtmstr, run->global->mutationsPerRun,
+        run->global->externalCommand == NULL ? "NULL" : run->global->externalCommand,
+        run->global->fuzzStdin ? "TRUE" : "FALSE", run->global->tmOut,
+        run->global->linux.ignoreAddr, run->global->asLimit, run->global->linux.pid,
+        run->global->linux.pidCmd,
+        run->global->dictionaryFile == NULL ? "NULL" : run->global->dictionaryFile);
 
 #if defined(_HF_ARCH_LINUX)
-    report_printdynFileMethod(hfuzz);
+    report_printdynFileMethod(run);
 #endif
 
-    report_printTargetCmd(hfuzz);
+    report_printTargetCmd(run);
 
     dprintf(reportFD,
         "%s"
         "=====================================================================\n",
-        s);
+        run->report);
 }

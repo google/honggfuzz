@@ -315,14 +315,14 @@ static int sancov_qsortCmp(const void* a, const void* b)
     }
 }
 
-static bool sancov_sanCovParseRaw(honggfuzz_t* hfuzz, run_t* run)
+static bool sancov_sanCovParseRaw(run_t* run)
 {
     int dataFd = -1;
     uint8_t* dataBuf = NULL;
     off_t dataFileSz = 0, pos = 0;
     bool is32bit = true;
     char covFile[PATH_MAX] = { 0 };
-    pid_t targetPid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : run->pid;
+    pid_t targetPid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
 
     /* Fuzzer local runtime data structs - need free() before exit */
     uint64_t* startMapsIndex = NULL;
@@ -339,8 +339,8 @@ static bool sancov_sanCovParseRaw(honggfuzz_t* hfuzz, run_t* run)
     size_t lineSz = 0;
 
     /* Coverage data analysis starts by parsing map file listing */
-    snprintf(
-        covFile, sizeof(covFile), "%s/%s/%d.sancov.map", hfuzz->workDir, _HF_SANCOV_DIR, targetPid);
+    snprintf(covFile, sizeof(covFile), "%s/%s/%d.sancov.map", run->global->workDir, _HF_SANCOV_DIR,
+        targetPid);
     if (!files_exists(covFile)) {
         LOG_D("sancov map file not found");
         return false;
@@ -373,7 +373,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t* hfuzz, run_t* run)
     }
 
     /* See if #maps is available from previous run to avoid realloc inside loop */
-    uint64_t prevMapsNum = ATOMIC_GET(hfuzz->sanCovCnts.dsoCnt);
+    uint64_t prevMapsNum = ATOMIC_GET(run->global->sanCovCnts.dsoCnt);
     if (prevMapsNum > 0) {
         mapsBuf = util_Malloc(prevMapsNum * sizeof(memMap_t));
     }
@@ -408,11 +408,11 @@ static bool sancov_sanCovParseRaw(honggfuzz_t* hfuzz, run_t* run)
 
         /* Interaction with global Trie should mutex wrap to avoid threads races */
         {
-            MX_SCOPED_LOCK(&hfuzz->sanCov_mutex);
+            MX_SCOPED_LOCK(&run->global->sanCov_mutex);
 
             /* Add entry to Trie with zero data if not already */
-            if (!sancov_trieSearch(hfuzz->covMetadata->children, mapData.mapName)) {
-                sancov_trieAdd(&hfuzz->covMetadata, mapData.mapName);
+            if (!sancov_trieSearch(run->global->covMetadata->children, mapData.mapName)) {
+                sancov_trieAdd(&run->global->covMetadata, mapData.mapName);
             }
         }
 
@@ -434,7 +434,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t* hfuzz, run_t* run)
     }
 
     /* Delete .sancov.map file */
-    if (hfuzz->linux.pid == 0 && hfuzz->persistent == false) {
+    if (run->global->linux.pid == 0 && run->global->persistent == false) {
         unlink(covFile);
     }
 
@@ -449,8 +449,8 @@ static bool sancov_sanCovParseRaw(honggfuzz_t* hfuzz, run_t* run)
     }
 
     /* mmap() .sancov.raw file */
-    snprintf(
-        covFile, sizeof(covFile), "%s/%s/%d.sancov.raw", hfuzz->workDir, _HF_SANCOV_DIR, targetPid);
+    snprintf(covFile, sizeof(covFile), "%s/%s/%d.sancov.raw", run->global->workDir, _HF_SANCOV_DIR,
+        targetPid);
     dataBuf = files_mapFile(covFile, &dataFileSz, &dataFd, false);
     if (dataBuf == NULL) {
         LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
@@ -504,10 +504,10 @@ static bool sancov_sanCovParseRaw(honggfuzz_t* hfuzz, run_t* run)
 
                     /* Interaction with global Trie should mutex wrap to avoid threads races */
                     {
-                        MX_SCOPED_LOCK(&hfuzz->sanCov_mutex);
+                        MX_SCOPED_LOCK(&run->global->sanCov_mutex);
 
                         curMap = sancov_trieSearch(
-                            hfuzz->covMetadata->children, mapsBuf[bestFit].mapName);
+                            run->global->covMetadata->children, mapsBuf[bestFit].mapName);
                         if (curMap == NULL) {
                             LOG_E("Corrupted Trie - '%s' not found", mapsBuf[bestFit].mapName);
                             continue;
@@ -537,7 +537,7 @@ static bool sancov_sanCovParseRaw(honggfuzz_t* hfuzz, run_t* run)
 
                     /* Interaction with global Trie should mutex wrap to avoid threads races */
                     {
-                        MX_SCOPED_LOCK(&hfuzz->sanCov_mutex);
+                        MX_SCOPED_LOCK(&run->global->sanCov_mutex);
 
                         sancov_setBitmap(curMap->data.pBM, relAddr);
                     }
@@ -571,13 +571,13 @@ static bool sancov_sanCovParseRaw(honggfuzz_t* hfuzz, run_t* run)
     run->sanCovCnts.dsoCnt = mapsNum;
     run->sanCovCnts.iDsoCnt = mapsNum - noCovMapsNum; /* Instrumented DSOs */
 
-    if (hfuzz->linux.pid == 0 && hfuzz->persistent == false) {
+    if (run->global->linux.pid == 0 && run->global->persistent == false) {
         unlink(covFile);
     }
     return true;
 }
 
-static bool sancov_sanCovParse(honggfuzz_t* hfuzz, run_t* run)
+static bool sancov_sanCovParse(run_t* run)
 {
     int dataFd = -1;
     uint8_t* dataBuf = NULL;
@@ -585,10 +585,10 @@ static bool sancov_sanCovParse(honggfuzz_t* hfuzz, run_t* run)
     bool is32bit = true;
     char covFile[PATH_MAX] = { 0 };
     DIR* pSanCovDir = NULL;
-    pid_t targetPid = (hfuzz->linux.pid > 0) ? hfuzz->linux.pid : run->pid;
+    pid_t targetPid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
 
-    snprintf(covFile, sizeof(covFile), "%s/%s/%s.%d.sancov", hfuzz->workDir, _HF_SANCOV_DIR,
-        files_basename(hfuzz->cmdline[0]), targetPid);
+    snprintf(covFile, sizeof(covFile), "%s/%s/%s.%d.sancov", run->global->workDir, _HF_SANCOV_DIR,
+        files_basename(run->global->cmdline[0]), targetPid);
     if (!files_exists(covFile)) {
         LOG_D("Target sancov file not found");
         return false;
@@ -602,7 +602,7 @@ static bool sancov_sanCovParse(honggfuzz_t* hfuzz, run_t* run)
     uint64_t nBBs = 0;
 
     /* Iterate sancov dir for files generated against target pid */
-    snprintf(covFile, sizeof(covFile), "%s/%s", hfuzz->workDir, _HF_SANCOV_DIR);
+    snprintf(covFile, sizeof(covFile), "%s/%s", run->global->workDir, _HF_SANCOV_DIR);
     pSanCovDir = opendir(covFile);
     if (pSanCovDir == NULL) {
         PLOG_E("opendir('%s')", covFile);
@@ -614,8 +614,8 @@ static bool sancov_sanCovParse(honggfuzz_t* hfuzz, run_t* run)
     while ((pDir = readdir(pSanCovDir)) != NULL) {
         /* Parse files with target's pid */
         if (strstr(pDir->d_name, pidFSuffix)) {
-            snprintf(
-                covFile, sizeof(covFile), "%s/%s/%s", hfuzz->workDir, _HF_SANCOV_DIR, pDir->d_name);
+            snprintf(covFile, sizeof(covFile), "%s/%s/%s", run->global->workDir, _HF_SANCOV_DIR,
+                pDir->d_name);
             dataBuf = files_mapFile(covFile, &dataFileSz, &dataFd, false);
             if (dataBuf == NULL) {
                 LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
@@ -672,7 +672,7 @@ static bool sancov_sanCovParse(honggfuzz_t* hfuzz, run_t* run)
     /* Successful parsing - update fuzzer worker counters */
     run->sanCovCnts.hitBBCnt = nBBs;
 
-    if (hfuzz->linux.pid == 0 && hfuzz->persistent == false) {
+    if (run->global->linux.pid == 0 && run->global->persistent == false) {
         unlink(covFile);
     }
     return true;
@@ -687,17 +687,17 @@ static bool sancov_sanCovParse(honggfuzz_t* hfuzz, run_t* run)
  *
  * Enabled methods are controlled from sanitizer flags in arch.c
  */
-void sancov_Analyze(honggfuzz_t* hfuzz, run_t* run)
+void sancov_Analyze(run_t* run)
 {
-    if (!hfuzz->useSanCov) {
+    if (!run->global->useSanCov) {
         return;
     }
     /*
      * For now supported methods are implemented in fail-over nature. This will
      * change in the future when best method is concluded.
      */
-    if (sancov_sanCovParseRaw(hfuzz, run) == false) {
-        sancov_sanCovParse(hfuzz, run);
+    if (sancov_sanCovParseRaw(run) == false) {
+        sancov_sanCovParse(run);
     }
 }
 

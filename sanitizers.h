@@ -33,6 +33,6 @@
 
 extern bool sanitizers_Init(honggfuzz_t* hfuzz);
 
-extern bool sanitizers_prepareExecve(honggfuzz_t* hfuzz);
+extern bool sanitizers_prepareExecve(run_t* run);
 
 #endif /* _HF_SANITIZERS_H_ */
