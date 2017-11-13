@@ -227,12 +227,14 @@ typedef struct {
 
     pthread_mutex_t feedback_mutex;
 
-    size_t mutationsCnt;
-    size_t crashesCnt;
-    size_t uniqueCrashesCnt;
-    size_t verifiedCrashesCnt;
-    size_t blCrashesCnt;
-    size_t timeoutedCnt;
+    struct {
+        size_t mutationsCnt;
+        size_t crashesCnt;
+        size_t uniqueCrashesCnt;
+        size_t verifiedCrashesCnt;
+        size_t blCrashesCnt;
+        size_t timeoutedCnt;
+    } cnts;
 
     dynFileMethod_t dynFileMethod;
     sancovcnt_t sanCovCnts;

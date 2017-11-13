@@ -197,12 +197,14 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
 
         .feedback_mutex = PTHREAD_MUTEX_INITIALIZER,
 
-        .mutationsCnt = 0,
-        .crashesCnt = 0,
-        .uniqueCrashesCnt = 0,
-        .verifiedCrashesCnt = 0,
-        .blCrashesCnt = 0,
-        .timeoutedCnt = 0,
+        .cnts = {
+            .mutationsCnt = 0,
+            .crashesCnt = 0,
+            .uniqueCrashesCnt = 0,
+            .verifiedCrashesCnt = 0,
+            .blCrashesCnt = 0,
+            .timeoutedCnt = 0,
+        },
 
         .dynFileMethod = _HF_DYNFILE_SOFT,
         .sanCovCnts = {
@@ -215,7 +217,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz)
         },
 
         .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER,
-		.sanOpts = {
+            .sanOpts = {
             .asanOpts = NULL,
             .msanOpts = NULL,
             .ubsanOpts = NULL,

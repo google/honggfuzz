@@ -134,8 +134,8 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, run_t* run)
     /*
      * All crashes are marked as unique due to lack of information in POSIX arch
      */
-    ATOMIC_POST_INC(hfuzz->crashesCnt);
-    ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
+    ATOMIC_POST_INC(hfuzz->cnts.crashesCnt);
+    ATOMIC_POST_INC(hfuzz->cnts.uniqueCrashesCnt);
 
     if (files_writeBufToFile(
             newname, run->dynamicFile, run->dynamicFileSz, O_CREAT | O_EXCL | O_WRONLY)

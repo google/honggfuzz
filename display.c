@@ -127,7 +127,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz)
             hour, min, second);
     }
 
-    size_t curr_exec_cnt = ATOMIC_GET(hfuzz->mutationsCnt);
+    size_t curr_exec_cnt = ATOMIC_GET(hfuzz->cnts.mutationsCnt);
     /*
      * We increase the mutation counter unconditionally in threads, but if it's
      * above hfuzz->mutationsMax we don't really execute the fuzzing loop.
@@ -212,17 +212,17 @@ static void display_displayLocked(honggfuzz_t* hfuzz)
                 " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n",
         exec_per_sec, elapsed_second ? (curr_exec_cnt / elapsed_second) : 0);
 
-    uint64_t crashesCnt = ATOMIC_GET(hfuzz->crashesCnt);
+    uint64_t crashesCnt = ATOMIC_GET(hfuzz->cnts.crashesCnt);
     /* colored the crash count as red when exist crash */
     display_put("     Crashes : " ESC_BOLD "%s"
                 "%zu" ESC_RESET " (unique: %s" ESC_BOLD "%zu" ESC_RESET ", blacklist: " ESC_BOLD
                 "%zu" ESC_RESET ", verified: " ESC_BOLD "%zu" ESC_RESET ")\n",
-        crashesCnt > 0 ? ESC_RED : "", hfuzz->crashesCnt, crashesCnt > 0 ? ESC_RED : "",
-        ATOMIC_GET(hfuzz->uniqueCrashesCnt), ATOMIC_GET(hfuzz->blCrashesCnt),
-        ATOMIC_GET(hfuzz->verifiedCrashesCnt));
+        crashesCnt > 0 ? ESC_RED : "", hfuzz->cnts.crashesCnt, crashesCnt > 0 ? ESC_RED : "",
+        ATOMIC_GET(hfuzz->cnts.uniqueCrashesCnt), ATOMIC_GET(hfuzz->cnts.blCrashesCnt),
+        ATOMIC_GET(hfuzz->cnts.verifiedCrashesCnt));
     display_put("    Timeouts : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
                 " [%" _HF_MONETARY_MOD "zu sec.]\n",
-        ATOMIC_GET(hfuzz->timeoutedCnt), hfuzz->tmOut);
+        ATOMIC_GET(hfuzz->cnts.timeoutedCnt), hfuzz->tmOut);
     /* Feedback data sources. Common headers. */
     display_put(" Corpus Size : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
                 ", max file size: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",

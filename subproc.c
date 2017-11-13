@@ -395,7 +395,7 @@ void subproc_checkTimeLimit(honggfuzz_t* hfuzz, run_t* run)
         } else {
             kill(run->pid, SIGKILL);
         }
-        ATOMIC_POST_INC(hfuzz->timeoutedCnt);
+        ATOMIC_POST_INC(hfuzz->cnts.timeoutedCnt);
     }
 }
 

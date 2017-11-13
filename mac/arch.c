@@ -227,7 +227,7 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, run_t* run)
     /*
      * Increase crashes counter presented by ASCII display
      */
-    ATOMIC_POST_INC(hfuzz->crashesCnt);
+    ATOMIC_POST_INC(hfuzz->cnts.crashesCnt);
 
     /*
      * Get data from exception handler
@@ -251,7 +251,7 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, run_t* run)
     if (hfuzz->blacklist
         && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, run->backtrace) != -1)) {
         LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
-        ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+        ATOMIC_POST_INC(hfuzz->cnts.blCrashesCnt);
         return true;
     }
 
@@ -290,7 +290,7 @@ static bool arch_analyzeSignal(honggfuzz_t* hfuzz, int status, run_t* run)
 
     LOG_I("Ok, that's interesting, saved '%s' as '%s'", run->fileName, run->crashFileName);
 
-    ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
+    ATOMIC_POST_INC(hfuzz->cnts.uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
     ATOMIC_CLEAR(hfuzz->dynFileIterExpire);
 

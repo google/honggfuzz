@@ -753,7 +753,7 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
     }
 
     /* Increase global crashes counter */
-    ATOMIC_POST_INC(hfuzz->crashesCnt);
+    ATOMIC_POST_INC(hfuzz->cnts.crashesCnt);
 
     /*
      * Check if backtrace contains whitelisted symbol. Whitelist overrides
@@ -774,7 +774,7 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
         if (hfuzz->blacklist
             && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, run->backtrace) != -1)) {
             LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
-            ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+            ATOMIC_POST_INC(hfuzz->cnts.blCrashesCnt);
             return;
         }
 
@@ -785,7 +785,7 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
             = arch_btContainsSymbol(hfuzz->linux.symsBlCnt, hfuzz->linux.symsBl, funcCnt, funcs);
         if (blSymbol != NULL) {
             LOG_I("Blacklisted symbol '%s' found, skipping", blSymbol);
-            ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+            ATOMIC_POST_INC(hfuzz->cnts.blCrashesCnt);
             return;
         }
     }
@@ -838,7 +838,7 @@ static void arch_traceSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
 
     LOG_I("Ok, that's interesting, saved '%s' as '%s'", run->fileName, run->crashFileName);
 
-    ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
+    ATOMIC_POST_INC(hfuzz->cnts.uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
     ATOMIC_CLEAR(hfuzz->dynFileIterExpire);
 
@@ -981,7 +981,7 @@ static void arch_traceExitSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
     }
 
     /* Increase global crashes counter */
-    ATOMIC_POST_INC(hfuzz->crashesCnt);
+    ATOMIC_POST_INC(hfuzz->cnts.crashesCnt);
     ATOMIC_POST_AND(hfuzz->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
     /*
@@ -1031,7 +1031,7 @@ static void arch_traceExitSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
     if (hfuzz->blacklist
         && (fastArray64Search(hfuzz->blacklist, hfuzz->blacklistCnt, run->backtrace) != -1)) {
         LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
-        ATOMIC_POST_INC(hfuzz->blCrashesCnt);
+        ATOMIC_POST_INC(hfuzz->cnts.blCrashesCnt);
         return;
     }
 
@@ -1062,7 +1062,7 @@ static void arch_traceExitSaveData(honggfuzz_t* hfuzz, pid_t pid, run_t* run)
         LOG_I("Ok, that's interesting, saved '%s' as '%s'", run->fileName, run->crashFileName);
 
         /* Increase unique crashes counters */
-        ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
+        ATOMIC_POST_INC(hfuzz->cnts.uniqueCrashesCnt);
         ATOMIC_CLEAR(hfuzz->dynFileIterExpire);
     } else {
         if (dstFileExists) {

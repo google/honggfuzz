@@ -339,7 +339,7 @@ static bool fuzz_runVerifier(honggfuzz_t* hfuzz, run_t* crashedFuzzer)
     if (files_copyFile(
             crashedFuzzer->crashFileName, verFile, &dstFileExists, true /* try_link */)) {
         LOG_I("Successfully verified, saving as (%s)", verFile);
-        ATOMIC_POST_INC(hfuzz->verifiedCrashesCnt);
+        ATOMIC_POST_INC(hfuzz->cnts.verifiedCrashesCnt);
         unlink(crashedFuzzer->crashFileName);
     } else {
         if (dstFileExists) {
@@ -630,13 +630,13 @@ static void* fuzz_threadNew(void* arg)
     for (;;) {
         /* Check if dry run mode with verifier enabled */
         if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
-            if (ATOMIC_POST_INC(hfuzz->mutationsCnt) >= hfuzz->fileCnt) {
+            if (ATOMIC_POST_INC(hfuzz->cnts.mutationsCnt) >= hfuzz->fileCnt) {
                 ATOMIC_POST_INC(hfuzz->threads.threadsFinished);
                 break;
             }
         }
         /* Check for max iterations limit if set */
-        else if ((ATOMIC_POST_INC(hfuzz->mutationsCnt) >= hfuzz->mutationsMax)
+        else if ((ATOMIC_POST_INC(hfuzz->cnts.mutationsCnt) >= hfuzz->mutationsMax)
             && hfuzz->mutationsMax) {
             ATOMIC_POST_INC(hfuzz->threads.threadsFinished);
             break;
@@ -648,7 +648,7 @@ static void* fuzz_threadNew(void* arg)
             break;
         }
 
-        if (hfuzz->exitUponCrash && ATOMIC_GET(hfuzz->crashesCnt) > 0) {
+        if (hfuzz->exitUponCrash && ATOMIC_GET(hfuzz->cnts.crashesCnt) > 0) {
             LOG_I("Seen a crash. Terminating all fuzzing threads");
             ATOMIC_SET(hfuzz->terminating, true);
             break;
