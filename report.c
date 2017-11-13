@@ -62,7 +62,7 @@ static void report_printTargetCmd(run_t* run) {
 }
 
 void report_Report(run_t* run) {
-    if (run->report == NULL || run->report[0] == '\0') {
+    if (run->report[0] == '\0') {
         return;
     }
 
