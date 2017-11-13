@@ -399,8 +399,8 @@ static void mangle_Random(run_t* run) {
 static void mangle_AddSub(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
 
-    /* 1,2,4 */
-    uint64_t varLen = 1ULL << util_rndGet(0, 2);
+    /* 1,2,4,8 */
+    uint64_t varLen = 1U << util_rndGet(0, 3);
     if ((run->dynamicFileSz - off) < varLen) {
         varLen = 1;
     }
@@ -415,8 +415,9 @@ static void mangle_AddSub(run_t* run) {
             break;
         }
         case 2: {
-            int16_t val = *((uint16_t*)&run->dynamicFile[off]);
-            if (util_rndGet(0, 1) == 0) {
+            int16_t val;
+            memcpy(&val, &run->dynamicFile[off], sizeof(val));
+            if (util_rnd64() & 0x1) {
                 val += delta;
             } else {
                 /* Foreign endianess */
@@ -429,14 +430,30 @@ static void mangle_AddSub(run_t* run) {
             break;
         }
         case 4: {
-            int32_t val = *((uint32_t*)&run->dynamicFile[off]);
-            if (util_rndGet(0, 1) == 0) {
+            int32_t val;
+            memcpy(&val, &run->dynamicFile[off], sizeof(val));
+            if (util_rnd64() & 0x1) {
                 val += delta;
             } else {
                 /* Foreign endianess */
                 val = __builtin_bswap32(val);
                 val += delta;
                 val = __builtin_bswap32(val);
+            }
+            mangle_Overwrite(run, (uint8_t*)&val, off, varLen);
+            return;
+            break;
+        }
+        case 8: {
+            int64_t val;
+            memcpy(&val, &run->dynamicFile[off], sizeof(val));
+            if (util_rnd64() & 0x1) {
+                val += delta;
+            } else {
+                /* Foreign endianess */
+                val = __builtin_bswap64(val);
+                val += delta;
+                val = __builtin_bswap64(val);
             }
             mangle_Overwrite(run, (uint8_t*)&val, off, varLen);
             return;
