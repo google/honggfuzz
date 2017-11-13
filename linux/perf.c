@@ -360,10 +360,12 @@ void arch_perfAnalyze(honggfuzz_t* hfuzz, run_t* run)
     }
 
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
+        ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(hfuzz, run);
         arch_perfMmapReset(run);
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
+        ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(hfuzz, run);
         arch_perfMmapReset(run);
     }
