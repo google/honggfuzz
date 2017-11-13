@@ -53,8 +53,7 @@ static int32_t perfIntelPtPerfType = -1;
 static int32_t perfIntelBtsPerfType = -1;
 
 #if defined(PERF_ATTR_SIZE_VER5)
-static inline void arch_perfBtsCount(run_t* run)
-{
+static inline void arch_perfBtsCount(run_t* run) {
     struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
     struct bts_branch {
         uint64_t from;
@@ -69,14 +68,14 @@ static inline void arch_perfBtsCount(run_t* run)
          * Kernel sometimes reports branches from the kernel (iret), we are not interested in that
          * as it makes the whole concept of unique branch counting less predictable
          */
-        if (run->global->linux.kernelOnly == false
-            && (__builtin_expect(br->from > 0xFFFFFFFF00000000, false)
-                   || __builtin_expect(br->to > 0xFFFFFFFF00000000, false))) {
+        if (run->global->linux.kernelOnly == false &&
+            (__builtin_expect(br->from > 0xFFFFFFFF00000000, false) ||
+                __builtin_expect(br->to > 0xFFFFFFFF00000000, false))) {
             LOG_D("Adding branch %#018" PRIx64 " - %#018" PRIx64, br->from, br->to);
             continue;
         }
-        if (br->from >= run->global->linux.dynamicCutOffAddr
-            || br->to >= run->global->linux.dynamicCutOffAddr) {
+        if (br->from >= run->global->linux.dynamicCutOffAddr ||
+            br->to >= run->global->linux.dynamicCutOffAddr) {
             continue;
         }
 
@@ -90,8 +89,7 @@ static inline void arch_perfBtsCount(run_t* run)
 }
 #endif /* defined(PERF_ATTR_SIZE_VER5) */
 
-static inline void arch_perfMmapParse(run_t* run UNUSED)
-{
+static inline void arch_perfMmapParse(run_t* run UNUSED) {
 #if defined(PERF_ATTR_SIZE_VER5)
     struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
     if (pem->aux_head == pem->aux_tail) {
@@ -111,14 +109,12 @@ static inline void arch_perfMmapParse(run_t* run UNUSED)
 }
 
 static long perf_event_open(
-    struct perf_event_attr* hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags)
-{
+    struct perf_event_attr* hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags) {
     return syscall(__NR_perf_event_open, hw_event, (uintptr_t)pid, (uintptr_t)cpu,
         (uintptr_t)group_fd, (uintptr_t)flags);
 }
 
-static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* perfFd)
-{
+static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* perfFd) {
     LOG_D("Enabling PERF for PID=%d method=%x", pid, method);
 
     if (*perfFd != -1) {
@@ -150,29 +146,29 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
     pe.type = PERF_TYPE_HARDWARE;
 
     switch (method) {
-    case _HF_DYNFILE_INSTR_COUNT:
-        LOG_D("Using: PERF_COUNT_HW_INSTRUCTIONS for PID: %d", pid);
-        pe.config = PERF_COUNT_HW_INSTRUCTIONS;
-        pe.inherit = 1;
-        break;
-    case _HF_DYNFILE_BRANCH_COUNT:
-        LOG_D("Using: PERF_COUNT_HW_BRANCH_INSTRUCTIONS for PID: %d", pid);
-        pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
-        pe.inherit = 1;
-        break;
-    case _HF_DYNFILE_BTS_EDGE:
-        LOG_D("Using: (Intel BTS) type=%" PRIu32 " for PID: %d", perfIntelBtsPerfType, pid);
-        pe.type = perfIntelBtsPerfType;
-        break;
-    case _HF_DYNFILE_IPT_BLOCK:
-        LOG_D("Using: (Intel PT) type=%" PRIu32 " for PID: %d", perfIntelPtPerfType, pid);
-        pe.type = perfIntelPtPerfType;
-        pe.config = (1U << 11); /* Disable RETCompression */
-        break;
-    default:
-        LOG_E("Unknown perf mode: '%d' for PID: %d", method, pid);
-        return false;
-        break;
+        case _HF_DYNFILE_INSTR_COUNT:
+            LOG_D("Using: PERF_COUNT_HW_INSTRUCTIONS for PID: %d", pid);
+            pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+            pe.inherit = 1;
+            break;
+        case _HF_DYNFILE_BRANCH_COUNT:
+            LOG_D("Using: PERF_COUNT_HW_BRANCH_INSTRUCTIONS for PID: %d", pid);
+            pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+            pe.inherit = 1;
+            break;
+        case _HF_DYNFILE_BTS_EDGE:
+            LOG_D("Using: (Intel BTS) type=%" PRIu32 " for PID: %d", perfIntelBtsPerfType, pid);
+            pe.type = perfIntelBtsPerfType;
+            break;
+        case _HF_DYNFILE_IPT_BLOCK:
+            LOG_D("Using: (Intel PT) type=%" PRIu32 " for PID: %d", perfIntelPtPerfType, pid);
+            pe.type = perfIntelPtPerfType;
+            pe.config = (1U << 11); /* Disable RETCompression */
+            break;
+        default:
+            LOG_E("Unknown perf mode: '%d' for PID: %d", method, pid);
+            return false;
+            break;
     }
 
 #if !defined(PERF_FLAG_FD_CLOEXEC)
@@ -188,12 +184,13 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
         return true;
     }
 #if defined(PERF_ATTR_SIZE_VER5)
-    run->linux.perfMmapBuf = mmap(
-        NULL, _HF_PERF_MAP_SZ + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
+    run->linux.perfMmapBuf =
+        mmap(NULL, _HF_PERF_MAP_SZ + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
     if (run->linux.perfMmapBuf == MAP_FAILED) {
         run->linux.perfMmapBuf = NULL;
-        PLOG_W("mmap(mmapBuf) failed, sz=%zu, try increasing the kernel.perf_event_mlock_kb "
-               "sysctl (up to even 300000000)",
+        PLOG_W(
+            "mmap(mmapBuf) failed, sz=%zu, try increasing the kernel.perf_event_mlock_kb "
+            "sysctl (up to even 300000000)",
             (size_t)_HF_PERF_MAP_SZ + getpagesize());
         close(*perfFd);
         return false;
@@ -202,26 +199,26 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
     struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
     pem->aux_offset = pem->data_offset + pem->data_size;
     pem->aux_size = _HF_PERF_AUX_SZ;
-    run->linux.perfMmapAux
-        = mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
+    run->linux.perfMmapAux =
+        mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
 
     if (run->linux.perfMmapAux == MAP_FAILED) {
         munmap(run->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
         run->linux.perfMmapBuf = NULL;
-        PLOG_W("mmap(mmapAuxBuf) failed, try increasing the kernel.perf_event_mlock_kb "
-               "sysctl (up to even 300000000)");
+        PLOG_W(
+            "mmap(mmapAuxBuf) failed, try increasing the kernel.perf_event_mlock_kb "
+            "sysctl (up to even 300000000)");
         close(*perfFd);
         return false;
     }
-#else /* defined(PERF_ATTR_SIZE_VER5) */
+#else  /* defined(PERF_ATTR_SIZE_VER5) */
     LOG_F("Your <linux/perf_event.h> includes are too old to support Intel PT/BTS");
 #endif /* defined(PERF_ATTR_SIZE_VER5) */
 
     return true;
 }
 
-bool arch_perfOpen(pid_t pid, run_t* run)
-{
+bool arch_perfOpen(pid_t pid, run_t* run) {
     if (run->global->dynFileMethod == _HF_DYNFILE_NONE) {
         return true;
     }
@@ -261,8 +258,7 @@ out:
     return false;
 }
 
-void arch_perfClose(run_t* run)
-{
+void arch_perfClose(run_t* run) {
     if (run->global->dynFileMethod == _HF_DYNFILE_NONE) {
         return;
     }
@@ -294,8 +290,7 @@ void arch_perfClose(run_t* run)
     }
 }
 
-bool arch_perfEnable(run_t* run)
-{
+bool arch_perfEnable(run_t* run) {
     if (run->global->dynFileMethod == _HF_DYNFILE_NONE) {
         return true;
     }
@@ -316,8 +311,7 @@ bool arch_perfEnable(run_t* run)
     return true;
 }
 
-static void arch_perfMmapReset(run_t* run)
-{
+static void arch_perfMmapReset(run_t* run) {
     struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
     ATOMIC_SET(pem->data_head, 0);
     ATOMIC_SET(pem->data_tail, 0);
@@ -328,8 +322,7 @@ static void arch_perfMmapReset(run_t* run)
     wmb();
 }
 
-void arch_perfAnalyze(run_t* run)
-{
+void arch_perfAnalyze(run_t* run) {
     if (run->global->dynFileMethod == _HF_DYNFILE_NONE) {
         return;
     }
@@ -337,8 +330,8 @@ void arch_perfAnalyze(run_t* run)
     uint64_t instrCount = 0;
     if (run->global->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
         ioctl(run->linux.cpuInstrFd, PERF_EVENT_IOC_DISABLE, 0);
-        if (files_readFromFd(run->linux.cpuInstrFd, (uint8_t*)&instrCount, sizeof(instrCount))
-            != sizeof(instrCount)) {
+        if (files_readFromFd(run->linux.cpuInstrFd, (uint8_t*)&instrCount, sizeof(instrCount)) !=
+            sizeof(instrCount)) {
             PLOG_E("read(perfFd='%d') failed", run->linux.cpuInstrFd);
         }
         ioctl(run->linux.cpuInstrFd, PERF_EVENT_IOC_RESET, 0);
@@ -347,8 +340,8 @@ void arch_perfAnalyze(run_t* run)
     uint64_t branchCount = 0;
     if (run->global->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
         ioctl(run->linux.cpuBranchFd, PERF_EVENT_IOC_DISABLE, 0);
-        if (files_readFromFd(run->linux.cpuBranchFd, (uint8_t*)&branchCount, sizeof(branchCount))
-            != sizeof(branchCount)) {
+        if (files_readFromFd(run->linux.cpuBranchFd, (uint8_t*)&branchCount, sizeof(branchCount)) !=
+            sizeof(branchCount)) {
             PLOG_E("read(perfFd='%d') failed", run->linux.cpuBranchFd);
         }
         ioctl(run->linux.cpuBranchFd, PERF_EVENT_IOC_RESET, 0);
@@ -369,11 +362,10 @@ void arch_perfAnalyze(run_t* run)
     run->linux.hwCnts.cpuBranchCnt = branchCount;
 }
 
-bool arch_perfInit(honggfuzz_t* hfuzz UNUSED)
-{
+bool arch_perfInit(honggfuzz_t* hfuzz UNUSED) {
     uint8_t buf[PATH_MAX + 1];
-    ssize_t sz = files_readFileToBufMax(
-        "/sys/bus/event_source/devices/intel_pt/type", buf, sizeof(buf) - 1);
+    ssize_t sz =
+        files_readFileToBufMax("/sys/bus/event_source/devices/intel_pt/type", buf, sizeof(buf) - 1);
     if (sz > 0) {
         buf[sz] = '\0';
         perfIntelPtPerfType = (int32_t)strtoul((char*)buf, NULL, 10);

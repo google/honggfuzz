@@ -43,8 +43,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-bool nsEnter(uintptr_t cloneFlags)
-{
+bool nsEnter(uintptr_t cloneFlags) {
     pid_t current_uid = getuid();
     gid_t current_gid = getgid();
 
@@ -54,9 +53,8 @@ bool nsEnter(uintptr_t cloneFlags)
     }
 
     const char* deny_str = "deny";
-    if (files_writeBufToFile(
-            "/proc/self/setgroups", (const uint8_t*)deny_str, strlen(deny_str), O_WRONLY)
-        == false) {
+    if (files_writeBufToFile("/proc/self/setgroups", (const uint8_t*)deny_str, strlen(deny_str),
+            O_WRONLY) == false) {
         PLOG_E("Couldn't write to /proc/self/setgroups");
         return false;
     }
@@ -64,8 +62,7 @@ bool nsEnter(uintptr_t cloneFlags)
     char gid_map[4096];
     snprintf(gid_map, sizeof(gid_map), "%d %d 1", (int)current_gid, (int)current_gid);
     if (files_writeBufToFile(
-            "/proc/self/gid_map", (const uint8_t*)gid_map, strlen(gid_map), O_WRONLY)
-        == false) {
+            "/proc/self/gid_map", (const uint8_t*)gid_map, strlen(gid_map), O_WRONLY) == false) {
         PLOG_E("Couldn't write to /proc/self/gid_map");
         return false;
     }
@@ -73,8 +70,7 @@ bool nsEnter(uintptr_t cloneFlags)
     char uid_map[4096];
     snprintf(uid_map, sizeof(uid_map), "%d %d 1", (int)current_uid, (int)current_uid);
     if (files_writeBufToFile(
-            "/proc/self/uid_map", (const uint8_t*)uid_map, strlen(uid_map), O_WRONLY)
-        == false) {
+            "/proc/self/uid_map", (const uint8_t*)uid_map, strlen(uid_map), O_WRONLY) == false) {
         PLOG_E("Couldn't write to /proc/self/uid_map");
         return false;
     }
@@ -91,8 +87,7 @@ bool nsEnter(uintptr_t cloneFlags)
     return true;
 }
 
-bool nsIfaceUp(const char* ifacename)
-{
+bool nsIfaceUp(const char* ifacename) {
     int sock = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, IPPROTO_IP);
     if (sock == -1) {
         PLOG_E("socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, IPPROTO_IP)");
@@ -121,8 +116,7 @@ bool nsIfaceUp(const char* ifacename)
     return true;
 }
 
-bool nsMountTmpfs(const char* dst)
-{
+bool nsMountTmpfs(const char* dst) {
     if (mount(NULL, dst, "tmpfs", 0, NULL) == -1) {
         PLOG_E("mount(dst='%s', tmpfs)", dst);
         return false;

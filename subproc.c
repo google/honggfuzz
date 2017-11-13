@@ -48,8 +48,7 @@
 
 extern char** environ;
 
-const char* subproc_StatusToStr(int status, char* str, size_t len)
-{
+const char* subproc_StatusToStr(int status, char* str, size_t len) {
     if (WIFEXITED(status)) {
         snprintf(str, len, "EXITED, exit code: %d", WEXITSTATUS(status));
         return str;
@@ -80,42 +79,42 @@ const char* subproc_StatusToStr(int status, char* str, size_t len)
 #define __LINUX_WPTRACEEVENT(x) ((x & 0xff0000) >> 16)
     if (WSTOPSIG(status) == SIGTRAP && __LINUX_WPTRACEEVENT(status) != 0) {
         switch (__LINUX_WPTRACEEVENT(status)) {
-        case PTRACE_EVENT_FORK:
-            snprintf(str, len, "EVENT (Linux) - fork - with signal: %d (%s)", WSTOPSIG(status),
-                strsignal(WSTOPSIG(status)));
-            return str;
-        case PTRACE_EVENT_VFORK:
-            snprintf(str, len, "EVENT (Linux) - vfork - with signal: %d (%s)", WSTOPSIG(status),
-                strsignal(WSTOPSIG(status)));
-            return str;
-        case PTRACE_EVENT_CLONE:
-            snprintf(str, len, "EVENT (Linux) - clone - with signal: %d (%s)", WSTOPSIG(status),
-                strsignal(WSTOPSIG(status)));
-            return str;
-        case PTRACE_EVENT_EXEC:
-            snprintf(str, len, "EVENT (Linux) - exec - with signal: %d (%s)", WSTOPSIG(status),
-                strsignal(WSTOPSIG(status)));
-            return str;
-        case PTRACE_EVENT_VFORK_DONE:
-            snprintf(str, len, "EVENT (Linux) - vfork_done - with signal: %d (%s)",
-                WSTOPSIG(status), strsignal(WSTOPSIG(status)));
-            return str;
-        case PTRACE_EVENT_EXIT:
-            snprintf(str, len, "EVENT (Linux) - exit - with signal: %d (%s)", WSTOPSIG(status),
-                strsignal(WSTOPSIG(status)));
-            return str;
-        case PTRACE_EVENT_SECCOMP:
-            snprintf(str, len, "EVENT (Linux) - seccomp - with signal: %d (%s)", WSTOPSIG(status),
-                strsignal(WSTOPSIG(status)));
-            return str;
-        case PTRACE_EVENT_STOP:
-            snprintf(str, len, "EVENT (Linux) - stop - with signal: %d (%s)", WSTOPSIG(status),
-                strsignal(WSTOPSIG(status)));
-            return str;
-        default:
-            snprintf(str, len, "EVENT (Linux) UNKNOWN (%d): with signal: %d (%s)",
-                __LINUX_WPTRACEEVENT(status), WSTOPSIG(status), strsignal(WSTOPSIG(status)));
-            return str;
+            case PTRACE_EVENT_FORK:
+                snprintf(str, len, "EVENT (Linux) - fork - with signal: %d (%s)", WSTOPSIG(status),
+                    strsignal(WSTOPSIG(status)));
+                return str;
+            case PTRACE_EVENT_VFORK:
+                snprintf(str, len, "EVENT (Linux) - vfork - with signal: %d (%s)", WSTOPSIG(status),
+                    strsignal(WSTOPSIG(status)));
+                return str;
+            case PTRACE_EVENT_CLONE:
+                snprintf(str, len, "EVENT (Linux) - clone - with signal: %d (%s)", WSTOPSIG(status),
+                    strsignal(WSTOPSIG(status)));
+                return str;
+            case PTRACE_EVENT_EXEC:
+                snprintf(str, len, "EVENT (Linux) - exec - with signal: %d (%s)", WSTOPSIG(status),
+                    strsignal(WSTOPSIG(status)));
+                return str;
+            case PTRACE_EVENT_VFORK_DONE:
+                snprintf(str, len, "EVENT (Linux) - vfork_done - with signal: %d (%s)",
+                    WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+                return str;
+            case PTRACE_EVENT_EXIT:
+                snprintf(str, len, "EVENT (Linux) - exit - with signal: %d (%s)", WSTOPSIG(status),
+                    strsignal(WSTOPSIG(status)));
+                return str;
+            case PTRACE_EVENT_SECCOMP:
+                snprintf(str, len, "EVENT (Linux) - seccomp - with signal: %d (%s)",
+                    WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+                return str;
+            case PTRACE_EVENT_STOP:
+                snprintf(str, len, "EVENT (Linux) - stop - with signal: %d (%s)", WSTOPSIG(status),
+                    strsignal(WSTOPSIG(status)));
+                return str;
+            default:
+                snprintf(str, len, "EVENT (Linux) UNKNOWN (%d): with signal: %d (%s)",
+                    __LINUX_WPTRACEEVENT(status), WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+                return str;
         }
     }
 #endif /*  defined(PTRACE_EVENT_STOP)  */
@@ -125,8 +124,7 @@ const char* subproc_StatusToStr(int status, char* str, size_t len)
     return str;
 }
 
-bool subproc_persistentModeRoundDone(run_t* run)
-{
+bool subproc_persistentModeRoundDone(run_t* run) {
     if (!run->global->persistent) {
         return false;
     }
@@ -138,8 +136,7 @@ bool subproc_persistentModeRoundDone(run_t* run)
     return false;
 }
 
-static bool subproc_persistentSendFile(run_t* run)
-{
+static bool subproc_persistentSendFile(run_t* run) {
     uint32_t len = (uint64_t)run->dynamicFileSz;
     if (!files_sendToSocketNB(run->persistentSock, (uint8_t*)&len, sizeof(len))) {
         PLOG_W("files_sendToSocketNB(len=%zu)", sizeof(len));
@@ -152,8 +149,7 @@ static bool subproc_persistentSendFile(run_t* run)
     return true;
 }
 
-bool subproc_PrepareExecv(run_t* run, const char* fileName)
-{
+bool subproc_PrepareExecv(run_t* run, const char* fileName) {
     /*
      * The address space limit. If big enough - roughly the size of RAM used
      */
@@ -212,8 +208,7 @@ bool subproc_PrepareExecv(run_t* run, const char* fileName)
     return true;
 }
 
-static bool subproc_New(run_t* run)
-{
+static bool subproc_New(run_t* run) {
     run->pid = run->persistentPid;
     if (run->pid != 0) {
         return true;
@@ -298,8 +293,7 @@ static bool subproc_New(run_t* run)
     return true;
 }
 
-bool subproc_Run(run_t* run)
-{
+bool subproc_Run(run_t* run) {
     if (!subproc_New(run)) {
         LOG_E("subproc_New()");
         return false;
@@ -315,8 +309,7 @@ bool subproc_Run(run_t* run)
     return true;
 }
 
-uint8_t subproc_System(run_t* run, const char* const argv[])
-{
+uint8_t subproc_System(run_t* run, const char* const argv[]) {
     pid_t pid = arch_fork(run);
     if (pid == -1) {
         PLOG_E("Couldn't fork");
@@ -371,8 +364,7 @@ uint8_t subproc_System(run_t* run, const char* const argv[])
     }
 }
 
-void subproc_checkTimeLimit(run_t* run)
-{
+void subproc_checkTimeLimit(run_t* run) {
     if (run->global->tmOut == 0) {
         return;
     }
@@ -400,8 +392,7 @@ void subproc_checkTimeLimit(run_t* run)
     }
 }
 
-void subproc_checkTermination(run_t* run)
-{
+void subproc_checkTermination(run_t* run) {
     if (ATOMIC_GET(run->global->terminating)) {
         LOG_D("Killing PID: %d", (int)run->pid);
         kill(run->pid, SIGKILL);

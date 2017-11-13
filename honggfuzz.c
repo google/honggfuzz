@@ -50,8 +50,7 @@ static int sigReceived = 0;
  */
 honggfuzz_t hfuzz;
 
-void sigHandler(int sig)
-{
+void sigHandler(int sig) {
     /* We should not terminate upon SIGALRM delivery */
     if (sig == SIGALRM) {
         return;
@@ -67,19 +66,17 @@ void sigHandler(int sig)
     ATOMIC_SET(sigReceived, sig);
 }
 
-static void setupTimer(void)
-{
+static void setupTimer(void) {
     struct itimerval it = {
-        .it_value = { .tv_sec = 1, .tv_usec = 0 },
-        .it_interval = { .tv_sec = 1, .tv_usec = 0 },
+        .it_value = {.tv_sec = 1, .tv_usec = 0},
+        .it_interval = {.tv_sec = 1, .tv_usec = 0},
     };
     if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
         PLOG_F("setitimer(ITIMER_REAL)");
     }
 }
 
-static void setupSignalsPreThr(void)
-{
+static void setupSignalsPreThr(void) {
     /* Block signals which should be handled or blocked in the main thread */
     sigset_t ss;
     sigemptyset(&ss);
@@ -95,8 +92,7 @@ static void setupSignalsPreThr(void)
     }
 }
 
-static void setupSignalsPostThr(void)
-{
+static void setupSignalsPostThr(void) {
     struct sigaction sa = {
         .sa_handler = sigHandler,
         .sa_flags = 0,
@@ -126,8 +122,7 @@ static void setupSignalsPostThr(void)
     }
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     /*
      * Work around CygWin/MinGW
      */
@@ -150,8 +145,9 @@ int main(int argc, char** argv)
 
     if (!input_init(&hfuzz)) {
         if (hfuzz.externalCommand) {
-            LOG_I("No input file corpus loaded, the external command '%s' is responsible for "
-                  "creating the fuzz files",
+            LOG_I(
+                "No input file corpus loaded, the external command '%s' is responsible for "
+                "creating the fuzz files",
                 hfuzz.externalCommand);
         } else {
             LOG_F("Couldn't load input files");
@@ -167,13 +163,13 @@ int main(int argc, char** argv)
         LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.blacklistFile);
     }
 #define hfuzzl hfuzz.linux
-    if (hfuzzl.symsBlFile
-        && ((hfuzzl.symsBlCnt = files_parseSymbolFilter(hfuzzl.symsBlFile, &hfuzzl.symsBl)) == 0)) {
+    if (hfuzzl.symsBlFile &&
+        ((hfuzzl.symsBlCnt = files_parseSymbolFilter(hfuzzl.symsBlFile, &hfuzzl.symsBl)) == 0)) {
         LOG_F("Couldn't parse symbols blacklist file ('%s')", hfuzzl.symsBlFile);
     }
 
-    if (hfuzzl.symsWlFile
-        && ((hfuzzl.symsWlCnt = files_parseSymbolFilter(hfuzzl.symsWlFile, &hfuzzl.symsWl)) == 0)) {
+    if (hfuzzl.symsWlFile &&
+        ((hfuzzl.symsWlCnt = files_parseSymbolFilter(hfuzzl.symsWlFile, &hfuzzl.symsWl)) == 0)) {
         LOG_F("Couldn't parse symbols whitelist file ('%s')", hfuzzl.symsWlFile);
     }
 

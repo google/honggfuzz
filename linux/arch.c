@@ -60,8 +60,7 @@
 /* Size of remote pid cmdline char buffer */
 #define _HF_PROC_CMDLINE_SZ 8192
 
-static inline bool arch_shouldAttach(run_t* run)
-{
+static inline bool arch_shouldAttach(run_t* run) {
     if (run->global->persistent && run->linux.attachedPid == run->pid) {
         return false;
     }
@@ -80,16 +79,14 @@ __attribute__((no_sanitize("address"))) __attribute__((no_sanitize("memory")))
 #endif /* if __has_feature(address_sanitizer) */
 #endif /* if defined(__has_feature) */
 static int
-arch_cloneFunc(void* arg UNUSED)
-{
+arch_cloneFunc(void* arg UNUSED) {
     longjmp(env, 1);
     abort();
     return 0;
 }
 
 /* Avoid problem with caching of PID/TID in glibc */
-static pid_t arch_clone(uintptr_t flags)
-{
+static pid_t arch_clone(uintptr_t flags) {
     if (flags & CLONE_VM) {
         LOG_E("Cannot use clone(flags & CLONE_VM)");
         return -1;
@@ -104,8 +101,7 @@ static pid_t arch_clone(uintptr_t flags)
     return 0;
 }
 
-pid_t arch_fork(run_t* run)
-{
+pid_t arch_fork(run_t* run) {
     pid_t pid = run->global->linux.useClone ? arch_clone(CLONE_UNTRACED | SIGCHLD) : fork();
     if (pid == -1) {
         return pid;
@@ -120,8 +116,7 @@ pid_t arch_fork(run_t* run)
     return pid;
 }
 
-bool arch_launchChild(run_t* run)
-{
+bool arch_launchChild(run_t* run) {
     if ((run->global->linux.cloneFlags & CLONE_NEWNET) && (nsIfaceUp("lo") == false)) {
         LOG_W("Cannot bring interface 'lo' up");
     }
@@ -151,21 +146,21 @@ bool arch_launchChild(run_t* run)
      * This might fail in Docker, as Docker blocks __NR_personality. Consequently
      * it's just a debug warning
      */
-    if (run->global->linux.disableRandomization
-        && syscall(__NR_personality, ADDR_NO_RANDOMIZE) == -1) {
+    if (run->global->linux.disableRandomization &&
+        syscall(__NR_personality, ADDR_NO_RANDOMIZE) == -1) {
         PLOG_D("personality(ADDR_NO_RANDOMIZE) failed");
     }
 #define ARGS_MAX 512
     char* args[ARGS_MAX + 2];
-    char argData[PATH_MAX] = { 0 };
+    char argData[PATH_MAX] = {0};
     int x = 0;
 
     for (x = 0; x < ARGS_MAX && run->global->cmdline[x]; x++) {
-        if (!run->global->fuzzStdin && !run->global->persistent
-            && strcmp(run->global->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
+        if (!run->global->fuzzStdin && !run->global->persistent &&
+            strcmp(run->global->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
             args[x] = (char*)run->fileName;
-        } else if (!run->global->fuzzStdin && !run->global->persistent
-            && strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER)) {
+        } else if (!run->global->fuzzStdin && !run->global->persistent &&
+                   strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER)) {
             const char* off = strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER);
             snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - run->global->cmdline[x]),
                 run->global->cmdline[x], run->fileName);
@@ -201,8 +196,7 @@ bool arch_launchChild(run_t* run)
     return false;
 }
 
-void arch_prepareParentAfterFork(run_t* run)
-{
+void arch_prepareParentAfterFork(run_t* run) {
     arch_perfClose(run);
 
     /* Parent */
@@ -228,8 +222,7 @@ void arch_prepareParentAfterFork(run_t* run)
     }
 }
 
-void arch_prepareParent(run_t* run)
-{
+void arch_prepareParent(run_t* run) {
     pid_t ptracePid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
     pid_t childPid = run->pid;
 
@@ -249,8 +242,8 @@ void arch_prepareParent(run_t* run)
              * TODO: Investigate if we need to delay here, so that target process has
              * enough time to restart. Tricky to answer since is target dependent.
              */
-            if (files_readPidFromFile(run->global->linux.pidFile, &run->global->linux.pid)
-                == false) {
+            if (files_readPidFromFile(run->global->linux.pidFile, &run->global->linux.pid) ==
+                false) {
                 LOG_F("Failed to read new PID from file - abort");
             } else {
                 if (kill(run->global->linux.pid, 0) == -1) {
@@ -277,8 +270,7 @@ void arch_prepareParent(run_t* run)
     }
 }
 
-static bool arch_checkWait(run_t* run)
-{
+static bool arch_checkWait(run_t* run) {
     pid_t ptracePid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
     pid_t childPid = run->pid;
 
@@ -304,8 +296,8 @@ static bool arch_checkWait(run_t* run)
         LOG_D("PID '%d' returned with status: %s", pid,
             subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
 
-        if (run->global->persistent && pid == run->persistentPid
-            && (WIFEXITED(status) || WIFSIGNALED(status))) {
+        if (run->global->persistent && pid == run->persistentPid &&
+            (WIFEXITED(status) || WIFSIGNALED(status))) {
             arch_traceAnalyze(run, status, pid);
             run->persistentPid = 0;
             if (ATOMIC_GET(run->global->terminating) == false) {
@@ -330,8 +322,7 @@ static bool arch_checkWait(run_t* run)
 }
 
 __thread sigset_t sset_io_chld;
-void arch_reapChild(run_t* run)
-{
+void arch_reapChild(run_t* run) {
     static const struct timespec ts = {
         .tv_sec = 0L,
         .tv_nsec = 250000000L,
@@ -362,8 +353,9 @@ void arch_reapChild(run_t* run)
             if (run->backtrace) {
                 unlink(crashReport);
             } else {
-                LOG_W("Un-handled ASan report due to compiler-rt internal error - retry with '%s' "
-                      "(%s)",
+                LOG_W(
+                    "Un-handled ASan report due to compiler-rt internal error - retry with '%s' "
+                    "(%s)",
                     crashReport, run->fileName);
 
                 /* Try to parse report file */
@@ -376,8 +368,7 @@ void arch_reapChild(run_t* run)
     sancov_Analyze(run);
 }
 
-bool arch_archInit(honggfuzz_t* hfuzz)
-{
+bool arch_archInit(honggfuzz_t* hfuzz) {
     /* Make %'d work */
     setlocale(LC_NUMERIC, "en_US");
 
@@ -403,10 +394,11 @@ bool arch_archInit(honggfuzz_t* hfuzz)
             break;
         }
         if ((major < 2) || (major == 2 && minor < 23)) {
-            LOG_W("Your glibc version:'%s' will most likely result in malloc()-related "
-                  "deadlocks. Min. version 2.24 (Or, Ubuntu's 2.23-0ubuntu6) suggested. "
-                  "See https://sourceware.org/bugzilla/show_bug.cgi?id=19431 for explanation. "
-                  "Using clone() instead of fork()",
+            LOG_W(
+                "Your glibc version:'%s' will most likely result in malloc()-related "
+                "deadlocks. Min. version 2.24 (Or, Ubuntu's 2.23-0ubuntu6) suggested. "
+                "See https://sourceware.org/bugzilla/show_bug.cgi?id=19431 for explanation. "
+                "Using clone() instead of fork()",
                 gversion);
             break;
         }
@@ -434,8 +426,8 @@ bool arch_archInit(honggfuzz_t* hfuzz)
          *  3) Intel's PT and new Intel BTS format require kernel >= 4.1
          */
         unsigned long checkMajor = 3, checkMinor = 7;
-        if ((hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE)
-            || (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK)) {
+        if ((hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) ||
+            (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK)) {
             checkMajor = 4;
             checkMinor = 1;
         }
@@ -486,7 +478,7 @@ bool arch_archInit(honggfuzz_t* hfuzz)
 
     /* If remote pid, resolve command using procfs */
     if (hfuzz->linux.pid > 0) {
-        char procCmd[PATH_MAX] = { 0 };
+        char procCmd[PATH_MAX] = {0};
         snprintf(procCmd, sizeof(procCmd), "/proc/%d/cmdline", hfuzz->linux.pid);
 
         hfuzz->linux.pidCmd = malloc(_HF_PROC_CMDLINE_SZ * sizeof(char));
@@ -495,8 +487,8 @@ bool arch_archInit(honggfuzz_t* hfuzz)
             return false;
         }
 
-        ssize_t sz = files_readFileToBufMax(
-            procCmd, (uint8_t*)hfuzz->linux.pidCmd, _HF_PROC_CMDLINE_SZ - 1);
+        ssize_t sz =
+            files_readFileToBufMax(procCmd, (uint8_t*)hfuzz->linux.pidCmd, _HF_PROC_CMDLINE_SZ - 1);
         if (sz < 1) {
             LOG_E("Couldn't read '%s'", procCmd);
             free(hfuzz->linux.pidCmd);
@@ -532,8 +524,7 @@ bool arch_archInit(honggfuzz_t* hfuzz)
     return true;
 }
 
-bool arch_archThreadInit(run_t* run)
-{
+bool arch_archThreadInit(run_t* run) {
     run->linux.perfMmapBuf = NULL;
     run->linux.perfMmapAux = NULL;
     run->linux.cpuInstrFd = -1;

@@ -54,16 +54,14 @@
 #define _HF_MONETARY_MOD ""
 #endif
 
-static void display_put(const char* fmt, ...)
-{
+static void display_put(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     vdprintf(logFd(), fmt, args);
     va_end(args);
 }
 
-static void display_printKMG(uint64_t val)
-{
+static void display_printKMG(uint64_t val) {
     if (val >= 1000000000UL) {
         display_put(" [%.2lfG]", (double)val / 1000000000.0);
     } else if (val >= 1000000UL) {
@@ -73,8 +71,7 @@ static void display_printKMG(uint64_t val)
     }
 }
 
-static unsigned getCpuUse(long num_cpu)
-{
+static unsigned getCpuUse(long num_cpu) {
     static uint64_t prevIdleT = 0UL;
 
     FILE* f = fopen("/proc/stat", "re");
@@ -83,9 +80,8 @@ static unsigned getCpuUse(long num_cpu)
     }
     defer { fclose(f); };
     uint64_t userT, niceT, systemT, idleT;
-    if (fscanf(
-            f, "cpu  %" PRIu64 "%" PRIu64 "%" PRIu64 "%" PRIu64, &userT, &niceT, &systemT, &idleT)
-        != 4) {
+    if (fscanf(f, "cpu  %" PRIu64 "%" PRIu64 "%" PRIu64 "%" PRIu64, &userT, &niceT, &systemT,
+            &idleT) != 4) {
         LOG_W("fscanf('/proc/stat') != 4");
         return 0;
     }
@@ -100,8 +96,7 @@ static unsigned getCpuUse(long num_cpu)
     return cpuUse * 100 / sysconf(_SC_CLK_TCK);
 }
 
-static void display_displayLocked(honggfuzz_t* hfuzz)
-{
+static void display_displayLocked(honggfuzz_t* hfuzz) {
     static bool firstDisplay = true;
     if (firstDisplay) {
         display_put(ESC_CLEAR_ALL);
@@ -161,18 +156,18 @@ static void display_displayLocked(honggfuzz_t* hfuzz)
             hfuzz->mutationsMax, exeProgress);
     }
     switch (ATOMIC_GET(hfuzz->state)) {
-    case _HF_STATE_STATIC:
-        display_put("\n       Phase : " ESC_BOLD "Main" ESC_RESET);
-        break;
-    case _HF_STATE_DYNAMIC_PRE:
-        display_put("\n       Phase : " ESC_BOLD "Dynamic Dry Run (1/2)" ESC_RESET);
-        break;
-    case _HF_STATE_DYNAMIC_MAIN:
-        display_put("\n       Phase : " ESC_BOLD "Dynamic Main (2/2)" ESC_RESET);
-        break;
-    default:
-        display_put("\n       Phase : " ESC_BOLD "Unknown" ESC_RESET);
-        break;
+        case _HF_STATE_STATIC:
+            display_put("\n       Phase : " ESC_BOLD "Main" ESC_RESET);
+            break;
+        case _HF_STATE_DYNAMIC_PRE:
+            display_put("\n       Phase : " ESC_BOLD "Dynamic Dry Run (1/2)" ESC_RESET);
+            break;
+        case _HF_STATE_DYNAMIC_MAIN:
+            display_put("\n       Phase : " ESC_BOLD "Dynamic Main (2/2)" ESC_RESET);
+            break;
+        default:
+            display_put("\n       Phase : " ESC_BOLD "Unknown" ESC_RESET);
+            break;
     }
 
     display_put("\n    Run Time : " ESC_BOLD "%s" ESC_RESET, time_elapsed_str);
@@ -208,13 +203,15 @@ static void display_displayLocked(honggfuzz_t* hfuzz)
                 ", CPU%: " ESC_BOLD "%u" ESC_RESET "%% (" ESC_BOLD "%u" ESC_RESET "%%/CPU)\n",
         hfuzz->threads.threadsMax, num_cpu, cpuUse, cpuUse / num_cpu);
 
-    display_put("       Speed : " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET "/sec"
+    display_put("       Speed : " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET
+                "/sec"
                 " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n",
         exec_per_sec, elapsed_second ? (curr_exec_cnt / elapsed_second) : 0);
 
     uint64_t crashesCnt = ATOMIC_GET(hfuzz->crashesCnt);
     /* colored the crash count as red when exist crash */
-    display_put("     Crashes : " ESC_BOLD "%s"
+    display_put("     Crashes : " ESC_BOLD
+                "%s"
                 "%zu" ESC_RESET " (unique: %s" ESC_BOLD "%zu" ESC_RESET ", blacklist: " ESC_BOLD
                 "%zu" ESC_RESET ", verified: " ESC_BOLD "%zu" ESC_RESET ")\n",
         crashesCnt > 0 ? ESC_RED : "", hfuzz->crashesCnt, crashesCnt > 0 ? ESC_RED : "",
@@ -275,8 +272,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz)
     display_put(ESC_SCROLL(14, 999) ESC_NAV(999, 1));
 }
 
-extern void display_display(honggfuzz_t* hfuzz)
-{
+extern void display_display(honggfuzz_t* hfuzz) {
     if (logIsTTY() == false) {
         return;
     }
@@ -285,8 +281,7 @@ extern void display_display(honggfuzz_t* hfuzz)
 
 extern void display_fini(void) { display_put(ESC_SCROLL(1, 999) ESC_NAV(999, 1)); }
 
-extern void display_init(void)
-{
+extern void display_init(void) {
     atexit(display_fini);
     display_put(ESC_NAV(999, 1));
 }

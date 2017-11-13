@@ -34,8 +34,7 @@ static feedback_t bbMapFb;
 feedback_t* feedback = &bbMapFb;
 uint32_t my_thread_no = 0;
 
-__attribute__((constructor)) static void mapBB(void)
-{
+__attribute__((constructor)) static void mapBB(void) {
     char* my_thread_no_str = getenv(_HF_THREAD_NO_ENV);
     if (my_thread_no_str == NULL) {
         return;
@@ -53,9 +52,8 @@ __attribute__((constructor)) static void mapBB(void)
         LOG_F(
             "st.size != sizeof(feedback_t) (%zu != %zu)\n", (size_t)st.st_size, sizeof(feedback_t));
     }
-    if ((feedback
-            = mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED, _HF_BITMAP_FD, 0))
-        == MAP_FAILED) {
+    if ((feedback = mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED,
+             _HF_BITMAP_FD, 0)) == MAP_FAILED) {
         LOG_F("mmap: %s\n", strerror(errno));
     }
     feedback->pidFeedbackPc[my_thread_no] = 0U;
@@ -66,26 +64,23 @@ __attribute__((constructor)) static void mapBB(void)
 /*
  * -finstrument-functions
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __cyg_profile_func_enter(void* func, void* caller)
-{
-    register size_t pos
-        = (((uintptr_t)func << 12) | ((uintptr_t)caller & 0xFFF)) & _HF_PERF_BITMAP_BITSZ_MASK;
+ATTRIBUTE_X86_REQUIRE_SSE42 void __cyg_profile_func_enter(void* func, void* caller) {
+    register size_t pos =
+        (((uintptr_t)func << 12) | ((uintptr_t)caller & 0xFFF)) & _HF_PERF_BITMAP_BITSZ_MASK;
     register uint8_t prev = ATOMIC_BTS(feedback->bbMapPc, pos);
     if (!prev) {
         ATOMIC_PRE_INC_RELAXED(feedback->pidFeedbackPc[my_thread_no]);
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void __cyg_profile_func_exit(void* func UNUSED, void* caller UNUSED)
-{
+ATTRIBUTE_X86_REQUIRE_SSE42 void __cyg_profile_func_exit(void* func UNUSED, void* caller UNUSED) {
     return;
 }
 
 /*
  * -fsanitize-coverage=trace-pc
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc(void)
-{
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc(void) {
     register uintptr_t ret = (uintptr_t)__builtin_return_address(0) & _HF_PERF_BITMAP_BITSZ_MASK;
     register uint8_t prev = ATOMIC_BTS(feedback->bbMapPc, ret);
     if (!prev) {
@@ -96,8 +91,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc(void)
 /*
  * -fsanitize-coverage=trace-cmp
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Arg2)
-{
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Arg2) {
     uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
     uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
@@ -107,8 +101,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2)
-{
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2) {
     uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
     uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
@@ -118,8 +111,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint1
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2)
-{
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
     uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
     uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
@@ -129,8 +121,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint3
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2)
-{
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
     uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcountll(Arg1 ^ Arg2));
     uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
@@ -144,8 +135,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint6
  * Cases[0] is number of comparison entries
  * Cases[1] is length of Val in bits
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t* Cases)
-{
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t* Cases) {
     for (uint64_t i = 0; i < Cases[0]; i++) {
         uintptr_t pos = ((uintptr_t)__builtin_return_address(0) + i) % _HF_PERF_BITMAP_SIZE_16M;
         uint8_t v = (uint8_t)Cases[1] - __builtin_popcountll(Val ^ Cases[i + 2]);
@@ -158,30 +148,28 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_switch(uint64_t Val, uint
 }
 
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp(
-    uint64_t SizeAndType, uint64_t Arg1, uint64_t Arg2)
-{
+    uint64_t SizeAndType, uint64_t Arg1, uint64_t Arg2) {
     uint64_t CmpSize = (SizeAndType >> 32) / 8;
     switch (CmpSize) {
-    case (sizeof(uint8_t)):
-        __sanitizer_cov_trace_cmp1(Arg1, Arg2);
-        return;
-    case (sizeof(uint16_t)):
-        __sanitizer_cov_trace_cmp2(Arg1, Arg2);
-        return;
-    case (sizeof(uint32_t)):
-        __sanitizer_cov_trace_cmp4(Arg1, Arg2);
-        return;
-    case (sizeof(uint64_t)):
-        __sanitizer_cov_trace_cmp8(Arg1, Arg2);
-        return;
+        case (sizeof(uint8_t)):
+            __sanitizer_cov_trace_cmp1(Arg1, Arg2);
+            return;
+        case (sizeof(uint16_t)):
+            __sanitizer_cov_trace_cmp2(Arg1, Arg2);
+            return;
+        case (sizeof(uint32_t)):
+            __sanitizer_cov_trace_cmp4(Arg1, Arg2);
+            return;
+        case (sizeof(uint64_t)):
+            __sanitizer_cov_trace_cmp8(Arg1, Arg2);
+            return;
     }
 }
 
 /*
  * -fsanitize-coverage=indirect-calls
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(void* callee)
-{
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(void* callee) {
     register size_t pos1 = (uintptr_t)__builtin_return_address(0) << 12;
     register size_t pos2 = (uintptr_t)callee & 0xFFF;
     register size_t pos = (pos1 | pos2) & _HF_PERF_BITMAP_BITSZ_MASK;
@@ -193,8 +181,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(void* callee)
 }
 
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_indir_call16(
-    void* callee, void* callee_cache16[] UNUSED)
-{
+    void* callee, void* callee_cache16[] UNUSED) {
     register size_t pos1 = (uintptr_t)__builtin_return_address(0) << 12;
     register size_t pos2 = (uintptr_t)callee & 0xFFF;
     register size_t pos = (pos1 | pos2) & _HF_PERF_BITMAP_BITSZ_MASK;
@@ -209,8 +196,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_indir_call16(
  * -fsanitize-coverage=trace-pc-guard
  */
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
-    uint32_t* start, uint32_t* stop)
-{
+    uint32_t* start, uint32_t* stop) {
     static bool inited = false;
     if (inited == true) {
         return;
@@ -228,8 +214,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard(uint32_t* guard)
-{
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
     if (*guard == 0U) {
         return;
     }
@@ -242,8 +227,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard(uint32_t* guard)
 
 void instrumentCmpMap(void* addr, unsigned int n) { instrumentUpdateCmpMap(addr, n); }
 
-void instrumentUpdateCmpMap(void* addr, unsigned int n)
-{
+void instrumentUpdateCmpMap(void* addr, unsigned int n) {
     uintptr_t pos = (uintptr_t)addr % _HF_PERF_BITMAP_SIZE_16M;
     uint8_t v = n > 254 ? 254 : n;
     uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);

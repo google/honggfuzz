@@ -36,18 +36,15 @@
 static int reportFD = -1;
 
 #if defined(_HF_ARCH_LINUX)
-static void report_printdynFileMethod(run_t* run)
-{
+static void report_printdynFileMethod(run_t* run) {
     dprintf(reportFD, " dynFileMethod: ");
     if (run->global->dynFileMethod == 0)
         dprintf(reportFD, "NONE\n");
     else {
-        if (run->global->dynFileMethod & _HF_DYNFILE_INSTR_COUNT)
-            dprintf(reportFD, "INSTR_COUNT ");
+        if (run->global->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) dprintf(reportFD, "INSTR_COUNT ");
         if (run->global->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT)
             dprintf(reportFD, "BRANCH_COUNT ");
-        if (run->global->dynFileMethod & _HF_DYNFILE_BTS_EDGE)
-            dprintf(reportFD, "BTS_EDGE_COUNT ");
+        if (run->global->dynFileMethod & _HF_DYNFILE_BTS_EDGE) dprintf(reportFD, "BTS_EDGE_COUNT ");
         if (run->global->dynFileMethod & _HF_DYNFILE_IPT_BLOCK)
             dprintf(reportFD, "IPT_BLOCK_COUNT ");
 
@@ -56,8 +53,7 @@ static void report_printdynFileMethod(run_t* run)
 }
 #endif
 
-static void report_printTargetCmd(run_t* run)
-{
+static void report_printTargetCmd(run_t* run) {
     dprintf(reportFD, " fuzzTarget   : ");
     for (int x = 0; run->global->cmdline[x]; x++) {
         dprintf(reportFD, "%s ", run->global->cmdline[x]);
@@ -65,8 +61,7 @@ static void report_printTargetCmd(run_t* run)
     dprintf(reportFD, "\n");
 }
 
-void report_Report(run_t* run)
-{
+void report_Report(run_t* run) {
     if (run->report == NULL || run->report[0] == '\0') {
         return;
     }
@@ -101,7 +96,8 @@ void report_Report(run_t* run)
         " fuzzStdin       : %s\n"
         " timeout         : %ld (sec)\n"
         " ignoreAddr      : %p\n"
-        " memoryLimit     : %" PRIu64 " (MiB)\n"
+        " memoryLimit     : %" PRIu64
+        " (MiB)\n"
         " targetPid       : %d\n"
         " targetCmd       : %s\n"
         " wordlistFile    : %s\n",

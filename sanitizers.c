@@ -71,9 +71,9 @@
  *Sanitizer specific flags (notice that if enabled 'abort_on_error' has priority
  * over exitcode')
  */
-#define kASAN_COMMON_OPTS                                                                          \
-    "allow_user_segv_handler=1:"                                                                   \
-    "handle_segv=0:"                                                                               \
+#define kASAN_COMMON_OPTS        \
+    "allow_user_segv_handler=1:" \
+    "handle_segv=0:"             \
     "allocator_may_return_null=1:" kSAN_COMMON ":exitcode=" STR(HF_SAN_EXIT_CODE)
 /* Platform specific flags */
 #if defined(__ANDROID__)
@@ -90,14 +90,14 @@
 #define kUBSAN_OPTS kSAN_COMMON ":exitcode=" STR(HF_SAN_EXIT_CODE)
 
 /* --{ MSan }-- */
-#define kMSAN_OPTS                                                                                 \
+#define kMSAN_OPTS \
     kSAN_COMMON ":exit_code=" STR(HF_SAN_EXIT_CODE) ":"                                            \
                                                     "wrap_signals=0:print_stats=1"
 
 /* If no sanitzer support was requested, simply make it use abort() on errors */
-#define kSAN_REGULAR                                                                               \
-    "abort_on_error=1:handle_segv=0:handle_sigbus=0:handle_abort=0:"                               \
-    "handle_sigill=0:handle_sigfpe=0:allocator_may_return_null=1:"                                 \
+#define kSAN_REGULAR                                                 \
+    "abort_on_error=1:handle_segv=0:handle_sigbus=0:handle_abort=0:" \
+    "handle_sigill=0:handle_sigfpe=0:allocator_may_return_null=1:"   \
     "symbolize=1:detect_leaks=0:disable_coredump=0:log_path=stderr"
 
 /*
@@ -110,8 +110,7 @@
  */
 #define kSAN_COV_OPTS "coverage=1:coverage_direct=1"
 
-static bool sanitizers_Regular(void)
-{
+static bool sanitizers_Regular(void) {
     if (setenv("ASAN_OPTIONS", kSAN_REGULAR, 1) == -1) {
         PLOG_E("setenv(ASAN_OPTIONS=%s", kSAN_REGULAR);
         return false;
@@ -127,8 +126,7 @@ static bool sanitizers_Regular(void)
     return true;
 }
 
-bool sanitizers_Init(honggfuzz_t* hfuzz)
-{
+bool sanitizers_Init(honggfuzz_t* hfuzz) {
     if (hfuzz->linux.pid > 0) {
         return true;
     }
@@ -141,8 +139,8 @@ bool sanitizers_Init(honggfuzz_t* hfuzz)
     size_t flagsSz = 0;
 
     /* Larger constant combination + 2 dynamic paths */
-    size_t bufSz = sizeof(kASAN_OPTS) + 1 + sizeof(kABORT_ENABLED) + 1 + sizeof(kSANLOGDIR)
-        + PATH_MAX + 1 + sizeof(kSANCOVDIR) + PATH_MAX + 1;
+    size_t bufSz = sizeof(kASAN_OPTS) + 1 + sizeof(kABORT_ENABLED) + 1 + sizeof(kSANLOGDIR) +
+                   PATH_MAX + 1 + sizeof(kSANCOVDIR) + PATH_MAX + 1;
     char* san_opts = util_Calloc(bufSz);
     defer { free(san_opts); };
 
@@ -201,8 +199,7 @@ bool sanitizers_Init(honggfuzz_t* hfuzz)
     return true;
 }
 
-bool sanitizers_prepareExecve(run_t* run)
-{
+bool sanitizers_prepareExecve(run_t* run) {
     /* Address Sanitizer (ASan) */
     if (run->global->sanOpts.asanOpts) {
         if (setenv("ASAN_OPTIONS", run->global->sanOpts.asanOpts, 1) == -1) {

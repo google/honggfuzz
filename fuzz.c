@@ -59,23 +59,22 @@
 
 static pthread_t fuzz_mainThread;
 
-static void fuzz_getFileName(run_t* run)
-{
+static void fuzz_getFileName(run_t* run) {
     snprintf(run->fileName, PATH_MAX, "%s/honggfuzz.input.%" PRIu32 ".%s.%s", run->global->workDir,
         run->fuzzNo, basename(run->global->cmdline[0]), run->global->fileExtn);
 }
 
-static bool fuzz_prepareFileDynamically(run_t* run)
-{
+static bool fuzz_prepareFileDynamically(run_t* run) {
     run->origFileName = "[DYNAMIC]";
 
     {
         MX_SCOPED_RWLOCK_READ(&run->global->dynfileq_mutex);
 
         if (run->global->dynfileqCnt == 0) {
-            LOG_F("The dynamic file corpus is empty. Apparently, the initial fuzzing of the "
-                  "provided file corpus (-f) has not produced any follow-up files with positive "
-                  "coverage and/or CPU counters");
+            LOG_F(
+                "The dynamic file corpus is empty. Apparently, the initial fuzzing of the "
+                "provided file corpus (-f) has not produced any follow-up files with positive "
+                "coverage and/or CPU counters");
         }
 
         if (run->dynfileqCurrent == NULL) {
@@ -94,10 +93,9 @@ static bool fuzz_prepareFileDynamically(run_t* run)
 
     mangle_mangleContent(run);
 
-    if (run->global->persistent == false
-        && files_writeBufToFile(run->fileName, run->dynamicFile, run->dynamicFileSz,
-               O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC)
-            == false) {
+    if (run->global->persistent == false &&
+        files_writeBufToFile(run->fileName, run->dynamicFile, run->dynamicFileSz,
+            O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC) == false) {
         LOG_E("Couldn't write buffer to file '%s'", run->fileName);
         return false;
     }
@@ -105,8 +103,7 @@ static bool fuzz_prepareFileDynamically(run_t* run)
     return true;
 }
 
-static bool fuzz_prepareFile(run_t* run, bool rewind)
-{
+static bool fuzz_prepareFile(run_t* run, bool rewind) {
     char fname[PATH_MAX];
     if (input_getNext(run, fname, rewind) == false) {
         return false;
@@ -122,10 +119,9 @@ static bool fuzz_prepareFile(run_t* run, bool rewind)
 
     mangle_mangleContent(run);
 
-    if (run->global->persistent == false
-        && files_writeBufToFile(run->fileName, run->dynamicFile, run->dynamicFileSz,
-               O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC)
-            == false) {
+    if (run->global->persistent == false &&
+        files_writeBufToFile(run->fileName, run->dynamicFile, run->dynamicFileSz,
+            O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC) == false) {
         LOG_E("Couldn't write buffer to file '%s'", run->fileName);
         return false;
     }
@@ -133,8 +129,7 @@ static bool fuzz_prepareFile(run_t* run, bool rewind)
     return true;
 }
 
-static bool fuzz_prepareFileExternally(run_t* run)
-{
+static bool fuzz_prepareFileExternally(run_t* run) {
     char fname[PATH_MAX];
     if (input_getNext(run, fname, true /* rewind */)) {
         run->origFileName = files_basename(fname);
@@ -154,7 +149,7 @@ static bool fuzz_prepareFileExternally(run_t* run)
 
     LOG_D("Created '%s' as an input file", run->fileName);
 
-    const char* const argv[] = { run->global->externalCommand, run->fileName, NULL };
+    const char* const argv[] = {run->global->externalCommand, run->fileName, NULL};
     if (subproc_System(run, argv) != 0) {
         LOG_E("Subprocess '%s' returned abnormally", run->global->externalCommand);
         return false;
@@ -175,18 +170,16 @@ static bool fuzz_prepareFileExternally(run_t* run)
     return true;
 }
 
-static bool fuzz_postProcessFile(run_t* run)
-{
+static bool fuzz_postProcessFile(run_t* run) {
     if (run->global->persistent) {
         if (files_writeBufToFile(run->fileName, run->dynamicFile, run->dynamicFileSz,
-                O_CREAT | O_TRUNC | O_WRONLY | O_CLOEXEC)
-            == false) {
+                O_CREAT | O_TRUNC | O_WRONLY | O_CLOEXEC) == false) {
             LOG_E("Couldn't write file to '%s'", run->fileName);
             return false;
         }
     }
 
-    const char* const argv[] = { run->global->postExternalCommand, run->fileName, NULL };
+    const char* const argv[] = {run->global->postExternalCommand, run->fileName, NULL};
     if (subproc_System(run, argv) != 0) {
         LOG_E("Subprocess '%s' returned abnormally", run->global->postExternalCommand);
         return false;
@@ -205,8 +198,7 @@ static bool fuzz_postProcessFile(run_t* run)
 
 static fuzzState_t fuzz_getState(honggfuzz_t* hfuzz) { return ATOMIC_GET(hfuzz->state); }
 
-static void fuzz_setState(honggfuzz_t* hfuzz, fuzzState_t state)
-{
+static void fuzz_setState(honggfuzz_t* hfuzz, fuzzState_t state) {
     /* All threads must indicate willingness to switch to _HF_STATE_DYNAMIC_MAIN */
     if (state == _HF_STATE_DYNAMIC_MAIN) {
         static size_t cnt = 0;
@@ -227,25 +219,24 @@ static void fuzz_setState(honggfuzz_t* hfuzz, fuzzState_t state)
     }
 
     switch (state) {
-    case _HF_STATE_DYNAMIC_PRE:
-        LOG_I("Entering phase 1/2: Dry Run");
-        break;
-    case _HF_STATE_DYNAMIC_MAIN:
-        LOG_I("Entering phase 2/2: Main");
-        break;
-    case _HF_STATE_STATIC:
-        LOG_I("Entering phase: Static");
-        break;
-    default:
-        LOG_I("Entering unknown phase: %d", state);
-        break;
+        case _HF_STATE_DYNAMIC_PRE:
+            LOG_I("Entering phase 1/2: Dry Run");
+            break;
+        case _HF_STATE_DYNAMIC_MAIN:
+            LOG_I("Entering phase 2/2: Main");
+            break;
+        case _HF_STATE_STATIC:
+            LOG_I("Entering phase: Static");
+            break;
+        default:
+            LOG_I("Entering unknown phase: %d", state);
+            break;
     }
 
     ATOMIC_SET(hfuzz->state, state);
 }
 
-static bool fuzz_runVerifier(run_t* crashedFuzzer)
-{
+static bool fuzz_runVerifier(run_t* crashedFuzzer) {
     int crashFd = -1;
     uint8_t* crashBuf = NULL;
     off_t crashFileSz = 0;
@@ -255,8 +246,7 @@ static bool fuzz_runVerifier(run_t* crashedFuzzer)
         LOG_E("Couldn't open and map '%s' in R/O mode", crashedFuzzer->crashFileName);
         return false;
     }
-    defer
-    {
+    defer {
         munmap(crashBuf, crashFileSz);
         close(crashFd);
     };
@@ -264,12 +254,12 @@ static bool fuzz_runVerifier(run_t* crashedFuzzer)
     LOG_I("Launching verifier for %" PRIx64 " hash", crashedFuzzer->backtrace);
     for (int i = 0; i < _HF_VERIFIER_ITER; i++) {
         run_t vFuzzer = {
-			.global = crashedFuzzer->global,
+            .global = crashedFuzzer->global,
             .pid = 0,
             .persistentPid = 0,
             .state = fuzz_getState(crashedFuzzer->global),
             .timeStartedMillis = util_timeNowMillis(),
-            .crashFileName = { 0 },
+            .crashFileName = {0},
             .pc = 0ULL,
             .backtrace = 0ULL,
             .access = 0ULL,
@@ -277,32 +267,35 @@ static bool fuzz_runVerifier(run_t* crashedFuzzer)
             .dynfileqCurrent = NULL,
             .dynamicFileSz = 0,
             .dynamicFile = NULL,
-            .sanCovCnts = {
-                .hitBBCnt = 0ULL,
-                .totalBBCnt = 0ULL,
-                .dsoCnt = 0ULL,
-                .iDsoCnt = 0ULL,
-                .newBBCnt = 0ULL,
-                .crashesCnt = 0ULL,
-            },
-            .report = { '\0' },
+            .sanCovCnts =
+                {
+                    .hitBBCnt = 0ULL,
+                    .totalBBCnt = 0ULL,
+                    .dsoCnt = 0ULL,
+                    .iDsoCnt = 0ULL,
+                    .newBBCnt = 0ULL,
+                    .crashesCnt = 0ULL,
+                },
+            .report = {'\0'},
             .mainWorker = false,
             .fuzzNo = crashedFuzzer->fuzzNo,
             .persistentSock = -1,
             .tmOutSignaled = false,
 
-            .linux = {
-                .hwCnts = {
-                    .cpuInstrCnt = 0ULL,
-                    .cpuBranchCnt = 0ULL,
-                    .bbCnt = 0ULL,
-                    .newBBCnt = 0ULL,
-                    .softCntPc = 0ULL,
-                    .softCntEdge = 0ULL,
-                    .softCntCmp = 0ULL,
+            .linux =
+                {
+                    .hwCnts =
+                        {
+                            .cpuInstrCnt = 0ULL,
+                            .cpuBranchCnt = 0ULL,
+                            .bbCnt = 0ULL,
+                            .newBBCnt = 0ULL,
+                            .softCntPc = 0ULL,
+                            .softCntEdge = 0ULL,
+                            .softCntCmp = 0ULL,
+                        },
+                    .attachedPid = 0,
                 },
-                .attachedPid = 0,
-            },
         };
 
         if (arch_archThreadInit(&vFuzzer) == false) {
@@ -310,9 +303,8 @@ static bool fuzz_runVerifier(run_t* crashedFuzzer)
         }
 
         fuzz_getFileName(&vFuzzer);
-        if (files_writeBufToFile(
-                vFuzzer.fileName, crashBuf, crashFileSz, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC)
-            == false) {
+        if (files_writeBufToFile(vFuzzer.fileName, crashBuf, crashFileSz,
+                O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC) == false) {
             LOG_E("Couldn't write buffer to file '%s'", vFuzzer.fileName);
             return false;
         }
@@ -332,7 +324,7 @@ static bool fuzz_runVerifier(run_t* crashedFuzzer)
     }
 
     /* Workspace is inherited, just append a extra suffix */
-    char verFile[PATH_MAX] = { 0 };
+    char verFile[PATH_MAX] = {0};
     snprintf(verFile, sizeof(verFile), "%s.verified", crashedFuzzer->crashFileName);
 
     /* Copy file with new suffix & remove original copy */
@@ -354,8 +346,7 @@ static bool fuzz_runVerifier(run_t* crashedFuzzer)
     return true;
 }
 
-static void fuzz_addFileToFileQ(run_t* run)
-{
+static void fuzz_addFileToFileQ(run_t* run) {
     struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t));
     dynfile->size = run->dynamicFileSz;
     dynfile->data = (uint8_t*)util_Malloc(run->dynamicFileSz);
@@ -386,14 +377,12 @@ static void fuzz_addFileToFileQ(run_t* run)
     LOG_D("Adding file '%s' to the corpus directory", fname);
 
     if (files_writeBufToFile(fname, run->dynamicFile, run->dynamicFileSz,
-            O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC)
-        == false) {
+            O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC) == false) {
         LOG_W("Couldn't write buffer to file '%s'", fname);
     }
 }
 
-static void fuzz_perfFeedback(run_t* run)
-{
+static void fuzz_perfFeedback(run_t* run) {
     if (run->global->skipFeedbackOnTimeout && run->tmOutSignaled) {
         return;
     }
@@ -425,9 +414,8 @@ static void fuzz_perfFeedback(run_t* run)
      * Coverage is the primary counter, the rest is secondary, and taken into consideration only
      * if the coverage counter has not been changed
      */
-    if (run->linux.hwCnts.newBBCnt > 0 || softCntPc > 0 || softCntEdge > 0 || softCntCmp > 0
-        || diff0 < 0 || diff1 < 0) {
-
+    if (run->linux.hwCnts.newBBCnt > 0 || softCntPc > 0 || softCntEdge > 0 || softCntCmp > 0 ||
+        diff0 < 0 || diff1 < 0) {
         if (diff0 < 0) {
             run->global->linux.hwCnts.cpuInstrCnt = run->linux.hwCnts.cpuInstrCnt;
         }
@@ -452,8 +440,7 @@ static void fuzz_perfFeedback(run_t* run)
     }
 }
 
-static void fuzz_sanCovFeedback(run_t* run)
-{
+static void fuzz_sanCovFeedback(run_t* run) {
     if (run->global->skipFeedbackOnTimeout && run->tmOutSignaled) {
         return;
     }
@@ -479,8 +466,8 @@ static void fuzz_sanCovFeedback(run_t* run)
      * based on current absolute elitism (only one mutated seed is promoted).
      */
 
-    bool newCov = (run->sanCovCnts.newBBCnt > 0
-        || run->global->sanCovCnts.iDsoCnt < run->sanCovCnts.iDsoCnt);
+    bool newCov =
+        (run->sanCovCnts.newBBCnt > 0 || run->global->sanCovCnts.iDsoCnt < run->sanCovCnts.iDsoCnt);
 
     if (newCov || (diff0 < 0 || diff1 < 0)) {
         LOG_I("SanCov Update: fsize:%zu, newBBs:%" PRIu64 ", (Cur,New): %" PRIu64 "/%" PRIu64
@@ -506,8 +493,7 @@ static void fuzz_sanCovFeedback(run_t* run)
     }
 }
 
-static void fuzz_fuzzLoop(run_t* run)
-{
+static void fuzz_fuzzLoop(run_t* run) {
     run->pid = 0;
     run->timeStartedMillis = util_timeNowMillis();
     run->state = fuzz_getState(run->global);
@@ -603,8 +589,7 @@ static void fuzz_fuzzLoop(run_t* run)
     report_Report(run);
 }
 
-static void* fuzz_threadNew(void* arg)
-{
+static void* fuzz_threadNew(void* arg) {
     honggfuzz_t* hfuzz = (honggfuzz_t*)arg;
     unsigned int fuzzNo = ATOMIC_POST_INC(hfuzz->threads.threadsActiveCnt);
     LOG_I("Launched new fuzzing thread, no. #%" PRId32, fuzzNo);
@@ -638,8 +623,8 @@ static void* fuzz_threadNew(void* arg)
             }
         }
         /* Check for max iterations limit if set */
-        else if ((ATOMIC_POST_INC(run.global->mutationsCnt) >= run.global->mutationsMax)
-            && run.global->mutationsMax) {
+        else if ((ATOMIC_POST_INC(run.global->mutationsCnt) >= run.global->mutationsMax) &&
+                 run.global->mutationsMax) {
             ATOMIC_POST_INC(run.global->threads.threadsFinished);
             break;
         }
@@ -663,8 +648,7 @@ static void* fuzz_threadNew(void* arg)
     return NULL;
 }
 
-static void fuzz_runThread(honggfuzz_t* hfuzz, pthread_t* thread, void* (*thread_func)(void*))
-{
+static void fuzz_runThread(honggfuzz_t* hfuzz, pthread_t* thread, void* (*thread_func)(void*)) {
     pthread_attr_t attr;
 
     pthread_attr_init(&attr);
@@ -681,8 +665,7 @@ static void fuzz_runThread(honggfuzz_t* hfuzz, pthread_t* thread, void* (*thread
     return;
 }
 
-void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads)
-{
+void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
     fuzz_mainThread = pthread_self();
 
     if (!arch_archInit(hfuzz)) {
@@ -706,8 +689,7 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads)
     }
 }
 
-void fuzz_threadsStop(honggfuzz_t* hfuzz, pthread_t* threads)
-{
+void fuzz_threadsStop(honggfuzz_t* hfuzz, pthread_t* threads) {
     for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
         void* retval;
         if (pthread_join(threads[i], &retval) != 0) {

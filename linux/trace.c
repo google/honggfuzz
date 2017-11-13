@@ -66,8 +66,8 @@
 #define REG_TYPE uint32_t
 #define REG_PM PRIx32
 #define REG_PD "0x%08"
-#elif defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__) || defined(__mips__)   \
-    || defined(__mips64__)
+#elif defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__) || \
+    defined(__mips__) || defined(__mips64__)
 #define REG_TYPE uint64_t
 #define REG_PM PRIx64
 #define REG_PD "0x%016"
@@ -287,8 +287,7 @@ static struct {
 extern const char* sys_sigabbrev[];
 
 static __thread char arch_signame[32];
-static const char* arch_sigName(int signo)
-{
+static const char* arch_sigName(int signo) {
     if (signo < 0 || signo > _NSIG) {
         snprintf(arch_signame, sizeof(arch_signame), "UNKNOWN-%d", signo);
         return arch_signame;
@@ -309,8 +308,7 @@ static const char* arch_sigName(int signo)
 #endif /* __ANDROID__ */
 }
 
-static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, REG_TYPE pc)
-{
+static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, REG_TYPE pc) {
     /*
      * Let's try process_vm_readv first
      */
@@ -350,8 +348,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, REG_TYPE pc)
     return memsz;
 }
 
-static size_t arch_getPC(pid_t pid, REG_TYPE* pc, REG_TYPE* status_reg UNUSED)
-{
+static size_t arch_getPC(pid_t pid, REG_TYPE* pc, REG_TYPE* status_reg UNUSED) {
 /*
  * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
  * the correct register values if struct size is bigger than expected. As such the
@@ -468,8 +465,7 @@ static size_t arch_getPC(pid_t pid, REG_TYPE* pc, REG_TYPE* status_reg UNUSED)
     return 0;
 }
 
-static void arch_getInstrStr(pid_t pid, REG_TYPE* pc, char* instr)
-{
+static void arch_getInstrStr(pid_t pid, REG_TYPE* pc, char* instr) {
     /*
      * We need a value aligned to 8
      * which is sizeof(long) on 64bit CPU archs (on most of them, I hope;)
@@ -540,14 +536,13 @@ static void arch_getInstrStr(pid_t pid, REG_TYPE* pc, char* instr)
     return;
 }
 
-static void arch_hashCallstack(run_t* run, funcs_t* funcs, size_t funcCnt, bool enableMasking)
-{
+static void arch_hashCallstack(run_t* run, funcs_t* funcs, size_t funcCnt, bool enableMasking) {
     uint64_t hash = 0;
     for (size_t i = 0; i < funcCnt && i < run->global->linux.numMajorFrames; i++) {
         /*
          * Convert PC to char array to be compatible with hash function
          */
-        char pcStr[REGSIZEINCHAR] = { 0 };
+        char pcStr[REGSIZEINCHAR] = {0};
         snprintf(pcStr, REGSIZEINCHAR, REG_PD REG_PM, (REG_TYPE)(long)funcs[i].pc);
 
         /*
@@ -569,8 +564,7 @@ static void arch_hashCallstack(run_t* run, funcs_t* funcs, size_t funcCnt, bool 
 }
 
 static void arch_traceGenerateReport(
-    pid_t pid, run_t* run, funcs_t* funcs, size_t funcCnt, siginfo_t* si, const char* instr)
-{
+    pid_t pid, run_t* run, funcs_t* funcs, size_t funcCnt, siginfo_t* si, const char* instr) {
     run->report[0] = '\0';
     util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->origFileName);
     util_ssnprintf(run->report, sizeof(run->report), "FUZZ_FNAME: %s\n", run->crashFileName);
@@ -609,8 +603,7 @@ static void arch_traceGenerateReport(
     return;
 }
 
-static void arch_traceAnalyzeData(run_t* run, pid_t pid)
-{
+static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
     REG_TYPE pc = 0, status_reg = 0;
     size_t pcRegSz = arch_getPC(pid, &pc, &status_reg);
     if (!pcRegSz) {
@@ -652,8 +645,7 @@ static void arch_traceAnalyzeData(run_t* run, pid_t pid)
     arch_hashCallstack(run, funcs, funcCnt, false);
 }
 
-static void arch_traceSaveData(run_t* run, pid_t pid)
-{
+static void arch_traceSaveData(run_t* run, pid_t pid) {
     REG_TYPE pc = 0;
 
     /* Local copy since flag is overridden for some crashes */
@@ -770,9 +762,8 @@ static void arch_traceSaveData(run_t* run, pid_t pid)
         /*
          * Check if stackhash is blacklisted
          */
-        if (run->global->blacklist
-            && (fastArray64Search(run->global->blacklist, run->global->blacklistCnt, run->backtrace)
-                   != -1)) {
+        if (run->global->blacklist && (fastArray64Search(run->global->blacklist,
+                                           run->global->blacklistCnt, run->backtrace) != -1)) {
             LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
             ATOMIC_POST_INC(run->global->blCrashesCnt);
             return;
@@ -830,8 +821,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid)
     }
 
     if (files_writeBufToFile(run->crashFileName, run->dynamicFile, run->dynamicFileSz,
-            O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC)
-        == false) {
+            O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC) == false) {
         LOG_E("Couldn't copy '%s' to '%s'", run->fileName, run->crashFileName);
         return;
     }
@@ -846,9 +836,9 @@ static void arch_traceSaveData(run_t* run, pid_t pid)
 }
 
 /* TODO: Add report parsing support for other sanitizers too */
-static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, void** crashAddr, char** op)
-{
-    char crashReport[PATH_MAX] = { 0 };
+static int arch_parseAsanReport(
+    run_t* run, pid_t pid, funcs_t* funcs, void** crashAddr, char** op) {
+    char crashReport[PATH_MAX] = {0};
     const char* const crashReportCpy = crashReport;
     snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", run->global->workDir, kLOGPREFIX, pid);
 
@@ -860,13 +850,13 @@ static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, void** cr
     defer { fclose(fReport); };
     defer { unlink(crashReportCpy); };
 
-    char header[35] = { 0 };
+    char header[35] = {0};
     snprintf(header, sizeof(header), "==%d==ERROR: AddressSanitizer:", pid);
     size_t headerSz = strlen(header);
     bool headerFound = false;
 
     uint8_t frameIdx = 0;
-    char framePrefix[5] = { 0 };
+    char framePrefix[5] = {0};
     snprintf(framePrefix, sizeof(framePrefix), "#%" PRIu8, frameIdx);
 
     char *lineptr = NULL, *cAddr = NULL;
@@ -934,8 +924,8 @@ static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, void** cr
                  */
                 char* savePtr = NULL;
                 strtok_r(pLineLC, " ", &savePtr);
-                funcs[frameIdx].pc
-                    = (void*)((size_t)strtoull(strtok_r(NULL, " ", &savePtr), NULL, 16));
+                funcs[frameIdx].pc =
+                    (void*)((size_t)strtoull(strtok_r(NULL, " ", &savePtr), NULL, 16));
 
                 /* DSO & code offset parsing */
                 char* targetStr = strtok_r(NULL, " ", &savePtr);
@@ -946,8 +936,8 @@ static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, void** cr
                 if ((startOff == NULL) || (endOff == NULL) || (plusOff == NULL)) {
                     LOG_D("Invalid ASan report entry (%s)", lineptr);
                 } else {
-                    size_t dsoSz
-                        = MIN(sizeof(funcs[frameIdx].mapName), (size_t)(plusOff - startOff));
+                    size_t dsoSz =
+                        MIN(sizeof(funcs[frameIdx].mapName), (size_t)(plusOff - startOff));
                     memcpy(funcs[frameIdx].mapName, startOff, dsoSz);
                     char* codeOff = targetStr + (plusOff - startOff) + 1;
                     funcs[frameIdx].line = strtoull(codeOff, NULL, 16);
@@ -967,8 +957,7 @@ static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, void** cr
  * a raised signal. Such case is the ASan fuzzing for Android. Crash file name maintains
  * the same format for compatibility with post campaign tools.
  */
-static void arch_traceExitSaveData(run_t* run, pid_t pid)
-{
+static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     REG_TYPE pc = 0;
     void* crashAddr = 0;
     char* op = "UNKNOWN";
@@ -1027,9 +1016,8 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid)
     /*
      * Check if stackhash is blacklisted
      */
-    if (run->global->blacklist
-        && (fastArray64Search(run->global->blacklist, run->global->blacklistCnt, run->backtrace)
-               != -1)) {
+    if (run->global->blacklist && (fastArray64Search(run->global->blacklist,
+                                       run->global->blacklistCnt, run->backtrace) != -1)) {
         LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
         ATOMIC_POST_INC(run->global->blCrashesCnt);
         return;
@@ -1106,8 +1094,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid)
     }
 }
 
-static void arch_traceExitAnalyzeData(run_t* run, pid_t pid)
-{
+static void arch_traceExitAnalyzeData(run_t* run, pid_t pid) {
     void* crashAddr = 0;
     char* op = "UNKNOWN";
     int funcCnt = 0;
@@ -1131,8 +1118,7 @@ static void arch_traceExitAnalyzeData(run_t* run, pid_t pid)
     arch_hashCallstack(run, funcs, funcCnt, false);
 }
 
-void arch_traceExitAnalyze(run_t* run, pid_t pid)
-{
+void arch_traceExitAnalyze(run_t* run, pid_t pid) {
     if (run->mainWorker) {
         /* Main fuzzing threads */
         arch_traceExitSaveData(run, pid);
@@ -1143,37 +1129,37 @@ void arch_traceExitAnalyze(run_t* run, pid_t pid)
 }
 
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)
-static void arch_traceEvent(run_t* run, int status, pid_t pid)
-{
+static void arch_traceEvent(run_t* run, int status, pid_t pid) {
     LOG_D("PID: %d, Ptrace event: %d", pid, __WEVENT(status));
     switch (__WEVENT(status)) {
-    case PTRACE_EVENT_EXIT: {
-        unsigned long event_msg;
-        if (ptrace(PTRACE_GETEVENTMSG, pid, NULL, &event_msg) == -1) {
-            PLOG_E("ptrace(PTRACE_GETEVENTMSG,%d) failed", pid);
-            return;
-        }
-
-        if (WIFEXITED(event_msg)) {
-            LOG_D("PID: %d exited with exit_code: %lu", pid, (unsigned long)WEXITSTATUS(event_msg));
-            if (WEXITSTATUS(event_msg) == (unsigned long)HF_SAN_EXIT_CODE) {
-                arch_traceExitAnalyze(run, pid);
+        case PTRACE_EVENT_EXIT: {
+            unsigned long event_msg;
+            if (ptrace(PTRACE_GETEVENTMSG, pid, NULL, &event_msg) == -1) {
+                PLOG_E("ptrace(PTRACE_GETEVENTMSG,%d) failed", pid);
+                return;
             }
-        } else if (WIFSIGNALED(event_msg)) {
-            LOG_D("PID: %d terminated with signal: %lu", pid, (unsigned long)WTERMSIG(event_msg));
-        } else {
-            LOG_D("PID: %d exited with unknown status: %lu", pid, event_msg);
-        }
-    } break;
-    default:
-        break;
+
+            if (WIFEXITED(event_msg)) {
+                LOG_D("PID: %d exited with exit_code: %lu", pid,
+                    (unsigned long)WEXITSTATUS(event_msg));
+                if (WEXITSTATUS(event_msg) == (unsigned long)HF_SAN_EXIT_CODE) {
+                    arch_traceExitAnalyze(run, pid);
+                }
+            } else if (WIFSIGNALED(event_msg)) {
+                LOG_D(
+                    "PID: %d terminated with signal: %lu", pid, (unsigned long)WTERMSIG(event_msg));
+            } else {
+                LOG_D("PID: %d exited with unknown status: %lu", pid, event_msg);
+            }
+        } break;
+        default:
+            break;
     }
 
     ptrace(PTRACE_CONT, pid, 0, 0);
 }
 
-void arch_traceAnalyze(run_t* run, int status, pid_t pid)
-{
+void arch_traceAnalyze(run_t* run, int status, pid_t pid) {
     /*
      * It's a ptrace event, deal with it elsewhere
      */
@@ -1229,8 +1215,7 @@ void arch_traceAnalyze(run_t* run, int status, pid_t pid)
     abort(); /* NOTREACHED */
 }
 
-static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
-{
+static bool arch_listThreads(int tasks[], size_t thrSz, int pid) {
     char path[512];
     snprintf(path, sizeof(path), "/proc/%d/task", pid);
 
@@ -1285,8 +1270,7 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid)
     return true;
 }
 
-bool arch_traceWaitForPidStop(pid_t pid)
-{
+bool arch_traceWaitForPidStop(pid_t pid) {
     for (;;) {
         int status;
         pid_t ret = wait4(pid, &status, __WALL | WUNTRACED, NULL);
@@ -1306,8 +1290,7 @@ bool arch_traceWaitForPidStop(pid_t pid)
 }
 
 #define MAX_THREAD_IN_TASK 4096
-bool arch_traceAttach(run_t* run, pid_t pid)
-{
+bool arch_traceAttach(run_t* run, pid_t pid) {
 /*
  * It should be present since, at least, Linux kernel 3.8, but
  * not always defined in kernel-headers
@@ -1340,7 +1323,7 @@ bool arch_traceAttach(run_t* run, pid_t pid)
         return true;
     }
 
-    int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
+    int tasks[MAX_THREAD_IN_TASK + 1] = {0};
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
         LOG_E("Couldn't read thread list for pid '%d'", pid);
         return false;
@@ -1359,14 +1342,13 @@ bool arch_traceAttach(run_t* run, pid_t pid)
     return true;
 }
 
-void arch_traceDetach(pid_t pid)
-{
+void arch_traceDetach(pid_t pid) {
     if (syscall(__NR_kill, pid, 0) == -1 && errno == ESRCH) {
         LOG_D("PID: %d no longer exists", pid);
         return;
     }
 
-    int tasks[MAX_THREAD_IN_TASK + 1] = { 0 };
+    int tasks[MAX_THREAD_IN_TASK + 1] = {0};
     if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
         LOG_E("Couldn't read thread list for pid '%d'", pid);
         return;
@@ -1379,8 +1361,7 @@ void arch_traceDetach(pid_t pid)
     }
 }
 
-void arch_traceSignalsInit(honggfuzz_t* hfuzz)
-{
+void arch_traceSignalsInit(honggfuzz_t* hfuzz) {
     /* Default is true for all platforms except Android */
     arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
 

@@ -79,8 +79,7 @@ struct {
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
-static bool arch_analyzeSignal(run_t* run, int status)
-{
+static bool arch_analyzeSignal(run_t* run, int status) {
     /*
      * Resumed by delivery of SIGCONT
      */
@@ -138,8 +137,7 @@ static bool arch_analyzeSignal(run_t* run, int status)
     ATOMIC_POST_INC(run->global->uniqueCrashesCnt);
 
     if (files_writeBufToFile(
-            newname, run->dynamicFile, run->dynamicFileSz, O_CREAT | O_EXCL | O_WRONLY)
-        == false) {
+            newname, run->dynamicFile, run->dynamicFileSz, O_CREAT | O_EXCL | O_WRONLY) == false) {
         LOG_E("Couldn't copy '%s' to '%s'", run->fileName, run->crashFileName);
     }
 
@@ -148,18 +146,17 @@ static bool arch_analyzeSignal(run_t* run, int status)
 
 pid_t arch_fork(run_t* fuzzer UNUSED) { return fork(); }
 
-bool arch_launchChild(run_t* run)
-{
+bool arch_launchChild(run_t* run) {
 #define ARGS_MAX 512
     char* args[ARGS_MAX + 2];
-    char argData[PATH_MAX] = { 0 };
+    char argData[PATH_MAX] = {0};
     int x;
 
     for (x = 0; x < ARGS_MAX && run->global->cmdline[x]; x++) {
         if (!run->global->fuzzStdin && strcmp(run->global->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
             args[x] = run->fileName;
-        } else if (!run->global->fuzzStdin
-            && strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER)) {
+        } else if (!run->global->fuzzStdin &&
+                   strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER)) {
             const char* off = strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER);
             snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - run->global->cmdline[x]),
                 run->global->cmdline[x], run->fileName);
@@ -185,8 +182,7 @@ void arch_prepareParent(run_t* fuzzer UNUSED) {}
 
 void arch_prepareParentAfterFork(run_t* fuzzer UNUSED) {}
 
-void arch_reapChild(run_t* run)
-{
+void arch_reapChild(run_t* run) {
     for (;;) {
         if (run->global->persistent) {
             struct pollfd pfd = {
@@ -225,8 +221,8 @@ void arch_reapChild(run_t* run)
         }
 
         char strStatus[4096];
-        if (run->global->persistent && ret == run->persistentPid
-            && (WIFEXITED(status) || WIFSIGNALED(status))) {
+        if (run->global->persistent && ret == run->persistentPid &&
+            (WIFEXITED(status) || WIFSIGNALED(status))) {
             run->persistentPid = 0;
             if (ATOMIC_GET(run->global->terminating) == false) {
                 LOG_W("Persistent mode: PID %d exited with status: %s", ret,
@@ -243,8 +239,7 @@ void arch_reapChild(run_t* run)
     }
 }
 
-bool arch_archInit(honggfuzz_t* hfuzz)
-{
+bool arch_archInit(honggfuzz_t* hfuzz) {
     /* Default is true for all platforms except Android */
     arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
 

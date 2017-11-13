@@ -107,10 +107,8 @@ struct {
     const char* descr;
 } arch_sigs[NSIG];
 
-__attribute__((constructor)) void arch_initSigs(void)
-{
-    for (int x = 0; x < NSIG; x++)
-        arch_sigs[x].important = false;
+__attribute__((constructor)) void arch_initSigs(void) {
+    for (int x = 0; x < NSIG; x++) arch_sigs[x].important = false;
 
     arch_sigs[SIGILL].important = true;
     arch_sigs[SIGILL].descr = "SIGILL";
@@ -130,35 +128,33 @@ __attribute__((constructor)) void arch_initSigs(void)
     arch_sigs[SIGVTALRM].descr = "SIGVTALRM";
 }
 
-const char* exception_to_string(int exception)
-{
+const char* exception_to_string(int exception) {
     switch (exception) {
-    case EXC_BAD_ACCESS:
-        return "EXC_BAD_ACCESS";
-    case EXC_BAD_INSTRUCTION:
-        return "EXC_BAD_INSTRUCTION";
-    case EXC_ARITHMETIC:
-        return "EXC_ARITHMETIC";
-    case EXC_EMULATION:
-        return "EXC_EMULATION";
-    case EXC_SOFTWARE:
-        return "EXC_SOFTWARE";
-    case EXC_BREAKPOINT:
-        return "EXC_BREAKPOINT";
-    case EXC_SYSCALL:
-        return "EXC_SYSCALL";
-    case EXC_MACH_SYSCALL:
-        return "EXC_MACH_SYSCALL";
-    case EXC_RPC_ALERT:
-        return "EXC_RPC_ALERT";
-    case EXC_CRASH:
-        return "EXC_CRASH";
+        case EXC_BAD_ACCESS:
+            return "EXC_BAD_ACCESS";
+        case EXC_BAD_INSTRUCTION:
+            return "EXC_BAD_INSTRUCTION";
+        case EXC_ARITHMETIC:
+            return "EXC_ARITHMETIC";
+        case EXC_EMULATION:
+            return "EXC_EMULATION";
+        case EXC_SOFTWARE:
+            return "EXC_SOFTWARE";
+        case EXC_BREAKPOINT:
+            return "EXC_BREAKPOINT";
+        case EXC_SYSCALL:
+            return "EXC_SYSCALL";
+        case EXC_MACH_SYSCALL:
+            return "EXC_MACH_SYSCALL";
+        case EXC_RPC_ALERT:
+            return "EXC_RPC_ALERT";
+        case EXC_CRASH:
+            return "EXC_CRASH";
     }
     return "UNKNOWN";
 }
 
-static void arch_generateReport(run_t* run, int termsig)
-{
+static void arch_generateReport(run_t* run, int termsig) {
     run->report[0] = '\0';
     util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->origFileName);
     util_ssnprintf(run->report, sizeof(run->report), "FUZZ_FNAME: %s\n", run->crashFileName);
@@ -184,8 +180,7 @@ static void arch_generateReport(run_t* run, int termsig)
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
-static bool arch_analyzeSignal(run_t* run, int status)
-{
+static bool arch_analyzeSignal(run_t* run, int status) {
     /*
      * Resumed by delivery of SIGCONT
      */
@@ -237,8 +232,7 @@ static bool arch_analyzeSignal(run_t* run, int status)
     run->access = g_fuzzer_crash_information[run->pid].access;
     run->backtrace = g_fuzzer_crash_information[run->pid].backtrace;
 
-    defer
-    {
+    defer {
         if (g_fuzzer_crash_callstack[run->pid]) {
             free(g_fuzzer_crash_callstack[run->pid]);
             g_fuzzer_crash_callstack[run->pid] = NULL;
@@ -248,9 +242,8 @@ static bool arch_analyzeSignal(run_t* run, int status)
     /*
      * Check if stackhash is blacklisted
      */
-    if (run->global->blacklist
-        && (fastArray64Search(run->global->blacklist, run->global->blacklistCnt, run->backtrace)
-               != -1)) {
+    if (run->global->blacklist && (fastArray64Search(run->global->blacklist,
+                                       run->global->blacklistCnt, run->backtrace) != -1)) {
         LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
         ATOMIC_POST_INC(run->global->blCrashesCnt);
         return true;
@@ -282,9 +275,8 @@ static bool arch_analyzeSignal(run_t* run, int status)
         return true;
     }
 
-    if (files_writeBufToFile(
-            run->crashFileName, run->dynamicFile, run->dynamicFileSz, O_CREAT | O_EXCL | O_WRONLY)
-        == false) {
+    if (files_writeBufToFile(run->crashFileName, run->dynamicFile, run->dynamicFileSz,
+            O_CREAT | O_EXCL | O_WRONLY) == false) {
         LOG_E("Couldn't copy '%s' to '%s'", run->fileName, run->crashFileName);
         return true;
     }
@@ -302,18 +294,17 @@ static bool arch_analyzeSignal(run_t* run, int status)
 
 pid_t arch_fork(run_t* run UNUSED) { return fork(); }
 
-bool arch_launchChild(run_t* run)
-{
+bool arch_launchChild(run_t* run) {
 #define ARGS_MAX 512
     char* args[ARGS_MAX + 2];
-    char argData[PATH_MAX] = { 0 };
+    char argData[PATH_MAX] = {0};
     int x;
 
     for (x = 0; x < ARGS_MAX && run->global->cmdline[x]; x++) {
         if (!run->global->fuzzStdin && strcmp(run->global->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
             args[x] = run->fileName;
-        } else if (!run->global->fuzzStdin
-            && strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER)) {
+        } else if (!run->global->fuzzStdin &&
+                   strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER)) {
             const char* off = strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER);
             snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - run->global->cmdline[x]),
                 run->global->cmdline[x], run->fileName);
@@ -348,8 +339,8 @@ bool arch_launchChild(run_t* run)
      * Here we register the exception port in the child
      */
     if (task_set_exception_ports(mach_task_self(), EXC_MASK_CRASH, exception_port,
-            EXCEPTION_STATE_IDENTITY | MACH_EXCEPTION_CODES, MACHINE_THREAD_STATE)
-        != KERN_SUCCESS) {
+            EXCEPTION_STATE_IDENTITY | MACH_EXCEPTION_CODES,
+            MACHINE_THREAD_STATE) != KERN_SUCCESS) {
         return false;
     }
 
@@ -365,8 +356,7 @@ void arch_prepareParent(run_t* run UNUSED) {}
 
 void arch_prepareParentAfterFork(run_t* run UNUSED) {}
 
-void arch_reapChild(run_t* run)
-{
+void arch_reapChild(run_t* run) {
     /*
      * First check manually if we have expired children
      */
@@ -399,8 +389,7 @@ void arch_reapChild(run_t* run)
     }
 }
 
-void* wait_for_exception()
-{
+void* wait_for_exception() {
     while (1) {
         mach_msg_server_once(mach_exc_server, 4096, g_exception_port, MACH_MSG_OPTION_NONE);
     }
@@ -409,31 +398,30 @@ void* wait_for_exception()
 /*
  * Called once before fuzzing starts. Prepare mach ports for attaching crash reporter.
  */
-bool arch_archInit(honggfuzz_t* hfuzz)
-{
+bool arch_archInit(honggfuzz_t* hfuzz) {
     char plist[PATH_MAX];
     snprintf(plist, sizeof(plist), "/Users/%s/Library/Preferences/com.apple.DebugSymbols.plist",
         getlogin());
 
     if (files_exists(plist)) {
-        LOG_W("honggfuzz won't work if DBGShellCommands are set in "
-              "~/Library/Preferences/com.apple.DebugSymbols.plist");
+        LOG_W(
+            "honggfuzz won't work if DBGShellCommands are set in "
+            "~/Library/Preferences/com.apple.DebugSymbols.plist");
     }
 
     /*
      * Allocate exception port.
      */
-    if (mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &g_exception_port)
-        != KERN_SUCCESS) {
+    if (mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &g_exception_port) !=
+        KERN_SUCCESS) {
         return false;
     }
 
     /*
      * Insert exception receive port.
      */
-    if (mach_port_insert_right(
-            mach_task_self(), g_exception_port, g_exception_port, MACH_MSG_TYPE_MAKE_SEND)
-        != KERN_SUCCESS) {
+    if (mach_port_insert_right(mach_task_self(), g_exception_port, g_exception_port,
+            MACH_MSG_TYPE_MAKE_SEND) != KERN_SUCCESS) {
         return false;
     }
 
@@ -485,9 +473,7 @@ bool arch_archInit(honggfuzz_t* hfuzz)
  */
 static void write_crash_report(thread_port_t thread, task_port_t task, exception_type_t exception,
     mach_exception_data_t code, mach_msg_type_number_t code_count, int* flavor,
-    thread_state_t in_state, mach_msg_type_number_t in_state_count)
-{
-
+    thread_state_t in_state, mach_msg_type_number_t in_state_count) {
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
     CrashReport* _crashReport = nil;
 
@@ -513,9 +499,7 @@ static void write_crash_report(thread_port_t thread, task_port_t task, exception
 /* Hash the callstack in an unique way */
 static uint64_t hash_callstack(thread_port_t thread, task_port_t task, exception_type_t exception,
     mach_exception_data_t code, mach_msg_type_number_t code_count, int* flavor,
-    thread_state_t in_state, mach_msg_type_number_t in_state_count)
-{
-
+    thread_state_t in_state, mach_msg_type_number_t in_state_count) {
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
     CrashReport* _crashReport = nil;
 
@@ -647,10 +631,8 @@ static uint64_t hash_callstack(thread_port_t thread, task_port_t task, exception
          * Format: dylib spaces tab address space symbol space plus space offset
          * Scroll pos forward to the last three nibbles of the address.
          */
-        if ((pos = strstr(pos, "\t")) == NULL)
-            break;
-        if ((pos = strstr(pos, " ")) == NULL)
-            break;
+        if ((pos = strstr(pos, "\t")) == NULL) break;
+        if ((pos = strstr(pos, " ")) == NULL) break;
         pos = pos - 3;
         /*
          * Hash the last three nibbles
@@ -672,8 +654,7 @@ static uint64_t hash_callstack(thread_port_t thread, task_port_t task, exception
 
 kern_return_t catch_mach_exception_raise(mach_port_t exception_port, mach_port_t thread,
     mach_port_t task, exception_type_t exception, mach_exception_data_t code,
-    mach_msg_type_number_t codeCnt)
-{
+    mach_msg_type_number_t codeCnt) {
     LOG_F("This function should never get called");
     return KERN_SUCCESS;
 }
@@ -681,8 +662,7 @@ kern_return_t catch_mach_exception_raise(mach_port_t exception_port, mach_port_t
 kern_return_t catch_mach_exception_raise_state(mach_port_t exception_port,
     exception_type_t exception, const mach_exception_data_t code, mach_msg_type_number_t codeCnt,
     int* flavor, const thread_state_t old_state, mach_msg_type_number_t old_stateCnt,
-    thread_state_t new_state, mach_msg_type_number_t* new_stateCnt)
-{
+    thread_state_t new_state, mach_msg_type_number_t* new_stateCnt) {
     LOG_F("This function should never get called");
     return KERN_SUCCESS;
 }
@@ -691,8 +671,7 @@ kern_return_t catch_mach_exception_raise_state_identity(
     __attribute__((unused)) exception_port_t exception_port, thread_port_t thread, task_port_t task,
     exception_type_t exception, mach_exception_data_t code, mach_msg_type_number_t code_count,
     int* flavor, thread_state_t in_state, mach_msg_type_number_t in_state_count,
-    thread_state_t out_state, mach_msg_type_number_t* out_state_count)
-{
+    thread_state_t out_state, mach_msg_type_number_t* out_state_count) {
     if (exception != EXC_CRASH) {
         LOG_F("Got non EXC_CRASH! This should not happen.");
     }
@@ -741,8 +720,8 @@ kern_return_t catch_mach_exception_raise_state_identity(
     /*
      * Get a hash of the callstack
      */
-    uint64_t hash = hash_callstack(
-        thread, task, exception, code, code_count, flavor, in_state, in_state_count);
+    uint64_t hash =
+        hash_callstack(thread, task, exception, code, code_count, flavor, in_state, in_state_count);
     run->backtrace = hash;
 
 #ifdef DEBUG
