@@ -41,7 +41,7 @@ static inline void mangle_Overwrite(run_t* run, const uint8_t* src, size_t off, 
         sz = maxToCopy;
     }
 
-    memcpy(&run->dynamicFile[off], src, sz);
+    memmove(&run->dynamicFile[off], src, sz);
 }
 
 static inline void mangle_Move(run_t* run, size_t off_from, size_t off_to, size_t len) {
