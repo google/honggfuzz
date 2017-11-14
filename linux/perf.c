@@ -350,11 +350,13 @@ void arch_perfAnalyze(run_t* run) {
         ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(run);
         arch_perfMmapReset(run);
+        ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
     }
     if (run->global->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
         ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(run);
         arch_perfMmapReset(run);
+        ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
     }
 
     run->linux.hwCnts.cpuInstrCnt = instrCount;
