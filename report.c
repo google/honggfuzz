@@ -71,8 +71,8 @@ void report_Report(run_t* run) {
     if (reportFD == -1) {
         char reportFName[PATH_MAX];
         if (run->global->reportFile == NULL) {
-            snprintf(
-                reportFName, sizeof(reportFName), "%s/%s", run->global->workDir, _HF_REPORT_FILE);
+            snprintf(reportFName, sizeof(reportFName), "%s/%s", run->global->io.workDir,
+                _HF_REPORT_FILE);
         } else {
             snprintf(reportFName, sizeof(reportFName), "%s", run->global->reportFile);
         }

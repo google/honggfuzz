@@ -60,7 +60,8 @@ void sigHandler(int sig) {
         static const char* const sigMsg = "Repeated termination signal caugth\n";
         if (write(STDERR_FILENO, sigMsg, strlen(sigMsg) + 1) == -1) {
         };
-        _exit(EXIT_FAILURE);
+        alarm(1);
+        exit(EXIT_FAILURE);
     }
 
     ATOMIC_SET(sigReceived, sig);
@@ -174,9 +175,10 @@ int main(int argc, char** argv) {
     }
 
     if (hfuzz.dynFileMethod != _HF_DYNFILE_NONE) {
-        hfuzz.feedback = files_mapSharedMem(sizeof(feedback_t), &hfuzz.bbFd, hfuzz.workDir);
+        hfuzz.feedback = files_mapSharedMem(sizeof(feedback_t), &hfuzz.bbFd, hfuzz.io.workDir);
         if (hfuzz.feedback == MAP_FAILED) {
-            LOG_F("files_mapSharedMem(sz=%zu, dir='%s') failed", sizeof(feedback_t), hfuzz.workDir);
+            LOG_F("files_mapSharedMem(sz=%zu, dir='%s') failed", sizeof(feedback_t),
+                hfuzz.io.workDir);
         }
     }
 

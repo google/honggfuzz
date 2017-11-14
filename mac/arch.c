@@ -251,21 +251,21 @@ static bool arch_analyzeSignal(run_t* run, int status) {
 
     /* If dry run mode, copy file with same name into workspace */
     if (run->global->mutationsPerRun == 0U && run->global->useVerifier) {
-        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->workDir,
+        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.workDir,
             run->origFileName);
     } else if (run->global->saveUnique) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
-            "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s", run->global->workDir,
+            "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s", run->global->io.workDir,
             arch_sigs[termsig].descr, exception_to_string(run->exception), run->pc, run->backtrace,
-            run->access, run->global->fileExtn);
+            run->access, run->global->io.fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr), time(NULL));
 
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s",
-            run->global->workDir, arch_sigs[termsig].descr, exception_to_string(run->exception),
-            run->pc, run->backtrace, run->access, localtmstr, run->pid, run->global->fileExtn);
+            run->global->io.workDir, arch_sigs[termsig].descr, exception_to_string(run->exception),
+            run->pc, run->backtrace, run->access, localtmstr, run->pid, run->global->io.fileExtn);
     }
 
     if (files_exists(run->crashFileName)) {

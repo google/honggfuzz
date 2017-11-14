@@ -797,20 +797,20 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
 
     /* If dry run mode, copy file with same name into workspace */
     if (run->global->mutationsPerRun == 0U && run->global->useVerifier) {
-        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->workDir,
+        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.workDir,
             run->origFileName);
     } else if (saveUnique) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
-            run->global->workDir, arch_sigName(si.si_signo), pc, run->backtrace, si.si_code,
-            sig_addr, instr, run->global->fileExtn);
+            run->global->io.workDir, arch_sigName(si.si_signo), pc, run->backtrace, si.si_code,
+            sig_addr, instr, run->global->io.fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
-            run->global->workDir, arch_sigName(si.si_signo), pc, run->backtrace, si.si_code,
-            sig_addr, instr, localtmstr, pid, run->global->fileExtn);
+            run->global->io.workDir, arch_sigName(si.si_signo), pc, run->backtrace, si.si_code,
+            sig_addr, instr, localtmstr, pid, run->global->io.fileExtn);
     }
 
     if (files_exists(run->crashFileName)) {
@@ -840,7 +840,8 @@ static int arch_parseAsanReport(
     run_t* run, pid_t pid, funcs_t* funcs, void** crashAddr, char** op) {
     char crashReport[PATH_MAX] = {0};
     const char* const crashReportCpy = crashReport;
-    snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", run->global->workDir, kLOGPREFIX, pid);
+    snprintf(
+        crashReport, sizeof(crashReport), "%s/%s.%d", run->global->io.workDir, kLOGPREFIX, pid);
 
     FILE* fReport = fopen(crashReport, "rb");
     if (fReport == NULL) {
@@ -1025,23 +1026,23 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
 
     /* If dry run mode, copy file with same name into workspace */
     if (run->global->mutationsPerRun == 0U && run->global->useVerifier) {
-        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->workDir,
+        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.workDir,
             run->origFileName);
     } else {
         /* Keep the crashes file name format identical */
         if (run->backtrace != 0ULL && run->global->saveUnique) {
             snprintf(run->crashFileName, sizeof(run->crashFileName),
                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s",
-                run->global->workDir, "SAN", pc, run->backtrace, op, crashAddr, "[UNKNOWN]",
-                run->global->fileExtn);
+                run->global->io.workDir, "SAN", pc, run->backtrace, op, crashAddr, "[UNKNOWN]",
+                run->global->io.fileExtn);
         } else {
             /* If no stack hash available, all crashes treated as unique */
             char localtmstr[PATH_MAX];
             util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
             snprintf(run->crashFileName, sizeof(run->crashFileName),
                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s.%s",
-                run->global->workDir, "SAN", pc, run->backtrace, op, crashAddr, "[UNKNOWN]",
-                localtmstr, run->global->fileExtn);
+                run->global->io.workDir, "SAN", pc, run->backtrace, op, crashAddr, "[UNKNOWN]",
+                localtmstr, run->global->io.fileExtn);
         }
     }
 

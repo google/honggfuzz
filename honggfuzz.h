@@ -170,19 +170,21 @@ typedef struct {
 typedef struct {
     char** cmdline;
     char cmdline_txt[61];
-    char* inputDir;
-    DIR* inputDirP;
-    size_t fileCnt;
-    bool fileCntDone;
     bool nullifyStdio;
     bool fuzzStdin;
     bool saveUnique;
     bool useScreen;
     bool useVerifier;
     time_t timeStart;
-    char* fileExtn;
-    char* workDir;
-    char* covDir;
+    struct {
+        char* inputDir;
+        DIR* inputDirP;
+        size_t fileCnt;
+        char* fileExtn;
+        bool fileCntDone;
+        char* workDir;
+        char* covDir;
+    } io;
     unsigned mutationsPerRun;
     char* externalCommand;
     char* postExternalCommand;
@@ -202,7 +204,6 @@ typedef struct {
     bool skipFeedbackOnTimeout;
     bool enableSanitizers;
     bool monitorSIGABRT;
-    pid_t mainPid;
     bool terminating;
     bool exitUponCrash;
 
@@ -210,6 +211,8 @@ typedef struct {
         size_t threadsMax;
         size_t threadsFinished;
         uint32_t threadsActiveCnt;
+        pthread_t mainThread;
+        pid_t mainPid;
     } threads;
 
     const char* dictionaryFile;

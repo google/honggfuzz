@@ -132,19 +132,22 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     honggfuzz_t tmp = {
         .cmdline = NULL,
         .cmdline_txt[0] = '\0',
-        .inputDir = NULL,
-        .inputDirP = NULL,
-        .fileCnt = 0,
-        .fileCntDone = false,
+        .io =
+            {
+                .inputDir = NULL,
+                .inputDirP = NULL,
+                .fileCnt = 0,
+                .fileCntDone = false,
+                .fileExtn = "fuzz",
+                .workDir = ".",
+                .covDir = NULL,
+            },
         .nullifyStdio = true,
         .fuzzStdin = false,
         .saveUnique = true,
         .useScreen = true,
         .useVerifier = false,
         .timeStart = time(NULL),
-        .fileExtn = "fuzz",
-        .workDir = ".",
-        .covDir = NULL,
         .mutationsPerRun = 6U,
         .externalCommand = NULL,
         .postExternalCommand = NULL,
@@ -168,7 +171,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 #else
         .monitorSIGABRT = true,
 #endif
-        .mainPid = getpid(),
         .terminating = false,
         .exitUponCrash = false,
 
@@ -178,6 +180,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .threadsMax =
                     (sysconf(_SC_NPROCESSORS_ONLN) <= 1) ? 1 : sysconf(_SC_NPROCESSORS_ONLN) / 2,
                 .threadsActiveCnt = 0,
+                .mainThread = pthread_self(),
+                .mainPid = getpid(),
             },
 
         .dictionaryFile = NULL,
@@ -340,7 +344,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 cmdlineUsage(argv[0], custom_opts);
                 break;
             case 'f':
-                hfuzz->inputDir = optarg;
+                hfuzz->io.inputDir = optarg;
                 break;
             case 'x':
                 hfuzz->dynFileMethod = _HF_DYNFILE_NONE;
@@ -367,10 +371,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 ll = atoi(optarg);
                 break;
             case 'e':
-                hfuzz->fileExtn = optarg;
+                hfuzz->io.fileExtn = optarg;
                 break;
             case 'W':
-                hfuzz->workDir = optarg;
+                hfuzz->io.workDir = optarg;
                 break;
             case 'r':
                 hfuzz->mutationsPerRun = strtoul(optarg, NULL, 10);
@@ -415,7 +419,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->clearEnv = true;
                 break;
             case 0x103:
-                hfuzz->covDir = optarg;
+                hfuzz->io.covDir = optarg;
                 break;
             case 0x104:
                 hfuzz->postExternalCommand = optarg;
@@ -544,14 +548,14 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         return false;
     }
 
-    if (strchr(hfuzz->fileExtn, '/')) {
-        LOG_E("The file extension contains the '/' character: '%s'", hfuzz->fileExtn);
+    if (strchr(hfuzz->io.fileExtn, '/')) {
+        LOG_E("The file extension contains the '/' character: '%s'", hfuzz->io.fileExtn);
         return false;
     }
 
-    if (hfuzz->workDir[0] != '.' || strlen(hfuzz->workDir) > 2) {
-        if (!files_exists(hfuzz->workDir)) {
-            LOG_E("Provided workspace directory '%s' doesn't exist", hfuzz->workDir);
+    if (hfuzz->io.workDir[0] != '.' || strlen(hfuzz->io.workDir) > 2) {
+        if (!files_exists(hfuzz->io.workDir)) {
+            LOG_E("Provided workspace directory '%s' doesn't exist", hfuzz->io.workDir);
             return false;
         }
     }
@@ -582,10 +586,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         "threads.threadsMax: %zu, "
         "fileExtn: '%s', "
         "memoryLimit: 0x%" PRIx64 "(MiB), fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
-        (int)getpid(), hfuzz->inputDir, cmdlineYesNo(hfuzz->nullifyStdio),
+        (int)getpid(), hfuzz->io.inputDir, cmdlineYesNo(hfuzz->nullifyStdio),
         cmdlineYesNo(hfuzz->fuzzStdin), cmdlineYesNo(hfuzz->saveUnique), hfuzz->mutationsPerRun,
         hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, (int)hfuzz->runEndTime,
-        hfuzz->tmOut, hfuzz->mutationsMax, hfuzz->threads.threadsMax, hfuzz->fileExtn,
+        hfuzz->tmOut, hfuzz->mutationsMax, hfuzz->threads.threadsMax, hfuzz->io.fileExtn,
         hfuzz->asLimit, hfuzz->cmdline[0], hfuzz->linux.pid, cmdlineYesNo(hfuzz->monitorSIGABRT));
 
     snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->cmdline[0]);

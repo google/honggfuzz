@@ -326,8 +326,8 @@ static bool sancov_sanCovParseRaw(run_t* run) {
     size_t lineSz = 0;
 
     /* Coverage data analysis starts by parsing map file listing */
-    snprintf(covFile, sizeof(covFile), "%s/%s/%d.sancov.map", run->global->workDir, _HF_SANCOV_DIR,
-        targetPid);
+    snprintf(covFile, sizeof(covFile), "%s/%s/%d.sancov.map", run->global->io.workDir,
+        _HF_SANCOV_DIR, targetPid);
     if (!files_exists(covFile)) {
         LOG_D("sancov map file not found");
         return false;
@@ -435,8 +435,8 @@ static bool sancov_sanCovParseRaw(run_t* run) {
     }
 
     /* mmap() .sancov.raw file */
-    snprintf(covFile, sizeof(covFile), "%s/%s/%d.sancov.raw", run->global->workDir, _HF_SANCOV_DIR,
-        targetPid);
+    snprintf(covFile, sizeof(covFile), "%s/%s/%d.sancov.raw", run->global->io.workDir,
+        _HF_SANCOV_DIR, targetPid);
     dataBuf = files_mapFile(covFile, &dataFileSz, &dataFd, false);
     if (dataBuf == NULL) {
         LOG_E("Couldn't open and map '%s' in R/O mode", covFile);
@@ -570,8 +570,8 @@ static bool sancov_sanCovParse(run_t* run) {
     DIR* pSanCovDir = NULL;
     pid_t targetPid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
 
-    snprintf(covFile, sizeof(covFile), "%s/%s/%s.%d.sancov", run->global->workDir, _HF_SANCOV_DIR,
-        files_basename(run->global->cmdline[0]), targetPid);
+    snprintf(covFile, sizeof(covFile), "%s/%s/%s.%d.sancov", run->global->io.workDir,
+        _HF_SANCOV_DIR, files_basename(run->global->cmdline[0]), targetPid);
     if (!files_exists(covFile)) {
         LOG_D("Target sancov file not found");
         return false;
@@ -585,7 +585,7 @@ static bool sancov_sanCovParse(run_t* run) {
     uint64_t nBBs = 0;
 
     /* Iterate sancov dir for files generated against target pid */
-    snprintf(covFile, sizeof(covFile), "%s/%s", run->global->workDir, _HF_SANCOV_DIR);
+    snprintf(covFile, sizeof(covFile), "%s/%s", run->global->io.workDir, _HF_SANCOV_DIR);
     pSanCovDir = opendir(covFile);
     if (pSanCovDir == NULL) {
         PLOG_E("opendir('%s')", covFile);
@@ -597,7 +597,7 @@ static bool sancov_sanCovParse(run_t* run) {
     while ((pDir = readdir(pSanCovDir)) != NULL) {
         /* Parse files with target's pid */
         if (strstr(pDir->d_name, pidFSuffix)) {
-            snprintf(covFile, sizeof(covFile), "%s/%s/%s", run->global->workDir, _HF_SANCOV_DIR,
+            snprintf(covFile, sizeof(covFile), "%s/%s/%s", run->global->io.workDir, _HF_SANCOV_DIR,
                 pDir->d_name);
             dataBuf = files_mapFile(covFile, &dataFileSz, &dataFd, false);
             if (dataBuf == NULL) {
@@ -689,7 +689,7 @@ bool sancov_Init(honggfuzz_t* hfuzz) {
     sancov_trieCreate(&hfuzz->covMetadata);
 
     char sanCovOutDir[PATH_MAX] = {0};
-    snprintf(sanCovOutDir, sizeof(sanCovOutDir), "%s/%s", hfuzz->workDir, _HF_SANCOV_DIR);
+    snprintf(sanCovOutDir, sizeof(sanCovOutDir), "%s/%s", hfuzz->io.workDir, _HF_SANCOV_DIR);
     if (!files_exists(sanCovOutDir)) {
         if (mkdir(sanCovOutDir, S_IRWXU | S_IXGRP | S_IXOTH) != 0) {
             PLOG_E("mkdir() '%s' failed", sanCovOutDir);

@@ -102,6 +102,8 @@ static pid_t arch_clone(uintptr_t flags) {
 }
 
 pid_t arch_fork(run_t* run) {
+    run->global->linux.useClone = true;
+
     pid_t pid = run->global->linux.useClone ? arch_clone(CLONE_UNTRACED | SIGCHLD) : fork();
     if (pid == -1) {
         return pid;
@@ -347,7 +349,7 @@ void arch_reapChild(run_t* run) {
     if (run->global->enableSanitizers) {
         pid_t ptracePid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
         char crashReport[PATH_MAX];
-        snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", run->global->workDir, kLOGPREFIX,
+        snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", run->global->io.workDir, kLOGPREFIX,
             ptracePid);
         if (files_exists(crashReport)) {
             if (run->backtrace) {

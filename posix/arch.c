@@ -124,8 +124,8 @@ static bool arch_analyzeSignal(run_t* run, int status) {
     if (run->global->mutationsPerRun == 0U && run->global->useVerifier) {
         snprintf(newname, sizeof(newname), "%s", run->origFileName);
     } else {
-        snprintf(newname, sizeof(newname), "%s/%s.PID.%d.TIME.%s.%s", run->global->workDir,
-            arch_sigs[termsig].descr, run->pid, localtmstr, run->global->fileExtn);
+        snprintf(newname, sizeof(newname), "%s/%s.PID.%d.TIME.%s.%s", run->global->io.workDir,
+            arch_sigs[termsig].descr, run->pid, localtmstr, run->global->io.fileExtn);
     }
 
     LOG_I("Ok, that's interesting, saving the '%s' as '%s'", run->fileName, newname);

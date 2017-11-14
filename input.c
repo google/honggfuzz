@@ -51,18 +51,18 @@
 #include "libcommon/util.h"
 
 static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
-    rewinddir(hfuzz->inputDirP);
+    rewinddir(hfuzz->io.inputDirP);
 
     size_t maxSize = 0U;
     size_t fileCnt = 0U;
     for (;;) {
         errno = 0;
-        struct dirent* entry = readdir(hfuzz->inputDirP);
+        struct dirent* entry = readdir(hfuzz->io.inputDirP);
         if (entry == NULL && errno == EINTR) {
             continue;
         }
         if (entry == NULL && errno != 0) {
-            PLOG_W("readdir('%s')", hfuzz->inputDir);
+            PLOG_W("readdir('%s')", hfuzz->io.inputDir);
             return false;
         }
         if (entry == NULL) {
@@ -70,7 +70,7 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
         }
 
         char fname[PATH_MAX];
-        snprintf(fname, sizeof(fname), "%s/%s", hfuzz->inputDir, entry->d_name);
+        snprintf(fname, sizeof(fname), "%s/%s", hfuzz->io.inputDir, entry->d_name);
         LOG_D("Analyzing file '%s'", fname);
 
         struct stat st;
@@ -96,7 +96,7 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
         fileCnt++;
     }
 
-    ATOMIC_SET(hfuzz->fileCnt, fileCnt);
+    ATOMIC_SET(hfuzz->io.fileCnt, fileCnt);
     if (hfuzz->maxFileSz == 0U) {
         if (maxSize < 8192) {
             hfuzz->maxFileSz = 8192;
@@ -109,15 +109,15 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
         hfuzz->maxFileSz = 1024U * 128;
     }
 
-    if (hfuzz->fileCnt == 0U) {
-        LOG_W("No usable files in the input directory '%s'", hfuzz->inputDir);
+    if (hfuzz->io.fileCnt == 0U) {
+        LOG_W("No usable files in the input directory '%s'", hfuzz->io.inputDir);
         return false;
     }
 
-    LOG_D("Re-read the '%s', maxFileSz:%zu, number of usable files:%zu", hfuzz->inputDir,
-        hfuzz->maxFileSz, hfuzz->fileCnt);
+    LOG_D("Re-read the '%s', maxFileSz:%zu, number of usable files:%zu", hfuzz->io.inputDir,
+        hfuzz->maxFileSz, hfuzz->io.fileCnt);
 
-    rewinddir(hfuzz->inputDirP);
+    rewinddir(hfuzz->io.inputDirP);
 
     return true;
 }
@@ -126,18 +126,18 @@ bool input_getNext(run_t* run, char* fname, bool rewind) {
     static pthread_mutex_t input_mutex = PTHREAD_MUTEX_INITIALIZER;
     MX_SCOPED_LOCK(&input_mutex);
 
-    if (run->global->fileCnt == 0U) {
+    if (run->global->io.fileCnt == 0U) {
         return false;
     }
 
     for (;;) {
         errno = 0;
-        struct dirent* entry = readdir(run->global->inputDirP);
+        struct dirent* entry = readdir(run->global->io.inputDirP);
         if (entry == NULL && errno == EINTR) {
             continue;
         }
         if (entry == NULL && errno != 0) {
-            PLOG_W("readdir_r('%s')", run->global->inputDir);
+            PLOG_W("readdir_r('%s')", run->global->io.inputDir);
             return false;
         }
         if (entry == NULL && rewind == false) {
@@ -145,13 +145,13 @@ bool input_getNext(run_t* run, char* fname, bool rewind) {
         }
         if (entry == NULL && rewind == true) {
             if (input_getDirStatsAndRewind(run->global) == false) {
-                LOG_E("input_getDirStatsAndRewind('%s')", run->global->inputDir);
+                LOG_E("input_getDirStatsAndRewind('%s')", run->global->io.inputDir);
                 return false;
             }
             continue;
         }
 
-        snprintf(fname, PATH_MAX, "%s/%s", run->global->inputDir, entry->d_name);
+        snprintf(fname, PATH_MAX, "%s/%s", run->global->io.inputDir, entry->d_name);
 
         struct stat st;
         if (stat(fname, &st) == -1) {
@@ -171,26 +171,26 @@ bool input_getNext(run_t* run, char* fname, bool rewind) {
 }
 
 bool input_init(honggfuzz_t* hfuzz) {
-    hfuzz->fileCnt = 0U;
+    hfuzz->io.fileCnt = 0U;
 
-    if (!hfuzz->inputDir) {
+    if (!hfuzz->io.inputDir) {
         LOG_W("No input file/dir specified");
         return false;
     }
 
-    int dir_fd = open(hfuzz->inputDir, O_DIRECTORY | O_RDONLY | O_CLOEXEC);
+    int dir_fd = open(hfuzz->io.inputDir, O_DIRECTORY | O_RDONLY | O_CLOEXEC);
     if (dir_fd == -1) {
-        PLOG_W("open('%s', O_DIRECTORY|O_RDONLY|O_CLOEXEC)", hfuzz->inputDir);
+        PLOG_W("open('%s', O_DIRECTORY|O_RDONLY|O_CLOEXEC)", hfuzz->io.inputDir);
         return false;
     }
-    if ((hfuzz->inputDirP = fdopendir(dir_fd)) == NULL) {
+    if ((hfuzz->io.inputDirP = fdopendir(dir_fd)) == NULL) {
         close(dir_fd);
-        PLOG_W("opendir('%s')", hfuzz->inputDir);
+        PLOG_W("opendir('%s')", hfuzz->io.inputDir);
         return false;
     }
     if (input_getDirStatsAndRewind(hfuzz) == false) {
-        hfuzz->fileCnt = 0U;
-        LOG_W("input_getDirStatsAndRewind('%s')", hfuzz->inputDir);
+        hfuzz->io.fileCnt = 0U;
+        LOG_W("input_getDirStatsAndRewind('%s')", hfuzz->io.inputDir);
         return false;
     }
 

@@ -266,8 +266,8 @@ static bool subproc_New(run_t* run) {
             exit(EXIT_FAILURE);
         }
         if (!arch_launchChild(run)) {
-            kill(run->global->mainPid, SIGTERM);
             LOG_E("Error launching child process");
+            kill(run->global->threads.mainPid, SIGTERM);
             _exit(1);
         }
         abort();

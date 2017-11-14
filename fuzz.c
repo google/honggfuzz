@@ -57,11 +57,10 @@
 #include "sanitizers.h"
 #include "subproc.h"
 
-static pthread_t fuzz_mainThread;
-
 static void fuzz_getFileName(run_t* run) {
-    snprintf(run->fileName, PATH_MAX, "%s/honggfuzz.input.%" PRIu32 ".%s.%s", run->global->workDir,
-        run->fuzzNo, basename(run->global->cmdline[0]), run->global->fileExtn);
+    snprintf(run->fileName, PATH_MAX, "%s/honggfuzz.input.%" PRIu32 ".%s.%s",
+        run->global->io.workDir, run->fuzzNo, basename(run->global->cmdline[0]),
+        run->global->io.fileExtn);
 }
 
 static bool fuzz_prepareFileDynamically(run_t* run) {
@@ -357,7 +356,7 @@ static void fuzz_addFileToFileQ(run_t* run) {
     run->global->dynfileqCnt++;
 
     /* No need to add new coverage if we are supposed to append new coverage-inducing inputs only */
-    if (run->state == _HF_STATE_DYNAMIC_PRE && run->global->covDir == NULL) {
+    if (run->state == _HF_STATE_DYNAMIC_PRE && run->global->io.covDir == NULL) {
         LOG_D("New coverage found, but we're in the initial coverage assessment state. Skipping");
         return;
     }
@@ -366,7 +365,7 @@ static void fuzz_addFileToFileQ(run_t* run) {
     uint64_t crc64f = util_CRC64(run->dynamicFile, run->dynamicFileSz);
     uint64_t crc64r = util_CRC64Rev(run->dynamicFile, run->dynamicFileSz);
     snprintf(fname, sizeof(fname), "%s/%016" PRIx64 "%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov",
-        run->global->covDir ? run->global->covDir : run->global->inputDir, crc64f, crc64r,
+        run->global->io.covDir ? run->global->io.covDir : run->global->io.inputDir, crc64f, crc64r,
         (uint32_t)run->dynamicFileSz);
 
     if (access(fname, R_OK) == 0) {
@@ -617,7 +616,7 @@ static void* fuzz_threadNew(void* arg) {
     for (;;) {
         /* Check if dry run mode with verifier enabled */
         if (run.global->mutationsPerRun == 0U && run.global->useVerifier) {
-            if (ATOMIC_POST_INC(run.global->cnts.mutationsCnt) >= run.global->fileCnt) {
+            if (ATOMIC_POST_INC(run.global->cnts.mutationsCnt) >= run.global->io.fileCnt) {
                 ATOMIC_POST_INC(run.global->threads.threadsFinished);
                 break;
             }
@@ -644,7 +643,7 @@ static void* fuzz_threadNew(void* arg) {
 
     LOG_I("Terminating thread no. #%" PRId32, fuzzNo);
     ATOMIC_POST_INC(run.global->threads.threadsFinished);
-    pthread_kill(fuzz_mainThread, SIGALRM);
+    pthread_kill(run.global->threads.mainThread, SIGALRM);
     return NULL;
 }
 
@@ -666,8 +665,6 @@ static void fuzz_runThread(honggfuzz_t* hfuzz, pthread_t* thread, void* (*thread
 }
 
 void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
-    fuzz_mainThread = pthread_self();
-
     if (!arch_archInit(hfuzz)) {
         LOG_F("Couldn't prepare arch for fuzzing");
     }
