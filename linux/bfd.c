@@ -110,7 +110,6 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num) {
     if (arch_bfdInit(pid, &bfdParams) == false) {
         return;
     }
-    defer { arch_bfdDestroy(&bfdParams); };
 
     const char* func;
     const char* file;
@@ -130,6 +129,8 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num) {
             funcs[i].line = line;
         }
     }
+
+    arch_bfdDestroy(&bfdParams);
 }
 
 static int arch_bfdFPrintF(void* buf, const char* fmt, ...) {
@@ -153,10 +154,10 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
         LOG_W("bfd_openr('/proc/%d/exe') failed", pid);
         return;
     }
-    defer { bfd_close(bfdh); };
 
     if (!bfd_check_format(bfdh, bfd_object)) {
         LOG_W("bfd_check_format() failed");
+        bfd_close(bfdh);
         return;
     }
 #if defined(_HF_BFD_GE_2_29)
@@ -167,6 +168,7 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
 #endif  // defined(_HD_BFD_GE_2_29)
     if (disassemble == NULL) {
         LOG_W("disassembler() failed");
+        bfd_close(bfdh);
         return;
     }
 
@@ -184,4 +186,6 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
     if (disassemble(0, &info) <= 0) {
         snprintf(instr, _HF_INSTR_SZ, "[DIS-ASM_FAILURE]");
     }
+
+    bfd_close(bfdh);
 }
