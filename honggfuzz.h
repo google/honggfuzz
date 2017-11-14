@@ -197,6 +197,8 @@ typedef struct {
     size_t maxFileSz;
     char* reportFile;
     uint64_t asLimit;
+    uint64_t rssLimit;
+    uint64_t dataLimit;
     bool clearEnv;
     char* envs[128];
     bool persistent;

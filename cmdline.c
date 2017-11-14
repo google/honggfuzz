@@ -159,7 +159,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .runEndTime = 0,
         .mutationsMax = 0,
         .reportFile = NULL,
-        .asLimit = 0ULL,
+        .asLimit = 0U,
+        .rssLimit = 0U,
+        .dataLimit = 0U,
         .clearEnv = false,
         .envs[0] = NULL,
         .persistent = false,
@@ -292,10 +294,12 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "pprocess_cmd", required_argument, NULL, 0x104 }, "External command postprocessing files produced by internal mutators" },
         { { "run_time", required_argument, NULL, 0x109 }, "Number of seconds this fuzzing session will last (default: '0' [no limit])" },
         { { "iterations", required_argument, NULL, 'N' }, "Number of fuzzing iterations (default: '0' [no limit])" },
-        { { "rlimit_as", required_argument, NULL, 0x100 }, "Per process memory limit in MiB (default: '0' [no limit])" },
+        { { "rlimit_as", required_argument, NULL, 0x100 }, "Per process RLIMIT_AS in MiB (default: '0' [no limit])" },
+        { { "rlimit_rss", required_argument, NULL, 0x101 }, "Per process RLIMIT_RSS in MiB (default: '0' [no limit])" },
+        { { "rlimit_data", required_argument, NULL, 0x102 }, "Per process RLIMIT_DATA in MiB (default: '0' [no limit])" },
         { { "report", required_argument, NULL, 'R' }, "Write report to this file (default: '" _HF_REPORT_FILE "')" },
         { { "max_file_size", required_argument, NULL, 'F' }, "Maximal size of files processed by the fuzzer in bytes (default: '1048576')" },
-        { { "clear_env", no_argument, NULL, 0x101 }, "Clear all environment variables before executing the binary" },
+        { { "clear_env", no_argument, NULL, 0x108 }, "Clear all environment variables before executing the binary" },
         { { "env", required_argument, NULL, 'E' }, "Pass this environment variable, can be used multiple times" },
         { { "save_all", no_argument, NULL, 'u' }, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames" },
         { { "tmout_sigvtalrm", no_argument, NULL, 'T' }, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)" },
@@ -416,7 +420,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->asLimit = strtoull(optarg, NULL, 0);
                 break;
             case 0x101:
-                hfuzz->clearEnv = true;
+                hfuzz->rssLimit = strtoull(optarg, NULL, 0);
+                break;
+            case 0x102:
+                hfuzz->dataLimit = strtoull(optarg, NULL, 0);
                 break;
             case 0x103:
                 hfuzz->io.covDir = optarg;
@@ -436,6 +443,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 0x107:
                 hfuzz->exitUponCrash = true;
+                break;
+            case 0x108:
+                hfuzz->clearEnv = true;
                 break;
             case 'P':
                 hfuzz->persistent = true;
@@ -585,12 +595,14 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         "externalCommand: '%s', runEndTime: %d tmOut: %ld, mutationsMax: %zu, "
         "threads.threadsMax: %zu, "
         "fileExtn: '%s', "
-        "memoryLimit: 0x%" PRIx64 "(MiB), fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
+        "ASLimit: 0x%" PRIx64 "(MiB), RSSLimit: 0x%" PRIx64 ", DATALimit: 0x%" PRIx64
+        ", fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
         (int)getpid(), hfuzz->io.inputDir, cmdlineYesNo(hfuzz->nullifyStdio),
         cmdlineYesNo(hfuzz->fuzzStdin), cmdlineYesNo(hfuzz->saveUnique), hfuzz->mutationsPerRun,
         hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, (int)hfuzz->runEndTime,
         hfuzz->tmOut, hfuzz->mutationsMax, hfuzz->threads.threadsMax, hfuzz->io.fileExtn,
-        hfuzz->asLimit, hfuzz->cmdline[0], hfuzz->linux.pid, cmdlineYesNo(hfuzz->monitorSIGABRT));
+        hfuzz->asLimit, hfuzz->rssLimit, hfuzz->dataLimit, hfuzz->cmdline[0], hfuzz->linux.pid,
+        cmdlineYesNo(hfuzz->monitorSIGABRT));
 
     snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->cmdline[0]);
     for (size_t i = 1; hfuzz->cmdline[i]; i++) {

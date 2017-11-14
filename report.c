@@ -96,7 +96,11 @@ void report_Report(run_t* run) {
         " fuzzStdin       : %s\n"
         " timeout         : %ld (sec)\n"
         " ignoreAddr      : %p\n"
-        " memoryLimit     : %" PRIu64
+        " ASLimit         : %" PRIu64
+        " (MiB)\n"
+        " RSSLimit        : %" PRIu64
+        " (MiB)\n"
+        " DATALimit       : %" PRIu64
         " (MiB)\n"
         " targetPid       : %d\n"
         " targetCmd       : %s\n"
@@ -104,8 +108,8 @@ void report_Report(run_t* run) {
         localtmstr, run->global->mutationsPerRun,
         run->global->externalCommand == NULL ? "NULL" : run->global->externalCommand,
         run->global->fuzzStdin ? "TRUE" : "FALSE", run->global->tmOut,
-        run->global->linux.ignoreAddr, run->global->asLimit, run->global->linux.pid,
-        run->global->linux.pidCmd,
+        run->global->linux.ignoreAddr, run->global->asLimit, run->global->rssLimit,
+        run->global->dataLimit, run->global->linux.pid, run->global->linux.pidCmd,
         run->global->dictionaryFile == NULL ? "NULL" : run->global->dictionaryFile);
 
 #if defined(_HF_ARCH_LINUX)
