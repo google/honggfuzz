@@ -99,8 +99,6 @@ static inline void arch_perfMmapParse(run_t* run UNUSED) {
         LOG_F("The PERF AUX data has been overwritten. The AUX buffer is too small");
     }
 
-    LOG_E("%llu %llu", pem->aux_tail, pem->aux_head);
-
     if (run->global->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         arch_perfBtsCount(run);
     }
