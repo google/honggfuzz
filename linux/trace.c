@@ -649,7 +649,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     REG_TYPE pc = 0;
 
     /* Local copy since flag is overridden for some crashes */
-    bool saveUnique = run->global->saveUnique;
+    bool saveUnique = run->global->io.saveUnique;
 
     char instr[_HF_INSTR_SZ] = "\x00";
     siginfo_t si;
@@ -1030,7 +1030,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
             run->origFileName);
     } else {
         /* Keep the crashes file name format identical */
-        if (run->backtrace != 0ULL && run->global->saveUnique) {
+        if (run->backtrace != 0ULL && run->global->io.saveUnique) {
             snprintf(run->crashFileName, sizeof(run->crashFileName),
                 "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s",
                 run->global->io.workDir, "SAN", pc, run->backtrace, op, crashAddr, "[UNKNOWN]",

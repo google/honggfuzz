@@ -172,7 +172,6 @@ typedef struct {
     char cmdline_txt[61];
     bool nullifyStdio;
     bool fuzzStdin;
-    bool saveUnique;
     bool useScreen;
     bool useVerifier;
     time_t timeStart;
@@ -184,6 +183,7 @@ typedef struct {
         bool fileCntDone;
         char* workDir;
         char* covDir;
+        bool saveUnique;
     } io;
     unsigned mutationsPerRun;
     char* externalCommand;

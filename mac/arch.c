@@ -253,7 +253,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
     if (run->global->mutationsPerRun == 0U && run->global->useVerifier) {
         snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.workDir,
             run->origFileName);
-    } else if (run->global->saveUnique) {
+    } else if (run->global->io.saveUnique) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s", run->global->io.workDir,
             arch_sigs[termsig].descr, exception_to_string(run->exception), run->pc, run->backtrace,

@@ -141,10 +141,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .fileExtn = "fuzz",
                 .workDir = ".",
                 .covDir = NULL,
+                .saveUnique = true,
             },
         .nullifyStdio = true,
         .fuzzStdin = false,
-        .saveUnique = true,
         .useScreen = true,
         .useVerifier = false,
         .timeStart = time(NULL),
@@ -366,7 +366,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->fuzzStdin = true;
                 break;
             case 'u':
-                hfuzz->saveUnique = false;
+                hfuzz->io.saveUnique = false;
                 break;
             case 'l':
                 logfile = optarg;
@@ -598,7 +598,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         "ASLimit: 0x%" PRIx64 "(MiB), RSSLimit: 0x%" PRIx64 ", DATALimit: 0x%" PRIx64
         ", fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
         (int)getpid(), hfuzz->io.inputDir, cmdlineYesNo(hfuzz->nullifyStdio),
-        cmdlineYesNo(hfuzz->fuzzStdin), cmdlineYesNo(hfuzz->saveUnique), hfuzz->mutationsPerRun,
+        cmdlineYesNo(hfuzz->fuzzStdin), cmdlineYesNo(hfuzz->io.saveUnique), hfuzz->mutationsPerRun,
         hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, (int)hfuzz->runEndTime,
         hfuzz->tmOut, hfuzz->mutationsMax, hfuzz->threads.threadsMax, hfuzz->io.fileExtn,
         hfuzz->asLimit, hfuzz->rssLimit, hfuzz->dataLimit, hfuzz->cmdline[0], hfuzz->linux.pid,
