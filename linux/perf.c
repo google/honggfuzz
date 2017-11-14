@@ -99,6 +99,8 @@ static inline void arch_perfMmapParse(run_t* run UNUSED) {
         LOG_F("The PERF AUX data has been overwritten. The AUX buffer is too small");
     }
 
+    LOG_E("%llu %llu", pem->aux_tail, pem->aux_head);
+
     if (run->global->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         arch_perfBtsCount(run);
     }
@@ -200,7 +202,7 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
     pem->aux_offset = pem->data_offset + pem->data_size;
     pem->aux_size = _HF_PERF_AUX_SZ;
     run->linux.perfMmapAux =
-        mmap(NULL, pem->aux_size, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, pem->aux_offset);
+        mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
     if (run->linux.perfMmapAux == MAP_FAILED) {
         munmap(run->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
         run->linux.perfMmapBuf = NULL;
