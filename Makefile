@@ -149,6 +149,7 @@ COMPILER = $(shell $(CC) -v 2>&1 | \
 ifeq ($(COMPILER),clang)
   ARCH_CFLAGS += -Wno-initializer-overrides -Wno-unknown-warning-option
   ARCH_CFLAGS += -fblocks
+  CFLAGS_NOBLOCKS = -fno-blocks
 
   ifneq ($(OS),Darwin)
     ARCH_LDFLAGS += -lBlocksRuntime
@@ -261,13 +262,13 @@ $(HFUZZ_CC_BINS): $(LHFUZZ_ARCH) $(LCOMMON_ARCH) $(HFUZZ_CC_SRCS)
 	$(LD) -o $@ $(HFUZZ_CC_SRCS) $(LDFLAGS) $(CFLAGS) -D_HFUZZ_INC_PATH=$(HFUZZ_INC)
 
 $(LHFUZZ_OBJS): $(LHFUZZ_SRCS)
-	$(CC) -c $(LIBS_CFLAGS) $(CFLAGS) -o $@ $(@:.o=.c)
+	$(CC) -c $(LIBS_CFLAGS) $(CFLAGS) $(CFLAGS_NOBLOCKS) -o $@ $(@:.o=.c)
 
 $(LHFUZZ_ARCH): $(LHFUZZ_OBJS) $(LCOMMON_ARCH)
 	$(AR) rcs $(LHFUZZ_ARCH) $(LHFUZZ_OBJS) $(LCOMMON_OBJS)
 
 $(LCOMMON_OBJS): $(LCOMMON_SRCS)
-	$(CC) -c $(LIBS_CFLAGS) $(CFLAGS) -o $@ $(@:.o=.c)
+	$(CC) -c $(LIBS_CFLAGS) $(CFLAGS) $(CFLAGS_NOBLOCKS) -o $@ $(@:.o=.c)
 
 $(LCOMMON_ARCH): $(LCOMMON_OBJS)
 	$(AR) rcs $(LCOMMON_ARCH) $(LCOMMON_OBJS)

@@ -111,7 +111,7 @@ void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt
 
     /* Start printing logs */
     {
-        MX_SCOPED_LOCK(&log_mutex);
+        MX_LOCK(&log_mutex);
 
         if (log_fd_isatty) {
             dprintf(log_fd, "%s", logLevels[ll].prefix);
@@ -135,6 +135,8 @@ void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt
             dprintf(log_fd, "\033[0m");
         }
         dprintf(log_fd, "\n");
+
+        MX_UNLOCK(&log_mutex);
     }
     /* End printing logs */
 
