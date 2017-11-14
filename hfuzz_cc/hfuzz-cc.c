@@ -162,7 +162,6 @@ static void commonOpts(int* j, char** args) {
      * Make the execution flow more explicit, allowing for more code blocks
      * (and better code coverage estimates)
      */
-    args[(*j)++] = "-funroll-loops";
     args[(*j)++] = "-fno-inline";
     args[(*j)++] = "-fno-builtin";
 
