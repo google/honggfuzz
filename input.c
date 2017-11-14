@@ -50,8 +50,7 @@
 #include "libcommon/log.h"
 #include "libcommon/util.h"
 
-static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz)
-{
+static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
     rewinddir(hfuzz->inputDirP);
 
     size_t maxSize = 0U;
@@ -123,37 +122,36 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz)
     return true;
 }
 
-bool input_getNext(honggfuzz_t* hfuzz, char* fname, bool rewind)
-{
+bool input_getNext(run_t* run, char* fname, bool rewind) {
     static pthread_mutex_t input_mutex = PTHREAD_MUTEX_INITIALIZER;
     MX_SCOPED_LOCK(&input_mutex);
 
-    if (hfuzz->fileCnt == 0U) {
+    if (run->global->fileCnt == 0U) {
         return false;
     }
 
     for (;;) {
         errno = 0;
-        struct dirent* entry = readdir(hfuzz->inputDirP);
+        struct dirent* entry = readdir(run->global->inputDirP);
         if (entry == NULL && errno == EINTR) {
             continue;
         }
         if (entry == NULL && errno != 0) {
-            PLOG_W("readdir_r('%s')", hfuzz->inputDir);
+            PLOG_W("readdir_r('%s')", run->global->inputDir);
             return false;
         }
         if (entry == NULL && rewind == false) {
             return false;
         }
         if (entry == NULL && rewind == true) {
-            if (input_getDirStatsAndRewind(hfuzz) == false) {
-                LOG_E("input_getDirStatsAndRewind('%s')", hfuzz->inputDir);
+            if (input_getDirStatsAndRewind(run->global) == false) {
+                LOG_E("input_getDirStatsAndRewind('%s')", run->global->inputDir);
                 return false;
             }
             continue;
         }
 
-        snprintf(fname, PATH_MAX, "%s/%s", hfuzz->inputDir, entry->d_name);
+        snprintf(fname, PATH_MAX, "%s/%s", run->global->inputDir, entry->d_name);
 
         struct stat st;
         if (stat(fname, &st) == -1) {
@@ -172,8 +170,7 @@ bool input_getNext(honggfuzz_t* hfuzz, char* fname, bool rewind)
     }
 }
 
-bool input_init(honggfuzz_t* hfuzz)
-{
+bool input_init(honggfuzz_t* hfuzz) {
     hfuzz->fileCnt = 0U;
 
     if (!hfuzz->inputDir) {
@@ -200,8 +197,7 @@ bool input_init(honggfuzz_t* hfuzz)
     return true;
 }
 
-bool input_parseDictionary(honggfuzz_t* hfuzz)
-{
+bool input_parseDictionary(honggfuzz_t* hfuzz) {
     FILE* fDict = fopen(hfuzz->dictionaryFile, "rb");
     if (fDict == NULL) {
         PLOG_W("Couldn't open '%s' - R/O mode", hfuzz->dictionaryFile);
@@ -230,10 +226,10 @@ bool input_parseDictionary(honggfuzz_t* hfuzz)
         if (lineptr[0] == '\0') {
             continue;
         }
-        char bufn[1025] = { 0 };
-        char bufv[1025] = { 0 };
-        if (sscanf(lineptr, "\"%1024s", bufv) != 1
-            && sscanf(lineptr, "%1024[^=]=\"%1024s", bufn, bufv) != 2) {
+        char bufn[1025] = {0};
+        char bufv[1025] = {0};
+        if (sscanf(lineptr, "\"%1024s", bufv) != 1 &&
+            sscanf(lineptr, "%1024[^=]=\"%1024s", bufn, bufv) != 2) {
             LOG_W("Incorrect dictionary entry: '%s'. Skipping", lineptr);
             continue;
         }
@@ -251,8 +247,7 @@ bool input_parseDictionary(honggfuzz_t* hfuzz)
     return true;
 }
 
-bool input_parseBlacklist(honggfuzz_t* hfuzz)
-{
+bool input_parseBlacklist(honggfuzz_t* hfuzz) {
     FILE* fBl = fopen(hfuzz->blacklistFile, "rb");
     if (fBl == NULL) {
         PLOG_W("Couldn't open '%s' - R/O mode", hfuzz->blacklistFile);
@@ -269,9 +264,8 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz)
             break;
         }
 
-        if ((hfuzz->blacklist = util_Realloc(
-                 hfuzz->blacklist, (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0])))
-            == NULL) {
+        if ((hfuzz->blacklist = util_Realloc(hfuzz->blacklist,
+                 (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]))) == NULL) {
             PLOG_W(
                 "realloc failed (sz=%zu)", (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]));
             return false;
@@ -283,8 +277,9 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz)
         // Verify entries are sorted so we can use interpolation search
         if (hfuzz->blacklistCnt > 1) {
             if (hfuzz->blacklist[hfuzz->blacklistCnt - 1] > hfuzz->blacklist[hfuzz->blacklistCnt]) {
-                LOG_F("Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort "
-                      "records");
+                LOG_F(
+                    "Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort "
+                    "records");
                 return false;
             }
         }

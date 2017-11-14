@@ -33,16 +33,16 @@
 
 extern const char* subproc_StatusToStr(int status, char* str, size_t len);
 
-extern bool subproc_PrepareExecv(honggfuzz_t* hfuzz, run_t* run, const char* fileName);
+extern bool subproc_PrepareExecv(run_t* run, const char* fileName);
 
-extern bool subproc_Run(honggfuzz_t* hfuzz, run_t* run);
+extern bool subproc_Run(run_t* run);
 
-extern bool subproc_persistentModeRoundDone(honggfuzz_t* hfuzz, run_t* run);
+extern bool subproc_persistentModeRoundDone(run_t* run);
 
-extern uint8_t subproc_System(honggfuzz_t* hfuzz, run_t* run, const char* const argv[]);
+extern uint8_t subproc_System(run_t* run, const char* const argv[]);
 
-extern void subproc_checkTimeLimit(honggfuzz_t* hfuzz, run_t* run);
+extern void subproc_checkTimeLimit(run_t* run);
 
-extern void subproc_checkTermination(honggfuzz_t* hfuzz, run_t* run);
+extern void subproc_checkTermination(run_t* run);
 
 #endif

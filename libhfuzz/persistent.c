@@ -23,16 +23,14 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) __attribute__((weak));
 
 /* FIXME(robertswiecki): Make it call mangle_Mangle() */
 __attribute__((weak)) size_t LLVMFuzzerMutate(
-    uint8_t* Data UNUSED, size_t Size UNUSED, size_t MaxSize UNUSED)
-{
+    uint8_t* Data UNUSED, size_t Size UNUSED, size_t MaxSize UNUSED) {
     LOG_F("LLVMFuzzerMutate() is not supported in honggfuzz yet");
     return 0;
 }
 
-static uint8_t buf[_HF_PERF_BITMAP_SIZE_16M] = { 0 };
+static uint8_t buf[_HF_PERF_BITMAP_SIZE_16M] = {0};
 
-void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr)
-{
+void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr) {
     /*
      * Send the 'done' marker to the parent
      */
@@ -47,8 +45,8 @@ void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr)
     initialized = true;
 
     uint32_t rlen;
-    if (files_readFromFd(_HF_PERSISTENT_FD, (uint8_t*)&rlen, sizeof(rlen))
-        != (ssize_t)sizeof(rlen)) {
+    if (files_readFromFd(_HF_PERSISTENT_FD, (uint8_t*)&rlen, sizeof(rlen)) !=
+        (ssize_t)sizeof(rlen)) {
         LOG_F("readFromFd(size=%zu) failed", sizeof(rlen));
     }
     size_t len = (size_t)rlen;
@@ -64,8 +62,7 @@ void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr)
     *len_ptr = len;
 }
 
-static void runOneInput(const uint8_t* buf, size_t len)
-{
+static void runOneInput(const uint8_t* buf, size_t len) {
     int ret = LLVMFuzzerTestOneInput(buf, len);
     if (ret != 0) {
         LOG_F("LLVMFuzzerTestOneInput() returned '%d' instead of '0'", ret);
@@ -76,14 +73,14 @@ static void runOneInput(const uint8_t* buf, size_t len)
  * Declare it 'weak', so it can be safely linked with regular binaries which
  * implement their own main()
  */
-__attribute__((weak)) int main(int argc, char** argv)
-{
+__attribute__((weak)) int main(int argc, char** argv) {
     if (LLVMFuzzerInitialize) {
         LLVMFuzzerInitialize(&argc, &argv);
     }
     if (LLVMFuzzerTestOneInput == NULL) {
-        LOG_F("Define 'int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)' in your "
-              "code to make it work");
+        LOG_F(
+            "Define 'int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)' in your "
+            "code to make it work");
     }
 
     if (fcntl(_HF_PERSISTENT_FD, F_GETFD) == -1 && errno == EBADF) {
@@ -98,8 +95,9 @@ __attribute__((weak)) int main(int argc, char** argv)
             }
         }
 
-        LOG_I("Accepting input from '%s'\n"
-              "Usage for fuzzing: honggfuzz -P [flags] -- %s",
+        LOG_I(
+            "Accepting input from '%s'\n"
+            "Usage for fuzzing: honggfuzz -P [flags] -- %s",
             fname, argv[0]);
 
         ssize_t len = files_readFromFd(in_fd, buf, sizeof(buf));

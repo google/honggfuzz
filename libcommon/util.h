@@ -35,18 +35,18 @@
 
 #define MX_LOCK(m) util_mutexLock(m, __func__, __LINE__)
 #define MX_UNLOCK(m) util_mutexUnlock(m, __func__, __LINE__)
-#define MX_SCOPED_LOCK(m)                                                                          \
-    MX_LOCK(m);                                                                                    \
+#define MX_SCOPED_LOCK(m) \
+    MX_LOCK(m);           \
     defer { MX_UNLOCK(m); }
 
 #define MX_RWLOCK_READ(m) util_mutexRWLockRead(m, __func__, __LINE__)
 #define MX_RWLOCK_WRITE(m) util_mutexRWLockWrite(m, __func__, __LINE__)
 #define MX_RWLOCK_UNLOCK(m) util_mutexRWUnlock(m, __func__, __LINE__)
-#define MX_SCOPED_RWLOCK_READ(m)                                                                   \
-    MX_RWLOCK_READ(m);                                                                             \
+#define MX_SCOPED_RWLOCK_READ(m) \
+    MX_RWLOCK_READ(m);           \
     defer { MX_RWLOCK_UNLOCK(m); }
-#define MX_SCOPED_RWLOCK_WRITE(m)                                                                  \
-    MX_RWLOCK_WRITE(m);                                                                            \
+#define MX_SCOPED_RWLOCK_WRITE(m) \
+    MX_RWLOCK_WRITE(m);           \
     defer { MX_RWLOCK_UNLOCK(m); }
 
 /* Atomics */
@@ -76,8 +76,7 @@
 #define ATOMIC_PRE_INC_RELAXED(x) __atomic_add_fetch(&(x), 1, __ATOMIC_RELAXED)
 #define ATOMIC_POST_OR_RELAXED(x, y) __atomic_fetch_or(&(x), y, __ATOMIC_RELAXED)
 
-__attribute__((always_inline)) static inline uint8_t ATOMIC_BTS(uint8_t* addr, size_t offset)
-{
+__attribute__((always_inline)) static inline uint8_t ATOMIC_BTS(uint8_t* addr, size_t offset) {
     uint8_t oldbit;
     addr += (offset / 8);
     oldbit = ATOMIC_POST_OR_RELAXED(*addr, ((uint8_t)1U << (offset % 8)));

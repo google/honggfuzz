@@ -56,8 +56,7 @@ typedef struct {
 
 static pthread_mutex_t arch_bfd_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static bool arch_bfdInit(pid_t pid, bfd_t* bfdParams)
-{
+static bool arch_bfdInit(pid_t pid, bfd_t* bfdParams) {
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "/proc/%d/exe", pid);
     if ((bfdParams->bfdh = bfd_openr(fname, 0)) == NULL) {
@@ -87,8 +86,7 @@ static bool arch_bfdInit(pid_t pid, bfd_t* bfdParams)
     return true;
 }
 
-static void arch_bfdDestroy(bfd_t* bfdParams)
-{
+static void arch_bfdDestroy(bfd_t* bfdParams) {
     if (bfdParams->syms) {
         free(bfdParams->syms);
     }
@@ -97,8 +95,7 @@ static void arch_bfdDestroy(bfd_t* bfdParams)
     }
 }
 
-void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num)
-{
+void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num) {
     /* Guess what? libbfd is not multi-threading safe */
     MX_SCOPED_LOCK(&arch_bfd_mutex);
 
@@ -135,8 +132,7 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num)
     }
 }
 
-static int arch_bfdFPrintF(void* buf, const char* fmt, ...)
-{
+static int arch_bfdFPrintF(void* buf, const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     int ret = util_vssnprintf(buf, _HF_INSTR_SZ, fmt, args);
@@ -145,8 +141,7 @@ static int arch_bfdFPrintF(void* buf, const char* fmt, ...)
     return ret;
 }
 
-void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr)
-{
+void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
     MX_SCOPED_LOCK(&arch_bfd_mutex);
 
     bfd_init();
@@ -165,11 +160,11 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr)
         return;
     }
 #if defined(_HF_BFD_GE_2_29)
-    disassembler_ftype disassemble
-        = disassembler(bfd_get_arch(bfdh), bfd_little_endian(bfdh) ? FALSE : TRUE, 0, NULL);
+    disassembler_ftype disassemble =
+        disassembler(bfd_get_arch(bfdh), bfd_little_endian(bfdh) ? FALSE : TRUE, 0, NULL);
 #else
     disassembler_ftype disassemble = disassembler(bfdh);
-#endif // defined(_HD_BFD_GE_2_29)
+#endif  // defined(_HD_BFD_GE_2_29)
     if (disassemble == NULL) {
         LOG_W("disassembler() failed");
         return;

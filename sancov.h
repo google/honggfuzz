@@ -25,7 +25,7 @@
 /* Bitmap size */
 #define _HF_SANCOV_BITMAP_SIZE 0x3FFFFFF
 
-extern void sancov_Analyze(honggfuzz_t* hfuzz, run_t* run);
+extern void sancov_Analyze(run_t* run);
 
 extern bool sancov_Init(honggfuzz_t* hfuzz);
 

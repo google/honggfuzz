@@ -106,10 +106,10 @@ typedef struct {
 
 /* Memory map struct */
 typedef struct __attribute__((packed)) {
-    uint64_t start; // region start addr
-    uint64_t end; // region end addr
-    uint64_t base; // region base addr
-    char mapName[NAME_MAX]; // bin/DSO name
+    uint64_t start;          // region start addr
+    uint64_t end;            // region end addr
+    uint64_t base;           // region base addr
+    char mapName[NAME_MAX];  // bin/DSO name
     uint64_t bbCnt;
     uint64_t newBBCnt;
 } memMap_t;
@@ -270,6 +270,7 @@ typedef struct {
 } honggfuzz_t;
 
 typedef struct {
+    honggfuzz_t* global;
     pid_t pid;
     pid_t persistentPid;
     fuzzState_t state;
@@ -292,7 +293,7 @@ typedef struct {
     bool tmOutSignaled;
 #if !defined(_HF_ARCH_DARWIN)
     timer_t timerId;
-#endif // !defined(_HF_ARCH_DARWIN)
+#endif  // !defined(_HF_ARCH_DARWIN)
 
     sancovcnt_t sanCovCnts;
 

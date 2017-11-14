@@ -50,8 +50,7 @@ static bool log_fd_isatty = false;
 enum llevel_t log_level = INFO;
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-__attribute__((constructor)) static void log_init(void)
-{
+__attribute__((constructor)) static void log_init(void) {
     log_level = INFO;
     log_fd = fcntl(STDERR_FILENO, F_DUPFD_CLOEXEC, 0);
     if (log_fd == -1) {
@@ -64,8 +63,7 @@ __attribute__((constructor)) static void log_init(void)
  * Log to stderr by default. Use a dup()d fd, because in the future we'll associate the
  * connection socket with fd (0, 1, 2).
  */
-bool logInitLogFile(const char* logfile, enum llevel_t ll)
-{
+bool logInitLogFile(const char* logfile, enum llevel_t ll) {
     log_level = ll;
 
     if (logfile == NULL) {
@@ -82,8 +80,7 @@ bool logInitLogFile(const char* logfile, enum llevel_t ll)
     return true;
 }
 
-void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt, ...)
-{
+void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt, ...) {
     char strerr[512];
     if (perr == true) {
         snprintf(strerr, sizeof(strerr), "%s", strerror(errno));
@@ -95,13 +92,13 @@ void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt
         const bool print_time;
     };
     static const struct ll_t logLevels[] = {
-        { "F", "\033[7;35m", true, true },
-        { "E", "\033[1;31m", true, true },
-        { "W", "\033[0;33m", true, true },
-        { "I", "\033[1m", false, false },
-        { "D", "\033[0;4m", true, true },
-        { "HR", "\033[0m", false, false },
-        { "HB", "\033[1m", false, false },
+        {"F", "\033[7;35m", true, true},
+        {"E", "\033[1;31m", true, true},
+        {"W", "\033[0;33m", true, true},
+        {"I", "\033[1m", false, false},
+        {"D", "\033[0;4m", true, true},
+        {"HR", "\033[0m", false, false},
+        {"HB", "\033[1m", false, false},
     };
 
     time_t ltstamp = time(NULL);
@@ -114,7 +111,7 @@ void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt
 
     /* Start printing logs */
     {
-        MX_SCOPED_LOCK(&log_mutex);
+        MX_LOCK(&log_mutex);
 
         if (log_fd_isatty) {
             dprintf(log_fd, "%s", logLevels[ll].prefix);
@@ -138,6 +135,8 @@ void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt
             dprintf(log_fd, "\033[0m");
         }
         dprintf(log_fd, "\n");
+
+        MX_UNLOCK(&log_mutex);
     }
     /* End printing logs */
 

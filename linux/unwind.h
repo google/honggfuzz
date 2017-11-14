@@ -28,7 +28,7 @@
 #include <sys/types.h>
 
 /* String buffer size for function names in stack traces produced from libunwind */
-#define _HF_FUNC_NAME_SZ 256 // Should be alright for mangled C++ procs too
+#define _HF_FUNC_NAME_SZ 256  // Should be alright for mangled C++ procs too
 
 #define _HF_MAX_FUNCS 80
 typedef struct {

@@ -39,17 +39,17 @@
 
 // libunwind error codes used for debugging
 static const char* UNW_ER[] = {
-    "UNW_ESUCCESS", /* no error */
-    "UNW_EUNSPEC", /* unspecified (general) error */
-    "UNW_ENOMEM", /* out of memory */
-    "UNW_EBADREG", /* bad register number */
+    "UNW_ESUCCESS",     /* no error */
+    "UNW_EUNSPEC",      /* unspecified (general) error */
+    "UNW_ENOMEM",       /* out of memory */
+    "UNW_EBADREG",      /* bad register number */
     "UNW_EREADONLYREG", /* attempt to write read-only register */
-    "UNW_ESTOPUNWIND", /* stop unwinding */
-    "UNW_EINVALIDIP", /* invalid IP */
-    "UNW_EBADFRAME", /* bad frame */
-    "UNW_EINVAL", /* unsupported operation or bad value */
-    "UNW_EBADVERSION", /* unwind info has unsupported version */
-    "UNW_ENOINFO" /* no unwind info found */
+    "UNW_ESTOPUNWIND",  /* stop unwinding */
+    "UNW_EINVALIDIP",   /* invalid IP */
+    "UNW_EBADFRAME",    /* bad frame */
+    "UNW_EINVAL",       /* unsupported operation or bad value */
+    "UNW_EBADVERSION",  /* unwind info has unsupported version */
+    "UNW_ENOINFO"       /* no unwind info found */
 };
 
 typedef struct {
@@ -62,10 +62,9 @@ typedef struct {
     char name[PATH_MAX];
 } procMap_t;
 
-static procMap_t* arch_parsePidMaps(pid_t pid, size_t* mapsCount)
-{
+static procMap_t* arch_parsePidMaps(pid_t pid, size_t* mapsCount) {
     FILE* f = NULL;
-    char fProcMaps[PATH_MAX] = { 0 };
+    char fProcMaps[PATH_MAX] = {0};
     snprintf(fProcMaps, PATH_MAX, "/proc/%d/maps", pid);
 
     if ((f = fopen(fProcMaps, "rb")) == NULL) {
@@ -103,8 +102,7 @@ static procMap_t* arch_parsePidMaps(pid_t pid, size_t* mapsCount)
     return mapsList;
 }
 
-static char* arch_searchMaps(unsigned long addr, size_t mapsCnt, procMap_t* mapsList)
-{
+static char* arch_searchMaps(unsigned long addr, size_t mapsCnt, procMap_t* mapsList) {
     for (size_t i = 0; i < mapsCnt; i++) {
         if (addr >= mapsList[i].start && addr <= mapsList[i].end) {
             return mapsList[i].name;
@@ -119,8 +117,7 @@ static char* arch_searchMaps(unsigned long addr, size_t mapsCnt, procMap_t* maps
 }
 
 #ifndef __ANDROID__
-size_t arch_unwindStack(pid_t pid, funcs_t* funcs)
-{
+size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
     size_t num_frames = 0, mapsCnt = 0;
     procMap_t* mapsList = arch_parsePidMaps(pid, &mapsCnt);
     defer { free(mapsList); };
@@ -166,9 +163,8 @@ size_t arch_unwindStack(pid_t pid, funcs_t* funcs)
     return num_frames;
 }
 
-#else /* !defined(__ANDROID__) */
-size_t arch_unwindStack(pid_t pid, funcs_t* funcs)
-{
+#else  /* !defined(__ANDROID__) */
+size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
     size_t num_frames = 0, mapsCnt = 0;
     procMap_t* mapsList = arch_parsePidMaps(pid, &mapsCnt);
     defer { free(mapsList); };
@@ -197,7 +193,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t* funcs)
     do {
         char* mapName = NULL;
         unw_word_t pc = 0, offset = 0;
-        char buf[_HF_FUNC_NAME_SZ] = { 0 };
+        char buf[_HF_FUNC_NAME_SZ] = {0};
 
         ret = unw_get_reg(&cursor, UNW_REG_IP, &pc);
         if (ret < 0) {
@@ -248,8 +244,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t* funcs)
  * usually target specific and thus small.
  */
 char* arch_btContainsSymbol(
-    size_t symbolsListSz, char** symbolsList, size_t num_frames, funcs_t* funcs)
-{
+    size_t symbolsListSz, char** symbolsList, size_t num_frames, funcs_t* funcs) {
     for (size_t frame = 0; frame < num_frames; frame++) {
         size_t len = strlen(funcs[frame].func);
 

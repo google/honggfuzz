@@ -48,8 +48,7 @@
 
 extern char** environ;
 
-const char* subproc_StatusToStr(int status, char* str, size_t len)
-{
+const char* subproc_StatusToStr(int status, char* str, size_t len) {
     if (WIFEXITED(status)) {
         snprintf(str, len, "EXITED, exit code: %d", WEXITSTATUS(status));
         return str;
@@ -80,42 +79,42 @@ const char* subproc_StatusToStr(int status, char* str, size_t len)
 #define __LINUX_WPTRACEEVENT(x) ((x & 0xff0000) >> 16)
     if (WSTOPSIG(status) == SIGTRAP && __LINUX_WPTRACEEVENT(status) != 0) {
         switch (__LINUX_WPTRACEEVENT(status)) {
-        case PTRACE_EVENT_FORK:
-            snprintf(str, len, "EVENT (Linux) - fork - with signal: %d (%s)", WSTOPSIG(status),
-                strsignal(WSTOPSIG(status)));
-            return str;
-        case PTRACE_EVENT_VFORK:
-            snprintf(str, len, "EVENT (Linux) - vfork - with signal: %d (%s)", WSTOPSIG(status),
-                strsignal(WSTOPSIG(status)));
-            return str;
-        case PTRACE_EVENT_CLONE:
-            snprintf(str, len, "EVENT (Linux) - clone - with signal: %d (%s)", WSTOPSIG(status),
-                strsignal(WSTOPSIG(status)));
-            return str;
-        case PTRACE_EVENT_EXEC:
-            snprintf(str, len, "EVENT (Linux) - exec - with signal: %d (%s)", WSTOPSIG(status),
-                strsignal(WSTOPSIG(status)));
-            return str;
-        case PTRACE_EVENT_VFORK_DONE:
-            snprintf(str, len, "EVENT (Linux) - vfork_done - with signal: %d (%s)",
-                WSTOPSIG(status), strsignal(WSTOPSIG(status)));
-            return str;
-        case PTRACE_EVENT_EXIT:
-            snprintf(str, len, "EVENT (Linux) - exit - with signal: %d (%s)", WSTOPSIG(status),
-                strsignal(WSTOPSIG(status)));
-            return str;
-        case PTRACE_EVENT_SECCOMP:
-            snprintf(str, len, "EVENT (Linux) - seccomp - with signal: %d (%s)", WSTOPSIG(status),
-                strsignal(WSTOPSIG(status)));
-            return str;
-        case PTRACE_EVENT_STOP:
-            snprintf(str, len, "EVENT (Linux) - stop - with signal: %d (%s)", WSTOPSIG(status),
-                strsignal(WSTOPSIG(status)));
-            return str;
-        default:
-            snprintf(str, len, "EVENT (Linux) UNKNOWN (%d): with signal: %d (%s)",
-                __LINUX_WPTRACEEVENT(status), WSTOPSIG(status), strsignal(WSTOPSIG(status)));
-            return str;
+            case PTRACE_EVENT_FORK:
+                snprintf(str, len, "EVENT (Linux) - fork - with signal: %d (%s)", WSTOPSIG(status),
+                    strsignal(WSTOPSIG(status)));
+                return str;
+            case PTRACE_EVENT_VFORK:
+                snprintf(str, len, "EVENT (Linux) - vfork - with signal: %d (%s)", WSTOPSIG(status),
+                    strsignal(WSTOPSIG(status)));
+                return str;
+            case PTRACE_EVENT_CLONE:
+                snprintf(str, len, "EVENT (Linux) - clone - with signal: %d (%s)", WSTOPSIG(status),
+                    strsignal(WSTOPSIG(status)));
+                return str;
+            case PTRACE_EVENT_EXEC:
+                snprintf(str, len, "EVENT (Linux) - exec - with signal: %d (%s)", WSTOPSIG(status),
+                    strsignal(WSTOPSIG(status)));
+                return str;
+            case PTRACE_EVENT_VFORK_DONE:
+                snprintf(str, len, "EVENT (Linux) - vfork_done - with signal: %d (%s)",
+                    WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+                return str;
+            case PTRACE_EVENT_EXIT:
+                snprintf(str, len, "EVENT (Linux) - exit - with signal: %d (%s)", WSTOPSIG(status),
+                    strsignal(WSTOPSIG(status)));
+                return str;
+            case PTRACE_EVENT_SECCOMP:
+                snprintf(str, len, "EVENT (Linux) - seccomp - with signal: %d (%s)",
+                    WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+                return str;
+            case PTRACE_EVENT_STOP:
+                snprintf(str, len, "EVENT (Linux) - stop - with signal: %d (%s)", WSTOPSIG(status),
+                    strsignal(WSTOPSIG(status)));
+                return str;
+            default:
+                snprintf(str, len, "EVENT (Linux) UNKNOWN (%d): with signal: %d (%s)",
+                    __LINUX_WPTRACEEVENT(status), WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+                return str;
         }
     }
 #endif /*  defined(PTRACE_EVENT_STOP)  */
@@ -125,9 +124,8 @@ const char* subproc_StatusToStr(int status, char* str, size_t len)
     return str;
 }
 
-bool subproc_persistentModeRoundDone(honggfuzz_t* hfuzz, run_t* run)
-{
-    if (!hfuzz->persistent) {
+bool subproc_persistentModeRoundDone(run_t* run) {
+    if (!run->global->persistent) {
         return false;
     }
     char z;
@@ -138,8 +136,7 @@ bool subproc_persistentModeRoundDone(honggfuzz_t* hfuzz, run_t* run)
     return false;
 }
 
-static bool subproc_persistentSendFile(run_t* run)
-{
+static bool subproc_persistentSendFile(run_t* run) {
     uint32_t len = (uint64_t)run->dynamicFileSz;
     if (!files_sendToSocketNB(run->persistentSock, (uint8_t*)&len, sizeof(len))) {
         PLOG_W("files_sendToSocketNB(len=%zu)", sizeof(len));
@@ -152,26 +149,25 @@ static bool subproc_persistentSendFile(run_t* run)
     return true;
 }
 
-bool subproc_PrepareExecv(honggfuzz_t* hfuzz, run_t* run, const char* fileName)
-{
+bool subproc_PrepareExecv(run_t* run, const char* fileName) {
     /*
      * The address space limit. If big enough - roughly the size of RAM used
      */
-    if (hfuzz->asLimit) {
+    if (run->global->asLimit) {
         struct rlimit rl = {
-            .rlim_cur = hfuzz->asLimit * 1024ULL * 1024ULL,
-            .rlim_max = hfuzz->asLimit * 1024ULL * 1024ULL,
+            .rlim_cur = run->global->asLimit * 1024ULL * 1024ULL,
+            .rlim_max = run->global->asLimit * 1024ULL * 1024ULL,
         };
         if (setrlimit(RLIMIT_AS, &rl) == -1) {
             PLOG_D("Couldn't enforce the RLIMIT_AS resource limit, ignoring");
         }
     }
 
-    if (hfuzz->nullifyStdio) {
+    if (run->global->nullifyStdio) {
         util_nullifyStdio();
     }
 
-    if (hfuzz->fuzzStdin) {
+    if (run->global->fuzzStdin) {
         /*
          * Uglyyyyyy ;)
          */
@@ -180,15 +176,15 @@ bool subproc_PrepareExecv(honggfuzz_t* hfuzz, run_t* run, const char* fileName)
         }
     }
 
-    if (hfuzz->clearEnv) {
+    if (run->global->clearEnv) {
         environ = NULL;
     }
-    if (!sanitizers_prepareExecve(hfuzz)) {
+    if (!sanitizers_prepareExecve(run)) {
         LOG_E("sanitizers_prepareExecve() failed");
         return false;
     }
-    for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs) && hfuzz->envs[i]; i++) {
-        putenv(hfuzz->envs[i]);
+    for (size_t i = 0; i < ARRAYSIZE(run->global->envs) && run->global->envs[i]; i++) {
+        putenv(run->global->envs[i]);
     }
     char fuzzNo[128];
     snprintf(fuzzNo, sizeof(fuzzNo), "%" PRId32, run->fuzzNo);
@@ -196,11 +192,11 @@ bool subproc_PrepareExecv(honggfuzz_t* hfuzz, run_t* run, const char* fileName)
 
     setsid();
 
-    if (hfuzz->bbFd != -1) {
-        if (dup2(hfuzz->bbFd, _HF_BITMAP_FD) == -1) {
-            PLOG_F("dup2('%d', %d)", hfuzz->bbFd, _HF_BITMAP_FD);
+    if (run->global->bbFd != -1) {
+        if (dup2(run->global->bbFd, _HF_BITMAP_FD) == -1) {
+            PLOG_F("dup2('%d', %d)", run->global->bbFd, _HF_BITMAP_FD);
         }
-        close(hfuzz->bbFd);
+        close(run->global->bbFd);
     }
 
     sigset_t sset;
@@ -212,8 +208,7 @@ bool subproc_PrepareExecv(honggfuzz_t* hfuzz, run_t* run, const char* fileName)
     return true;
 }
 
-static bool subproc_New(honggfuzz_t* hfuzz, run_t* run)
-{
+static bool subproc_New(run_t* run) {
     run->pid = run->persistentPid;
     if (run->pid != 0) {
         return true;
@@ -221,7 +216,7 @@ static bool subproc_New(honggfuzz_t* hfuzz, run_t* run)
     run->tmOutSignaled = false;
 
     int sv[2];
-    if (hfuzz->persistent) {
+    if (run->global->persistent) {
         if (run->persistentSock != -1) {
             close(run->persistentSock);
         }
@@ -237,7 +232,7 @@ static bool subproc_New(honggfuzz_t* hfuzz, run_t* run)
         run->persistentSock = sv[0];
     }
 
-    run->pid = arch_fork(hfuzz, run);
+    run->pid = arch_fork(run);
     if (run->pid == -1) {
         PLOG_E("Couldn't fork");
         return false;
@@ -258,7 +253,7 @@ static bool subproc_New(honggfuzz_t* hfuzz, run_t* run)
         alarm(1);
         signal(SIGALRM, SIG_DFL);
 
-        if (hfuzz->persistent) {
+        if (run->global->persistent) {
             if (dup2(sv[1], _HF_PERSISTENT_FD) == -1) {
                 PLOG_F("dup2('%d', '%d')", sv[1], _HF_PERSISTENT_FD);
             }
@@ -266,12 +261,12 @@ static bool subproc_New(honggfuzz_t* hfuzz, run_t* run)
             close(sv[1]);
         }
 
-        if (!subproc_PrepareExecv(hfuzz, run, run->fileName)) {
+        if (!subproc_PrepareExecv(run, run->fileName)) {
             LOG_E("subproc_PrepareExecv() failed");
             exit(EXIT_FAILURE);
         }
-        if (!arch_launchChild(hfuzz, run->fileName)) {
-            kill(hfuzz->mainPid, SIGTERM);
+        if (!arch_launchChild(run)) {
+            kill(run->global->mainPid, SIGTERM);
             LOG_E("Error launching child process");
             _exit(1);
         }
@@ -279,44 +274,43 @@ static bool subproc_New(honggfuzz_t* hfuzz, run_t* run)
     }
 
     /* Parent */
-    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", run->pid, hfuzz->threads.threadsMax);
+    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", run->pid,
+        run->global->threads.threadsMax);
 
-    if (hfuzz->persistent) {
+    if (run->global->persistent) {
         close(sv[1]);
         LOG_I("Persistent mode: Launched new persistent PID: %d", (int)run->pid);
         run->persistentPid = run->pid;
 
-        int sndbuf = hfuzz->maxFileSz + 256;
+        int sndbuf = run->global->maxFileSz + 256;
         if (setsockopt(run->persistentSock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)) == -1) {
             LOG_W("Couldn't set FD send buffer to '%d' bytes", sndbuf);
         }
     }
 
-    arch_prepareParentAfterFork(hfuzz, run);
+    arch_prepareParentAfterFork(run);
 
     return true;
 }
 
-bool subproc_Run(honggfuzz_t* hfuzz, run_t* run)
-{
-    if (!subproc_New(hfuzz, run)) {
+bool subproc_Run(run_t* run) {
+    if (!subproc_New(run)) {
         LOG_E("subproc_New()");
         return false;
     }
 
-    arch_prepareParent(hfuzz, run);
-    if (hfuzz->persistent && !subproc_persistentSendFile(run)) {
+    arch_prepareParent(run);
+    if (run->global->persistent && !subproc_persistentSendFile(run)) {
         LOG_W("Could not send file contents to the persistent process");
         kill(run->persistentPid, SIGKILL);
     }
-    arch_reapChild(hfuzz, run);
+    arch_reapChild(run);
 
     return true;
 }
 
-uint8_t subproc_System(honggfuzz_t* hfuzz, run_t* run, const char* const argv[])
-{
-    pid_t pid = arch_fork(hfuzz, run);
+uint8_t subproc_System(run_t* run, const char* const argv[]) {
+    pid_t pid = arch_fork(run);
     if (pid == -1) {
         PLOG_E("Couldn't fork");
         return 255;
@@ -370,38 +364,36 @@ uint8_t subproc_System(honggfuzz_t* hfuzz, run_t* run, const char* const argv[])
     }
 }
 
-void subproc_checkTimeLimit(honggfuzz_t* hfuzz, run_t* run)
-{
-    if (hfuzz->tmOut == 0) {
+void subproc_checkTimeLimit(run_t* run) {
+    if (run->global->tmOut == 0) {
         return;
     }
 
     int64_t curMillis = util_timeNowMillis();
     int64_t diffMillis = curMillis - run->timeStartedMillis;
 
-    if (run->tmOutSignaled && (diffMillis > ((hfuzz->tmOut + 1) * 1000))) {
+    if (run->tmOutSignaled && (diffMillis > ((run->global->tmOut + 1) * 1000))) {
         /* Has this instance been already signaled due to timeout? Just, SIGKILL it */
         LOG_W("PID %d has already been signaled due to timeout. Killing it with SIGKILL", run->pid);
         kill(run->pid, SIGKILL);
         return;
     }
 
-    if ((diffMillis > (hfuzz->tmOut * 1000)) && !run->tmOutSignaled) {
+    if ((diffMillis > (run->global->tmOut * 1000)) && !run->tmOutSignaled) {
         run->tmOutSignaled = true;
-        LOG_W("PID %d took too much time (limit %ld s). Killing it with %s", run->pid, hfuzz->tmOut,
-            hfuzz->tmout_vtalrm ? "SIGVTALRM" : "SIGKILL");
-        if (hfuzz->tmout_vtalrm) {
+        LOG_W("PID %d took too much time (limit %ld s). Killing it with %s", run->pid,
+            run->global->tmOut, run->global->tmout_vtalrm ? "SIGVTALRM" : "SIGKILL");
+        if (run->global->tmout_vtalrm) {
             kill(run->pid, SIGVTALRM);
         } else {
             kill(run->pid, SIGKILL);
         }
-        ATOMIC_POST_INC(hfuzz->cnts.timeoutedCnt);
+        ATOMIC_POST_INC(run->global->cnts.timeoutedCnt);
     }
 }
 
-void subproc_checkTermination(honggfuzz_t* hfuzz, run_t* run)
-{
-    if (ATOMIC_GET(hfuzz->terminating)) {
+void subproc_checkTermination(run_t* run) {
+    if (ATOMIC_GET(run->global->terminating)) {
         LOG_D("Killing PID: %d", (int)run->pid);
         kill(run->pid, SIGKILL);
     }

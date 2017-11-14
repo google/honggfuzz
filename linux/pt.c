@@ -76,42 +76,34 @@ struct pt_last_ip {
     uint32_t suppressed : 1;
 };
 
-inline static void pt_last_ip_init(struct pt_last_ip* last_ip)
-{
-    if (!last_ip)
-        return;
+inline static void pt_last_ip_init(struct pt_last_ip* last_ip) {
+    if (!last_ip) return;
 
     last_ip->ip = 0ull;
     last_ip->have_ip = 0;
     last_ip->suppressed = 0;
 }
 
-inline static int pt_last_ip_query(uint64_t* ip, const struct pt_last_ip* last_ip)
-{
-    if (!last_ip)
-        return -pte_invalid;
+inline static int pt_last_ip_query(uint64_t* ip, const struct pt_last_ip* last_ip) {
+    if (!last_ip) return -pte_invalid;
 
     if (!last_ip->have_ip) {
-        if (ip)
-            *ip = 0ull;
+        if (ip) *ip = 0ull;
         return -pte_noip;
     }
 
     if (last_ip->suppressed) {
-        if (ip)
-            *ip = 0ull;
+        if (ip) *ip = 0ull;
         return -pte_ip_suppressed;
     }
 
-    if (ip)
-        *ip = last_ip->ip;
+    if (ip) *ip = last_ip->ip;
 
     return 0;
 }
 
 /* Sign-extend a uint64_t value. */
-inline static uint64_t sext(uint64_t val, uint8_t sign)
-{
+inline static uint64_t sext(uint64_t val, uint8_t sign) {
     uint64_t signbit, mask;
 
     signbit = 1ull << (sign - 1);
@@ -121,63 +113,60 @@ inline static uint64_t sext(uint64_t val, uint8_t sign)
 }
 
 inline static int pt_last_ip_update_ip(
-    struct pt_last_ip* last_ip, const struct pt_packet_ip* packet, const struct pt_config* config)
-{
+    struct pt_last_ip* last_ip, const struct pt_packet_ip* packet, const struct pt_config* config) {
     (void)config;
 
-    if (!last_ip || !packet)
-        return -pte_invalid;
+    if (!last_ip || !packet) return -pte_invalid;
 
     switch (packet->ipc) {
-    case pt_ipc_suppressed:
-        last_ip->suppressed = 1;
-        return 0;
+        case pt_ipc_suppressed:
+            last_ip->suppressed = 1;
+            return 0;
 
-    case pt_ipc_sext_48:
-        last_ip->ip = sext(packet->ip, 48);
-        last_ip->have_ip = 1;
-        last_ip->suppressed = 0;
-        return 0;
+        case pt_ipc_sext_48:
+            last_ip->ip = sext(packet->ip, 48);
+            last_ip->have_ip = 1;
+            last_ip->suppressed = 0;
+            return 0;
 
-    case pt_ipc_update_16:
-        last_ip->ip = (last_ip->ip & ~0xffffull) | (packet->ip & 0xffffull);
-        last_ip->have_ip = 1;
-        last_ip->suppressed = 0;
-        return 0;
+        case pt_ipc_update_16:
+            last_ip->ip = (last_ip->ip & ~0xffffull) | (packet->ip & 0xffffull);
+            last_ip->have_ip = 1;
+            last_ip->suppressed = 0;
+            return 0;
 
-    case pt_ipc_update_32:
-        last_ip->ip = (last_ip->ip & ~0xffffffffull) | (packet->ip & 0xffffffffull);
-        last_ip->have_ip = 1;
-        last_ip->suppressed = 0;
-        return 0;
+        case pt_ipc_update_32:
+            last_ip->ip = (last_ip->ip & ~0xffffffffull) | (packet->ip & 0xffffffffull);
+            last_ip->have_ip = 1;
+            last_ip->suppressed = 0;
+            return 0;
 
-    case pt_ipc_update_48:
-        last_ip->ip = (last_ip->ip & ~0xffffffffffffull) | (packet->ip & 0xffffffffffffull);
-        last_ip->have_ip = 1;
-        last_ip->suppressed = 0;
-        return 0;
+        case pt_ipc_update_48:
+            last_ip->ip = (last_ip->ip & ~0xffffffffffffull) | (packet->ip & 0xffffffffffffull);
+            last_ip->have_ip = 1;
+            last_ip->suppressed = 0;
+            return 0;
 
-    case pt_ipc_full:
-        last_ip->ip = packet->ip;
-        last_ip->have_ip = 1;
-        last_ip->suppressed = 0;
-        return 0;
+        case pt_ipc_full:
+            last_ip->ip = packet->ip;
+            last_ip->have_ip = 1;
+            last_ip->suppressed = 0;
+            return 0;
     }
 
     return -pte_bad_packet;
 }
 
-inline static void perf_ptAnalyzePkt(honggfuzz_t* hfuzz, run_t* run, struct pt_packet* packet,
-    struct pt_config* ptc, struct pt_last_ip* last_ip)
-{
+inline static void perf_ptAnalyzePkt(
+    run_t* run, struct pt_packet* packet, struct pt_config* ptc, struct pt_last_ip* last_ip) {
     switch (packet->type) {
-    case ppt_tip:
-    case ppt_fup:
-    case ppt_tip_pge:
-    case ppt_tip_pgd:
-        break;
-    default:
-        return;
+        case ppt_tip:
+        case ppt_fup:
+        case ppt_tip_pge:
+        case ppt_tip_pgd:
+            break;
+        default:
+            return;
     }
 
     int errcode = pt_last_ip_update_ip(last_ip, &(packet->payload.ip), ptc);
@@ -191,7 +180,7 @@ inline static void perf_ptAnalyzePkt(honggfuzz_t* hfuzz, run_t* run, struct pt_p
         errcode = pt_last_ip_query(&ip, last_ip);
         if (errcode == 0) {
             ip &= _HF_PERF_BITMAP_BITSZ_MASK;
-            register uint8_t prev = ATOMIC_BTS(hfuzz->feedback->bbMapPc, ip);
+            register uint8_t prev = ATOMIC_BTS(run->global->feedback->bbMapPc, ip);
             if (!prev) {
                 run->linux.hwCnts.newBBCnt++;
             }
@@ -200,8 +189,7 @@ inline static void perf_ptAnalyzePkt(honggfuzz_t* hfuzz, run_t* run, struct pt_p
     return;
 }
 
-void arch_ptAnalyze(honggfuzz_t* hfuzz, run_t* run)
-{
+void arch_ptAnalyze(run_t* run) {
     struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
 
     uint64_t aux_tail = ATOMIC_GET(pem->aux_tail);
@@ -241,14 +229,13 @@ void arch_ptAnalyze(honggfuzz_t* hfuzz, run_t* run)
             LOG_W("pt_pkt_next() failed: %s", pt_errstr(errcode));
             break;
         }
-        perf_ptAnalyzePkt(hfuzz, run, &packet, &ptc, &last_ip);
+        perf_ptAnalyzePkt(run, &packet, &ptc, &last_ip);
     }
 }
 
 #else /* _HF_LINUX_INTEL_PT_LIB */
 
-void arch_ptAnalyze(honggfuzz_t* hfuzz UNUSED, run_t* fuzzer UNUSED)
-{
+void arch_ptAnalyze(run_t* fuzzer UNUSED) {
     LOG_F(
         "The program has not been linked against the Intel's Processor Trace Library (libipt.so)");
 }

@@ -21,46 +21,43 @@
 #define __XSTR(x) #x
 #define _XSTR(x) __XSTR(x)
 
-static char lhfuzzPath[PATH_MAX] = { 0 };
+static char lhfuzzPath[PATH_MAX] = {0};
 
 static bool isCXX = false;
 static bool isGCC = false;
 
 /* Embed libhfuzz.a inside this binary */
-__asm__("\n"
-        "   .global lhfuzz_start\n"
-        "   .global lhfuzz_end\n"
-        "lhfuzz_start:\n"
-        "   .incbin \"libhfuzz/libhfuzz.a\"\n"
-        "lhfuzz_end:\n"
-        "\n");
+__asm__(
+    "\n"
+    "   .global lhfuzz_start\n"
+    "   .global lhfuzz_end\n"
+    "lhfuzz_start:\n"
+    "   .incbin \"libhfuzz/libhfuzz.a\"\n"
+    "lhfuzz_end:\n"
+    "\n");
 
-static bool useASAN()
-{
+static bool useASAN() {
     if (getenv("HFUZZ_CC_ASAN") != NULL) {
         return true;
     }
     return false;
 }
 
-static bool useMSAN()
-{
+static bool useMSAN() {
     if (getenv("HFUZZ_CC_MSAN") != NULL) {
         return true;
     }
     return false;
 }
 
-static bool useUBSAN()
-{
+static bool useUBSAN() {
     if (getenv("HFUZZ_CC_UBSAN") != NULL) {
         return true;
     }
     return false;
 }
 
-static bool isLDMode(int argc, char** argv)
-{
+static bool isLDMode(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--version") == 0) {
             return false;
@@ -78,8 +75,7 @@ static bool isLDMode(int argc, char** argv)
     return true;
 }
 
-static int execCC(int argc, char** argv)
-{
+static int execCC(int argc, char** argv) {
     if (useASAN()) {
         argv[argc++] = "-fsanitize=address";
     }
@@ -138,8 +134,7 @@ static int execCC(int argc, char** argv)
 }
 
 /* It'll point back to the libhfuzz's source tree */
-char* getIncPaths(void)
-{
+char* getIncPaths(void) {
 #if !defined(_HFUZZ_INC_PATH)
 #error "You need to define _HFUZZ_INC_PATH"
 #endif
@@ -149,8 +144,7 @@ char* getIncPaths(void)
     return path;
 }
 
-static void commonOpts(int* j, char** args)
-{
+static void commonOpts(int* j, char** args) {
     args[(*j)++] = getIncPaths();
     if (isGCC) {
         /* That's the best gcc-6/7 currently offers */
@@ -177,8 +171,7 @@ static void commonOpts(int* j, char** args)
     }
 }
 
-static bool getLibHfuzz(void)
-{
+static bool getLibHfuzz(void) {
     const char* lhfuzzEnvLoc = getenv("HFUZZ_LHFUZZ_PATH");
     if (lhfuzzEnvLoc) {
         snprintf(lhfuzzPath, sizeof(lhfuzzPath), "%s", lhfuzzEnvLoc);
@@ -226,8 +219,7 @@ static bool getLibHfuzz(void)
     return true;
 }
 
-static int ccMode(int argc, char** argv)
-{
+static int ccMode(int argc, char** argv) {
     char* args[ARGS_MAX];
 
     int j = 0;
@@ -245,8 +237,7 @@ static int ccMode(int argc, char** argv)
     return execCC(j, args);
 }
 
-static int ldMode(int argc, char** argv)
-{
+static int ldMode(int argc, char** argv) {
     if (!getLibHfuzz()) {
         return EXIT_FAILURE;
     }
@@ -309,8 +300,7 @@ static int ldMode(int argc, char** argv)
     return execCC(j, args);
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     if (strstr(basename(util_StrDup(argv[0])), "++") != NULL) {
         isCXX = true;
     }

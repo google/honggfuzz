@@ -26,7 +26,7 @@
 
 #include "honggfuzz.h"
 
-extern bool input_getNext(honggfuzz_t* hfuzz, char* fname, bool rewind);
+extern bool input_getNext(run_t* run, char* fname, bool rewind);
 
 extern bool input_init(honggfuzz_t* hfuzz);
 

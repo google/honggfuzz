@@ -26,6 +26,6 @@
 
 #include "honggfuzz.h"
 
-extern void report_Report(honggfuzz_t* hfuzz, char* s);
+extern void report_Report(run_t* run);
 
 #endif
