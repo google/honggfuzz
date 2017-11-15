@@ -548,16 +548,14 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
     SSL_set_dh_auto(client, 1);
 
     SSL_set_max_early_data(client, 1024);
-    size_t sz;
     for (;;) {
+        size_t sz;
         uint8_t edata_rbuf[128];
         if (SSL_read_early_data(client, edata_rbuf, sizeof(edata_rbuf), &sz) !=
             SSL_READ_EARLY_DATA_SUCCESS) {
             break;
         }
     }
-    static const uint8_t edata_wbuf[128] = {1, 2, 3};
-    SSL_write_early_data(client, edata_wbuf, sizeof(edata_wbuf), &sz);
 #endif  // defined(HF_SSL_IS_OPENSSL_GE_1_1)
 
     /* Try it two times to test SSL_clear() */
