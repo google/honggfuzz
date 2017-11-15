@@ -145,8 +145,8 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     MX_SCOPED_LOCK(logMutexGet());
 
     display_put(ESC_NAV(13, 1) ESC_CLEAR_ABOVE ESC_NAV(1, 1));
-    display_put("------------------------- [ " ESC_BOLD "HONGGFUZZ" ESC_RESET " ] - [ " ESC_BOLD
-                "v%s" ESC_RESET " ] ----------------------------\n",
+    display_put("--------------------------- [ " ESC_BOLD "HONGGFUZZ" ESC_RESET " / " ESC_BOLD
+                "v%s" ESC_RESET " ] ------------------------------\n",
         PROG_VERSION);
     display_put("  Iterations : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
