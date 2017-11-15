@@ -14,14 +14,12 @@ extern "C" {
 #include <hf_ssl_lib.h>
 #include <libhfuzz/libhfuzz.h>
 
-int LLVMFuzzerInitialize(int* argc, char*** argv)
-{
+int LLVMFuzzerInitialize(int* argc, char*** argv) {
     HFResetRand();
     return 1;
 }
 
-int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
-{
+int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
     const uint8_t* b = buf;
     X509* x = d2i_X509(NULL, &b, len);
     if (x) {
