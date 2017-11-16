@@ -42,6 +42,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "honggfuzz.h"
 #include "libcommon/common.h"
 #include "libcommon/files.h"
 #include "libcommon/log.h"

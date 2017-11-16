@@ -35,19 +35,9 @@
 
 #define MX_LOCK(m) util_mutexLock(m, __func__, __LINE__)
 #define MX_UNLOCK(m) util_mutexUnlock(m, __func__, __LINE__)
-#define MX_SCOPED_LOCK(m) \
-    MX_LOCK(m);           \
-    defer { MX_UNLOCK(m); }
-
 #define MX_RWLOCK_READ(m) util_mutexRWLockRead(m, __func__, __LINE__)
 #define MX_RWLOCK_WRITE(m) util_mutexRWLockWrite(m, __func__, __LINE__)
 #define MX_RWLOCK_UNLOCK(m) util_mutexRWUnlock(m, __func__, __LINE__)
-#define MX_SCOPED_RWLOCK_READ(m) \
-    MX_RWLOCK_READ(m);           \
-    defer { MX_RWLOCK_UNLOCK(m); }
-#define MX_SCOPED_RWLOCK_WRITE(m) \
-    MX_RWLOCK_WRITE(m);           \
-    defer { MX_RWLOCK_UNLOCK(m); }
 
 /* Atomics */
 #define ATOMIC_GET(x) __atomic_load_n(&(x), __ATOMIC_SEQ_CST)

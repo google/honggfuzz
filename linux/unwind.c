@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "honggfuzz.h"
 #include "libcommon/common.h"
 #include "libcommon/log.h"
 
