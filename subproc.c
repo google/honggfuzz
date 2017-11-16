@@ -412,7 +412,7 @@ void subproc_checkTimeLimit(run_t* run) {
 }
 
 void subproc_checkTermination(run_t* run) {
-    if (fuzz_isTerminating(run->global)) {
+    if (fuzz_isTerminating()) {
         LOG_D("Killing PID: %d", (int)run->pid);
         kill(run->pid, SIGKILL);
     }

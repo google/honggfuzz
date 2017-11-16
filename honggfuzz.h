@@ -206,7 +206,6 @@ typedef struct {
     bool skipFeedbackOnTimeout;
     bool enableSanitizers;
     bool monitorSIGABRT;
-    time_t termTimeStamp;
     bool exitUponCrash;
 
     struct {

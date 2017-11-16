@@ -59,8 +59,8 @@ static void exitWithMsg(const char* msg, int exit_code) {
 void sigHandler(int sig) {
     /* We should not terminate upon SIGALRM delivery */
     if (sig == SIGALRM) {
-        if (fuzz_isTerminating(&hfuzz) && ((time(NULL) - hfuzz.termTimeStamp) > 5)) {
-            exitWithMsg("Terminating forecefully\n", EXIT_FAILURE);
+        if (fuzz_shouldTerminate()) {
+            exitWithMsg("Terminating forcefully\n", EXIT_FAILURE);
         }
         return;
     }
@@ -211,13 +211,13 @@ int main(int argc, char** argv) {
         }
         if (hfuzz.runEndTime > 0 && (time(NULL) > hfuzz.runEndTime)) {
             LOG_I("Maximum run time reached, terminating");
-            fuzz_setTerminating(&hfuzz);
+            fuzz_setTerminating();
             break;
         }
         pause();
     }
 
-    fuzz_setTerminating(&hfuzz);
+    fuzz_setTerminating();
 
     fuzz_threadsStop(&hfuzz, threads);
 

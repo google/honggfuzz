@@ -225,7 +225,7 @@ void arch_reapChild(run_t* run) {
         if (run->global->persistent && ret == run->persistentPid &&
             (WIFEXITED(status) || WIFSIGNALED(status))) {
             run->persistentPid = 0;
-            if (fuzz_isTerminating(run->global) == false) {
+            if (fuzz_isTerminating() == false) {
                 LOG_W("Persistent mode: PID %d exited with status: %s", ret,
                     subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
             }

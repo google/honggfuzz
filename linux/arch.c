@@ -303,7 +303,7 @@ static bool arch_checkWait(run_t* run) {
             (WIFEXITED(status) || WIFSIGNALED(status))) {
             arch_traceAnalyze(run, status, pid);
             run->persistentPid = 0;
-            if (fuzz_isTerminating(run->global) == false) {
+            if (fuzz_isTerminating() == false) {
                 LOG_W("Persistent mode: PID %d exited with status: %s", pid,
                     subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
             }
