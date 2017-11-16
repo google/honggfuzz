@@ -40,6 +40,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "fuzz.h"
 #include "libcommon/common.h"
 #include "libcommon/files.h"
 #include "libcommon/log.h"
@@ -224,7 +225,7 @@ void arch_reapChild(run_t* run) {
         if (run->global->persistent && ret == run->persistentPid &&
             (WIFEXITED(status) || WIFSIGNALED(status))) {
             run->persistentPid = 0;
-            if (ATOMIC_GET(run->global->terminating) == false) {
+            if (fuzz_isTerminating(run->global) == false) {
                 LOG_W("Persistent mode: PID %d exited with status: %s", ret,
                     subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
             }

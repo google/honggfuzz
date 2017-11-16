@@ -40,6 +40,7 @@
 #include <unistd.h>
 
 #include "arch.h"
+#include "fuzz.h"
 #include "libcommon/common.h"
 #include "libcommon/files.h"
 #include "libcommon/log.h"
@@ -411,7 +412,7 @@ void subproc_checkTimeLimit(run_t* run) {
 }
 
 void subproc_checkTermination(run_t* run) {
-    if (ATOMIC_GET(run->global->terminating)) {
+    if (fuzz_isTerminating(run->global)) {
         LOG_D("Killing PID: %d", (int)run->pid);
         kill(run->pid, SIGKILL);
     }

@@ -173,7 +173,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 #else
         .monitorSIGABRT = true,
 #endif
-        .terminating = false,
+        .termTimeStamp = 0U,
         .exitUponCrash = false,
 
         .threads =

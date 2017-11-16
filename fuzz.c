@@ -57,6 +57,20 @@
 #include "sanitizers.h"
 #include "subproc.h"
 
+bool fuzz_isTerminating(honggfuzz_t* hfuzz) {
+    if (ATOMIC_GET(hfuzz->termTimeStamp) != 0) {
+        return true;
+    }
+    return false;
+}
+
+void fuzz_setTerminating(honggfuzz_t* hfuzz) {
+    if (ATOMIC_GET(hfuzz->termTimeStamp) != 0) {
+        return;
+    }
+    ATOMIC_SET(hfuzz->termTimeStamp, time(NULL));
+}
+
 static void fuzz_getFileName(run_t* run) {
     snprintf(run->fileName, PATH_MAX, "%s/honggfuzz.input.%" PRIu32 ".%s.%s",
         run->global->io.workDir, run->fuzzNo, basename(run->global->cmdline[0]),
@@ -203,7 +217,7 @@ static void fuzz_setState(honggfuzz_t* hfuzz, fuzzState_t state) {
         static size_t cnt = 0;
         ATOMIC_PRE_INC(cnt);
         while (ATOMIC_GET(cnt) < hfuzz->threads.threadsMax) {
-            if (ATOMIC_GET(hfuzz->terminating) == true) {
+            if (fuzz_isTerminating(hfuzz)) {
                 return;
             }
             sleep(1);
@@ -526,7 +540,7 @@ static void fuzz_fuzzLoop(run_t* run) {
         }
     }
 
-    if (ATOMIC_GET(run->global->terminating) == true) {
+    if (fuzz_isTerminating(run->global)) {
         return;
     }
 
@@ -630,13 +644,13 @@ static void* fuzz_threadNew(void* arg) {
 
         fuzz_fuzzLoop(&run);
 
-        if (ATOMIC_GET(run.global->terminating) == true) {
+        if (fuzz_isTerminating(run.global)) {
             break;
         }
 
         if (run.global->exitUponCrash && ATOMIC_GET(run.global->cnts.crashesCnt) > 0) {
             LOG_I("Seen a crash. Terminating all fuzzing threads");
-            ATOMIC_SET(run.global->terminating, true);
+            fuzz_setTerminating(run.global);
             break;
         }
     }

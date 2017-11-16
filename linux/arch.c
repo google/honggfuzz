@@ -46,6 +46,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "fuzz.h"
 #include "libcommon/common.h"
 #include "libcommon/files.h"
 #include "libcommon/log.h"
@@ -302,7 +303,7 @@ static bool arch_checkWait(run_t* run) {
             (WIFEXITED(status) || WIFSIGNALED(status))) {
             arch_traceAnalyze(run, status, pid);
             run->persistentPid = 0;
-            if (ATOMIC_GET(run->global->terminating) == false) {
+            if (fuzz_isTerminating(run->global) == false) {
                 LOG_W("Persistent mode: PID %d exited with status: %s", pid,
                     subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
             }

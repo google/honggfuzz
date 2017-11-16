@@ -50,18 +50,23 @@ static int sigReceived = 0;
  */
 honggfuzz_t hfuzz;
 
+static void exitWithMsg(const char* msg, int exit_code) {
+    (void)write(STDERR_FILENO, msg, strlen(msg));
+    exit(exit_code);
+    abort();
+}
+
 void sigHandler(int sig) {
     /* We should not terminate upon SIGALRM delivery */
     if (sig == SIGALRM) {
+        if (fuzz_isTerminating(&hfuzz) && ((time(NULL) - hfuzz.termTimeStamp) > 5)) {
+            exitWithMsg("Terminating forecefully\n", EXIT_FAILURE);
+        }
         return;
     }
 
     if (ATOMIC_GET(sigReceived) != 0) {
-        static const char* const sigMsg = "Repeated termination signal caugth\n";
-        if (write(STDERR_FILENO, sigMsg, strlen(sigMsg) + 1) == -1) {
-        };
-        alarm(1);
-        exit(EXIT_FAILURE);
+        exitWithMsg("Repeated termination signal caugth\n", EXIT_FAILURE);
     }
 
     ATOMIC_SET(sigReceived, sig);
@@ -206,13 +211,13 @@ int main(int argc, char** argv) {
         }
         if (hfuzz.runEndTime > 0 && (time(NULL) > hfuzz.runEndTime)) {
             LOG_I("Maximum run time reached, terminating");
-            ATOMIC_SET(hfuzz.terminating, true);
+            fuzz_setTerminating(&hfuzz);
             break;
         }
         pause();
     }
 
-    ATOMIC_SET(hfuzz.terminating, true);
+    fuzz_setTerminating(&hfuzz);
 
     fuzz_threadsStop(&hfuzz, threads);
 
