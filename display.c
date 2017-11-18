@@ -47,6 +47,7 @@
 #define ESC_RESET "\033[0m"
 #define ESC_SCROLL(x, y) "\033[" #x ";" #y "r"
 #define ESC_SCROLL_DISABLE "\033[?7h"
+#define ESC_SCROLL_ENABLE "\033[r"
 #define ESC_RESET_SETTINGS "\033[!p"
 
 #if defined(_HF_ARCH_LINUX)
@@ -281,7 +282,7 @@ extern void display_display(honggfuzz_t* hfuzz) {
 }
 
 extern void display_fini(void) {
-    display_put(ESC_RESET_SETTINGS ESC_SCROLL(1, 999) ESC_NAV(999, 1));
+    display_put(ESC_SCROLL_ENABLE ESC_NAV(999, 1));
 }
 
 extern void display_init(void) {
