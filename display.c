@@ -47,6 +47,7 @@
 #define ESC_RESET "\033[0m"
 #define ESC_SCROLL(x, y) "\033[" #x ";" #y "r"
 #define ESC_SCROLL_DISABLE "\033[?7h"
+#define ESC_RESET_SETTINGS "\033[!p"
 
 #if defined(_HF_ARCH_LINUX)
 #define _HF_MONETARY_MOD "'"
@@ -279,7 +280,9 @@ extern void display_display(honggfuzz_t* hfuzz) {
     display_displayLocked(hfuzz);
 }
 
-extern void display_fini(void) { display_put(ESC_SCROLL(1, 999) ESC_NAV(999, 1)); }
+extern void display_fini(void) {
+    display_put(ESC_RESET_SETTINGS ESC_SCROLL(1, 999) ESC_NAV(999, 1));
+}
 
 extern void display_init(void) {
     atexit(display_fini);
