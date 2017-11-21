@@ -607,9 +607,11 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     for (size_t i = 1; hfuzz->cmdline[i]; i++) {
         util_ssnprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), " %s", hfuzz->cmdline[i]);
         if (strlen(hfuzz->cmdline_txt) == (sizeof(hfuzz->cmdline_txt) - 1)) {
+            hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 5] = ' ';
+            hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 4] = '.';
             hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 3] = '.';
             hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 2] = '.';
-            hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 1] = '.';
+            hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 1] = '\0';
         }
     }
 
