@@ -74,7 +74,7 @@ bool arch_checkCrash() {
     char result[128];
 
     //FILE* pipe = popen("taskkill /F /IM WerFault.exe", "r");
-    FILE* pipe = popen("taskkill /F /IM cdb.exe", "r");
+    FILE* pipe = popen("taskkill /F /IM cdb.exe 2>nul", "r");
     if (!pipe){
           LOG_E("popen执行失败");
           return 0;
