@@ -243,7 +243,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     char start_time_str[128];
     util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
     if(ATOMIC_GET(hfuzz->state) == _HF_STATE_DRY_RUN){
-        display_put(ESC_WHITE "\n    Run Time : " ESC_RESET ESC_BOLD "%s (" ESC_RESET ESC_WHITE "Remain: "ESC_RESET ESC_BOLD "%s)\n" ESC_RESET , time_elapsed_str, time_remain_str);
+        display_put(ESC_WHITE "\n    Run Time : " ESC_RESET ESC_BOLD "%s (" ESC_RESET ESC_WHITE "Remain: " ESC_RESET ESC_BOLD "%s)\n" ESC_RESET , time_elapsed_str, time_remain_str);
     }else{
         display_put(ESC_WHITE "\n    Run Time : " ESC_RESET ESC_BOLD "%s\n" ESC_RESET , time_elapsed_str);   
     } 
