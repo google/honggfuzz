@@ -133,6 +133,29 @@ static char* get_time_elapsed(uint64_t start_time) {
     return str_time_elapsed;
 }    
 
+static char* get_time_remain(unsigned long remain_second) {
+   
+    unsigned int day, hour, min, second;
+    static char str_time_remain[64];
+
+    if (remain_second < 24 * 3600) {
+        hour = remain_second / 3600;
+        min = (remain_second - 3600 * hour) / 60;
+        second = remain_second - hour * 3600 - min * 60;
+        snprintf(str_time_remain, sizeof(str_time_remain), "%02u:%02u:%02u", hour,
+                 min, second);
+    } else {
+        day = remain_second / 24 / 3600;
+        remain_second = remain_second - day * 24 * 3600;
+        hour = remain_second / 3600;
+        min = (remain_second - 3600 * hour) / 60;
+        second = remain_second - hour * 3600 - min * 60;
+        snprintf(str_time_remain, sizeof(str_time_remain),
+                 "%u days %02u:%02u:%02u", day, hour, min, second);
+    }
+    return str_time_remain;
+} 
+
 static void display_displayLocked(honggfuzz_t * hfuzz)
 {
     static bool firstDisplay = true;
@@ -143,7 +166,10 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     char *target;
     char *time_elapsed_str;
+    char *time_remain_str;
     unsigned long elapsed_second;
+    unsigned long remain_second;
+    unsigned long speed_second;
 
     elapsed_second = (unsigned long)(time(NULL) - hfuzz->timeStart);
     time_elapsed_str = get_time_elapsed(hfuzz->timeStart);
@@ -178,7 +204,15 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 		target = hfuzz->cmdline[0];  // only exec file name
 	}
     hfuzz->target = target;
-    
+    if(0 == curr_exec_cnt){
+        speed_second = ATOMIC_GET(hfuzz->tmOut);
+    }else{
+        speed_second = curr_exec_cnt/(elapsed_second==0?1:elapsed_second);
+    }
+   
+    remain_second = (ATOMIC_GET(hfuzz->fileCnt) - curr_exec_cnt) * (speed_second==0?1:speed_second);
+    time_remain_str = get_time_remain(remain_second);
+
     display_put(ESC_NAV(11, 1) ESC_CLEAR_ABOVE ESC_NAV(1, 1));
     display_put("-------------------------[ " ESC_BOLD ESC_YELLOW "%s " ESC_RESET ESC_BOLD"v%s "  ESC_PINK "(%s)" ESC_RESET" ]-------------------------\n",
                 PROG_NAME, PROG_VERSION, target );
@@ -193,7 +227,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "Dumb Fuzzing" ESC_RESET);
         break;
     case _HF_STATE_DRY_RUN:
-        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "Dry Run Mode" ESC_RESET);
+        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "Dry Run" ESC_RESET);
     break;
     case _HF_STATE_DYNAMIC_PRE:
         display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "Dynamic Fuzzing" ESC_RESET);
@@ -208,7 +242,11 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 
     char start_time_str[128];
     util_getLocalTime("%F %T", start_time_str, sizeof(start_time_str), hfuzz->timeStart);
-    display_put(ESC_WHITE "\n    Run Time : " ESC_RESET ESC_BOLD "%s\n" ESC_RESET , time_elapsed_str);
+    if(ATOMIC_GET(hfuzz->state) == _HF_STATE_DRY_RUN){
+        display_put(ESC_WHITE "\n    Run Time : " ESC_RESET ESC_BOLD "%s (Remain: %s)\n" ESC_RESET , time_elapsed_str, time_remain_str);
+    }else{
+        display_put(ESC_WHITE "\n    Run Time : " ESC_RESET ESC_BOLD "%s\n" ESC_RESET , time_elapsed_str);   
+    } 
     display_put(ESC_WHITE "   Input Dir : " ESC_RESET ESC_RED "[% " _HF_MONETARY_MOD "zu] " ESC_RESET ESC_BOLD "'%s" ESC_RESET "'\n",
                 ATOMIC_GET(hfuzz->fileCnt), hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]");
     display_put(ESC_WHITE "  Fuzzed Cmd : " ESC_RESET ESC_BOLD "'%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
