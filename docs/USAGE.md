@@ -55,7 +55,7 @@ Options:
  --threads|-n VALUE
 	Number of concurrent fuzzing threads (default: '2')
  --stdin_input|-s
-	Provide fuzzing input on STDIN, instead of ___FILE___
+	Provide fuzzing input on STDIN, instead of @@
  --mutation_rate|-r VALUE
 	Maximal mutation rate in relation to the file size, (default: '0.001')
  --logfile|-l VALUE
@@ -125,25 +125,25 @@ Options:
 
 Examples:
  Run the binary over a mutated file chosen from the directory
-  honggfuzz -f input_dir -- /usr/bin/tiffinfo -D ___FILE___
+  honggfuzz -f input_dir -- /usr/bin/tiffinfo -D @@
  As above, provide input over STDIN:
   honggfuzz -f input_dir -s -- /usr/bin/djpeg
  Use SANCOV to maximize code coverage:
-  honggfuzz -f input_dir -C -- /usr/bin/tiffinfo -D ___FILE___
+  honggfuzz -f input_dir -C -- /usr/bin/tiffinfo -D @@
  Use compile-time instrumentation (libhfuzz/instrument.c):
-  honggfuzz -f input_dir -z -- /usr/bin/tiffinfo -D ___FILE___
+  honggfuzz -f input_dir -z -- /usr/bin/tiffinfo -D @@
  Use persistent mode (libhfuzz/persistent.c):
   honggfuzz -f input_dir -P -- /usr/bin/tiffinfo_persistent
  Run the binary over a dynamic file, maximize total no. of instructions:
-  honggfuzz --linux_perf_instr -- /usr/bin/tiffinfo -D ___FILE___
+  honggfuzz --linux_perf_instr -- /usr/bin/tiffinfo -D @@
  Run the binary over a dynamic file, maximize total no. of branches:
-  honggfuzz --linux_perf_branch -- /usr/bin/tiffinfo -D ___FILE___
+  honggfuzz --linux_perf_branch -- /usr/bin/tiffinfo -D @@
  Run the binary over a dynamic file, maximize unique code blocks (coverage):
-  honggfuzz --linux_perf_ip -- /usr/bin/tiffinfo -D ___FILE___
+  honggfuzz --linux_perf_ip -- /usr/bin/tiffinfo -D @@
  Run the binary over a dynamic file, maximize unique branches (edges):
-  honggfuzz --linux_perf_ip_addr -- /usr/bin/tiffinfo -D ___FILE___
+  honggfuzz --linux_perf_ip_addr -- /usr/bin/tiffinfo -D @@
  Run the binary over a dynamic file, maximize custom counters (experimental):
-  honggfuzz --linux_perf_custom -- /usr/bin/tiffinfo -D ___FILE___
+  honggfuzz --linux_perf_custom -- /usr/bin/tiffinfo -D @@
 ```
 
 # OUTPUT FILES #

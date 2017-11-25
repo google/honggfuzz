@@ -63,7 +63,7 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 #endif
 
 /* Name of the template which will be replaced with the proper name of the file */
-#define _HF_FILE_PLACEHOLDER "___FILE___"
+#define _HF_FILE_PLACEHOLDER "@@"
 
 /* Default name of the report created with some architectures */
 #define _HF_REPORT_FILE "HONGGFUZZ.REPORT.TXT"

@@ -38,12 +38,12 @@ There are 2 phases of feedback-driven the fuzzing:
 In order to make this mode work, one needs to compile the fuzzed tool (_xmllint_ here) with _-fsanitize=address -fsanitize-coverage=bb_
 
 ```
-$ honggfuzz -C -f IN.corpus/ -- ./xmllint --format --nonet ___FILE___
+$ honggfuzz -C -f IN.corpus/ -- ./xmllint --format --nonet @@
 ============================== STAT ==============================
 Iterations: 1419
 Start time: 2016-03-15 16:43:57 (16 seconds elapsed)
 Input file/dir: 'IN/'
-Fuzzed cmd: './xmllint --format --nonet ___FILE___'
+Fuzzed cmd: './xmllint --format --nonet @@'
 Fuzzing threads: 3
 Execs per second: 41 (avg: 88)
 Crashes: 0 (unique: 0, blacklist: 0, verified: 0)
@@ -134,7 +134,7 @@ $ honggfuzz -z -P -f IN.server/ -- ./persistent.server.openssl.1.0.2i.asan
 -----------------------------------[ LOGS ]-----------------------------------
 ```
 
-PS. You can also use a non-persistent mode here (without the -P flag), in which case you need to read data either from a file passed at command-line (`___FILE___`), or from the standard input (e.g. with `read(0, buf, sizeof(buf))`. The compile-time instrumentation (-z) will still work in such case.
+PS. You can also use a non-persistent mode here (without the -P flag), in which case you need to read data either from a file passed at command-line (`@@`), or from the standard input (e.g. with `read(0, buf, sizeof(buf))`. The compile-time instrumentation (-z) will still work in such case.
 
 # Hardware-based coverage #
 ## Unique branch points counting (--linux_perf_bts_block) ##
@@ -142,12 +142,12 @@ PS. You can also use a non-persistent mode here (without the -P flag), in which 
 This feedback-driven counting honggfuzz mode utilizes Intel's BTS (Branch Trace Store) feature to record all basic blocks (jump blocks) inside the fuzzed process. Later on, honggfuzz will de-duplicate those entries. The resulting number of branch jump point is a good approximation of how much code of a given tool have been actively executed/used (code coverage).
 
 ```
-$ honggfuzz --linux_perf_bts_block -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
+$ honggfuzz --linux_perf_bts_block -f IN.corpus/ -- /usr/bin/xmllint -format @@
 ============================== STAT ==============================
 Iterations: 0
 Start time: 2016-02-16 18:35:32 (0 seconds elapsed)
 Input file/dir: 'CURRENT_BEST'
-Fuzzed cmd: '/usr/bin/xmllint -format ___FILE___'
+Fuzzed cmd: '/usr/bin/xmllint -format @@'
 Fuzzing threads: 2
 Execs per second: 0 (avg: 0)
 Crashes: 0 (unique: 0, blacklist: 0, verified: 0)
@@ -165,12 +165,12 @@ Coverage (max):
 This mode will take into consideration pairs (tuples) of jumps, recording unique from-to jump pairs. The data is taken from the Intel BTS CPU registers.
 
 ```
-$ honggfuzz --linux_perf_bts_edge -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
+$ honggfuzz --linux_perf_bts_edge -f IN.corpus/ -- /usr/bin/xmllint -format @@
 ============================== STAT ==============================
 Iterations: 1
 Start time: 2016-02-16 18:37:08 (1 seconds elapsed)
 Input file/dir: 'IN/'
-Fuzzed cmd: '/usr/bin/xmllint -format ___FILE___'
+Fuzzed cmd: '/usr/bin/xmllint -format @@'
 Fuzzing threads: 2
 Execs per second: 1 (avg: 1)
 Crashes: 0 (unique: 0, blacklist: 0, verified: 0)
@@ -187,12 +187,12 @@ Coverage (max):
 This mode will utilize Interl's PT (Process Trace) subsystem, which should be way faster than BTS (Branch Trace Store), but will currently produce less precise results.
 
 ```
-$ honggfuzz --linux_perf_ipt_block -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
+$ honggfuzz --linux_perf_ipt_block -f IN.corpus/ -- /usr/bin/xmllint -format @@
 ============================== STAT ==============================
 Iterations: 0
 Start time: 2016-02-16 18:38:45 (0 seconds elapsed)
 Input file/dir: 'IN/'
-Fuzzed cmd: '/usr/bin/xmllint -format ___FILE___'
+Fuzzed cmd: '/usr/bin/xmllint -format @@'
 Fuzzing threads: 2
 Execs per second: 0 (avg: 0)
 Crashes: 0 (unique: 0, blacklist: 0, verified: 0)
@@ -208,12 +208,12 @@ Coverage (max):
 This mode tries to maximize the number of instructions taken during each process iteration. The counters will be taken from the Linux perf subsystems. Intel, AMD and even other CPU architectures are supported for this mode.
 
 ```
-$ honggfuzz --linux_perf_instr -f IN.corpus -- /usr/bin/xmllint -format ___FILE___
+$ honggfuzz --linux_perf_instr -f IN.corpus -- /usr/bin/xmllint -format @@
 ============================== STAT ==============================
 Iterations: 2776
 Start time: 2016-02-16 18:40:51 (3 seconds elapsed)
 Input file/dir: 'CURRENT_BEST'
-Fuzzed cmd: '/usr/bin/xmllint -format ___FILE___'
+Fuzzed cmd: '/usr/bin/xmllint -format @@'
 Fuzzing threads: 2
 Execs per second: 922 (avg: 925)
 Crashes: 0 (unique: 0, blacklist: 0, verified: 0)
@@ -233,12 +233,12 @@ Coverage (max):
 As above, it will try to maximize the number of branches taken by CPU on behalf of the fuzzed process (here: djpeg.static) while performing each fuzzing iteration. Intel, AMD and even other CPU architectures are supported for this mode.
 
 ```
-$ honggfuzz --linux_perf_branch -f IN/ -F 2500 -q -- /usr/bin/xmllint -format ___FILE___
+$ honggfuzz --linux_perf_branch -f IN/ -F 2500 -q -- /usr/bin/xmllint -format @@
 ============================== STAT ==============================
 Iterations: 0
 Start time: 2016-02-16 18:39:41 (0 seconds elapsed)
 Input file/dir: 'IN/'
-Fuzzed cmd: '/usr/bin/xmllint -format ___FILE___'
+Fuzzed cmd: '/usr/bin/xmllint -format @@'
 Fuzzing threads: 2
 Execs per second: 0 (avg: 0)
 Crashes: 0 (unique: 0, blacklist: 0, verified: 0)

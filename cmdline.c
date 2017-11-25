@@ -252,7 +252,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         {{"nullify_stdio", no_argument, NULL, 'q'}, "Null-ify children's stdin, stdout, stderr; make them quiet"},
         {{"timeout", required_argument, NULL, 't'}, "Timeout in seconds (default: '10')"},
         {{"threads", required_argument, NULL, 'n'}, "Number of concurrent fuzzing threads (default: number of CPUs / 2)"},
-        {{"stdin_input", no_argument, NULL, 's'}, "Provide fuzzing input on STDIN, instead of ___FILE___"},
+        {{"stdin_input", no_argument, NULL, 's'}, "Provide fuzzing input on STDIN, instead of @@"},
         {{"mutation_rate", required_argument, NULL, 'r'}, "Maximal mutation rate in relation to the file size, (default: '0.001')"},
         {{"logfile", required_argument, NULL, 'l'}, "Log file"},
         {{"verbose", no_argument, NULL, 'v'}, "Disable ANSI console; use simple log output"},
