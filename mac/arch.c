@@ -747,4 +747,4 @@ kern_return_t catch_mach_exception_raise_state_identity(
     return KERN_SUCCESS;
 }
 
-bool arch_archThreadInit(honggfuzz_t* hfuzz UNUSED, run_t* run UNUSED) { return true; }
+bool arch_archThreadInit(run_t* run UNUSED) { return true; }
