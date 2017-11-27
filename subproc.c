@@ -163,6 +163,7 @@ bool subproc_PrepareExecv(run_t* run, const char* fileName) {
             PLOG_W("Couldn't enforce the RLIMIT_AS resource limit, ignoring");
         }
     }
+#if defined(RLIMIT_RSS)
     if (run->global->rssLimit) {
         struct rlimit rl = {
             .rlim_cur = run->global->rssLimit * 1024ULL * 1024ULL,
@@ -172,6 +173,7 @@ bool subproc_PrepareExecv(run_t* run, const char* fileName) {
             PLOG_W("Couldn't enforce the RLIMIT_RSS resource limit, ignoring");
         }
     }
+#endif /* defined(RLIMIT_RSS) */
     if (run->global->dataLimit) {
         struct rlimit rl = {
             .rlim_cur = run->global->dataLimit * 1024ULL * 1024ULL,
