@@ -179,7 +179,7 @@ bool subproc_PrepareExecv(run_t* run, const char* fileName) {
             .rlim_cur = run->global->dataLimit * 1024ULL * 1024ULL,
             .rlim_max = run->global->dataLimit * 1024ULL * 1024ULL,
         };
-        if (setrlimit(RLIMIT_RSS, &rl) == -1) {
+        if (setrlimit(RLIMIT_DATA, &rl) == -1) {
             PLOG_W("Couldn't enforce the RLIMIT_DATA resource limit, ignoring");
         }
     }
