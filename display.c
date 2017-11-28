@@ -210,7 +210,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         speed_second = curr_exec_cnt/(elapsed_second==0?1:elapsed_second);
     }
     int remain_file_cnt = ATOMIC_GET(hfuzz->fileCnt) - curr_exec_cnt;
-    remain_second = (remain_file_cnt<0?0:remain_file_cnt) * (speed_second==0?1:speed_second);
+    remain_second = (remain_file_cnt<0?1:remain_file_cnt) * (speed_second==0?1:speed_second);
     time_remain_str = get_time_remain(remain_second);
 
     display_put(ESC_NAV(11, 1) ESC_CLEAR_ABOVE ESC_NAV(1, 1));
