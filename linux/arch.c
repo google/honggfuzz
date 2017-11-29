@@ -215,21 +215,32 @@ void arch_prepareParentAfterFork(run_t* run) {
     }
 }
 
+static bool arch_attachToNewPid(run_t* run, pid_t pid) {
+    if (!arch_shouldAttach(run)) {
+        return true;
+    }
+    run->linux.attachedPid = pid;
+    if (!arch_traceAttach(run, pid)) {
+        LOG_W("arch_traceAttach(pid=%d) failed", pid);
+        kill(pid, SIGKILL);
+        return false;
+    }
+
+    arch_perfClose(run);
+    if (arch_perfOpen(pid, run) == false) {
+        kill(pid, SIGKILL);
+        return false;
+    }
+
+    return true;
+}
+
 void arch_prepareParent(run_t* run) {
     pid_t ptracePid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
     pid_t childPid = run->pid;
 
-    if (arch_shouldAttach(run) == true) {
-        if (arch_traceAttach(run, ptracePid)) {
-            arch_perfClose(run);
-            if (arch_perfOpen(ptracePid, run) == false) {
-                LOG_F("arch_perfOpen(pid=%d)", (int)ptracePid);
-            }
-        } else {
-            LOG_E("arch_traceAttach(pid=%d) failed", ptracePid);
-            kill(ptracePid, SIGKILL);
-        }
-        run->linux.attachedPid = ptracePid;
+    if (!arch_attachToNewPid(run, ptracePid)) {
+        LOG_E("Couldn't attach to PID=%d", (int)ptracePid);
     }
 
     /* A long-lived process could have already exited, and we wouldn't know */
