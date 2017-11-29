@@ -200,8 +200,6 @@ bool arch_launchChild(run_t* run) {
 }
 
 void arch_prepareParentAfterFork(run_t* run) {
-    arch_perfClose(run);
-
     /* Parent */
     if (run->global->persistent) {
         const struct f_owner_ex fown = {
@@ -218,11 +216,6 @@ void arch_prepareParentAfterFork(run_t* run) {
             PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", run->persistentSock);
         }
     }
-
-    pid_t perf_pid = (run->global->linux.pid == 0) ? run->pid : run->global->linux.pid;
-    if (arch_perfOpen(perf_pid, run) == false) {
-        LOG_F("arch_perfOpen(pid=%d)", (int)perf_pid);
-    }
 }
 
 void arch_prepareParent(run_t* run) {
@@ -230,7 +223,12 @@ void arch_prepareParent(run_t* run) {
     pid_t childPid = run->pid;
 
     if (arch_shouldAttach(run) == true) {
-        if (arch_traceAttach(run, ptracePid) == false) {
+        if (arch_traceAttach(run, ptracePid)) {
+            arch_perfClose(run);
+            if (arch_perfOpen(ptracePid, run) == false) {
+                LOG_F("arch_perfOpen(pid=%d)", (int)ptracePid);
+            }
+        } else {
             LOG_E("arch_traceAttach(pid=%d) failed", ptracePid);
             kill(ptracePid, SIGKILL);
         }

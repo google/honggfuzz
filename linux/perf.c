@@ -193,6 +193,7 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
             "sysctl (up to even 300000000)",
             (size_t)_HF_PERF_MAP_SZ + getpagesize());
         close(*perfFd);
+        *perfFd = -1;
         return false;
     }
 
@@ -208,6 +209,7 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
             "mmap(mmapAuxBuf) failed, try increasing the kernel.perf_event_mlock_kb "
             "sysctl (up to even 300000000)");
         close(*perfFd);
+        *perfFd = -1;
         return false;
     }
 #else  /* defined(PERF_ATTR_SIZE_VER5) */
@@ -251,8 +253,11 @@ bool arch_perfOpen(pid_t pid, run_t* run) {
 
 out:
     close(run->linux.cpuInstrFd);
+    run->linux.cpuInstrFd = -1;
     close(run->linux.cpuBranchFd);
+    run->linux.cpuBranchFd = -1;
     close(run->linux.cpuIptBtsFd);
+    run->linux.cpuIptBtsFd = 1;
 
     return false;
 }
