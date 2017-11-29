@@ -250,7 +250,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .numMajorFrames = 7,
                 .pid = 0,
                 .pidFile = NULL,
-                .pidCmd = NULL,
+                .pidCmd[0] = '\0',
                 .symsBlFile = NULL,
                 .symsBlCnt = 0,
                 .symsBl = NULL,

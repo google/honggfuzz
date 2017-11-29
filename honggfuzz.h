@@ -262,7 +262,7 @@ typedef struct {
         size_t numMajorFrames;
         pid_t pid;
         const char* pidFile;
-        char* pidCmd;
+        char pidCmd[55];
         const char* symsBlFile;
         char** symsBl;
         size_t symsBlCnt;

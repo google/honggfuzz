@@ -58,9 +58,6 @@
 #include "sanitizers.h"
 #include "subproc.h"
 
-/* Size of remote pid cmdline char buffer */
-#define _HF_PROC_CMDLINE_SZ 8192
-
 static inline bool arch_shouldAttach(run_t* run) {
     if (run->global->persistent && run->linux.attachedPid == run->pid) {
         return false;
@@ -482,17 +479,10 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
         char procCmd[PATH_MAX] = {0};
         snprintf(procCmd, sizeof(procCmd), "/proc/%d/cmdline", hfuzz->linux.pid);
 
-        hfuzz->linux.pidCmd = malloc(_HF_PROC_CMDLINE_SZ * sizeof(char));
-        if (!hfuzz->linux.pidCmd) {
-            PLOG_E("malloc(%zu) failed", (size_t)_HF_PROC_CMDLINE_SZ);
-            return false;
-        }
-
-        ssize_t sz =
-            files_readFileToBufMax(procCmd, (uint8_t*)hfuzz->linux.pidCmd, _HF_PROC_CMDLINE_SZ - 1);
+        ssize_t sz = files_readFileToBufMax(
+            procCmd, (uint8_t*)hfuzz->linux.pidCmd, sizeof(hfuzz->linux.pidCmd) - 1);
         if (sz < 1) {
             LOG_E("Couldn't read '%s'", procCmd);
-            free(hfuzz->linux.pidCmd);
             return false;
         }
 
