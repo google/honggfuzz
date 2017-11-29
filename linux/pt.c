@@ -50,12 +50,21 @@ inline static void perf_ptAnalyzePkt(run_t* run, struct pt_packet* packet) {
     }
 
     uint64_t ip;
-    if (packet->payload.ip.ipc == pt_ipc_sext_48) {
-        ip = sext(packet->payload.ip.ip, 48);
-    } else if (packet->payload.ip.ipc == pt_ipc_full) {
-        ip = packet->payload.ip.ip;
-    } else {
-        return;
+    switch (packet->payload.ip.ipc) {
+        case pt_ipc_sext_48:
+            ip = sext(packet->payload.ip.ip, 48);
+            break;
+        case pt_ipc_full:
+            ip = packet->payload.ip.ip;
+            break;
+        case pt_ipc_update_32:
+            ip = packet->payload.ip.ip & 0xFFFFFFFF;
+            break;
+        case pt_ipc_update_48:
+            ip = packet->payload.ip.ip & 0xFFFFFFFFFFFF;
+            break;
+        default:
+            return;
     }
 
     ip &= _HF_PERF_BITMAP_BITSZ_MASK;
