@@ -51,17 +51,20 @@ inline static void perf_ptAnalyzePkt(run_t* run, struct pt_packet* packet) {
 
     uint64_t ip;
     switch (packet->payload.ip.ipc) {
-        case pt_ipc_sext_48:
-            ip = sext(packet->payload.ip.ip, 48);
-            break;
-        case pt_ipc_full:
-            ip = packet->payload.ip.ip;
+        case pt_ipc_update_16:
+            ip = packet->payload.ip.ip & 0xFFFF;
             break;
         case pt_ipc_update_32:
             ip = packet->payload.ip.ip & 0xFFFFFFFF;
             break;
         case pt_ipc_update_48:
             ip = packet->payload.ip.ip & 0xFFFFFFFFFFFF;
+            break;
+        case pt_ipc_sext_48:
+            ip = sext(packet->payload.ip.ip, 48);
+            break;
+        case pt_ipc_full:
+            ip = packet->payload.ip.ip;
             break;
         default:
             return;
