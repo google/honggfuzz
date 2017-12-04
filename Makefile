@@ -180,7 +180,7 @@ endif
 # Control Android builds
 ANDROID_API           ?= android-24
 ANDROID_DEBUG_ENABLED ?= false
-ANDROID_CLANG         ?= false
+ANDROID_CLANG         ?= true
 ANDROID_APP_ABI       ?= armeabi-v7a
 ANDROID_SKIP_CLEAN    ?= false
 NDK_BUILD_ARGS :=
@@ -198,6 +198,7 @@ ifeq ($(ANDROID_SKIP_CLEAN),true)
 endif
 
 ifeq ($(ANDROID_CLANG),true)
+  ANDROID_NDK_TOOLCHAIN_VER := clang
   # clang works only against APIs >= 23
   ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),armeabi armeabi-v7a))
     ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-clang
@@ -215,6 +216,7 @@ ifeq ($(ANDROID_CLANG),true)
     $(error Unsuported / Unknown APP_API '$(ANDROID_APP_ABI)')
   endif
 else
+  ANDROID_NDK_TOOLCHAIN_VER := 4.9
   ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),armeabi armeabi-v7a))
     ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-4.9
     ANDROID_ARCH_CPU := arm
@@ -303,8 +305,8 @@ android:
 
 	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
     APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) \
-    NDK_TOOLCHAIN=$(ANDROID_NDK_TOOLCHAIN) $(NDK_BUILD_ARGS) \
-    APP_MODULES='honggfuzz hfuzz'
+    NDK_TOOLCHAIN=$(ANDROID_NDK_TOOLCHAIN) NDK_TOOLCHAIN_VERSION=$(ANDROID_NDK_TOOLCHAIN_VER) \
+    $(NDK_BUILD_ARGS) APP_MODULES='honggfuzz hfuzz'
 
 # Loop all ABIs and pass-through flags since visibility is lost due to sub-process
 .PHONY: android-all
