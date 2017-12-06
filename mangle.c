@@ -26,6 +26,7 @@
 
 #include <inttypes.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -523,6 +524,14 @@ static void mangle_InsertRnd(run_t* run) {
     util_rndBuf(&run->dynamicFile[off], len);
 }
 
+static void mangle_ASCIIVal(run_t* run) {
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%" PRId64, (int64_t)util_rnd64());
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+
+    mangle_Overwrite(run, (uint8_t*)buf, off, strlen(buf));
+}
+
 void mangle_mangleContent(run_t* run) {
     if (run->mutationsPerRun == 0U) {
         return;
@@ -557,6 +566,7 @@ void mangle_mangleContent(run_t* run) {
         mangle_Expand,
         mangle_Shrink,
         mangle_InsertRnd,
+        mangle_ASCIIVal,
         mangle_Resize,
     };
 

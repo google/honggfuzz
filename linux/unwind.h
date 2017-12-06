@@ -24,7 +24,7 @@
 #ifndef _HF_LINUX_UNWIND_H_
 #define _HF_LINUX_UNWIND_H_
 
-#include <limits.h>
+#include <linux/limits.h>
 #include <sys/types.h>
 
 /* String buffer size for function names in stack traces produced from libunwind */
