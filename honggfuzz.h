@@ -38,7 +38,7 @@
 #include "libcommon/util.h"
 
 #define PROG_NAME "honggfuzz"
-#define PROG_VERSION "1.2"
+#define PROG_VERSION "1.3"
 
 /* Name of the template which will be replaced with the proper name of the file */
 #define _HF_FILE_PLACEHOLDER "___FILE___"
