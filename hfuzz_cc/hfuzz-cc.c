@@ -146,7 +146,6 @@ char* getIncPaths(void) {
 }
 
 static void commonOpts(int* j, char** args) {
-    args[(*j)++] = getIncPaths();
     if (isGCC) {
         /* That's the best gcc-6/7 currently offers */
         args[(*j)++] = "-fsanitize-coverage=trace-pc";
@@ -234,6 +233,8 @@ static int ccMode(int argc, char** argv) {
         args[j++] = argv[i];
     }
 
+    args[j++] = getIncPaths();
+
     return execCC(j, args);
 }
 
@@ -296,6 +297,7 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--no-whole-archive";
 
     args[j++] = "-lpthread";
+    args[j++] = getIncPaths();
 
     return execCC(j, args);
 }
