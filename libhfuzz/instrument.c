@@ -20,6 +20,8 @@
 #include "libcommon/log.h"
 #include "libcommon/util.h"
 
+int hfuzz_module_instrument = 0;
+
 /*
  * We require SSE4.2 with x86-(32|64) for the 'popcnt', as it's much faster than the software
  * emulation of gcc/clang

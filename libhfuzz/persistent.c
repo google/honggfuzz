@@ -81,6 +81,13 @@ __attribute__((weak)) int main(int argc, char** argv) {
         LOG_F(
             "Define 'int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)' in your "
             "code to make it work");
+
+        extern int hfuzz_module_instrument;
+        extern int hfuzz_module_memorycmp;
+        LOG_F(
+            "This won't be displayed, it's used just to reference other modules in this archive: "
+            "%d",
+            hfuzz_module_instrument + hfuzz_module_memorycmp);
     }
 
     if (fcntl(_HF_PERSISTENT_FD, F_GETFD) == -1 && errno == EBADF) {

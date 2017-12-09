@@ -1,7 +1,9 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "instrument.h"
+#include "libhfuzz/instrument.h"
+
+int hfuzz_module_memorycmp = 0;
 
 static inline int _strcmp(const char* s1, const char* s2, void* addr) {
     unsigned int v = 0;
