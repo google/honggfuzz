@@ -287,14 +287,7 @@ static int ldMode(int argc, char** argv) {
         args[j++] = argv[i];
     }
 
-    /*
-     * Include whole libhfuzz.a
-     */
-    args[j++] = "-Wl,-z,muldefs";
-    args[j++] = "-Wl,--whole-archive";
     args[j++] = lhfuzzPath;
-    args[j++] = "-Wl,--no-whole-archive";
-
     args[j++] = "-lpthread";
 
     return execCC(j, args);
