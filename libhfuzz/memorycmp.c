@@ -143,7 +143,7 @@ static inline void* _memmem(
 /* Define a weak function x, as well as __wrap_x pointing to x */
 #define XVAL(x) x
 #define HF_WEAK_WRAP(ret, func, ...)                                             \
-    __attribute__((weak, alias(#func))) XVAL(ret) XVAL(__wrap_##func) (__VA_ARGS__); \
+    __attribute__((alias(#func))) XVAL(ret) XVAL(__wrap_##func) (__VA_ARGS__); \
     __attribute__((weak)) XVAL(ret) XVAL(func) (__VA_ARGS__)
 
 /* Typical libc wrappers */
