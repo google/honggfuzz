@@ -20,13 +20,13 @@
 #ifndef _HF_SANCOV_H_
 #define _HF_SANCOV_H_
 
-#include "sanitizers.h"
+#include "honggfuzz.h"
 
 /* Bitmap size */
 #define _HF_SANCOV_BITMAP_SIZE 0x3FFFFFF
 
-extern void sancov_Analyze(honggfuzz_t * hfuzz, fuzzer_t * fuzzer);
+extern void sancov_Analyze(run_t* run);
 
-extern bool sancov_Init(honggfuzz_t * hfuzz);
+extern bool sancov_Init(honggfuzz_t* hfuzz);
 
-#endif                          /* _HF_SANCOV_H_ */
+#endif /* _HF_SANCOV_H_ */

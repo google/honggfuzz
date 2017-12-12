@@ -24,20 +24,20 @@
 #ifndef _HF_ARCH_H_
 #define _HF_ARCH_H_
 
-#include "libcommon/common.h"
+#include "honggfuzz.h"
 
-extern bool arch_launchChild(honggfuzz_t * fuzz, char *fileName);
+extern bool arch_launchChild(run_t* run);
 
-extern bool arch_archInit(honggfuzz_t * fuzz);
+extern bool arch_archInit(honggfuzz_t* fuzz);
 
-extern bool arch_archThreadInit(honggfuzz_t * fuzz, fuzzer_t * fuzzer);
+extern bool arch_archThreadInit(run_t* run);
 
-extern pid_t arch_fork(honggfuzz_t * fuzz, fuzzer_t * fuzzer);
+extern pid_t arch_fork(run_t* run);
 
-extern void arch_reapChild(honggfuzz_t * fuzz, fuzzer_t * fuzzer);
+extern void arch_reapChild(run_t* run);
 
-extern void arch_prepareParent(honggfuzz_t * fuzz, fuzzer_t * fuzzer);
+extern void arch_prepareParent(run_t* run);
 
-extern void arch_prepareParentAfterFork(honggfuzz_t * fuzz, fuzzer_t * fuzzer);
+extern void arch_prepareParentAfterFork(run_t* run);
 
-#endif                          /* _HF_ARCH_H_ */
+#endif /* _HF_ARCH_H_ */

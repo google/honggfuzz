@@ -35,7 +35,9 @@
 
 #define MX_LOCK(m) util_mutexLock(m, __func__, __LINE__)
 #define MX_UNLOCK(m) util_mutexUnlock(m, __func__, __LINE__)
-#define MX_SCOPED_LOCK(m) MX_LOCK(m); defer { MX_UNLOCK(m); }
+#define MX_RWLOCK_READ(m) util_mutexRWLockRead(m, __func__, __LINE__)
+#define MX_RWLOCK_WRITE(m) util_mutexRWLockWrite(m, __func__, __LINE__)
+#define MX_RWLOCK_UNLOCK(m) util_mutexRWUnlock(m, __func__, __LINE__)
 
 /* Atomics */
 #define ATOMIC_GET(x) __atomic_load_n(&(x), __ATOMIC_SEQ_CST)
@@ -64,68 +66,60 @@
 #define ATOMIC_PRE_INC_RELAXED(x) __atomic_add_fetch(&(x), 1, __ATOMIC_RELAXED)
 #define ATOMIC_POST_OR_RELAXED(x, y) __atomic_fetch_or(&(x), y, __ATOMIC_RELAXED)
 
-__attribute__ ((always_inline))
-static inline uint8_t ATOMIC_BTS(uint8_t * addr, size_t offset)
-{
+__attribute__((always_inline)) static inline uint8_t ATOMIC_BTS(uint8_t* addr, size_t offset) {
     uint8_t oldbit;
     addr += (offset / 8);
-#if defined(__x86_64__)
-    /*  *INDENT-OFF* */
-    __asm__("lock btsq %2, %1\n"
-            "sbb %0, %0\n"
-            :"=r"(oldbit), "+m"(*addr)
-            :"Ir"(offset % 8)
-    );
-    /*  *INDENT-ON* */
-#else
-    oldbit = ATOMIC_POST_OR(*addr, ((uint8_t) 1U << (offset % 8)));
-#endif
+    oldbit = ATOMIC_POST_OR_RELAXED(*addr, ((uint8_t)1U << (offset % 8)));
     return oldbit;
 }
 
-extern void *util_Malloc(size_t sz);
+extern void* util_Malloc(size_t sz);
 
-extern void *util_Calloc(size_t sz);
+extern void* util_Calloc(size_t sz);
 
-extern void *util_MMap(size_t sz);
+extern void* util_MMap(size_t sz);
 
-extern void *util_Realloc(void *ptr, size_t sz);
+extern void* util_Realloc(void* ptr, size_t sz);
 
-extern char *util_StrDup(const char *s);
+extern char* util_StrDup(const char* s);
 
 extern uint64_t util_rndGet(uint64_t min, uint64_t max);
 
-extern void util_rndBuf(uint8_t * buf, size_t sz);
+extern void util_rndBuf(uint8_t* buf, size_t sz);
 
 extern uint64_t util_rnd64(void);
 
-extern int util_ssnprintf(char *str, size_t size, const char *format, ...);
+extern int util_ssnprintf(char* str, size_t size, const char* format, ...);
 
-extern int util_vssnprintf(char *str, size_t size, const char *format, va_list ap);
+extern int util_vssnprintf(char* str, size_t size, const char* format, va_list ap);
 
-extern void util_getLocalTime(const char *fmt, char *buf, size_t len, time_t tm);
+extern void util_getLocalTime(const char* fmt, char* buf, size_t len, time_t tm);
 
 extern void util_nullifyStdio(void);
 
-extern bool util_redirectStdin(const char *inputFile);
+extern bool util_redirectStdin(const char* inputFile);
 
-extern uint64_t util_hash(const char *buf, size_t len);
+extern uint64_t util_hash(const char* buf, size_t len);
 
 extern int64_t util_timeNowMillis(void);
 
-extern uint64_t util_getUINT32(const uint8_t * buf);
-extern uint64_t util_getUINT64(const uint8_t * buf);
+extern uint64_t util_getUINT32(const uint8_t* buf);
+extern uint64_t util_getUINT64(const uint8_t* buf);
 
-extern void util_mutexLock(pthread_mutex_t * mutex, const char *func, int line);
-extern void util_mutexUnlock(pthread_mutex_t * mutex, const char *func, int line);
+extern void util_mutexLock(pthread_mutex_t* mutex, const char* func, int line);
+extern void util_mutexUnlock(pthread_mutex_t* mutex, const char* func, int line);
 
-extern int64_t fastArray64Search(uint64_t * array, size_t arraySz, uint64_t key);
+extern void util_mutexRWLockRead(pthread_rwlock_t* mutex, const char* func, int line);
+extern void util_mutexRWLockWrite(pthread_rwlock_t* mutex, const char* func, int line);
+extern void util_mutexRWUnlock(pthread_rwlock_t* mutex, const char* func, int line);
 
-extern bool util_isANumber(const char *s);
+extern int64_t fastArray64Search(uint64_t* array, size_t arraySz, uint64_t key);
 
-extern size_t util_decodeCString(char *s);
+extern bool util_isANumber(const char* s);
 
-extern uint64_t util_CRC64(uint8_t * buf, size_t len);
-extern uint64_t util_CRC64Rev(uint8_t * buf, size_t len);
+extern size_t util_decodeCString(char* s);
+
+extern uint64_t util_CRC64(uint8_t* buf, size_t len);
+extern uint64_t util_CRC64Rev(uint8_t* buf, size_t len);
 
 #endif

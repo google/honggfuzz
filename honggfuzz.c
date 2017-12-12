@@ -23,22 +23,24 @@
  *
  */
 
-#include <inttypes.h>
 #include <getopt.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <time.h>
 #include <unistd.h>
 
-#include "libcommon/common.h"
-#include "libcommon/log.h"
-#include "libcommon/files.h"
-#include "libcommon/util.h"
 #include "cmdline.h"
 #include "display.h"
 #include "fuzz.h"
+#include "input.h"
+#include "libcommon/common.h"
+#include "libcommon/files.h"
+#include "libcommon/log.h"
+#include "libcommon/util.h"
 
 static int sigReceived = 0;
 
@@ -48,36 +50,39 @@ static int sigReceived = 0;
  */
 honggfuzz_t hfuzz;
 
-void sigHandler(int sig)
-{
+static void exitWithMsg(const char* msg, int exit_code) {
+    UNUSED ssize_t sz = write(STDERR_FILENO, msg, strlen(msg));
+    exit(exit_code);
+    abort();
+}
+
+void sigHandler(int sig) {
     /* We should not terminate upon SIGALRM delivery */
     if (sig == SIGALRM) {
+        if (fuzz_shouldTerminate()) {
+            exitWithMsg("Terminating forcefully\n", EXIT_FAILURE);
+        }
         return;
     }
 
     if (ATOMIC_GET(sigReceived) != 0) {
-        static const char *const sigMsg = "Repeated termination signal caugth\n";
-        if (write(STDERR_FILENO, sigMsg, strlen(sigMsg) + 1) == -1) {
-        };
-        _exit(EXIT_FAILURE);
+        exitWithMsg("Repeated termination signal caugth\n", EXIT_FAILURE);
     }
 
     ATOMIC_SET(sigReceived, sig);
 }
 
-static void setupTimer(void)
-{
+static void setupTimer(void) {
     struct itimerval it = {
-        .it_value = {.tv_sec = 1,.tv_usec = 0},
-        .it_interval = {.tv_sec = 1,.tv_usec = 0},
+        .it_value = {.tv_sec = 1, .tv_usec = 0},
+        .it_interval = {.tv_sec = 1, .tv_usec = 0},
     };
     if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
         PLOG_F("setitimer(ITIMER_REAL)");
     }
 }
 
-static void setupSignalsPreThr(void)
-{
+static void setupSignalsPreThr(void) {
     /* Block signals which should be handled or blocked in the main thread */
     sigset_t ss;
     sigemptyset(&ss);
@@ -93,8 +98,7 @@ static void setupSignalsPreThr(void)
     }
 }
 
-static void setupSignalsPostThr(void)
-{
+static void setupSignalsPostThr(void) {
     struct sigaction sa = {
         .sa_handler = sigHandler,
         .sa_flags = 0,
@@ -124,15 +128,12 @@ static void setupSignalsPostThr(void)
     }
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
     /*
      * Work around CygWin/MinGW
      */
-    char **myargs = (char **)util_Malloc(sizeof(char *) * (argc + 1));
-    defer {
-        free(myargs);
-    };
+    char** myargs = (char**)util_Malloc(sizeof(char*) * (argc + 1));
+    defer { free(myargs); };
 
     int i;
     for (i = 0U; i < argc; i++) {
@@ -148,22 +149,23 @@ int main(int argc, char **argv)
         display_init();
     }
 
-    if (!files_init(&hfuzz)) {
+    if (!input_init(&hfuzz)) {
         if (hfuzz.externalCommand) {
-            LOG_I
-                ("No input file corpus loaded, the external command '%s' is responsible for creating the fuzz files",
-                 hfuzz.externalCommand);
+            LOG_I(
+                "No input file corpus loaded, the external command '%s' is responsible for "
+                "creating the fuzz files",
+                hfuzz.externalCommand);
         } else {
             LOG_F("Couldn't load input files");
             exit(EXIT_FAILURE);
         }
     }
 
-    if (hfuzz.dictionaryFile && (files_parseDictionary(&hfuzz) == false)) {
+    if (hfuzz.dictionaryFile && (input_parseDictionary(&hfuzz) == false)) {
         LOG_F("Couldn't parse dictionary file ('%s')", hfuzz.dictionaryFile);
     }
 
-    if (hfuzz.blacklistFile && (files_parseBlacklist(&hfuzz) == false)) {
+    if (hfuzz.blacklistFile && (input_parseBlacklist(&hfuzz) == false)) {
         LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.blacklistFile);
     }
 #define hfuzzl hfuzz.linux
@@ -178,16 +180,17 @@ int main(int argc, char **argv)
     }
 
     if (hfuzz.dynFileMethod != _HF_DYNFILE_NONE) {
-        hfuzz.feedback = files_mapSharedMem(sizeof(feedback_t), &hfuzz.bbFd, hfuzz.workDir);
+        hfuzz.feedback = files_mapSharedMem(sizeof(feedback_t), &hfuzz.bbFd, hfuzz.io.workDir);
         if (hfuzz.feedback == MAP_FAILED) {
-            LOG_F("files_mapSharedMem(sz=%zu, dir='%s') failed", sizeof(feedback_t), hfuzz.workDir);
+            LOG_F("files_mapSharedMem(sz=%zu, dir='%s') failed", sizeof(feedback_t),
+                hfuzz.io.workDir);
         }
     }
 
     /*
      * So far, so good
      */
-    pthread_t threads[hfuzz.threadsMax];
+    pthread_t threads[hfuzz.threads.threadsMax];
 
     setupSignalsPreThr();
     fuzz_threadsStart(&hfuzz, threads);
@@ -200,21 +203,21 @@ int main(int argc, char **argv)
         }
         if (ATOMIC_GET(sigReceived) > 0) {
             LOG_I("Signal %d (%s) received, terminating", ATOMIC_GET(sigReceived),
-                  strsignal(ATOMIC_GET(sigReceived)));
+                strsignal(ATOMIC_GET(sigReceived)));
             break;
         }
-        if (ATOMIC_GET(hfuzz.threadsFinished) >= hfuzz.threadsMax) {
+        if (ATOMIC_GET(hfuzz.threads.threadsFinished) >= hfuzz.threads.threadsMax) {
             break;
         }
         if (hfuzz.runEndTime > 0 && (time(NULL) > hfuzz.runEndTime)) {
             LOG_I("Maximum run time reached, terminating");
-            ATOMIC_SET(hfuzz.terminating, true);
+            fuzz_setTerminating();
             break;
         }
         pause();
     }
 
-    ATOMIC_SET(hfuzz.terminating, true);
+    fuzz_setTerminating();
 
     fuzz_threadsStop(&hfuzz, threads);
 
@@ -236,9 +239,6 @@ int main(int argc, char **argv)
     }
     if (hfuzz.sanOpts.msanOpts) {
         free(hfuzz.sanOpts.msanOpts);
-    }
-    if (hfuzz.linux.pidCmd) {
-        free(hfuzz.linux.pidCmd);
     }
 
     return EXIT_SUCCESS;

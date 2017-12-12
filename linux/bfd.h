@@ -24,14 +24,18 @@
 #ifndef _HF_LINUX_BFD_H_
 #define _HF_LINUX_BFD_H_
 
-#include "unwind.h"
+#include <inttypes.h>
+#include <limits.h>
+#include <sys/types.h>
+
+#include "linux/unwind.h"
 
 #define _HF_INSTR_SZ 64
 
 #define PACKAGE 1
 #define PACKAGE_VERSION 1
 
-extern void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num);
-extern void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr);
+extern void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num);
+extern void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr);
 
 #endif

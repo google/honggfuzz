@@ -3,29 +3,55 @@
 set -x
 set -e
 
-TYPE="$1"
+DIR="$1"
 SAN="$2"
-COMMON_FLAGS="-DBORINGSSL_UNSAFE_DETERMINISTIC_MODE -DBORINGSSL_UNSAFE_FUZZER_MODE -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -DBN_DEBUG -O3 -g -DFuzzerInitialize=LLVMFuzzerInitialize -DFuzzerTestOneInput=LLVMFuzzerTestOneInput -lpthread -lz -Wl,-z,now"
-OS=`uname -s`
+TYPE=`basename "$DIR"`
 HFUZZ_SRC=~/src/honggfuzz/
+OS=`uname -s`
+CLANG_VER=-5.0
 CC="$HFUZZ_SRC/hfuzz_cc/hfuzz-clang"
-CXX="clang++"
+CXX="$HFUZZ_SRC/hfuzz_cc/hfuzz-clang++"
+COMMON_FLAGS="-DBORINGSSL_UNSAFE_DETERMINISTIC_MODE -DBORINGSSL_UNSAFE_FUZZER_MODE -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -DBN_DEBUG \
+	-O3 -g -DFuzzerInitialize=LLVMFuzzerInitialize -DFuzzerTestOneInput=LLVMFuzzerTestOneInput \
+	-I./$DIR/include -I$HFUZZ_SRC/examples/openssl -I$HFUZZ_SRC"
+COMMON_LDFLAGS="-lpthread -lz -Wl,-z,now"
 
-if [ "$OS" = "Linux" ]; then
-		COMMON_FLAGS="$COMMON_FLAGS -ldl"
+if [ -z "$DIR" ]; then
+	echo "$0" DIR SANITIZE
+	exit 1
 fi
 
-if [ -z "$TYPE" ]; then
-		echo "$0" DIR SANITIZE
-		exit 1
+LIBSSL="`find "$DIR" -type f -name 'libssl.a' | head -n1`"
+if [ -z "$LIBSSL" ]; then
+	echo "Couldn't find libssl.a inside $DIR"
+	exit 1
+fi
+
+LIBCRYPTO="`find "$DIR" -type f -name 'libcrypto.a' | head -n1`"
+if [ -z "$LIBCRYPTO" ]; then
+	echo "Couldn't find libcrypto.a inside $DIR"
+	exit 1
+fi
+
+
+if [ "$OS" = "Linux" ]; then
+	COMMON_LDFLAGS="$COMMON_LDFLAGS -ldl"
 fi
 
 if [ -n "$SAN" ]; then
-		SAN_COMPILE="-fsanitize=$SAN"
-		SAN=".$SAN"
+	SAN_COMPILE="-fsanitize=$SAN"
+	SAN=".$SAN"
 fi
 
-$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/server.c" "-I./openssl-$TYPE/include" -o "persistent.server.openssl.$TYPE$SAN" "./openssl-$TYPE/libssl.a" "./openssl-$TYPE/libcrypto.a" $SAN_COMPILE
-$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/client.c" "-I./openssl-$TYPE/include" -o "persistent.client.openssl.$TYPE$SAN" "./openssl-$TYPE/libssl.a" "./openssl-$TYPE/libcrypto.a" $SAN_COMPILE
-$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/x509.c" "-I./openssl-$TYPE/include" -o "persistent.x509.openssl.$TYPE$SAN" "./openssl-$TYPE/libssl.a" "./openssl-$TYPE/libcrypto.a" $SAN_COMPILE
-$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/privkey.c" "-I./openssl-$TYPE/include" -o "persistent.privkey.openssl.$TYPE$SAN" "./openssl-$TYPE/libssl.a" "./openssl-$TYPE/libcrypto.a" $SAN_COMPILE
+for x in x509 privkey client server; do
+	$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "$TYPE$SAN.$x$SUFFIX" "$LIBSSL" "$LIBCRYPTO" $COMMON_LDFLAGS $SAN_COMPILE
+done
+
+for x in x509 privkey client server; do
+	$CC $COMMON_FLAGS -DHF_SSL_FROM_STDIN -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "stdin.$TYPE$SAN.$x" "$LIBSSL" "$LIBCRYPTO" $COMMON_LDFLAGS $SAN_COMPILE
+done
+
+for x in x509 privkey client server; do
+	clang++$CLANG_VER $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "libfuzzer.$TYPE$SAN.$x$SUFFIX" "$LIBSSL" "$LIBCRYPTO" $COMMON_LDFLAGS $SAN_COMPILE -lFuzzer
+done
+

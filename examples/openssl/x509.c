@@ -11,22 +11,15 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
-#include <libhfuzz.h>
+#include <hf_ssl_lib.h>
+#include <libhfuzz/libhfuzz.h>
 
-int rand_predictable __attribute__((weak));
-void RAND_reset_for_fuzzing(void) __attribute__((weak));
-
-int LLVMFuzzerInitialize(int* argc, char*** argv)
-{
-    rand_predictable = 1;
+int LLVMFuzzerInitialize(int* argc, char*** argv) {
+    HFResetRand();
     return 1;
 }
 
-int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
-{
-    if (RAND_reset_for_fuzzing)
-        RAND_reset_for_fuzzing();
-
+int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
     const uint8_t* b = buf;
     X509* x = d2i_X509(NULL, &b, len);
     if (x) {

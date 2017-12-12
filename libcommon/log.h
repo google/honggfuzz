@@ -28,37 +28,59 @@
 
 #include "common.h"
 
-enum llevel_t {
-    FATAL = 0,
-    ERROR,
-    WARNING,
-    INFO,
-    DEBUG,
-    HELP,
-    HELP_BOLD
-};
+enum llevel_t { FATAL = 0, ERROR, WARNING, INFO, DEBUG, HELP, HELP_BOLD };
 
 extern enum llevel_t log_level;
 
 #define LOG_HELP(...) logLog(HELP, __FUNCTION__, __LINE__, false, __VA_ARGS__);
 #define LOG_HELP_BOLD(...) logLog(HELP_BOLD, __FUNCTION__, __LINE__, false, __VA_ARGS__);
 
-#define LOG_D(...) if (log_level >= DEBUG) { logLog(DEBUG, __FUNCTION__, __LINE__, false, __VA_ARGS__); }
-#define LOG_I(...) if (log_level >= INFO) { logLog(INFO, __FUNCTION__, __LINE__, false, __VA_ARGS__); }
-#define LOG_W(...) if (log_level >= WARNING) { logLog(WARNING, __FUNCTION__, __LINE__, false, __VA_ARGS__); }
-#define LOG_E(...) if (log_level >= ERROR) { logLog(ERROR, __FUNCTION__, __LINE__, false, __VA_ARGS__); }
-#define LOG_F(...) if (log_level >= FATAL) { logLog(FATAL, __FUNCTION__, __LINE__, false, __VA_ARGS__); }
+#define LOG_D(...)                                                 \
+    if (log_level >= DEBUG) {                                      \
+        logLog(DEBUG, __FUNCTION__, __LINE__, false, __VA_ARGS__); \
+    }
+#define LOG_I(...)                                                \
+    if (log_level >= INFO) {                                      \
+        logLog(INFO, __FUNCTION__, __LINE__, false, __VA_ARGS__); \
+    }
+#define LOG_W(...)                                                   \
+    if (log_level >= WARNING) {                                      \
+        logLog(WARNING, __FUNCTION__, __LINE__, false, __VA_ARGS__); \
+    }
+#define LOG_E(...)                                                 \
+    if (log_level >= ERROR) {                                      \
+        logLog(ERROR, __FUNCTION__, __LINE__, false, __VA_ARGS__); \
+    }
+#define LOG_F(...)                                                 \
+    if (log_level >= FATAL) {                                      \
+        logLog(FATAL, __FUNCTION__, __LINE__, false, __VA_ARGS__); \
+    }
 
-#define PLOG_D(...) if (log_level >= DEBUG) { logLog(DEBUG, __FUNCTION__, __LINE__, true, __VA_ARGS__); }
-#define PLOG_I(...) if (log_level >= INFO) { logLog(INFO, __FUNCTION__, __LINE__, true, __VA_ARGS__); }
-#define PLOG_W(...) if (log_level >= WARNING) { logLog(WARNING, __FUNCTION__, __LINE__, true, __VA_ARGS__); }
-#define PLOG_E(...) if (log_level >= ERROR) { logLog(ERROR, __FUNCTION__, __LINE__, true, __VA_ARGS__); }
-#define PLOG_F(...) if (log_level >= FATAL) { logLog(FATAL, __FUNCTION__, __LINE__, true, __VA_ARGS__); }
+#define PLOG_D(...)                                               \
+    if (log_level >= DEBUG) {                                     \
+        logLog(DEBUG, __FUNCTION__, __LINE__, true, __VA_ARGS__); \
+    }
+#define PLOG_I(...)                                              \
+    if (log_level >= INFO) {                                     \
+        logLog(INFO, __FUNCTION__, __LINE__, true, __VA_ARGS__); \
+    }
+#define PLOG_W(...)                                                 \
+    if (log_level >= WARNING) {                                     \
+        logLog(WARNING, __FUNCTION__, __LINE__, true, __VA_ARGS__); \
+    }
+#define PLOG_E(...)                                               \
+    if (log_level >= ERROR) {                                     \
+        logLog(ERROR, __FUNCTION__, __LINE__, true, __VA_ARGS__); \
+    }
+#define PLOG_F(...)                                               \
+    if (log_level >= FATAL) {                                     \
+        logLog(FATAL, __FUNCTION__, __LINE__, true, __VA_ARGS__); \
+    }
 
-extern bool logInitLogFile(const char *logfile, enum llevel_t ll);
+extern bool logInitLogFile(const char* logfile, enum llevel_t ll);
 
-extern void logLog(enum llevel_t ll, const char *fn, int ln, bool perr, const char *fmt, ...)
-    __attribute__ ((format(printf, 5, 6)));
+extern void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt, ...)
+    __attribute__((format(printf, 5, 6)));
 
 extern void logStop(int sig);
 
@@ -66,8 +88,8 @@ extern bool logIsTTY(void);
 
 extern int logFd(void);
 
-extern pthread_mutex_t *logMutexGet(void);
+extern pthread_mutex_t* logMutexGet(void);
 
 void logMutexReset(void);
 
-#endif                          /* _HF_LOG_H_ */
+#endif /* _HF_LOG_H_ */

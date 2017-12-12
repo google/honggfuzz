@@ -1,6 +1,6 @@
 /*
  *
- * honggfuzz - fuzzer->dynamicFilefer mangling routines
+ * honggfuzz - run->dynamicFilefer mangling routines
  * -----------------------------------------
  *
  * Author:
@@ -22,401 +22,387 @@
  *
  */
 
-#include "libcommon/common.h"
 #include "mangle.h"
 
 #include <inttypes.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "libcommon/common.h"
 #include "libcommon/log.h"
 #include "libcommon/util.h"
 
-static inline void mangle_Overwrite(fuzzer_t * fuzzer, const uint8_t * src, size_t off, size_t sz)
-{
-    size_t maxToCopy = fuzzer->dynamicFileSz - off;
+static inline void mangle_Overwrite(run_t* run, const uint8_t* src, size_t off, size_t sz) {
+    size_t maxToCopy = run->dynamicFileSz - off;
     if (sz > maxToCopy) {
         sz = maxToCopy;
     }
 
-    memcpy(&fuzzer->dynamicFile[off], src, sz);
+    memmove(&run->dynamicFile[off], src, sz);
 }
 
-static inline void mangle_Move(fuzzer_t * fuzzer, size_t off_from, size_t off_to, size_t len)
-{
-    if (off_from >= fuzzer->dynamicFileSz) {
+static inline void mangle_Move(run_t* run, size_t off_from, size_t off_to, size_t len) {
+    if (off_from >= run->dynamicFileSz) {
         return;
     }
-    if (off_to >= fuzzer->dynamicFileSz) {
+    if (off_to >= run->dynamicFileSz) {
         return;
     }
 
-    ssize_t len_from = (ssize_t) fuzzer->dynamicFileSz - off_from - 1;
-    ssize_t len_to = (ssize_t) fuzzer->dynamicFileSz - off_to - 1;
+    ssize_t len_from = (ssize_t)run->dynamicFileSz - off_from - 1;
+    ssize_t len_to = (ssize_t)run->dynamicFileSz - off_to - 1;
 
-    if ((ssize_t) len > len_from) {
+    if ((ssize_t)len > len_from) {
         len = len_from;
     }
-    if ((ssize_t) len > len_to) {
+    if ((ssize_t)len > len_to) {
         len = len_to;
     }
 
-    memmove(&fuzzer->dynamicFile[off_to], &fuzzer->dynamicFile[off_from], len);
+    memmove(&run->dynamicFile[off_to], &run->dynamicFile[off_from], len);
 }
 
-static void mangle_Inflate(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, size_t off, size_t len)
-{
-    if (fuzzer->dynamicFileSz >= hfuzz->maxFileSz) {
+static void mangle_Inflate(run_t* run, size_t off, size_t len) {
+    if (run->dynamicFileSz >= run->global->maxFileSz) {
         return;
     }
-    if (len > (hfuzz->maxFileSz - fuzzer->dynamicFileSz)) {
-        len = hfuzz->maxFileSz - fuzzer->dynamicFileSz;
+    if (len > (run->global->maxFileSz - run->dynamicFileSz)) {
+        len = run->global->maxFileSz - run->dynamicFileSz;
     }
 
-    fuzzer->dynamicFileSz += len;
-    mangle_Move(fuzzer, off, off + len, fuzzer->dynamicFileSz);
+    run->dynamicFileSz += len;
+    mangle_Move(run, off, off + len, run->dynamicFileSz);
 }
 
-static void mangle_MemMove(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    size_t off_from = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    size_t off_to = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    size_t len = util_rndGet(0, fuzzer->dynamicFileSz);
+static void mangle_MemMove(run_t* run) {
+    size_t off_from = util_rndGet(0, run->dynamicFileSz - 1);
+    size_t off_to = util_rndGet(0, run->dynamicFileSz - 1);
+    size_t len = util_rndGet(0, run->dynamicFileSz);
 
-    mangle_Move(fuzzer, off_from, off_to, len);
+    mangle_Move(run, off_from, off_to, len);
 }
 
-static void mangle_Byte(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    fuzzer->dynamicFile[off] = (uint8_t) util_rnd64();
+static void mangle_Byte(run_t* run) {
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+    run->dynamicFile[off] = (uint8_t)util_rnd64();
 }
 
-static void mangle_Bytes(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    uint32_t val = (uint32_t) util_rnd64();
+static void mangle_Bytes(run_t* run) {
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+    uint32_t val = (uint32_t)util_rnd64();
 
     /* Overwrite with random 2,3,4-byte values */
     size_t toCopy = util_rndGet(2, 4);
-    mangle_Overwrite(fuzzer, (uint8_t *) & val, off, toCopy);
+    mangle_Overwrite(run, (uint8_t*)&val, off, toCopy);
 }
 
-static void mangle_Bit(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    fuzzer->dynamicFile[off] ^= (uint8_t) (1U << util_rndGet(0, 7));
+static void mangle_Bit(run_t* run) {
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+    run->dynamicFile[off] ^= (uint8_t)(1U << util_rndGet(0, 7));
 }
 
-static void mangle_DictionaryInsert(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
-{
-    if (hfuzz->dictionaryCnt == 0) {
-        mangle_Bit(hfuzz, fuzzer);
+static void mangle_DictionaryInsert(run_t* run) {
+    if (run->global->dictionaryCnt == 0) {
+        mangle_Bit(run);
         return;
     }
 
-    uint64_t choice = util_rndGet(0, hfuzz->dictionaryCnt - 1);
-    struct strings_t *str = TAILQ_FIRST(&hfuzz->dictq);
+    uint64_t choice = util_rndGet(0, run->global->dictionaryCnt - 1);
+    struct strings_t* str = TAILQ_FIRST(&run->global->dictq);
     for (uint64_t i = 0; i < choice; i++) {
         str = TAILQ_NEXT(str, pointers);
     }
 
-    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    mangle_Inflate(hfuzz, fuzzer, off, str->len);
-    mangle_Move(fuzzer, off, off + str->len, str->len);
-    mangle_Overwrite(fuzzer, (uint8_t *) str->s, off, str->len);
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+    mangle_Inflate(run, off, str->len);
+    mangle_Move(run, off, off + str->len, str->len);
+    mangle_Overwrite(run, (uint8_t*)str->s, off, str->len);
 }
 
-static void mangle_Dictionary(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
-{
-    if (hfuzz->dictionaryCnt == 0) {
-        mangle_Bit(hfuzz, fuzzer);
+static void mangle_Dictionary(run_t* run) {
+    if (run->global->dictionaryCnt == 0) {
+        mangle_Bit(run);
         return;
     }
 
-    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
 
-    uint64_t choice = util_rndGet(0, hfuzz->dictionaryCnt - 1);
-    struct strings_t *str = TAILQ_FIRST(&hfuzz->dictq);
+    uint64_t choice = util_rndGet(0, run->global->dictionaryCnt - 1);
+    struct strings_t* str = TAILQ_FIRST(&run->global->dictq);
     for (uint64_t i = 0; i < choice; i++) {
         str = TAILQ_NEXT(str, pointers);
     }
 
-    mangle_Overwrite(fuzzer, (uint8_t *) str->s, off, str->len);
+    mangle_Overwrite(run, (uint8_t*)str->s, off, str->len);
 }
 
-static void mangle_Magic(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    /*  *INDENT-OFF* */
+static void mangle_Magic(run_t* run) {
     static const struct {
         const uint8_t val[8];
         const size_t size;
     } mangleMagicVals[] = {
         /* 1B - No endianness */
-        { "\x00\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x01\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x02\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x03\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x04\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x05\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x06\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x07\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x08\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x09\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x0A\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x0B\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x0C\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x0D\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x0E\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x0F\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x10\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x20\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x40\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x7E\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x7F\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x80\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\x81\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\xC0\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\xFE\x00\x00\x00\x00\x00\x00\x00", 1},
-        { "\xFF\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x00\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x01\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x02\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x03\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x04\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x05\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x06\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x07\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x08\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x09\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x0A\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x0B\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x0C\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x0D\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x0E\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x0F\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x10\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x20\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x40\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x7E\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x7F\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x80\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\x81\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\xC0\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\xFE\x00\x00\x00\x00\x00\x00\x00", 1},
+        {"\xFF\x00\x00\x00\x00\x00\x00\x00", 1},
         /* 2B - NE */
-        { "\x00\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x01\x01\x00\x00\x00\x00\x00\x00", 2},
-        { "\x80\x80\x00\x00\x00\x00\x00\x00", 2},
-        { "\xFF\xFF\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x01\x01\x00\x00\x00\x00\x00\x00", 2},
+        {"\x80\x80\x00\x00\x00\x00\x00\x00", 2},
+        {"\xFF\xFF\x00\x00\x00\x00\x00\x00", 2},
         /* 2B - BE */
-        { "\x00\x01\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x02\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x03\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x04\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x05\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x06\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x07\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x08\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x09\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x0A\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x0B\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x0C\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x0D\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x0E\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x0F\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x10\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x20\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x40\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x7E\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x7F\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x80\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x81\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\xC0\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\xFE\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\xFF\x00\x00\x00\x00\x00\x00", 2},
-        { "\x7E\xFF\x00\x00\x00\x00\x00\x00", 2},
-        { "\x7F\xFF\x00\x00\x00\x00\x00\x00", 2},
-        { "\x80\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x80\x01\x00\x00\x00\x00\x00\x00", 2},
-        { "\xFF\xFE\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x01\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x02\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x03\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x04\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x05\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x06\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x07\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x08\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x09\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x0A\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x0B\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x0C\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x0D\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x0E\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x0F\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x10\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x20\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x40\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x7E\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x7F\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x80\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x81\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\xC0\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\xFE\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\xFF\x00\x00\x00\x00\x00\x00", 2},
+        {"\x7E\xFF\x00\x00\x00\x00\x00\x00", 2},
+        {"\x7F\xFF\x00\x00\x00\x00\x00\x00", 2},
+        {"\x80\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x80\x01\x00\x00\x00\x00\x00\x00", 2},
+        {"\xFF\xFE\x00\x00\x00\x00\x00\x00", 2},
         /* 2B - LE */
-        { "\x00\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x01\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x02\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x03\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x04\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x05\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x06\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x07\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x08\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x09\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x0A\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x0B\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x0C\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x0D\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x0E\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x0F\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x10\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x20\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x40\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x7E\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x7F\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x80\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\x81\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\xC0\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\xFE\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\xFF\x00\x00\x00\x00\x00\x00\x00", 2},
-        { "\xFF\x7E\x00\x00\x00\x00\x00\x00", 2},
-        { "\xFF\x7F\x00\x00\x00\x00\x00\x00", 2},
-        { "\x00\x80\x00\x00\x00\x00\x00\x00", 2},
-        { "\x01\x80\x00\x00\x00\x00\x00\x00", 2},
-        { "\xFE\xFF\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x01\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x02\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x03\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x04\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x05\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x06\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x07\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x08\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x09\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x0A\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x0B\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x0C\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x0D\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x0E\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x0F\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x10\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x20\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x40\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x7E\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x7F\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x80\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\x81\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\xC0\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\xFE\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\xFF\x00\x00\x00\x00\x00\x00\x00", 2},
+        {"\xFF\x7E\x00\x00\x00\x00\x00\x00", 2},
+        {"\xFF\x7F\x00\x00\x00\x00\x00\x00", 2},
+        {"\x00\x80\x00\x00\x00\x00\x00\x00", 2},
+        {"\x01\x80\x00\x00\x00\x00\x00\x00", 2},
+        {"\xFE\xFF\x00\x00\x00\x00\x00\x00", 2},
         /* 4B - NE */
-        { "\x00\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x01\x01\x01\x01\x00\x00\x00\x00", 4},
-        { "\x80\x80\x80\x80\x00\x00\x00\x00", 4},
-        { "\xFF\xFF\xFF\xFF\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x01\x01\x01\x01\x00\x00\x00\x00", 4},
+        {"\x80\x80\x80\x80\x00\x00\x00\x00", 4},
+        {"\xFF\xFF\xFF\xFF\x00\x00\x00\x00", 4},
         /* 4B - BE */
-        { "\x00\x00\x00\x01\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x02\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x03\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x04\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x05\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x06\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x07\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x08\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x09\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x0A\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x0B\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x0C\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x0D\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x0E\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x0F\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x10\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x20\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x40\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x7E\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x7F\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x80\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x81\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\xC0\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\xFE\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\xFF\x00\x00\x00\x00", 4},
-        { "\x7E\xFF\xFF\xFF\x00\x00\x00\x00", 4},
-        { "\x7F\xFF\xFF\xFF\x00\x00\x00\x00", 4},
-        { "\x80\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x80\x00\x00\x01\x00\x00\x00\x00", 4},
-        { "\xFF\xFF\xFF\xFE\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x01\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x02\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x03\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x04\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x05\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x06\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x07\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x08\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x09\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x0A\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x0B\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x0C\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x0D\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x0E\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x0F\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x10\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x20\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x40\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x7E\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x7F\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x80\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x81\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\xC0\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\xFE\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\xFF\x00\x00\x00\x00", 4},
+        {"\x7E\xFF\xFF\xFF\x00\x00\x00\x00", 4},
+        {"\x7F\xFF\xFF\xFF\x00\x00\x00\x00", 4},
+        {"\x80\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x80\x00\x00\x01\x00\x00\x00\x00", 4},
+        {"\xFF\xFF\xFF\xFE\x00\x00\x00\x00", 4},
         /* 4B - LE */
-        { "\x00\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x01\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x02\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x03\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x04\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x05\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x06\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x07\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x08\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x09\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x0A\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x0B\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x0C\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x0D\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x0E\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x0F\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x10\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x20\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x40\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x7E\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x7F\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x80\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\x81\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\xC0\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\xFE\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\xFF\x00\x00\x00\x00\x00\x00\x00", 4},
-        { "\xFF\xFF\xFF\x7E\x00\x00\x00\x00", 4},
-        { "\xFF\xFF\xFF\x7F\x00\x00\x00\x00", 4},
-        { "\x00\x00\x00\x80\x00\x00\x00\x00", 4},
-        { "\x01\x00\x00\x80\x00\x00\x00\x00", 4},
-        { "\xFE\xFF\xFF\xFF\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x01\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x02\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x03\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x04\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x05\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x06\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x07\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x08\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x09\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x0A\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x0B\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x0C\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x0D\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x0E\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x0F\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x10\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x20\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x40\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x7E\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x7F\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x80\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\x81\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\xC0\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\xFE\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\xFF\x00\x00\x00\x00\x00\x00\x00", 4},
+        {"\xFF\xFF\xFF\x7E\x00\x00\x00\x00", 4},
+        {"\xFF\xFF\xFF\x7F\x00\x00\x00\x00", 4},
+        {"\x00\x00\x00\x80\x00\x00\x00\x00", 4},
+        {"\x01\x00\x00\x80\x00\x00\x00\x00", 4},
+        {"\xFE\xFF\xFF\xFF\x00\x00\x00\x00", 4},
         /* 8B - NE */
-        { "\x00\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x01\x01\x01\x01\x01\x01\x01\x01", 8},
-        { "\x80\x80\x80\x80\x80\x80\x80\x80", 8},
-        { "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x01\x01\x01\x01\x01\x01\x01\x01", 8},
+        {"\x80\x80\x80\x80\x80\x80\x80\x80", 8},
+        {"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 8},
         /* 8B - BE */
-        { "\x00\x00\x00\x00\x00\x00\x00\x01", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x02", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x03", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x04", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x05", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x06", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x07", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x08", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x09", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x0A", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x0B", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x0C", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x0D", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x0E", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x0F", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x10", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x20", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x40", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x7E", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x7F", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x80", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x81", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\xC0", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\xFE", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\xFF", 8},
-        { "\x7E\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 8},
-        { "\x7F\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 8},
-        { "\x80\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x80\x00\x00\x00\x00\x00\x00\x01", 8},
-        { "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFE", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x01", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x02", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x03", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x04", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x05", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x06", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x07", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x08", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x09", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x0A", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x0B", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x0C", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x0D", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x0E", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x0F", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x10", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x20", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x40", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x7E", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x7F", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x80", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x81", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\xC0", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\xFE", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\xFF", 8},
+        {"\x7E\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 8},
+        {"\x7F\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 8},
+        {"\x80\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x80\x00\x00\x00\x00\x00\x00\x01", 8},
+        {"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFE", 8},
         /* 8B - LE */
-        { "\x00\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x01\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x02\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x03\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x04\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x05\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x06\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x07\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x08\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x09\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x0A\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x0B\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x0C\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x0D\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x0E\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x0F\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x10\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x20\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x40\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x7E\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x7F\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x80\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\x81\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\xC0\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\xFE\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\xFF\x00\x00\x00\x00\x00\x00\x00", 8},
-        { "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x7E", 8},
-        { "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x7F", 8},
-        { "\x00\x00\x00\x00\x00\x00\x00\x80", 8},
-        { "\x01\x00\x00\x00\x00\x00\x00\x80", 8},
-        { "\xFE\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x01\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x02\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x03\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x04\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x05\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x06\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x07\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x08\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x09\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x0A\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x0B\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x0C\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x0D\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x0E\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x0F\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x10\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x20\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x40\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x7E\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x7F\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x80\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\x81\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\xC0\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\xFE\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\xFF\x00\x00\x00\x00\x00\x00\x00", 8},
+        {"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x7E", 8},
+        {"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x7F", 8},
+        {"\x00\x00\x00\x00\x00\x00\x00\x80", 8},
+        {"\x01\x00\x00\x00\x00\x00\x00\x80", 8},
+        {"\xFE\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 8},
     };
-    /*  *INDENT-ON* */
 
-    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
     uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleMagicVals) - 1);
-    mangle_Overwrite(fuzzer, mangleMagicVals[choice].val, off, mangleMagicVals[choice].size);
+    mangle_Overwrite(run, mangleMagicVals[choice].val, off, mangleMagicVals[choice].size);
 }
 
-static void mangle_MemSet(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    size_t sz = util_rndGet(1, fuzzer->dynamicFileSz - off);
+static void mangle_MemSet(run_t* run) {
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+    size_t sz = util_rndGet(1, run->dynamicFileSz - off);
     int val = (int)util_rndGet(0, UINT8_MAX);
 
-    memset(&fuzzer->dynamicFile[off], val, sz);
+    memset(&run->dynamicFile[off], val, sz);
 }
 
-static void mangle_Random(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    size_t len = util_rndGet(1, fuzzer->dynamicFileSz - off);
-    util_rndBuf(&fuzzer->dynamicFile[off], len);
+static void mangle_Random(run_t* run) {
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+    size_t len = util_rndGet(1, run->dynamicFileSz - off);
+    util_rndBuf(&run->dynamicFile[off], len);
 }
 
-static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
+static void mangle_AddSub(run_t* run) {
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
 
-    /* 1,2,4 */
-    uint64_t varLen = 1ULL << util_rndGet(0, 2);
-    if ((fuzzer->dynamicFileSz - off) < varLen) {
+    /* 1,2,4,8 */
+    uint64_t varLen = 1U << util_rndGet(0, 3);
+    if ((run->dynamicFileSz - off) < varLen) {
         varLen = 1;
     }
 
@@ -424,16 +410,15 @@ static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
     delta -= 4096;
 
     switch (varLen) {
-    case 1:
-        {
-            fuzzer->dynamicFile[off] += delta;
+        case 1: {
+            run->dynamicFile[off] += delta;
             return;
             break;
         }
-    case 2:
-        {
-            int16_t val = *((uint16_t *) & fuzzer->dynamicFile[off]);
-            if (util_rndGet(0, 1) == 0) {
+        case 2: {
+            int16_t val;
+            memcpy(&val, &run->dynamicFile[off], sizeof(val));
+            if (util_rnd64() & 0x1) {
                 val += delta;
             } else {
                 /* Foreign endianess */
@@ -441,14 +426,14 @@ static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
                 val += delta;
                 val = __builtin_bswap16(val);
             }
-            mangle_Overwrite(fuzzer, (uint8_t *) & val, off, varLen);
+            mangle_Overwrite(run, (uint8_t*)&val, off, varLen);
             return;
             break;
         }
-    case 4:
-        {
-            int32_t val = *((uint32_t *) & fuzzer->dynamicFile[off]);
-            if (util_rndGet(0, 1) == 0) {
+        case 4: {
+            int32_t val;
+            memcpy(&val, &run->dynamicFile[off], sizeof(val));
+            if (util_rnd64() & 0x1) {
                 val += delta;
             } else {
                 /* Foreign endianess */
@@ -456,102 +441,114 @@ static void mangle_AddSub(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
                 val += delta;
                 val = __builtin_bswap32(val);
             }
-            mangle_Overwrite(fuzzer, (uint8_t *) & val, off, varLen);
+            mangle_Overwrite(run, (uint8_t*)&val, off, varLen);
             return;
             break;
         }
-    default:
-        {
+        case 8: {
+            int64_t val;
+            memcpy(&val, &run->dynamicFile[off], sizeof(val));
+            if (util_rnd64() & 0x1) {
+                val += delta;
+            } else {
+                /* Foreign endianess */
+                val = __builtin_bswap64(val);
+                val += delta;
+                val = __builtin_bswap64(val);
+            }
+            mangle_Overwrite(run, (uint8_t*)&val, off, varLen);
+            return;
+            break;
+        }
+        default: {
             LOG_F("Unknown variable length size: %" PRIu64, varLen);
             break;
         }
     }
 }
 
-static void mangle_IncByte(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    fuzzer->dynamicFile[off] += (uint8_t) 1UL;
+static void mangle_IncByte(run_t* run) {
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+    run->dynamicFile[off] += (uint8_t)1UL;
 }
 
-static void mangle_DecByte(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    fuzzer->dynamicFile[off] -= (uint8_t) 1UL;
+static void mangle_DecByte(run_t* run) {
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+    run->dynamicFile[off] -= (uint8_t)1UL;
 }
 
-static void mangle_NegByte(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    fuzzer->dynamicFile[off] = ~(fuzzer->dynamicFile[off]);
+static void mangle_NegByte(run_t* run) {
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+    run->dynamicFile[off] = ~(run->dynamicFile[off]);
 }
 
-static void mangle_CloneByte(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    size_t off1 = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    size_t off2 = util_rndGet(0, fuzzer->dynamicFileSz - 1);
+static void mangle_CloneByte(run_t* run) {
+    size_t off1 = util_rndGet(0, run->dynamicFileSz - 1);
+    size_t off2 = util_rndGet(0, run->dynamicFileSz - 1);
 
-    uint8_t tmp = fuzzer->dynamicFile[off1];
-    fuzzer->dynamicFile[off1] = fuzzer->dynamicFile[off2];
-    fuzzer->dynamicFile[off2] = tmp;
+    uint8_t tmp = run->dynamicFile[off1];
+    run->dynamicFile[off1] = run->dynamicFile[off2];
+    run->dynamicFile[off2] = tmp;
 }
 
-static void mangle_Resize(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    fuzzer->dynamicFileSz = util_rndGet(1, hfuzz->maxFileSz);
+static void mangle_Resize(run_t* run) {
+    run->dynamicFileSz = util_rndGet(1, run->global->maxFileSz);
 }
 
-static void mangle_Expand(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    size_t len = util_rndGet(1, fuzzer->dynamicFileSz - off);
+static void mangle_Expand(run_t* run) {
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+    size_t len = util_rndGet(1, run->dynamicFileSz - off);
 
-    mangle_Inflate(hfuzz, fuzzer, off, len);
-    mangle_Move(fuzzer, off, off + len, fuzzer->dynamicFileSz);
+    mangle_Inflate(run, off, len);
+    mangle_Move(run, off, off + len, run->dynamicFileSz);
 }
 
-static void mangle_Shrink(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    if (fuzzer->dynamicFileSz <= 1U) {
+static void mangle_Shrink(run_t* run) {
+    if (run->dynamicFileSz <= 1U) {
         return;
     }
 
-    size_t len = util_rndGet(1, fuzzer->dynamicFileSz - 1);
+    size_t len = util_rndGet(1, run->dynamicFileSz - 1);
     size_t off = util_rndGet(0, len);
 
-    mangle_Move(fuzzer, off + len, off, fuzzer->dynamicFileSz);
-    fuzzer->dynamicFileSz -= len;
+    mangle_Move(run, off + len, off, run->dynamicFileSz);
+    run->dynamicFileSz -= len;
 }
 
-static void mangle_InsertRnd(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer)
-{
-    size_t off = util_rndGet(0, fuzzer->dynamicFileSz - 1);
-    size_t len = util_rndGet(1, fuzzer->dynamicFileSz - off);
+static void mangle_InsertRnd(run_t* run) {
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+    size_t len = util_rndGet(1, run->dynamicFileSz - off);
 
-    mangle_Inflate(hfuzz, fuzzer, off, len);
-    mangle_Move(fuzzer, off, off + len, fuzzer->dynamicFileSz);
-    util_rndBuf(&fuzzer->dynamicFile[off], len);
+    mangle_Inflate(run, off, len);
+    mangle_Move(run, off, off + len, run->dynamicFileSz);
+    util_rndBuf(&run->dynamicFile[off], len);
 }
 
-void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
-{
-    if (fuzzer->flipRate == 0.0f) {
+static void mangle_ASCIIVal(run_t* run) {
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%" PRId64, (int64_t)util_rnd64());
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+
+    mangle_Overwrite(run, (uint8_t*)buf, off, strlen(buf));
+}
+
+void mangle_mangleContent(run_t* run) {
+    if (run->mutationsPerRun == 0U) {
         return;
     }
 
     /* Minimum support file size for mangling is 1 */
-    if (fuzzer->dynamicFileSz == 0UL) {
-        fuzzer->dynamicFileSz = 1UL;
-        fuzzer->dynamicFile[0] = '\0';
+    if (run->dynamicFileSz == 0UL) {
+        run->dynamicFileSz = 1UL;
+        run->dynamicFile[0] = '\0';
     }
 
     /* 20% chance to change the file size */
     if ((util_rnd64() % 5) == 0) {
-        mangle_Resize(hfuzz, fuzzer);
+        mangle_Resize(run);
     }
 
-    static void (*const mangleFuncs[]) (honggfuzz_t * hfuzz, fuzzer_t * fuzzer) = {
-    /*  *INDENT-OFF* */
+    static void (*const mangleFuncs[])(run_t * run) = {
         mangle_Byte,
         mangle_Bit,
         mangle_Bytes,
@@ -569,15 +566,15 @@ void mangle_mangleContent(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         mangle_Expand,
         mangle_Shrink,
         mangle_InsertRnd,
+        mangle_ASCIIVal,
         mangle_Resize,
-    /* *INDENT-ON* */
     };
 
     /* Max number of stacked changes is 6 */
-    uint64_t changesCnt = util_rndGet(1, 6);
+    uint64_t changesCnt = util_rndGet(1, run->global->mutationsPerRun);
 
     for (uint64_t x = 0; x < changesCnt; x++) {
         uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);
-        mangleFuncs[choice] (hfuzz, fuzzer);
+        mangleFuncs[choice](run);
     }
 }

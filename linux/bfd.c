@@ -21,35 +21,43 @@
  *
  */
 
-#include "../libcommon/common.h"
-#include "bfd.h"
+#include "linux/bfd.h"
 
 #include <bfd.h>
 #include <dis-asm.h>
+#include <inttypes.h>
 #include <pthread.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
 #include <unistd.h>
 
-#include "../libcommon/files.h"
-#include "../libcommon/log.h"
-#include "../libcommon/util.h"
+#include "honggfuzz.h"
+#include "libcommon/common.h"
+#include "libcommon/files.h"
+#include "libcommon/log.h"
+#include "libcommon/util.h"
 
 typedef struct {
-    bfd *bfdh;
-    asection *section;
-    asymbol **syms;
+    bfd* bfdh;
+    asection* section;
+    asymbol** syms;
 } bfd_t;
+
+/*
+ * This is probably the only define which was added with binutils 2.29, so we us
+ * it, do decide which disassembler() prototype from dis-asm.h to use
+ */
+#if defined(FOR_EACH_DISASSEMBLER_OPTION)
+#define _HF_BFD_GE_2_29
+#endif
 
 static pthread_mutex_t arch_bfd_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static bool arch_bfdInit(pid_t pid, bfd_t * bfdParams)
-{
+static bool arch_bfdInit(pid_t pid, bfd_t* bfdParams) {
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "/proc/%d/exe", pid);
     if ((bfdParams->bfdh = bfd_openr(fname, 0)) == NULL) {
@@ -68,7 +76,7 @@ static bool arch_bfdInit(pid_t pid, bfd_t * bfdParams)
         return false;
     }
 
-    bfdParams->syms = (asymbol **) util_Malloc(storage_needed);
+    bfdParams->syms = (asymbol**)util_Malloc(storage_needed);
     bfd_canonicalize_symtab(bfdParams->bfdh, bfdParams->syms);
 
     if ((bfdParams->section = bfd_get_section_by_name(bfdParams->bfdh, ".text")) == NULL) {
@@ -79,8 +87,7 @@ static bool arch_bfdInit(pid_t pid, bfd_t * bfdParams)
     return true;
 }
 
-static void arch_bfdDestroy(bfd_t * bfdParams)
-{
+static void arch_bfdDestroy(bfd_t* bfdParams) {
     if (bfdParams->syms) {
         free(bfdParams->syms);
     }
@@ -89,8 +96,7 @@ static void arch_bfdDestroy(bfd_t * bfdParams)
     }
 }
 
-void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
-{
+void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num) {
     /* Guess what? libbfd is not multi-threading safe */
     MX_SCOPED_LOCK(&arch_bfd_mutex);
 
@@ -105,12 +111,9 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
     if (arch_bfdInit(pid, &bfdParams) == false) {
         return;
     }
-    defer {
-        arch_bfdDestroy(&bfdParams);
-    };
 
-    const char *func;
-    const char *file;
+    const char* func;
+    const char* file;
     unsigned int line;
     for (unsigned int i = 0; i < num; i++) {
         snprintf(funcs[i].func, sizeof(funcs->func), "[UNKNOWN]");
@@ -121,16 +124,17 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t * funcs, size_t num)
         if ((offset < 0 || (unsigned long)offset > bfdParams.section->size)) {
             continue;
         }
-        if (bfd_find_nearest_line
-            (bfdParams.bfdh, bfdParams.section, bfdParams.syms, offset, &file, &func, &line)) {
+        if (bfd_find_nearest_line(
+                bfdParams.bfdh, bfdParams.section, bfdParams.syms, offset, &file, &func, &line)) {
             snprintf(funcs[i].func, sizeof(funcs->func), "%s", func);
             funcs[i].line = line;
         }
     }
+
+    arch_bfdDestroy(&bfdParams);
 }
 
-static int arch_bfdFPrintF(void *buf, const char *fmt, ...)
-{
+static int arch_bfdFPrintF(void* buf, const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     int ret = util_vssnprintf(buf, _HF_INSTR_SZ, fmt, args);
@@ -139,31 +143,33 @@ static int arch_bfdFPrintF(void *buf, const char *fmt, ...)
     return ret;
 }
 
-void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
-{
+void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
     MX_SCOPED_LOCK(&arch_bfd_mutex);
 
     bfd_init();
 
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "/proc/%d/exe", pid);
-    bfd *bfdh = bfd_openr(fname, NULL);
+    bfd* bfdh = bfd_openr(fname, NULL);
     if (bfdh == NULL) {
         LOG_W("bfd_openr('/proc/%d/exe') failed", pid);
         return;
     }
-    defer {
-        bfd_close(bfdh);
-    };
 
     if (!bfd_check_format(bfdh, bfd_object)) {
         LOG_W("bfd_check_format() failed");
+        bfd_close(bfdh);
         return;
     }
-
+#if defined(_HF_BFD_GE_2_29)
+    disassembler_ftype disassemble =
+        disassembler(bfd_get_arch(bfdh), bfd_little_endian(bfdh) ? FALSE : TRUE, 0, NULL);
+#else
     disassembler_ftype disassemble = disassembler(bfdh);
+#endif  // defined(_HD_BFD_GE_2_29)
     if (disassemble == NULL) {
         LOG_W("disassembler() failed");
+        bfd_close(bfdh);
         return;
     }
 
@@ -181,4 +187,6 @@ void arch_bfdDisasm(pid_t pid, uint8_t * mem, size_t size, char *instr)
     if (disassemble(0, &info) <= 0) {
         snprintf(instr, _HF_INSTR_SZ, "[DIS-ASM_FAILURE]");
     }
+
+    bfd_close(bfdh);
 }

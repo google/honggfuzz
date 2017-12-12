@@ -119,7 +119,7 @@ ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
 endif
 
 ifeq ($(ANDROID_WITH_PTRACE),true)
-  ARCH_SRCS := linux/arch.c linux/ptrace_utils.c linux/perf.c linux/unwind.c linux/pt.c
+  ARCH_SRCS := linux/arch.c linux/trace.c linux/perf.c linux/unwind.c linux/pt.c
   ARCH := LINUX
   $(info $(shell (echo "********************************************************************")))
   $(info $(shell (echo "Android PTRACE build: Will prevent debuggerd from processing crashes")))
@@ -132,7 +132,7 @@ else
   $(info $(shell (echo "********************************************************************")))
 endif
 
-COMMON_CFLAGS := -std=c11 -I. \
+COMMON_CFLAGS := -std=c11 \
   -D_GNU_SOURCE \
   -Wall -Wextra -Wno-initializer-overrides -Wno-override-init \
   -Wno-unknown-warning-option -Werror -funroll-loops -O2 \

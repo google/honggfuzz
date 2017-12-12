@@ -8,7 +8,7 @@ extern "C" {
 #include <libxml/xmlerror.h>
 #include <stdlib.h>
 
-#include <libhfuzz.h>
+#include <libhfuzz/libhfuzz.h>
 
 FILE* null_file = NULL;
 

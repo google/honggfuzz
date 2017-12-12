@@ -1,0 +1,168 @@
+diff -Nur httpd/compile_and_install.sh httpd.new/compile_and_install.sh
+--- httpd/compile_and_install.sh	1970-01-01 01:00:00.000000000 +0100
++++ httpd.new/compile_and_install.sh	2017-11-02 23:48:05.049844778 +0100
+@@ -0,0 +1,62 @@
++#!/bin/sh
++
++set -ex
++
++# Directory with honggfuzz installation
++HFUZZ_DIR="/home/jagger/src/honggfuzz"
++# Change this to a directory where apache should be installed into
++INSTALL_PREFIX="$(realpath "$PWD/../dist")"
++NGHTTP2_VER=1.27.0
++APR_VER=1.6.3
++APR_UTIL_VER=1.6.1
++CFLAGS_SAN="-fsanitize=address"
++# Another viable option: few
++APACHE_MODULES=most
++
++NGHTTP2_PATH="$(realpath "$PWD/../nghttp2-$NGHTTP2_VER")/"
++APR_PATH="$(realpath "$PWD/../apr-$APR_VER")"
++APR_UTIL_PATH="$(realpath "$PWD/../apr-util-$APR_UTIL_VER")/"
++
++export CC="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang"
++export CXX="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang++"
++
++echo "Compiling APR"
++cd "$APR_PATH"
++CFLAGS="$CFLAGS_SAN" ./configure --disable-shared --enable-static
++make clean
++make -j$(nproc)
++cd -
++
++echo "Compiling APR-UTIL"
++cd "$APR_UTIL_PATH"
++CFLAGS="$CFLAGS_SAN" ./configure --with-apr="$APR_PATH" --disable-shared --enable-static
++make clean
++make -j$(nproc)
++cd -
++
++echo "Compiling NGHTTP2"
++cd "$NGHTTP2_PATH"
++CFLAGS="$CFLAGS_SAN" CXXFLAGS="$CFLAGS_SAN" ./configure --disable-shared --enable-static
++make clean
++make -j$(nproc)
++cd -
++
++echo "Install PATH: $INSTALL_PREFIX"
++./buildconf --with-apr="$APR_PATH" --with-apr-util="$APR_UTIL_PATH"
++
++echo "Compiling HTTPD"
++CC="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang" CXX="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang++" CFLAGS="-I$NGHTTP2_PATH/lib/includes $CFLAGS_SAN -ggdb -O3" LDFLAGS="-L$NGHTTP2_PATH/lib -lpthread" \
++./configure \
++		--prefix="$INSTALL_PREFIX" \
++		--with-nghttp2="$NGHTTP2_PATH/" \
++		--enable-http2 \
++		--enable-nghttp2-staticlib-deps \
++		--with-mpm=event \
++		--enable-unixd \
++		--disable-pie \
++		--enable-mods-static=$APACHE_MODULES \
++		--with-apr="$APR_PATH" \
++		--with-apr-util="$APR_UTIL_PATH"
++make clean
++make -j$(nproc)
++make install
+diff -Nur httpd/configure.in httpd.new/configure.in
+--- httpd/configure.in	2017-11-02 23:48:27.717470876 +0100
++++ httpd.new/configure.in	2017-11-02 23:48:05.053844712 +0100
+@@ -721,7 +721,7 @@
+ if test "x$PKGCONFIG" != "x" && `$PKGCONFIG --atleast-version='0.9.12' check`; then
+   UNITTEST_CFLAGS=`$PKGCONFIG --cflags check`
+   UNITTEST_LIBS=`$PKGCONFIG --libs check`
+-  other_targets="$other_targets test/httpdunit"
++  other_targets="$other_targets"
+ 
+   AC_MSG_RESULT([yes])
+ else
+diff -Nur httpd/server/main.c httpd.new/server/main.c
+--- httpd/server/main.c	2017-11-02 23:48:27.913467639 +0100
++++ httpd.new/server/main.c	2017-11-02 23:48:05.053844712 +0100
+@@ -484,8 +484,84 @@
+     destroy_and_exit_process(process, 1);
+ }
+ 
+-int main(int argc, const char * const argv[])
+-{
++#include <libhfuzz/libhfuzz.h>
++
++static void GETDATA(void *unused) {
++  usleep(100000);
++
++  for (;;) {
++    size_t len;
++    const uint8_t *buf;
++
++    HF_ITER(&buf, &len);
++
++    int myfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
++    if (myfd == -1) {
++      perror("socket");
++      _exit(1);
++    }
++
++    int sz = (1024 * 1024);
++    if (setsockopt(myfd, SOL_SOCKET, SO_SNDBUF, &sz, sizeof(sz)) == -1) {
++      perror("setsockopt");
++      exit(1);
++    }
++
++    struct sockaddr_in saddr;
++    saddr.sin_family = AF_INET;
++    saddr.sin_port = htons(8080);
++    saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
++    if (connect(myfd, &saddr, sizeof(saddr)) == -1) {
++      perror("connect");
++      close(myfd);
++      continue;
++    }
++
++    if (send(myfd, buf, len, MSG_NOSIGNAL) != len) {
++      perror("send() failed 1");
++      exit(1);
++    }
++
++    if (shutdown(myfd, SHUT_WR) == -1) {
++      perror("shutdown");
++      exit(1);
++    }
++
++    char b[1024 * 1024];
++    while (recv(myfd, b, sizeof(b), MSG_WAITALL) > 0) {} ;
++
++    close(myfd);
++  }
++}
++
++static void LAUNCHTHR() {
++  if (linuxEnterNs(CLONE_NEWUSER|CLONE_NEWNET|CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS) == false) {
++    exit(1);
++  }
++  if (linuxIfaceUp("lo") == false) {
++    exit(1);
++  }
++  if (linuxMountTmpfs("/tmp") == false) {
++    exit(1);
++  }
++
++  pthread_t t;
++  pthread_attr_t attr;
++
++  pthread_attr_init(&attr);
++  pthread_attr_setstacksize(&attr, 1024 * 1024 * 8);
++  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
++
++  pthread_create(&t, &attr, GETDATA,  NULL);
++}
++
++ int main(int argc, const char * const argv[])
++ {
++
++  if (getenv("NO_FUZZ") == NULL) {
++        LAUNCHTHR();
++  }
++
+     char c;
+     int showcompile = 0, showdirectives = 0;
+     const char *confname = SERVER_CONFIG_FILE;

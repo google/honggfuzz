@@ -20,17 +20,19 @@
 #ifndef _HF_SANITIZERS_H_
 #define _HF_SANITIZERS_H_
 
+#include "honggfuzz.h"
+
 /* Exit code is common for all sanitizers */
-#define HF_SAN_EXIT_CODE   103
+#define HF_SAN_EXIT_CODE 103
 
 /* Prefix for sanitizer report files */
-#define kLOGPREFIX          "HF.sanitizer.log"
+#define kLOGPREFIX "HF.sanitizer.log"
 
 /* Directory in workspace to store sanitizer coverage data */
 #define _HF_SANCOV_DIR "HF_SANCOV"
 
-extern bool sanitizers_Init(honggfuzz_t * hfuzz);
+extern bool sanitizers_Init(honggfuzz_t* hfuzz);
 
-extern bool sanitizers_prepareExecve(honggfuzz_t * hfuzz);
+extern bool sanitizers_prepareExecve(run_t* run);
 
-#endif                          /* _HF_SANITIZERS_H_ */
+#endif /* _HF_SANITIZERS_H_ */

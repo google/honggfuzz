@@ -1,0 +1,67 @@
+ServerRoot "/home/jagger/fuzz/apache/dist"
+DocumentRoot "/home/jagger/fuzz/apache/dist/htdocs"
+ServerName 127.0.0.1
+Timeout 1
+KeepAlive On
+MaxKeepAliveRequests 1000
+MaxConnectionsPerChild 0
+ListenBacklog 1023
+KeepAliveTimeout 5
+HostnameLookups Off
+ErrorLog /tmp/error.log
+LogLevel crit
+Listen 127.0.0.1:8080
+PidFile /tmp/apache-pid
+Protocols h2c
+ServerTokens Full
+TraceEnable on
+ExtendedStatus On
+EnableSendfile On
+EnableMMAP On
+ContentDigest On
+AcceptPathInfo On
+AddDefaultCharset On
+AllowEncodedSlashes On
+MaxRanges unlimited
+MaxRangeOverlaps unlimited
+MaxRangeReversals unlimited
+MergeTrailers on
+QualifyRedirectURL On
+SeeRequestTail On
+ServerSignature On
+Options All
+ScriptAlias "/cgi-bin/" "/home/jagger/fuzz/apache/dist/cgi-bin/"
+Redirect "/abc" "/"
+RedirectMatch "(.*)\.gif$" "/image/$1.jpg"
+UseCanonicalPhysicalPort On
+HttpProtocolOptions Unsafe LenientMethods Allow0.9
+<Directory />
+	Options FollowSymLinks
+	AllowOverride None
+</Directory>
+<LocationMatch "/app/(?<NUMBER>[0-9]+)">
+	SetHandler "fcgi://localhost:8080/app_%{env:MATCH_NUMBER}"
+</LocationMatch>
+<Directory /home/jagger/fuzz/apache/dist/htdocs>
+	Options All MultiViews
+	AllowOverride None
+</Directory>
+<Directory /home/jagger/fuzz/apache/dist/cgi-bin>
+	Options All MultiViews
+	AllowOverride None
+</Directory>
+<Location "/server-status">
+    SetHandler server-status
+    AuthType Digest
+    AuthName "private"
+    AuthDigestDomain "/private/" "http://mirror.my.dom/private2/"
+    AuthDigestProvider file
+    AuthUserFile "/home/jagger/fuzz/apache/dist/digest_pw"
+    Require valid-user
+	<Limit OPTIONS>
+  		Require host localhost
+	</Limit>
+</Location>
+<LocationMatch "/error/(?<NUMBER>[0-9]+)">
+    Redirect permanent "/%{env:MATCH_NUMBER}.html"
+</LocationMatch>

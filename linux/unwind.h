@@ -24,12 +24,15 @@
 #ifndef _HF_LINUX_UNWIND_H_
 #define _HF_LINUX_UNWIND_H_
 
+#include <linux/limits.h>
+#include <sys/types.h>
+
 /* String buffer size for function names in stack traces produced from libunwind */
-#define _HF_FUNC_NAME_SZ    256 // Should be alright for mangled C++ procs too
+#define _HF_FUNC_NAME_SZ 256  // Should be alright for mangled C++ procs too
 
 #define _HF_MAX_FUNCS 80
 typedef struct {
-    void *pc;
+    void* pc;
 
     /* If ASan custom parsing, function not available without symbolication */
     char func[_HF_FUNC_NAME_SZ];
@@ -48,8 +51,8 @@ typedef struct {
     size_t line;
 } funcs_t;
 
-extern size_t arch_unwindStack(pid_t pid, funcs_t * funcs);
-extern char *arch_btContainsSymbol(size_t symbolsListSz, char **symbolsList, size_t num_frames,
-                                   funcs_t * funcs);
+extern size_t arch_unwindStack(pid_t pid, funcs_t* funcs);
+extern char* arch_btContainsSymbol(
+    size_t symbolsListSz, char** symbolsList, size_t num_frames, funcs_t* funcs);
 
 #endif
