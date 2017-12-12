@@ -184,9 +184,9 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp(
 /*
  * -fsanitize-coverage=indirect-calls
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(void* callee) {
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(uintptr_t callee) {
     register size_t pos1 = (uintptr_t)__builtin_return_address(0) << 12;
-    register size_t pos2 = (uintptr_t)callee & 0xFFF;
+    register size_t pos2 = callee & 0xFFF;
     register size_t pos = (pos1 | pos2) & _HF_PERF_BITMAP_BITSZ_MASK;
 
     register uint8_t prev = ATOMIC_BTS(feedback->bbMapPc, pos);
