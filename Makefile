@@ -31,7 +31,7 @@ COMMON_LDFLAGS := -lm libcommon/libcommon.a
 COMMON_SRCS := $(sort $(wildcard *.c))
 CFLAGS ?= -O3
 LDFLAGS ?=
-LIBS_CFLAGS ?= -fPIC -fno-stack-protector -fno-builtin
+LIBS_CFLAGS ?= -fPIC -fno-stack-protector -fno-builtin -D__NO_STRING_INLINES
 
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
@@ -46,7 +46,7 @@ ifeq ($(OS),Linux)
     ARCH_LDFLAGS := -L/usr/local/include \
                     -lpthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt -ldl
     ARCH_SRCS := $(sort $(wildcard linux/*.c))
-    LIBS_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -D__NO_STRING_INLINES.
+    LIBS_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 
     ifeq ("$(wildcard /usr/include/bfd.h)","")
         WARN_LIBRARY += binutils-devel

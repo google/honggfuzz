@@ -147,57 +147,30 @@ static inline void* _memmem(
     __attribute__((weak)) XVAL(ret) XVAL(func)(__VA_ARGS__)
 
 /* Typical libc wrappers */
-#if defined strcmp
-#undef strcmp
-#endif
 HF_WEAK_WRAP(int, strcmp, const char* s1, const char* s2) {
     return _strcmp(s1, s2, __builtin_return_address(0));
 }
-#if defined strcasecmp
-#undef strcasecmp
-#endif
 HF_WEAK_WRAP(int, strcasecmp, const char* s1, const char* s2) {
     return _strcasecmp(s1, s2, __builtin_return_address(0));
 }
-#if defined strncmp
-#undef strncmp
-#endif
 HF_WEAK_WRAP(int, strncmp, const char* s1, const char* s2, size_t n) {
     return _strncmp(s1, s2, n, __builtin_return_address(0));
 }
-#if defined strncasecmp
-#undef strncasecmp
-#endif
 HF_WEAK_WRAP(int, strncasecmp, const char* s1, const char* s2, size_t n) {
     return _strncasecmp(s1, s2, n, __builtin_return_address(0));
 }
-#if defined strstr
-#undef strstr
-#endif
 HF_WEAK_WRAP(char*, strstr, const char* haystack, const char* needle) {
     return _strstr(haystack, needle, __builtin_return_address(0));
 }
-#if defined strcasestr
-#undef strcasestr
-#endif
 HF_WEAK_WRAP(char*, strcasestr, const char* haystack, const char* needle) {
     return _strcasestr(haystack, needle, __builtin_return_address(0));
 }
-#if defined memcmp
-#undef memcmp
-#endif
 HF_WEAK_WRAP(int, memcmp, const void* m1, const void* m2, size_t n) {
     return _memcmp(m1, m2, n, __builtin_return_address(0));
 }
-#if defined bcmp
-#undef bcmp
-#endif
 HF_WEAK_WRAP(int, bcmp, const void* m1, const void* m2, size_t n) {
     return _memcmp(m1, m2, n, __builtin_return_address(0));
 }
-#if defined memmem
-#undef memmem
-#endif
 HF_WEAK_WRAP(
     void*, memmem, const void* haystack, size_t haystacklen, const void* needle, size_t needlelen) {
     return _memmem(haystack, haystacklen, needle, needlelen, __builtin_return_address(0));
