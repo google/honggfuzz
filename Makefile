@@ -31,7 +31,7 @@ COMMON_LDFLAGS := -lm libcommon/libcommon.a
 COMMON_SRCS := $(sort $(wildcard *.c))
 CFLAGS ?= -O3
 LDFLAGS ?=
-LIBS_CFLAGS ?= -fPIC -fno-stack-protector -fno-builtin -D__NO_STRING_INLINES
+LIBS_CFLAGS ?= -fPIC -fno-stack-protector -fno-builtin -D__NO_STRING_INLINES -D__NO_INLINE__
 
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
