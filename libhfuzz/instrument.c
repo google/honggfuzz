@@ -180,7 +180,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp(uint64_t SizeAndType,
 /*
  * -fsanitize-coverage=indirect-calls
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(void *callee)
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(uintptr_t callee)
 {
     register size_t pos1 = (uintptr_t) __builtin_return_address(0) << 12;
     register size_t pos2 = (uintptr_t) callee & 0xFFF;
