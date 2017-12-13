@@ -21,6 +21,7 @@
 #include "libcommon/util.h"
 
 int hfuzz_module_instrument = 0;
+static bool inited = false;
 
 /*
  * We require SSE4.2 with x86-(32|64) for the 'popcnt', as it's much faster than the software
@@ -35,6 +36,8 @@ int hfuzz_module_instrument = 0;
 static feedback_t bbMapFb;
 feedback_t* feedback = &bbMapFb;
 uint32_t my_thread_no = 0;
+
+void __asan_init(void);
 
 __attribute__((constructor)) static void mapBB(void) {
     char* my_thread_no_str = getenv(_HF_THREAD_NO_ENV);
@@ -212,7 +215,6 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_indir_call16(
  */
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
     uint32_t* start, uint32_t* stop) {
-    static bool inited = false;
     if (inited == true) {
         return;
     }
@@ -230,6 +232,17 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
 }
 
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
+    // ANDROID: Bionic invokes routines that Honggfuzz wraps, before either
+    //          ASAN or Honggfuzz have initialized.  Check to see if Honggfuzz
+    //          has initialized -- if not, force ASAN to initialize (otherwise
+    //          _strcmp() will crash, as it is ASAN-instrumented).
+    //
+    //          Defer all trace_pc_guard activity until trace_pc_guard_init is
+    //          invoked via sancov.module_ctor in the normal process of things.
+    if (!inited) {
+        __asan_init();
+        return;
+    }
     if (*guard == 0U) {
         return;
     }
