@@ -73,32 +73,28 @@ static void cmdlineHelp(const char* pname, struct custom_option* opts) {
     LOG_HELP(
         " Run the binary over a mutated file chosen from the directory. Disable fuzzing "
         "feedback (dry/static mode)");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -x -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -x -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" As above, provide input over STDIN:");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -x -s -- /usr/bin/djpeg");
     LOG_HELP(" Use compile-time instrumentation (libhfuzz/instrument.c):");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" Use SANCOV instrumentation:");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -C -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -C -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" Use persistent mode (libhfuzz/persistent.c) w/o instrumentation:");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -x -- /usr/bin/tiffinfo_persistent");
+    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -x -- /usr/bin/djpeg_persistent_mode");
     LOG_HELP(" Use persistent mode (libhfuzz/persistent.c) and compile-time instrumentation:");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -- /usr/bin/tiffinfo_persistent");
+    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -- /usr/bin/djpeg_persistent_mode");
 #if defined(_HF_ARCH_LINUX)
     LOG_HELP(
         " Run the binary with dynamically generate inputs, maximize total no. of instructions:");
-    LOG_HELP_BOLD(
-        "  " PROG_NAME " --linux_perf_instr -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_instr -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" As above, maximize total no. of branches:");
-    LOG_HELP_BOLD(
-        "  " PROG_NAME " --linux_perf_branch -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_branch -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" As above, maximize unique branches (edges) via Intel BTS:");
-    LOG_HELP_BOLD(
-        "  " PROG_NAME " --linux_perf_bts_edge -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_bts_edge -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
     LOG_HELP(
         " As above, maximize unique code blocks via Intel Processor Trace (requires libipt.so):");
-    LOG_HELP_BOLD(
-        "  " PROG_NAME " --linux_perf_ipt_block -- /usr/bin/tiffinfo -D " _HF_FILE_PLACEHOLDER);
+    LOG_HELP_BOLD("  " PROG_NAME " --linux_perf_ipt_block -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
 #endif /* defined(_HF_ARCH_LINUX) */
 }
 

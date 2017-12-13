@@ -48,8 +48,7 @@ It should work under the following operating systems:
 
 # USAGE #
 
-```
-Usage: ./honggfuzz [options] -- path_to_command [args]
+```shell
 Usage: ./honggfuzz [options] -- path_to_command [args]
 Options:
  --help|-h 
@@ -72,8 +71,8 @@ Options:
 	Number of concurrent fuzzing threads (default: number of CPUs / 2)
  --stdin_input|-s 
 	Provide fuzzing input on STDIN, instead of ___FILE___
- --mutation_rate|-r VALUE
-	Maximal mutation rate in relation to the file size, (default: '0.001')
+ --mutations_per_run|-r VALUE
+	Maximal number of mutations per one run (default: '6')
  --logfile|-l VALUE
 	Log file
  --verbose|-v 
@@ -101,7 +100,11 @@ Options:
  --iterations|-N VALUE
 	Number of fuzzing iterations (default: '0' [no limit])
  --rlimit_as VALUE
-	Per process memory limit in MiB (default: '0' [no limit])
+	Per process RLIMIT_AS in MiB (default: '0' [no limit])
+ --rlimit_rss VALUE
+	Per process RLIMIT_RSS in MiB (default: '0' [no limit])
+ --rlimit_data VALUE
+	Per process RLIMIT_DATA in MiB (default: '0' [no limit])
  --report|-R VALUE
 	Write report to this file (default: 'HONGGFUZZ.REPORT.TXT')
  --max_file_size|-F VALUE
@@ -154,26 +157,26 @@ Options:
 	Use Linux IPC namespace isolation
 
 Examples:
- Run the binary over a mutated file chosen from the directory
-  honggfuzz -f input_dir -- /usr/bin/tiffinfo -D ___FILE___
+ Run the binary over a mutated file chosen from the directory. Disable fuzzing feedback (dry/static mode)
+  honggfuzz -f input_dir -x -- /usr/bin/djpeg ___FILE___
  As above, provide input over STDIN:
-  honggfuzz -f input_dir -s -- /usr/bin/djpeg
- Use SANCOV to maximize code coverage:
-  honggfuzz -f input_dir -C -- /usr/bin/tiffinfo -D ___FILE___
+  honggfuzz -f input_dir -x -s -- /usr/bin/djpeg
  Use compile-time instrumentation (libhfuzz/instrument.c):
-  honggfuzz -f input_dir -- /usr/bin/tiffinfo -D ___FILE___
- Use persistent mode (libhfuzz/persistent.c):
-  honggfuzz -f input_dir -P -- /usr/bin/tiffinfo_persistent
- Use persistent mode (libhfuzz/persistent.c) and compile-time instrumentation (libhfuzz/instrument.c):
-  honggfuzz -f input_dir -P -- /usr/bin/tiffinfo_persistent
- Run the binary over a dynamic file, maximize total no. of instructions:
-  honggfuzz --linux_perf_instr -- /usr/bin/tiffinfo -D ___FILE___
- Run the binary over a dynamic file, maximize total no. of branches:
-  honggfuzz --linux_perf_branch -- /usr/bin/tiffinfo -D ___FILE___
- Run the binary over a dynamic file, maximize unique branches (edges) via BTS:
-  honggfuzz --linux_perf_bts_edge -- /usr/bin/tiffinfo -D ___FILE___
- Run the binary over a dynamic file, maximize unique code blocks via Intel Processor Trace (requires libipt.so):
-  honggfuzz --linux_perf_ipt_block -- /usr/bin/tiffinfo -D ___FILE___
+  honggfuzz -f input_dir -- /usr/bin/djpeg ___FILE___
+ Use SANCOV instrumentation:
+  honggfuzz -f input_dir -C -- /usr/bin/djpeg ___FILE___
+ Use persistent mode (libhfuzz/persistent.c) w/o instrumentation:
+  honggfuzz -f input_dir -P -x -- /usr/bin/djpeg_persistent_mode
+ Use persistent mode (libhfuzz/persistent.c) and compile-time instrumentation:
+  honggfuzz -f input_dir -P -- /usr/bin/djpeg_persistent_mode
+ Run the binary with dynamically generate inputs, maximize total no. of instructions:
+  honggfuzz --linux_perf_instr -- /usr/bin/djpeg ___FILE___
+ As above, maximize total no. of branches:
+  honggfuzz --linux_perf_branch -- /usr/bin/djpeg ___FILE___
+ As above, maximize unique branches (edges) via Intel BTS:
+  honggfuzz --linux_perf_bts_edge -- /usr/bin/djpeg ___FILE___
+ As above, maximize unique code blocks via Intel Processor Trace (requires libipt.so):
+  honggfuzz --linux_perf_ipt_block -- /usr/bin/djpeg ___FILE___
 ```
 
 # OUTPUT FILES #
