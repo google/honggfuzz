@@ -139,7 +139,7 @@ COMMON_CFLAGS := -std=c11 \
   -Wframe-larger-than=51200 -Wno-format-truncation
 
 ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
-  COMMON_CFLAGS += -fblocks
+  COMMON_CFLAGS += -fblocks -fno-sanitize=address,undefined,memory,thread -fsanitize-coverage=0
   COMMON_STATIC_LIBS += libblocksruntime
 endif
 
