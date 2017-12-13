@@ -175,8 +175,8 @@ elif [ ! -x "$CXX" ]; then
   abort 1
 fi
 
-export CC="$CC --sysroot=$SYSROOT"
-export CXX="$CXX --sysroot=$SYSROOT"
+export CC="$CC --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/"
+export CXX="$CXX --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/"
 
 if [ ! -f configure ]; then
   NOCONFIGURE=true ./autogen.sh

@@ -144,12 +144,12 @@ HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH=$(uname -m)
 
 SYSROOT="$NDK/platforms/$ANDROID_API/arch-$ARCH"
-export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc --sysroot=$SYSROOT"
-export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++ --sysroot=$SYSROOT"
+export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/"
+export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++ --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/"
 export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
 
 # We need to construct a cross variable that capstone Makefile can pick ar, strip & ranlib from
-export CROSS="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-" CFLAGS="--sysroot=$SYSROOT" LDFLAGS="--sysroot=$SYSROOT"
+export CROSS="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-" CFLAGS="--sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/" LDFLAGS="--sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/"
 
 # Build it
 make clean
