@@ -62,7 +62,7 @@
 #define _HF_PERF_BITMAP_SIZE_16M (1024U * 1024U * 16U)
 #define _HF_PERF_BITMAP_BITSZ_MASK 0x7ffffff
 /* Maximum number of PC guards (=trace-pc-guard) we support */
-#define _HF_PC_GUARD_MAX (1024U * 1024U)
+#define _HF_PC_GUARD_MAX (1024U * 1024U * 16U)
 
 /* FD used to pass feedback bitmap a process */
 #define _HF_BITMAP_FD 1022
