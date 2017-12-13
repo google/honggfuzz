@@ -21,7 +21,14 @@
 #include "libcommon/util.h"
 
 int hfuzz_module_instrument = 0;
-static bool inited = false;
+
+static bool guards_initialized = false;
+
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+void __asan_init(void);
+#endif /* __has_feature(address_sanitizer) */
+#endif /* defined(__has_feature) */
 
 /*
  * We require SSE4.2 with x86-(32|64) for the 'popcnt', as it's much faster than the software
@@ -37,7 +44,6 @@ static feedback_t bbMapFb;
 feedback_t* feedback = &bbMapFb;
 uint32_t my_thread_no = 0;
 
-void __asan_init(void);
 
 __attribute__((constructor)) static void mapBB(void) {
     char* my_thread_no_str = getenv(_HF_THREAD_NO_ENV);
@@ -215,10 +221,10 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_indir_call16(
  */
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
     uint32_t* start, uint32_t* stop) {
-    if (inited == true) {
+    if (guards_initialized == true) {
         return;
     }
-    inited = true;
+    guards_initialized = true;
     uint32_t n = 1U;
     for (uint32_t* x = start; x < stop; x++, n++) {
         if (n >= _HF_PC_GUARD_MAX) {
@@ -232,6 +238,9 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
 }
 
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
+#if defined(__ANDROID__)
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
     // ANDROID: Bionic invokes routines that Honggfuzz wraps, before either
     //          ASAN or Honggfuzz have initialized.  Check to see if Honggfuzz
     //          has initialized -- if not, force ASAN to initialize (otherwise
@@ -243,6 +252,9 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard(uint32_t* guard)
         __asan_init();
         return;
     }
+#endif /* __has_feature(address_sanitizer) */
+#endif /* defined(__has_feature) */
+#endif /* defined(__ANDROID__) */
     if (*guard == 0U) {
         return;
     }
