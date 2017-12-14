@@ -23,7 +23,6 @@
 int hfuzz_module_instrument = 0;
 
 static bool guards_initialized = false;
-void __asan_init(void) __attribute__((weak));
 
 /*
  * We require SSE4.2 with x86-(32|64) for the 'popcnt', as it's much faster than the software
@@ -234,15 +233,28 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
 #if defined(__ANDROID__)
     // ANDROID: Bionic invokes routines that Honggfuzz wraps, before either
-    //          ASAN or Honggfuzz have initialized.  Check to see if Honggfuzz
-    //          has initialized -- if not, force ASAN to initialize (otherwise
-    //          _strcmp() will crash, as it is ASAN-instrumented).
+    //          *SAN or Honggfuzz have initialized.  Check to see if Honggfuzz
+    //          has initialized -- if not, force *SAN to initialize (otherwise
+    //          _strcmp() will crash, as it is *SAN-instrumented).
     //
     //          Defer all trace_pc_guard activity until trace_pc_guard_init is
     //          invoked via sancov.module_ctor in the normal process of things.
     if (!guards_initialized) {
+        void __asan_init(void) __attribute__((weak));
         if (__asan_init) {
             __asan_init();
+        }
+        void __msan_init(void) __attribute__((weak));
+        if (__msan_init) {
+            __msan_init();
+        }
+        void __ubsan_init(void) __attribute__((weak));
+        if (__ubsan_init) {
+            __ubsan_init();
+        }
+        void __tsan_init(void) __attribute__((weak));
+        if (__tsan_init) {
+            __tsan_init();
         }
         return;
     }
