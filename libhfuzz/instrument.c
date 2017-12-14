@@ -46,7 +46,8 @@ __attribute__((constructor)) static void mapBB(void) {
     my_thread_no = atoi(my_thread_no_str);
 
     if (my_thread_no >= _HF_THREAD_MAX) {
-        LOG_F("my_thread_no > _HF_THREAD_MAX (%" PRIu32 " > %d)\n", my_thread_no, _HF_THREAD_MAX);
+        LOG_F("Received (via envvar) my_thread_no > _HF_THREAD_MAX (%" PRIu32 " > %d)\n",
+            my_thread_no, _HF_THREAD_MAX);
     }
     struct stat st;
     if (fstat(_HF_BITMAP_FD, &st) == -1) {
@@ -54,11 +55,12 @@ __attribute__((constructor)) static void mapBB(void) {
     }
     if (st.st_size != sizeof(feedback_t)) {
         LOG_F(
-            "st.size != sizeof(feedback_t) (%zu != %zu)\n", (size_t)st.st_size, sizeof(feedback_t));
+            "size of the feedback structure mismatch: st.size != sizeof(feedback_t) (%zu != %zu)\n",
+            (size_t)st.st_size, sizeof(feedback_t));
     }
     if ((feedback = mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED,
              _HF_BITMAP_FD, 0)) == MAP_FAILED) {
-        PLOG_F("mmap");
+        PLOG_F("mmap of the feedback structure");
     }
     feedback->pidFeedbackPc[my_thread_no] = 0U;
     feedback->pidFeedbackEdge[my_thread_no] = 0U;
