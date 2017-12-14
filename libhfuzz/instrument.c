@@ -58,7 +58,7 @@ __attribute__((constructor)) static void mapBB(void) {
     }
     if ((feedback = mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED,
              _HF_BITMAP_FD, 0)) == MAP_FAILED) {
-        LOG_F("mmap: %s\n", strerror(errno));
+        PLOG_F("mmap");
     }
     feedback->pidFeedbackPc[my_thread_no] = 0U;
     feedback->pidFeedbackEdge[my_thread_no] = 0U;
