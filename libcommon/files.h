@@ -53,9 +53,9 @@ extern const char* files_basename(const char* fileName);
 extern bool files_copyFile(
     const char* source, const char* destination, bool* dstExists, bool try_link);
 
-extern uint8_t* files_mapFile(char* fileName, off_t* fileSz, int* fd, bool isWritable);
+extern uint8_t* files_mapFile(const char* fileName, off_t* fileSz, int* fd, bool isWritable);
 
-extern uint8_t* files_mapFileShared(char* fileName, off_t* fileSz, int* fd);
+extern uint8_t* files_mapFileShared(const char* fileName, off_t* fileSz, int* fd);
 
 extern void* files_mapSharedMem(size_t sz, int* fd, const char* dir);
 

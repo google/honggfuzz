@@ -51,13 +51,13 @@
 #include "libcommon/util.h"
 
 static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
-    rewinddir(hfuzz->io.inputDirP);
+    rewinddir(hfuzz->io.inputDirPtr);
 
     size_t maxSize = 0U;
     size_t fileCnt = 0U;
     for (;;) {
         errno = 0;
-        struct dirent* entry = readdir(hfuzz->io.inputDirP);
+        struct dirent* entry = readdir(hfuzz->io.inputDirPtr);
         if (entry == NULL && errno == EINTR) {
             continue;
         }
@@ -117,7 +117,7 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
     LOG_D("Re-read the '%s', maxFileSz:%zu, number of usable files:%zu", hfuzz->io.inputDir,
         hfuzz->maxFileSz, hfuzz->io.fileCnt);
 
-    rewinddir(hfuzz->io.inputDirP);
+    rewinddir(hfuzz->io.inputDirPtr);
 
     return true;
 }
@@ -132,7 +132,7 @@ bool input_getNext(run_t* run, char* fname, bool rewind) {
 
     for (;;) {
         errno = 0;
-        struct dirent* entry = readdir(run->global->io.inputDirP);
+        struct dirent* entry = readdir(run->global->io.inputDirPtr);
         if (entry == NULL && errno == EINTR) {
             continue;
         }
@@ -183,7 +183,7 @@ bool input_init(honggfuzz_t* hfuzz) {
         PLOG_W("open('%s', O_DIRECTORY|O_RDONLY|O_CLOEXEC)", hfuzz->io.inputDir);
         return false;
     }
-    if ((hfuzz->io.inputDirP = fdopendir(dir_fd)) == NULL) {
+    if ((hfuzz->io.inputDirPtr = fdopendir(dir_fd)) == NULL) {
         close(dir_fd);
         PLOG_W("opendir('%s')", hfuzz->io.inputDir);
         return false;

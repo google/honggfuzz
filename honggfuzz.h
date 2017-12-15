@@ -179,7 +179,7 @@ typedef struct {
     time_t timeStart;
     struct {
         const char* inputDir;
-        DIR* inputDirP;
+        DIR* inputDirPtr;
         size_t fileCnt;
         const char* fileExtn;
         bool fileCntDone;

@@ -35,6 +35,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/queue.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "libcommon/common.h"
@@ -124,6 +126,67 @@ rlim_t cmdlineParseRLimit(int res, const char* optarg, unsigned long mul) {
     return val;
 }
 
+static bool cmdlineVerify(honggfuzz_t* hfuzz) {
+    if (!hfuzz->fuzzStdin && !hfuzz->persistent && !checkFor_FILE_PLACEHOLDER(hfuzz->cmdline)) {
+        LOG_E("You must specify '" _HF_FILE_PLACEHOLDER
+              "' when the -s (stdin fuzzing) or --persistent options are not set");
+        return false;
+    }
+
+    if (hfuzz->fuzzStdin && hfuzz->persistent) {
+        LOG_E(
+            "Stdin fuzzing (-s) and persistent fuzzing (-P) cannot be specified at the same time");
+        return false;
+    }
+
+    if (hfuzz->threads.threadsMax >= _HF_THREAD_MAX) {
+        LOG_E("Too many fuzzing threads specified %zu (>= _HF_THREAD_MAX (%u))",
+            hfuzz->threads.threadsMax, _HF_THREAD_MAX);
+        return false;
+    }
+
+    if (strchr(hfuzz->io.fileExtn, '/')) {
+        LOG_E("The file extension contains the '/' character: '%s'", hfuzz->io.fileExtn);
+        return false;
+    }
+
+    if (hfuzz->io.workDir == NULL) {
+        hfuzz->io.workDir = ".";
+    }
+    if (mkdir(hfuzz->io.workDir, 0700) == -1 && errno != EEXIST) {
+        PLOG_E("Couldn't create the workspace directory '%s'", hfuzz->io.workDir);
+        return false;
+    }
+    if (hfuzz->io.crashDir == NULL) {
+        hfuzz->io.crashDir = hfuzz->io.workDir;
+    }
+    if (mkdir(hfuzz->io.crashDir, 0700) && errno != EEXIST) {
+        PLOG_E("Couldn't create the crash directory '%s'", hfuzz->io.crashDir);
+        return false;
+    }
+
+    if (hfuzz->linux.pid > 0 || hfuzz->linux.pidFile) {
+        LOG_I("PID=%d specified, lowering maximum number of concurrent threads to 1",
+            hfuzz->linux.pid);
+        hfuzz->threads.threadsMax = 1;
+    }
+
+    if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
+        LOG_I("Verifier enabled with mutationsPerRun == 0, activating the dry run mode");
+    }
+
+    /*
+     * 'enableSanitizers' can be auto enabled when 'useSanCov', although it's probably
+     * better to let user know about the features that each flag control.
+     */
+    if (hfuzz->useSanCov == true && hfuzz->enableSanitizers == false) {
+        LOG_E("Sanitizer coverage cannot be used without enabling sanitizers '-S/--sanitizers'");
+        return false;
+    }
+
+    return true;
+}
+
 bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     honggfuzz_t tmp = {
         .cmdline = NULL,
@@ -131,7 +194,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .io =
             {
                 .inputDir = NULL,
-                .inputDirP = NULL,
+                .inputDirPtr = NULL,
                 .fileCnt = 0,
                 .fileCntDone = false,
                 .fileExtn = "fuzz",
@@ -284,9 +347,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "debug_level", required_argument, NULL, 'd' }, "Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])" },
         { { "extension", required_argument, NULL, 'e' }, "Input file extension (e.g. 'swf'), (default: 'fuzz')" },
         { { "workspace", required_argument, NULL, 'W' }, "Workspace directory to save crashes & runtime files (default: '.')" },
-        { { "crashdir", required_argument, NULL, 0x10b }, "Directory where crashes are saved to (default: workspace directory)" },
-        { { "covdir_all", required_argument, NULL, 0x103 }, "Coverage is written to a separate directory (default: input directory)" },
-        { { "covdir_new", required_argument, NULL, 0x10a }, "New coverage (beyond the dry-run fuzzing phase) is written to this separate directory" },
+        { { "crashdir", required_argument, NULL, 0x600 }, "Directory where crashes are saved to (default: workspace directory)" },
+        { { "covdir_all", required_argument, NULL, 0x601 }, "Coverage is written to a separate directory (default: input directory)" },
+        { { "covdir_new", required_argument, NULL, 0x602 }, "New coverage (beyond the dry-run fuzzing phase) is written to this separate directory" },
         { { "dict", required_argument, NULL, 'w' }, "Dictionary file. Format:http://llvm.org/docs/LibFuzzer.html#dictionaries" },
         { { "stackhash_bl", required_argument, NULL, 'B' }, "Stackhashes blacklist file (one entry per line)" },
         { { "mutate_cmd", required_argument, NULL, 'c' }, "External command producing fuzz files (instead of internal mutators)" },
@@ -382,8 +445,14 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             case 'W':
                 hfuzz->io.workDir = optarg;
                 break;
-            case 0x10b:
+            case 0x600:
                 hfuzz->io.crashDir = optarg;
+                break;
+            case 0x601:
+                hfuzz->io.covDirAll = optarg;
+                break;
+            case 0x602:
+                hfuzz->io.covDirNew = optarg;
                 break;
             case 'r':
                 hfuzz->mutationsPerRun = strtoul(optarg, NULL, 10);
@@ -429,12 +498,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 0x102:
                 hfuzz->dataLimit = strtoull(optarg, NULL, 0);
-                break;
-            case 0x103:
-                hfuzz->io.covDirAll = optarg;
-                break;
-            case 0x10a:
-                hfuzz->io.covDirNew = optarg;
                 break;
             case 0x104:
                 hfuzz->postExternalCommand = optarg;
@@ -537,71 +600,16 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         }
     }
 
-    if (logInitLogFile(logfile, ll) == false) {
+    if (!logInitLogFile(logfile, ll)) {
         return false;
     }
-
     hfuzz->cmdline = &argv[optind];
     if (hfuzz->cmdline[0] == NULL) {
         LOG_E("No fuzz command provided");
         cmdlineUsage(argv[0], custom_opts);
         return false;
     }
-
-    if (!hfuzz->fuzzStdin && !hfuzz->persistent && !checkFor_FILE_PLACEHOLDER(hfuzz->cmdline)) {
-        LOG_E("You must specify '" _HF_FILE_PLACEHOLDER
-              "' when the -s (stdin fuzzing) or --persistent options are not set");
-        return false;
-    }
-
-    if (hfuzz->fuzzStdin && hfuzz->persistent) {
-        LOG_E(
-            "Stdin fuzzing (-s) and persistent fuzzing (-P) cannot be specified at the same time");
-        return false;
-    }
-
-    if (hfuzz->threads.threadsMax >= _HF_THREAD_MAX) {
-        LOG_E("Too many fuzzing threads specified %zu (>= _HF_THREAD_MAX (%u))",
-            hfuzz->threads.threadsMax, _HF_THREAD_MAX);
-        return false;
-    }
-
-    if (strchr(hfuzz->io.fileExtn, '/')) {
-        LOG_E("The file extension contains the '/' character: '%s'", hfuzz->io.fileExtn);
-        return false;
-    }
-
-    if (hfuzz->io.workDir == NULL) {
-        hfuzz->io.workDir = ".";
-    }
-    if (!files_exists(hfuzz->io.workDir)) {
-        LOG_E("Provided workspace directory '%s' doesn't exist", hfuzz->io.workDir);
-        return false;
-    }
-    if (hfuzz->io.crashDir == NULL) {
-        hfuzz->io.crashDir = hfuzz->io.workDir;
-    }
-    if (!files_exists(hfuzz->io.crashDir)) {
-        LOG_E("Provided crash directory '%s' doesn't exist", hfuzz->io.crashDir);
-        return false;
-    }
-
-    if (hfuzz->linux.pid > 0 || hfuzz->linux.pidFile) {
-        LOG_I("PID=%d specified, lowering maximum number of concurrent threads to 1",
-            hfuzz->linux.pid);
-        hfuzz->threads.threadsMax = 1;
-    }
-
-    if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
-        LOG_I("Verifier enabled with mutationsPerRun == 0, activating the dry run mode");
-    }
-
-    /*
-     * 'enableSanitizers' can be auto enabled when 'useSanCov', although it's probably
-     * better to let user know about the features that each flag control.
-     */
-    if (hfuzz->useSanCov == true && hfuzz->enableSanitizers == false) {
-        LOG_E("Sanitizer coverage cannot be used without enabling sanitizers '-S/--sanitizers'");
+    if (!cmdlineVerify(hfuzz)) {
         return false;
     }
 

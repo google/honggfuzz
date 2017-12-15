@@ -304,7 +304,7 @@ size_t files_parseSymbolFilter(const char* srcFile, char*** filterList) {
     return symbolsRead;
 }
 
-uint8_t* files_mapFile(char* fileName, off_t* fileSz, int* fd, bool isWritable) {
+uint8_t* files_mapFile(const char* fileName, off_t* fileSz, int* fd, bool isWritable) {
     int mmapProt = PROT_READ;
     if (isWritable) {
         mmapProt |= PROT_WRITE;
@@ -333,7 +333,7 @@ uint8_t* files_mapFile(char* fileName, off_t* fileSz, int* fd, bool isWritable) 
     return buf;
 }
 
-uint8_t* files_mapFileShared(char* fileName, off_t* fileSz, int* fd) {
+uint8_t* files_mapFileShared(const char* fileName, off_t* fileSz, int* fd) {
     if ((*fd = open(fileName, O_RDONLY)) == -1) {
         PLOG_W("Couldn't open() '%s' file in R/O mode", fileName);
         return NULL;
