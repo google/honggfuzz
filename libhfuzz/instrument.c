@@ -55,7 +55,8 @@ __attribute__((constructor)) static void mapBB(void) {
     }
     if (st.st_size != sizeof(feedback_t)) {
         LOG_F(
-            "size of the feedback structure mismatch: st.size != sizeof(feedback_t) (%zu != %zu)\n",
+            "size of the feedback structure mismatch: st.size != sizeof(feedback_t) (%zu != %zu). "
+            "Recompile your fuzzed binaries with your newest honggfuzz sources (libhfuzz.a)\n",
             (size_t)st.st_size, sizeof(feedback_t));
     }
     if ((feedback = mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED,
