@@ -132,20 +132,21 @@ if [ -z "$NDK" ]; then
 fi
 
 if [ -z "$ANDROID_API" ]; then
-  ANDROID_API="android-21"
+  ANDROID_API="android-26"
 fi
 if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
   echo "[-] Invalid ANDROID_API '$ANDROID_API'"
   abort 1
 fi
+ANDROID_API_V=$(echo "$ANDROID_API" | grep -oE '[0-9]{1,2}$')
 
 # Support both Linux & Darwin
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH=$(uname -m)
 
 SYSROOT="$NDK/platforms/$ANDROID_API/arch-$ARCH"
-export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/"
-export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++ --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/"
+export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/ -D__ANDROID_API__=$ANDROID_API_V"
+export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++ --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/ -D__ANDROID_API__=$ANDROID_API_V"
 export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
 
 # We need to construct a cross variable that capstone Makefile can pick ar, strip & ranlib from

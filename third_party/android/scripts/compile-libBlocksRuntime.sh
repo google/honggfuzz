@@ -26,7 +26,7 @@ if [ -z "$NDK" ]; then
 fi
 
 if [ -z "$ANDROID_API" ]; then
-  ANDROID_API="android-23"
+  ANDROID_API="android-26"
 fi
 if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
   echo "[-] Invalid ANDROID_API '$ANDROID_API'"

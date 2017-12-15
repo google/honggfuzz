@@ -114,7 +114,7 @@ Were `<arch>` can be:
 | **ANDROID_DEBUG_ENABLED** | true, false (default: false) | Enable Android debug builds |
 | **ANDROID_APP_ABI** | armeabi, armeabi-v7a, arm64-v8a, x86, x86_64 (default: armeabi-v7a) | Target CPU |
 | **ANDROID_WITH_PTRACE** | true, false (default: true) `1`| Fuzzing engine backend architecture |
-| **ANDROID_API** | android-21, android-22, ... (default: android-24) `2` | Target Android API |
+| **ANDROID_API** | android-21, android-22, ... (default: android-26) `2` | Target Android API |
 | **ANDROID_CLANG** | true, false (default: true) | Android NDK compiler toolchain to use |
 
 _`1`) If false, POSIX signals interface is used instead of PTRACE API_

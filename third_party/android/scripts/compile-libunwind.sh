@@ -85,12 +85,13 @@ if [ -z "$NDK" ]; then
 fi
 
 if [ -z "$ANDROID_API" ]; then
-  ANDROID_API="android-21"
+  ANDROID_API="android-26"
 fi
 if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
   echo "[-] Invalid ANDROID_API '$ANDROID_API'"
   abort 1
 fi
+ANDROID_API_V=$(echo "$ANDROID_API" | grep -oE '[0-9]{1,2}$')
 
 case "$2" in
   arm|arm64|x86|x86_64)
@@ -162,6 +163,7 @@ fi
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH=$(uname -m)
 
+
 SYSROOT="$NDK/platforms/$ANDROID_API/arch-$ARCH"
 export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc"
 export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++"
@@ -175,8 +177,8 @@ elif [ ! -x "$CXX" ]; then
   abort 1
 fi
 
-export CC="$CC --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/"
-export CXX="$CXX --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/"
+export CC="$CC --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/ -D__ANDROID_API__=$ANDROID_API_V"
+export CXX="$CXX --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/ -D__ANDROID_API__=$ANDROID_API_V"
 
 if [ ! -f configure ]; then
   NOCONFIGURE=true ./autogen.sh

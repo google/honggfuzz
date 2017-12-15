@@ -179,7 +179,7 @@ ifeq ($(DEBUG),true)
 endif
 
 # Control Android builds
-ANDROID_API           ?= android-24
+ANDROID_API           ?= android-26
 ANDROID_DEBUG_ENABLED ?= false
 ANDROID_CLANG         ?= true
 ANDROID_APP_ABI       ?= armeabi-v7a
