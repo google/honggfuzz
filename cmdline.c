@@ -135,8 +135,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .fileCnt = 0,
                 .fileCntDone = false,
                 .fileExtn = "fuzz",
-                .workDir = ".",
-                .covDir = NULL,
+                .workDir = NULL,
+                .crashDir = NULL,
+                .covDirAll = NULL,
+                .covDirNew = NULL,
                 .saveUnique = true,
             },
         .nullifyStdio = true,
@@ -282,7 +284,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "debug_level", required_argument, NULL, 'd' }, "Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])" },
         { { "extension", required_argument, NULL, 'e' }, "Input file extension (e.g. 'swf'), (default: 'fuzz')" },
         { { "workspace", required_argument, NULL, 'W' }, "Workspace directory to save crashes & runtime files (default: '.')" },
-        { { "covdir", required_argument, NULL, 0x103 }, "New coverage is written to a separate directory (default: use the input directory)" },
+        { { "crashdir", required_argument, NULL, 0x10b }, "Directory where crashes are saved to (default: workspace directory)" },
+        { { "covdir_all", required_argument, NULL, 0x103 }, "Coverage is written to a separate directory (default: input directory)" },
+        { { "covdir_new", required_argument, NULL, 0x10a }, "New coverage (beyond the dry-run fuzzing phase) is written to this separate directory" },
         { { "dict", required_argument, NULL, 'w' }, "Dictionary file. Format:http://llvm.org/docs/LibFuzzer.html#dictionaries" },
         { { "stackhash_bl", required_argument, NULL, 'B' }, "Stackhashes blacklist file (one entry per line)" },
         { { "mutate_cmd", required_argument, NULL, 'c' }, "External command producing fuzz files (instead of internal mutators)" },
@@ -344,6 +348,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 'f':
                 hfuzz->io.inputDir = optarg;
+                if (hfuzz->io.covDirAll == NULL) {
+                    hfuzz->io.covDirAll = optarg;
+                }
                 break;
             case 'x':
                 hfuzz->dynFileMethod = _HF_DYNFILE_NONE;
@@ -374,6 +381,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 'W':
                 hfuzz->io.workDir = optarg;
+                break;
+            case 0x10b:
+                hfuzz->io.crashDir = optarg;
                 break;
             case 'r':
                 hfuzz->mutationsPerRun = strtoul(optarg, NULL, 10);
@@ -421,7 +431,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->dataLimit = strtoull(optarg, NULL, 0);
                 break;
             case 0x103:
-                hfuzz->io.covDir = optarg;
+                hfuzz->io.covDirAll = optarg;
+                break;
+            case 0x10a:
+                hfuzz->io.covDirNew = optarg;
                 break;
             case 0x104:
                 hfuzz->postExternalCommand = optarg;
@@ -558,11 +571,19 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         return false;
     }
 
-    if (hfuzz->io.workDir[0] != '.' || strlen(hfuzz->io.workDir) > 2) {
-        if (!files_exists(hfuzz->io.workDir)) {
-            LOG_E("Provided workspace directory '%s' doesn't exist", hfuzz->io.workDir);
-            return false;
-        }
+    if (hfuzz->io.workDir == NULL) {
+        hfuzz->io.workDir = ".";
+    }
+    if (!files_exists(hfuzz->io.workDir)) {
+        LOG_E("Provided workspace directory '%s' doesn't exist", hfuzz->io.workDir);
+        return false;
+    }
+    if (hfuzz->io.crashDir == NULL) {
+        hfuzz->io.crashDir = hfuzz->io.workDir;
+    }
+    if (!files_exists(hfuzz->io.crashDir)) {
+        LOG_E("Provided crash directory '%s' doesn't exist", hfuzz->io.crashDir);
+        return false;
     }
 
     if (hfuzz->linux.pid > 0 || hfuzz->linux.pidFile) {

@@ -371,6 +371,30 @@ static bool fuzz_runVerifier(run_t* crashedFuzzer) {
     return true;
 }
 
+static bool fuzz_writeCovFile(const char* dir, const uint8_t* data, size_t len) {
+    char fname[PATH_MAX];
+
+    uint64_t crc64f = util_CRC64(data, len);
+    uint64_t crc64r = util_CRC64Rev(data, len);
+    snprintf(fname, sizeof(fname), "%s/%016" PRIx64 "%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov",
+        dir, crc64f, crc64r, (uint32_t)len);
+
+    if (access(fname, R_OK) == 0) {
+        LOG_D("File '%s' already exists in the output corpus directory '%s'", fname, dir);
+        return true;
+    }
+
+    LOG_D("Adding file '%s' to the corpus directory '%s'", fname, dir);
+
+    if (files_writeBufToFile(fname, data, len, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC) ==
+        false) {
+        LOG_W("Couldn't write buffer to file '%s'", fname);
+        return false;
+    }
+
+    return true;
+}
+
 static void fuzz_addFileToFileQ(run_t* run) {
     struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t));
     dynfile->size = run->dynamicFileSz;
@@ -381,29 +405,17 @@ static void fuzz_addFileToFileQ(run_t* run) {
     TAILQ_INSERT_TAIL(&run->global->dynfileq, dynfile, pointers);
     run->global->dynfileqCnt++;
 
-    /* No need to add new coverage if we are supposed to append new coverage-inducing inputs only */
-    if (run->state == _HF_STATE_DYNAMIC_PRE && run->global->io.covDir == NULL) {
-        LOG_D("New coverage found, but we're in the initial coverage assessment state. Skipping");
+    if (!fuzz_writeCovFile(run->global->io.covDirAll, run->dynamicFile, run->dynamicFileSz)) {
+        LOG_E("Couldn't save the coverage data to '%s'", run->global->io.covDirAll);
+    }
+
+    /* No need to add files to the new coverage dir, if this is just the dry-run phase */
+    if (run->state == _HF_STATE_DYNAMIC_PRE || run->global->io.covDirNew == NULL) {
         return;
     }
 
-    char fname[PATH_MAX];
-    uint64_t crc64f = util_CRC64(run->dynamicFile, run->dynamicFileSz);
-    uint64_t crc64r = util_CRC64Rev(run->dynamicFile, run->dynamicFileSz);
-    snprintf(fname, sizeof(fname), "%s/%016" PRIx64 "%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov",
-        run->global->io.covDir ? run->global->io.covDir : run->global->io.inputDir, crc64f, crc64r,
-        (uint32_t)run->dynamicFileSz);
-
-    if (access(fname, R_OK) == 0) {
-        LOG_D("File '%s' already exists in the corpus directory", fname);
-        return;
-    }
-
-    LOG_D("Adding file '%s' to the corpus directory", fname);
-
-    if (files_writeBufToFile(fname, run->dynamicFile, run->dynamicFileSz,
-            O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC) == false) {
-        LOG_W("Couldn't write buffer to file '%s'", fname);
+    if (!fuzz_writeCovFile(run->global->io.covDirNew, run->dynamicFile, run->dynamicFileSz)) {
+        LOG_E("Couldn't save the new coverage data to '%s'", run->global->io.covDirNew);
     }
 }
 

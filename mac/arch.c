@@ -252,11 +252,11 @@ static bool arch_analyzeSignal(run_t* run, int status) {
 
     /* If dry run mode, copy file with same name into workspace */
     if (run->global->mutationsPerRun == 0U && run->global->useVerifier) {
-        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.workDir,
+        snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.crashDir,
             run->origFileName);
     } else if (run->global->io.saveUnique) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
-            "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s", run->global->io.workDir,
+            "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s", run->global->io.crashDir,
             arch_sigs[termsig].descr, exception_to_string(run->exception), run->pc, run->backtrace,
             run->access, run->global->io.fileExtn);
     } else {
@@ -265,7 +265,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
 
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.TIME.%s.PID.%.5d.%s",
-            run->global->io.workDir, arch_sigs[termsig].descr, exception_to_string(run->exception),
+            run->global->io.crashDir, arch_sigs[termsig].descr, exception_to_string(run->exception),
             run->pc, run->backtrace, run->access, localtmstr, run->pid, run->global->io.fileExtn);
     }
 

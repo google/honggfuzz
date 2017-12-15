@@ -125,7 +125,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
     if (run->global->mutationsPerRun == 0U && run->global->useVerifier) {
         snprintf(newname, sizeof(newname), "%s", run->origFileName);
     } else {
-        snprintf(newname, sizeof(newname), "%s/%s.PID.%d.TIME.%s.%s", run->global->io.workDir,
+        snprintf(newname, sizeof(newname), "%s/%s.PID.%d.TIME.%s.%s", run->global->io.crashDir,
             arch_sigs[termsig].descr, run->pid, localtmstr, run->global->io.fileExtn);
     }
 

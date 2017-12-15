@@ -187,7 +187,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         }
     }
     display_put("\n   Input Dir : [% " _HF_MONETARY_MOD "zu] '" ESC_BOLD "%s" ESC_RESET "'\n",
-        ATOMIC_GET(hfuzz->io.fileCnt), hfuzz->io.inputDir != NULL ? hfuzz->io.inputDir : "[NONE]");
+        ATOMIC_GET(hfuzz->io.fileCnt), hfuzz->io.inputDir);
 
     if (hfuzz->linux.pid > 0) {
         display_put("  Remote cmd : [" ESC_BOLD "%d" ESC_RESET "] '" ESC_BOLD "%s" ESC_RESET "'\n",

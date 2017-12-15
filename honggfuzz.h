@@ -178,13 +178,15 @@ typedef struct {
     bool useVerifier;
     time_t timeStart;
     struct {
-        char* inputDir;
+        const char* inputDir;
         DIR* inputDirP;
         size_t fileCnt;
-        char* fileExtn;
+        const char* fileExtn;
         bool fileCntDone;
-        char* workDir;
-        char* covDir;
+        const char* workDir;
+        const char* crashDir;
+        const char* covDirAll;
+        const char* covDirNew;
         bool saveUnique;
     } io;
     unsigned mutationsPerRun;

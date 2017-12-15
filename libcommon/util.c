@@ -626,7 +626,7 @@ static const uint64_t util_CRC64ISOPoly[] = {
     0x9090000000000000ULL,
 };
 
-uint64_t util_CRC64(uint8_t* buf, size_t len) {
+uint64_t util_CRC64(const uint8_t* buf, size_t len) {
     uint64_t res = 0ULL;
 
     for (size_t i = 0; i < len; i++) {
@@ -636,7 +636,7 @@ uint64_t util_CRC64(uint8_t* buf, size_t len) {
     return res;
 }
 
-uint64_t util_CRC64Rev(uint8_t* buf, size_t len) {
+uint64_t util_CRC64Rev(const uint8_t* buf, size_t len) {
     uint64_t res = 0ULL;
 
     for (ssize_t i = (ssize_t)len - 1; i >= 0; i--) {

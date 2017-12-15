@@ -112,7 +112,7 @@ ssize_t files_readFromFd(int fd, uint8_t* buf, size_t fileSz) {
     return (ssize_t)readSz;
 }
 
-bool files_exists(char* fileName) { return (access(fileName, F_OK) != -1); }
+bool files_exists(const char* fileName) { return (access(fileName, F_OK) != -1); }
 
 bool files_writePatternToFd(int fd, off_t size, unsigned char p) {
     void* buf = malloc(size);
@@ -161,7 +161,7 @@ bool files_sendToSocket(int fd, const uint8_t* buf, size_t fileSz) {
     return true;
 }
 
-const char* files_basename(char* path) {
+const char* files_basename(const char* path) {
     const char* base = strrchr(path, '/');
     return base ? base + 1 : path;
 }

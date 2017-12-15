@@ -150,15 +150,8 @@ int main(int argc, char** argv) {
     }
 
     if (!input_init(&hfuzz)) {
-        if (hfuzz.externalCommand) {
-            LOG_I(
-                "No input file corpus loaded, the external command '%s' is responsible for "
-                "creating the fuzz files",
-                hfuzz.externalCommand);
-        } else {
-            LOG_F("Couldn't load input files");
-            exit(EXIT_FAILURE);
-        }
+        LOG_F("Couldn't load input corpus");
+        exit(EXIT_FAILURE);
     }
 
     if (hfuzz.dictionaryFile && (input_parseDictionary(&hfuzz) == false)) {
