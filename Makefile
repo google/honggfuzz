@@ -137,10 +137,6 @@ else
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
                    -U__STRICT_ANSI__ -funroll-loops
     ARCH_LDFLAGS := -lpthread -L/usr/local/include -lrt
-    # CygWin's gcc doesn't accept -fPIC (all code is position independent)
-    ifeq (Windows,$(findstring Windows,$(OS)))
-      LIBS_CFLAGS = -fno-stack-protector -fno-builtin -D__NO_STRING_INLINES -D__NO_INLINE__
-    endif
     # OS Posix
 endif
 
