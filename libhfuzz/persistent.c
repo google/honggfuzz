@@ -18,8 +18,8 @@
 #include "libcommon/files.h"
 #include "libcommon/log.h"
 
-int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) __attribute__((weak));
-int LLVMFuzzerInitialize(int* argc, char*** argv) __attribute__((weak));
+__attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len);
+__attribute__((weak)) int LLVMFuzzerInitialize(int* argc UNUSED, char*** argv UNUSED) { return 0; }
 
 /* FIXME(robertswiecki): Make it call mangle_Mangle() */
 __attribute__((weak)) size_t LLVMFuzzerMutate(
@@ -77,9 +77,7 @@ static void runOneInput(const uint8_t* buf, size_t len) {
 __attribute__((weak))
 #endif /* !defined(__CYGWIN__) */
 int main(int argc, char** argv) {
-    if (LLVMFuzzerInitialize) {
-        LLVMFuzzerInitialize(&argc, &argv);
-    }
+    LLVMFuzzerInitialize(&argc, &argv);
     if (LLVMFuzzerTestOneInput == NULL) {
         LOG_F(
             "Define 'int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)' in your "
