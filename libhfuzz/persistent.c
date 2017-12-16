@@ -73,7 +73,10 @@ static void runOneInput(const uint8_t* buf, size_t len) {
  * Declare it 'weak', so it can be safely linked with regular binaries which
  * implement their own main()
  */
-__attribute__((weak)) int main(int argc, char** argv) {
+#if !defined(__CYGWIN__)
+__attribute__((weak))
+#endif /* !defined(__CYGWIN__) */
+int main(int argc, char** argv) {
     if (LLVMFuzzerInitialize) {
         LLVMFuzzerInitialize(&argc, &argv);
     }
