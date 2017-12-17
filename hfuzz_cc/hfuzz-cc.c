@@ -178,19 +178,19 @@ static bool getLibHfuzz(void) {
         return true;
     }
 
-    if (lhfuzzPath[0] == 0) {
-        snprintf(lhfuzzPath, sizeof(lhfuzzPath), "/tmp/libhfuzz.%d.a", geteuid());
-    }
-
     extern uint8_t lhfuzz_start __asm__("lhfuzz_start");
     extern uint8_t lhfuzz_end __asm__("lhfuzz_end");
-
     ptrdiff_t len = (uintptr_t)&lhfuzz_end - (uintptr_t)&lhfuzz_start;
+    if (lhfuzzPath[0] == 0) {
+        uint64_t crc64 = util_CRC64(&lhfuzz_start, len);
+        snprintf(
+            lhfuzzPath, sizeof(lhfuzzPath), "/tmp/libhfuzz.%d.%" PRIx64 ".a", geteuid(), crc64);
+    }
 
-    /* Does the library exist and is of the expected size */
+    /* Does the library exist, belongs to the user and is of the expected size */
     struct stat st;
     if (stat(lhfuzzPath, &st) != -1) {
-        if (st.st_size == len) {
+        if (st.st_size == len && st.st_uid == geteuid()) {
             return true;
         }
     }

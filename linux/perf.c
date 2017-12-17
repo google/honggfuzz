@@ -98,7 +98,6 @@ static inline void arch_perfMmapParse(run_t* run UNUSED) {
     if (pem->aux_head < pem->aux_tail) {
         LOG_F("The PERF AUX data has been overwritten. The AUX buffer is too small");
     }
-
     if (run->global->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         arch_perfBtsCount(run);
     }
@@ -189,8 +188,8 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
     if (run->linux.perfMmapBuf == MAP_FAILED) {
         run->linux.perfMmapBuf = NULL;
         PLOG_W(
-            "mmap(mmapBuf) failed, sz=%zu, try increasing the kernel.perf_event_mlock_kb "
-            "sysctl (up to even 300000000)",
+            "mmap(mmapBuf) failed, sz=%zu, try increasing the kernel.perf_event_mlock_kb sysctl "
+            "(up to even 300000000)",
             (size_t)_HF_PERF_MAP_SZ + getpagesize());
         close(*perfFd);
         *perfFd = -1;
@@ -201,13 +200,13 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
     pem->aux_offset = pem->data_offset + pem->data_size;
     pem->aux_size = _HF_PERF_AUX_SZ;
     run->linux.perfMmapAux =
-        mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
+        mmap(NULL, pem->aux_size, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, pem->aux_offset);
     if (run->linux.perfMmapAux == MAP_FAILED) {
         munmap(run->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
         run->linux.perfMmapBuf = NULL;
         PLOG_W(
-            "mmap(mmapAuxBuf) failed, try increasing the kernel.perf_event_mlock_kb "
-            "sysctl (up to even 300000000)");
+            "mmap(mmapAuxBuf) failed, try increasing the kernel.perf_event_mlock_kb sysctl (up to "
+            "even 300000000)");
         close(*perfFd);
         *perfFd = -1;
         return false;
