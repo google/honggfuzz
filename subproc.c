@@ -154,41 +154,41 @@ bool subproc_PrepareExecv(run_t* run, const char* fileName) {
     /*
      * The address space limit. If big enough - roughly the size of RAM used
      */
-    if (run->global->asLimit) {
+    if (run->global->exe.asLimit) {
         struct rlimit rl = {
-            .rlim_cur = run->global->asLimit * 1024ULL * 1024ULL,
-            .rlim_max = run->global->asLimit * 1024ULL * 1024ULL,
+            .rlim_cur = run->global->exe.asLimit * 1024ULL * 1024ULL,
+            .rlim_max = run->global->exe.asLimit * 1024ULL * 1024ULL,
         };
         if (setrlimit(RLIMIT_AS, &rl) == -1) {
             PLOG_W("Couldn't enforce the RLIMIT_AS resource limit, ignoring");
         }
     }
 #if defined(RLIMIT_RSS)
-    if (run->global->rssLimit) {
+    if (run->global->exe.rssLimit) {
         struct rlimit rl = {
-            .rlim_cur = run->global->rssLimit * 1024ULL * 1024ULL,
-            .rlim_max = run->global->rssLimit * 1024ULL * 1024ULL,
+            .rlim_cur = run->global->exe.rssLimit * 1024ULL * 1024ULL,
+            .rlim_max = run->global->exe.rssLimit * 1024ULL * 1024ULL,
         };
         if (setrlimit(RLIMIT_RSS, &rl) == -1) {
             PLOG_W("Couldn't enforce the RLIMIT_RSS resource limit, ignoring");
         }
     }
 #endif /* defined(RLIMIT_RSS) */
-    if (run->global->dataLimit) {
+    if (run->global->exe.dataLimit) {
         struct rlimit rl = {
-            .rlim_cur = run->global->dataLimit * 1024ULL * 1024ULL,
-            .rlim_max = run->global->dataLimit * 1024ULL * 1024ULL,
+            .rlim_cur = run->global->exe.dataLimit * 1024ULL * 1024ULL,
+            .rlim_max = run->global->exe.dataLimit * 1024ULL * 1024ULL,
         };
         if (setrlimit(RLIMIT_DATA, &rl) == -1) {
             PLOG_W("Couldn't enforce the RLIMIT_DATA resource limit, ignoring");
         }
     }
 
-    if (run->global->nullifyStdio) {
+    if (run->global->exe.nullifyStdio) {
         util_nullifyStdio();
     }
 
-    if (run->global->fuzzStdin) {
+    if (run->global->exe.fuzzStdin) {
         /*
          * Uglyyyyyy ;)
          */
@@ -197,15 +197,15 @@ bool subproc_PrepareExecv(run_t* run, const char* fileName) {
         }
     }
 
-    if (run->global->clearEnv) {
+    if (run->global->exe.clearEnv) {
         environ = NULL;
     }
     if (!sanitizers_prepareExecve(run)) {
         LOG_E("sanitizers_prepareExecve() failed");
         return false;
     }
-    for (size_t i = 0; i < ARRAYSIZE(run->global->envs) && run->global->envs[i]; i++) {
-        putenv(run->global->envs[i]);
+    for (size_t i = 0; i < ARRAYSIZE(run->global->exe.envs) && run->global->exe.envs[i]; i++) {
+        putenv(run->global->exe.envs[i]);
     }
     char fuzzNo[128];
     snprintf(fuzzNo, sizeof(fuzzNo), "%" PRId32, run->fuzzNo);

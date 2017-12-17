@@ -84,9 +84,10 @@ bool fuzz_shouldTerminate() {
 }
 
 static void fuzz_getFileName(run_t* run) {
+    char bname[PATH_MAX];
+    snprintf(bname, sizeof(bname), "%s", run->global->exe.cmdline[0]);
     snprintf(run->fileName, PATH_MAX, "%s/honggfuzz.input.%" PRIu32 ".%s.%s",
-        run->global->io.workDir, run->fuzzNo, basename(run->global->cmdline[0]),
-        run->global->io.fileExtn);
+        run->global->io.workDir, run->fuzzNo, basename(bname), run->global->io.fileExtn);
 }
 
 static bool fuzz_prepareFileDynamically(run_t* run) {
@@ -174,12 +175,12 @@ static bool fuzz_prepareFileExternally(run_t* run) {
 
     LOG_D("Created '%s' as an input file", run->fileName);
 
-    const char* const argv[] = {run->global->externalCommand, run->fileName, NULL};
+    const char* const argv[] = {run->global->exe.externalCommand, run->fileName, NULL};
     if (subproc_System(run, argv) != 0) {
-        LOG_E("Subprocess '%s' returned abnormally", run->global->externalCommand);
+        LOG_E("Subprocess '%s' returned abnormally", run->global->exe.externalCommand);
         return false;
     }
-    LOG_D("Subporcess '%s' finished with success", run->global->externalCommand);
+    LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
 
     ssize_t rsz = files_readFileToBufMax(run->fileName, run->dynamicFile, run->global->maxFileSz);
     if (rsz < 0) {
@@ -204,12 +205,12 @@ static bool fuzz_postProcessFile(run_t* run) {
         }
     }
 
-    const char* const argv[] = {run->global->postExternalCommand, run->fileName, NULL};
+    const char* const argv[] = {run->global->exe.postExternalCommand, run->fileName, NULL};
     if (subproc_System(run, argv) != 0) {
-        LOG_E("Subprocess '%s' returned abnormally", run->global->postExternalCommand);
+        LOG_E("Subprocess '%s' returned abnormally", run->global->exe.postExternalCommand);
         return false;
     }
-    LOG_D("Subporcess '%s' finished with success", run->global->externalCommand);
+    LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
 
     ssize_t rsz = files_readFileToBufMax(run->fileName, run->dynamicFile, run->global->maxFileSz);
     if (rsz < 0) {
@@ -569,7 +570,7 @@ static void fuzz_fuzzLoop(run_t* run) {
     }
 
     if (run->state == _HF_STATE_DYNAMIC_MAIN) {
-        if (run->global->externalCommand) {
+        if (run->global->exe.externalCommand) {
             if (!fuzz_prepareFileExternally(run)) {
                 LOG_F("fuzz_prepareFileExternally() failed");
             }
@@ -577,7 +578,7 @@ static void fuzz_fuzzLoop(run_t* run) {
             LOG_F("fuzz_prepareFileDynamically() failed");
         }
 
-        if (run->global->postExternalCommand) {
+        if (run->global->exe.postExternalCommand) {
             if (!fuzz_postProcessFile(run)) {
                 LOG_F("fuzz_postProcessFile() failed");
             }
@@ -585,7 +586,7 @@ static void fuzz_fuzzLoop(run_t* run) {
     }
 
     if (run->state == _HF_STATE_STATIC) {
-        if (run->global->externalCommand) {
+        if (run->global->exe.externalCommand) {
             if (!fuzz_prepareFileExternally(run)) {
                 LOG_F("fuzz_prepareFileExternally() failed");
             }
@@ -595,7 +596,7 @@ static void fuzz_fuzzLoop(run_t* run) {
             }
         }
 
-        if (run->global->postExternalCommand != NULL) {
+        if (run->global->exe.postExternalCommand != NULL) {
             if (!fuzz_postProcessFile(run)) {
                 LOG_F("fuzz_postProcessFile() failed");
             }

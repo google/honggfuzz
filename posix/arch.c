@@ -149,21 +149,22 @@ pid_t arch_fork(run_t* fuzzer UNUSED) { return fork(); }
 
 bool arch_launchChild(run_t* run) {
 #define ARGS_MAX 512
-    char* args[ARGS_MAX + 2];
+    const char* args[ARGS_MAX + 2];
     char argData[PATH_MAX] = {0};
     int x;
 
-    for (x = 0; x < ARGS_MAX && run->global->cmdline[x]; x++) {
-        if (!run->global->fuzzStdin && strcmp(run->global->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
+    for (x = 0; x < ARGS_MAX && run->global->exe.cmdline[x]; x++) {
+        if (!run->global->exe.fuzzStdin &&
+            strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
             args[x] = run->fileName;
-        } else if (!run->global->fuzzStdin &&
-                   strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER)) {
-            const char* off = strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER);
-            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - run->global->cmdline[x]),
-                run->global->cmdline[x], run->fileName);
+        } else if (!run->global->exe.fuzzStdin &&
+                   strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
+            const char* off = strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER);
+            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - run->global->exe.cmdline[x]),
+                run->global->exe.cmdline[x], run->fileName);
             args[x] = argData;
         } else {
-            args[x] = run->global->cmdline[x];
+            args[x] = run->global->exe.cmdline[x];
         }
     }
 
@@ -173,7 +174,7 @@ bool arch_launchChild(run_t* run) {
 
     /* alarm persists across forks, so disable it here */
     alarm(0);
-    execvp(args[0], args);
+    execvp(args[0], (char* const*)args);
     alarm(1);
 
     return false;

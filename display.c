@@ -173,14 +173,15 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     }
 
     display_put("\n    Run Time : " ESC_BOLD "%s" ESC_RESET, time_elapsed_str);
-    if (hfuzz->runEndTime > 0) {
-        time_t time_left = hfuzz->runEndTime - time(NULL);
+    if (hfuzz->exe.runEndTime > 0) {
+        time_t time_left = hfuzz->exe.runEndTime - time(NULL);
         if (time_left < 0) {
             time_left = 0;
         }
         if (time_left > 3600) {
             char end_time_str[512];
-            util_getLocalTime("%F %H:%M:%S", end_time_str, sizeof(end_time_str), hfuzz->runEndTime);
+            util_getLocalTime(
+                "%F %H:%M:%S", end_time_str, sizeof(end_time_str), hfuzz->exe.runEndTime);
             display_put(", end time: " ESC_BOLD "%s" ESC_RESET, end_time_str);
         } else {
             display_put(", left: " ESC_BOLD "%d" ESC_RESET " sec.", time_left);

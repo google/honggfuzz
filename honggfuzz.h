@@ -170,13 +170,6 @@ typedef struct {
 } feedback_t;
 
 typedef struct {
-    char** cmdline;
-    char cmdline_txt[61];
-    bool nullifyStdio;
-    bool fuzzStdin;
-    bool useScreen;
-    bool useVerifier;
-    time_t timeStart;
     struct {
         const char* inputDir;
         DIR* inputDirPtr;
@@ -189,29 +182,19 @@ typedef struct {
         const char* covDirNew;
         bool saveUnique;
     } io;
-    unsigned mutationsPerRun;
-    char* externalCommand;
-    char* postExternalCommand;
-    const char* blacklistFile;
-    uint64_t* blacklist;
-    size_t blacklistCnt;
-    long tmOut;
-    time_t runEndTime;
-    size_t mutationsMax;
-    size_t maxFileSz;
-    char* reportFile;
-    uint64_t asLimit;
-    uint64_t rssLimit;
-    uint64_t dataLimit;
-    bool clearEnv;
-    char* envs[128];
-    bool persistent;
-    bool tmout_vtalrm;
-    bool skipFeedbackOnTimeout;
-    bool enableSanitizers;
-    bool monitorSIGABRT;
-    bool exitUponCrash;
-
+    struct {
+        const char* const* cmdline;
+        bool nullifyStdio;
+        bool fuzzStdin;
+        char* externalCommand;
+        char* postExternalCommand;
+        uint64_t asLimit;
+        uint64_t rssLimit;
+        uint64_t dataLimit;
+        bool clearEnv;
+        char* envs[128];
+        time_t runEndTime;
+    } exe;
     struct {
         size_t threadsMax;
         size_t threadsFinished;
@@ -219,7 +202,24 @@ typedef struct {
         pthread_t mainThread;
         pid_t mainPid;
     } threads;
-
+    time_t timeStart;
+    bool useScreen;
+    bool useVerifier;
+    char cmdline_txt[61];
+    unsigned mutationsPerRun;
+    const char* blacklistFile;
+    uint64_t* blacklist;
+    size_t blacklistCnt;
+    long tmOut;
+    size_t mutationsMax;
+    size_t maxFileSz;
+    char* reportFile;
+    bool persistent;
+    bool tmout_vtalrm;
+    bool skipFeedbackOnTimeout;
+    bool enableSanitizers;
+    bool monitorSIGABRT;
+    bool exitUponCrash;
     const char* dictionaryFile;
     TAILQ_HEAD(strq_t, strings_t) dictq;
     size_t dictionaryCnt;

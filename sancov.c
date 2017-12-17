@@ -571,7 +571,7 @@ static bool sancov_sanCovParse(run_t* run) {
     pid_t targetPid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
 
     snprintf(covFile, sizeof(covFile), "%s/%s/%s.%d.sancov", run->global->io.workDir,
-        _HF_SANCOV_DIR, files_basename(run->global->cmdline[0]), targetPid);
+        _HF_SANCOV_DIR, files_basename(run->global->exe.cmdline[0]), targetPid);
     if (!files_exists(covFile)) {
         LOG_D("Target sancov file not found");
         return false;

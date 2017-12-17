@@ -49,7 +49,7 @@ struct custom_option {
     const char* descr;
 };
 
-static bool checkFor_FILE_PLACEHOLDER(char** args) {
+static bool checkFor_FILE_PLACEHOLDER(const char* const* args) {
     for (int x = 0; args[x]; x++) {
         if (strstr(args[x], _HF_FILE_PLACEHOLDER)) return true;
     }
@@ -127,13 +127,14 @@ rlim_t cmdlineParseRLimit(int res, const char* optarg, unsigned long mul) {
 }
 
 static bool cmdlineVerify(honggfuzz_t* hfuzz) {
-    if (!hfuzz->fuzzStdin && !hfuzz->persistent && !checkFor_FILE_PLACEHOLDER(hfuzz->cmdline)) {
+    if (!hfuzz->exe.fuzzStdin && !hfuzz->persistent &&
+        !checkFor_FILE_PLACEHOLDER(hfuzz->exe.cmdline)) {
         LOG_E("You must specify '" _HF_FILE_PLACEHOLDER
               "' when the -s (stdin fuzzing) or --persistent options are not set");
         return false;
     }
 
-    if (hfuzz->fuzzStdin && hfuzz->persistent) {
+    if (hfuzz->exe.fuzzStdin && hfuzz->persistent) {
         LOG_E(
             "Stdin fuzzing (-s) and persistent fuzzing (-P) cannot be specified at the same time");
         return false;
@@ -189,7 +190,6 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
 
 bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     honggfuzz_t tmp = {
-        .cmdline = NULL,
         .cmdline_txt[0] = '\0',
         .io =
             {
@@ -204,27 +204,31 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .covDirNew = NULL,
                 .saveUnique = true,
             },
-        .nullifyStdio = true,
-        .fuzzStdin = false,
+        .exe =
+            {
+                .cmdline = NULL,
+                .nullifyStdio = true,
+                .fuzzStdin = false,
+                .externalCommand = NULL,
+                .postExternalCommand = NULL,
+                .runEndTime = 0,
+                .asLimit = 0U,
+                .rssLimit = 0U,
+                .dataLimit = 0U,
+                .clearEnv = false,
+                .envs[0] = NULL,
+            },
         .useScreen = true,
         .useVerifier = false,
         .timeStart = time(NULL),
         .mutationsPerRun = 6U,
-        .externalCommand = NULL,
-        .postExternalCommand = NULL,
         .blacklistFile = NULL,
         .blacklistCnt = 0,
         .blacklist = NULL,
         .maxFileSz = 0UL,
         .tmOut = 10,
-        .runEndTime = 0,
         .mutationsMax = 0,
         .reportFile = NULL,
-        .asLimit = 0U,
-        .rssLimit = 0U,
-        .dataLimit = 0U,
-        .clearEnv = false,
-        .envs[0] = NULL,
         .persistent = false,
         .tmout_vtalrm = false,
         .skipFeedbackOnTimeout = false,
@@ -419,7 +423,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->dynFileMethod = _HF_DYNFILE_NONE;
                 break;
             case 'Q':
-                hfuzz->nullifyStdio = false;
+                hfuzz->exe.nullifyStdio = false;
                 break;
             case 'v':
                 hfuzz->useScreen = false;
@@ -428,7 +432,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->useVerifier = true;
                 break;
             case 's':
-                hfuzz->fuzzStdin = true;
+                hfuzz->exe.fuzzStdin = true;
                 break;
             case 'u':
                 hfuzz->io.saveUnique = false;
@@ -458,7 +462,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->mutationsPerRun = strtoul(optarg, NULL, 10);
                 break;
             case 'c':
-                hfuzz->externalCommand = optarg;
+                hfuzz->exe.externalCommand = optarg;
                 break;
             case 'C':
                 hfuzz->useSanCov = true;
@@ -484,23 +488,23 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             case 0x109: {
                 time_t p = atol(optarg);
                 if (p > 0) {
-                    hfuzz->runEndTime = time(NULL) + p;
+                    hfuzz->exe.runEndTime = time(NULL) + p;
                 }
             } break;
             case 'N':
                 hfuzz->mutationsMax = atol(optarg);
                 break;
             case 0x100:
-                hfuzz->asLimit = strtoull(optarg, NULL, 0);
+                hfuzz->exe.asLimit = strtoull(optarg, NULL, 0);
                 break;
             case 0x101:
-                hfuzz->rssLimit = strtoull(optarg, NULL, 0);
+                hfuzz->exe.rssLimit = strtoull(optarg, NULL, 0);
                 break;
             case 0x102:
-                hfuzz->dataLimit = strtoull(optarg, NULL, 0);
+                hfuzz->exe.dataLimit = strtoull(optarg, NULL, 0);
                 break;
             case 0x104:
-                hfuzz->postExternalCommand = optarg;
+                hfuzz->exe.postExternalCommand = optarg;
                 break;
             case 0x105:
                 if ((strcasecmp(optarg, "0") == 0) || (strcasecmp(optarg, "false") == 0)) {
@@ -516,7 +520,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->exitUponCrash = true;
                 break;
             case 0x108:
-                hfuzz->clearEnv = true;
+                hfuzz->exe.clearEnv = true;
                 break;
             case 'P':
                 hfuzz->persistent = true;
@@ -539,9 +543,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->linux.pidFile = optarg;
                 break;
             case 'E':
-                for (size_t i = 0; i < ARRAYSIZE(hfuzz->envs); i++) {
-                    if (hfuzz->envs[i] == NULL) {
-                        hfuzz->envs[i] = optarg;
+                for (size_t i = 0; i < ARRAYSIZE(hfuzz->exe.envs); i++) {
+                    if (hfuzz->exe.envs[i] == NULL) {
+                        hfuzz->exe.envs[i] = optarg;
                         break;
                     }
                 }
@@ -603,8 +607,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     if (!logInitLogFile(logfile, ll)) {
         return false;
     }
-    hfuzz->cmdline = &argv[optind];
-    if (hfuzz->cmdline[0] == NULL) {
+    hfuzz->exe.cmdline = (const char* const*)&argv[optind];
+    if (hfuzz->exe.cmdline[0] == NULL) {
         LOG_E("No fuzz command provided");
         cmdlineUsage(argv[0], custom_opts);
         return false;
@@ -621,16 +625,18 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         "fileExtn: '%s', "
         "ASLimit: 0x%" PRIx64 "(MiB), RSSLimit: 0x%" PRIx64 ", DATALimit: 0x%" PRIx64
         ", fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
-        (int)getpid(), hfuzz->io.inputDir, cmdlineYesNo(hfuzz->nullifyStdio),
-        cmdlineYesNo(hfuzz->fuzzStdin), cmdlineYesNo(hfuzz->io.saveUnique), hfuzz->mutationsPerRun,
-        hfuzz->externalCommand == NULL ? "NULL" : hfuzz->externalCommand, (int)hfuzz->runEndTime,
-        hfuzz->tmOut, hfuzz->mutationsMax, hfuzz->threads.threadsMax, hfuzz->io.fileExtn,
-        hfuzz->asLimit, hfuzz->rssLimit, hfuzz->dataLimit, hfuzz->cmdline[0], hfuzz->linux.pid,
-        cmdlineYesNo(hfuzz->monitorSIGABRT));
+        (int)getpid(), hfuzz->io.inputDir, cmdlineYesNo(hfuzz->exe.nullifyStdio),
+        cmdlineYesNo(hfuzz->exe.fuzzStdin), cmdlineYesNo(hfuzz->io.saveUnique),
+        hfuzz->mutationsPerRun,
+        hfuzz->exe.externalCommand == NULL ? "NULL" : hfuzz->exe.externalCommand,
+        (int)hfuzz->exe.runEndTime, hfuzz->tmOut, hfuzz->mutationsMax, hfuzz->threads.threadsMax,
+        hfuzz->io.fileExtn, hfuzz->exe.asLimit, hfuzz->exe.rssLimit, hfuzz->exe.dataLimit,
+        hfuzz->exe.cmdline[0], hfuzz->linux.pid, cmdlineYesNo(hfuzz->monitorSIGABRT));
 
-    snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->cmdline[0]);
-    for (size_t i = 1; hfuzz->cmdline[i]; i++) {
-        util_ssnprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), " %s", hfuzz->cmdline[i]);
+    snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->exe.cmdline[0]);
+    for (size_t i = 1; hfuzz->exe.cmdline[i]; i++) {
+        util_ssnprintf(
+            hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), " %s", hfuzz->exe.cmdline[i]);
         if (strlen(hfuzz->cmdline_txt) == (sizeof(hfuzz->cmdline_txt) - 1)) {
             hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 5] = ' ';
             hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 4] = '.';

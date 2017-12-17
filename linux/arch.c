@@ -151,22 +151,22 @@ bool arch_launchChild(run_t* run) {
         PLOG_D("personality(ADDR_NO_RANDOMIZE) failed");
     }
 #define ARGS_MAX 512
-    char* args[ARGS_MAX + 2];
+    const char* args[ARGS_MAX + 2];
     char argData[PATH_MAX] = {0};
     int x = 0;
 
-    for (x = 0; x < ARGS_MAX && run->global->cmdline[x]; x++) {
-        if (!run->global->fuzzStdin && !run->global->persistent &&
-            strcmp(run->global->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
+    for (x = 0; x < ARGS_MAX && run->global->exe.cmdline[x]; x++) {
+        if (!run->global->exe.fuzzStdin && !run->global->persistent &&
+            strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
             args[x] = (char*)run->fileName;
-        } else if (!run->global->fuzzStdin && !run->global->persistent &&
-                   strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER)) {
-            const char* off = strstr(run->global->cmdline[x], _HF_FILE_PLACEHOLDER);
-            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - run->global->cmdline[x]),
-                run->global->cmdline[x], run->fileName);
+        } else if (!run->global->exe.fuzzStdin && !run->global->persistent &&
+                   strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
+            const char* off = strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER);
+            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - run->global->exe.cmdline[x]),
+                run->global->exe.cmdline[x], run->fileName);
             args[x] = argData;
         } else {
-            args[x] = run->global->cmdline[x];
+            args[x] = run->global->exe.cmdline[x];
         }
     }
 
@@ -187,7 +187,7 @@ bool arch_launchChild(run_t* run) {
 #if defined(__NR_execveat)
     syscall(__NR_execveat, run->global->linux.exeFd, "", args, environ, AT_EMPTY_PATH);
 #endif /* defined__NR_execveat) */
-    execve(args[0], args, environ);
+    execve(args[0], (char* const*)args, environ);
     int errno_cpy = errno;
     alarm(1);
 
@@ -381,12 +381,12 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
     /* Make %'d work */
     setlocale(LC_NUMERIC, "en_US");
 
-    if (access(hfuzz->cmdline[0], X_OK) == -1) {
-        PLOG_E("File '%s' doesn't seem to be executable", hfuzz->cmdline[0]);
+    if (access(hfuzz->exe.cmdline[0], X_OK) == -1) {
+        PLOG_E("File '%s' doesn't seem to be executable", hfuzz->exe.cmdline[0]);
         return false;
     }
-    if ((hfuzz->linux.exeFd = open(hfuzz->cmdline[0], O_RDONLY | O_CLOEXEC)) == -1) {
-        PLOG_E("Cannot open the executable binary: %s)", hfuzz->cmdline[0]);
+    if ((hfuzz->linux.exeFd = open(hfuzz->exe.cmdline[0], O_RDONLY | O_CLOEXEC)) == -1) {
+        PLOG_E("Cannot open the executable binary: %s)", hfuzz->exe.cmdline[0]);
         return false;
     }
 

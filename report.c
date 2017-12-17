@@ -55,8 +55,8 @@ static void report_printdynFileMethod(run_t* run) {
 
 static void report_printTargetCmd(run_t* run) {
     dprintf(reportFD, " fuzzTarget   : ");
-    for (int x = 0; run->global->cmdline[x]; x++) {
-        dprintf(reportFD, "%s ", run->global->cmdline[x]);
+    for (int x = 0; run->global->exe.cmdline[x]; x++) {
+        dprintf(reportFD, "%s ", run->global->exe.cmdline[x]);
     }
     dprintf(reportFD, "\n");
 }
@@ -106,10 +106,10 @@ void report_Report(run_t* run) {
         " targetCmd       : %s\n"
         " wordlistFile    : %s\n",
         localtmstr, run->global->mutationsPerRun,
-        run->global->externalCommand == NULL ? "NULL" : run->global->externalCommand,
-        run->global->fuzzStdin ? "TRUE" : "FALSE", run->global->tmOut,
-        run->global->linux.ignoreAddr, run->global->asLimit, run->global->rssLimit,
-        run->global->dataLimit, run->global->linux.pid, run->global->linux.pidCmd,
+        run->global->exe.externalCommand == NULL ? "NULL" : run->global->exe.externalCommand,
+        run->global->exe.fuzzStdin ? "TRUE" : "FALSE", run->global->tmOut,
+        run->global->linux.ignoreAddr, run->global->exe.asLimit, run->global->exe.rssLimit,
+        run->global->exe.dataLimit, run->global->linux.pid, run->global->linux.pidCmd,
         run->global->dictionaryFile == NULL ? "NULL" : run->global->dictionaryFile);
 
 #if defined(_HF_ARCH_LINUX)
