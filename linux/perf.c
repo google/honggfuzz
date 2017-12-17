@@ -53,7 +53,7 @@ static int32_t perfIntelPtPerfType = -1;
 static int32_t perfIntelBtsPerfType = -1;
 
 #if defined(PERF_ATTR_SIZE_VER5)
-static inline void arch_perfBtsCount(run_t* run) {
+__attribute__((hot)) static inline void arch_perfBtsCount(run_t* run) {
     struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
     struct bts_branch {
         uint64_t from;

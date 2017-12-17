@@ -44,7 +44,7 @@ inline static uint64_t sext(uint64_t val, uint8_t sign) {
     return val & signbit ? val | mask : val & ~mask;
 }
 
-inline static void perf_ptAnalyzePkt(run_t* run, struct pt_packet* packet) {
+__attribute__((hot)) inline static void perf_ptAnalyzePkt(run_t* run, struct pt_packet* packet) {
     if (packet->type != ppt_tip) {
         return;
     }
