@@ -34,7 +34,9 @@ $ make
 
 The _make.sh_ script will compile honggfuzz and libFuzzer binaries. Syntax:
 
+```shell
 __make.sh <directory-with-open/libre/boring-ssl> [address|memory|undefined]__
+```
 
 ```shell
 $ cd ..
