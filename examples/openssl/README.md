@@ -3,9 +3,9 @@
 **Requirements**
 
   * honggfuzz
-  * clang-4.0, or newer (5.0/6.0 works as well)
+  * clang-4.0, or newer (5.0/6.0 work as well)
   * openssl 1.1.0 (or, the master branch from git)
-  * libressl/boringssl/openssl-1.0.2 works as well, though they might require specific building instructions
+  * libressl/boringssl/openssl-1.0.2 work as well, though they might require specific building instructions
 
 **Preparation (for OpenSSL 1.1.0/master)**
 
