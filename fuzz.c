@@ -464,14 +464,14 @@ static void fuzz_perfFeedback(run_t* run) {
         run->global->linux.hwCnts.softCntEdge += softCntEdge;
         run->global->linux.hwCnts.softCntCmp += softCntCmp;
 
-        LOG_I("Size:%zu (i,b,edg,ip,hw,cmp): %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
+        LOG_I("Size:%zu (i,b,hw,edge,ip,cmp): %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
               "/%" PRIu64 "/%" PRIu64 ", Tot:%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
               "/%" PRIu64 "/%" PRIu64,
             run->dynamicFileSz, run->linux.hwCnts.cpuInstrCnt, run->linux.hwCnts.cpuBranchCnt,
-            softCntEdge, softCntPc, run->linux.hwCnts.newBBCnt, softCntCmp,
+            run->linux.hwCnts.newBBCnt, softCntEdge, softCntPc, softCntCmp,
             run->global->linux.hwCnts.cpuInstrCnt, run->global->linux.hwCnts.cpuBranchCnt,
-            run->global->linux.hwCnts.softCntEdge, run->global->linux.hwCnts.softCntPc,
-            run->global->linux.hwCnts.bbCnt, run->global->linux.hwCnts.softCntCmp);
+            run->global->linux.hwCnts.bbCnt, run->global->linux.hwCnts.softCntEdge,
+            run->global->linux.hwCnts.softCntPc, run->global->linux.hwCnts.softCntCmp);
 
         fuzz_addFileToFileQ(run);
     }
