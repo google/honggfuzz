@@ -403,8 +403,8 @@ void subproc_checkTimeLimit(run_t* run) {
     if ((diffMillis > (run->global->timing.tmOut * 1000)) && !run->tmOutSignaled) {
         run->tmOutSignaled = true;
         LOG_W("PID %d took too much time (limit %ld s). Killing it with %s", run->pid,
-            run->global->timing.tmOut, run->global->timing.tmoutVTAlarm ? "SIGVTALRM" : "SIGKILL");
-        if (run->global->timing.tmoutVTAlarm) {
+            run->global->timing.tmOut, run->global->timing.tmoutVTALRM ? "SIGVTALRM" : "SIGKILL");
+        if (run->global->timing.tmoutVTALRM) {
             kill(run->pid, SIGVTALRM);
         } else {
             kill(run->pid, SIGKILL);

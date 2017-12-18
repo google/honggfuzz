@@ -124,7 +124,7 @@ __attribute__((constructor)) void arch_initSigs(void) {
     arch_sigs[SIGABRT].important = true;
     arch_sigs[SIGABRT].descr = "SIGABRT";
 
-    /* Is affected from tmoutVTAlarm flag */
+    /* Is affected from tmoutVTALRM flag */
     arch_sigs[SIGVTALRM].important = false;
     arch_sigs[SIGVTALRM].descr = "SIGVTALRM";
 }
@@ -464,7 +464,7 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
     arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
 
     /* Default is false */
-    arch_sigs[SIGVTALRM].important = hfuzz->tmoutVTAlarm;
+    arch_sigs[SIGVTALRM].important = hfuzz->tmoutVTALRM;
 
     return true;
 }

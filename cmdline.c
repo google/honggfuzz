@@ -221,7 +221,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .timeStart = time(NULL),
                 .runEndTime = 0,
                 .tmOut = 10,
-                .tmoutVTAlarm = false,
+                .tmoutVTALRM = false,
             },
         .cmdline_txt[0] = '\0',
         .useScreen = true,
@@ -529,7 +529,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->persistent = true;
                 break;
             case 'T':
-                hfuzz->timing.tmoutVTAlarm = true;
+                hfuzz->timing.tmoutVTALRM = true;
                 break;
             case 'p':
                 if (util_isANumber(optarg) == false) {

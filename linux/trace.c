@@ -271,7 +271,7 @@ static struct {
     [SIGABRT].important = false,
     [SIGABRT].descr = "SIGABRT",
 
-    /* Is affected from tmoutVTAlarm flag */
+    /* Is affected from tmoutVTALRM flag */
     [SIGVTALRM].important = false,
     [SIGVTALRM].descr = "SIGVTALRM-TMOUT",
 
@@ -1367,5 +1367,5 @@ void arch_traceSignalsInit(honggfuzz_t* hfuzz) {
     arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
 
     /* Default is false */
-    arch_sigs[SIGVTALRM].important = hfuzz->timing.tmoutVTAlarm;
+    arch_sigs[SIGVTALRM].important = hfuzz->timing.tmoutVTALRM;
 }

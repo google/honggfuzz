@@ -205,7 +205,7 @@ typedef struct {
         time_t timeStart;
         time_t runEndTime;
         time_t tmOut;
-        bool tmoutVTAlarm;
+        bool tmoutVTALRM;
     } timing;
     bool useScreen;
     bool useVerifier;

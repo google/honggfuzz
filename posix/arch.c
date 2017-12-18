@@ -246,7 +246,7 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
     arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
 
     /* Default is false */
-    arch_sigs[SIGVTALRM].important = hfuzz->timing.tmoutVTAlarm;
+    arch_sigs[SIGVTALRM].important = hfuzz->timing.tmoutVTALRM;
 
     return true;
 }
