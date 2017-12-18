@@ -165,6 +165,8 @@ static void commonOpts(int* j, char** args) {
      */
     args[(*j)++] = "-fno-inline";
     args[(*j)++] = "-fno-builtin";
+    args[(*j)++] = "-fno-omit-frame-pointer";
+    args[(*j)++] = "-D__NO_STRING_INLINES";
 
     if (getenv("HFUZZ_FORCE_M32")) {
         args[(*j)++] = "-m32";
