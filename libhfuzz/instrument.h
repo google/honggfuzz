@@ -24,6 +24,8 @@
 #ifndef _HF_LIBHFUZZ_INSTRUMENT_H_
 #define _HF_LIBHFUZZ_INSTRUMENT_H_
 
-void instrumentUpdateCmpMap(void* addr, unsigned int n);
+#include <inttypes.h>
+
+void instrumentUpdateCmpMap(uintptr_t addr, unsigned int n);
 
 #endif

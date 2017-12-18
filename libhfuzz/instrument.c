@@ -269,10 +269,8 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard(uint32_t* guard)
     *guard = 0U;
 }
 
-void instrumentCmpMap(void* addr, unsigned int n) { instrumentUpdateCmpMap(addr, n); }
-
-void instrumentUpdateCmpMap(void* addr, unsigned int n) {
-    uintptr_t pos = (uintptr_t)addr % _HF_PERF_BITMAP_SIZE_16M;
+void instrumentUpdateCmpMap(uintptr_t addr, unsigned int n) {
+    uintptr_t pos = addr % _HF_PERF_BITMAP_SIZE_16M;
     uint8_t v = n > 254 ? 254 : n;
     uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
     if (prev < v) {

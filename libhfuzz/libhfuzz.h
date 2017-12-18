@@ -46,7 +46,7 @@ void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr);
  * addr: address of original comparison
  * n: new value (only if better than the old/current value)
  */
-void instrumentCmpMap(void* addr, unsigned int n);
+void instrumentUpdateCmpMap(void* addr, unsigned int n);
 
 /*
  * Instrumented comparison functions

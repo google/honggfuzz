@@ -1,11 +1,20 @@
 #include <ctype.h>
+#include <inttypes.h>
 #include <string.h>
 
 #include "libhfuzz/instrument.h"
 
 int hfuzz_module_memorycmp = 0;
 
-static inline int _strcmp(const char* s1, const char* s2, void* addr) {
+#if 0 /* Might be useful with defined(__x86_64__) */
+#define RET_CALL_CHAIN                                 \
+    ((uintptr_t)__builtin_return_address(0) & 0xFFF) | \
+        ((uintptr_t)__builtin_return_address(1) << 12)
+#else
+#define RET_CALL_CHAIN (uintptr_t) __builtin_return_address(0)
+#endif /* defined(x86_64) */
+
+static inline int _strcmp(const char* s1, const char* s2, uintptr_t addr) {
     unsigned int v = 0;
 
     size_t i;
@@ -19,7 +28,7 @@ static inline int _strcmp(const char* s1, const char* s2, void* addr) {
     return (s1[i] - s2[i]);
 }
 
-static inline int _strcasecmp(const char* s1, const char* s2, void* addr) {
+static inline int _strcasecmp(const char* s1, const char* s2, uintptr_t addr) {
     unsigned int v = 0;
 
     size_t i;
@@ -33,7 +42,7 @@ static inline int _strcasecmp(const char* s1, const char* s2, void* addr) {
     return (tolower(s1[i]) - tolower(s2[i]));
 }
 
-static inline int _strncmp(const char* s1, const char* s2, size_t n, void* addr) {
+static inline int _strncmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
     if (n == 0) {
         return 0;
     }
@@ -56,7 +65,7 @@ static inline int _strncmp(const char* s1, const char* s2, size_t n, void* addr)
     return ret;
 }
 
-static inline int _strncasecmp(const char* s1, const char* s2, size_t n, void* addr) {
+static inline int _strncasecmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
     if (n == 0) {
         return 0;
     }
@@ -79,7 +88,7 @@ static inline int _strncasecmp(const char* s1, const char* s2, size_t n, void* a
     return ret;
 }
 
-static inline char* _strstr(const char* haystack, const char* needle, void* addr) {
+static inline char* _strstr(const char* haystack, const char* needle, uintptr_t addr) {
     size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
         if (_strncmp(&haystack[i], needle, needle_len, addr) == 0) {
@@ -89,7 +98,7 @@ static inline char* _strstr(const char* haystack, const char* needle, void* addr
     return NULL;
 }
 
-static inline char* _strcasestr(const char* haystack, const char* needle, void* addr) {
+static inline char* _strcasestr(const char* haystack, const char* needle, uintptr_t addr) {
     size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
         if (_strncasecmp(&haystack[i], needle, needle_len, addr) == 0) {
@@ -99,7 +108,7 @@ static inline char* _strcasestr(const char* haystack, const char* needle, void* 
     return NULL;
 }
 
-static inline int _memcmp(const void* m1, const void* m2, size_t n, void* addr) {
+static inline int _memcmp(const void* m1, const void* m2, size_t n, uintptr_t addr) {
     if (n == 0) {
         return 0;
     }
@@ -122,8 +131,8 @@ static inline int _memcmp(const void* m1, const void* m2, size_t n, void* addr) 
     return ret;
 }
 
-static inline void* _memmem(
-    const void* haystack, size_t haystacklen, const void* needle, size_t needlelen, void* addr) {
+static inline void* _memmem(const void* haystack, size_t haystacklen, const void* needle,
+    size_t needlelen, uintptr_t addr) {
     if (needlelen > haystacklen) {
         return NULL;
     }
@@ -148,74 +157,74 @@ static inline void* _memmem(
 
 /* Typical libc wrappers */
 HF_WEAK_WRAP(int, strcmp, const char* s1, const char* s2) {
-    return _strcmp(s1, s2, __builtin_return_address(0));
+    return _strcmp(s1, s2, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(int, strcasecmp, const char* s1, const char* s2) {
-    return _strcasecmp(s1, s2, __builtin_return_address(0));
+    return _strcasecmp(s1, s2, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(int, strncmp, const char* s1, const char* s2, size_t n) {
-    return _strncmp(s1, s2, n, __builtin_return_address(0));
+    return _strncmp(s1, s2, n, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(int, strncasecmp, const char* s1, const char* s2, size_t n) {
-    return _strncasecmp(s1, s2, n, __builtin_return_address(0));
+    return _strncasecmp(s1, s2, n, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(char*, strstr, const char* haystack, const char* needle) {
-    return _strstr(haystack, needle, __builtin_return_address(0));
+    return _strstr(haystack, needle, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(char*, strcasestr, const char* haystack, const char* needle) {
-    return _strcasestr(haystack, needle, __builtin_return_address(0));
+    return _strcasestr(haystack, needle, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(int, memcmp, const void* m1, const void* m2, size_t n) {
-    return _memcmp(m1, m2, n, __builtin_return_address(0));
+    return _memcmp(m1, m2, n, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(int, bcmp, const void* m1, const void* m2, size_t n) {
-    return _memcmp(m1, m2, n, __builtin_return_address(0));
+    return _memcmp(m1, m2, n, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(
     void*, memmem, const void* haystack, size_t haystacklen, const void* needle, size_t needlelen) {
-    return _memmem(haystack, haystacklen, needle, needlelen, __builtin_return_address(0));
+    return _memmem(haystack, haystacklen, needle, needlelen, RET_CALL_CHAIN);
 }
 
 /*
  * Apache's httpd wrappers
  */
 HF_WEAK_WRAP(int, ap_cstr_casecmp, const char* s1, const char* s2) {
-    return _strcasecmp(s1, s2, __builtin_return_address(0));
+    return _strcasecmp(s1, s2, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, ap_cstr_casecmpn, const char* s1, const char* s2, size_t n) {
-    return _strncasecmp(s1, s2, n, __builtin_return_address(0));
+    return _strncasecmp(s1, s2, n, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(const char*, ap_strcasestr, const char* s1, const char* s2) {
-    return _strcasestr(s1, s2, __builtin_return_address(0));
+    return _strcasestr(s1, s2, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, apr_cstr_casecmp, const char* s1, const char* s2) {
-    return _strcasecmp(s1, s2, __builtin_return_address(0));
+    return _strcasecmp(s1, s2, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, apr_cstr_casecmpn, const char* s1, const char* s2, size_t n) {
-    return _strncasecmp(s1, s2, n, __builtin_return_address(0));
+    return _strncasecmp(s1, s2, n, RET_CALL_CHAIN);
 }
 
 /*
  * *SSL wrappers
  */
 HF_WEAK_WRAP(int, CRYPTO_memcmp, const void* m1, const void* m2, size_t len) {
-    return _memcmp(m1, m2, len, __builtin_return_address(0));
+    return _memcmp(m1, m2, len, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, OPENSSL_memcmp, const void* m1, const void* m2, size_t len) {
-    return _memcmp(m1, m2, len, __builtin_return_address(0));
+    return _memcmp(m1, m2, len, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, OPENSSL_strcasecmp, const char* s1, const char* s2) {
-    return _strcasecmp(s1, s2, __builtin_return_address(0));
+    return _strcasecmp(s1, s2, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, OPENSSL_strncasecmp, const char* s1, const char* s2, size_t len) {
-    return _strncasecmp(s1, s2, len, __builtin_return_address(0));
+    return _strncasecmp(s1, s2, len, RET_CALL_CHAIN);
 }
 
 /*
@@ -234,7 +243,7 @@ HF_WEAK_WRAP(int, xmlStrncmp, const char* s1, const char* s2, int len) {
     if (s2 == NULL) {
         return 1;
     }
-    return _strncmp(s1, s2, (size_t)len, __builtin_return_address(0));
+    return _strncmp(s1, s2, (size_t)len, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, xmlStrcmp, const char* s1, const char* s2) {
@@ -247,7 +256,7 @@ HF_WEAK_WRAP(int, xmlStrcmp, const char* s1, const char* s2) {
     if (s2 == NULL) {
         return 1;
     }
-    return _strcmp(s1, s2, __builtin_return_address(0));
+    return _strcmp(s1, s2, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, xmlStrEqual, const char* s1, const char* s2) {
@@ -260,7 +269,7 @@ HF_WEAK_WRAP(int, xmlStrEqual, const char* s1, const char* s2) {
     if (s2 == NULL) {
         return 0;
     }
-    if (_strcmp(s1, s2, __builtin_return_address(0)) == 0) {
+    if (_strcmp(s1, s2, RET_CALL_CHAIN) == 0) {
         return 1;
     }
     return 0;
@@ -276,7 +285,7 @@ HF_WEAK_WRAP(int, xmlStrcasecmp, const char* s1, const char* s2) {
     if (s2 == NULL) {
         return 1;
     }
-    return _strcasecmp(s1, s2, __builtin_return_address(0));
+    return _strcasecmp(s1, s2, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, xmlStrncasecmp, const char* s1, const char* s2, int len) {
@@ -292,7 +301,7 @@ HF_WEAK_WRAP(int, xmlStrncasecmp, const char* s1, const char* s2, int len) {
     if (s2 == NULL) {
         return 1;
     }
-    return _strncasecmp(s1, s2, (size_t)len, __builtin_return_address(0));
+    return _strncasecmp(s1, s2, (size_t)len, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(const char*, xmlStrstr, const char* haystack, const char* needle) {
@@ -302,7 +311,7 @@ HF_WEAK_WRAP(const char*, xmlStrstr, const char* haystack, const char* needle) {
     if (needle == NULL) {
         return NULL;
     }
-    return _strstr(haystack, needle, __builtin_return_address(0));
+    return _strstr(haystack, needle, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(const char*, xmlStrcasestr, const char* haystack, const char* needle) {
@@ -312,5 +321,5 @@ HF_WEAK_WRAP(const char*, xmlStrcasestr, const char* haystack, const char* needl
     if (needle == NULL) {
         return NULL;
     }
-    return _strcasestr(haystack, needle, __builtin_return_address(0));
+    return _strcasestr(haystack, needle, RET_CALL_CHAIN);
 }
