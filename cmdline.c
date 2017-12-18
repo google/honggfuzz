@@ -190,7 +190,6 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
 
 bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     honggfuzz_t tmp = {
-        .cmdline_txt[0] = '\0',
         .io =
             {
                 .inputDir = NULL,
@@ -211,26 +210,30 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .fuzzStdin = false,
                 .externalCommand = NULL,
                 .postExternalCommand = NULL,
-                .runEndTime = 0,
                 .asLimit = 0U,
                 .rssLimit = 0U,
                 .dataLimit = 0U,
                 .clearEnv = false,
                 .envs[0] = NULL,
             },
+        .timing =
+            {
+                .timeStart = time(NULL),
+                .runEndTime = 0,
+                .tmOut = 10,
+                .tmoutVTAlarm = false,
+            },
+        .cmdline_txt[0] = '\0',
         .useScreen = true,
         .useVerifier = false,
-        .timeStart = time(NULL),
         .mutationsPerRun = 6U,
         .blacklistFile = NULL,
         .blacklistCnt = 0,
         .blacklist = NULL,
         .maxFileSz = 0UL,
-        .tmOut = 10,
         .mutationsMax = 0,
         .reportFile = NULL,
         .persistent = false,
-        .tmout_vtalrm = false,
         .skipFeedbackOnTimeout = false,
         .enableSanitizers = false,
 #if defined(__ANDROID__)
@@ -477,7 +480,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->maxFileSz = strtoul(optarg, NULL, 0);
                 break;
             case 't':
-                hfuzz->tmOut = atol(optarg);
+                hfuzz->timing.tmOut = atol(optarg);
                 break;
             case 'R':
                 hfuzz->reportFile = optarg;
@@ -488,7 +491,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             case 0x109: {
                 time_t p = atol(optarg);
                 if (p > 0) {
-                    hfuzz->exe.runEndTime = time(NULL) + p;
+                    hfuzz->timing.runEndTime = time(NULL) + p;
                 }
             } break;
             case 'N':
@@ -526,7 +529,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->persistent = true;
                 break;
             case 'T':
-                hfuzz->tmout_vtalrm = true;
+                hfuzz->timing.tmoutVTAlarm = true;
                 break;
             case 'p':
                 if (util_isANumber(optarg) == false) {
@@ -629,9 +632,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         cmdlineYesNo(hfuzz->exe.fuzzStdin), cmdlineYesNo(hfuzz->io.saveUnique),
         hfuzz->mutationsPerRun,
         hfuzz->exe.externalCommand == NULL ? "NULL" : hfuzz->exe.externalCommand,
-        (int)hfuzz->exe.runEndTime, hfuzz->tmOut, hfuzz->mutationsMax, hfuzz->threads.threadsMax,
-        hfuzz->io.fileExtn, hfuzz->exe.asLimit, hfuzz->exe.rssLimit, hfuzz->exe.dataLimit,
-        hfuzz->exe.cmdline[0], hfuzz->linux.pid, cmdlineYesNo(hfuzz->monitorSIGABRT));
+        (int)hfuzz->timing.runEndTime, hfuzz->timing.tmOut, hfuzz->mutationsMax,
+        hfuzz->threads.threadsMax, hfuzz->io.fileExtn, hfuzz->exe.asLimit, hfuzz->exe.rssLimit,
+        hfuzz->exe.dataLimit, hfuzz->exe.cmdline[0], hfuzz->linux.pid,
+        cmdlineYesNo(hfuzz->monitorSIGABRT));
 
     snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->exe.cmdline[0]);
     for (size_t i = 1; hfuzz->exe.cmdline[i]; i++) {

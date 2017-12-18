@@ -386,25 +386,25 @@ uint8_t subproc_System(run_t* run, const char* const argv[]) {
 }
 
 void subproc_checkTimeLimit(run_t* run) {
-    if (run->global->tmOut == 0) {
+    if (run->global->timing.tmOut == 0) {
         return;
     }
 
     int64_t curMillis = util_timeNowMillis();
     int64_t diffMillis = curMillis - run->timeStartedMillis;
 
-    if (run->tmOutSignaled && (diffMillis > ((run->global->tmOut + 1) * 1000))) {
+    if (run->tmOutSignaled && (diffMillis > ((run->global->timing.tmOut + 1) * 1000))) {
         /* Has this instance been already signaled due to timeout? Just, SIGKILL it */
         LOG_W("PID %d has already been signaled due to timeout. Killing it with SIGKILL", run->pid);
         kill(run->pid, SIGKILL);
         return;
     }
 
-    if ((diffMillis > (run->global->tmOut * 1000)) && !run->tmOutSignaled) {
+    if ((diffMillis > (run->global->timing.tmOut * 1000)) && !run->tmOutSignaled) {
         run->tmOutSignaled = true;
         LOG_W("PID %d took too much time (limit %ld s). Killing it with %s", run->pid,
-            run->global->tmOut, run->global->tmout_vtalrm ? "SIGVTALRM" : "SIGKILL");
-        if (run->global->tmout_vtalrm) {
+            run->global->timing.tmOut, run->global->timing.tmoutVTAlarm ? "SIGVTALRM" : "SIGKILL");
+        if (run->global->timing.tmoutVTAlarm) {
             kill(run->pid, SIGVTALRM);
         } else {
             kill(run->pid, SIGKILL);

@@ -202,7 +202,7 @@ int main(int argc, char** argv) {
         if (ATOMIC_GET(hfuzz.threads.threadsFinished) >= hfuzz.threads.threadsMax) {
             break;
         }
-        if (hfuzz.exe.runEndTime > 0 && (time(NULL) > hfuzz.exe.runEndTime)) {
+        if (hfuzz.timing.runEndTime > 0 && (time(NULL) > hfuzz.timing.runEndTime)) {
             LOG_I("Maximum run time reached, terminating");
             fuzz_setTerminating();
             break;

@@ -124,7 +124,7 @@ __attribute__((constructor)) void arch_initSigs(void) {
     arch_sigs[SIGABRT].important = true;
     arch_sigs[SIGABRT].descr = "SIGABRT";
 
-    /* Is affected from tmout_vtalrm flag */
+    /* Is affected from tmoutVTAlarm flag */
     arch_sigs[SIGVTALRM].important = false;
     arch_sigs[SIGVTALRM].descr = "SIGVTALRM";
 }
@@ -368,14 +368,14 @@ void arch_reapChild(run_t* run) {
      * Now check for signals using wait4
      */
     int options = WUNTRACED;
-    if (run->global->tmOut) {
+    if (run->global->timing.tmOut) {
         options |= WNOHANG;
     }
 
     for (;;) {
         int status = 0;
         while (wait4(run->pid, &status, options, NULL) != run->pid) {
-            if (run->global->tmOut) {
+            if (run->global->timin.tmOut) {
                 subproc_checkTimeLimit(run);
                 usleep(0.20 * 1000000);
             }
@@ -464,7 +464,7 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
     arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
 
     /* Default is false */
-    arch_sigs[SIGVTALRM].important = hfuzz->tmout_vtalrm;
+    arch_sigs[SIGVTALRM].important = hfuzz->tmoutVTAlarm;
 
     return true;
 }

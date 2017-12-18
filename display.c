@@ -105,7 +105,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         firstDisplay = false;
     }
 
-    unsigned long elapsed_second = (unsigned long)(time(NULL) - hfuzz->timeStart);
+    unsigned long elapsed_second = (unsigned long)(time(NULL) - hfuzz->timing.timeStart);
     unsigned int day, hour, min, second;
     char time_elapsed_str[64];
     if (elapsed_second < 24 * 3600) {
@@ -173,15 +173,15 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     }
 
     display_put("\n    Run Time : " ESC_BOLD "%s" ESC_RESET, time_elapsed_str);
-    if (hfuzz->exe.runEndTime > 0) {
-        time_t time_left = hfuzz->exe.runEndTime - time(NULL);
+    if (hfuzz->timing.runEndTime > 0) {
+        time_t time_left = hfuzz->timing.runEndTime - time(NULL);
         if (time_left < 0) {
             time_left = 0;
         }
         if (time_left > 3600) {
             char end_time_str[512];
             util_getLocalTime(
-                "%F %H:%M:%S", end_time_str, sizeof(end_time_str), hfuzz->exe.runEndTime);
+                "%F %H:%M:%S", end_time_str, sizeof(end_time_str), hfuzz->timing.runEndTime);
             display_put(", end time: " ESC_BOLD "%s" ESC_RESET, end_time_str);
         } else {
             display_put(", left: " ESC_BOLD "%d" ESC_RESET " sec.", time_left);
@@ -222,7 +222,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         ATOMIC_GET(hfuzz->cnts.verifiedCrashesCnt));
     display_put("    Timeouts : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
                 " [%" _HF_MONETARY_MOD "zu sec.]\n",
-        ATOMIC_GET(hfuzz->cnts.timeoutedCnt), hfuzz->tmOut);
+        ATOMIC_GET(hfuzz->cnts.timeoutedCnt), hfuzz->timing.tmOut);
     /* Feedback data sources. Common headers. */
     display_put(" Corpus Size : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
                 ", max file size: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",

@@ -107,7 +107,7 @@ void report_Report(run_t* run) {
         " wordlistFile    : %s\n",
         localtmstr, run->global->mutationsPerRun,
         run->global->exe.externalCommand == NULL ? "NULL" : run->global->exe.externalCommand,
-        run->global->exe.fuzzStdin ? "TRUE" : "FALSE", run->global->tmOut,
+        run->global->exe.fuzzStdin ? "TRUE" : "FALSE", run->global->timing.tmOut,
         run->global->linux.ignoreAddr, run->global->exe.asLimit, run->global->exe.rssLimit,
         run->global->exe.dataLimit, run->global->linux.pid, run->global->linux.pidCmd,
         run->global->dictionaryFile == NULL ? "NULL" : run->global->dictionaryFile);

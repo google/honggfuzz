@@ -193,7 +193,6 @@ typedef struct {
         uint64_t dataLimit;
         bool clearEnv;
         char* envs[128];
-        time_t runEndTime;
     } exe;
     struct {
         size_t threadsMax;
@@ -202,7 +201,12 @@ typedef struct {
         pthread_t mainThread;
         pid_t mainPid;
     } threads;
-    time_t timeStart;
+    struct {
+        time_t timeStart;
+        time_t runEndTime;
+        time_t tmOut;
+        bool tmoutVTAlarm;
+    } timing;
     bool useScreen;
     bool useVerifier;
     char cmdline_txt[61];
@@ -210,12 +214,10 @@ typedef struct {
     const char* blacklistFile;
     uint64_t* blacklist;
     size_t blacklistCnt;
-    long tmOut;
     size_t mutationsMax;
     size_t maxFileSz;
     char* reportFile;
     bool persistent;
-    bool tmout_vtalrm;
     bool skipFeedbackOnTimeout;
     bool enableSanitizers;
     bool monitorSIGABRT;
