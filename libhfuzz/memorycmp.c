@@ -6,9 +6,9 @@
 
 int hfuzz_module_memorycmp = 0;
 
-#if 0 /* Might be useful with defined(__x86_64__) */
+#if defined(_HF_USE_RET_ADDR_1) /* Use mix of two previous addresses */
 #define RET_CALL_CHAIN                                 \
-    ((uintptr_t)__builtin_return_address(0) & 0xFFF) | \
+    ((uintptr_t)__builtin_return_address(0)) ^ \
         ((uintptr_t)__builtin_return_address(1) << 12)
 #else
 #define RET_CALL_CHAIN (uintptr_t) __builtin_return_address(0)
