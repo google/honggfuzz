@@ -15,6 +15,7 @@ extern "C" {
 #include <libhfuzz/libhfuzz.h>
 
 int LLVMFuzzerInitialize(int* argc, char*** argv) {
+    HFInit();
     HFResetRand();
     return 1;
 }

@@ -475,9 +475,7 @@ static int npn_callback(SSL* ssl, const uint8_t** out, unsigned* out_len, void* 
 }
 
 int LLVMFuzzerInitialize(int* argc, char*** argv) {
-    SSL_library_init();
-    OpenSSL_add_ssl_algorithms();
-    ERR_load_crypto_strings();
+    HFInit();
     HFResetRand();
 
     ctx = SSL_CTX_new(SSLv23_method());

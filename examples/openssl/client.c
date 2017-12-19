@@ -437,8 +437,7 @@ unsigned int psk_callback(SSL* ssl, const char* hint, char* identuty, unsigned i
 }
 
 int LLVMFuzzerInitialize(int* argc, char*** argv) {
-    SSL_library_init();
-    OpenSSL_add_ssl_algorithms();
+    HFInit();
     HFResetRand();
 
     ctx = SSL_CTX_new(SSLv23_method());

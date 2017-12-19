@@ -11,9 +11,7 @@ extern "C" {
 #endif
 
 int LLVMFuzzerInitialize(int* argc, char*** argv) {
-    SSL_library_init();
-    OpenSSL_add_ssl_algorithms();
-    ERR_load_crypto_strings();
+    HFInit();
     HFResetRand();
 
     return 1;

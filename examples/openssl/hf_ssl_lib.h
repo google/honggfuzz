@@ -1,5 +1,7 @@
+#include <openssl/err.h>
 #include <openssl/opensslv.h>
 #include <openssl/rand.h>
+#include <openssl/ssl.h>
 
 #include <libhfuzz/libhfuzz.h>
 
@@ -17,6 +19,12 @@ extern "C" {
     OPENSSL_VERSION_NUMBER >= 0x10100000
 #define HF_SSL_IS_OPENSSL_GE_1_1 1
 #endif
+
+#define FUZZTIME 1485898104
+time_t time(time_t* t) {
+    if (t != NULL) *t = FUZZTIME;
+    return FUZZTIME;
+}
 
 #if defined(HF_SSL_IS_BORINGSSL)
 static int hf_rnd(unsigned char* buf, size_t num)
@@ -56,3 +64,9 @@ int main(int argc, char** argv) {
 #ifdef __cplusplus
 }  // extern "C"
 #endif
+
+static void HFInit(void) {
+    SSL_library_init();
+    OpenSSL_add_ssl_algorithms();
+    ERR_load_crypto_strings();
+}
