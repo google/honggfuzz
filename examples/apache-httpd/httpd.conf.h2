@@ -2,6 +2,8 @@ ServerRoot "/home/jagger/fuzz/apache/dist"
 DocumentRoot "/home/jagger/fuzz/apache/dist/htdocs"
 ServerName 127.0.0.1
 Timeout 1
+CacheEnable socache /
+#CacheSocache shmcb:/tmp/data
 KeepAlive On
 MaxKeepAliveRequests 1000
 MaxConnectionsPerChild 0
@@ -35,6 +37,10 @@ Redirect "/abc" "/"
 RedirectMatch "(.*)\.gif$" "/image/$1.jpg"
 UseCanonicalPhysicalPort On
 HttpProtocolOptions Unsafe LenientMethods Allow0.9
+ProxyStatus On
+ProxyVia On
+Header set MyHeader "%D %t"
+Header set Set-Cookie testcookie "expr=-z %{req:Cookie}"
 <Directory />
 	Options FollowSymLinks
 	AllowOverride None
@@ -42,6 +48,13 @@ HttpProtocolOptions Unsafe LenientMethods Allow0.9
 <LocationMatch "/app/(?<NUMBER>[0-9]+)">
 	SetHandler "fcgi://localhost:8080/app_%{env:MATCH_NUMBER}"
 </LocationMatch>
+<Directory /home/jagger/fuzz/apache/dist/htdocs/private>
+	DAV On
+	AuthType Basic
+	AuthName DAV
+	Options All MultiViews
+	AllowOverride None
+</Directory>
 <Directory /home/jagger/fuzz/apache/dist/htdocs>
 	Options All MultiViews
 	AllowOverride None
@@ -65,3 +78,8 @@ HttpProtocolOptions Unsafe LenientMethods Allow0.9
 <LocationMatch "/error/(?<NUMBER>[0-9]+)">
     Redirect permanent "/%{env:MATCH_NUMBER}.html"
 </LocationMatch>
+<Location "/proxy/">
+  ProxyPass "http://127.0.0.1:8080/index.html"
+  SetEnv force-proxy-request-1.0 1
+  SetEnv proxy-nokeepalive 1
+</Location>
