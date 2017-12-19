@@ -10,7 +10,7 @@ diff -Nur httpd/compile_and_install.sh httpd.new/compile_and_install.sh
 +HFUZZ_DIR="/home/jagger/src/honggfuzz"
 +# Change this to a directory where apache should be installed into
 +INSTALL_PREFIX="$(realpath "$PWD/../dist")"
-+NGHTTP2_VER=1.27.0
++NGHTTP2_VER=1.29.0
 +APR_VER=1.6.3
 +APR_UTIL_VER=1.6.1
 +CFLAGS_SAN="-fsanitize=address"
