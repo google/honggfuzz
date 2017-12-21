@@ -492,7 +492,7 @@ static void mangle_CloneByte(run_t* run) {
 }
 
 static void mangle_Resize(run_t* run) {
-    run->dynamicFileSz = util_rndGet(1, run->global->maxFileSz);
+    run->dynamicFileSz = util_rndGet(0, run->global->maxFileSz);
 }
 
 static void mangle_Expand(run_t* run) {
@@ -537,15 +537,14 @@ void mangle_mangleContent(run_t* run) {
         return;
     }
 
-    /* Minimum support file size for mangling is 1 */
-    if (run->dynamicFileSz == 0UL) {
-        run->dynamicFileSz = 1UL;
-        run->dynamicFile[0] = '\0';
-    }
-
     /* 20% chance to change the file size */
     if ((util_rnd64() % 5) == 0) {
         mangle_Resize(run);
+    }
+
+    /* No point in modifying it if its size is 0 */
+    if (run->dynamicFileSz == 0UL) {
+        return;
     }
 
     static void (*const mangleFuncs[])(run_t * run) = {
@@ -567,7 +566,6 @@ void mangle_mangleContent(run_t* run) {
         mangle_Shrink,
         mangle_InsertRnd,
         mangle_ASCIIVal,
-        mangle_Resize,
     };
 
     /* Max number of stacked changes is 6 */

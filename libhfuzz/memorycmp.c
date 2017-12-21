@@ -17,7 +17,7 @@ int hfuzz_module_memorycmp = 0;
 /* Use mix of three previous returen addresses - unsafe */
 #define RET_CALL_CHAIN                                                                         \
     ((uintptr_t)__builtin_return_address(0)) ^ ((uintptr_t)__builtin_return_address(1) << 8) ^ \
-        ((uintptr_t)__builtin_return_address(1) << 16)
+        ((uintptr_t)__builtin_return_address(2) << 16)
 #else
 #error "Unknown value of _HF_USE_RET_ADDR"
 #endif /* !defined(_HF_USE_RET_ADDR_1) */
