@@ -1,11 +1,0 @@
-GET /index.html HTTP/1.1
-Range:ifincm:t:: –ncm:t:: VgUt80T0
-If-Range:"2d-550ec0T0
-If-Range:"2d-554t80T0
-If-Range:"2d-5547"
-Host: 127.ve
-
-
-
-7.ve
-PUTTransfer-Encoding:Transfer-Encoding:€@

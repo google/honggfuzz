@@ -1,0 +1,75 @@
+GET /dir/ HTTP/1.1
+Host: 127.0.0.1:8080
+Conection: keep/alivd
+Cache-Control: max-agÿ=‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹ests:eÿÿÿUser-Agent:`Mozilla/5.0 (X11; €€nux x86_64) AppleWebKit/(Ä7.36 (KHeML, like Gecko) Chrpme/59.0.3071.109 Safari/537.36
+Accept: text/html,applibati139883296761039042cation/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+Pragma:
+AccTpt-Encoding: gzip, deflate, b‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚:tml HTTP/1.1
+Transfer-Encoding: chunked
+Content-tengt: 080
+Iost: 127.0.0index.html HTTP/1.1
+Transfer-Encoding: chunked
+Contenu-LOCKth:080
+Host: 12If-None-Match:HHHHHHHHHHHHqansfer-ltio33333333-8848164857648810926NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN^NNNNNNNN:"1
+Urization:Î±±¹If-None-Match:"1
+User-AgentAuthorizatio33333333333333127.0.0.1atch:"1
+User-AgentAuthorizatio3333333333333333333NNNNNNNNNNNNNNNNNNNN‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚=‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹ests:eÿÿÿUser-Agent: Mozilla/5.0 (X11; €€mfx x86_64) AppleWe‚Kit/(Ä7.36 (KHeML, like Gecko) Chrp:me/59.0.3071.109 Safari/537.36
+Last-Modified:Accept: text/hsml,applibation/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+Pragma:
+AccTpt-Encoding: gzip, deflate, b‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚:tml HTTP/1.1
+Transfer-Encoding: chunked
+Content-Lengt: 080
+Iost: 127.0.0index.html HTTP/1.1
+Transfer-Encoding: chunked
+Content-Encoding: gzip, deflate, b‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚:tml HTTP/1.1
+Transfer-Encoding: chunked
+Content-tengt: 080
+Iost: 127.0.0index.html HTTP/1.1
+Transfer-Encoding: chunked
+Contenu-LOCKth:080
+Host: 127.0.0.1
+
+0
+HHHHHHHHHHHHqansfer-ltio33333333-8848164857648810926NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN^NNNNNNNN:"1
+Urization:Î±±¹If-None-Match:"1
+User-AgentAuthorizatio33333333333333127.0.0.1atch:"1
+User-AgentAuthorizatio3333333333333333333NNNNNNNNNNNNNNNNNNNN‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚=‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹ests:eÿÿÿUser-Agent: Mozilla/5.0 (X11; €€nux x86_64) AppleWe‚Kit/(Ä7.36 (KHeML, like Gecko) Chrpme/59.0.3071.109 Safari/537.36
+Last-Modified:Accept: text/html,applibation/xhtml+xml,application/xml;q=0.9,image/webp,imafe/apng,*/*;q=0.8
+Pragma:
+AccTpt-Encoding: gzip, deflate, b‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚:tml HTTP/1.1
+Transfer-Encoding: chunked
+Content-Lengt: 080
+Iost: 127.0.0index.html HTTP/1.1
+Transfer-Encoding: chunked
+Content-Encoding: gzip, deflate, b‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚:tml HTTP/1.1
+Transfer-Encoding: chunked
+Content-tengt: 080
+Iost: 127.0.0index.html HTTP/1.1
+Transfer-Encoding: chunked
+Contenu-LOCKth:080
+Host: 127.0.0.1
+
+0
+HHHHHHHHHHHHqansfer-ltio33333333-8848164857648810926NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN^NNNNNNNN:"1
+Urization:Î±±¹If-None-Match:"1
+User-AgentAuthorizatio33333333333333127.0.0.1atch:"1
+User-AgentAuthorizatio3333333333333333333NNNNNNNNNNNNNNNNNNNN‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚=‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹ests:eÿÿÿUser-Agent: Mozilla/5.0 (X11; €€nux x86_64) AppleWe‚Kit/(Ä7.36 (KHeML, like Gecko) Chrpme/59.0.3071.109 Safari/537.36
+Last-Modified:Accept: text/html,applibation/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+Pragma:
+AccTpt-Encoding: gzip, deflate, b‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚:tml HTTP/1.1
+Transfer-Encoding: chunked
+Content-Lengt: 080
+Iost: 127.0.0index.html HTTP/1.1
+Transfer-Encoding: chunked
+Contenu-LOCKth:080
+Host: 127.0.0.1
+
+0
+HHHHHHHHHHHHqansfer-ltio3333333333333333373NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN‚‚‚‚‚‚‚‚‚‚:tml HTTP/1.1
+Transfer-Encoding: chunked
+Content-Lengt: 080
+Iost: 127.0.0index.html HTTP/1.1
+Transfer-Encoding: chunked
+Co)H §U\mÜ¡qON;prVR×¦òRÜ<:È0èöÛIp­İ«hGf×•y©O1 ¶
+­ŒT|qlÀ>1„s¬a„kÂR4¤a_5â¨LñÅVµŠ§ncB¼âíxÆ¢íÄhÿÎ»zLZûLèdÈSWŒ!` Î>}JtFA…µ%NáÈQpCßıˆùn²îqİ=‹aÈƒ}÷J)$¸iÒÓ!>çÆ¸Bm—ƒ¯¬ˆ Ä¿oûšõõç”ëşê,6“¢,ˆ"
+ñ&Q~ÂA_v¬?7îãÂ±™—Õòw(»	÷Ì£·Pšc·Ô8èÆ„XbÕÿÂrŒP[ Z?ä3÷Ü:ì,'Ú›Îx—PŒ‰ë©‡>İ[HlcEÛÅnìD ×èëk+;Á8.'¦né]4cşvg¶QÎ¥7$gø€æy[(2>7¾Ë×'¦¡‰xïB>ÏÅ"*æİ£5d Èeø@sÜ¸=ş¾Æ=“õbÜLÂLmØì·WÂŒgpâPºwh±÷-=¯Ê.ãc"°ĞêDVîLŸğX+·á3B1ó

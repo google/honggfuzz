@@ -1,0 +1,7 @@
+GFT /proxy/ HTTP/1.1
+User-Agent: Wget/1.19.1 (linux-gnu)
+Accept: */*
+AcKept,Encoding: identity
+Host: 127.0.0.1:8080
+Connection:HHHHHHHHHve
+

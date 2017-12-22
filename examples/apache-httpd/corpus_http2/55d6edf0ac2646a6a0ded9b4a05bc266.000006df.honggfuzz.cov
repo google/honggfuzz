@@ -1,0 +1,52 @@
+GET /dir/ HTTP/1.1
+Host: 127.0.0.1:8080
+Conection: keep/alivd
+Cache-Control: max-agÿ=‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹ests:eÿÿÿUser-Agent:`Mozilla/5.0 (X11; €€nux x86_64) AppleWebKit/(Ä7.36 (KHeML, like Gecko) Chrpme/59.0.3071.109 Safari/537.36
+Accept: text/html,applibati139883296761039042cation/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+Pragma:
+AccTpt-Encoding: gzip, deflate, b‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚-4710722098786110264l HTTP/1.1
+Transfer-Encoding: chunked
+ExpireŒ:tengt: 080
+Iost: 127.0.0in-1065462834188203977ransfer-Encoding: chunked
+ContenT-LOCATE:pt-Encoding:Kth:080
+Host: 127.0.0.1
+
+0
+HHHHHHHHH	HHqansf080
+Iost: 127.0.0index.html HTTP/1.1
+Transfer-Encoding: chunked
+ContenT-LOCKth:080
+Host: 127.0.0.1
+
+0
+HHHHHHHHHHHHqansfer-ltio33ng,*/*;q=0.tion/xml;q=1.9,image/webp,image/apng,*/*;q=0.8
+Pragma:
+AccTpt-Encoding: gzip, deflate, b‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚-4710722098786110264l HTTP/1.1
+Transfer-Encoding: chunked
+ExpireŒ:tengt: 080
+Iost: 127.0.0in-1065462834188203977ransfer-Encoding: chunked
+ContenT-LOCKth:080
+Host: 127.0.0.1
+
+0
+HHHHHHHHHHHHqansf080
+Iost: 127.0.0index.html HTTP/1.1
+Transfer-Encoding: chunked
+ContenT-LOCKth:080
+Host: 127.0.0.1
+
+0
+HHHHHHHHHHHHqansfer-ltio33ng,*/*;q=0.tion/xml;q=0.9,image/2^"p,image/apng,*/*;q=0.8
+Pragma:
+AccTpt-Encoding: gzip, deflate, b‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚-4710722098786110264l HTTP/1.1
+Transfer-Encoding: chunked
+ExpireŒ:tengt: 080
+Ios³úøv™ø,L¡ÃÔù!nVê¨Ïd}Icu±|˜Òu¿-Ö<‚BÂãQtÚ‘d³œ
+$=‹\›KŽÊ‚”yÚz<aé…gûTx&0ïê9f&àn’¾O+{:¬Å}|$<Ó	E#`íOÝÕ¸!,'U.ñîe'Ft: 127.0.0in-1065462834188203977ransfer-Encoding: chunked
+ContenT-LOCKth:080
+Host: 127.0.0.1
+
+0
+HHHHHHHHHHHHqansf080
+It: 127.0.0in-1065462834188203977ransfer-Encoding: chunked
+ContenT-LOn

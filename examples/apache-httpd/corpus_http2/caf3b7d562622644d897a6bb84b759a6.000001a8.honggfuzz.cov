@@ -1,0 +1,11 @@
+GET /dir/ HTTP/1.1
+Host: 127.0.0.1:8080
+Connection: keep-alive
+Cache-Control: max-a``Upgrade:80
+Connection: keep-alive
+Cache-Control: max-a`````````````````££££££££££££££££££££££££££££££££££££££££Ë>k'£gzip, deflate, €&¥1ä~ept-\angIf-Unmodified-Since:```````````````````````````````````````age/,pUpgrade:=0.8
+DNT: 1
+Accept-EncodingT: 1
+Accept-Encoding: gzip, deflate, br
+Accept-Language: en-US,en;q=0.8,pl;q=0.6
+

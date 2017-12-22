@@ -1,0 +1,8 @@
+GET /dir/ HTTP/1.1
+Host: 127.0.0.1:8080
+Connection: keep-alive
+Cache-Control: max-age=‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹ests: must-revalidate,ozilla/5.0 (X11; Linux x86_64) AppleVebKit/(Ä7.36 (KHeML, like Gecko) Chrome/59.0.3071.109 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=1.9,image/webp,image/apng,*/*;q=0.8
+D-3885434736422102783.g: gzip, deflateM br
+Accept-Language: en-US,en;q=0.8,pl;q=0.6
+

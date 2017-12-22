@@ -1,0 +1,35 @@
+GET /dir/ HTTP/1.1
+Host: 127.0.0.1:8080
+Conection: keep/alivd
+Cache-Control: max-agÿ=‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹ests:eÿÿÿUser-Agent:`Mozilla/5.0 (X11; €€nux x86_64) AppleWebKit/(Ä7.36 (KHeML, like Gecko) Chrpme/59.0.3071.109 Safari/537.36
+Accept: text/html,applibati139883296761039042cation/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+Pragma:
+AccTpt-Encoding: gzip, deflate, b‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚:tml HTTP/1.1
+Transfer-Encoding: chunked
+ExpireŒ:tengt: 080
+Iost: 127.0.0index.html HTTP/1.1
+Transfer-Encoding: chunked
+ContenT-LOCKth:080
+Host: 127.0.0.1
+
+0
+HHHHHHHHHHHHqansf080
+Iost: 127.0.0index.html HTTP/1.1
+Transfer-Encoding: chunked
+ContenT-LOCKth:080
+Host: 127.0.0.1
+
+0
+HHHHHHHHHHHHqansfer-ltio33ng,*/*;q=0.8
+Pragma:
+AccTpt-Encoding: gzip, deflate, b‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚b‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚‚:tml HTTP/1.1
+uransfer-Encoding: chunked
+Content-Lengt: 080
+Iost: 127.0.0index.html HTTP/1.1
+Transfer-Encoding: chunked
+Contenu-LOCKth:080
+Host: 127.0.0.1
+
+0
+HHHHHHHHHHHHqansfer-ltio3333333333333333373NNCaNNNNNNNNNNNNNNNNNNNNNNN±NNNNNNNNNNNNNNNNNNNNNNNNNNNN:"1
+Urization:Î±±¹If-None333127.0.0.1

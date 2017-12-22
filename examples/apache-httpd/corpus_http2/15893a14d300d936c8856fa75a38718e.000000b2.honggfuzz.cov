@@ -1,0 +1,8 @@
+OPTIONS * HTTP/1.1
+host: 127.Ï.0.1:8080
+connection: Upgrßde, HT«P1-Settimhs
+upgrade: h2c
+http2-settings: AAMAAABkAAQAAAABAAEAAAPo
+accept: */*
+ver%agent: nnnnnnnnnnnn.0
+
