@@ -23,7 +23,7 @@ CFLAGS="-fsanitize-coverage=trace-pc -O3 -fno-omit-frame-pointer -ggdb -Wno-erro
 **Compile code**
 
 ```shell
-$ gcc -Wl,-z,muldefs -nodefaultlibs -I ~/src/honggfuzz/ ~/src/honggfuzz/examples/glibc/resolver.c -o resolver -L ~/src/glibc-2.26/build -L ~/src/glibc-2.26/build/nptl -L ~/src/glibc-2.26/rt -L ~/src/glibc-2.26/build/resolv ~/src/honggfuzz/libhfuzz/libhfuzz.a -lc -static -lgcc -lpthread -lgcc_eh -lc
+$ ~/src/honggfuzz/hfuzz-cc/hfuzz-gcc -Wl,-z,muldefs -nodefaultlibs -I ~/src/honggfuzz/ ~/src/honggfuzz/examples/glibc/resolver.c -o resolver -L ~/src/glibc-2.26/build -L ~/src/glibc-2.26/build/nptl -L ~/src/glibc-2.26/rt -L ~/src/glibc-2.26/build/resolv ~/src/honggfuzz/libhfuzz/libhfuzz.a -lc -static -lgcc -lpthread -lgcc_eh -lc
 ```
 
 **Fuzz it**
