@@ -140,16 +140,20 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint6
 
 /*
  * Const versions of trace_cmp, we don't use any special handling for these (for
- * now)
+ * now).
+ *
+ * TODO: This should be a non-weak alias (a regular function), so it can overload symbols provided
+ * in lib*san, but Darwin doesn't support them:
+ * https://github.com/google/honggfuzz/issues/176#issuecomment-353809324
  */
 void __sanitizer_cov_trace_const_cmp1(uint8_t Arg1, uint8_t Arg2)
-    __attribute__((alias("__sanitizer_cov_trace_cmp1")));
+    __attribute__((weak, alias("__sanitizer_cov_trace_cmp1")));
 void __sanitizer_cov_trace_const_cmp2(uint16_t Arg1, uint16_t Arg2)
-    __attribute__((alias("__sanitizer_cov_trace_cmp2")));
+    __attribute__((weak, alias("__sanitizer_cov_trace_cmp2")));
 void __sanitizer_cov_trace_const_cmp4(uint32_t Arg1, uint32_t Arg2)
-    __attribute__((alias("__sanitizer_cov_trace_cmp4")));
+    __attribute__((weak, alias("__sanitizer_cov_trace_cmp4")));
 void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2)
-    __attribute__((alias("__sanitizer_cov_trace_cmp8")));
+    __attribute__((weak, alias("__sanitizer_cov_trace_cmp8")));
 
 /*
  * Cases[0] is number of comparison entries
