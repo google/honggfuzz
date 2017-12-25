@@ -191,6 +191,13 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp(
 }
 
 /*
+ * gcc-8 -fsanitize-coverage=trace-cmp trace hooks
+ * TODO: implement it
+ */
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmpf(float Arg1 UNUSED, float Arg2 UNUSED) {}
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmpd(float Arg1 UNUSED, float Arg2 UNUSED) {}
+
+/*
  * -fsanitize-coverage=indirect-calls
  */
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(uintptr_t callee) {
