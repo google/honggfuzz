@@ -375,7 +375,7 @@ void arch_reapChild(run_t* run) {
     for (;;) {
         int status = 0;
         while (wait4(run->pid, &status, options, NULL) != run->pid) {
-            if (run->global->timin.tmOut) {
+            if (run->global->timing.tmOut) {
                 subproc_checkTimeLimit(run);
                 usleep(0.20 * 1000000);
             }
@@ -464,7 +464,7 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
     arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
 
     /* Default is false */
-    arch_sigs[SIGVTALRM].important = hfuzz->tmoutVTALRM;
+    arch_sigs[SIGVTALRM].important = hfuzz->timing.tmoutVTALRM;
 
     return true;
 }
