@@ -1,20 +1,23 @@
 # Fuzzing glibc based programs #
 
+**Requirements**
+ * gcc-6 or, for best results (cmp instrumentation), gcc-8 released after 2017-10
+ * relatively modern glibc (e.g. 2.26)
+
 **Prepare glibc**
 
 ```shell
-$ gcc ~/src/honggfuzz/examples/glibc/wrappers.c -o /tmp/wrappers.o
+$ gcc -c ~/src/honggfuzz/examples/glibc/wrappers.c -o /tmp/wrappers.o
 $ cd ~/src/glibc-2.26
-$ mkdir build
-$ cd build
-$ CC="gcc-8 -Wl,/tmp/wrappers.o" CFLAGS="-fsanitize-coverage=trace-pc,trace-cmp -O3 -fno-omit-frame-pointer -ggdb -Wno-error" LIBS="/tmp/wrappers.o" LDFLAGS="/tmp/wrappers.o" ../configure --prefix=/usr --without-cvs --enable-add-ons=libidn --without-selinux --enable-stackguard-randomization --enable-obsolete-rpc --disable-sanity-checks
+$ mkdir build && cd build
+$ CC="gcc-8 -Wl,/tmp/wrappers.o" CFLAGS="-fsanitize-coverage=trace-pc,trace-cmp -O3 -fno-omit-frame-pointer -ggdb -Wno-error" ../configure --prefix=/usr --without-cvs --enable-add-ons=libidn --without-selinux --enable-stackguard-randomization --enable-obsolete-rpc --disable-sanity-checks
 $ make -j$(nproc)
 ```
 
-_For gcc < 8, use the following ```configure``` options_
+_For gcc < 8, use the following ```CFLAGS```, as gcc < 8 doesn't support -fsanitize-coverage=trace-cmp_
 
-```
-$ CC="gcc -Wl,/tmp/wrappers.o" CFLAGS="-fsanitize-coverage=trace-pc -O3 -fno-omit-frame-pointer -ggdb -Wno-error" LIBS="/tmp/wrappers.o" LDFLAGS="/tmp/wrappers.o" ../configure --prefix=/usr --without-cvs --enable-add-ons=libidn --without-selinux --enable-stackguard-randomization --enable-obsolete-rpc --disable-sanity-checks
+```shell
+CFLAGS="-fsanitize-coverage=trace-pc -O3 -fno-omit-frame-pointer -ggdb -Wno-error"
 ```
 
 **Compile code**
