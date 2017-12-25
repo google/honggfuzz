@@ -171,6 +171,9 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_switch(uint64_t Val, uint
     }
 }
 
+/*
+ * Old version of __sanitizer_cov_trace_cmp[n]. Remove it at some point
+ */
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp(
     uint64_t SizeAndType, uint64_t Arg1, uint64_t Arg2) {
     uint64_t CmpSize = (SizeAndType >> 32) / 8;
@@ -192,10 +195,11 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp(
 
 /*
  * gcc-8 -fsanitize-coverage=trace-cmp trace hooks
- * TODO: implement it
+ * TODO: evaluate, whether it makes sense to implement them
  */
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmpf(float Arg1 UNUSED, float Arg2 UNUSED) {}
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmpd(float Arg1 UNUSED, float Arg2 UNUSED) {}
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmpd(
+    double Arg1 UNUSED, double Arg2 UNUSED) {}
 
 /*
  * -fsanitize-coverage=indirect-calls
