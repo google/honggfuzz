@@ -149,6 +149,8 @@ int main(int argc, char *argv[]) {
         strncpy(b, buf, len);
         b[len] = '\0';
 
+		gethostbyname(b);
+
         struct hostent he;
         struct hostent *result;
         char sbuf[1024 * 32];

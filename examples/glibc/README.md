@@ -11,7 +11,7 @@ $ gcc -c ~/src/honggfuzz/examples/glibc/wrappers.c -o /tmp/wrappers.o
 $ cd ~/src/glibc-2.26
 $ mkdir build && cd build
 $ CC="gcc-8 -Wl,/tmp/wrappers.o" CFLAGS="-fsanitize-coverage=trace-pc,trace-cmp -O3 -fno-omit-frame-pointer -ggdb -Wno-error" ../configure --prefix=/usr --without-cvs --enable-add-ons=libidn --without-selinux --enable-stackguard-randomization --enable-obsolete-rpc --disable-sanity-checks
-$ make -j$(nproc)
+$ make -j$(nproc) lib
 ```
 
 _For gcc < 8, use the following ```CFLAGS```, as gcc < 8 doesn't support -fsanitize-coverage=trace-cmp_
