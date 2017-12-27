@@ -70,7 +70,7 @@ bool logInitLogFile(const char* logfile, enum llevel_t ll) {
         return true;
     }
 
-    log_fd = open(logfile, O_CREAT | O_RDWR | O_APPEND, 0640);
+    log_fd = open(logfile, O_CREAT | O_RDWR | O_TRUNC, 0640);
     if (log_fd == -1) {
         log_fd = STDERR_FILENO;
         PLOG_E("Couldn't open logfile open('%s')", logfile);
