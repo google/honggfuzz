@@ -110,6 +110,15 @@
  */
 #define kSAN_COV_OPTS "coverage=1:coverage_direct=1"
 
+static void sanitizers_AddToEnv(honggfuzz_t* hfuzz, char* env) {
+    for (size_t i = 0; i < ARRAYSIZE(hfuzz->exe.envs); i++) {
+        if (hfuzz->exe.envs[i] == NULL) {
+            hfuzz->exe.envs[i] = env;
+            break;
+        }
+    }
+}
+
 bool sanitizers_Init(honggfuzz_t* hfuzz) {
     if (hfuzz->linux.pid > 0) {
         return true;
@@ -124,64 +133,54 @@ bool sanitizers_Init(honggfuzz_t* hfuzz) {
 
     /* Address Sanitizer (ASan) */
     if (!hfuzz->enableSanitizers) {
-        snprintf(hfuzz->sanOpts.asanOpts, sizeof(hfuzz->sanOpts.asanOpts), kSAN_REGULAR);
+        snprintf(
+            hfuzz->sanOpts.asanOpts, sizeof(hfuzz->sanOpts.asanOpts), "ASAN_OPTIONS=" kSAN_REGULAR);
     } else if (hfuzz->useSanCov) {
         snprintf(hfuzz->sanOpts.asanOpts, sizeof(hfuzz->sanOpts.asanOpts),
-            "%s:%s:%s:%s%s/%s:%s%s/%s", kASAN_OPTS, abortFlag, kSAN_COV_OPTS, kSANCOVDIR,
-            hfuzz->io.workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->io.workDir, kLOGPREFIX);
+            "ASAN_OPTIONS=%s:%s:%s:%s%s/%s:%s%s/%s", kASAN_OPTS, abortFlag, kSAN_COV_OPTS,
+            kSANCOVDIR, hfuzz->io.workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->io.workDir,
+            kLOGPREFIX);
     } else {
-        snprintf(hfuzz->sanOpts.asanOpts, sizeof(hfuzz->sanOpts.asanOpts), "%s:%s:%s%s/%s",
-            kASAN_OPTS, abortFlag, kSANLOGDIR, hfuzz->io.workDir, kLOGPREFIX);
+        snprintf(hfuzz->sanOpts.asanOpts, sizeof(hfuzz->sanOpts.asanOpts),
+            "ASAN_OPTIONS=%s:%s:%s%s/%s", kASAN_OPTS, abortFlag, kSANLOGDIR, hfuzz->io.workDir,
+            kLOGPREFIX);
     }
-    LOG_D("ASAN_OPTIONS=%s", hfuzz->sanOpts.asanOpts);
+    sanitizers_AddToEnv(hfuzz, hfuzz->sanOpts.asanOpts);
+    LOG_D("%s", hfuzz->sanOpts.asanOpts);
 
     /* Undefined Behavior Sanitizer (UBSan) */
     if (!hfuzz->enableSanitizers) {
-        snprintf(hfuzz->sanOpts.ubsanOpts, sizeof(hfuzz->sanOpts.ubsanOpts), kSAN_REGULAR);
+        snprintf(hfuzz->sanOpts.ubsanOpts, sizeof(hfuzz->sanOpts.ubsanOpts),
+            "UBSAN_OPTIONS=" kSAN_REGULAR);
     } else if (hfuzz->useSanCov) {
         snprintf(hfuzz->sanOpts.ubsanOpts, sizeof(hfuzz->sanOpts.ubsanOpts),
-            "%s:%s:%s:%s%s/%s:%s%s/%s", kUBSAN_OPTS, abortFlag, kSAN_COV_OPTS, kSANCOVDIR,
-            hfuzz->io.workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->io.workDir, kLOGPREFIX);
+            "UBSAN_OPTIONS=%s:%s:%s:%s%s/%s:%s%s/%s", kUBSAN_OPTS, abortFlag, kSAN_COV_OPTS,
+            kSANCOVDIR, hfuzz->io.workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->io.workDir,
+            kLOGPREFIX);
     } else {
-        snprintf(hfuzz->sanOpts.ubsanOpts, sizeof(hfuzz->sanOpts.ubsanOpts), "%s:%s:%s%s/%s",
-            kUBSAN_OPTS, abortFlag, kSANLOGDIR, hfuzz->io.workDir, kLOGPREFIX);
+        snprintf(hfuzz->sanOpts.ubsanOpts, sizeof(hfuzz->sanOpts.ubsanOpts),
+            "UBSAN_OPTIONS=%s:%s:%s%s/%s", kUBSAN_OPTS, abortFlag, kSANLOGDIR, hfuzz->io.workDir,
+            kLOGPREFIX);
     }
-    LOG_D("UBSAN_OPTIONS=%s", hfuzz->sanOpts.ubsanOpts);
+    sanitizers_AddToEnv(hfuzz, hfuzz->sanOpts.ubsanOpts);
+    LOG_D("%s", hfuzz->sanOpts.ubsanOpts);
 
     /* Memory Sanitizer (MSan) */
     if (!hfuzz->enableSanitizers) {
-        snprintf(hfuzz->sanOpts.msanOpts, sizeof(hfuzz->sanOpts.msanOpts), kSAN_REGULAR);
+        snprintf(
+            hfuzz->sanOpts.msanOpts, sizeof(hfuzz->sanOpts.msanOpts), "MSAN_OPTIONS=" kSAN_REGULAR);
     } else if (hfuzz->useSanCov) {
         snprintf(hfuzz->sanOpts.msanOpts, sizeof(hfuzz->sanOpts.msanOpts),
-            "%s:%s:%s:%s%s/%s:%s%s/%s", kMSAN_OPTS, abortFlag, kSAN_COV_OPTS, kSANCOVDIR,
-            hfuzz->io.workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->io.workDir, kLOGPREFIX);
+            "MSAN_OPTIONS=%s:%s:%s:%s%s/%s:%s%s/%s", kMSAN_OPTS, abortFlag, kSAN_COV_OPTS,
+            kSANCOVDIR, hfuzz->io.workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->io.workDir,
+            kLOGPREFIX);
     } else {
-        snprintf(hfuzz->sanOpts.msanOpts, sizeof(hfuzz->sanOpts.msanOpts), "%s:%s:%s%s/%s",
-            kMSAN_OPTS, abortFlag, kSANLOGDIR, hfuzz->io.workDir, kLOGPREFIX);
+        snprintf(hfuzz->sanOpts.msanOpts, sizeof(hfuzz->sanOpts.msanOpts),
+            "MSAN_OPTIONS=%s:%s:%s%s/%s", kMSAN_OPTS, abortFlag, kSANLOGDIR, hfuzz->io.workDir,
+            kLOGPREFIX);
     }
-    LOG_D("MSAN_OPTIONS=%s", hfuzz->sanOpts.msanOpts);
-
-    return true;
-}
-
-bool sanitizers_prepareExecve(run_t* run) {
-    /* Address Sanitizer (ASan) */
-    if (setenv("ASAN_OPTIONS", run->global->sanOpts.asanOpts, 1) == -1) {
-        PLOG_E("setenv(ASAN_OPTIONS) failed");
-        return false;
-    }
-
-    /* Memory Sanitizer (MSan) */
-    if (setenv("MSAN_OPTIONS", run->global->sanOpts.msanOpts, 1) == -1) {
-        PLOG_E("setenv(MSAN_OPTIONS) failed");
-        return false;
-    }
-
-    /* Undefined Behavior Sanitizer (UBSan) */
-    if (setenv("UBSAN_OPTIONS", run->global->sanOpts.ubsanOpts, 1) == -1) {
-        PLOG_E("setenv(UBSAN_OPTIONS) failed");
-        return false;
-    }
+    sanitizers_AddToEnv(hfuzz, hfuzz->sanOpts.msanOpts);
+    LOG_D("%s", hfuzz->sanOpts.msanOpts);
 
     return true;
 }

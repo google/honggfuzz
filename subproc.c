@@ -45,7 +45,6 @@
 #include "libcommon/files.h"
 #include "libcommon/log.h"
 #include "libcommon/util.h"
-#include "sanitizers.h"
 
 extern char** environ;
 
@@ -199,10 +198,6 @@ bool subproc_PrepareExecv(run_t* run, const char* fileName) {
 
     if (run->global->exe.clearEnv) {
         environ = NULL;
-    }
-    if (!sanitizers_prepareExecve(run)) {
-        LOG_E("sanitizers_prepareExecve() failed");
-        return false;
     }
     for (size_t i = 0; i < ARRAYSIZE(run->global->exe.envs) && run->global->exe.envs[i]; i++) {
         putenv(run->global->exe.envs[i]);
