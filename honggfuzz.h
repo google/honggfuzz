@@ -134,9 +134,9 @@ typedef struct node {
 /* EOF Sanitizer coverage specific data structures */
 
 typedef struct {
-    char* asanOpts;
-    char* msanOpts;
-    char* ubsanOpts;
+    char asanOpts[4096];
+    char msanOpts[4096];
+    char ubsanOpts[4096];
 } sanOpts_t;
 
 typedef enum {

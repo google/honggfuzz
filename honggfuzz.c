@@ -224,15 +224,6 @@ int main(int argc, char** argv) {
     if (hfuzz.linux.symsWl) {
         free(hfuzz.linux.symsWl);
     }
-    if (hfuzz.sanOpts.asanOpts) {
-        free(hfuzz.sanOpts.asanOpts);
-    }
-    if (hfuzz.sanOpts.ubsanOpts) {
-        free(hfuzz.sanOpts.ubsanOpts);
-    }
-    if (hfuzz.sanOpts.msanOpts) {
-        free(hfuzz.sanOpts.msanOpts);
-    }
 
     return EXIT_SUCCESS;
 }
