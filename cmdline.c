@@ -351,7 +351,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "logfile", required_argument, NULL, 'l' }, "Log file" },
         { { "verbose", no_argument, NULL, 'v' }, "Disable ANSI console; use simple log output" },
         { { "verifier", no_argument, NULL, 'V' }, "Enable crashes verifier" },
-        { { "debug_level", required_argument, NULL, 'd' }, "Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])" },
+        { { "debug", no_argument, NULL, 'd' }, "Show debug messages (level >= 4)" },
+        { { "quiet", no_argument, NULL, 'q' }, "Show only warnings and more serious messages (level <= 1)" },
         { { "extension", required_argument, NULL, 'e' }, "Input file extension (e.g. 'swf'), (default: 'fuzz')" },
         { { "workspace", required_argument, NULL, 'W' }, "Workspace directory to save crashes & runtime files (default: '.')" },
         { { "crashdir", required_argument, NULL, 0x600 }, "Directory where crashes are saved to (default: workspace directory)" },
@@ -408,7 +409,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     int opt_index = 0;
     for (;;) {
         int c = getopt_long(
-            argc, argv, "-?hQvVsuPxf:d:e:W:r:c:F:t:R:n:N:l:p:g:E:w:B:CzTS", opts, &opt_index);
+            argc, argv, "-?hQvVsuPxf:dqe:W:r:c:F:t:R:n:N:l:p:g:E:w:B:CzTS", opts, &opt_index);
         if (c < 0) break;
 
         switch (c) {
@@ -444,7 +445,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 logfile = optarg;
                 break;
             case 'd':
-                ll = atoi(optarg);
+                ll = DEBUG;
+                break;
+            case 'q':
+                ll = WARNING;
                 break;
             case 'e':
                 hfuzz->io.fileExtn = optarg;
