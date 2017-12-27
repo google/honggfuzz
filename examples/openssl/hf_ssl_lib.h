@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 #define FUZZTIME 1485898104
-time_t time(time_t* t) {
+time_t __wrap_time(time_t* t) {
     if (t != NULL) *t = FUZZTIME;
     return FUZZTIME;
 }
