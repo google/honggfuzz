@@ -14,7 +14,7 @@ CXX="$HFUZZ_SRC/hfuzz_cc/hfuzz-clang++"
 COMMON_FLAGS="-DBORINGSSL_UNSAFE_DETERMINISTIC_MODE -DBORINGSSL_UNSAFE_FUZZER_MODE -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -DBN_DEBUG \
 	-O3 -g -DFuzzerInitialize=LLVMFuzzerInitialize -DFuzzerTestOneInput=LLVMFuzzerTestOneInput \
 	-I./$DIR/include -I$HFUZZ_SRC/examples/openssl -I$HFUZZ_SRC"
-COMMON_LDFLAGS="-lpthread -lz -Wl,-z,now"
+COMMON_LDFLAGS="-Wl,-z,muldefs -lpthread -lz -Wl,-z,now"
 
 if [ -z "$DIR" ]; then
 	echo "$0" DIR SANITIZE
