@@ -98,7 +98,7 @@
 #define kSAN_REGULAR                                                 \
     "abort_on_error=1:handle_segv=0:handle_sigbus=0:handle_abort=0:" \
     "handle_sigill=0:handle_sigfpe=0:allocator_may_return_null=1:"   \
-    "symbolize=1:detect_leaks=0:disable_coredump=0:log_path=stderr"
+    "symbolize=1:detect_leaks=0:disable_coredump=0"
 
 /*
  * If the program ends with a signal that ASan does not handle (or can not
@@ -110,13 +110,18 @@
  */
 #define kSAN_COV_OPTS "coverage=1:coverage_direct=1"
 
-static void sanitizers_AddToEnv(honggfuzz_t* hfuzz, char* env) {
+static void sanitizers_AddToEnv(honggfuzz_t* hfuzz, const char* prefix, char* env) {
     for (size_t i = 0; i < ARRAYSIZE(hfuzz->exe.envs); i++) {
         if (hfuzz->exe.envs[i] == NULL) {
             hfuzz->exe.envs[i] = env;
             break;
         }
+        /* If the env already exist, skip overriding it */
+        if (strncmp(hfuzz->exe.envs[i], prefix, strlen(prefix)) == 0) {
+            break;
+        }
     }
+    LOG_D("%s", env);
 }
 
 bool sanitizers_Init(honggfuzz_t* hfuzz) {
@@ -145,8 +150,7 @@ bool sanitizers_Init(honggfuzz_t* hfuzz) {
             "ASAN_OPTIONS=%s:%s:%s%s/%s", kASAN_OPTS, abortFlag, kSANLOGDIR, hfuzz->io.workDir,
             kLOGPREFIX);
     }
-    sanitizers_AddToEnv(hfuzz, hfuzz->sanOpts.asanOpts);
-    LOG_D("%s", hfuzz->sanOpts.asanOpts);
+    sanitizers_AddToEnv(hfuzz, "ASAN_OPTIONS=", hfuzz->sanOpts.asanOpts);
 
     /* Undefined Behavior Sanitizer (UBSan) */
     if (!hfuzz->enableSanitizers) {
@@ -162,8 +166,7 @@ bool sanitizers_Init(honggfuzz_t* hfuzz) {
             "UBSAN_OPTIONS=%s:%s:%s%s/%s", kUBSAN_OPTS, abortFlag, kSANLOGDIR, hfuzz->io.workDir,
             kLOGPREFIX);
     }
-    sanitizers_AddToEnv(hfuzz, hfuzz->sanOpts.ubsanOpts);
-    LOG_D("%s", hfuzz->sanOpts.ubsanOpts);
+    sanitizers_AddToEnv(hfuzz, "UBSAN_OPTIONS=", hfuzz->sanOpts.ubsanOpts);
 
     /* Memory Sanitizer (MSan) */
     if (!hfuzz->enableSanitizers) {
@@ -179,12 +182,11 @@ bool sanitizers_Init(honggfuzz_t* hfuzz) {
             "MSAN_OPTIONS=%s:%s:%s%s/%s", kMSAN_OPTS, abortFlag, kSANLOGDIR, hfuzz->io.workDir,
             kLOGPREFIX);
     }
-    sanitizers_AddToEnv(hfuzz, hfuzz->sanOpts.msanOpts);
-    LOG_D("%s", hfuzz->sanOpts.msanOpts);
+    sanitizers_AddToEnv(hfuzz, "MSAN_OPTIONS=", hfuzz->sanOpts.msanOpts);
 
-    static char lsanOpts[] = "LSAN_OPTIONS=log_threads=1";
-    sanitizers_AddToEnv(hfuzz, lsanOpts);
-    LOG_D("%s", lsanOpts);
+    snprintf(
+        hfuzz->sanOpts.lsanOpts, sizeof(hfuzz->sanOpts.lsanOpts), "LSAN_OPTIONS=log_threads=1");
+    sanitizers_AddToEnv(hfuzz, "LSAN_OPTIONS=", hfuzz->sanOpts.lsanOpts);
 
     return true;
 }

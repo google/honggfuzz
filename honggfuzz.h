@@ -137,6 +137,7 @@ typedef struct {
     char asanOpts[4096];
     char msanOpts[4096];
     char ubsanOpts[4096];
+    char lsanOpts[4096];
 } sanOpts_t;
 
 typedef enum {
