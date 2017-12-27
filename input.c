@@ -218,10 +218,10 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
         if (lineptr[0] == '\0') {
             continue;
         }
-        char bufn[1025] = {0};
-        char bufv[1025] = {0};
-        if (sscanf(lineptr, "\"%1024s", bufv) != 1 &&
-            sscanf(lineptr, "%1024[^=]=\"%1024s", bufn, bufv) != 2) {
+        char bufn[1025] = {};
+        char bufv[1025] = {};
+        if (sscanf(lineptr, "\"%1024[^\"]", bufv) != 1 &&
+            sscanf(lineptr, "%1024[^=]=\"%1024[^\"]", bufn, bufv) != 2) {
             LOG_W("Incorrect dictionary entry: '%s'. Skipping", lineptr);
             continue;
         }
