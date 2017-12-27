@@ -1,12 +1,14 @@
 ServerRoot "/home/jagger/fuzz/apache/dist"
 DocumentRoot "/home/jagger/fuzz/apache/dist/htdocs"
 ServerName 127.0.0.1
-Timeout 1
 CacheEnable socache /
 #CacheSocache shmcb:/tmp/data
+Timeout 1
 KeepAlive On
 MaxKeepAliveRequests 1000
 MaxConnectionsPerChild 0
+ServerLimit 20000
+MaxRequestWorkers 20000
 ListenBacklog 1023
 KeepAliveTimeout 5
 HostnameLookups Off
@@ -15,6 +17,20 @@ LogLevel crit
 Listen 127.0.0.1:8080
 PidFile /tmp/apache-pid
 Protocols h2c
+H2Direct On
+H2EarlyHints On
+H2Push On
+H2MaxSessionStreams 4096
+H2MinWorkers 128
+H2MaxWorkers 512
+H2ModernTLSOnly off
+H2PushDiarySize 4096
+H2SerializeHeaders on
+H2StreamMaxMemSize 524288
+H2TLSCoolDownSecs 0
+H2Upgrade On
+H2CopyFiles On
+MaxMemFree 1024
 ServerTokens Full
 TraceEnable on
 ExtendedStatus On
@@ -37,6 +53,7 @@ Redirect "/abc" "/"
 RedirectMatch "(.*)\.gif$" "/image/$1.jpg"
 UseCanonicalPhysicalPort On
 HttpProtocolOptions Unsafe LenientMethods Allow0.9
+DavLockDB /tmp/dav.lock
 ProxyStatus On
 ProxyVia On
 Header set MyHeader "%D %t"
@@ -48,14 +65,14 @@ Header set Set-Cookie testcookie "expr=-z %{req:Cookie}"
 <LocationMatch "/app/(?<NUMBER>[0-9]+)">
 	SetHandler "fcgi://localhost:8080/app_%{env:MATCH_NUMBER}"
 </LocationMatch>
+<Directory /home/jagger/fuzz/apache/dist/htdocs>
+	Options All MultiViews
+	AllowOverride None
+</Directory>
 <Directory /home/jagger/fuzz/apache/dist/htdocs/private>
 	DAV On
 	AuthType Basic
 	AuthName DAV
-	Options All MultiViews
-	AllowOverride None
-</Directory>
-<Directory /home/jagger/fuzz/apache/dist/htdocs>
 	Options All MultiViews
 	AllowOverride None
 </Directory>
