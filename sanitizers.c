@@ -182,5 +182,9 @@ bool sanitizers_Init(honggfuzz_t* hfuzz) {
     sanitizers_AddToEnv(hfuzz, hfuzz->sanOpts.msanOpts);
     LOG_D("%s", hfuzz->sanOpts.msanOpts);
 
+    static char lsanOpts[] = "LSAN_OPTIONS=log_threads=1";
+    sanitizers_AddToEnv(hfuzz, lsanOpts);
+    LOG_D("%s", lsanOpts);
+
     return true;
 }
