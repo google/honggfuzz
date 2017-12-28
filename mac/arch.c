@@ -270,7 +270,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
     }
 
     if (files_exists(run->crashFileName)) {
-        LOG_I("It seems that '%s' already exists, skipping", run->crashFileName);
+        LOG_I("Crash (dup): '%s' already exists, skipping", run->crashFileName);
         // Clear filename so that verifier can understand we hit a duplicate
         memset(run->crashFileName, 0, sizeof(run->crashFileName));
         return true;
@@ -282,7 +282,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
         return true;
     }
 
-    LOG_I("Ok, that's interesting, saved '%s' as '%s'", run->fileName, run->crashFileName);
+    LOG_I("Crash: '%s' saved as '%s'", run->fileName, run->crashFileName);
 
     ATOMIC_POST_INC(run->global->cnts.uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
