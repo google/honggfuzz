@@ -263,15 +263,13 @@ struct {
     [SIGSEGV].important = true,
     [SIGSEGV].descr = "SIGSEGV",
 
-    [SIGBUS].important = true,
+    [SIGBUS].important = false,
     [SIGBUS].descr = "SIGBUS",
 
-#if _HF_MONITOR_SIGABRT
-    [SIGABRT].important = true,
-#else
     [SIGABRT].important = false,
-#endif
     [SIGABRT].descr = "SIGABRT"
+
+    arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
 };
 /*  *INDENT-ON* */
 
@@ -848,7 +846,7 @@ static void arch_ptraceSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * fuzze
         return;
     }
 
-    LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, fuzzer->crashFileName);
+    LOG_I("Crash! saved '%s' as '%s'", fuzzer->fileName, fuzzer->crashFileName);
 
     ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
@@ -1114,7 +1112,7 @@ static void arch_ptraceExitSaveData(honggfuzz_t * hfuzz, pid_t pid, fuzzer_t * f
 
     bool dstFileExists = false;
     if (files_copyFile(fuzzer->fileName, fuzzer->crashFileName, &dstFileExists)) {
-        LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName,
+        LOG_I("Crash! saved '%s' as '%s'", fuzzer->fileName,
               fuzzer->crashFileName);
 
         /* Increase unique crashes counters */

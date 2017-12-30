@@ -120,7 +120,7 @@ void arch_initSigs(void)
     arch_sigs[SIGFPE].descr = "SIGFPE";
     arch_sigs[SIGSEGV].important = true;
     arch_sigs[SIGSEGV].descr = "SIGSEGV";
-    arch_sigs[SIGBUS].important = true;
+    arch_sigs[SIGBUS].important = false;
     arch_sigs[SIGBUS].descr = "SIGBUS";
     arch_sigs[SIGABRT].important = true;
     arch_sigs[SIGABRT].descr = "SIGABRT";
@@ -290,7 +290,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
         return true;
     }
 
-    LOG_I("Ok, that's interesting, saved '%s' as '%s'", fuzzer->fileName, fuzzer->crashFileName);
+    LOG_I("Crash! saved '%s' as '%s'", fuzzer->fileName, fuzzer->crashFileName);
 
     ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
@@ -486,6 +486,9 @@ bool arch_archInit(honggfuzz_t * hfuzz)
         return false;
     }
 
+    /* Default is true for all platforms except Android */
+    arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
+    
     return true;
 }
 

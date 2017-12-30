@@ -61,7 +61,7 @@ struct {
     [SIGFPE].descr = "SIGFPE",
     [SIGSEGV].important = true,
     [SIGSEGV].descr = "SIGSEGV",
-    [SIGBUS].important = true,
+    [SIGBUS].important = false,
     [SIGBUS].descr = "SIGBUS",
     [SIGABRT].important = true,
     [SIGABRT].descr = "SIGABRT"
@@ -175,7 +175,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
                  hfuzz->keepext?fuzzer->ext:hfuzz->fileExtn);
     }
 
-    LOG_I("Ok, that's interesting, saving the '%s' as '%s'", fuzzer->fileName, newname);
+    LOG_I("Crash! saving the '%s' as '%s'", fuzzer->fileName, newname);
 
     /*
      * All crashes are marked as unique due to lack of information in POSIX arch
@@ -319,6 +319,10 @@ bool arch_archInit(honggfuzz_t * hfuzz UNUSED)
 {
     /* Default is false */
     arch_sigs[SIGVTALRM].important = hfuzz->tmout_vtalrm;
+
+    /* Default is true for all platforms except Android */
+    arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
+
     return true;
 }
 

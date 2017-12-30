@@ -245,6 +245,7 @@ typedef struct {
     char *envs[128];
     bool persistent;
     bool terminating;
+    bool monitorSIGABRT;
 
     const char *dictionaryFile;
      TAILQ_HEAD(, strings_t) dictq;
