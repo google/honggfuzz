@@ -175,7 +175,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
                  hfuzz->keepext?fuzzer->ext:hfuzz->fileExtn);
     }
 
-    LOG_I("Crash! saving the '%s' as '%s'", fuzzer->fileName, newname);
+    LOG_I("Crash! Saving the '%s' as '%s'", fuzzer->fileName, newname);
 
     /*
      * All crashes are marked as unique due to lack of information in POSIX arch

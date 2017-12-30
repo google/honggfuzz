@@ -290,7 +290,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
         return true;
     }
 
-    LOG_I("Crash! saved '%s' as '%s'", fuzzer->fileName, fuzzer->crashFileName);
+    LOG_I("Crash! Saved '%s' as '%s'", fuzzer->fileName, fuzzer->crashFileName);
 
     ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
