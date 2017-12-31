@@ -168,10 +168,10 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
 
     /* If dry run mode, copy file with same name into workspace */
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
-        snprintf(newname, sizeof(newname), "%s", fuzzer->origFileName);
+        snprintf(newname, sizeof(newname), "%s.%s", arch_sigs[termsig].descr, fuzzer->origFileName);
     } else {
-        snprintf(newname, sizeof(newname), "%s/%s.PID.%d.TIME.%s.%s",
-                 hfuzz->workDir, arch_sigs[termsig].descr, fuzzer->pid, localtmstr,
+        snprintf(newname, sizeof(newname), "%s/%s.TIME.%s.orig.%s.%s",
+                 hfuzz->workDir, arch_sigs[termsig].descr, localtmstr,fuzzer->fileName,
                  hfuzz->keepext?fuzzer->ext:hfuzz->fileExtn);
     }
 
