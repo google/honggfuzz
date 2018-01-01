@@ -244,6 +244,15 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     TAILQ_INIT(&hfuzz->dynfileq);
     TAILQ_INIT(&hfuzz->dictq);
     TAILQ_INIT(&hfuzz->fileq);
+  
+    printf("\n");
+    printf("  ██████╗ ██╗██╗   ██╗███████╗██╗   ██╗███████╗███████╗ \n");
+    printf("  ██╔══██╗██║██║   ██║██╔════╝██║   ██║╚══███╔╝╚══███╔╝ \n");
+    printf("  ██████╔╝██║██║   ██║█████╗  ██║   ██║  ███╔╝   ███╔╝  \n");
+    printf("  ██╔══██╗██║██║   ██║██╔══╝  ██║   ██║ ███╔╝   ███╔╝   \n");
+    printf("  ██║  ██║██║╚██████╔╝██║     ╚██████╔╝███████╗███████╗ \n");
+    printf("  ╚═╝  ╚═╝╚═╝ ╚═════╝ ╚═╝      ╚═════╝ ╚══════╝╚══════╝ \n");
+    printf("\n");                                                     
 
     /*  *INDENT-OFF* */
     struct custom_option custom_opts[] = {
@@ -471,7 +480,7 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
     if (logInitLogFile(logfile, ll) == false) {
         return false;
     }
-
+    
     hfuzz->cmdline = &argv[optind];
     if (hfuzz->cmdline[0] == NULL) {
         LOG_E("No fuzz command provided");
