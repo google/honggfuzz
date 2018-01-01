@@ -11,7 +11,7 @@
 4. 在 Dry Run 模式下增加剩余时间
 5. 使用 "@@" 代替 "\_\_\_FILE\_\_\_"
 6. 增加 "--monitor_sigabrt" 选项以支持忽略abort信号
-7. Windows平台 Dry Run 模式下崩溃样本包含原始文件名
+7. Windows平台 Dry Run 模式下崩溃样本名称包含原始文件名
 8. 更改 coverage 显示信息
 
 
