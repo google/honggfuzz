@@ -324,10 +324,9 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
     for (x = 0; x < ARGS_MAX && hfuzz->cmdline[x]; x++) {
         if (!hfuzz->fuzzStdin && strcmp(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {          
             // 有些软件必须使用绝对路径，否则会出错，比如 Adobe Digital Editions
-            args[x] = &current_absolute_path;
+            args[x] = &current_absolute_path[0];
             strcat(args[x], "/");
             strcat(args[x], fileName);
-            LOG_D("args[x]=%s", args[x]);
         } else if (!hfuzz->fuzzStdin && strstr(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER)) {
             const char *off = strstr(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER);
             snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - hfuzz->cmdline[x]), hfuzz->cmdline[x],
