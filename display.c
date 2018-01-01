@@ -249,12 +249,13 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     } 
     display_put(ESC_WHITE "   Input Dir : " ESC_RESET ESC_RED "[% " _HF_MONETARY_MOD "zu] " ESC_RESET ESC_BOLD "'%s" ESC_RESET "'\n",
                 ATOMIC_GET(hfuzz->fileCnt), hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]");
+    /*
     display_put(ESC_WHITE "  Fuzzed Cmd : " ESC_RESET ESC_BOLD "'%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
     if (hfuzz->linux.pid > 0) {
         display_put(ESC_WHITE "Remote cmd [" ESC_BOLD "%d" ESC_RESET "]: '" ESC_RESET ESC_BOLD "%s" ESC_RESET
                     "'\n", hfuzz->linux.pid, hfuzz->linux.pidCmd);
     }
-
+    */
     static long num_cpu = 0;
     if (num_cpu == 0) {
         num_cpu = sysconf(_SC_NPROCESSORS_ONLN);
@@ -281,10 +282,14 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                 _HF_MONETARY_MOD "zu sec]\n", ATOMIC_GET(hfuzz->timeoutedCnt), hfuzz->tmOut);
     /* Feedback data sources are enabled. Start with common headers. */
     if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE || hfuzz->useSanCov) {
+        /*
         display_put(ESC_WHITE " Corpus Size : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
                     ", " ESC_WHITE "max size (bytes): " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",
                     hfuzz->dynfileqCnt, hfuzz->maxFileSz);
         display_put(ESC_WHITE "    Coverage :\n" ESC_RESET);
+        */
+    }else{
+        display_put(ESC_WHITE "    Coverage : N/A\n" ESC_RESET);
     }
 
     /* HW perf specific counters */
@@ -322,6 +327,11 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         uint64_t hitBB = ATOMIC_GET(hfuzz->sanCovCnts.hitBBCnt);
         uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
         float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
+        display_put(ESC_YELLOW "    Coverage : " ESC_RESET ESC_BOLD "%.2f" ESC_RESET "%%"
+                "(" ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET ESC_WHITE 
+                ", last update:" ESC_RESET ESC_BOLD " %s" ESC_RESET ")\n", covPer, hitBB, 
+                get_time_elapsed(ATOMIC_GET(hfuzz->sanCovCnts.lastBBTime)));
+        /*
         display_put(ESC_YELLOW "       *** hit #bb    : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     " (" ESC_WHITE "coverage: " ESC_RESET ESC_BOLD "%.2f" ESC_RESET "%%)\n", hitBB, covPer);
         display_put(ESC_YELLOW "       *** total #dso : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
@@ -332,6 +342,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                     get_time_elapsed(ATOMIC_GET(hfuzz->sanCovCnts.lastBBTime)));          
         display_put(ESC_YELLOW "       *** crashes    : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
                     "\n", ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
+        */
     }
     display_put("-----------------------------------[ " ESC_BOLD ESC_YELLOW "LOGS" ESC_RESET 
                 " ]-----------------------------------\n");
