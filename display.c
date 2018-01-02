@@ -169,7 +169,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     char *time_remain_str;
     unsigned long elapsed_second;
     unsigned long remain_second;
-    unsigned long speed_second;
+    float speed_second;
 
     elapsed_second = (unsigned long)(time(NULL) - hfuzz->timeStart);
     time_elapsed_str = get_time_elapsed(hfuzz->timeStart);
@@ -205,9 +205,10 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 	}
     hfuzz->target = target;
 
-    speed_second = elapsed_second ? (curr_exec_cnt / elapsed_second) : ATOMIC_GET(hfuzz->tmOut);
+    speed_second = elapsed_second ? (curr_exec_cnt / elapsed_second) : (ATOMIC_GET(hfuzz->tmOut)/hfuzz->threadsMax);
+    LOG_D("speed_second: %f\n", speed_second);
     int remain_file_cnt = ATOMIC_GET(hfuzz->fileCnt) - curr_exec_cnt;
-    remain_second = (remain_file_cnt<0?1:remain_file_cnt) / (speed_second==0?1:speed_second);
+    remain_second = (remain_file_cnt<0?1:remain_file_cnt) / speed_second;
     time_remain_str = get_time_remain(remain_second);
 
     display_put(ESC_NAV(11, 1) ESC_CLEAR_ABOVE ESC_NAV(1, 1));
