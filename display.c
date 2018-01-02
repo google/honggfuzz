@@ -205,7 +205,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
 	}
     hfuzz->target = target;
 
-    speed_second = elapsed_second ? (curr_exec_cnt / elapsed_second) : (ATOMIC_GET(hfuzz->tmOut)/hfuzz->threadsMax);
+    speed_second = (float) (elapsed_second ? (curr_exec_cnt / elapsed_second) : (ATOMIC_GET(hfuzz->tmOut)/hfuzz->threadsMax));
     LOG_D("speed_second: %f\n", speed_second);
     int remain_file_cnt = ATOMIC_GET(hfuzz->fileCnt) - curr_exec_cnt;
     remain_second = (remain_file_cnt<0?1:remain_file_cnt) / speed_second;
