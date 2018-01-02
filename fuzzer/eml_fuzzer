@@ -1,1 +1,0 @@
-honggfuzz -f /Volumes/Macintosh/Users/riusksk/bughunt_tools/fuzzdata/samples/other/eml/ -t5 -n3 -e eml -- /Applications/Mail.app/Contents/MacOS/Mail ___FILE___

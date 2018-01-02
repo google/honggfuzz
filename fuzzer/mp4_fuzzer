@@ -1,1 +1,0 @@
-honggfuzz -f ~/Downloads/mp4 -e mp4 -t 4 -n 5 -- /Applications/QuickTime\ Player.app/Contents/MacOS/QuickTime\ Player ___FILE___
