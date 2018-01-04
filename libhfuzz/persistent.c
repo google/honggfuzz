@@ -62,21 +62,14 @@ void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr) {
     *len_ptr = len;
 }
 
-static void runOneInput(const uint8_t* buf, size_t len) {
+static void HonggfuzzRunOneInput(const uint8_t* buf, size_t len) {
     int ret = LLVMFuzzerTestOneInput(buf, len);
     if (ret != 0) {
         LOG_F("LLVMFuzzerTestOneInput() returned '%d' instead of '0'", ret);
     }
 }
 
-/*
- * Declare it 'weak', so it can be safely linked with regular binaries which
- * implement their own main()
- */
-#if !defined(__CYGWIN__)
-__attribute__((weak))
-#endif /* !defined(__CYGWIN__) */
-int main(int argc, char** argv) {
+int HonggfuzzMain(int argc, char** argv) {
     LLVMFuzzerInitialize(&argc, &argv);
     if (LLVMFuzzerTestOneInput == NULL) {
         LOG_F(
@@ -114,7 +107,7 @@ int main(int argc, char** argv) {
             return -1;
         }
 
-        runOneInput(buf, len);
+        HonggfuzzRunOneInput(buf, len);
         return 0;
     }
 
@@ -123,6 +116,17 @@ int main(int argc, char** argv) {
         const uint8_t* buf;
 
         HF_ITER(&buf, &len);
-        runOneInput(buf, len);
+        HonggfuzzRunOneInput(buf, len);
     }
+}
+
+/*
+ * Declare it 'weak', so it can be safely linked with regular binaries which
+ * implement their own main()
+ */
+#if !defined(__CYGWIN__)
+__attribute__((weak))
+#endif /* !defined(__CYGWIN__) */
+int main(int argc, char** argv) {
+    return HonggfuzzMain(argc, argv);
 }

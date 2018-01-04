@@ -48,7 +48,7 @@ bool nsEnter(uintptr_t cloneFlags) {
     gid_t current_gid = getgid();
 
     if (unshare(cloneFlags) == -1) {
-        PLOG_E("unshare(%tx)", cloneFlags);
+        PLOG_E("unshare(0x%tx)", cloneFlags);
         return false;
     }
 
