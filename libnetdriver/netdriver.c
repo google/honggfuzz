@@ -21,8 +21,9 @@
 
 static int tcp_port = 8080;
 
-int argc_cpy = 0;
-char **argv_cpy = NULL;
+int argc_server = 0;
+char **argv_server = NULL;
+
 static void *getSymbol(const char *func) {
     void *dlhandle = dlopen(NULL, RTLD_NOW);
     if (dlhandle == NULL) {
@@ -44,7 +45,7 @@ static void *mainThread(void *unused UNUSED) {
     if (f == NULL) {
         LOG_F("Couldn't find symbol for 'main'");
     }
-    f(argc_cpy, argv_cpy);
+    f(argc_server, argv_server);
     LOG_F("__real_main exited");
     return NULL;
 }
@@ -79,37 +80,7 @@ static void initNs(void) {
     LOG_W("The Honggfuzz net driver didn't enable namespaces for this platform");
 }
 
-__attribute__((weak)) uint16_t HonggfuzzNetDriverInit(int *argc UNUSED, char ***argv UNUSED) {
-    const char *port_str = getenv(HF_TCP_PORT_ENV);
-    if (port_str == NULL) {
-        return tcp_port;
-    }
-    return atoi(port_str);
-}
-
-int LLVMFuzzerInitialize(int *argc, char ***argv) {
-    tcp_port = HonggfuzzNetDriverInit(argc, argv);
-
-    LOG_I("Honggfuzz Net Driver will use port:%d", tcp_port);
-
-    argc_cpy = *argc;
-    argv_cpy = *argv;
-
-    for (int i = 0; i < *argc; i++) {
-        if (strcmp((*argv)[i], "--") == 0) {
-            (*argv[i]) = (*argv[0]);
-            argc_cpy = *argc - i;
-            argv_cpy = &(*argv)[i];
-            *argc = i;
-            break;
-        }
-    }
-
-    initThreads();
-    return 0;
-}
-
-int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
+int SockConn(void) {
     if (tcp_port < 1) {
         LOG_F("Specified tcp_port (%d) cannot be < 1", tcp_port);
     }
@@ -132,9 +103,67 @@ int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
     saddr.sin_port = htons(tcp_port);
     saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     if (connect(myfd, &saddr, sizeof(saddr)) == -1) {
-        PLOG_W("connect(sock=%d, 127.0.0.1:%" PRIu16 ") failed", myfd, tcp_port);
+        PLOG_W("connect('127.0.0.1:%" PRIu16 ")", tcp_port);
+        return -1;
+    }
+
+    return myfd;
+}
+
+__attribute__((weak)) uint16_t HonggfuzzNetDriverPort(int *argc UNUSED, char ***argv UNUSED) {
+    const char *port_str = getenv(HF_TCP_PORT_ENV);
+    if (port_str == NULL) {
+        return tcp_port;
+    }
+    return atoi(port_str);
+}
+
+__attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
+    int argc, char **argv, int *server_argc, char ***server_argv) {
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "--") == 0) {
+            *server_argc = argc - i;
+            *server_argv = &argv[i];
+            return argc - i;
+        }
+    }
+
+    *server_argc = argc;
+    *server_argv = &argv[0];
+    return argc;
+}
+
+void waitForServer(uint16_t tcp_port) {
+    for (;;) {
+        int fd = SockConn();
+        if (fd >= 0) {
+            close(fd);
+            break;
+        }
+        LOG_I("Waiting for the server to start accepting TCP connections at 127.0.0.1:%" PRIu16
+              " ...",
+            tcp_port);
         sleep(1);
-        return 0;
+    }
+
+    LOG_I("Server ready to accept connections at 127.0.0.1:%" PRIu16 ". Fuzzing starts", tcp_port);
+}
+
+int LLVMFuzzerInitialize(int *argc, char ***argv) {
+    tcp_port = HonggfuzzNetDriverPort(argc, argv);
+    *argc = HonggfuzzNetDriverArgsForServer(*argc, *argv, &argc_server, &argv_server);
+
+    LOG_I("Honggfuzz Net Driver will use port:%d", tcp_port);
+
+    initThreads();
+    waitForServer(tcp_port);
+    return 0;
+}
+
+int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
+    int myfd = SockConn();
+    if (myfd == -1) {
+        LOG_F("Couldn't connect to the server TCP port");
     }
 
     if (send(myfd, buf, len, MSG_NOSIGNAL) < 0) {
