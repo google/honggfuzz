@@ -34,6 +34,10 @@ static bool guards_initialized = false;
 #define ATTRIBUTE_X86_REQUIRE_SSE42
 #endif /* defined(__x86_64__) || defined(__i386__) */
 
+/*
+ * If there's no _HF_BITMAP_FD available (running without the honggfuzz
+ * supervisor), use a dummy bitmap and control structure located in the BSS
+ */
 static feedback_t bbMapFb;
 feedback_t* feedback = &bbMapFb;
 uint32_t my_thread_no = 0;
@@ -56,13 +60,14 @@ __attribute__((constructor)) static void mapBB(void) {
     if (st.st_size != sizeof(feedback_t)) {
         LOG_F(
             "size of the feedback structure mismatch: st.size != sizeof(feedback_t) (%zu != %zu). "
-            "Recompile your fuzzed binaries with your newest honggfuzz sources (libhfuzz.a)\n",
+            "Link your fuzzed binaries with the newest honggfuzz sources (libhfuzz.a)\n",
             (size_t)st.st_size, sizeof(feedback_t));
     }
     if ((feedback = mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED,
              _HF_BITMAP_FD, 0)) == MAP_FAILED) {
         PLOG_F("mmap of the feedback structure");
     }
+    /* Reset the counters of newly discovered edges/pcs/features */
     feedback->pidFeedbackPc[my_thread_no] = 0U;
     feedback->pidFeedbackEdge[my_thread_no] = 0U;
     feedback->pidFeedbackCmp[my_thread_no] = 0U;
@@ -139,21 +144,24 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint6
 }
 
 /*
- * Const versions of trace_cmp, we don't use any special handling for these (for
- * now).
+ * Const versions of trace_cmp, we don't use any special handling for these
  *
- * TODO: This should be a non-weak alias (a regular function), so it can overload symbols provided
- * in lib*san, but Darwin doesn't support them:
- * https://github.com/google/honggfuzz/issues/176#issuecomment-353809324
+ * For MacOS, these're weak aliases, as Darwin supports only them
  */
+
+#if defined(_HF_ARCH_DARWIN)
+#define HF_DARWIN_WEAK weak,
+#else
+#define HF_DARWIN_WEAK
+#endif /* defined(_HF_ARCH_DARWIN) */
 void __sanitizer_cov_trace_const_cmp1(uint8_t Arg1, uint8_t Arg2)
-    __attribute__((weak, alias("__sanitizer_cov_trace_cmp1")));
+    __attribute__((HF_DARWIN_WEAK alias("__sanitizer_cov_trace_cmp1")));
 void __sanitizer_cov_trace_const_cmp2(uint16_t Arg1, uint16_t Arg2)
-    __attribute__((weak, alias("__sanitizer_cov_trace_cmp2")));
+    __attribute__((HF_DARWIN_WEAK alias("__sanitizer_cov_trace_cmp2")));
 void __sanitizer_cov_trace_const_cmp4(uint32_t Arg1, uint32_t Arg2)
-    __attribute__((weak, alias("__sanitizer_cov_trace_cmp4")));
+    __attribute__((HF_DARWIN_WEAK alias("__sanitizer_cov_trace_cmp4")));
 void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2)
-    __attribute__((weak, alias("__sanitizer_cov_trace_cmp8")));
+    __attribute__((HF_DARWIN_WEAK alias("__sanitizer_cov_trace_cmp8")));
 
 /*
  * Cases[0] is number of comparison entries
@@ -236,8 +244,8 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
     static uint32_t n = 1U;
     for (uint32_t* x = start; x < stop; x++, n++) {
         if (n >= _HF_PC_GUARD_MAX) {
-            LOG_F("This process has too many PC guards: %tx\n",
-                ((uintptr_t)stop - (uintptr_t)start) / sizeof(start));
+            LOG_F("This process has too many PC guards:%tx (start:%p stop:%p)\n",
+                ((uintptr_t)stop - (uintptr_t)start) / sizeof(start), start, stop);
         }
         /* If the corresponding PC was already hit, map this specific guard as non-interesting (0)
          */
