@@ -48,7 +48,7 @@ bool files_sendToSocket(int fd, const uint8_t* buf, size_t fileSz);
 
 extern bool files_exists(const char* fileName);
 
-extern const char* files_basename(const char* fileName);
+extern const char* files_basename(const char* path);
 
 extern bool files_copyFile(
     const char* source, const char* destination, bool* dstExists, bool try_link);
