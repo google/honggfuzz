@@ -100,7 +100,7 @@ int SockConn(void) {
     saddr.sin_port = htons(tcp_port);
     saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     if (connect(myfd, &saddr, sizeof(saddr)) == -1) {
-        PLOG_W("connect('127.0.0.1:%" PRIu16 ")", tcp_port);
+        PLOG_W("connect('127.0.0.1:%" PRIu16 "')", tcp_port);
         return -1;
     }
 
@@ -168,6 +168,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
     }
 
     if (shutdown(myfd, SHUT_WR) == -1) {
+        if (errno == ENOTCONN) {
+            PLOG_D("shutdown(sock=%d, SHUT_WR)", myfd);
+            close(myfd);
+            return 0;
+        }
         PLOG_F("shutdown(sock=%d, SHUT_WR)", myfd);
     }
 
