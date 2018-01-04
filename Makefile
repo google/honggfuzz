@@ -169,6 +169,10 @@ LCOMMON_SRCS := $(wildcard libcommon/*.c)
 LCOMMON_OBJS := $(LCOMMON_SRCS:.c=.o)
 LCOMMON_ARCH := libcommon/libcommon.a
 
+LNETDRIVER_SRCS := $(wildcard libnetdriver/*.c)
+LNETDRIVER_OBJS := $(LNETDRIVER_SRCS:.c=.o)
+LNETDRIVER_ARCH := libnetdriver/libnetdriver.a
+
 # Respect external user defines
 CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH}
 LDFLAGS += $(COMMON_LDFLAGS) $(ARCH_LDFLAGS)
@@ -244,10 +248,12 @@ ANDROID_GARBAGE := obj libs
 
 CLEAN_TARGETS := core Makefile.bak \
   $(OBJS) $(BIN) $(HFUZZ_CC_BINS) \
-  $(LHFUZZ_ARCH) $(LHFUZZ_OBJS) $(LCOMMON_ARCH) $(LCOMMON_OBJS) \
+  $(LHFUZZ_ARCH) $(LHFUZZ_OBJS) \
+  $(LCOMMON_ARCH) $(LCOMMON_OBJS) \
+  $(LNETDRIVER_ARCH) $(LNETDRIVER_OBJS) \
   $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
 
-all: $(BIN) $(HFUZZ_CC_BINS) $(LHFUZZ_ARCH) $(LCOMMON_ARCH)
+all: $(BIN) $(HFUZZ_CC_BINS) $(LHFUZZ_ARCH) $(LCOMMON_ARCH) $(LNETDRIVER_ARCH)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
@@ -264,17 +270,23 @@ $(BIN): $(OBJS) $(LCOMMON_ARCH)
 $(HFUZZ_CC_BINS): $(LHFUZZ_ARCH) $(LCOMMON_ARCH) $(HFUZZ_CC_SRCS)
 	$(LD) -o $@ $(HFUZZ_CC_SRCS) $(LDFLAGS) $(CFLAGS) -D_HFUZZ_INC_PATH=$(HFUZZ_INC)
 
+$(LCOMMON_OBJS): $(LCOMMON_SRCS)
+	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) $(CFLAGS_NOBLOCKS) -o $@ $(@:.o=.c)
+
+$(LCOMMON_ARCH): $(LCOMMON_OBJS)
+	$(AR) rcs $(LCOMMON_ARCH) $(LCOMMON_OBJS)
+
 $(LHFUZZ_OBJS): $(LHFUZZ_SRCS)
 	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) $(CFLAGS_NOBLOCKS) -o $@ $(@:.o=.c)
 
 $(LHFUZZ_ARCH): $(LHFUZZ_OBJS) $(LCOMMON_ARCH)
 	$(AR) rcs $(LHFUZZ_ARCH) $(LHFUZZ_OBJS) $(LCOMMON_OBJS)
 
-$(LCOMMON_OBJS): $(LCOMMON_SRCS)
+$(LNETDRIVER_OBJS): $(LNETDRIVER_SRCS)
 	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) $(CFLAGS_NOBLOCKS) -o $@ $(@:.o=.c)
 
-$(LCOMMON_ARCH): $(LCOMMON_OBJS)
-	$(AR) rcs $(LCOMMON_ARCH) $(LCOMMON_OBJS)
+$(LNETDRIVER_ARCH): $(LNETDRIVER_OBJS)
+	$(AR) rcs $(LNETDRIVER_ARCH) $(LNETDRIVER_OBJS) $(LCOMMON_OBJS)
 
 .PHONY: clean
 clean:
@@ -378,6 +390,8 @@ libhfuzz/memorycmp.o: libhfuzz/instrument.h
 libhfuzz/persistent.o: libhfuzz/libhfuzz.h honggfuzz.h libcommon/util.h
 libhfuzz/persistent.o: libcommon/common.h libcommon/files.h
 libhfuzz/persistent.o: libcommon/common.h libcommon/log.h
+libnetdriver/netdriver.o: libcommon/common.h libcommon/log.h
+libnetdriver/netdriver.o: libcommon/common.h libcommon/ns.h
 linux/arch.o: arch.h honggfuzz.h libcommon/util.h fuzz.h libcommon/common.h
 linux/arch.o: libcommon/files.h libcommon/common.h libcommon/log.h
 linux/arch.o: libcommon/ns.h linux/perf.h linux/trace.h sancov.h sanitizers.h
