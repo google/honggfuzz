@@ -128,7 +128,7 @@ __attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
         }
     }
 
-    *server_argc = argc;
+    *server_argc = 1;
     *server_argv = &argv[0];
     return argc;
 }
