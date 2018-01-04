@@ -64,9 +64,6 @@ static void initThreads(void) {
 static void initNs(void) {
 #if defined(_HF_ARCH_LINUX)
     if (!nsEnter(CLONE_NEWUSER | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWIPC | CLONE_NEWUTS)) {
-        for (;;) {
-            pause();
-        }
         LOG_F("nsEnter(CLONE_NEWUSER|CLONE_NEWNET|CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS) failed");
     }
     if (!nsIfaceUp("lo")) {
