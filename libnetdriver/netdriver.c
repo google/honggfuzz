@@ -14,7 +14,6 @@
 #endif /* defined(_HF_ARCH_LINUX) */
 
 #include "libcommon/common.h"
-#include "libcommon/files.h"
 #include "libcommon/log.h"
 #include "libcommon/ns.h"
 
@@ -145,22 +144,23 @@ void netDriver_waitForServer(uint16_t portno) {
             break;
         }
         LOG_I(
-            "Honggfuzz Net Driver: Waiting for the server to start accepting TCP connections at "
+            "Honggfuzz Net Driver (pid=%d): Waiting for the server to start accepting TCP "
+            "connections at "
             "127.0.0.1:%" PRIu16 " ...",
-            portno);
+            (int)getpid(), portno);
         sleep(1);
     }
 
-    LOG_I("Honggfuzz Net Driver: Server ready to accept connections at 127.0.0.1:%" PRIu16
+    LOG_I("Honggfuzz Net Driver (pid=%d): Server ready to accept connections at 127.0.0.1:%" PRIu16
           ". TCP fuzzing will start now",
-        portno);
+        (int)getpid(), portno);
 }
 
 int LLVMFuzzerInitialize(int *argc, char ***argv) {
     tcp_port = HonggfuzzNetDriverPort(argc, argv);
     *argc = HonggfuzzNetDriverArgsForServer(*argc, *argv, &argc_server, &argv_server);
 
-    LOG_I("Honggfuzz Net Driver: TCP port:%d will be used", tcp_port);
+    LOG_I("Honggfuzz Net Driver (pid=%d): TCP port:%d will be used", (int)getpid(), tcp_port);
 
     netDriver_initThreads();
     netDriver_waitForServer(tcp_port);
@@ -172,7 +172,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
     if (sock == -1) {
         LOG_F("Couldn't connect to the server TCP port");
     }
-    if (!files_sendToSocket(sock, buf, len)) {
+    while (send(sock, buf, len, MSG_NOSIGNAL) == -1) {
+        if (errno == EINTR) {
+            continue;
+        }
         PLOG_F("send(sock=%d, len=%zu) failed", sock, len);
     }
     /*
@@ -180,7 +183,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
      *
      * Well-behaved TCP servers should process the input at this point, and close the TCP connection
      */
-    if (shutdown(sock, SHUT_WR) == -1 && errno != ENOTCONN) {
+    if (shutdown(sock, SHUT_WR)) {
+        if (errno == ENOTCONN) {
+            close(sock);
+            return 0;
+        }
         PLOG_F("shutdown(sock=%d, SHUT_WR)", sock);
     }
 
