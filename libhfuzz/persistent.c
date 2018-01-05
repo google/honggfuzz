@@ -21,7 +21,6 @@
 __attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len);
 __attribute__((weak)) int LLVMFuzzerInitialize(int* argc UNUSED, char*** argv UNUSED) { return 0; }
 
-/* FIXME(robertswiecki): Make it call mangle_Mangle() */
 __attribute__((weak)) size_t LLVMFuzzerMutate(
     uint8_t* Data UNUSED, size_t Size UNUSED, size_t MaxSize UNUSED) {
     LOG_F("LLVMFuzzerMutate() is not supported in honggfuzz yet");
@@ -30,13 +29,13 @@ __attribute__((weak)) size_t LLVMFuzzerMutate(
 
 static uint8_t buf[_HF_PERF_BITMAP_SIZE_16M] = {0};
 
-void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr) {
+void HonggfuzzFetchData(const uint8_t** buf_ptr, size_t* len_ptr) {
     /*
      * Send the 'done' marker to the parent
      */
     static bool initialized = false;
 
-    if (initialized == true) {
+    if (initialized) {
         static const uint8_t readyTag = 'A';
         if (files_writeToFd(_HF_PERSISTENT_FD, &readyTag, sizeof(readyTag)) == false) {
             LOG_F("writeToFd(size=%zu) failed", sizeof(readyTag));
@@ -62,6 +61,10 @@ void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr) {
     *len_ptr = len;
 }
 
+void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr) {
+    return HonggfuzzFetchData(buf_ptr, len_ptr);
+}
+
 static void HonggfuzzRunOneInput(const uint8_t* buf, size_t len) {
     int ret = LLVMFuzzerTestOneInput(buf, len);
     if (ret != 0) {
@@ -69,8 +72,19 @@ static void HonggfuzzRunOneInput(const uint8_t* buf, size_t len) {
     }
 }
 
+static void HonggfuzzPersistentLoop(void) {
+    for (;;) {
+        size_t len;
+        const uint8_t* buf;
+
+        HF_ITER(&buf, &len);
+        HonggfuzzRunOneInput(buf, len);
+    }
+}
+
 int HonggfuzzMain(int argc, char** argv) {
     LLVMFuzzerInitialize(&argc, &argv);
+
     if (LLVMFuzzerTestOneInput == NULL) {
         LOG_F(
             "Define 'int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)' in your "
@@ -96,10 +110,8 @@ int HonggfuzzMain(int argc, char** argv) {
             }
         }
 
-        LOG_I(
-            "Accepting input from '%s'\n"
-            "Usage for fuzzing: honggfuzz -P [flags] -- %s",
-            fname, argv[0]);
+        LOG_I("Accepting input from '%s'\nUsage for fuzzing: honggfuzz -P [flags] -- %s", fname,
+            argv[0]);
 
         ssize_t len = files_readFromFd(in_fd, buf, sizeof(buf));
         if (len < 0) {
@@ -111,13 +123,8 @@ int HonggfuzzMain(int argc, char** argv) {
         return 0;
     }
 
-    for (;;) {
-        size_t len;
-        const uint8_t* buf;
-
-        HF_ITER(&buf, &len);
-        HonggfuzzRunOneInput(buf, len);
-    }
+    HonggfuzzPersistentLoop();
+    return 0;
 }
 
 /*
