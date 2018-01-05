@@ -14,6 +14,7 @@
 #endif /* defined(_HF_ARCH_LINUX) */
 
 #include "libcommon/common.h"
+#include "libcommon/files.h"
 #include "libcommon/log.h"
 #include "libcommon/ns.h"
 
@@ -25,16 +26,11 @@ int argc_server = 0;
 char **argv_server = NULL;
 
 static void *netDriver_getSymbol(const char *func) {
-    void *dlhandle = dlopen(NULL, RTLD_NOW);
-    if (dlhandle == NULL) {
-        LOG_F("dlopen(NULL, RTLD_NOW) failed:'%s'", dlerror());
-    }
-
     dlerror(); /* Clear existing errors */
-    void *f = dlsym(dlhandle, func);
+    void *f = dlsym(RTLD_DEFAULT, func);
     char *error = dlerror();
-    if (error != NULL) {
-        LOG_W("Couldn't find function '%s': %s", func, error);
+    if (f == NULL && error != NULL) {
+        LOG_D("Couldn't find function '%s': %s", func, error);
         return NULL;
     }
 
@@ -156,7 +152,7 @@ void netDriver_waitForServer(uint16_t portno) {
     }
 
     LOG_I("Honggfuzz Net Driver: Server ready to accept connections at 127.0.0.1:%" PRIu16
-          ". Fuzzing starts",
+          ". TCP fuzzing will start now",
         portno);
 }
 
@@ -176,10 +172,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
     if (sock == -1) {
         LOG_F("Couldn't connect to the server TCP port");
     }
-    while (send(sock, buf, len, MSG_NOSIGNAL) == -1) {
-        if (errno == EINTR) {
-            continue;
-        }
+    if (!files_sendToSocket(sock, buf, len)) {
         PLOG_F("send(sock=%d, len=%zu) failed", sock, len);
     }
     /*
