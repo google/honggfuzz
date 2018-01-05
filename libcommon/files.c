@@ -222,7 +222,6 @@ bool files_copyFile(const char* source, const char* destination, bool* dstExists
         close(inFD);
         return false;
     }
-    close(outFD);
 
     uint8_t* inFileBuf = malloc(inSt.st_size);
     if (!inFileBuf) {
