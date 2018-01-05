@@ -13,9 +13,9 @@
 #include <sched.h>
 #endif /* defined(_HF_ARCH_LINUX) */
 
-#include "libcommon/common.h"
-#include "libcommon/log.h"
-#include "libcommon/ns.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/ns.h"
 
 #define HF_TCP_PORT_ENV "_HF_TCP_PORT"
 

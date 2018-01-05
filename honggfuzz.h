@@ -35,7 +35,7 @@
 #include <sys/types.h>
 #include <time.h>
 
-#include "libcommon/util.h"
+#include "libhfcommon/util.h"
 
 #define PROG_NAME "honggfuzz"
 #define PROG_VERSION "1.3"

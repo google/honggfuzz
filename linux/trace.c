@@ -48,10 +48,10 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "libcommon/common.h"
-#include "libcommon/files.h"
-#include "libcommon/log.h"
-#include "libcommon/util.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/files.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/util.h"
 #include "linux/bfd.h"
 #include "linux/unwind.h"
 #include "sancov.h"

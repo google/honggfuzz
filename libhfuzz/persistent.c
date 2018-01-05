@@ -14,9 +14,9 @@
 #include <unistd.h>
 
 #include "honggfuzz.h"
-#include "libcommon/common.h"
-#include "libcommon/files.h"
-#include "libcommon/log.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/files.h"
+#include "libhfcommon/log.h"
 
 __attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len);
 __attribute__((weak)) int LLVMFuzzerInitialize(int* argc UNUSED, char*** argv UNUSED) { return 0; }

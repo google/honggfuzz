@@ -30,8 +30,8 @@
 #include <string.h>
 
 #include "honggfuzz.h"
-#include "libcommon/common.h"
-#include "libcommon/log.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/log.h"
 
 /*
  * WARNING: Ensure that _UPT-info structs are not shared between threads

@@ -21,11 +21,12 @@
  *
  */
 
-#ifndef _HF_FILES_H_
-#define _HF_FILES_H_
+#ifndef _HF_COMMON_FILES_H_
+#define _HF_COMMON_FILES_H_
 
 #include "common.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <unistd.h>
 
@@ -63,4 +64,4 @@ extern bool files_readPidFromFile(const char* fileName, pid_t* pidPtr);
 
 extern size_t files_parseSymbolFilter(const char* inFIle, char*** filterList);
 
-#endif
+#endif /* ifndef HF_COMMON_FILES */

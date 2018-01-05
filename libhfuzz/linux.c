@@ -1,9 +1,9 @@
-#include "libcommon/common.h"
+#include "libhfcommon/common.h"
 #include "libhfuzz.h"
 
-#include "libcommon/files.h"
-#include "libcommon/log.h"
-#include "libcommon/ns.h"
+#include "libhfcommon/files.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/ns.h"
 
 #if defined(_HF_ARCH_LINUX)
 

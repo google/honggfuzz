@@ -24,16 +24,8 @@
 #ifndef _HF_COMMON_H_
 #define _HF_COMMON_H_
 
-#include <dirent.h>
-#include <inttypes.h>
-#include <limits.h>
-#include <pthread.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <sys/param.h>
-#include <sys/queue.h>
-#include <sys/types.h>
-#include <time.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #ifndef UNUSED
 #define UNUSED __attribute__((unused))

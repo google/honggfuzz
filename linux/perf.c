@@ -40,10 +40,10 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-#include "libcommon/common.h"
-#include "libcommon/files.h"
-#include "libcommon/log.h"
-#include "libcommon/util.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/files.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/util.h"
 #include "pt.h"
 
 #define _HF_PERF_MAP_SZ (1024 * 512)

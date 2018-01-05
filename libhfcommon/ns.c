@@ -21,11 +21,11 @@
  *
  */
 
-#include "ns.h"
-#include "common.h"
+#include "libhfcommon/ns.h"
 
-#include "files.h"
-#include "log.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/files.h"
+#include "libhfcommon/log.h"
 
 #if defined(_HF_ARCH_LINUX)
 

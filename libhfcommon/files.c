@@ -21,8 +21,7 @@
  *
  */
 
-#include "files.h"
-#include "common.h"
+#include "libhfcommon/files.h"
 
 #include <dirent.h>
 #include <errno.h>
@@ -41,8 +40,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "log.h"
-#include "util.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/util.h"
 
 ssize_t files_readFileToBufMax(char* fileName, uint8_t* buf, size_t fileMaxSz) {
     int fd = open(fileName, O_RDONLY | O_CLOEXEC);

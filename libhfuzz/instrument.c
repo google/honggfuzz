@@ -16,9 +16,9 @@
 #include <unistd.h>
 
 #include "honggfuzz.h"
-#include "libcommon/common.h"
-#include "libcommon/log.h"
-#include "libcommon/util.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/util.h"
 
 int hfuzz_module_instrument = 0;
 

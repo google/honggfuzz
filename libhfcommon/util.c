@@ -21,8 +21,7 @@
  *
  */
 
-#include "util.h"
-#include "common.h"
+#include "libhfcommon/util.h"
 
 #include <ctype.h>
 #include <fcntl.h>
@@ -41,8 +40,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "files.h"
-#include "log.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/files.h"
+#include "libhfcommon/log.h"
 
 void* util_Malloc(size_t sz) {
     void* p = malloc(sz);
