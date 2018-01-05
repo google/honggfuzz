@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _HF_UTIL_H_
-#define _HF_UTIL_H_
+#ifndef _HF_COMMON_UTIL_H_
+#define _HF_COMMON_UTIL_H_
 
 #include <pthread.h>
 #include <stdarg.h>
@@ -122,4 +122,4 @@ extern size_t util_decodeCString(char* s);
 extern uint64_t util_CRC64(const uint8_t* buf, size_t len);
 extern uint64_t util_CRC64Rev(const uint8_t* buf, size_t len);
 
-#endif
+#endif /* ifndef _HF_COMMON_UTIL_H_ */

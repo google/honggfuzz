@@ -32,9 +32,9 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "libcommon/common.h"
-#include "libcommon/log.h"
-#include "libcommon/util.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/util.h"
 
 static inline void mangle_Overwrite(run_t* run, const uint8_t* src, size_t off, size_t sz) {
     size_t maxToCopy = run->dynamicFileSz - off;

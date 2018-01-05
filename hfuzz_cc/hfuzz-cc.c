@@ -13,10 +13,10 @@
 #include <unistd.h>
 
 #include "honggfuzz.h"
-#include "libcommon/common.h"
-#include "libcommon/files.h"
-#include "libcommon/log.h"
-#include "libcommon/util.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/files.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/util.h"
 
 #define ARGS_MAX 4096
 #define __XSTR(x) #x

@@ -36,10 +36,10 @@
 #include <unistd.h>
 
 #include "honggfuzz.h"
-#include "libcommon/common.h"
-#include "libcommon/files.h"
-#include "libcommon/log.h"
-#include "libcommon/util.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/files.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/util.h"
 
 typedef struct {
     bfd* bfdh;

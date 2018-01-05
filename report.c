@@ -29,9 +29,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "libcommon/common.h"
-#include "libcommon/log.h"
-#include "libcommon/util.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/util.h"
 
 static int reportFD = -1;
 

@@ -19,14 +19,11 @@
  *
  */
 
-#ifndef _HF_LOG_H_
-#define _HF_LOG_H_
+#ifndef _HF_COMMON_LOG_H_
+#define _HF_COMMON_LOG_H_
 
-#include <getopt.h>
 #include <pthread.h>
 #include <stdbool.h>
-
-#include "common.h"
 
 enum llevel_t { FATAL = 0, ERROR, WARNING, INFO, DEBUG, HELP, HELP_BOLD };
 
@@ -92,4 +89,4 @@ extern pthread_mutex_t* logMutexGet(void);
 
 void logMutexReset(void);
 
-#endif /* _HF_LOG_H_ */
+#endif /* ifndef _HF_COMMON_LOG_H_ */

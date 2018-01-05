@@ -24,25 +24,31 @@
 #ifndef _HF_COMMON_H_
 #define _HF_COMMON_H_
 
-#include <dirent.h>
-#include <inttypes.h>
-#include <limits.h>
-#include <pthread.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <sys/param.h>
-#include <sys/queue.h>
-#include <sys/types.h>
-#include <time.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #ifndef UNUSED
 #define UNUSED __attribute__((unused))
-#endif
+#endif /* ifndef UNUSED */
 
+#ifndef ARRAYSIZE
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
+#endif /* ifndef ARRAYSIZE */
 
 /* Memory barriers */
 #define rmb() __asm__ __volatile__("" ::: "memory")
 #define wmb() __sync_synchronize()
+
+/* TEMP_FAILURE_RETRY, but for all OSes */
+#ifndef TEMP_FAILURE_RETRY
+#define TEMP_FAILURE_RETRY(exp)                \
+    ({                                         \
+        typeof(exp) _rc;                       \
+        do {                                   \
+            _rc = (exp);                       \
+        } while (_rc == -1 && errno == EINTR); \
+        _rc;                                   \
+    })
+#endif /* ifndef TEMP_FAILURE_RETRY */
 
 #endif /* ifndef _HF_COMMON_H_ */

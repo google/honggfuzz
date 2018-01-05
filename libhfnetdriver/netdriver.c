@@ -13,40 +13,37 @@
 #include <sched.h>
 #endif /* defined(_HF_ARCH_LINUX) */
 
-#include "libcommon/common.h"
-#include "libcommon/log.h"
-#include "libcommon/ns.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/ns.h"
 
 #define HF_TCP_PORT_ENV "_HF_TCP_PORT"
 
-static uint16_t tcp_port = 8080;
-
-int argc_server = 0;
-char **argv_server = NULL;
-
-static void *netDriver_getSymbol(const char *func) {
-    dlerror(); /* Clear existing errors */
-    void *f = dlsym(RTLD_DEFAULT, func);
-    char *error = dlerror();
-    if (f == NULL && error != NULL) {
-        LOG_D("Couldn't find function '%s': %s", func, error);
-        return NULL;
-    }
-    return f;
-}
+static struct {
+    uint16_t tcp_port;
+    int argc_server;
+    char **argv_server;
+} hfnd_globals = {
+    .tcp_port = 8080,
+    .argc_server = 0,
+    .argv_server = NULL,
+};
 
 static void *netDriver_mainProgram(void *unused UNUSED) {
-    int (*f)(int argc, char **argv) = netDriver_getSymbol("fuzzing_main");
-    if (f == NULL) {
-        /* FIXME: This can find libfuzzer's main() as well */
-        f = netDriver_getSymbol("main");
+    __attribute__((weak)) int HonggfuzzNetDriver_main(int argc, char **argv);
+    __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainiPPc(
+        int argc, char **argv); /* C++ version */
+
+    int ret = 0;
+    if (HonggfuzzNetDriver_main) {
+        ret = HonggfuzzNetDriver_main(hfnd_globals.argc_server, hfnd_globals.argv_server);
+    } else if (_Z23HonggfuzzNetDriver_mainiPPc) {
+        ret = _Z23HonggfuzzNetDriver_mainiPPc(hfnd_globals.argc_server, hfnd_globals.argv_server);
+    } else {
+        LOG_F("'int HonggfuzzNetDriver_main(int argc, char **argv)' wasn't defined in the code");
     }
-    if (f == NULL) {
-        LOG_F("Couldn't find symbol address for the 'fuzzing_main' or 'main' functions");
-    }
-    int ret = f(argc_server, argv_server);
-    LOG_I("Honggfuzz Net Driver (pid=%d): original main() function exited with: %d", (int)getpid(),
-        ret);
+    LOG_I("Honggfuzz Net Driver (pid=%d): HonggfuzzNetDriver_main() function exited with: %d",
+        (int)getpid(), ret);
     _exit(ret);
 }
 
@@ -58,7 +55,9 @@ static void netDriver_startOriginalProgramInThread(void) {
     pthread_attr_setstacksize(&attr, 1024 * 1024 * 8);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-    pthread_create(&t, &attr, netDriver_mainProgram, NULL);
+    if (pthread_create(&t, &attr, netDriver_mainProgram, NULL) != 0) {
+        PLOG_F("Couldn't create the 'netDriver_mainProgram' thread");
+    }
 }
 
 static void netDriver_initNs(void) {
@@ -96,10 +95,7 @@ int netDriver_sockConn(uint16_t portno) {
     saddr.sin_family = AF_INET;
     saddr.sin_port = htons(portno);
     saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    while (connect(sock, (const struct sockaddr *)&saddr, sizeof(saddr)) == -1) {
-        if (errno == EINTR) {
-            continue;
-        }
+    if (TEMP_FAILURE_RETRY(connect(sock, (const struct sockaddr *)&saddr, sizeof(saddr))) == -1) {
         PLOG_W("connect('127.0.0.1:%" PRIu16 ")", portno);
         return -1;
     }
@@ -114,9 +110,24 @@ int netDriver_sockConn(uint16_t portno) {
 __attribute__((weak)) uint16_t HonggfuzzNetDriverPort(int argc UNUSED, char **argv UNUSED) {
     const char *port_str = getenv(HF_TCP_PORT_ENV);
     if (port_str == NULL) {
-        return tcp_port;
+        return hfnd_globals.tcp_port;
     }
-    return (uint16_t)atoi(port_str);
+    errno = 0;
+    signed long portsl = strtol(port_str, NULL, 0);
+    if (errno != 0) {
+        PLOG_F("Couldn't convert '%s'='%s' to a number", HF_TCP_PORT_ENV, port_str);
+    }
+
+    if (portsl < 1) {
+        LOG_F(
+            "Specified TCP port '%s'='%s' (%ld) cannot be < 1", HF_TCP_PORT_ENV, port_str, portsl);
+    }
+    if (portsl > 65535) {
+        LOG_F("Specified TCP port '%s'='%s' (%ld) cannot be > 65535", HF_TCP_PORT_ENV, port_str,
+            portsl);
+    }
+
+    return (uint16_t)portsl;
 }
 
 /*
@@ -133,8 +144,6 @@ __attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
     int argc, char **argv, int *server_argc, char ***server_argv) {
     for (int i = 0; i < argc; i++) {
         if (strcmp(argv[i], "--") == 0) {
-            argv[i] = argv[0]; /* Change '--' into argv[0], as it's the new argv[0] for the TCP
-                                  server program */
             *server_argc = argc - i;
             *server_argv = &argv[i];
             return argc - i;
@@ -171,33 +180,33 @@ void netDriver_waitForServerReady(uint16_t portno) {
 }
 
 int LLVMFuzzerInitialize(int *argc, char ***argv) {
-    tcp_port = HonggfuzzNetDriverPort(*argc, *argv);
-    *argc = HonggfuzzNetDriverArgsForServer(*argc, *argv, &argc_server, &argv_server);
+    hfnd_globals.tcp_port = HonggfuzzNetDriverPort(*argc, *argv);
+    *argc = HonggfuzzNetDriverArgsForServer(
+        *argc, *argv, &hfnd_globals.argc_server, &hfnd_globals.argv_server);
 
-    LOG_I("Honggfuzz Net Driver (pid=%d): TCP port:%d will be used", (int)getpid(), tcp_port);
+    LOG_I("Honggfuzz Net Driver (pid=%d): TCP port:%d will be used", (int)getpid(),
+        hfnd_globals.tcp_port);
 
+    netDriver_initNs();
     netDriver_startOriginalProgramInThread();
-    netDriver_waitForServerReady(tcp_port);
+    netDriver_waitForServerReady(hfnd_globals.tcp_port);
     return 0;
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
-    int sock = netDriver_sockConn(tcp_port);
+    int sock = netDriver_sockConn(hfnd_globals.tcp_port);
     if (sock == -1) {
         LOG_F("Couldn't connect to the server TCP port");
     }
-    while (send(sock, buf, len, MSG_NOSIGNAL) == -1) {
-        if (errno == EINTR) {
-            continue;
-        }
+    if (TEMP_FAILURE_RETRY(send(sock, buf, len, MSG_NOSIGNAL)) == -1) {
         PLOG_F("send(sock=%d, len=%zu) failed", sock, len);
     }
     /*
-     * Indicate the end of input for the TCP server
+     * Indicate the end of input to the TCP server
      *
-     * Well-behaved TCP servers should process the input at this point, and close the TCP connection
+     * Well-behaved TCP servers should process the input, or close the TCP connection at this point
      */
-    if (shutdown(sock, SHUT_WR)) {
+    if (TEMP_FAILURE_RETRY(shutdown(sock, SHUT_WR)) == -1) {
         if (errno == ENOTCONN) {
             close(sock);
             return 0;
@@ -210,29 +219,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
      * TCP server to drop the input data, instead of processing it
      */
     static char b[1024 * 1024 * 8];
-    while (recv(sock, b, sizeof(b), MSG_WAITALL) > 0)
+    while (TEMP_FAILURE_RETRY(recv(sock, b, sizeof(b), MSG_WAITALL)) > 0)
         ;
 
     close(sock);
 
-    return 0;
-}
-
-/* Use -Wl,--wrap=main to redirect invocation of the whole program from main() to __wrap_main() */
-int __wrap_main(int argc, char **argv) {
-    netDriver_initNs();
-
-    int (*f1)(int argc, char **argv) = netDriver_getSymbol("HonggfuzzMain");
-    int (*f2)(int *argc, char ***argv, void *callback) =
-        netDriver_getSymbol("_ZN6fuzzer12FuzzerDriverEPiPPPcPFiPKhmE");
-
-    if (f1) {
-        return f1(argc, argv);
-    }
-    if (f2) {
-        return f2(&argc, &argv, LLVMFuzzerTestOneInput);
-    }
-
-    LOG_F("Couldn't find Honggfuzz nor LibFuzzer entry points");
     return 0;
 }

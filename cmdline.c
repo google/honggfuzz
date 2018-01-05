@@ -39,10 +39,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "libcommon/common.h"
-#include "libcommon/files.h"
-#include "libcommon/log.h"
-#include "libcommon/util.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/files.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/util.h"
 
 struct custom_option {
     struct option opt;

@@ -33,9 +33,9 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "libcommon/common.h"
-#include "libcommon/log.h"
-#include "libcommon/util.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/util.h"
 
 #define ESC_CLEAR_ALL "\033[2J"
 #define ESC_CLEAR_LINE "\033[2K"

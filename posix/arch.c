@@ -41,10 +41,10 @@
 #include <unistd.h>
 
 #include "fuzz.h"
-#include "libcommon/common.h"
-#include "libcommon/files.h"
-#include "libcommon/log.h"
-#include "libcommon/util.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/files.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/util.h"
 #include "sancov.h"
 #include "subproc.h"
 

@@ -37,8 +37,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "libcommon/common.h"
-#include "libcommon/files.h"
+#include "libhfcommon/common.h"
+#include "libhfcommon/files.h"
 
 #if defined(_HF_ARCH_LINUX)
 #include <sys/syscall.h>
@@ -47,8 +47,8 @@
 #endif /* defined(__NR_memfd_create) */
 #endif /* defined(_HF_ARCH_LINUX) */
 
-#include "libcommon/log.h"
-#include "libcommon/util.h"
+#include "libhfcommon/log.h"
+#include "libhfcommon/util.h"
 
 static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
     rewinddir(hfuzz->io.inputDirPtr);
