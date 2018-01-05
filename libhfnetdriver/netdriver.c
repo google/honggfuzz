@@ -144,8 +144,6 @@ __attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
     int argc, char **argv, int *server_argc, char ***server_argv) {
     for (int i = 0; i < argc; i++) {
         if (strcmp(argv[i], "--") == 0) {
-            argv[i] = argv[0]; /* Change '--' into argv[0], as it's the new argv[0] for the TCP
-                                  server program */
             *server_argc = argc - i;
             *server_argv = &argv[i];
             return argc - i;
