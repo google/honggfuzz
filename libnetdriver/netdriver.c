@@ -97,7 +97,10 @@ int netDriver_sockConn(uint16_t portno) {
     saddr.sin_family = AF_INET;
     saddr.sin_port = htons(portno);
     saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    if (connect(myfd, (const struct sockaddr *)&saddr, sizeof(saddr)) == -1) {
+    while (connect(myfd, (const struct sockaddr *)&saddr, sizeof(saddr)) == -1) {
+        if (errno == EINTR) {
+            continue;
+        }
         PLOG_W("connect('127.0.0.1:%" PRIu16 ")", portno);
         return -1;
     }
@@ -105,6 +108,7 @@ int netDriver_sockConn(uint16_t portno) {
     return myfd;
 }
 
+/* Decide which TCP port should be used for sending inputs */
 __attribute__((weak)) uint16_t HonggfuzzNetDriverPort(int *argc UNUSED, char ***argv UNUSED) {
     const char *port_str = getenv(HF_TCP_PORT_ENV);
     if (port_str == NULL) {
@@ -113,6 +117,15 @@ __attribute__((weak)) uint16_t HonggfuzzNetDriverPort(int *argc UNUSED, char ***
     return (uint16_t)atoi(port_str);
 }
 
+/*
+ * Split: ./httpdserver -max_input=10 -- --config /etc/httpd.confg
+ *
+ * so:
+ * This code (honggfuzz, libfuzzer) will only see "-max_input=10",
+ * while the httpdserver will only see: "--config /etc/httpd.confg"
+ *
+ * Can be overriden by the code to provide custom arguments, or envvars
+ */
 __attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
     int argc, char **argv, int *server_argc, char ***server_argv) {
     for (int i = 0; i < argc; i++) {
@@ -163,7 +176,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
     if (sock == -1) {
         LOG_F("Couldn't connect to the server TCP port");
     }
-    if (send(sock, buf, len, MSG_NOSIGNAL) < 0) {
+    while (send(sock, buf, len, MSG_NOSIGNAL) == -1) {
+        if (errno == EINTR) {
+            continue;
+        }
         PLOG_F("send(sock=%d, len=%zu) failed", sock, len);
     }
     /*
@@ -188,6 +204,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
     return 0;
 }
 
+/* Use -Wl,--wrap=main to redirect invocation of the whole program from main() to __wrap_main() */
 int __wrap_main(int argc, char **argv) {
     netDriver_initNs();
 
@@ -202,6 +219,6 @@ int __wrap_main(int argc, char **argv) {
         return f2(&argc, &argv, LLVMFuzzerTestOneInput);
     }
 
-    LOG_F("Couldn't find not Honggfuzz nor LibFuzzer entry points");
+    LOG_F("Couldn't find Honggfuzz nor LibFuzzer entry points");
     return 0;
 }
