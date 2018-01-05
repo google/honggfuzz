@@ -32,14 +32,17 @@ static void *netDriver_getSymbol(const char *func) {
         LOG_D("Couldn't find function '%s': %s", func, error);
         return NULL;
     }
-
     return f;
 }
 
-static void *netDriver_mainThread(void *unused UNUSED) {
-    int (*f)(int argc, char **argv) = netDriver_getSymbol("main");
+static void *netDriver_mainProgram(void *unused UNUSED) {
+    int (*f)(int argc, char **argv) = netDriver_getSymbol("fuzzing_main");
     if (f == NULL) {
-        LOG_F("Couldn't find symbol address for the 'main' function");
+        /* FIXME: This can find libfuzzer's main() as well */
+        f = netDriver_getSymbol("main");
+    }
+    if (f == NULL) {
+        LOG_F("Couldn't find symbol address for the 'fuzzing_main' or 'main' functions");
     }
     int ret = f(argc_server, argv_server);
     LOG_I("Honggfuzz Net Driver (pid=%d): original main() function exited with: %d", (int)getpid(),
@@ -47,7 +50,7 @@ static void *netDriver_mainThread(void *unused UNUSED) {
     _exit(ret);
 }
 
-static void netDriver_initThreads(void) {
+static void netDriver_startOriginalProgramInThread(void) {
     pthread_t t;
     pthread_attr_t attr;
 
@@ -55,7 +58,7 @@ static void netDriver_initThreads(void) {
     pthread_attr_setstacksize(&attr, 1024 * 1024 * 8);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-    pthread_create(&t, &attr, netDriver_mainThread, NULL);
+    pthread_create(&t, &attr, netDriver_mainProgram, NULL);
 }
 
 static void netDriver_initNs(void) {
@@ -71,7 +74,7 @@ static void netDriver_initNs(void) {
     }
     return;
 #endif /* defined(_HF_ARCH_LINUX) */
-    LOG_W("The Honggfuzz net driver didn't enable namespaces for this platform");
+    LOG_W("Honggfuzz Net Driver: Namespaces not enabled for this OS platform");
 }
 
 int netDriver_sockConn(uint16_t portno) {
@@ -79,21 +82,21 @@ int netDriver_sockConn(uint16_t portno) {
         LOG_F("Specified TCP port (%d) cannot be < 1", portno);
     }
 
-    int myfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-    if (myfd == -1) {
+    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+    if (sock == -1) {
         PLOG_F("socket(AF_INET, SOCK_STREAM, IPPROTO_IP)");
     }
 
     int sz = (1024 * 1024);
-    if (setsockopt(myfd, SOL_SOCKET, SO_SNDBUF, &sz, sizeof(sz)) == -1) {
-        PLOG_F("setsockopt(socket=%d, SOL_SOCKET, SO_SNDBUF, size=%d", myfd, sz);
+    if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &sz, sizeof(sz)) == -1) {
+        PLOG_F("setsockopt(socket=%d, SOL_SOCKET, SO_SNDBUF, size=%d", sock, sz);
     }
 
     struct sockaddr_in saddr;
     saddr.sin_family = AF_INET;
     saddr.sin_port = htons(portno);
     saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    while (connect(myfd, (const struct sockaddr *)&saddr, sizeof(saddr)) == -1) {
+    while (connect(sock, (const struct sockaddr *)&saddr, sizeof(saddr)) == -1) {
         if (errno == EINTR) {
             continue;
         }
@@ -101,7 +104,7 @@ int netDriver_sockConn(uint16_t portno) {
         return -1;
     }
 
-    return myfd;
+    return sock;
 }
 
 /*
@@ -147,7 +150,7 @@ __attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
     return argc;
 }
 
-void netDriver_waitForServer(uint16_t portno) {
+void netDriver_waitForServerReady(uint16_t portno) {
     for (;;) {
         int fd = netDriver_sockConn(portno);
         if (fd >= 0) {
@@ -163,7 +166,7 @@ void netDriver_waitForServer(uint16_t portno) {
 
     LOG_I(
         "Honggfuzz Net Driver (pid=%d): The TCP server process ready to accept connections at "
-        "127.0.0.1:%" PRIu16 ". TCP fuzzing will starts now!",
+        "127.0.0.1:%" PRIu16 ". TCP fuzzing starts now!",
         (int)getpid(), portno);
 }
 
@@ -173,8 +176,8 @@ int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
     LOG_I("Honggfuzz Net Driver (pid=%d): TCP port:%d will be used", (int)getpid(), tcp_port);
 
-    netDriver_initThreads();
-    netDriver_waitForServer(tcp_port);
+    netDriver_startOriginalProgramInThread();
+    netDriver_waitForServerReady(tcp_port);
     return 0;
 }
 
