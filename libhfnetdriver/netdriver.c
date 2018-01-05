@@ -31,12 +31,19 @@ static struct {
 
 static void *netDriver_mainProgram(void *unused UNUSED) {
     __attribute__((weak)) int HonggfuzzNetDriver_main(int argc, char **argv);
-    if (!HonggfuzzNetDriver_main) {
-        LOG_F("Couldn't find address of the 'HonggfuzzNetDriver_main' function");
+    __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainiPPc(
+        int argc, char **argv); /* C++ version */
+
+    int ret = 0;
+    if (HonggfuzzNetDriver_main) {
+        ret = HonggfuzzNetDriver_main(hfnd_globals.argc_server, hfnd_globals.argv_server);
+    } else if (_Z23HonggfuzzNetDriver_mainiPPc) {
+        ret = _Z23HonggfuzzNetDriver_mainiPPc(hfnd_globals.argc_server, hfnd_globals.argv_server);
+    } else {
+        LOG_F("'int HonggfuzzNetDriver_main(int argc, char **argv)' wasn't defined in the code");
     }
-    int ret = HonggfuzzNetDriver_main(hfnd_globals.argc_server, hfnd_globals.argv_server);
-    LOG_I("Honggfuzz Net Driver (pid=%d): original main() function exited with: %d", (int)getpid(),
-        ret);
+    LOG_I("Honggfuzz Net Driver (pid=%d): HonggfuzzNetDriver_main() function exited with: %d",
+        (int)getpid(), ret);
     _exit(ret);
 }
 
