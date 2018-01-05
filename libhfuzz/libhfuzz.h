@@ -39,6 +39,7 @@ size_t LLVMFuzzerMutate(uint8_t* Data, size_t Size, size_t MaxSize);
  * len_ptr: will be set to the size of the input fuzzing data
  */
 void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr);
+void HonggfuzzFetchData(const uint8_t** buf_ptr, size_t* len_ptr);
 
 /*
  * Update comparison map:
