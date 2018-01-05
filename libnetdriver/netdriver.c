@@ -42,7 +42,8 @@ static void *netDriver_mainThread(void *unused UNUSED) {
         LOG_F("Couldn't find symbol address for the 'main' function");
     }
     int ret = f(argc_server, argv_server);
-    LOG_I("original main() function exited with: %d", ret);
+    LOG_I("Honggfuzz Net Driver (pid=%d): original main() function exited with: %d", (int)getpid(),
+        ret);
     _exit(ret);
 }
 
@@ -103,8 +104,11 @@ int netDriver_sockConn(uint16_t portno) {
     return myfd;
 }
 
-/* Decide which TCP port should be used for sending inputs */
-__attribute__((weak)) uint16_t HonggfuzzNetDriverPort(int *argc UNUSED, char ***argv UNUSED) {
+/*
+ * Decide which TCP port should be used for sending inputs
+ * Define this function in your code to provide custom TCP port choice
+ */
+__attribute__((weak)) uint16_t HonggfuzzNetDriverPort(int argc UNUSED, char **argv UNUSED) {
     const char *port_str = getenv(HF_TCP_PORT_ENV);
     if (port_str == NULL) {
         return tcp_port;
@@ -114,23 +118,30 @@ __attribute__((weak)) uint16_t HonggfuzzNetDriverPort(int *argc UNUSED, char ***
 
 /*
  * Split: ./httpdserver -max_input=10 -- --config /etc/httpd.confg
- *
  * so:
- * This code (honggfuzz, libfuzzer) will only see "-max_input=10",
- * while the httpdserver will only see: "--config /etc/httpd.confg"
+ * This code (e.g. libfuzzer) will only see "./httpdserver -max_input=10",
+ * while the httpdserver will only see: "./httpdserver --config /etc/httpd.confg"
  *
- * Can be overriden by the code to provide custom arguments, or envvars
+ * The return value is a number of arguments passed to libfuzzer (if used)
+ *
+ * Define this function in your code to manipulate the arguments as desired
  */
 __attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
     int argc, char **argv, int *server_argc, char ***server_argv) {
     for (int i = 0; i < argc; i++) {
         if (strcmp(argv[i], "--") == 0) {
+            argv[i] = argv[0]; /* Change '--' into argv[0], as it's the new argv[0] for the TCP
+                                  server program */
             *server_argc = argc - i;
             *server_argv = &argv[i];
             return argc - i;
         }
     }
 
+    LOG_I(
+        "Honggfuzz Net Driver (pid=%d): No '--' was found in the commandline, and therefore no "
+        "arguments will be passed to the TCP server program",
+        (int)getpid());
     *server_argc = 1;
     *server_argv = &argv[0];
     return argc;
@@ -144,20 +155,20 @@ void netDriver_waitForServer(uint16_t portno) {
             break;
         }
         LOG_I(
-            "Honggfuzz Net Driver (pid=%d): Waiting for the server to start accepting TCP "
-            "connections at "
-            "127.0.0.1:%" PRIu16 " ...",
+            "Honggfuzz Net Driver (pid=%d): Waiting for the TCP server process to start accepting "
+            "TCP connections at 127.0.0.1:%" PRIu16 " ...",
             (int)getpid(), portno);
         sleep(1);
     }
 
-    LOG_I("Honggfuzz Net Driver (pid=%d): Server ready to accept connections at 127.0.0.1:%" PRIu16
-          ". TCP fuzzing will start now",
+    LOG_I(
+        "Honggfuzz Net Driver (pid=%d): The TCP server process ready to accept connections at "
+        "127.0.0.1:%" PRIu16 ". TCP fuzzing will starts now!",
         (int)getpid(), portno);
 }
 
 int LLVMFuzzerInitialize(int *argc, char ***argv) {
-    tcp_port = HonggfuzzNetDriverPort(argc, argv);
+    tcp_port = HonggfuzzNetDriverPort(*argc, *argv);
     *argc = HonggfuzzNetDriverArgsForServer(*argc, *argv, &argc_server, &argv_server);
 
     LOG_I("Honggfuzz Net Driver (pid=%d): TCP port:%d will be used", (int)getpid(), tcp_port);
