@@ -30,15 +30,35 @@ static struct {
 };
 
 static void *netDriver_mainProgram(void *unused UNUSED) {
+    /*
+     * When redefining 'main' to 'HonggfuzzNetDriver_main' (e.g. with
+     * -Dmain=HonggfuzzNetDriver_main), and compiling with a C++ compiler, the symbol will be
+     * mangled (as opposed to the regular 'main')
+     */
     __attribute__((weak)) int HonggfuzzNetDriver_main(int argc, char **argv);
+    __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainv(); /* C++: int(*)(void) */
     __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainiPPc(
-        int argc, char **argv); /* C++ version */
+        int argc, char **argv); /* C++: int(*)(int, char**) */
+    __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainiPPKc(
+        int argc, char **argv); /* C++: int(*)(int, const char**) */
+    __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainiPKPKc(
+        int argc, char **argv); /* C++: int(*)(int, const char* const*) */
+    __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainiPKPc(
+        int argc, char **argv); /* C++: int(*)(int, char* const*) */
 
     int ret = 0;
     if (HonggfuzzNetDriver_main) {
         ret = HonggfuzzNetDriver_main(hfnd_globals.argc_server, hfnd_globals.argv_server);
+    } else if (_Z23HonggfuzzNetDriver_mainv) {
+        ret = _Z23HonggfuzzNetDriver_mainv();
     } else if (_Z23HonggfuzzNetDriver_mainiPPc) {
         ret = _Z23HonggfuzzNetDriver_mainiPPc(hfnd_globals.argc_server, hfnd_globals.argv_server);
+    } else if (_Z23HonggfuzzNetDriver_mainiPPKc) {
+        ret = _Z23HonggfuzzNetDriver_mainiPPKc(hfnd_globals.argc_server, hfnd_globals.argv_server);
+    } else if (_Z23HonggfuzzNetDriver_mainiPKPKc) {
+        ret = _Z23HonggfuzzNetDriver_mainiPKPKc(hfnd_globals.argc_server, hfnd_globals.argv_server);
+    } else if (_Z23HonggfuzzNetDriver_mainiPKPc) {
+        ret = _Z23HonggfuzzNetDriver_mainiPKPc(hfnd_globals.argc_server, hfnd_globals.argv_server);
     } else {
         LOG_F("'int HonggfuzzNetDriver_main(int argc, char **argv)' wasn't defined in the code");
     }
@@ -73,7 +93,8 @@ static void netDriver_initNs(void) {
     }
     return;
 #endif /* defined(_HF_ARCH_LINUX) */
-    LOG_W("Honggfuzz Net Driver: Namespaces not enabled for this OS platform");
+    LOG_W("Honggfuzz Net Driver (pid=%d): Namespaces not enabled for this OS platform",
+        (int)getpid());
 }
 
 int netDriver_sockConn(uint16_t portno) {
@@ -96,7 +117,8 @@ int netDriver_sockConn(uint16_t portno) {
     saddr.sin_port = htons(portno);
     saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     if (TEMP_FAILURE_RETRY(connect(sock, (const struct sockaddr *)&saddr, sizeof(saddr))) == -1) {
-        PLOG_W("connect('127.0.0.1:%" PRIu16 ")", portno);
+        PLOG_W("Honggfuzz Net Driver (pid=%d): connect('127.0.0.1:%" PRIu16 ")", (int)getpid(),
+            portno);
         return -1;
     }
 
