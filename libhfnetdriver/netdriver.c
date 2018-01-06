@@ -1,10 +1,8 @@
-#include <dlfcn.h>
 #include <errno.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -224,9 +222,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
         PLOG_F("send(sock=%d, len=%zu) failed", sock, len);
     }
     /*
-     * Indicate the end of input to the TCP server
+     * Indicate EOF (via the FIN flag) to the TCP server
      *
-     * Well-behaved TCP servers should process the input, or close the TCP connection at this point
+     * Well-behaved TCP servers should process the input and responsd/close the TCP connection at
+     * this point
      */
     if (TEMP_FAILURE_RETRY(shutdown(sock, SHUT_WR)) == -1) {
         if (errno == ENOTCONN) {
