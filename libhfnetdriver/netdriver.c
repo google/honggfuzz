@@ -45,6 +45,7 @@ static void *netDriver_mainProgram(void *unused UNUSED) {
         int argc, char **argv); /* C++: int(*)(int, char* const*) */
 
     int ret = 0;
+    /* Try both the standard C symbol and variants of the C++ (mangled) symbol */
     if (HonggfuzzNetDriver_main) {
         ret = HonggfuzzNetDriver_main(hfnd_globals.argc_server, hfnd_globals.argv_server);
     } else if (_Z23HonggfuzzNetDriver_mainv) {
@@ -78,7 +79,13 @@ static void netDriver_startOriginalProgramInThread(void) {
     }
 }
 
-static void netDriver_initNs(void) {
+static void netDriver_initNsIfNeeded(void) {
+    static bool initialized = false;
+    if (initialized) {
+        return;
+    }
+    initialized = true;
+
 #if defined(_HF_ARCH_LINUX)
     if (!nsEnter(CLONE_NEWUSER | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWIPC | CLONE_NEWUTS)) {
         LOG_F("nsEnter(CLONE_NEWUSER|CLONE_NEWNET|CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS) failed");
@@ -93,6 +100,25 @@ static void netDriver_initNs(void) {
 #endif /* defined(_HF_ARCH_LINUX) */
     LOG_W("Honggfuzz Net Driver (pid=%d): Namespaces not enabled for this OS platform",
         (int)getpid());
+}
+
+/*
+ * Initialize namespaces before e.g. ASAN, which can spawn threads, what can use
+ * unshare(CLONE_NEWUSER|...) to fail
+ */
+__attribute__((section(".preinit_array"), used)) void (*__local_libhfnetdriver_preinit)(
+    void) = netDriver_initNsIfNeeded;
+
+/*
+ * ASAN BackgroundThread is also started from the .preinit_array, hijack the __asan_init symbol,
+ * and call unshare() first
+ */
+void __wrap___asan_init(void) {
+    netDriver_initNsIfNeeded();
+    __attribute__((weak)) void __real___asan_init(void);
+    if (__real___asan_init) {
+        __real___asan_init();
+    }
 }
 
 int netDriver_sockConn(uint16_t portno) {
@@ -207,7 +233,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv) {
     LOG_I("Honggfuzz Net Driver (pid=%d): TCP port:%d will be used", (int)getpid(),
         hfnd_globals.tcp_port);
 
-    netDriver_initNs();
+    netDriver_initNsIfNeeded();
     netDriver_startOriginalProgramInThread();
     netDriver_waitForServerReady(hfnd_globals.tcp_port);
     return 0;
