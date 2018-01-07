@@ -45,7 +45,7 @@
 #include "libhfcommon/util.h"
 
 ssize_t files_readFileToBufMax(char* fileName, uint8_t* buf, size_t fileMaxSz) {
-    int fd = open(fileName, O_RDONLY | O_CLOEXEC);
+    int fd = TEMP_FAILURE_RETRY(open(fileName, O_RDONLY | O_CLOEXEC));
     if (fd == -1) {
         PLOG_W("Couldn't open '%s' for R/O", fileName);
         return -1;
@@ -62,7 +62,7 @@ ssize_t files_readFileToBufMax(char* fileName, uint8_t* buf, size_t fileMaxSz) {
 }
 
 bool files_writeBufToFile(const char* fileName, const uint8_t* buf, size_t fileSz, int flags) {
-    int fd = open(fileName, flags, 0644);
+    int fd = TEMP_FAILURE_RETRY(open(fileName, flags, 0644));
     if (fd == -1) {
         PLOG_W("Couldn't open '%s' for R/W", fileName);
         return false;
@@ -83,11 +83,10 @@ bool files_writeBufToFile(const char* fileName, const uint8_t* buf, size_t fileS
 bool files_writeToFd(int fd, const uint8_t* buf, size_t fileSz) {
     size_t writtenSz = 0;
     while (writtenSz < fileSz) {
-        ssize_t sz = write(fd, &buf[writtenSz], fileSz - writtenSz);
-        if (sz < 0 && errno == EINTR) continue;
-
-        if (sz < 0) return false;
-
+        ssize_t sz = TEMP_FAILURE_RETRY(write(fd, &buf[writtenSz], fileSz - writtenSz));
+        if (sz < 0) {
+            return false;
+        }
         writtenSz += sz;
     }
     return true;
@@ -100,13 +99,13 @@ bool files_writeStrToFd(int fd, const char* str) {
 ssize_t files_readFromFd(int fd, uint8_t* buf, size_t fileSz) {
     size_t readSz = 0;
     while (readSz < fileSz) {
-        ssize_t sz = read(fd, &buf[readSz], fileSz - readSz);
-        if (sz < 0 && errno == EINTR) continue;
-
-        if (sz == 0) break;
-
-        if (sz < 0) return -1;
-
+        ssize_t sz = TEMP_FAILURE_RETRY(read(fd, &buf[readSz], fileSz - readSz));
+        if (sz == 0) {
+            break;
+        }
+        if (sz < 0) {
+            return -1;
+        }
         readSz += sz;
     }
     return (ssize_t)readSz;
@@ -131,11 +130,11 @@ bool files_writePatternToFd(int fd, off_t size, unsigned char p) {
 bool files_sendToSocketNB(int fd, const uint8_t* buf, size_t fileSz) {
     size_t writtenSz = 0;
     while (writtenSz < fileSz) {
-        ssize_t sz = send(fd, &buf[writtenSz], fileSz - writtenSz, MSG_DONTWAIT);
-        if (sz < 0 && errno == EINTR) continue;
-
-        if (sz < 0) return false;
-
+        ssize_t sz =
+            TEMP_FAILURE_RETRY(send(fd, &buf[writtenSz], fileSz - writtenSz, MSG_DONTWAIT));
+        if (sz < 0) {
+            return false;
+        }
         writtenSz += sz;
     }
     return true;
@@ -200,7 +199,7 @@ bool files_copyFile(const char* source, const char* destination, bool* dstExists
     dstOpenFlags = O_CREAT | O_WRONLY | O_CLOEXEC | O_EXCL;
     dstFilePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 
-    inFD = open(source, O_RDONLY | O_CLOEXEC);
+    inFD = TEMP_FAILURE_RETRY(open(source, O_RDONLY | O_CLOEXEC));
     if (inFD == -1) {
         PLOG_D("Couldn't open '%s' source", source);
         return false;
@@ -213,7 +212,7 @@ bool files_copyFile(const char* source, const char* destination, bool* dstExists
         return false;
     }
 
-    outFD = open(destination, dstOpenFlags, dstFilePerms);
+    outFD = TEMP_FAILURE_RETRY(open(destination, dstOpenFlags, dstFilePerms));
     if (outFD == -1) {
         if (errno == EEXIST) {
             if (dstExists) *dstExists = true;
@@ -309,7 +308,7 @@ uint8_t* files_mapFile(const char* fileName, off_t* fileSz, int* fd, bool isWrit
         mmapProt |= PROT_WRITE;
     }
 
-    if ((*fd = open(fileName, O_RDONLY)) == -1) {
+    if ((*fd = TEMP_FAILURE_RETRY(open(fileName, O_RDONLY))) == -1) {
         PLOG_W("Couldn't open() '%s' file in R/O mode", fileName);
         return NULL;
     }
@@ -333,7 +332,7 @@ uint8_t* files_mapFile(const char* fileName, off_t* fileSz, int* fd, bool isWrit
 }
 
 uint8_t* files_mapFileShared(const char* fileName, off_t* fileSz, int* fd) {
-    if ((*fd = open(fileName, O_RDONLY)) == -1) {
+    if ((*fd = TEMP_FAILURE_RETRY(open(fileName, O_RDONLY))) == -1) {
         PLOG_W("Couldn't open() '%s' file in R/O mode", fileName);
         return NULL;
     }
@@ -374,7 +373,7 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* dir) {
         }
         unlink(template);
     }
-    if (ftruncate(*fd, sz) == -1) {
+    if (TEMP_FAILURE_RETRY(ftruncate(*fd, sz)) == -1) {
         PLOG_W("ftruncate(%d, %zu)", *fd, sz);
         close(*fd);
         *fd = -1;
@@ -393,7 +392,7 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* dir) {
 bool files_readPidFromFile(const char* fileName, pid_t* pidPtr) {
     FILE* fPID = fopen(fileName, "rbe");
     if (fPID == NULL) {
-        PLOG_W("Couldn't open '%s' - R/O mode", fileName);
+        PLOG_W("Couldn't fopen('%s', mode='rbe')", fileName);
         return false;
     }
 
