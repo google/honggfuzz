@@ -143,10 +143,10 @@ ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
   COMMON_STATIC_LIBS += libblocksruntime
 endif
 
-# libcommon module
+# libhfcommon module
 include $(CLEAR_VARS)
 LOCAL_MODULE := common
-LOCAL_SRC_FILES := $(wildcard libcommon/*.c)
+LOCAL_SRC_FILES := $(wildcard libhfcommon/*.c)
 LOCAL_CFLAGS := -D_HF_ARCH_${ARCH} $(COMMON_CFLAGS)
 LOCAL_STATIC_LIBRARIES := $(COMMON_STATIC_LIBS)
 include $(BUILD_STATIC_LIBRARY)
