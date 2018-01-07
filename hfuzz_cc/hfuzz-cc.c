@@ -266,6 +266,7 @@ static int ccMode(int argc, char** argv) {
     } else {
         args[j++] = "cc";
     }
+
     commonOpts(&j, args);
 
     for (int i = 1; i < argc; i++) {
@@ -284,6 +285,8 @@ static int ldMode(int argc, char** argv) {
     } else {
         args[j++] = "cc";
     }
+
+    commonOpts(&j, args);
 
     /* Intercept common *cmp functions */
     args[j++] = "-Wl,--wrap=strcmp";
@@ -315,8 +318,6 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=xmlStrstr";
     args[j++] = "-Wl,--wrap=xmlStrcasestr";
 
-    commonOpts(&j, args);
-
     for (int i = 1; i < argc; i++) {
         args[j++] = argv[i];
     }
@@ -332,14 +333,24 @@ static int ldMode(int argc, char** argv) {
     return execCC(j, args);
 }
 
+static bool baseNameContains(const char* path, const char* str) {
+    char fname[PATH_MAX];
+    snprintf(fname, sizeof(fname), "%s", path);
+    const char* bname = basename(fname);
+    if (strstr(bname, str)) {
+        return true;
+    }
+    return false;
+}
+
 int main(int argc, char** argv) {
-    if (strstr(basename(util_StrDup(argv[0])), "++") != NULL) {
+    if (baseNameContains(argv[0], "++")) {
         isCXX = true;
     }
-    if (strstr(basename(util_StrDup(argv[0])), "-gcc") != NULL) {
+    if (baseNameContains(argv[0], "-gcc")) {
         isGCC = true;
     }
-    if (strstr(basename(util_StrDup(argv[0])), "-g++") != NULL) {
+    if (baseNameContains(argv[0], "-g++")) {
         isGCC = true;
     }
     if (argc <= 1) {
