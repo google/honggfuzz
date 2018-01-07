@@ -156,34 +156,6 @@ char* getIncPaths(void) {
     return path;
 }
 
-static void commonOpts(int* j, char** args) {
-    args[(*j)++] = getIncPaths();
-    if (isGCC) {
-        /* That's the best gcc-6/7 currently offers */
-        args[(*j)++] = "-fsanitize-coverage=trace-pc";
-    } else {
-        args[(*j)++] = "-Wno-unused-command-line-argument";
-        args[(*j)++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
-        args[(*j)++] = "-mllvm";
-        args[(*j)++] = "-sanitizer-coverage-prune-blocks=0";
-        args[(*j)++] = "-mllvm";
-        args[(*j)++] = "-sanitizer-coverage-level=3";
-    }
-
-    /*
-     * Make the execution flow more explicit, allowing for more code blocks
-     * (and better code coverage estimates)
-     */
-    args[(*j)++] = "-fno-inline";
-    args[(*j)++] = "-fno-builtin";
-    args[(*j)++] = "-fno-omit-frame-pointer";
-    args[(*j)++] = "-D__NO_STRING_INLINES";
-
-    if (getenv("HFUZZ_FORCE_M32")) {
-        args[(*j)++] = "-m32";
-    }
-}
-
 static bool getLibPath(
     const char* name, const char* env, uint8_t* start, uint8_t* end, char* path) {
     const char* libEnvLoc = getenv(env);
@@ -257,6 +229,34 @@ static char* getLibHFNetDriverPath() {
     return path;
 }
 
+static void commonOpts(int* j, char** args) {
+    args[(*j)++] = getIncPaths();
+    if (isGCC) {
+        /* That's the best gcc-6/7 currently offers */
+        args[(*j)++] = "-fsanitize-coverage=trace-pc";
+    } else {
+        args[(*j)++] = "-Wno-unused-command-line-argument";
+        args[(*j)++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
+        args[(*j)++] = "-mllvm";
+        args[(*j)++] = "-sanitizer-coverage-prune-blocks=0";
+        args[(*j)++] = "-mllvm";
+        args[(*j)++] = "-sanitizer-coverage-level=3";
+    }
+
+    /*
+     * Make the execution flow more explicit, allowing for more code blocks
+     * (and better code coverage estimates)
+     */
+    args[(*j)++] = "-fno-inline";
+    args[(*j)++] = "-fno-builtin";
+    args[(*j)++] = "-fno-omit-frame-pointer";
+    args[(*j)++] = "-D__NO_STRING_INLINES";
+
+    if (getenv("HFUZZ_FORCE_M32")) {
+        args[(*j)++] = "-m32";
+    }
+}
+
 static int ccMode(int argc, char** argv) {
     char* args[ARGS_MAX];
 
@@ -323,6 +323,7 @@ static int ldMode(int argc, char** argv) {
 
     args[j++] = getLibHfuzzPath();
     if (useHFNetDriver()) {
+        args[j++] = "-Wl,--wrap=__asan_init";
         args[j++] = getLibHFNetDriverPath();
     }
 
