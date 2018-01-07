@@ -69,6 +69,13 @@ static bool useHFNetDriver() {
     return false;
 }
 
+static bool useGccGE8() {
+    if (getenv("HFUZZ_CC_USE_GCC_GE_8")) {
+        return true;
+    }
+    return false;
+}
+
 static bool isLDMode(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--version") == 0) {
@@ -232,8 +239,13 @@ static char* getLibHFNetDriverPath() {
 static void commonOpts(int* j, char** args) {
     args[(*j)++] = getIncPaths();
     if (isGCC) {
-        /* That's the best gcc-6/7 currently offers */
-        args[(*j)++] = "-fsanitize-coverage=trace-pc";
+        if (useGccGE8()) {
+            /* gcc-8 offers trace-cmp as well, but it's not that widely used yet */
+            args[(*j)++] = "-fsanitize-coverage=trace-pc,trace-cmp";
+        } else {
+            /* trace-pc is the best that gcc-6/7 currently offers */
+            args[(*j)++] = "-fsanitize-coverage=trace-pc";
+        }
     } else {
         args[(*j)++] = "-Wno-unused-command-line-argument";
         args[(*j)++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,indirect-calls";
