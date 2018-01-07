@@ -131,6 +131,7 @@ static int execCC(int argc, char** argv) {
         }
     } else {
         if (isCXX) {
+            /* Try newest ones (hopefully) first */
             execvp("clang++-devel", argv);
             execvp("clang++-7.0", argv);
             execvp("clang++-6.0", argv);
@@ -139,6 +140,7 @@ static int execCC(int argc, char** argv) {
             execvp("clang++", argv);
             execvp("clang", argv);
         } else {
+            /* Try newest ones (hopefully) first */
             execvp("clang-devel", argv);
             execvp("clang-7.0", argv);
             execvp("clang-6.0", argv);
@@ -148,14 +150,15 @@ static int execCC(int argc, char** argv) {
         }
     }
 
-    PLOG_E("execvp('%s')", argv[0]);
+    PLOG_F("execvp('%s')", argv[0]);
     return EXIT_FAILURE;
 }
 
 /* It'll point back to the libhfuzz's source tree */
 char* getIncPaths(void) {
 #if !defined(_HFUZZ_INC_PATH)
-#error "You need to define _HFUZZ_INC_PATH"
+#error \
+    "You need to define _HFUZZ_INC_PATH to a directory containing directrory 'includes' with libhfcommon/libhfuzz/libhfnetdriver includes"
 #endif
 
     static char path[PATH_MAX];
@@ -164,7 +167,7 @@ char* getIncPaths(void) {
 }
 
 static bool getLibPath(
-    const char* name, const char* env, uint8_t* start, uint8_t* end, char* path) {
+    const char* name, const char* env, const uint8_t* start, const uint8_t* end, char* path) {
     const char* libEnvLoc = getenv(env);
     if (libEnvLoc) {
         snprintf(path, PATH_MAX, "%s", libEnvLoc);
@@ -175,30 +178,28 @@ static bool getLibPath(
     uint64_t crc64 = util_CRC64(start, len);
     snprintf(path, PATH_MAX, "/tmp/%s.%d.%" PRIx64 ".a", name, geteuid(), crc64);
 
-    /* Does the library exist, belongs to the user and is of the expected size */
+    /* Does the library exist, belongs to the user, and is of expected size? */
     struct stat st;
-    if (stat(path, &st) != -1) {
-        if (st.st_size == len && st.st_uid == geteuid()) {
-            return true;
-        }
+    if (stat(path, &st) != -1 && st.st_size == len && st.st_uid == geteuid()) {
+        return true;
     }
 
-    /* If not, provide it with atomic rename() */
+    /* If not, create it with atomic rename() */
     char template[] = "/tmp/lib.honggfuzz.a.XXXXXX";
-    int fd = mkostemp(template, O_CLOEXEC);
+    int fd = TEMP_FAILURE_RETRY(mkostemp(template, O_CLOEXEC));
     if (fd == -1) {
         PLOG_E("mkostemp('%s')", template);
         return false;
     }
     defer { close(fd); };
 
-    bool ret = files_writeToFd(fd, start, len);
-    if (!ret) {
+    if (!files_writeToFd(fd, start, len)) {
         PLOG_E("Couldn't write to '%s'", template);
+        unlink(template);
         return false;
     }
 
-    if (rename(template, path) == -1) {
+    if (TEMP_FAILURE_RETRY(rename(template, path)) == -1) {
         PLOG_E("Couldn't rename('%s', '%s')", template, path);
         unlink(template);
         return false;
@@ -340,6 +341,7 @@ static int ldMode(int argc, char** argv) {
         args[j++] = getLibHFNetDriverPath();
     }
 
+    /* Needed by the libhfcommon */
     args[j++] = "-lpthread";
 
     return execCC(j, args);
@@ -347,6 +349,7 @@ static int ldMode(int argc, char** argv) {
 
 static bool baseNameContains(const char* path, const char* str) {
     char fname[PATH_MAX];
+    /* basename() can modify the argument (sic!) */
     snprintf(fname, sizeof(fname), "%s", path);
     const char* bname = basename(fname);
     if (strstr(bname, str)) {
