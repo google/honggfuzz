@@ -382,18 +382,19 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
         PLOG_E("File '%s' doesn't seem to be executable", hfuzz->exe.cmdline[0]);
         return false;
     }
-    if ((hfuzz->linux.exeFd = open(hfuzz->exe.cmdline[0], O_RDONLY | O_CLOEXEC)) == -1) {
+    if ((hfuzz->linux.exeFd =
+                TEMP_FAILURE_RETRY(open(hfuzz->exe.cmdline[0], O_RDONLY | O_CLOEXEC))) == -1) {
         PLOG_E("Cannot open the executable binary: %s)", hfuzz->exe.cmdline[0]);
         return false;
     }
 
-    const char* (*gvs)(void) = dlsym(RTLD_DEFAULT, "gnu_get_libc_version");
+    __attribute__((weak)) const char* gnu_get_libc_version(void);
     for (;;) {
-        if (!gvs) {
+        if (!gnu_get_libc_version) {
             LOG_W("Unknown libc implementation. Using clone() instead of fork()");
             break;
         }
-        const char* gversion = gvs();
+        const char* gversion = gnu_get_libc_version();
         int major, minor;
         if (sscanf(gversion, "%d.%d", &major, &minor) != 2) {
             LOG_W("Unknown glibc version:'%s'. Using clone() instead of fork()", gversion);
