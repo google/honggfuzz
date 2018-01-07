@@ -24,7 +24,7 @@
 CC ?= gcc
 LD = $(CC)
 BIN := honggfuzz
-HFUZZ_CC_BINS := hfuzz_cc/hfuzz-clang hfuzz_cc/hfuzz-clang++ hfuzz_cc/hfuzz-gcc hfuzz_cc/hfuzz-g++
+HFUZZ_CC_BIN := hfuzz_cc/hfuzz-cc
 HFUZZ_CC_SRCS := hfuzz_cc/hfuzz-cc.c
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wframe-larger-than=131072 -Wno-format-truncation -I.
 COMMON_LDFLAGS := -lm libhfcommon/libhfcommon.a
@@ -247,13 +247,13 @@ MAC_GARGBAGE := $(wildcard mac/mach_exc*)
 ANDROID_GARBAGE := obj libs
 
 CLEAN_TARGETS := core Makefile.bak \
-  $(OBJS) $(BIN) $(HFUZZ_CC_BINS) \
+  $(OBJS) $(BIN) $(HFUZZ_CC_BIN) \
   $(LHFUZZ_ARCH) $(LHFUZZ_OBJS) \
   $(LCOMMON_ARCH) $(LCOMMON_OBJS) \
   $(LNETDRIVER_ARCH) $(LNETDRIVER_OBJS) \
   $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
 
-all: $(BIN) $(HFUZZ_CC_BINS) $(LHFUZZ_ARCH) $(LCOMMON_ARCH) $(LNETDRIVER_ARCH)
+all: $(BIN) $(HFUZZ_CC_BIN) $(LHFUZZ_ARCH) $(LCOMMON_ARCH) $(LNETDRIVER_ARCH)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
@@ -267,7 +267,7 @@ all: $(BIN) $(HFUZZ_CC_BINS) $(LHFUZZ_ARCH) $(LCOMMON_ARCH) $(LNETDRIVER_ARCH)
 $(BIN): $(OBJS) $(LCOMMON_ARCH)
 	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
 
-$(HFUZZ_CC_BINS): $(LHFUZZ_ARCH) $(LCOMMON_ARCH) $(HFUZZ_CC_SRCS)
+$(HFUZZ_CC_BIN): $(LCOMMON_ARCH) $(LHFUZZ_ARCH) $(LNETDRIVER_ARCH) $(HFUZZ_CC_SRCS)
 	$(LD) -o $@ $(HFUZZ_CC_SRCS) $(LDFLAGS) $(CFLAGS) -D_HFUZZ_INC_PATH=$(HFUZZ_INC)
 
 $(LCOMMON_OBJS): $(LCOMMON_SRCS)

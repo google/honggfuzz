@@ -22,8 +22,6 @@
 #define __XSTR(x) #x
 #define _XSTR(x) __XSTR(x)
 
-static char lhfuzzPath[PATH_MAX] = {0};
-
 static bool isCXX = false;
 static bool isGCC = false;
 
@@ -35,24 +33,37 @@ __asm__(
     "lhfuzz_start:\n"
     "   .incbin \"libhfuzz/libhfuzz.a\"\n"
     "lhfuzz_end:\n"
+    "\n"
+    "   .global lhfnetdriver_start\n"
+    "   .global lhfnetdriver_end\n"
+    "lhfnetdriver_start:\n"
+    "   .incbin \"libhfnetdriver/libhfnetdriver.a\"\n"
+    "lhfnetdriver_end:\n"
     "\n");
 
 static bool useASAN() {
-    if (getenv("HFUZZ_CC_ASAN") != NULL) {
+    if (getenv("HFUZZ_CC_ASAN")) {
         return true;
     }
     return false;
 }
 
 static bool useMSAN() {
-    if (getenv("HFUZZ_CC_MSAN") != NULL) {
+    if (getenv("HFUZZ_CC_MSAN")) {
         return true;
     }
     return false;
 }
 
 static bool useUBSAN() {
-    if (getenv("HFUZZ_CC_UBSAN") != NULL) {
+    if (getenv("HFUZZ_CC_UBSAN")) {
+        return true;
+    }
+    return false;
+}
+
+static bool useHFNetDriver() {
+    if (getenv("HFUZZ_CC_USE_NET_DRIVER")) {
         return true;
     }
     return false;
@@ -173,32 +184,28 @@ static void commonOpts(int* j, char** args) {
     }
 }
 
-static bool getLibHfuzz(void) {
-    const char* lhfuzzEnvLoc = getenv("HFUZZ_LHFUZZ_PATH");
-    if (lhfuzzEnvLoc) {
-        snprintf(lhfuzzPath, sizeof(lhfuzzPath), "%s", lhfuzzEnvLoc);
+static bool getLibPath(
+    const char* name, const char* env, uint8_t* start, uint8_t* end, char* path) {
+    const char* libEnvLoc = getenv(env);
+    if (libEnvLoc) {
+        snprintf(path, PATH_MAX, "%s", libEnvLoc);
         return true;
     }
 
-    extern uint8_t lhfuzz_start __asm__("lhfuzz_start");
-    extern uint8_t lhfuzz_end __asm__("lhfuzz_end");
-    ptrdiff_t len = (uintptr_t)&lhfuzz_end - (uintptr_t)&lhfuzz_start;
-    if (lhfuzzPath[0] == 0) {
-        uint64_t crc64 = util_CRC64(&lhfuzz_start, len);
-        snprintf(
-            lhfuzzPath, sizeof(lhfuzzPath), "/tmp/libhfuzz.%d.%" PRIx64 ".a", geteuid(), crc64);
-    }
+    ptrdiff_t len = (uintptr_t)end - (uintptr_t)start;
+    uint64_t crc64 = util_CRC64(start, len);
+    snprintf(path, PATH_MAX, "/tmp/%s.%d.%" PRIx64 ".a", name, geteuid(), crc64);
 
     /* Does the library exist, belongs to the user and is of the expected size */
     struct stat st;
-    if (stat(lhfuzzPath, &st) != -1) {
+    if (stat(path, &st) != -1) {
         if (st.st_size == len && st.st_uid == geteuid()) {
             return true;
         }
     }
 
     /* If not, provide it with atomic rename() */
-    char template[] = "/tmp/libhfuzz.a.XXXXXX";
+    char template[] = "/tmp/lib.honggfuzz.a.XXXXXX";
     int fd = mkostemp(template, O_CLOEXEC);
     if (fd == -1) {
         PLOG_E("mkostemp('%s')", template);
@@ -206,19 +213,48 @@ static bool getLibHfuzz(void) {
     }
     defer { close(fd); };
 
-    bool ret = files_writeToFd(fd, &lhfuzz_start, len);
+    bool ret = files_writeToFd(fd, start, len);
     if (!ret) {
         PLOG_E("Couldn't write to '%s'", template);
         return false;
     }
 
-    if (rename(template, lhfuzzPath) == -1) {
-        PLOG_E("Couldn't rename('%s', '%s')", template, lhfuzzPath);
+    if (rename(template, path) == -1) {
+        PLOG_E("Couldn't rename('%s', '%s')", template, path);
         unlink(template);
         return false;
     }
 
     return true;
+}
+
+static char* getLibHfuzzPath() {
+    extern uint8_t lhfuzz_start __asm__("lhfuzz_start");
+    extern uint8_t lhfuzz_end __asm__("lhfuzz_end");
+
+    static char path[PATH_MAX] = {};
+    if (path[0]) {
+        return path;
+    }
+    if (!getLibPath("libhfuzz", "HFUZZ_LHFUZZ_PATH", &lhfuzz_start, &lhfuzz_end, path)) {
+        LOG_F("Couldn't create the temporary libhfuzz.a");
+    }
+    return path;
+}
+
+static char* getLibHFNetDriverPath() {
+    extern uint8_t lhfnetdriver_start __asm__("lhfnetdriver_start");
+    extern uint8_t lhfnetdriver_end __asm__("lhfnetdriver_end");
+
+    static char path[PATH_MAX] = {};
+    if (path[0]) {
+        return path;
+    }
+    if (!getLibPath("libhfnetdriver", "HFUZZ_LHFNETDRIVER_PATH", &lhfnetdriver_start,
+            &lhfnetdriver_end, path)) {
+        LOG_F("Couldn't create the temporary libhfnetdriver.a");
+    }
+    return path;
 }
 
 static int ccMode(int argc, char** argv) {
@@ -240,10 +276,6 @@ static int ccMode(int argc, char** argv) {
 }
 
 static int ldMode(int argc, char** argv) {
-    if (!getLibHfuzz()) {
-        return EXIT_FAILURE;
-    }
-
     char* args[ARGS_MAX];
 
     int j = 0;
@@ -289,7 +321,11 @@ static int ldMode(int argc, char** argv) {
         args[j++] = argv[i];
     }
 
-    args[j++] = lhfuzzPath;
+    args[j++] = getLibHfuzzPath();
+    if (useHFNetDriver()) {
+        args[j++] = getLibHFNetDriverPath();
+    }
+
     args[j++] = "-lpthread";
 
     return execCC(j, args);
