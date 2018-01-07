@@ -72,8 +72,8 @@ void sigHandler(int sig) {
     ATOMIC_SET(sigReceived, sig);
 }
 
-static void setupTimer(void) {
-    struct itimerval it = {
+static void setupMainThreadTimer(void) {
+    const struct itimerval it = {
         .it_value = {.tv_sec = 1, .tv_usec = 0},
         .it_interval = {.tv_sec = 1, .tv_usec = 0},
     };
@@ -82,7 +82,7 @@ static void setupTimer(void) {
     }
 }
 
-static void setupSignalsPreThr(void) {
+static void setupSignalsPreThreads(void) {
     /* Block signals which should be handled or blocked in the main thread */
     sigset_t ss;
     sigemptyset(&ss);
@@ -98,7 +98,7 @@ static void setupSignalsPreThr(void) {
     }
 }
 
-static void setupSignalsPostThr(void) {
+static void setupSignalsMainThread(void) {
     struct sigaction sa = {
         .sa_handler = sigHandler,
         .sa_flags = 0,
@@ -185,11 +185,12 @@ int main(int argc, char** argv) {
      */
     pthread_t threads[hfuzz.threads.threadsMax];
 
-    setupSignalsPreThr();
+    setupSignalsPreThreads();
     fuzz_threadsStart(&hfuzz, threads);
-    setupSignalsPostThr();
+    setupSignalsMainThread();
 
-    setupTimer();
+    setupMainThreadTimer();
+
     for (;;) {
         if (hfuzz.useScreen) {
             display_display(&hfuzz);

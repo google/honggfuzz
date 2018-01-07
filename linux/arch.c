@@ -283,22 +283,19 @@ static bool arch_checkWait(run_t* run) {
     pid_t ptracePid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
     pid_t childPid = run->pid;
 
-    /* All queued wait events must be tested */
+    /* All queued wait events must be tested when SIGCHLD was delivered */
     for (;;) {
         int status;
-        pid_t pid = waitpid(-1, &status, __WALL | __WNOTHREAD | WNOHANG);
+        pid_t pid = TEMP_FAILURE_RETRY(waitpid(-1, &status, __WALL | __WNOTHREAD | WNOHANG));
         if (pid == 0) {
             return false;
-        }
-        if (pid == -1 && errno == EINTR) {
-            continue;
         }
         if (pid == -1 && errno == ECHILD) {
             LOG_D("No more processes to track");
             return true;
         }
         if (pid == -1) {
-            PLOG_F("wait4() failed");
+            PLOG_F("waitpid() failed");
         }
 
         char statusStr[4096];

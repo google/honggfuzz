@@ -361,7 +361,7 @@ static size_t arch_getPC(pid_t pid, REG_TYPE* pc, REG_TYPE* status_reg UNUSED) {
 #else
     HEADERS_STRUCT regs;
 #endif
-    struct iovec pt_iov = {
+    const struct iovec pt_iov = {
         .iov_base = &regs,
         .iov_len = sizeof(regs),
     };
@@ -1240,7 +1240,7 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid) {
 
     for (;;) {
         errno = 0;
-        struct dirent* res = readdir(dir);
+        const struct dirent* res = readdir(dir);
         if (res == NULL && errno != 0) {
             PLOG_E("Couldn't read contents of '%s'", path);
             return false;

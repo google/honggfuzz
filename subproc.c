@@ -154,7 +154,7 @@ bool subproc_PrepareExecv(run_t* run, const char* fileName) {
      * The address space limit. If big enough - roughly the size of RAM used
      */
     if (run->global->exe.asLimit) {
-        struct rlimit rl = {
+        const struct rlimit rl = {
             .rlim_cur = run->global->exe.asLimit * 1024ULL * 1024ULL,
             .rlim_max = run->global->exe.asLimit * 1024ULL * 1024ULL,
         };
@@ -164,7 +164,7 @@ bool subproc_PrepareExecv(run_t* run, const char* fileName) {
     }
 #if defined(RLIMIT_RSS)
     if (run->global->exe.rssLimit) {
-        struct rlimit rl = {
+        const struct rlimit rl = {
             .rlim_cur = run->global->exe.rssLimit * 1024ULL * 1024ULL,
             .rlim_max = run->global->exe.rssLimit * 1024ULL * 1024ULL,
         };
@@ -174,7 +174,7 @@ bool subproc_PrepareExecv(run_t* run, const char* fileName) {
     }
 #endif /* defined(RLIMIT_RSS) */
     if (run->global->exe.dataLimit) {
-        struct rlimit rl = {
+        const struct rlimit rl = {
             .rlim_cur = run->global->exe.dataLimit * 1024ULL * 1024ULL,
             .rlim_max = run->global->exe.dataLimit * 1024ULL * 1024ULL,
         };
