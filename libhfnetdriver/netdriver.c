@@ -1,3 +1,5 @@
+#include "libhfnetdriver/netdriver.h"
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -19,14 +21,16 @@
 
 #define HF_TCP_PORT_ENV "_HF_TCP_PORT"
 
+static char *initial_server_argv[] = {"fuzzer"};
+
 static struct {
     uint16_t tcp_port;
     int argc_server;
     char **argv_server;
 } hfnd_globals = {
     .tcp_port = 8080,
-    .argc_server = 0,
-    .argv_server = NULL,
+    .argc_server = 1,
+    .argv_server = initial_server_argv,
 };
 
 static void *netDriver_mainProgram(void *unused HF_ATTR_UNUSED) {
@@ -110,18 +114,6 @@ static void netDriver_initNsIfNeeded(void) {
  */
 __attribute__((section(".preinit_array"), used)) void (*__local_libhfnetdriver_preinit)(
     void) = netDriver_initNsIfNeeded;
-
-/*
- * ASAN BackgroundThread is also started from the .preinit_array, hijack the __asan_init symbol,
- * and call unshare() first
- */
-void __wrap___asan_init(void) {
-    netDriver_initNsIfNeeded();
-    __attribute__((weak)) void __real___asan_init(void);
-    if (__real___asan_init) {
-        __real___asan_init();
-    }
-}
 
 static int netDriver_sockConnAddr(const struct in6_addr *addr6, uint16_t portno) {
     int sock = socket(PF_INET6, SOCK_STREAM, IPPROTO_TCP);
