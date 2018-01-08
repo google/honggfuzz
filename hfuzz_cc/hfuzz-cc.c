@@ -335,11 +335,12 @@ static int ldMode(int argc, char** argv) {
         args[j++] = argv[i];
     }
 
-    args[j++] = getLibHfuzzPath();
     if (useHFNetDriver()) {
-        args[j++] = "-Wl,--wrap=__asan_init";
+        args[j++] = "-Wl,-u,HonggfuzzNetDriver_main";
+        args[j++] = "-Wl,-u,LLVMFuzzerTestOneInput";
         args[j++] = getLibHFNetDriverPath();
     }
+    args[j++] = getLibHfuzzPath();
 
     /* Needed by the libhfcommon */
     args[j++] = "-lpthread";
