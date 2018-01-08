@@ -85,7 +85,8 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __cyg_profile_func_enter(void* func, void* call
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void __cyg_profile_func_exit(void* func UNUSED, void* caller UNUSED) {
+ATTRIBUTE_X86_REQUIRE_SSE42 void __cyg_profile_func_exit(
+    void* func HF_ATTR_UNUSED, void* caller HF_ATTR_UNUSED) {
     return;
 }
 
@@ -205,9 +206,10 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp(
  * gcc-8 -fsanitize-coverage=trace-cmp trace hooks
  * TODO: evaluate, whether it makes sense to implement them
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmpf(float Arg1 UNUSED, float Arg2 UNUSED) {}
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmpf(
+    float Arg1 HF_ATTR_UNUSED, float Arg2 HF_ATTR_UNUSED) {}
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmpd(
-    double Arg1 UNUSED, double Arg2 UNUSED) {}
+    double Arg1 HF_ATTR_UNUSED, double Arg2 HF_ATTR_UNUSED) {}
 
 /*
  * -fsanitize-coverage=indirect-calls
@@ -224,7 +226,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(uintptr_t callee
 }
 
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_indir_call16(
-    void* callee, void* callee_cache16[] UNUSED) {
+    void* callee, void* callee_cache16[] HF_ATTR_UNUSED) {
     register size_t pos1 = (uintptr_t)__builtin_return_address(0) << 12;
     register size_t pos2 = (uintptr_t)callee & 0xFFF;
     register size_t pos = (pos1 | pos2) & _HF_PERF_BITMAP_BITSZ_MASK;

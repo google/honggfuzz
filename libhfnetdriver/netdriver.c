@@ -28,7 +28,7 @@ static struct {
     .argv_server = NULL,
 };
 
-static void *netDriver_mainProgram(void *unused UNUSED) {
+static void *netDriver_mainProgram(void *unused HF_ATTR_UNUSED) {
     /*
      * When redefining 'main' to 'HonggfuzzNetDriver_main' (e.g. with
      * -Dmain=HonggfuzzNetDriver_main), and compiling with a C++ compiler, the symbol will be
@@ -154,7 +154,8 @@ int netDriver_sockConn(uint16_t portno) {
  * Decide which TCP port should be used for sending inputs
  * Define this function in your code to provide custom TCP port choice
  */
-__attribute__((weak)) uint16_t HonggfuzzNetDriverPort(int argc UNUSED, char **argv UNUSED) {
+__attribute__((weak)) uint16_t HonggfuzzNetDriverPort(
+    int argc HF_ATTR_UNUSED, char **argv HF_ATTR_UNUSED) {
     const char *port_str = getenv(HF_TCP_PORT_ENV);
     if (port_str == NULL) {
         return hfnd_globals.tcp_port;

@@ -348,7 +348,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, REG_TYPE pc) 
     return memsz;
 }
 
-static size_t arch_getPC(pid_t pid, REG_TYPE* pc, REG_TYPE* status_reg UNUSED) {
+static size_t arch_getPC(pid_t pid, REG_TYPE* pc, REG_TYPE* status_reg HF_ATTR_UNUSED) {
 /*
  * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
  * the correct register values if struct size is bigger than expected. As such the

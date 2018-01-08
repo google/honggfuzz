@@ -27,9 +27,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#ifndef UNUSED
-#define UNUSED __attribute__((unused))
-#endif /* ifndef UNUSED */
+#ifndef HF_ATTR_UNUSED
+#define HF_ATTR_UNUSED __attribute__((unused))
+#endif /* ifndef HF_ATTR_UNUSED */
 
 #ifndef ARRAYSIZE
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))

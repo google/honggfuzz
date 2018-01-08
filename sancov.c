@@ -231,7 +231,7 @@ static inline void sancov_trieCreate(node_t** root) {
 }
 
 /* Destroy Trie - iterate nodes and free memory */
-UNUSED static void sancov_trieDestroy(node_t* root) {
+HF_ATTR_UNUSED static void sancov_trieDestroy(node_t* root) {
     node_t* pNode = root;
     node_t* pNodeTmp = root;
     while (pNode) {

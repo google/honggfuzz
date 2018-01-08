@@ -89,7 +89,7 @@ __attribute__((hot)) static inline void arch_perfBtsCount(run_t* run) {
 }
 #endif /* defined(PERF_ATTR_SIZE_VER5) */
 
-static inline void arch_perfMmapParse(run_t* run UNUSED) {
+static inline void arch_perfMmapParse(run_t* run HF_ATTR_UNUSED) {
 #if defined(PERF_ATTR_SIZE_VER5)
     struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
     if (pem->aux_head == pem->aux_tail) {
@@ -367,7 +367,7 @@ void arch_perfAnalyze(run_t* run) {
     run->linux.hwCnts.cpuBranchCnt = branchCount;
 }
 
-bool arch_perfInit(honggfuzz_t* hfuzz UNUSED) {
+bool arch_perfInit(honggfuzz_t* hfuzz HF_ATTR_UNUSED) {
     uint8_t buf[PATH_MAX + 1];
     ssize_t sz =
         files_readFileToBufMax("/sys/bus/event_source/devices/intel_pt/type", buf, sizeof(buf) - 1);

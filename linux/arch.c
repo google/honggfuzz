@@ -73,7 +73,7 @@ static __thread jmp_buf env;
 
 HF_ATTR_NO_SANITIZE_ADDRESS
 HF_ATTR_NO_SANITIZE_MEMORY
-static int arch_cloneFunc(void* arg UNUSED) {
+static int arch_cloneFunc(void* arg HF_ATTR_UNUSED) {
     longjmp(env, 1);
     abort();
     return 0;

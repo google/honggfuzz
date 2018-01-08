@@ -51,7 +51,7 @@ static int sigReceived = 0;
 honggfuzz_t hfuzz;
 
 static void exitWithMsg(const char* msg, int exit_code) {
-    UNUSED ssize_t sz = write(STDERR_FILENO, msg, strlen(msg));
+    HF_ATTR_UNUSED ssize_t sz = write(STDERR_FILENO, msg, strlen(msg));
     exit(exit_code);
     abort();
 }

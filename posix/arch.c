@@ -145,7 +145,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
     return true;
 }
 
-pid_t arch_fork(run_t* fuzzer UNUSED) { return fork(); }
+pid_t arch_fork(run_t* fuzzer HF_ATTR_UNUSED) { return fork(); }
 
 bool arch_launchChild(run_t* run) {
 #define ARGS_MAX 512
@@ -180,9 +180,9 @@ bool arch_launchChild(run_t* run) {
     return false;
 }
 
-void arch_prepareParent(run_t* fuzzer UNUSED) {}
+void arch_prepareParent(run_t* fuzzer HF_ATTR_UNUSED) {}
 
-void arch_prepareParentAfterFork(run_t* fuzzer UNUSED) {}
+void arch_prepareParentAfterFork(run_t* fuzzer HF_ATTR_UNUSED) {}
 
 void arch_reapChild(run_t* run) {
     for (;;) {
@@ -251,6 +251,6 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
     return true;
 }
 
-void arch_sigFunc(int sig UNUSED) { return; }
+void arch_sigFunc(int sig HF_ATTR_UNUSED) { return; }
 
-bool arch_archThreadInit(run_t* fuzzer UNUSED) { return true; }
+bool arch_archThreadInit(run_t* fuzzer HF_ATTR_UNUSED) { return true; }

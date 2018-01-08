@@ -122,7 +122,7 @@ void arch_ptAnalyze(run_t* run) {
 
 #else /* _HF_LINUX_INTEL_PT_LIB */
 
-void arch_ptAnalyze(run_t* fuzzer UNUSED) {
+void arch_ptAnalyze(run_t* fuzzer HF_ATTR_UNUSED) {
     LOG_F(
         "The program has not been linked against the Intel's Processor Trace Library (libipt.so)");
 }
