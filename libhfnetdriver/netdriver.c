@@ -131,7 +131,13 @@ static int netDriver_sockConnAddr(const struct in6_addr *addr6, uint16_t portno)
         .sin6_addr = *addr6,
         .sin6_scope_id = 0,
     };
-    return TEMP_FAILURE_RETRY(connect(sock, (const struct sockaddr *)&saddr6, sizeof(saddr6)));
+    if (TEMP_FAILURE_RETRY(connect(sock, (const struct sockaddr *)&saddr6, sizeof(saddr6))) == -1) {
+        int saved_errno = errno;
+        close(sock);
+        errno = saved_errno;
+        return -1;
+    }
+    return sock;
 }
 
 int netDriver_sockConn(uint16_t portno) {
@@ -153,9 +159,9 @@ int netDriver_sockConn(uint16_t portno) {
     if ((sock = netDriver_sockConnAddr(&in6addr_loopback, portno)) != -1) {
         return sock;
     }
-
     PLOG_W("Honggfuzz Net Driver (pid=%d): connect(loopback, port:%" PRIu16 ")", (int)getpid(),
         portno);
+
     return -1;
 }
 
