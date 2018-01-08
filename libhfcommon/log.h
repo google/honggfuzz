@@ -24,6 +24,7 @@
 
 #include <pthread.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 enum llevel_t { FATAL = 0, ERROR, WARNING, INFO, DEBUG, HELP, HELP_BOLD };
 
@@ -48,10 +49,9 @@ extern enum llevel_t log_level;
     if (log_level >= ERROR) {                                      \
         logLog(ERROR, __FUNCTION__, __LINE__, false, __VA_ARGS__); \
     }
-#define LOG_F(...)                                                 \
-    if (log_level >= FATAL) {                                      \
-        logLog(FATAL, __FUNCTION__, __LINE__, false, __VA_ARGS__); \
-    }
+#define LOG_F(...)                                             \
+    logLog(FATAL, __FUNCTION__, __LINE__, false, __VA_ARGS__); \
+    exit(EXIT_FAILURE);
 
 #define PLOG_D(...)                                               \
     if (log_level >= DEBUG) {                                     \
@@ -69,10 +69,9 @@ extern enum llevel_t log_level;
     if (log_level >= ERROR) {                                     \
         logLog(ERROR, __FUNCTION__, __LINE__, true, __VA_ARGS__); \
     }
-#define PLOG_F(...)                                               \
-    if (log_level >= FATAL) {                                     \
-        logLog(FATAL, __FUNCTION__, __LINE__, true, __VA_ARGS__); \
-    }
+#define PLOG_F(...)                                           \
+    logLog(FATAL, __FUNCTION__, __LINE__, true, __VA_ARGS__); \
+    exit(EXIT_FAILURE);
 
 extern bool logInitLogFile(const char* logfile, enum llevel_t ll);
 

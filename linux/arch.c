@@ -71,13 +71,9 @@ static inline bool arch_shouldAttach(run_t* run) {
 static uint8_t arch_clone_stack[128 * 1024];
 static __thread jmp_buf env;
 
-#if defined(__has_feature)
-#if __has_feature(address_sanitizer)
-__attribute__((no_sanitize("address"))) __attribute__((no_sanitize("memory")))
-#endif /* if __has_feature(address_sanitizer) */
-#endif /* if defined(__has_feature) */
-static int
-arch_cloneFunc(void* arg UNUSED) {
+HF_ATTR_NO_SANITIZE_ADDRESS
+HF_ATTR_NO_SANITIZE_MEMORY
+static int arch_cloneFunc(void* arg UNUSED) {
     longjmp(env, 1);
     abort();
     return 0;

@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _HF_COMMON_H_
-#define _HF_COMMON_H_
+#ifndef _HF_COMMON_COMMON_H_
+#define _HF_COMMON_COMMON_H_
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -51,4 +51,20 @@
     })
 #endif /* ifndef TEMP_FAILURE_RETRY */
 
-#endif /* ifndef _HF_COMMON_H_ */
+#define HF_ATTR_NO_SANITIZE_ADDRESS
+#ifdef __has_feature
+#if __has_feature(address_sanitizer)
+#undef HF_ATTR_NO_SANITIZE_ADDRESS
+#define HF_ATTR_NO_SANITIZE_ADDRESS __attribute__((no_sanitize("address")))
+#endif /* if __has_feature(address_sanitizer) */
+#endif /* ifdef __has_feature */
+
+#define HF_ATTR_NO_SANITIZE_MEMORY
+#ifdef __has_feature
+#if __has_feature(memory_sanitizer)
+#undef HF_ATTR_NO_SANITIZE_MEMORY
+#define HF_ATTR_NO_SANITIZE_MEMORY __attribute__((no_sanitize("memory")))
+#endif /* if __has_feature(memory_sanitizer) */
+#endif /* ifdef __has_feature */
+
+#endif /* ifndef _HF_COMMON_COMMON_H_ */

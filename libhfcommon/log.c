@@ -141,7 +141,7 @@ void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt
     /* End printing logs */
 
     if (ll == FATAL) {
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 }
 
