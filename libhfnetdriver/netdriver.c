@@ -108,13 +108,6 @@ static void netDriver_initNsIfNeeded(void) {
         (int)getpid());
 }
 
-/*
- * Initialize namespaces before e.g. ASAN, which can spawn threads, what can use
- * unshare(CLONE_NEWUSER|...) to fail
- */
-__attribute__((section(".preinit_array"), used)) void (*__local_libhfnetdriver_preinit)(
-    void) = netDriver_initNsIfNeeded;
-
 static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen) {
     int sock = socket(addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
     if (sock == -1) {
