@@ -88,9 +88,9 @@ bool nsEnter(uintptr_t cloneFlags) {
 }
 
 bool nsIfaceUp(const char* ifacename) {
-    int sock = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, IPPROTO_IP);
+    int sock = socket(PF_INET6, SOCK_STREAM | SOCK_CLOEXEC, IPPROTO_TCP);
     if (sock == -1) {
-        PLOG_E("socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, IPPROTO_IP)");
+        PLOG_E("socket(PF_INET6, SOCK_STREAM|SOCK_CLOEXEC, IPPROTO_TCP)");
         return false;
     }
 

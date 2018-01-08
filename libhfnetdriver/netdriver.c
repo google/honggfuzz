@@ -1,3 +1,4 @@
+#include <arpa/inet.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <netinet/in.h>
@@ -122,32 +123,48 @@ void __wrap___asan_init(void) {
     }
 }
 
-int netDriver_sockConn(uint16_t portno) {
-    if (portno < 1) {
-        LOG_F("Specified TCP port (%d) cannot be < 1", portno);
-    }
-
-    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+static int netDriver_sockConnAddr(const struct in6_addr *addr6, uint16_t portno) {
+    int sock = socket(PF_INET6, SOCK_STREAM, IPPROTO_TCP);
     if (sock == -1) {
-        PLOG_F("socket(AF_INET, SOCK_STREAM, IPPROTO_IP)");
+        PLOG_F("socket(PF_INET6, SOCK_STREAM, IPPROTO_TCP)");
     }
-
     int sz = (1024 * 1024);
     if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &sz, sizeof(sz)) == -1) {
         PLOG_F("setsockopt(socket=%d, SOL_SOCKET, SO_SNDBUF, size=%d", sock, sz);
     }
+    const struct sockaddr_in6 saddr6 = {
+        .sin6_family = AF_INET6,
+        .sin6_port = htons(portno),
+        .sin6_flowinfo = 0,
+        .sin6_addr = *addr6,
+        .sin6_scope_id = 0,
+    };
+    return TEMP_FAILURE_RETRY(connect(sock, (const struct sockaddr *)&saddr6, sizeof(saddr6)));
+}
 
-    struct sockaddr_in saddr;
-    saddr.sin_family = AF_INET;
-    saddr.sin_port = htons(portno);
-    saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    if (TEMP_FAILURE_RETRY(connect(sock, (const struct sockaddr *)&saddr, sizeof(saddr))) == -1) {
-        PLOG_W("Honggfuzz Net Driver (pid=%d): connect('127.0.0.1:%" PRIu16 ")", (int)getpid(),
-            portno);
-        return -1;
+int netDriver_sockConn(uint16_t portno) {
+    int sock = -1;
+
+    if (portno < 1) {
+        LOG_F("Specified TCP port (%d) cannot be < 1", portno);
     }
 
-    return sock;
+    struct in6_addr in6a;
+    if (inet_pton(AF_INET6, "::ffff:127.0.0.1", &in6a) != 1) {
+        PLOG_F("Couldn't convert '::ffff:127.0.0.1' into in6_addr structure");
+    }
+    /* Try to connect to ::ffff:127.0.0.1 (IPv4 Loopback) first */
+    if ((sock = netDriver_sockConnAddr(&in6a, portno)) != -1) {
+        return sock;
+    }
+    /* Next, try ::1 */
+    if ((sock = netDriver_sockConnAddr(&in6addr_loopback, portno)) != -1) {
+        return sock;
+    }
+
+    PLOG_W("Honggfuzz Net Driver (pid=%d): connect(loopback, port:%" PRIu16 ")", (int)getpid(),
+        portno);
+    return -1;
 }
 
 /*
