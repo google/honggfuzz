@@ -114,18 +114,6 @@ static void netDriver_initNsIfNeeded(void) {
 __attribute__((section(".preinit_array"), used)) void (*__local_libhfnetdriver_preinit)(
     void) = netDriver_initNsIfNeeded;
 
-/*
- * ASAN BackgroundThread is also started from the .preinit_array, hijack the __asan_init symbol,
- * and call unshare() first
- */
-void __wrap___asan_init(void) {
-    netDriver_initNsIfNeeded();
-    __attribute__((weak)) void __real___asan_init(void);
-    if (__real___asan_init) {
-        __real___asan_init();
-    }
-}
-
 int netDriver_sockConn(uint16_t portno) {
     if (portno < 1) {
         LOG_F("Specified TCP port (%d) cannot be < 1", portno);
