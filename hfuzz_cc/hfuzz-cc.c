@@ -369,7 +369,6 @@ int main(int argc, char** argv) {
         isGCC = true;
     }
     if (argc <= 1) {
-        LOG_I("'%s': No arguments provided", argv[0]);
         return execCC(argc, argv);
     }
     if (argc > (ARGS_MAX - 128)) {
