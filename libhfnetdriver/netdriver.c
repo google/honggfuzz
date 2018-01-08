@@ -37,13 +37,13 @@ static void *netDriver_mainProgram(void *unused UNUSED) {
     __attribute__((weak)) int HonggfuzzNetDriver_main(int argc, char **argv);
     __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainv(); /* C++: int(*)(void) */
     __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainiPPc(
-        int argc, char **argv); /* C++: int(*)(int, char**) */
+        int argc, char **argv); /* C++: (*)(int, char**) */
     __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainiPPKc(
-        int argc, char **argv); /* C++: int(*)(int, const char**) */
+        int argc, char **argv); /* C++: (*)(int, const char**) */
     __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainiPKPKc(
-        int argc, char **argv); /* C++: int(*)(int, const char* const*) */
+        int argc, char **argv); /* C++: (*)(int, const char* const*) */
     __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainiPKPc(
-        int argc, char **argv); /* C++: int(*)(int, char* const*) */
+        int argc, char **argv); /* C++: (*)(int, char* const*) */
 
     int ret = 0;
     /* Try both the standard C symbol and variants of the C++ (mangled) symbol */
