@@ -1,3 +1,5 @@
+#include "libhfnetdriver/netdriver.h"
+
 #include <errno.h>
 #include <inttypes.h>
 #include <netinet/in.h>
