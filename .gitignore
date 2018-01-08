@@ -5,6 +5,7 @@
 *.a
 honggfuzz
 Makefile.bak
+hfuzz_cc/hfuzz-cc
 hfuzz_cc/hfuzz-clang
 hfuzz_cc/hfuzz-clang++
 hfuzz_cc/hfuzz-gcc
