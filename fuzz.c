@@ -632,6 +632,10 @@ static void* fuzz_threadNew(void* arg) {
     unsigned int fuzzNo = ATOMIC_POST_INC(hfuzz->threads.threadsActiveCnt);
     LOG_I("Launched new fuzzing thread, no. #%" PRId32, fuzzNo);
 
+    if (pthread_setname_np(pthread_self(), "HFUZZ-%" PRId32) != 0) {
+        PLOG_W("pthread_setname_np(pthread_self()) failed");
+    }
+
     run_t run = {
         .global = hfuzz,
         .pid = 0,

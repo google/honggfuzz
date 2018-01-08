@@ -77,7 +77,7 @@ static void HonggfuzzPersistentLoop(void) {
         size_t len;
         const uint8_t* buf;
 
-        HF_ITER(&buf, &len);
+        HonggfuzzFetchData(&buf, &len);
         HonggfuzzRunOneInput(buf, len);
     }
 }
