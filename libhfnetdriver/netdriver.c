@@ -115,26 +115,20 @@ static void netDriver_initNsIfNeeded(void) {
 __attribute__((section(".preinit_array"), used)) void (*__local_libhfnetdriver_preinit)(
     void) = netDriver_initNsIfNeeded;
 
-static int netDriver_sockConnAddr(const struct in6_addr *addr6, uint16_t portno) {
-    int sock = socket(PF_INET6, SOCK_STREAM, IPPROTO_TCP);
+static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen) {
+    int sock = socket(addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
     if (sock == -1) {
-        PLOG_F("socket(PF_INET6, SOCK_STREAM, IPPROTO_TCP)");
+        PLOG_D("socket(type=%d, SOCK_STREAM, IPPROTO_TCP)", addr->sa_family);
+        return -1;
     }
     int sz = (1024 * 1024);
     if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &sz, sizeof(sz)) == -1) {
-        PLOG_F("setsockopt(socket=%d, SOL_SOCKET, SO_SNDBUF, size=%d", sock, sz);
+        PLOG_F("setsockopt(type=%d, socket=%d, SOL_SOCKET, SO_SNDBUF, size=%d", addr->sa_family,
+            sock, sz);
     }
-    const struct sockaddr_in6 saddr6 = {
-        .sin6_family = AF_INET6,
-        .sin6_port = htons(portno),
-        .sin6_flowinfo = 0,
-        .sin6_addr = *addr6,
-        .sin6_scope_id = 0,
-    };
-    if (TEMP_FAILURE_RETRY(connect(sock, (const struct sockaddr *)&saddr6, sizeof(saddr6))) == -1) {
-        int saved_errno = errno;
+    if (TEMP_FAILURE_RETRY(connect(sock, addr, socklen)) == -1) {
+        PLOG_D("connect(type=%d, loopback)", addr->sa_family);
         close(sock);
-        errno = saved_errno;
         return -1;
     }
     return sock;
@@ -147,20 +141,30 @@ int netDriver_sockConn(uint16_t portno) {
         LOG_F("Specified TCP port (%d) cannot be < 1", portno);
     }
 
-    struct in6_addr in6a;
-    if (inet_pton(AF_INET6, "::ffff:127.0.0.1", &in6a) != 1) {
-        PLOG_F("Couldn't convert '::ffff:127.0.0.1' into in6_addr structure");
-    }
-    /* Try to connect to ::ffff:127.0.0.1 (IPv4 Loopback) first */
-    if ((sock = netDriver_sockConnAddr(&in6a, portno)) != -1) {
+    /* Try IPv4's 127.0.0.1 first */
+    const struct sockaddr_in saddr4 = {
+        .sin_family = AF_INET,
+        .sin_port = htons(portno),
+        .sin_addr.s_addr = htonl(INADDR_LOOPBACK),
+    };
+    if ((sock = netDriver_sockConnAddr((const struct sockaddr *)&saddr4, sizeof(saddr4))) != -1) {
         return sock;
     }
-    /* Next, try ::1 */
-    if ((sock = netDriver_sockConnAddr(&in6addr_loopback, portno)) != -1) {
+
+    /* Next, try IPv6's ::1 */
+    const struct sockaddr_in6 saddr6 = {
+        .sin6_family = AF_INET6,
+        .sin6_port = htons(portno),
+        .sin6_flowinfo = 0,
+        .sin6_addr = in6addr_loopback,
+        .sin6_scope_id = 0,
+    };
+    if ((sock = netDriver_sockConnAddr((const struct sockaddr *)&saddr6, sizeof(saddr6))) != -1) {
         return sock;
     }
-    PLOG_W("Honggfuzz Net Driver (pid=%d): connect(loopback, port:%" PRIu16 ")", (int)getpid(),
-        portno);
+
+    LOG_W("Honggfuzz Net Driver (pid=%d): couldn't connect(loopback, port:%" PRIu16 ")",
+        (int)getpid(), portno);
 
     return -1;
 }

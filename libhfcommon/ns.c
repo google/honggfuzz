@@ -88,10 +88,12 @@ bool nsEnter(uintptr_t cloneFlags) {
 }
 
 bool nsIfaceUp(const char* ifacename) {
-    int sock = socket(PF_INET6, SOCK_STREAM | SOCK_CLOEXEC, IPPROTO_TCP);
+    int sock = socket(PF_INET, SOCK_STREAM | SOCK_CLOEXEC, IPPROTO_TCP);
     if (sock == -1) {
-        PLOG_E("socket(PF_INET6, SOCK_STREAM|SOCK_CLOEXEC, IPPROTO_TCP)");
-        return false;
+        if ((sock = socket(PF_INET6, SOCK_STREAM | SOCK_CLOEXEC, IPPROTO_TCP)) == -1) {
+            PLOG_E("socket(PF_INET6, SOCK_STREAM|SOCK_CLOEXEC, IPPROTO_TCP)");
+            return false;
+        }
     }
 
     struct ifreq ifr;
