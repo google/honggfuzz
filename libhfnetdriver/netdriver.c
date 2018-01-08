@@ -20,14 +20,16 @@
 
 #define HF_TCP_PORT_ENV "_HF_TCP_PORT"
 
+static char *initial_server_argv[] = {"fuzzer"};
+
 static struct {
     uint16_t tcp_port;
     int argc_server;
     char **argv_server;
 } hfnd_globals = {
     .tcp_port = 8080,
-    .argc_server = 0,
-    .argv_server = NULL,
+    .argc_server = 1,
+    .argv_server = initial_server_argv,
 };
 
 static void *netDriver_mainProgram(void *unused HF_ATTR_UNUSED) {
