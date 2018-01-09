@@ -1,18 +1,18 @@
 #ifndef _HF_NETDRIVER_NETDRIVER_H
 #define _HF_NETDRIVER_NETDRIVER_H
 
+#include <stdint.h>
+#include <inttypes.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <inttypes.h>
-#include <stdint.h>
-
-#ifndef HFND_FUZZING
-#define MAIN_OR_HFND_FUZZ_TARGET(x, y) main(x, y)
-#else /* ifndef HFND_FUZZING */
-#define MAIN_OR_HFND_FUZZ_TARGET(x, y) HonggfuzzNetDriver_main(x, y)
-#endif /* ifndef HFND_FUZZING */
+#ifdef __cplusplus
+#define MAIN_OR_HFND_FUZZ_TARGET(x, y) extern "C" __attribute__((used)) int HonggfuzzNetDriver_main(x, y)
+#else /* ifdef __cplusplus */
+#define MAIN_OR_HFND_FUZZ_TARGET(x, y) __attribute__((used)) int HonggfuzzNetDriver_main(x, y)
+#endif /* ifdef __cplusplus */
 
 /*
  * Flags which will be passed to the original program running in a separate thread should go into
