@@ -213,7 +213,7 @@ void netDriver_waitForServerReady(uint16_t portno) {
         (int)getpid(), portno);
 }
 
-int LLVMFuzzerInitialize(int *argc, char ***argv) {
+__attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
     hfnd_globals.tcp_port = HonggfuzzNetDriverPort(*argc, *argv);
     *argc = HonggfuzzNetDriverArgsForServer(
         *argc, *argv, &hfnd_globals.argc_server, &hfnd_globals.argv_server);
@@ -227,7 +227,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv) {
     return 0;
 }
 
-int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
+__attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
     int sock = netDriver_sockConn(hfnd_globals.tcp_port);
     if (sock == -1) {
         LOG_F("Couldn't connect to the server TCP port");
