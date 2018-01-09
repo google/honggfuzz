@@ -41,6 +41,13 @@ __asm__(
     "lhfnetdriver_end:\n"
     "\n");
 
+static const char* _basename(const char* path) {
+    static __thread char fname[PATH_MAX];
+    /* basename() can modify the argument (sic!) */
+    snprintf(fname, sizeof(fname), "%s", path);
+    return basename(fname);
+}
+
 static bool useASAN() {
     if (getenv("HFUZZ_CC_ASAN")) {
         return true;
@@ -62,8 +69,15 @@ static bool useUBSAN() {
     return false;
 }
 
-static bool useHFNetDriver() {
-    if (getenv("HFUZZ_CC_USE_NET_DRIVER")) {
+static bool useHFNetDriver(const char* output) {
+    const char* pattern = getenv("HFUZZ_NET_DRIVER_OUTPUT");
+    if (!pattern) {
+        return false;
+    }
+    if (!output) {
+        return false;
+    }
+    if (strcmp(_basename(output), pattern) == 0) {
         return true;
     }
     return false;
@@ -331,16 +345,20 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=xmlStrstr";
     args[j++] = "-Wl,--wrap=xmlStrcasestr";
 
+    const char* output = NULL;
     for (int i = 1; i < argc; i++) {
+        if (strncmp(argv[i], "-o", 2) == 0) {
+            output = argv[i + 1];
+        }
         args[j++] = argv[i];
     }
 
-    if (useHFNetDriver()) {
+    args[j++] = getLibHfuzzPath();
+    if (useHFNetDriver(output)) {
         args[j++] = "-Wl,-u,HonggfuzzNetDriver_main";
         args[j++] = "-Wl,-u,LLVMFuzzerTestOneInput";
         args[j++] = getLibHFNetDriverPath();
     }
-    args[j++] = getLibHfuzzPath();
 
     /* Needed by the libhfcommon */
     args[j++] = "-lpthread";
@@ -349,11 +367,7 @@ static int ldMode(int argc, char** argv) {
 }
 
 static bool baseNameContains(const char* path, const char* str) {
-    char fname[PATH_MAX];
-    /* basename() can modify the argument (sic!) */
-    snprintf(fname, sizeof(fname), "%s", path);
-    const char* bname = basename(fname);
-    if (strstr(bname, str)) {
+    if (strstr(_basename(path), str)) {
         return true;
     }
     return false;

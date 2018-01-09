@@ -21,7 +21,7 @@
 
 #define HF_TCP_PORT_ENV "_HF_TCP_PORT"
 
-static char *initial_server_argv[] = {"fuzzer"};
+static char *initial_server_argv[] = {"fuzzer", NULL};
 
 static struct {
     uint16_t tcp_port;
