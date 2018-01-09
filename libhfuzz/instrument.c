@@ -151,18 +151,20 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint6
  */
 
 #if defined(_HF_ARCH_DARWIN)
-#define HF_DARWIN_WEAK weak,
+#pragma weak __sanitizer_cov_trace_const_cmp1 = __sanitizer_cov_trace_cmp1
+#pragma weak __sanitizer_cov_trace_const_cmp2 = __sanitizer_cov_trace_cmp2
+#pragma weak __sanitizer_cov_trace_const_cmp4 = __sanitizer_cov_trace_cmp4
+#pragma weak __sanitizer_cov_trace_const_cmp8 = __sanitizer_cov_trace_cmp8
 #else
-#define HF_DARWIN_WEAK
-#endif /* defined(_HF_ARCH_DARWIN) */
 void __sanitizer_cov_trace_const_cmp1(uint8_t Arg1, uint8_t Arg2)
-    __attribute__((HF_DARWIN_WEAK alias("__sanitizer_cov_trace_cmp1")));
+    __attribute__((alias("__sanitizer_cov_trace_cmp1")));
 void __sanitizer_cov_trace_const_cmp2(uint16_t Arg1, uint16_t Arg2)
-    __attribute__((HF_DARWIN_WEAK alias("__sanitizer_cov_trace_cmp2")));
+    __attribute__((alias("__sanitizer_cov_trace_cmp2")));
 void __sanitizer_cov_trace_const_cmp4(uint32_t Arg1, uint32_t Arg2)
-    __attribute__((HF_DARWIN_WEAK alias("__sanitizer_cov_trace_cmp4")));
+    __attribute__((alias("__sanitizer_cov_trace_cmp4")));
 void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2)
-    __attribute__((HF_DARWIN_WEAK alias("__sanitizer_cov_trace_cmp8")));
+    __attribute__((alias("__sanitizer_cov_trace_cmp8")));
+#endif /* defined(_HF_ARCH_DARWIN) */
 
 /*
  * Cases[0] is number of comparison entries
