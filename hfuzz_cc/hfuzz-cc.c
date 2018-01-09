@@ -69,15 +69,8 @@ static bool useUBSAN() {
     return false;
 }
 
-static bool useHFNetDriver(const char* output) {
-    const char* pattern = getenv("HFUZZ_NET_DRIVER_OUTPUT");
-    if (!pattern) {
-        return false;
-    }
-    if (!output) {
-        return false;
-    }
-    if (strcmp(_basename(output), pattern) == 0) {
+static bool useM32() {
+    if (getenv("HFUZZ_FORCE_M32")) {
         return true;
     }
     return false;
@@ -278,8 +271,18 @@ static void commonOpts(int* j, char** args) {
     args[(*j)++] = "-fno-builtin";
     args[(*j)++] = "-fno-omit-frame-pointer";
     args[(*j)++] = "-D__NO_STRING_INLINES";
+    /* Make it possible to use the libhfnetdriver */
+    if (isCXX) {
+        args[(*j)++] =
+            "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)=extern \"C\" __attribute__((used)) int "
+            "HonggfuzzNetDriver_main(x,y)";
+    } else {
+        args[(*j)++] =
+            "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)=__attribute__((used)) int "
+            "HonggfuzzNetDriver_main(x,y)";
+    }
 
-    if (getenv("HFUZZ_FORCE_M32")) {
+    if (useM32()) {
         args[(*j)++] = "-m32";
     }
 }
@@ -345,22 +348,14 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=xmlStrstr";
     args[j++] = "-Wl,--wrap=xmlStrcasestr";
 
-    const char* output = NULL;
     for (int i = 1; i < argc; i++) {
-        if (strncmp(argv[i], "-o", 2) == 0) {
-            output = argv[i + 1];
-        }
         args[j++] = argv[i];
     }
-
-    args[j++] = getLibHfuzzPath();
-    if (useHFNetDriver(output)) {
-        args[j++] = "-Wl,-u,HonggfuzzNetDriver_main";
-        args[j++] = "-Wl,-u,LLVMFuzzerTestOneInput";
-        args[j++] = getLibHFNetDriverPath();
-    }
-
     /* Needed by the libhfcommon */
+
+    args[j++] = getLibHFNetDriverPath();
+    args[j++] = getLibHfuzzPath();
+    args[j++] = "-Wl,-u,LLVMFuzzerTestOneInput";
     args[j++] = "-lpthread";
 
     return execCC(j, args);

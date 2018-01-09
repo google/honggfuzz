@@ -8,6 +8,12 @@ extern "C" {
 #include <inttypes.h>
 #include <stdint.h>
 
+#ifndef HFND_FUZZING
+#define MAIN_OR_HFND_FUZZ_TARGET(x, y) main(x, y)
+#else /* ifndef HFND_FUZZING */
+#define MAIN_OR_HFND_FUZZ_TARGET(x, y) HonggfuzzNetDriver_main(x, y)
+#endif /* ifndef HFND_FUZZING */
+
 /*
  * Flags which will be passed to the original program running in a separate thread should go into
  * server_argc/server_argv

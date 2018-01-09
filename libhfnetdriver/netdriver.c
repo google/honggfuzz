@@ -33,40 +33,14 @@ static struct {
     .argv_server = initial_server_argv,
 };
 
-static void *netDriver_mainProgram(void *unused HF_ATTR_UNUSED) {
-    /*
-     * When redefining 'main' to 'HonggfuzzNetDriver_main' (e.g. with
-     * -Dmain=HonggfuzzNetDriver_main), and compiling with a C++ compiler, the symbol will be
-     * mangled (as opposed to the regular 'main')
-     */
-    __attribute__((weak)) int HonggfuzzNetDriver_main(int argc, char **argv);
-    __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainv(); /* C++: int(*)(void) */
-    __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainiPPc(
-        int argc, char **argv); /* C++: (*)(int, char**) */
-    __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainiPPKc(
-        int argc, char **argv); /* C++: (*)(int, const char**) */
-    __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainiPKPKc(
-        int argc, char **argv); /* C++: (*)(int, const char* const*) */
-    __attribute__((weak)) int _Z23HonggfuzzNetDriver_mainiPKPc(
-        int argc, char **argv); /* C++: (*)(int, char* const*) */
+__attribute__((weak)) int HonggfuzzNetDriver_main(
+    int argc HF_ATTR_UNUSED, char **argv HF_ATTR_UNUSED) {
+    LOG_F("The HonggfuzzNetDriver_main function was not defined in your code");
+    return EXIT_FAILURE;
+}
 
-    int ret = 0;
-    /* Try both the standard C symbol and variants of the C++ (mangled) symbol */
-    if (HonggfuzzNetDriver_main) {
-        ret = HonggfuzzNetDriver_main(hfnd_globals.argc_server, hfnd_globals.argv_server);
-    } else if (_Z23HonggfuzzNetDriver_mainv) {
-        ret = _Z23HonggfuzzNetDriver_mainv();
-    } else if (_Z23HonggfuzzNetDriver_mainiPPc) {
-        ret = _Z23HonggfuzzNetDriver_mainiPPc(hfnd_globals.argc_server, hfnd_globals.argv_server);
-    } else if (_Z23HonggfuzzNetDriver_mainiPPKc) {
-        ret = _Z23HonggfuzzNetDriver_mainiPPKc(hfnd_globals.argc_server, hfnd_globals.argv_server);
-    } else if (_Z23HonggfuzzNetDriver_mainiPKPKc) {
-        ret = _Z23HonggfuzzNetDriver_mainiPKPKc(hfnd_globals.argc_server, hfnd_globals.argv_server);
-    } else if (_Z23HonggfuzzNetDriver_mainiPKPc) {
-        ret = _Z23HonggfuzzNetDriver_mainiPKPc(hfnd_globals.argc_server, hfnd_globals.argv_server);
-    } else {
-        LOG_F("'int HonggfuzzNetDriver_main(int argc, char **argv)' wasn't defined in the code");
-    }
+static void *netDriver_mainProgram(void *unused HF_ATTR_UNUSED) {
+    int ret = HonggfuzzNetDriver_main(hfnd_globals.argc_server, hfnd_globals.argv_server);
     LOG_I("Honggfuzz Net Driver (pid=%d): HonggfuzzNetDriver_main() function exited with: %d",
         (int)getpid(), ret);
     _exit(ret);
