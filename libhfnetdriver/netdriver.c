@@ -16,6 +16,7 @@
 #endif /* defined(_HF_ARCH_LINUX) */
 
 #include "libhfcommon/common.h"
+#include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
 #include "libhfcommon/ns.h"
 
@@ -234,8 +235,8 @@ __attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
     if (sock == -1) {
         LOG_F("Couldn't connect to the server TCP port");
     }
-    if (TEMP_FAILURE_RETRY(send(sock, buf, len, MSG_NOSIGNAL)) == -1) {
-        PLOG_F("send(sock=%d, len=%zu) failed", sock, len);
+    if (!files_sendToSocket(sock, buf, len)) {
+        LOG_F("files_sendToSocket(sock=%d, len=%zu) failed", sock, len);
     }
     /*
      * Indicate EOF (via the FIN flag) to the TCP server

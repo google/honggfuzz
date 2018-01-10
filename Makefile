@@ -119,7 +119,7 @@ else ifeq ($(OS),Darwin)
                     -framework CoreServices -framework CrashReporterSupport -framework CoreFoundation \
                     -framework CommerceKit $(CRASH_REPORT)
 
-    XCODE_VER := $(shell xcodebuild -version | grep "^Xcode" | cut -d " " -f2)
+    XCODE_VER := $(shell xcodebuild -version | grep --color=never "^Xcode" | cut -d " " -f2)
     ifeq "8.3" "$(word 1, $(sort 8.3 $(XCODE_VER)))"
       ARCH_LDFLAGS += -F/Applications/Xcode.app/Contents/SharedFrameworks \
                       -framework CoreSymbolicationDT \
@@ -145,8 +145,8 @@ else
 endif
 
 COMPILER = $(shell $(CC) -v 2>&1 | \
-  grep -oE '((gcc|clang) version|LLVM version.*clang)' | \
-  grep -oE '(clang|gcc)' | head -n1)
+  grep --color=never -oE '((gcc|clang) version|LLVM version.*clang)' | \
+  grep --color=never -oE '(clang|gcc)' | head -n1)
 ifeq ($(COMPILER),clang)
   ARCH_CFLAGS += -Wno-initializer-overrides -Wno-unknown-warning-option
   ARCH_CFLAGS += -fblocks
@@ -388,6 +388,7 @@ libhfcommon/util.o: libhfcommon/util.h libhfcommon/common.h
 libhfcommon/util.o: libhfcommon/files.h libhfcommon/common.h
 libhfcommon/util.o: libhfcommon/log.h
 libhfnetdriver/netdriver.o: libhfnetdriver/netdriver.h libhfcommon/common.h
+libhfnetdriver/netdriver.o: libhfcommon/files.h libhfcommon/common.h
 libhfnetdriver/netdriver.o: libhfcommon/log.h libhfcommon/ns.h
 libhfuzz/instrument.o: libhfuzz/instrument.h honggfuzz.h libhfcommon/util.h
 libhfuzz/instrument.o: libhfcommon/common.h libhfcommon/log.h
