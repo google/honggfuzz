@@ -358,17 +358,29 @@ uint8_t* files_mapFileShared(const char* fileName, off_t* fileSz, int* fd) {
 
 void* files_mapSharedMem(size_t sz, int* fd, const char* dir) {
     *fd = -1;
-#if defined(_HF_ARCH_LINUX) && defined(__NR_memfd_create)
-#if !defined(MFD_CLOEXEC) /* It's not defined as we didn't include sys/memfd.h, but it's \
-                             present with some Linux distros only */
+
+#if defined(_HF_ARCH_LINUX)
+
+#if !defined(MFD_CLOEXEC) /* sys/memfd.h is not always present */
 #define MFD_CLOEXEC 0x0001U
 #endif /* !defined(MFD_CLOEXEC) */
+
+#if !defined(__NR_memfd_create)
+#if defined(__x86_64__)
+#define __NR_memfd_create 319
+#endif /* defined(__x86_64__) */
+#endif /* !defined(__NR_memfd_create) */
+
+#if defined(__NR_memfd_create)
     *fd = syscall(__NR_memfd_create, "honggfuzz", (uintptr_t)MFD_CLOEXEC);
-#endif /* defined(_HF_ARCH_LINUX) && defined(__NR_memfd_create) */
+#endif /* defined__NR_memfd_create) */
+
+#endif /* defined(_HF_ARCH_LINUX) */
+
     if (*fd == -1) {
         char template[PATH_MAX];
         snprintf(template, sizeof(template), "%s/hfuzz.XXXXXX", dir);
-        if ((*fd = mkstemp(template)) == -1) {
+        if ((*fd = mkostemp(template, O_CLOEXEC)) == -1) {
             PLOG_W("mkstemp('%s')", template);
             return MAP_FAILED;
         }

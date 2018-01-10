@@ -33,8 +33,6 @@
 
 extern const char* subproc_StatusToStr(int status, char* str, size_t len);
 
-extern bool subproc_PrepareExecv(run_t* run, const char* fileName);
-
 extern bool subproc_Run(run_t* run);
 
 extern bool subproc_persistentModeRoundDone(run_t* run);

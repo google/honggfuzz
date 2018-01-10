@@ -17,6 +17,7 @@
 #include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
+#include "libhfuzz/instrument.h"
 
 __attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len);
 __attribute__((weak)) int LLVMFuzzerInitialize(int* argc, char*** argv);
@@ -29,35 +30,31 @@ __attribute__((weak)) size_t LLVMFuzzerMutate(
 static uint8_t buf[_HF_PERF_BITMAP_SIZE_16M] = {0};
 
 void HonggfuzzFetchData(const uint8_t** buf_ptr, size_t* len_ptr) {
-    /*
-     * Send the 'done' marker to the parent
-     */
     static bool initialized = false;
-
     if (initialized) {
-        static const uint8_t readyTag = 'A';
-        if (files_writeToFd(_HF_PERSISTENT_FD, &readyTag, sizeof(readyTag)) == false) {
-            LOG_F("writeToFd(size=%zu) failed", sizeof(readyTag));
+        if (!files_writeToFd(_HF_PERSISTENT_FD, &HFdoneTag, sizeof(HFdoneTag))) {
+            LOG_F("writeToFd(size=%zu, doneTag) failed", sizeof(HFdoneTag));
         }
-    }
-    initialized = true;
-
-    uint32_t rlen;
-    if (files_readFromFd(_HF_PERSISTENT_FD, (uint8_t*)&rlen, sizeof(rlen)) !=
-        (ssize_t)sizeof(rlen)) {
-        LOG_F("readFromFd(size=%zu) failed", sizeof(rlen));
-    }
-    size_t len = (size_t)rlen;
-    if (len > _HF_PERF_BITMAP_SIZE_16M) {
-        LOG_F("len (%zu) > buf_size (%zu)\n", len, (size_t)_HF_PERF_BITMAP_SIZE_16M);
-    }
-
-    if (files_readFromFd(_HF_PERSISTENT_FD, buf, len) != (ssize_t)len) {
-        LOG_F("readFromFd(size=%zu) failed", len);
+    } else {
+        /*
+         * Start coverage feedback from this point only (ignore coverage obtained during process
+         * start-up)
+         */
+        instrumentClearNewCov();
+        if (!files_writeToFd(_HF_PERSISTENT_FD, &HFreadyTag, sizeof(HFreadyTag))) {
+            LOG_F("writeToFd(size=%zu, readyTag) failed", sizeof(HFreadyTag));
+        }
+        initialized = true;
     }
 
-    *buf_ptr = buf;
-    *len_ptr = len;
+    uint64_t rcvLen;
+    if (files_readFromFd(_HF_PERSISTENT_FD, (uint8_t*)&rcvLen, sizeof(rcvLen)) !=
+        (ssize_t)sizeof(rcvLen)) {
+        LOG_F("readFromFd(size=%zu) failed", sizeof(rcvLen));
+    }
+
+    *buf_ptr = instrumentFileBuf();
+    *len_ptr = (size_t)rcvLen;
 }
 
 void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr) {

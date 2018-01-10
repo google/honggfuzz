@@ -27,5 +27,7 @@
 #include <inttypes.h>
 
 void instrumentUpdateCmpMap(uintptr_t addr, unsigned int n);
+void instrumentClearNewCov();
+const uint8_t* instrumentFileBuf();
 
 #endif

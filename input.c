@@ -100,10 +100,6 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
             hfuzz->maxFileSz = maxSize;
         }
     }
-    if (hfuzz->persistent && hfuzz->maxFileSz > (1024U * 128)) {
-        LOG_W("Persistent mode enabled, lowering maximum input size to 128KiB");
-        hfuzz->maxFileSz = 1024U * 128;
-    }
 
     if (hfuzz->io.fileCnt == 0U) {
         LOG_W("No usable files in the input directory '%s'", hfuzz->io.inputDir);

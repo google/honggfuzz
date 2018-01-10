@@ -643,7 +643,8 @@ static void* fuzz_threadNew(void* arg) {
         .pid = 0,
         .persistentPid = 0,
         .dynfileqCurrent = NULL,
-        .dynamicFile = util_Calloc(hfuzz->maxFileSz),
+        .dynamicFile = NULL,
+        .dynamicFileFd = -1,
         .fuzzNo = fuzzNo,
         .persistentSock = -1,
         .tmOutSignaled = false,
@@ -651,7 +652,11 @@ static void* fuzz_threadNew(void* arg) {
 
         .linux.attachedPid = 0,
     };
-    defer { free(run.dynamicFile); };
+    if ((run.dynamicFile = files_mapSharedMem(
+             hfuzz->maxFileSz, &run.dynamicFileFd, run.global->io.workDir)) == MAP_FAILED) {
+        LOG_F("Couldn't create an input file of size: %zu", hfuzz->maxFileSz);
+    }
+    defer { close(run.dynamicFileFd); };
     fuzz_getFileName(&run);
 
     if (arch_archThreadInit(&run) == false) {

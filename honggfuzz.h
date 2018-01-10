@@ -64,10 +64,18 @@
 /* Maximum number of PC guards (=trace-pc-guard) we support */
 #define _HF_PC_GUARD_MAX (1024U * 1024U * 16U)
 
+/* FD used to represent the input file */
+#define _HF_INPUT_FD 1021
 /* FD used to pass feedback bitmap a process */
 #define _HF_BITMAP_FD 1022
 /* FD used to pass data to a persistent process */
 #define _HF_PERSISTENT_FD 1023
+
+/* Message indicating that the fuzz process is ready (fuzzed->fuzzer) */
+static const uint8_t HFreadyTag = 'R';
+/* Message indicating that the fuzz process has done processing data (fuzzed->fuzzer) */
+static const uint8_t HFdoneTag = 'D';
+
 /* Maximum number of active fuzzing threads */
 #define _HF_THREAD_MAX 1024U
 
@@ -299,6 +307,7 @@ typedef struct {
     struct dynfile_t* dynfileqCurrent;
     uint8_t* dynamicFile;
     size_t dynamicFileSz;
+    int dynamicFileFd;
     uint32_t fuzzNo;
     int persistentSock;
     bool tmOutSignaled;

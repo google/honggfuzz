@@ -41,6 +41,7 @@ static bool guards_initialized = false;
 static feedback_t bbMapFb;
 feedback_t* feedback = &bbMapFb;
 uint32_t my_thread_no = 0;
+static const uint8_t* inputFile = NULL;
 
 __attribute__((constructor)) static void mapBB(void) {
     char* my_thread_no_str = getenv(_HF_THREAD_NO_ENV);
@@ -53,6 +54,7 @@ __attribute__((constructor)) static void mapBB(void) {
         LOG_F("Received (via envvar) my_thread_no > _HF_THREAD_MAX (%" PRIu32 " > %d)\n",
             my_thread_no, _HF_THREAD_MAX);
     }
+
     struct stat st;
     if (fstat(_HF_BITMAP_FD, &st) == -1) {
         return;
@@ -65,13 +67,31 @@ __attribute__((constructor)) static void mapBB(void) {
     }
     if ((feedback = mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED,
              _HF_BITMAP_FD, 0)) == MAP_FAILED) {
-        PLOG_F("mmap of the feedback structure");
+        PLOG_F("mmap of the feedback structure failed");
     }
-    /* Reset the counters of newly discovered edges/pcs/features */
+
+    /* Reset the counters to their initial state */
+    instrumentClearNewCov();
+
+    if (fstat(_HF_INPUT_FD, &st) == -1) {
+        PLOG_W("stat(_HF_INPUT_FD=%d)", _HF_INPUT_FD);
+        return;
+    }
+    if ((inputFile = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, _HF_INPUT_FD, 0)) ==
+        MAP_FAILED) {
+        PLOG_W("mmap of the input file failed");
+        inputFile = NULL;
+    }
+}
+
+/* Reset the counters of newly discovered edges/pcs/features */
+void instrumentClearNewCov() {
     feedback->pidFeedbackPc[my_thread_no] = 0U;
     feedback->pidFeedbackEdge[my_thread_no] = 0U;
     feedback->pidFeedbackCmp[my_thread_no] = 0U;
 }
+
+const uint8_t* instrumentFileBuf() { return inputFile; }
 
 /*
  * -finstrument-functions

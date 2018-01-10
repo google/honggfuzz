@@ -199,22 +199,6 @@ void util_nullifyStdio(void) {
     }
 }
 
-bool util_redirectStdin(const char* inputFile) {
-    int fd = open(inputFile, O_RDONLY);
-
-    if (fd == -1) {
-        PLOG_W("Couldn't open '%s'", inputFile);
-        return false;
-    }
-
-    dup2(fd, 0);
-    if (fd != 0) {
-        close(fd);
-    }
-
-    return true;
-}
-
 /*
  * This is not a cryptographically secure hash
  */

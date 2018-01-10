@@ -174,10 +174,8 @@ bool arch_launchChild(run_t* run) {
     /* alarm persists across forks, so disable it here */
     alarm(0);
 
-    /*
-     * Wait for the ptrace to attach
-     */
-    if (kill(syscall(__NR_getpid), SIGSTOP) == -1) {
+    /* Wait for the ptrace to attach, if this is not a persistent fuzzing session */
+    if (!run->global->persistent && kill(syscall(__NR_getpid), SIGSTOP) == -1) {
         LOG_F("Couldn't stop itself");
     }
 #if defined(__NR_execveat)

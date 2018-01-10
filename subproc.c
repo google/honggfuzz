@@ -128,28 +128,46 @@ bool subproc_persistentModeRoundDone(run_t* run) {
     if (!run->global->persistent) {
         return false;
     }
-    char z;
-    if (recv(run->persistentSock, &z, sizeof(z), MSG_DONTWAIT) == sizeof(z)) {
-        LOG_D("Persistent mode round finished");
+    uint8_t rcv;
+    if (recv(run->persistentSock, &rcv, sizeof(rcv), MSG_DONTWAIT) != sizeof(rcv)) {
+        return false;
+    }
+    if (rcv == HFdoneTag) {
         return true;
     }
+    LOG_F("Received invalid message from the persistent process: '%c' (0x%" PRIx8
+          ") , expected '%c' (0x%" PRIx8 ")",
+        rcv, rcv, HFdoneTag, HFdoneTag);
+    return false;
+}
+
+static bool subproc_persistentModeReady(run_t* run) {
+    if (!run->global->persistent) {
+        return false;
+    }
+    uint8_t rcv;
+    if (files_readFromFd(run->persistentSock, &rcv, sizeof(rcv)) != sizeof(rcv)) {
+        return false;
+    }
+    if (rcv == HFreadyTag) {
+        return true;
+    }
+    LOG_F("Received invalid message from the persistent process: '%c' (0x%" PRIx8
+          ") , expected '%c' (0x%" PRIx8 ")",
+        rcv, rcv, HFreadyTag, HFreadyTag);
     return false;
 }
 
 static bool subproc_persistentSendFile(run_t* run) {
-    uint32_t len = (uint64_t)run->dynamicFileSz;
+    uint64_t len = (uint64_t)run->dynamicFileSz;
     if (!files_sendToSocketNB(run->persistentSock, (uint8_t*)&len, sizeof(len))) {
         PLOG_W("files_sendToSocketNB(len=%zu)", sizeof(len));
-        return false;
-    }
-    if (!files_sendToSocketNB(run->persistentSock, run->dynamicFile, run->dynamicFileSz)) {
-        PLOG_W("files_sendToSocketNB(len=%zu)", run->dynamicFileSz);
         return false;
     }
     return true;
 }
 
-bool subproc_PrepareExecv(run_t* run, const char* fileName) {
+static bool subproc_PrepareExecv(run_t* run) {
     /*
      * The address space limit. If big enough - roughly the size of RAM used
      */
@@ -187,15 +205,6 @@ bool subproc_PrepareExecv(run_t* run, const char* fileName) {
         util_nullifyStdio();
     }
 
-    if (run->global->exe.fuzzStdin) {
-        /*
-         * Uglyyyyyy ;)
-         */
-        if (!util_redirectStdin(fileName)) {
-            return false;
-        }
-    }
-
     if (run->global->exe.clearEnv) {
         environ = NULL;
     }
@@ -214,6 +223,14 @@ bool subproc_PrepareExecv(run_t* run, const char* fileName) {
         }
         close(run->global->bbFd);
     }
+
+    if (dup2(run->dynamicFileFd, _HF_INPUT_FD) == -1) {
+        PLOG_F("dup2('%d', %d)", run->dynamicFileFd, _HF_INPUT_FD);
+    }
+    if (run->global->exe.fuzzStdin && dup2(run->dynamicFileFd, STDIN_FILENO) == -1) {
+        PLOG_F("dup2(%d, 0)", run->dynamicFileFd);
+    }
+    close(run->dynamicFileFd);
 
     sigset_t sset;
     sigemptyset(&sset);
@@ -277,7 +294,7 @@ static bool subproc_New(run_t* run) {
             close(sv[1]);
         }
 
-        if (!subproc_PrepareExecv(run, run->fileName)) {
+        if (!subproc_PrepareExecv(run)) {
             LOG_E("subproc_PrepareExecv() failed");
             exit(EXIT_FAILURE);
         }
@@ -298,9 +315,11 @@ static bool subproc_New(run_t* run) {
         LOG_I("Persistent mode: Launched new persistent PID: %d", (int)run->pid);
         run->persistentPid = run->pid;
 
-        int sndbuf = run->global->maxFileSz + 256;
-        if (setsockopt(run->persistentSock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)) == -1) {
-            LOG_W("Couldn't set FD send buffer to '%d' bytes", sndbuf);
+        if (!subproc_persistentModeReady(run)) {
+            LOG_W(
+                "Couldn't receive the readiness indication from the persistent process. Killing "
+                "it!");
+            kill(run->pid, SIGKILL);
         }
     }
 
@@ -316,8 +335,9 @@ bool subproc_Run(run_t* run) {
     }
 
     arch_prepareParent(run);
+
     if (run->global->persistent && !subproc_persistentSendFile(run)) {
-        LOG_W("Could not send file contents to the persistent process");
+        LOG_W("Could not send file size to the persistent process");
         kill(run->persistentPid, SIGKILL);
     }
     arch_reapChild(run);

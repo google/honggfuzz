@@ -97,8 +97,6 @@ extern void util_getLocalTime(const char* fmt, char* buf, size_t len, time_t tm)
 
 extern void util_nullifyStdio(void);
 
-extern bool util_redirectStdin(const char* inputFile);
-
 extern uint64_t util_hash(const char* buf, size_t len);
 
 extern int64_t util_timeNowMillis(void);
