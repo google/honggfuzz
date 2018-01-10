@@ -643,7 +643,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         cmdlineUsage(argv[0], custom_opts);
         return false;
     }
-    if (cmdlineCheckIfPersistent(hfuzz->exe.cmdline[0])) {
+    if (!hfuzz->persistent && cmdlineCheckIfPersistent(hfuzz->exe.cmdline[0])) {
         LOG_I("Persistent signature detected, assume it's a persistent fuzzing-mode binary");
         hfuzz->persistent = true;
     }
