@@ -1,7 +1,22 @@
-diff -Nur httpd/compile_and_install.sh httpd.new/compile_and_install.sh
---- httpd/compile_and_install.sh	1970-01-01 01:00:00.000000000 +0100
-+++ httpd.new/compile_and_install.sh	2017-11-02 23:48:05.049844778 +0100
-@@ -0,0 +1,62 @@
+diff --git a/configure.in b/configure.in
+index 4315aa1..ea61fe1 100644
+--- a/configure.in
++++ b/configure.in
+@@ -725,7 +725,7 @@ AC_MSG_CHECKING([for Check to enable unit tests])
+ if test "x$PKGCONFIG" != "x" && `$PKGCONFIG --atleast-version='0.9.12' check`; then
+   UNITTEST_CFLAGS=`$PKGCONFIG --cflags check`
+   UNITTEST_LIBS=`$PKGCONFIG --libs check`
+-  other_targets="$other_targets test/httpdunit"
++  other_targets="$other_targets"
+ 
+   AC_MSG_RESULT([yes])
+ else
+diff --git a/hfuzz.compile_and_install.asan.sh b/hfuzz.compile_and_install.asan.sh
+new file mode 100755
+index 0000000..6554d24
+--- /dev/null
++++ b/hfuzz.compile_and_install.asan.sh
+@@ -0,0 +1,63 @@
 +#!/bin/sh
 +
 +set -ex
@@ -13,7 +28,7 @@ diff -Nur httpd/compile_and_install.sh httpd.new/compile_and_install.sh
 +NGHTTP2_VER=1.29.0
 +APR_VER=1.6.3
 +APR_UTIL_VER=1.6.1
-+CFLAGS_SAN="-fsanitize=address"
++CFLAGS_SAN="-fsanitize=address -O3 -ggdb"
 +# Another viable option: few
 +APACHE_MODULES=most
 +
@@ -49,7 +64,7 @@ diff -Nur httpd/compile_and_install.sh httpd.new/compile_and_install.sh
 +./buildconf --with-apr="$APR_PATH" --with-apr-util="$APR_UTIL_PATH"
 +
 +echo "Compiling HTTPD"
-+CC="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang" CXX="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang++" CFLAGS="-I$NGHTTP2_PATH/lib/includes $CFLAGS_SAN -ggdb -O3" LDFLAGS="-L$NGHTTP2_PATH/lib -lpthread" \
++CFLAGS="-I$NGHTTP2_PATH/lib/includes $CFLAGS_SAN -ggdb -O3" LDFLAGS="-L$NGHTTP2_PATH/lib -lpthread" \
 +./configure \
 +		--prefix="$INSTALL_PREFIX" \
 +		--with-nghttp2="$NGHTTP2_PATH/" \
@@ -58,111 +73,66 @@ diff -Nur httpd/compile_and_install.sh httpd.new/compile_and_install.sh
 +		--with-mpm=event \
 +		--enable-unixd \
 +		--disable-pie \
++		--disable-ssl \
 +		--enable-mods-static=$APACHE_MODULES \
 +		--with-apr="$APR_PATH" \
 +		--with-apr-util="$APR_UTIL_PATH"
 +make clean
 +make -j$(nproc)
 +make install
-diff -Nur httpd/configure.in httpd.new/configure.in
---- httpd/configure.in	2017-11-02 23:48:27.717470876 +0100
-+++ httpd.new/configure.in	2017-11-02 23:48:05.053844712 +0100
-@@ -721,7 +721,7 @@
- if test "x$PKGCONFIG" != "x" && `$PKGCONFIG --atleast-version='0.9.12' check`; then
-   UNITTEST_CFLAGS=`$PKGCONFIG --cflags check`
-   UNITTEST_LIBS=`$PKGCONFIG --libs check`
--  other_targets="$other_targets test/httpdunit"
-+  other_targets="$other_targets"
+diff --git a/modules/generators/mod_autoindex.c b/modules/generators/mod_autoindex.c
+index c887056..1be2d16 100644
+--- a/modules/generators/mod_autoindex.c
++++ b/modules/generators/mod_autoindex.c
+@@ -1907,6 +1907,8 @@ static void output_directories(struct ent **ar, int n,
  
-   AC_MSG_RESULT([yes])
- else
-diff -Nur httpd/server/main.c httpd.new/server/main.c
---- httpd/server/main.c	2017-11-02 23:48:27.913467639 +0100
-+++ httpd.new/server/main.c	2017-11-02 23:48:05.053844712 +0100
-@@ -484,8 +484,84 @@
+ static int dsortf(struct ent **e1, struct ent **e2)
+ {
++    return 0;
++
+     struct ent *c1;
+     struct ent *c2;
+     int result = 0;
+diff --git a/server/main.c b/server/main.c
+index d0f6b3f..2f9f2b0 100644
+--- a/server/main.c
++++ b/server/main.c
+@@ -484,8 +484,11 @@ static void usage(process_rec *process)
      destroy_and_exit_process(process, 1);
  }
  
 -int main(int argc, const char * const argv[])
 -{
-+#include <libhfuzz/libhfuzz.h>
-+
-+static void GETDATA(void *unused) {
-+  usleep(100000);
-+
-+  for (;;) {
-+    size_t len;
-+    const uint8_t *buf;
-+
-+    HF_ITER(&buf, &len);
-+
-+    int myfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-+    if (myfd == -1) {
-+      perror("socket");
-+      _exit(1);
-+    }
-+
-+    int sz = (1024 * 1024);
-+    if (setsockopt(myfd, SOL_SOCKET, SO_SNDBUF, &sz, sizeof(sz)) == -1) {
-+      perror("setsockopt");
-+      exit(1);
-+    }
-+
-+    struct sockaddr_in saddr;
-+    saddr.sin_family = AF_INET;
-+    saddr.sin_port = htons(8080);
-+    saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-+    if (connect(myfd, &saddr, sizeof(saddr)) == -1) {
-+      perror("connect");
-+      close(myfd);
-+      continue;
-+    }
-+
-+    if (send(myfd, buf, len, MSG_NOSIGNAL) != len) {
-+      perror("send() failed 1");
-+      exit(1);
-+    }
-+
-+    if (shutdown(myfd, SHUT_WR) == -1) {
-+      perror("shutdown");
-+      exit(1);
-+    }
-+
-+    char b[1024 * 1024];
-+    while (recv(myfd, b, sizeof(b), MSG_WAITALL) > 0) {} ;
-+
-+    close(myfd);
-+  }
-+}
-+
-+static void LAUNCHTHR() {
-+  if (linuxEnterNs(CLONE_NEWUSER|CLONE_NEWNET|CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS) == false) {
-+    exit(1);
-+  }
-+  if (linuxIfaceUp("lo") == false) {
-+    exit(1);
-+  }
-+  if (linuxMountTmpfs("/tmp") == false) {
-+    exit(1);
-+  }
-+
-+  pthread_t t;
-+  pthread_attr_t attr;
-+
-+  pthread_attr_init(&attr);
-+  pthread_attr_setstacksize(&attr, 1024 * 1024 * 8);
-+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-+
-+  pthread_create(&t, &attr, GETDATA,  NULL);
-+}
-+
-+ int main(int argc, const char * const argv[])
-+ {
-+
-+  if (getenv("NO_FUZZ") == NULL) {
-+        LAUNCHTHR();
-+  }
-+
++#ifdef HFND_FUZZING_ENTRY_FUNCTION
++ HFND_FUZZING_ENTRY_FUNCTION(int argc, const char *const *argv) {
++#else
++ int main(int argc, const char *const *argv) {
++#endif
      char c;
      int showcompile = 0, showdirectives = 0;
      const char *confname = SERVER_CONFIG_FILE;
+diff --git a/server/request.c b/server/request.c
+index 55c32b2..ea3d771 100644
+--- a/server/request.c
++++ b/server/request.c
+@@ -1393,7 +1393,7 @@ AP_DECLARE(int) ap_directory_walk(request_rec *r)
+     return OK;
+ }
+ 
+-
++__attribute__((no_sanitize("memory")))
+ AP_DECLARE(int) ap_location_walk(request_rec *r)
+ {
+     ap_conf_vector_t *now_merged = NULL;
+diff --git a/server/util_pcre.c b/server/util_pcre.c
+index 73e7fc6..f0d62c4 100644
+--- a/server/util_pcre.c
++++ b/server/util_pcre.c
+@@ -344,6 +344,7 @@ AP_DECLARE(int) ap_regexec_len(const ap_regex_t *preg, const char *buff,
+     }
+ }
+ 
++__attribute__((no_sanitize("memory")))
+ AP_DECLARE(int) ap_regname(const ap_regex_t *preg,
+                            apr_array_header_t *names, const char *prefix,
+                            int upper)
