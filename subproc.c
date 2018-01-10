@@ -201,10 +201,6 @@ static bool subproc_PrepareExecv(run_t* run) {
         }
     }
 
-    if (run->global->exe.nullifyStdio) {
-        util_nullifyStdio();
-    }
-
     if (run->global->exe.clearEnv) {
         environ = NULL;
     }
@@ -236,6 +232,10 @@ static bool subproc_PrepareExecv(run_t* run) {
     sigemptyset(&sset);
     if (sigprocmask(SIG_SETMASK, &sset, NULL) == -1) {
         PLOG_W("sigprocmask(empty_set)");
+    }
+
+    if (run->global->exe.nullifyStdio) {
+        util_nullifyStdio();
     }
 
     return true;
