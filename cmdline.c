@@ -245,7 +245,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .tmOut = 10,
                 .tmoutVTALRM = false,
             },
-        .cmdline_txt = {},
+        .cmdline_txt[0] = '\0',
         .useScreen = true,
         .useVerifier = false,
         .mutationsPerRun = 6U,
