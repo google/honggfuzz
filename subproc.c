@@ -265,6 +265,8 @@ static bool subproc_New(run_t* run) {
         run->persistentSock = sv[0];
     }
 
+    LOG_D("Forking new process for thread: %" PRId32, run->fuzzNo);
+
     run->pid = arch_fork(run);
     if (run->pid == -1) {
         PLOG_E("Couldn't fork");
@@ -307,14 +309,15 @@ static bool subproc_New(run_t* run) {
     }
 
     /* Parent */
-    LOG_D("Launched new process, pid: %d, (concurrency: %zd)", run->pid,
-        run->global->threads.threadsMax);
+    LOG_D("Launched new process, PID: %d, thread: %" PRId32 " (concurrency: %zd)", run->pid,
+        run->fuzzNo, run->global->threads.threadsMax);
 
     if (run->global->persistent) {
         close(sv[1]);
         LOG_I("Persistent mode: Launched new persistent PID: %d", (int)run->pid);
         run->persistentPid = run->pid;
 
+        LOG_D("Waiting for the readiness message from PID: %d", (int)run->pid);
         if (!subproc_persistentModeReady(run)) {
             LOG_W(
                 "Couldn't receive the readiness indication from the persistent process. Killing "
