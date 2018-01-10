@@ -236,7 +236,6 @@ static bool subproc_PrepareExecv(run_t* run) {
     if (run->global->exe.fuzzStdin && dup2(run->dynamicFileFd, STDIN_FILENO) == -1) {
         PLOG_F("dup2(%d, 0)", run->dynamicFileFd);
     }
-    close(run->dynamicFileFd);
 
     return true;
 }
