@@ -6,10 +6,6 @@
 honggfuzz
 Makefile.bak
 hfuzz_cc/hfuzz-cc
-hfuzz_cc/hfuzz-clang
-hfuzz_cc/hfuzz-clang++
-hfuzz_cc/hfuzz-gcc
-hfuzz_cc/hfuzz-g++
 mac/mach_exc.h
 mac/mach_excUser.c
 mac/mach_excServer.h
