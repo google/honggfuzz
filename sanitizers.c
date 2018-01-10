@@ -141,13 +141,13 @@ bool sanitizers_Init(honggfuzz_t* hfuzz) {
         return true;
     }
 
-	static char asanOpts[4096];
+    static char asanOpts[4096];
     sanitizers_AddFlag(hfuzz, "ASAN_OPTIONS", asanOpts, sizeof(asanOpts));
-	static char ubsanOpts[4096];
+    static char ubsanOpts[4096];
     sanitizers_AddFlag(hfuzz, "UBSAN_OPTIONS", ubsanOpts, sizeof(ubsanOpts));
-	static char msanOpts[4096];
+    static char msanOpts[4096];
     sanitizers_AddFlag(hfuzz, "MSAN_OPTIONS", msanOpts, sizeof(msanOpts));
-	static char lsanOpts[4096];
+    static char lsanOpts[4096];
     sanitizers_AddFlag(hfuzz, "LSAN_OPTIONS", lsanOpts, sizeof(lsanOpts));
 
     return true;

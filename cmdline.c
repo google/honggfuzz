@@ -310,13 +310,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             },
 
         .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER,
-        .sanOpts =
-            {
-                .asanOpts = {},
-                .msanOpts = {},
-                .ubsanOpts = {},
-                .lsanOpts = {},
-            },
         .extSanOpts = NULL,
         .useSanCov = false,
         .covMetadata = NULL,

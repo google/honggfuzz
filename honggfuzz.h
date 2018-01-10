@@ -142,13 +142,6 @@ typedef struct node {
 
 /* EOF Sanitizer coverage specific data structures */
 
-typedef struct {
-    char asanOpts[4096];
-    char msanOpts[4096];
-    char ubsanOpts[4096];
-    char lsanOpts[4096];
-} sanOpts_t;
-
 typedef enum {
     _HF_STATE_UNSET = 0,
     _HF_STATE_STATIC = 1,
@@ -260,7 +253,6 @@ typedef struct {
     dynFileMethod_t dynFileMethod;
     sancovcnt_t sanCovCnts;
     pthread_mutex_t sanCov_mutex;
-    sanOpts_t sanOpts;
     const char* extSanOpts;
     size_t dynFileIterExpire;
     bool useSanCov;
