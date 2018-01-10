@@ -223,10 +223,6 @@ static bool subproc_PrepareExecv(run_t* run) {
     if (dup2(run->dynamicFileFd, _HF_INPUT_FD) == -1) {
         PLOG_F("dup2('%d', %d)", run->dynamicFileFd, _HF_INPUT_FD);
     }
-    if (run->global->exe.fuzzStdin && dup2(run->dynamicFileFd, STDIN_FILENO) == -1) {
-        PLOG_F("dup2(%d, 0)", run->dynamicFileFd);
-    }
-    close(run->dynamicFileFd);
 
     sigset_t sset;
     sigemptyset(&sset);
@@ -237,6 +233,10 @@ static bool subproc_PrepareExecv(run_t* run) {
     if (run->global->exe.nullifyStdio) {
         util_nullifyStdio();
     }
+    if (run->global->exe.fuzzStdin && dup2(run->dynamicFileFd, STDIN_FILENO) == -1) {
+        PLOG_F("dup2(%d, 0)", run->dynamicFileFd);
+    }
+    close(run->dynamicFileFd);
 
     return true;
 }
