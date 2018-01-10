@@ -362,7 +362,6 @@ static int ldMode(int argc, char** argv) {
     args[j++] = getLibHfuzzPath();
 
     /* Pull modules defining the following symbols (if they exist) */
-    args[j++] = "-Wl,-u,LLVMFuzzerTestOneInput",
     args[j++] = "-Wl,-u,LIBHFNETDRIVER_module_main",
     args[j++] = "-Wl,-u,LIBHFUZZ_module_instrument";
     args[j++] = "-Wl,-u,LIBHFUZZ_module_memorycmp";
