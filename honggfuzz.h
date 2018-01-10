@@ -79,6 +79,9 @@ static const uint8_t HFdoneTag = 'D';
 /* Maximum number of active fuzzing threads */
 #define _HF_THREAD_MAX 1024U
 
+/* Persistent-binary signature - if found within file, it means it's a persistent mode binary */
+#define _HF_PERSISTENT_SIG "\x01_LIBHFUZZ_PERSISTENT_BINARY_SIGNATURE_\x02\xFF"
+
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
     _HF_DYNFILE_INSTR_COUNT = 0x1,

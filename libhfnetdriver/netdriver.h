@@ -9,10 +9,13 @@ extern "C" {
 #endif
 
 #ifdef __cplusplus
-#define HFND_FUZZING_ENTRY_FUNCTION(x, y) \
-    int HonggfuzzNetDriver_main_required = 0; extern "C" __attribute__((used)) int HonggfuzzNetDriver_main(x, y)
+#define HFND_FUZZING_ENTRY_FUNCTION(x, y)     \
+    int HonggfuzzNetDriver_main_required = 0; \
+    extern "C" __attribute__((used)) int HonggfuzzNetDriver_main(x, y)
 #else /* ifdef __cplusplus */
-#define HFND_FUZZING_ENTRY_FUNCTION(x, y) int HonggfuzzNetDriver_main_required = 0; __attribute__((used)) int HonggfuzzNetDriver_main(x, y)
+#define HFND_FUZZING_ENTRY_FUNCTION(x, y)     \
+    int HonggfuzzNetDriver_main_required = 0; \
+    __attribute__((used)) int HonggfuzzNetDriver_main(x, y)
 #endif /* ifdef __cplusplus */
 
 /*

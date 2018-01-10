@@ -1,10 +1,12 @@
 #include <ctype.h>
 #include <inttypes.h>
+#include <stdint.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "libhfuzz/instrument.h"
 
-int hfuzz_module_memorycmp = 0;
+const char* LIBHFUZZ_module_memorycmp = NULL;
 
 #if !defined(_HF_USE_RET_ADDR)
 /* Use just single ret-address */

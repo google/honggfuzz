@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/queue.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -54,6 +55,26 @@ static bool checkFor_FILE_PLACEHOLDER(const char* const* args) {
         if (strstr(args[x], _HF_FILE_PLACEHOLDER)) return true;
     }
     return false;
+}
+
+static bool cmdlineCheckIfPersistent(const char* fname) {
+    int fd;
+    off_t fileSz;
+    int ret = false;
+
+    uint8_t* map = files_mapFile(fname, &fileSz, &fd, /* isWriteable= */ false);
+    if (map == MAP_FAILED) {
+        LOG_W("Couldn't map file '%s' to check whether it's a persistent binary", fname);
+        return false;
+    }
+    if (memmem(map, fileSz, _HF_PERSISTENT_SIG, strlen(_HF_PERSISTENT_SIG))) {
+        ret = true;
+    }
+    if (munmap(map, fileSz) == -1) {
+        PLOG_W("munmap(%p, %zu)", map, fileSz);
+    }
+    close(fd);
+    return ret;
 }
 
 static const char* cmdlineYesNo(bool yes) { return (yes ? "true" : "false"); }
@@ -621,6 +642,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         LOG_E("No fuzz command provided");
         cmdlineUsage(argv[0], custom_opts);
         return false;
+    }
+    if (cmdlineCheckIfPersistent(hfuzz->exe.cmdline[0])) {
+        LOG_I("Persistent signature detected, assume it's a persistent fuzzing-mode binary");
+        hfuzz->persistent = true;
     }
     if (!cmdlineVerify(hfuzz)) {
         return false;

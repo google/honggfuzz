@@ -1,7 +1,5 @@
 #include "instrument.h"
 
-#include <unistd.h>
-
 #include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -20,9 +18,7 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 
-int hfuzz_module_instrument = 0;
-
-static bool guards_initialized = false;
+const char* LIBHFUZZ_module_instrument = NULL;
 
 /*
  * We require SSE4.2 with x86-(32|64) for the 'popcnt', as it's much faster than the software
@@ -262,6 +258,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_indir_call16(
 /*
  * -fsanitize-coverage=trace-pc-guard
  */
+static bool guards_initialized = false;
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
     uint32_t* start, uint32_t* stop) {
     guards_initialized = true;

@@ -2,6 +2,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -18,6 +19,8 @@
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
 #include "libhfuzz/instrument.h"
+
+__attribute__((used)) const char* LIBHFUZZ_module_persistent = _HF_PERSISTENT_SIG;
 
 __attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len);
 __attribute__((weak)) int LLVMFuzzerInitialize(int* argc, char*** argv);
@@ -77,6 +80,31 @@ static void HonggfuzzPersistentLoop(void) {
     }
 }
 
+static int HonggfuzzRunFromFile(int argc, char** argv) {
+    int in_fd = STDIN_FILENO;
+    const char* fname = "[STDIN]";
+    if (argc > 1) {
+        fname = argv[argc - 1];
+        if ((in_fd = open(argv[argc - 1], O_RDONLY)) == -1) {
+            PLOG_W("Cannot open '%s' as input, using stdin", argv[argc - 1]);
+            in_fd = STDIN_FILENO;
+            fname = "[STDIN]";
+        }
+    }
+
+    LOG_I(
+        "Accepting input from '%s'\nUsage for fuzzing: honggfuzz -P [flags] -- %s", fname, argv[0]);
+
+    ssize_t len = files_readFromFd(in_fd, buf, sizeof(buf));
+    if (len < 0) {
+        LOG_E("Couldn't read data from stdin: %s", strerror(errno));
+        return -1;
+    }
+
+    HonggfuzzRunOneInput(buf, len);
+    return 0;
+}
+
 int HonggfuzzMain(int argc, char** argv) {
     if (LLVMFuzzerInitialize) {
         LLVMFuzzerInitialize(&argc, &argv);
@@ -86,42 +114,13 @@ int HonggfuzzMain(int argc, char** argv) {
         LOG_F(
             "Define 'int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)' in your "
             "code to make it work");
-
-        extern int hfuzz_module_instrument;
-        extern int hfuzz_module_memorycmp;
-        LOG_F(
-            "This won't be displayed, it's used just to reference other modules in this archive: "
-            "%d",
-            hfuzz_module_instrument + hfuzz_module_memorycmp);
     }
 
-    if (fcntl(_HF_PERSISTENT_FD, F_GETFD) == -1 && errno == EBADF) {
-        int in_fd = STDIN_FILENO;
-        const char* fname = "[STDIN]";
-        if (argc > 1) {
-            fname = argv[argc - 1];
-            if ((in_fd = open(argv[argc - 1], O_RDONLY)) == -1) {
-                PLOG_W("Cannot open '%s' as input, using stdin", argv[argc - 1]);
-                in_fd = STDIN_FILENO;
-                fname = "[STDIN]";
-            }
-        }
-
-        LOG_I("Accepting input from '%s'\nUsage for fuzzing: honggfuzz -P [flags] -- %s", fname,
-            argv[0]);
-
-        ssize_t len = files_readFromFd(in_fd, buf, sizeof(buf));
-        if (len < 0) {
-            LOG_E("Couldn't read data from stdin: %s", strerror(errno));
-            return -1;
-        }
-
-        HonggfuzzRunOneInput(buf, len);
-        return 0;
+    if (fcntl(_HF_PERSISTENT_FD, F_GETFD) != -1) {
+        HonggfuzzPersistentLoop();
     }
 
-    HonggfuzzPersistentLoop();
-    return 0;
+    return HonggfuzzRunFromFile(argc, argv);
 }
 
 /*

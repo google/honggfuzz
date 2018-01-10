@@ -273,9 +273,13 @@ static void commonOpts(int* j, char** args) {
     args[(*j)++] = "-D__NO_STRING_INLINES";
     /* Make it possible to use the libhfnetdriver */
     if (isCXX) {
-        args[(*j)++] = "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)=int HonggfuzzNetDriver_main_required = 0; extern \"C\" __attribute__((used)) int HonggfuzzNetDriver_main(x,y)";
+        args[(*j)++] =
+            "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)=int HonggfuzzNetDriver_main_required = 0; extern "
+            "\"C\" __attribute__((used)) int HonggfuzzNetDriver_main(x,y)";
     } else {
-        args[(*j)++] = "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)=int HonggfuzzNetDriver_main_required = 0; __attribute__((used)) int HonggfuzzNetDriver_main(x,y)";
+        args[(*j)++] =
+            "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)=int HonggfuzzNetDriver_main_required = 0; "
+            "__attribute__((used)) int HonggfuzzNetDriver_main(x,y)";
     }
 
     if (useM32()) {
@@ -351,8 +355,10 @@ static int ldMode(int argc, char** argv) {
 
     args[j++] = getLibHFNetDriverPath();
     args[j++] = getLibHfuzzPath();
-    args[j++] = "-Wl,-u,LLVMFuzzerTestOneInput";
     args[j++] = "-Wl,-u,HonggfuzzNetDriver_main_required";
+    args[j++] = "-Wl,-u,LIBHNETDRIVER_module_netdriver";
+    args[j++] = "-Wl,-u,LIBHFUZZ_module_instrument";
+    args[j++] = "-Wl,-u,LIBHFUZZ_module_memorycmp";
     args[j++] = "-lpthread";
 
     return execCC(j, args);
