@@ -110,14 +110,26 @@
  */
 #define kSAN_COV_OPTS "coverage=1:coverage_direct=1"
 
-static void sanitizers_AddToEnv(honggfuzz_t* hfuzz, const char* prefix, char* env) {
+static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, char* buf, size_t buflen) {
+    const char* abortFlag = hfuzz->monitorSIGABRT ? kABORT_ENABLED : kABORT_DISABLED;
+
+    if (!hfuzz->enableSanitizers) {
+        snprintf(buf, buflen, "%s=%s", env, kSAN_REGULAR);
+    } else if (hfuzz->useSanCov) {
+        snprintf(buf, buflen, "%s=%s:%s:%s:%s%s/%s:%s%s/%s", env, kASAN_OPTS, abortFlag,
+            kSAN_COV_OPTS, kSANCOVDIR, hfuzz->io.workDir, _HF_SANCOV_DIR, kSANLOGDIR,
+            hfuzz->io.workDir, kLOGPREFIX);
+    } else {
+        snprintf(buf, buflen, "%s=%s:%s:%s%s/%s", env, kASAN_OPTS, abortFlag, kSANLOGDIR,
+            hfuzz->io.workDir, kLOGPREFIX);
+    }
+    if (hfuzz->extSanOpts) {
+        util_ssnprintf(buf, buflen, ":%s", hfuzz->extSanOpts);
+    }
+
     for (size_t i = 0; i < ARRAYSIZE(hfuzz->exe.envs); i++) {
         if (hfuzz->exe.envs[i] == NULL) {
-            hfuzz->exe.envs[i] = env;
-            break;
-        }
-        /* If the env already exist, skip overriding it */
-        if (strncmp(hfuzz->exe.envs[i], prefix, strlen(prefix)) == 0) {
+            hfuzz->exe.envs[i] = buf;
             break;
         }
     }
@@ -129,60 +141,14 @@ bool sanitizers_Init(honggfuzz_t* hfuzz) {
         return true;
     }
 
-    char* abortFlag;
-    if (hfuzz->monitorSIGABRT) {
-        abortFlag = kABORT_ENABLED;
-    } else {
-        abortFlag = kABORT_DISABLED;
-    }
-
-    /* Address Sanitizer (ASan) */
-    if (!hfuzz->enableSanitizers) {
-        snprintf(
-            hfuzz->sanOpts.asanOpts, sizeof(hfuzz->sanOpts.asanOpts), "ASAN_OPTIONS=" kSAN_REGULAR);
-    } else if (hfuzz->useSanCov) {
-        snprintf(hfuzz->sanOpts.asanOpts, sizeof(hfuzz->sanOpts.asanOpts),
-            "ASAN_OPTIONS=%s:%s:%s:%s%s/%s:%s%s/%s", kASAN_OPTS, abortFlag, kSAN_COV_OPTS,
-            kSANCOVDIR, hfuzz->io.workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->io.workDir,
-            kLOGPREFIX);
-    } else {
-        snprintf(hfuzz->sanOpts.asanOpts, sizeof(hfuzz->sanOpts.asanOpts),
-            "ASAN_OPTIONS=%s:%s:%s%s/%s", kASAN_OPTS, abortFlag, kSANLOGDIR, hfuzz->io.workDir,
-            kLOGPREFIX);
-    }
-    sanitizers_AddToEnv(hfuzz, "ASAN_OPTIONS=", hfuzz->sanOpts.asanOpts);
-
-    /* Undefined Behavior Sanitizer (UBSan) */
-    if (!hfuzz->enableSanitizers) {
-        snprintf(hfuzz->sanOpts.ubsanOpts, sizeof(hfuzz->sanOpts.ubsanOpts),
-            "UBSAN_OPTIONS=" kSAN_REGULAR);
-    } else if (hfuzz->useSanCov) {
-        snprintf(hfuzz->sanOpts.ubsanOpts, sizeof(hfuzz->sanOpts.ubsanOpts),
-            "UBSAN_OPTIONS=%s:%s:%s:%s%s/%s:%s%s/%s", kUBSAN_OPTS, abortFlag, kSAN_COV_OPTS,
-            kSANCOVDIR, hfuzz->io.workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->io.workDir,
-            kLOGPREFIX);
-    } else {
-        snprintf(hfuzz->sanOpts.ubsanOpts, sizeof(hfuzz->sanOpts.ubsanOpts),
-            "UBSAN_OPTIONS=%s:%s:%s%s/%s", kUBSAN_OPTS, abortFlag, kSANLOGDIR, hfuzz->io.workDir,
-            kLOGPREFIX);
-    }
-    sanitizers_AddToEnv(hfuzz, "UBSAN_OPTIONS=", hfuzz->sanOpts.ubsanOpts);
-
-    /* Memory Sanitizer (MSan) */
-    if (!hfuzz->enableSanitizers) {
-        snprintf(
-            hfuzz->sanOpts.msanOpts, sizeof(hfuzz->sanOpts.msanOpts), "MSAN_OPTIONS=" kSAN_REGULAR);
-    } else if (hfuzz->useSanCov) {
-        snprintf(hfuzz->sanOpts.msanOpts, sizeof(hfuzz->sanOpts.msanOpts),
-            "MSAN_OPTIONS=%s:%s:%s:%s%s/%s:%s%s/%s", kMSAN_OPTS, abortFlag, kSAN_COV_OPTS,
-            kSANCOVDIR, hfuzz->io.workDir, _HF_SANCOV_DIR, kSANLOGDIR, hfuzz->io.workDir,
-            kLOGPREFIX);
-    } else {
-        snprintf(hfuzz->sanOpts.msanOpts, sizeof(hfuzz->sanOpts.msanOpts),
-            "MSAN_OPTIONS=%s:%s:%s%s/%s", kMSAN_OPTS, abortFlag, kSANLOGDIR, hfuzz->io.workDir,
-            kLOGPREFIX);
-    }
-    sanitizers_AddToEnv(hfuzz, "MSAN_OPTIONS=", hfuzz->sanOpts.msanOpts);
+	static char asanOpts[4096];
+    sanitizers_AddFlag(hfuzz, "ASAN_OPTIONS", asanOpts, sizeof(asanOpts));
+	static char ubsanOpts[4096];
+    sanitizers_AddFlag(hfuzz, "UBSAN_OPTIONS", ubsanOpts, sizeof(ubsanOpts));
+	static char msanOpts[4096];
+    sanitizers_AddFlag(hfuzz, "MSAN_OPTIONS", msanOpts, sizeof(msanOpts));
+	static char lsanOpts[4096];
+    sanitizers_AddFlag(hfuzz, "LSAN_OPTIONS", lsanOpts, sizeof(lsanOpts));
 
     return true;
 }

@@ -315,7 +315,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .asanOpts = {},
                 .msanOpts = {},
                 .ubsanOpts = {},
+                .lsanOpts = {},
             },
+        .extSanOpts = NULL,
         .useSanCov = false,
         .covMetadata = NULL,
 
@@ -396,6 +398,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "save_all", no_argument, NULL, 'u' }, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames" },
         { { "tmout_sigvtalrm", no_argument, NULL, 'T' }, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)" },
         { { "sanitizers", no_argument, NULL, 'S' }, "Enable sanitizers settings (default: false)" },
+        { { "san_opts", required_argument, NULL, 0x10A }, "Options appended to the regular *SAN_OPTIONS (default: empty)" },
         { { "monitor_sigabrt", required_argument, NULL, 0x105 }, "Monitor SIGABRT (default: 'false for Android - 'true for other platforms)" },
         { { "no_fb_timeout", required_argument, NULL, 0x106 }, "Skip feedback if the process has timeouted (default: 'false')" },
         { { "exit_upon_crash", no_argument, NULL, 0x107 }, "Exit upon seeing the first crash (default: 'false')" },
@@ -498,6 +501,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 'S':
                 hfuzz->enableSanitizers = true;
+                break;
+            case 0x10A:
+                hfuzz->extSanOpts = optarg;
                 break;
             case 'z':
                 hfuzz->dynFileMethod |= _HF_DYNFILE_SOFT;

@@ -261,6 +261,7 @@ typedef struct {
     sancovcnt_t sanCovCnts;
     pthread_mutex_t sanCov_mutex;
     sanOpts_t sanOpts;
+    const char* extSanOpts;
     size_t dynFileIterExpire;
     bool useSanCov;
     node_t* covMetadata;
