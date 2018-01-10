@@ -271,18 +271,19 @@ static void commonOpts(int* j, char** args) {
     args[(*j)++] = "-fno-builtin";
     args[(*j)++] = "-fno-omit-frame-pointer";
     args[(*j)++] = "-D__NO_STRING_INLINES";
+
     /* Make it possible to use the libhfnetdriver */
     if (isCXX) {
         args[(*j)++] =
             "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)="
             "extern const char* LIBHFNETDRIVER_module_netdriver;"
-            "int LIBHFNETDRIVER_module_main = 0;"
+            "const char** LIBHFNETDRIVER_module_main = &LIBHFNETDRIVER_module_netdriver;"
             "extern \"C\" __attribute__((used)) int HonggfuzzNetDriver_main(x,y)";
     } else {
         args[(*j)++] =
             "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)="
             "extern const char* LIBHFNETDRIVER_module_netdriver;"
-            "int LIBHFNETDRIVER_module_main = 0; "
+            "const char** LIBHFNETDRIVER_module_main = &LIBHFNETDRIVER_module_netdriver;"
             "__attribute__((used)) int HonggfuzzNetDriver_main(x,y)";
     }
 
@@ -361,6 +362,7 @@ static int ldMode(int argc, char** argv) {
     args[j++] = getLibHfuzzPath();
 
     /* Pull modules defining the following symbols (if they exist) */
+    args[j++] = "-Wl,-u,LLVMFuzzerTestOneInput",
     args[j++] = "-Wl,-u,LIBHFNETDRIVER_module_main",
     args[j++] = "-Wl,-u,LIBHFUZZ_module_instrument";
     args[j++] = "-Wl,-u,LIBHFUZZ_module_memorycmp";
