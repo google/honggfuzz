@@ -71,9 +71,7 @@
 /* FD used to pass data to a persistent process */
 #define _HF_PERSISTENT_FD 1023
 
-/* Message indicating that the fuzz process is ready (fuzzed->fuzzer) */
-static const uint8_t HFreadyTag = 'R';
-/* Message indicating that the fuzz process has done processing data (fuzzed->fuzzer) */
+/* Message indicating that the fuzz process has finished processing data (fuzzed->fuzzer) */
 static const uint8_t HFdoneTag = 'D';
 
 /* Maximum number of active fuzzing threads */

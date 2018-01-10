@@ -141,23 +141,6 @@ bool subproc_persistentModeRoundDone(run_t* run) {
     return false;
 }
 
-static bool subproc_persistentModeReady(run_t* run) {
-    if (!run->global->persistent) {
-        return false;
-    }
-    uint8_t rcv;
-    if (files_readFromFd(run->persistentSock, &rcv, sizeof(rcv)) != sizeof(rcv)) {
-        return false;
-    }
-    if (rcv == HFreadyTag) {
-        return true;
-    }
-    LOG_F("Received invalid message from the persistent process: '%c' (0x%" PRIx8
-          ") , expected '%c' (0x%" PRIx8 ")",
-        rcv, rcv, HFreadyTag, HFreadyTag);
-    return false;
-}
-
 static bool subproc_persistentSendFile(run_t* run) {
     uint64_t len = (uint64_t)run->dynamicFileSz;
     if (!files_sendToSocketNB(run->persistentSock, (uint8_t*)&len, sizeof(len))) {
@@ -316,14 +299,6 @@ static bool subproc_New(run_t* run) {
         close(sv[1]);
         LOG_I("Persistent mode: Launched new persistent PID: %d", (int)run->pid);
         run->persistentPid = run->pid;
-
-        LOG_D("Waiting for the readiness message from PID: %d", (int)run->pid);
-        if (!subproc_persistentModeReady(run)) {
-            LOG_W(
-                "Couldn't receive the readiness indication from the persistent process. Killing "
-                "it!");
-            kill(run->pid, SIGKILL);
-        }
     }
 
     arch_prepareParentAfterFork(run);

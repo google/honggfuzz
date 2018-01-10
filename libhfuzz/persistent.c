@@ -44,9 +44,6 @@ void HonggfuzzFetchData(const uint8_t** buf_ptr, size_t* len_ptr) {
          * start-up)
          */
         instrumentClearNewCov();
-        if (!files_writeToFd(_HF_PERSISTENT_FD, &HFreadyTag, sizeof(HFreadyTag))) {
-            LOG_F("writeToFd(size=%zu, readyTag) failed", sizeof(HFreadyTag));
-        }
         initialized = true;
     }
 

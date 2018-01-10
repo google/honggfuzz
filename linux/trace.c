@@ -1308,7 +1308,7 @@ bool arch_traceAttach(run_t* run, pid_t pid) {
         seize_options |= PTRACE_O_TRACEEXIT;
     }
 
-    if (run->global->linux.pid == 0 && !run->global->persistent && !arch_traceWaitForPidStop(pid)) {
+    if (run->global->linux.pid == 0 && !arch_traceWaitForPidStop(pid)) {
         return false;
     }
 
