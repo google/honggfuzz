@@ -274,11 +274,15 @@ static void commonOpts(int* j, char** args) {
     /* Make it possible to use the libhfnetdriver */
     if (isCXX) {
         args[(*j)++] =
-            "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)=int HonggfuzzNetDriver_main_required = 0; extern "
-            "\"C\" __attribute__((used)) int HonggfuzzNetDriver_main(x,y)";
+            "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)="
+            "extern const char* LIBHFNETDRIVER_module_netdriver;"
+            "int LIBHFNETDRIVER_module_main = 0;"
+            "extern \"C\" __attribute__((used)) int HonggfuzzNetDriver_main(x,y)";
     } else {
         args[(*j)++] =
-            "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)=int HonggfuzzNetDriver_main_required = 0; "
+            "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)="
+            "extern const char* LIBHFNETDRIVER_module_netdriver;"
+            "int LIBHFNETDRIVER_module_main = 0; "
             "__attribute__((used)) int HonggfuzzNetDriver_main(x,y)";
     }
 
@@ -351,14 +355,17 @@ static int ldMode(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         args[j++] = argv[i];
     }
-    /* Needed by the libhfcommon */
 
+    /* Reference standard honggfuzz libraries (libhfuzz and libhfnetdriver) */
     args[j++] = getLibHFNetDriverPath();
     args[j++] = getLibHfuzzPath();
-    args[j++] = "-Wl,-u,HonggfuzzNetDriver_main_required";
-    args[j++] = "-Wl,-u,LIBHNETDRIVER_module_netdriver";
+
+    /* Pull modules defining the following symbols (if they exist) */
+    args[j++] = "-Wl,-u,LIBHFNETDRIVER_module_main",
     args[j++] = "-Wl,-u,LIBHFUZZ_module_instrument";
     args[j++] = "-Wl,-u,LIBHFUZZ_module_memorycmp";
+
+    /* Needed by the libhfcommon */
     args[j++] = "-lpthread";
 
     return execCC(j, args);

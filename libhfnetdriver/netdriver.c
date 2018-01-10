@@ -19,7 +19,7 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/ns.h"
 
-const char *LIBHNETDRIVER_module_netdriver = NULL;
+const char *LIBHFNETDRIVER_module_netdriver = NULL;
 
 #define HF_TCP_PORT_ENV "_HF_TCP_PORT"
 
