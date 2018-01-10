@@ -215,13 +215,13 @@ static bool subproc_PrepareExecv(run_t* run) {
 
     if (run->global->bbFd != -1) {
         if (dup2(run->global->bbFd, _HF_BITMAP_FD) == -1) {
-            PLOG_F("dup2('%d', %d)", run->global->bbFd, _HF_BITMAP_FD);
+            PLOG_E("dup2('%d', %d)", run->global->bbFd, _HF_BITMAP_FD);
+            return false;
         }
-        close(run->global->bbFd);
     }
 
     if (dup2(run->dynamicFileFd, _HF_INPUT_FD) == -1) {
-        PLOG_F("dup2('%d', %d)", run->dynamicFileFd, _HF_INPUT_FD);
+        PLOG_E("dup2('%d', %d)", run->dynamicFileFd, _HF_INPUT_FD);
     }
 
     sigset_t sset;

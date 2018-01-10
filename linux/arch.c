@@ -146,32 +146,32 @@ bool arch_launchChild(run_t* run) {
         syscall(__NR_personality, ADDR_NO_RANDOMIZE) == -1) {
         PLOG_D("personality(ADDR_NO_RANDOMIZE) failed");
     }
+
 #define ARGS_MAX 512
     const char* args[ARGS_MAX + 2];
-    char argData[PATH_MAX] = {0};
+    char argData[PATH_MAX];
     int x = 0;
 
-    for (x = 0; x < ARGS_MAX && run->global->exe.cmdline[x]; x++) {
-        if (!run->global->exe.fuzzStdin && !run->global->persistent &&
-            strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
+    for (x = 0; x < ARGS_MAX && x < run->global->exe.argc; x++) {
+        if (run->global->persistent || run->global->exe.fuzzStdin) {
+            args[x] = run->global->exe.cmdline[x];
+        } else if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
             args[x] = (char*)run->fileName;
-        } else if (!run->global->exe.fuzzStdin && !run->global->persistent &&
-                   strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
+        } else if (strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
             const char* off = strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER);
-            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - run->global->exe.cmdline[x]),
+            snprintf(argData, sizeof(argData), "%.*s%s", (int)(off - run->global->exe.cmdline[x]),
                 run->global->exe.cmdline[x], run->fileName);
             args[x] = argData;
         } else {
             args[x] = run->global->exe.cmdline[x];
         }
     }
-
     args[x++] = NULL;
 
     LOG_D("Launching '%s' on file '%s'", args[0],
         run->global->persistent ? "PERSISTENT_MODE" : run->fileName);
 
-    /* alarm persists across forks, so disable it here */
+    /* alarms persist across execve(), so disable it here */
     alarm(0);
 
     /* Wait for the ptrace to attach, if this is not a persistent fuzzing session */
@@ -321,14 +321,13 @@ static bool arch_checkWait(run_t* run) {
     }
 }
 
-__thread sigset_t sset_io_chld;
 void arch_reapChild(run_t* run) {
-    static const struct timespec ts = {
-        .tv_sec = 0L,
-        .tv_nsec = 250000000L,
-    };
     for (;;) {
-        int sig = sigtimedwait(&sset_io_chld, NULL, &ts);
+        static const struct timespec ts = {
+            .tv_sec = 0L,
+            .tv_nsec = 250000000L,
+        };
+        int sig = sigtimedwait(&run->global->linux.waitSigSet, NULL, &ts);
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
             PLOG_F("sigtimedwait(SIGIO|SIGCHLD, 0.25s)");
         }
@@ -382,8 +381,17 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
         return false;
     }
 
-    __attribute__((weak)) const char* gnu_get_libc_version(void);
+    /*
+     * Set the bitmask (once) of interesting signals, that this thread will be waiting for
+     * (with sigsuspend). Do it once here, to save precious CPU cycles, as this cannot be
+     * a statically initialized const variable
+     */
+    sigemptyset(&hfuzz->linux.waitSigSet);
+    sigaddset(&hfuzz->linux.waitSigSet, SIGIO);
+    sigaddset(&hfuzz->linux.waitSigSet, SIGCHLD);
+
     for (;;) {
+        __attribute__((weak)) const char* gnu_get_libc_version(void);
         if (!gnu_get_libc_version) {
             LOG_W("Unknown libc implementation. Using clone() instead of fork()");
             break;
@@ -524,10 +532,6 @@ bool arch_archThreadInit(run_t* run) {
     run->linux.cpuInstrFd = -1;
     run->linux.cpuBranchFd = -1;
     run->linux.cpuIptBtsFd = -1;
-
-    sigemptyset(&sset_io_chld);
-    sigaddset(&sset_io_chld, SIGIO);
-    sigaddset(&sset_io_chld, SIGCHLD);
 
     return true;
 }

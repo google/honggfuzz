@@ -192,6 +192,7 @@ typedef struct {
         bool saveUnique;
     } io;
     struct {
+        int argc;
         const char* const* cmdline;
         bool nullifyStdio;
         bool fuzzStdin;
@@ -285,6 +286,7 @@ typedef struct {
         uintptr_t cloneFlags;
         bool kernelOnly;
         bool useClone;
+        sigset_t waitSigSet;
     } linux;
 } honggfuzz_t;
 

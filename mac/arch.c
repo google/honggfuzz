@@ -298,24 +298,23 @@ pid_t arch_fork(run_t* run HF_ATTR_UNUSED) { return fork(); }
 bool arch_launchChild(run_t* run) {
 #define ARGS_MAX 512
     const char* args[ARGS_MAX + 2];
-    char argData[PATH_MAX] = {0};
-    int x;
+    char argData[PATH_MAX];
 
-    for (x = 0; x < ARGS_MAX && run->global->exe.cmdline[x]; x++) {
-        if (!run->global->exe.fuzzStdin &&
-            strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
-            args[x] = run->fileName;
-        } else if (!run->global->exe.fuzzStdin &&
-                   strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
+    int x;
+    for (x = 0; x < ARGS_MAX && x < run->global->exe.argc; x++) {
+        if (run->global->persistent || run->global->exe.fuzzStdin) {
+            args[x] = run->global->exe.cmdline[x];
+        } else if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
+            args[x] = (char*)run->fileName;
+        } else if (strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
             const char* off = strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER);
-            snprintf(argData, PATH_MAX, "%.*s%s", (int)(off - run->global->exe.cmdline[x]),
+            snprintf(argData, sizeof(argData), "%.*s%s", (int)(off - run->global->exe.cmdline[x]),
                 run->global->exe.cmdline[x], run->fileName);
             args[x] = argData;
         } else {
             args[x] = run->global->exe.cmdline[x];
         }
     }
-
     args[x++] = NULL;
 
     LOG_D("Launching '%s' on file '%s'", args[0], run->fileName);

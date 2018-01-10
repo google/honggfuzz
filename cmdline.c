@@ -205,6 +205,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             },
         .exe =
             {
+                .argc = 0,
                 .cmdline = NULL,
                 .nullifyStdio = true,
                 .fuzzStdin = false,
@@ -614,8 +615,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     if (!logInitLogFile(logfile, ll)) {
         return false;
     }
+    hfuzz->exe.argc = argc - optind;
     hfuzz->exe.cmdline = (const char* const*)&argv[optind];
-    if (hfuzz->exe.cmdline[0] == NULL) {
+    if (hfuzz->exe.argc <= 0) {
         LOG_E("No fuzz command provided");
         cmdlineUsage(argv[0], custom_opts);
         return false;
