@@ -64,4 +64,6 @@ extern bool files_readPidFromFile(const char* fileName, pid_t* pidPtr);
 
 extern size_t files_parseSymbolFilter(const char* inFIle, char*** filterList);
 
+extern bool files_redirectStdin(const char* inputFile);
+
 #endif /* ifndef HF_COMMON_FILES */

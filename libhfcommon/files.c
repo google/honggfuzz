@@ -431,3 +431,21 @@ bool files_readPidFromFile(const char* fileName, pid_t* pidPtr) {
 
     return true;
 }
+
+bool files_redirectStdin(const char* inputFile) {
+    int fd = open(inputFile, O_RDONLY);
+
+    if (fd == -1) {
+        PLOG_W("Couldn't open '%s'", inputFile);
+        return false;
+    }
+    if (dup2(fd, STDIN_FILENO) == -1) {
+        PLOG_W("dup2(fd(%d), STDIN_FILENO(%d)", fd, STDIN_FILENO);
+        return false;
+    }
+    if (fd != STDIN_FILENO) {
+        close(fd);
+    }
+
+    return true;
+}
