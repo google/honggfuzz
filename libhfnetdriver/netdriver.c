@@ -211,7 +211,7 @@ void netDriver_waitForServerReady(uint16_t portno) {
     }
 
     LOG_I(
-        "Honggfuzz Net Driver (pid=%d): The TCP server process ready to accept connections at "
+        "Honggfuzz Net Driver (pid=%d): The TCP server process is ready to accept connections at "
         "127.0.0.1:%" PRIu16 ". TCP fuzzing starts now!",
         (int)getpid(), portno);
 }
