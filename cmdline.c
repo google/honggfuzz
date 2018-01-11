@@ -71,7 +71,7 @@ static bool cmdlineCheckIfPersistent(const char* fname) {
         ret = true;
     }
     if (munmap(map, fileSz) == -1) {
-        PLOG_W("munmap(%p, %zu)", map, fileSz);
+        PLOG_W("munmap(%p, %zu)", map, (size_t)fileSz);
     }
     close(fd);
     return ret;
