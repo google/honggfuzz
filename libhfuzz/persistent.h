@@ -1,11 +1,11 @@
 /*
  *
- * honggfuzz - compiler instrumentation
+ * honggfuzz - persistent mode of fuzzing
  * -----------------------------------------
  *
  * Author: Robert Swiecki <swiecki@google.com>
  *
- * Copyright 2010-2015 by Google Inc. All Rights Reserved.
+ * Copyright 2018 by Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -21,12 +21,9 @@
  *
  */
 
-#ifndef _HF_LIBHFUZZ_INSTRUMENT_H_
-#define _HF_LIBHFUZZ_INSTRUMENT_H_
+#ifndef _HF_LIBHFUZZ_PERSISTENT_H_
+#define _HF_LIBHFUZZ_PERSISTENT_H_
 
-#include <inttypes.h>
+int HonggfuzzMain(int argc, char** argv);
 
-void instrumentUpdateCmpMap(uintptr_t addr, unsigned int n);
-void instrumentClearNewCov();
-
-#endif /* ifdef _HF_LIBHFUZZ_INSTRUMENT_H_ */
+#endif /* ifdef _HF_LIBHFUZZ_PERSISTENT_H_ */

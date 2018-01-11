@@ -37,9 +37,8 @@ const char* LIBHFUZZ_module_instrument = NULL;
 static feedback_t bbMapFb;
 feedback_t* feedback = &bbMapFb;
 uint32_t my_thread_no = 0;
-static const uint8_t* inputFile = NULL;
 
-__attribute__((constructor)) static void mapBB(void) {
+__attribute__((constructor)) static void initializeInstrument(void) {
     char* my_thread_no_str = getenv(_HF_THREAD_NO_ENV);
     if (my_thread_no_str == NULL) {
         return;
@@ -68,13 +67,6 @@ __attribute__((constructor)) static void mapBB(void) {
 
     /* Reset the counters to their initial state */
     instrumentClearNewCov();
-
-    if ((inputFile = mmap(NULL, _HF_INPUT_MAX_SIZE, PROT_READ, MAP_SHARED, _HF_INPUT_FD, 0)) ==
-        MAP_FAILED) {
-        PLOG_W("mmap(fd=%d, size=%zu) of the input file failed", _HF_INPUT_FD,
-            (size_t)_HF_INPUT_MAX_SIZE);
-        inputFile = NULL;
-    }
 }
 
 /* Reset the counters of newly discovered edges/pcs/features */
@@ -83,8 +75,6 @@ void instrumentClearNewCov() {
     feedback->pidFeedbackEdge[my_thread_no] = 0U;
     feedback->pidFeedbackCmp[my_thread_no] = 0U;
 }
-
-const uint8_t* instrumentFileBuf() { return inputFile; }
 
 /*
  * -finstrument-functions

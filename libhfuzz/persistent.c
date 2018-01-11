@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -20,8 +21,6 @@
 #include "libhfcommon/log.h"
 #include "libhfuzz/instrument.h"
 
-__attribute__((used)) const char* LIBHFUZZ_module_persistent = _HF_PERSISTENT_SIG;
-
 __attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len);
 __attribute__((weak)) int LLVMFuzzerInitialize(int* argc, char*** argv);
 __attribute__((weak)) size_t LLVMFuzzerMutate(
@@ -31,6 +30,19 @@ __attribute__((weak)) size_t LLVMFuzzerMutate(
 }
 
 static uint8_t buf[_HF_INPUT_MAX_SIZE] = {0};
+
+static const uint8_t* inputFile = NULL;
+__attribute__((constructor)) static void initializePersistent(void) {
+    if (fcntl(_HF_INPUT_FD, F_GETFD) == -1 && errno == EBADFD) {
+        return;
+    }
+    if ((inputFile = mmap(NULL, _HF_INPUT_MAX_SIZE, PROT_READ, MAP_SHARED, _HF_INPUT_FD, 0)) ==
+        MAP_FAILED) {
+        PLOG_W("mmap(fd=%d, size=%zu) of the input file failed", _HF_INPUT_FD,
+            (size_t)_HF_INPUT_MAX_SIZE);
+        inputFile = NULL;
+    }
+}
 
 void HonggfuzzFetchData(const uint8_t** buf_ptr, size_t* len_ptr) {
     static bool initialized = false;
@@ -52,7 +64,7 @@ void HonggfuzzFetchData(const uint8_t** buf_ptr, size_t* len_ptr) {
         LOG_F("readFromFd(rcvLen, size=%zu) failed", sizeof(rcvLen));
     }
 
-    *buf_ptr = instrumentFileBuf();
+    *buf_ptr = inputFile;
     *len_ptr = (size_t)rcvLen;
 }
 
@@ -113,20 +125,9 @@ int HonggfuzzMain(int argc, char** argv) {
             "code to make it work");
     }
 
-    if (fcntl(_HF_PERSISTENT_FD, F_GETFD) != -1) {
+    if (inputFile) {
         HonggfuzzPersistentLoop();
     }
 
     return HonggfuzzRunFromFile(argc, argv);
-}
-
-/*
- * Declare it 'weak', so it can be safely linked with regular binaries which
- * implement their own main()
- */
-#if !defined(__CYGWIN__)
-__attribute__((weak))
-#endif /* !defined(__CYGWIN__) */
-int main(int argc, char** argv) {
-    return HonggfuzzMain(argc, argv);
 }
