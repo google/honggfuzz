@@ -273,19 +273,18 @@ static void commonOpts(int* j, char** args) {
     args[(*j)++] = "-D__NO_STRING_INLINES";
 
     /* Make it possible to use the libhfnetdriver */
-    if (isCXX) {
-        args[(*j)++] =
-            "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)="
-            "extern const char* LIBHFNETDRIVER_module_netdriver;"
-            "const char** LIBHFNETDRIVER_module_main = &LIBHFNETDRIVER_module_netdriver;"
-            "extern \"C\" __attribute__((used)) int HonggfuzzNetDriver_main(x,y)";
-    } else {
-        args[(*j)++] =
-            "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)="
-            "extern const char* LIBHFNETDRIVER_module_netdriver;"
-            "const char** LIBHFNETDRIVER_module_main = &LIBHFNETDRIVER_module_netdriver;"
-            "__attribute__((used)) int HonggfuzzNetDriver_main(x,y)";
-    }
+    args[(*j)++] =
+        "-DHFND_FUZZING_ENTRY_FUNCTION_CXX(x,y)="
+        "extern \"C\" int HonggfuzzNetDriver_main(x,y);"
+        "extern const char* LIBHFNETDRIVER_module_netdriver;"
+        "const char** LIBHFNETDRIVER_module_main = &LIBHFNETDRIVER_module_netdriver;"
+        "int HonggfuzzNetDriver_main(x,y)";
+    args[(*j)++] =
+        "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)="
+        "int HonggfuzzNetDriver_main(x,y);"
+        "extern const char* LIBHFNETDRIVER_module_netdriver;"
+        "const char** LIBHFNETDRIVER_module_main = &LIBHFNETDRIVER_module_netdriver;"
+        "int HonggfuzzNetDriver_main(x,y)";
 
     if (useM32()) {
         args[(*j)++] = "-m32";
