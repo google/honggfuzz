@@ -141,7 +141,7 @@ bool subproc_persistentModeRoundDone(run_t* run) {
     return false;
 }
 
-static bool subproc_persistentSendFile(run_t* run) {
+static bool subproc_persistentSendFileIndicator(run_t* run) {
     uint64_t len = (uint64_t)run->dynamicFileSz;
     if (!files_sendToSocketNB(run->persistentSock, (uint8_t*)&len, sizeof(len))) {
         PLOG_W("files_sendToSocketNB(len=%zu)", sizeof(len));
@@ -330,7 +330,7 @@ bool subproc_Run(run_t* run) {
 
     arch_prepareParent(run);
 
-    if (run->global->persistent && !subproc_persistentSendFile(run)) {
+    if (run->global->persistent && !subproc_persistentSendFileIndicator(run)) {
         LOG_W("Could not send file size to the persistent process");
         kill(run->persistentPid, SIGKILL);
     }

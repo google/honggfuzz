@@ -100,8 +100,8 @@ static bool fuzz_checkSizeNRewind(run_t* run) {
         LOG_W("External tool created too large of a file, '%zu', truncating it to '%zu'",
             (size_t)st.st_size, run->dynamicFileSz);
     }
-    if (ftruncate(run->dynamicFileFd, run->dynamicFileSz) == -1) {
-        PLOG_E("ftruncate(fd=%d, size=%zu)", run->dynamicFileFd, run->dynamicFileSz);
+    if (ftruncate(run->dynamicFileFd, _HF_INPUT_MAX_SIZE) == -1) {
+        PLOG_E("ftruncate(fd=%d, size=%zu)", run->dynamicFileFd, (size_t)_HF_INPUT_MAX_SIZE);
         return false;
     }
     return true;
@@ -306,7 +306,6 @@ static bool fuzz_runVerifier(run_t* crashedFuzzer) {
         if (arch_archThreadInit(&vFuzzer) == false) {
             LOG_F("Could not initialize the thread");
         }
-
         if (subproc_Run(&vFuzzer) == false) {
             LOG_F("subproc_Run()");
         }
@@ -570,6 +569,10 @@ static void fuzz_fuzzLoop(run_t* run) {
                 LOG_F("fuzz_postProcessFile() failed");
             }
         }
+    }
+    /* Truncate input file to the desired size */
+    if (ftruncate(run->dynamicFileFd, run->dynamicFileSz) == -1) {
+        PLOG_F("ftruncate(fd=%d, size=%zu)", run->dynamicFileFd, run->dynamicFileSz);
     }
 
     if (subproc_Run(run) == false) {
