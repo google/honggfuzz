@@ -9,15 +9,15 @@ extern "C" {
 #endif
 
 #ifdef __cplusplus
-#define HFND_FUZZING_ENTRY_FUNCTION(x, y)                                         \
-    "extern const char* LIBHFNETDRIVER_module_netdriver;"                         \
-    "const char** LIBHFNETDRIVER_module_main = &LIBHFNETDRIVER_module_netdriver;" \
-    "extern \"C\" __attribute__((used)) int HonggfuzzNetDriver_main(x,y)"
-#else /* ifdef __cplusplus */
-#define HFND_FUZZING_ENTRY_FUNCTION(x, y)                                         \
-    "extern const char* LIBHFNETDRIVER_module_netdriver;"                         \
-    "const char** LIBHFNETDRIVER_module_main = &LIBHFNETDRIVER_module_netdriver;" \
-    "__attribute__((used)) int HonggfuzzNetDriver_main(x,y)"
+#define HFND_FUZZING_ENTRY_FUNCTION(x, y)                                       \
+    extern const char* LIBHFNETDRIVER_module_netdriver;                         \
+    const char** LIBHFNETDRIVER_module_main = &LIBHFNETDRIVER_module_netdriver; \
+    extern "C" __attribute__((used)) int HonggfuzzNetDriver_main(x,y)
+#else /* ifndef __cplusplus */
+#define HFND_FUZZING_ENTRY_FUNCTION(x, y)                                       \
+    extern const char* LIBHFNETDRIVER_module_netdriver;                         \
+    const char** LIBHFNETDRIVER_module_main = &LIBHFNETDRIVER_module_netdriver; \
+    __attribute__((used)) int HonggfuzzNetDriver_main(x,y)
 #endif /* ifdef __cplusplus */
 
 /*
