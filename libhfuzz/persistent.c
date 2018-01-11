@@ -31,7 +31,7 @@ __attribute__((weak)) size_t LLVMFuzzerMutate(
 
 static const uint8_t* inputFile = NULL;
 __attribute__((constructor)) static void initializePersistent(void) {
-    if (fcntl(_HF_INPUT_FD, F_GETFD) == -1 && errno == EBADFD) {
+    if (fcntl(_HF_INPUT_FD, F_GETFD) == -1 && errno == EBADF) {
         return;
     }
     if ((inputFile = mmap(NULL, _HF_INPUT_MAX_SIZE, PROT_READ, MAP_SHARED, _HF_INPUT_FD, 0)) ==
