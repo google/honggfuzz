@@ -15,10 +15,6 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 
-/* Stringify */
-#define XSTR(x) #x
-#define STR(x) XSTR(x)
-
 /*
  * All clang sanitizers, except ASan, can be activated for target binaries
  * with or without the matching runtime library (libcompiler_rt). If runtime
@@ -74,7 +70,7 @@
 #define kASAN_COMMON_OPTS        \
     "allow_user_segv_handler=1:" \
     "handle_segv=0:"             \
-    "allocator_may_return_null=1:" kSAN_COMMON ":exitcode=" STR(HF_SAN_EXIT_CODE)
+    "allocator_may_return_null=1:" kSAN_COMMON ":exitcode=" HF_XSTR(HF_SAN_EXIT_CODE)
 /* Platform specific flags */
 #if defined(__ANDROID__)
 /*

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "libhfcommon/common.h"
 #include "libhfuzz/instrument.h"
 
 const char* const LIBHFUZZ_module_memorycmp = "LIBHFUZZ_module_memorycmp";
@@ -161,9 +162,8 @@ static inline void* _memmem(const void* haystack, size_t haystacklen, const void
 
 /* Define a weak function x, as well as __wrap_x pointing to x */
 #define XVAL(x) x
-#define HF_WEAK_WRAP(ret, func, ...)                                          \
-    __attribute__((alias(#func))) XVAL(ret) XVAL(__wrap_##func)(__VA_ARGS__); \
-    __attribute__((weak)) XVAL(ret) XVAL(func)(__VA_ARGS__)
+#define HF_WEAK_WRAP(ret, func, ...) \
+    _Pragma(HF__XSTR(weak func = __wrap_##func)) XVAL(ret) XVAL(__wrap_##func)(__VA_ARGS__)
 
 /* Typical libc wrappers */
 HF_WEAK_WRAP(int, strcmp, const char* s1, const char* s2) {

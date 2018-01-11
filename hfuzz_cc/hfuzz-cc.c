@@ -19,8 +19,6 @@
 #include "libhfcommon/util.h"
 
 #define ARGS_MAX 4096
-#define __XSTR(x) #x
-#define _XSTR(x) __XSTR(x)
 
 static bool isCXX = false;
 static bool isGCC = false;
@@ -169,7 +167,7 @@ char* getIncPaths(void) {
 #endif
 
     static char path[PATH_MAX];
-    snprintf(path, sizeof(path), "-I%s/includes/", _XSTR(_HFUZZ_INC_PATH));
+    snprintf(path, sizeof(path), "-I%s/includes/", HF_XSTR(_HFUZZ_INC_PATH));
     return path;
 }
 

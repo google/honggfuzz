@@ -68,9 +68,7 @@ void HonggfuzzFetchData(const uint8_t** buf_ptr, size_t* len_ptr) {
     *len_ptr = (size_t)rcvLen;
 }
 
-void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr) {
-    return HonggfuzzFetchData(buf_ptr, len_ptr);
-}
+void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr) { HonggfuzzFetchData(buf_ptr, len_ptr); }
 
 static void HonggfuzzRunOneInput(const uint8_t* buf, size_t len) {
     int ret = LLVMFuzzerTestOneInput(buf, len);

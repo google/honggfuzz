@@ -149,6 +149,8 @@ COMPILER = $(shell $(CC) -v 2>&1 | \
   grep --color=never -oE '(clang|gcc)' | head -n1)
 ifeq ($(COMPILER),clang)
   ARCH_CFLAGS += -Wno-initializer-overrides -Wno-unknown-warning-option
+  ARCH_CFLAGS += -Wno-gnu-empty-initializer -Wno-format-pedantic
+  ARCH_CFLAGS += -Wno-gnu-statement-expression
   ARCH_CFLAGS += -fblocks
   CFLAGS_NOBLOCKS = -fno-blocks
 
@@ -396,7 +398,7 @@ libhfuzz/linux.o: libhfcommon/common.h libhfuzz/libhfuzz.h
 libhfuzz/linux.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
 libhfuzz/linux.o: libhfcommon/ns.h
 libhfuzz/main.o: honggfuzz.h libhfcommon/util.h libhfuzz/persistent.h
-libhfuzz/memorycmp.o: libhfuzz/instrument.h
+libhfuzz/memorycmp.o: libhfcommon/common.h libhfuzz/instrument.h
 libhfuzz/persistent.o: libhfuzz/libhfuzz.h honggfuzz.h libhfcommon/util.h
 libhfuzz/persistent.o: libhfcommon/common.h libhfcommon/files.h
 libhfuzz/persistent.o: libhfcommon/common.h libhfcommon/log.h

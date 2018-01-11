@@ -27,9 +27,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#ifndef HF_ATTR_UNUSED
+/* Stringify */
+#define HF__XSTR(x) #x
+#define HF_XSTR(x) HF__XSTR(x)
+
 #define HF_ATTR_UNUSED __attribute__((unused))
-#endif /* ifndef HF_ATTR_UNUSED */
 
 #ifndef ARRAYSIZE
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
