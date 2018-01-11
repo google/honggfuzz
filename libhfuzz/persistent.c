@@ -106,10 +106,12 @@ static int HonggfuzzRunFromFile(int argc, char** argv) {
     ssize_t len = files_readFromFd(in_fd, buf, _HF_INPUT_MAX_SIZE);
     if (len < 0) {
         LOG_E("Couldn't read data from stdin: %s", strerror(errno));
+        free(buf);
         return -1;
     }
 
     HonggfuzzRunOneInput(buf, len);
+    free(buf);
     return 0;
 }
 
