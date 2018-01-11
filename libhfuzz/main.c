@@ -5,7 +5,7 @@
  * If this signature is visible inside a binary, it's probably a persistent-style fuzzing program.
  * This mode of discover is employed by honggfuzz
  */
-__attribute__((used)) const char* LIBHFUZZ_module_persistent = _HF_PERSISTENT_SIG;
+__attribute__((used)) const char* LIBHFUZZ_module_main = _HF_PERSISTENT_SIG;
 
 /*
  * Declare it 'weak', so it can be safely linked with regular binaries which

@@ -20,7 +20,7 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/ns.h"
 
-const char *LIBHFNETDRIVER_module_netdriver = NULL;
+const char *const LIBHFNETDRIVER_module_netdriver = "LIBHFNETDRIVER_module_netdriver";
 
 #define HF_TCP_PORT_ENV "_HF_TCP_PORT"
 
@@ -168,17 +168,28 @@ __attribute__((weak)) uint16_t HonggfuzzNetDriverPort(
 }
 
 /*
- * Split: ./httpdserver -max_input=10 -- --config /etc/httpd.confg
- * so:
- * This code (e.g. libfuzzer) will only see "./httpdserver -max_input=10",
- * while the httpdserver will only see: "./httpdserver --config /etc/httpd.confg"
+ * The return value is a number of arguments passed returned to libfuzzer (if used)
  *
- * The return value is a number of arguments passed to libfuzzer (if used)
- *
- * Define this function in your code to manipulate the arguments as desired
+ * Define this function in your code to describe which arguments are passed to the fuzzed
+ * TCP server, and which to the fuzzing engine.
  */
 __attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
     int argc, char **argv, int *server_argc, char ***server_argv) {
+    /* If the used fuzzer is honggfuzz, simply pass all arguments to the TCP server */
+    __attribute__((weak)) int HonggfuzzMain(int argc, char **argv);
+    if (HonggfuzzMain) {
+        *server_argc = argc;
+        *server_argv = argv;
+        return argc;
+    }
+
+    /*
+     * For other fuzzing engines:
+     * Split: ./httpdserver -max_input=10 -- --config /etc/httpd.confg
+     * into:
+     * The fuzzing engine (e.g. libfuzzer) will see "./httpdserver -max_input=10",
+     * The httpdserver will see: "./httpdserver --config /etc/httpd.confg"
+     */
     for (int i = 0; i < argc; i++) {
         if (strcmp(argv[i], "--") == 0) {
             *server_argc = argc - i;

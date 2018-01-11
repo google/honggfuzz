@@ -18,7 +18,7 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 
-const char* LIBHFUZZ_module_instrument = NULL;
+const char* const LIBHFUZZ_module_instrument = "LIBHFUZZ_module_instrument";
 
 /*
  * We require SSE4.2 with x86-(32|64) for the 'popcnt', as it's much faster than the software

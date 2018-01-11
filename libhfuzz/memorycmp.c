@@ -6,7 +6,7 @@
 
 #include "libhfuzz/instrument.h"
 
-const char* LIBHFUZZ_module_memorycmp = NULL;
+const char* const LIBHFUZZ_module_memorycmp = "LIBHFUZZ_module_memorycmp";
 
 #if !defined(_HF_USE_RET_ADDR)
 /* Use just single ret-address */

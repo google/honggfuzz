@@ -21,6 +21,8 @@
 #include "libhfcommon/log.h"
 #include "libhfuzz/instrument.h"
 
+const char* const LIBHFUZZ_module_persistent = "LIBHFUZZ_module_persistent";
+
 __attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len);
 __attribute__((weak)) int LLVMFuzzerInitialize(int* argc, char*** argv);
 __attribute__((weak)) size_t LLVMFuzzerMutate(
