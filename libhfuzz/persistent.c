@@ -29,8 +29,6 @@ __attribute__((weak)) size_t LLVMFuzzerMutate(
     return 0;
 }
 
-static uint8_t buf[_HF_INPUT_MAX_SIZE] = {0};
-
 static const uint8_t* inputFile = NULL;
 __attribute__((constructor)) static void initializePersistent(void) {
     if (fcntl(_HF_INPUT_FD, F_GETFD) == -1 && errno == EBADFD) {
@@ -104,7 +102,8 @@ static int HonggfuzzRunFromFile(int argc, char** argv) {
     LOG_I("Accepting input from '%s'", fname);
     LOG_I("Usage for fuzzing: honggfuzz -P [flags] -- %s", argv[0]);
 
-    ssize_t len = files_readFromFd(in_fd, buf, sizeof(buf));
+    uint8_t* buf = (uint8_t*)util_Malloc(_HF_INPUT_MAX_SIZE);
+    ssize_t len = files_readFromFd(in_fd, buf, _HF_INPUT_MAX_SIZE);
     if (len < 0) {
         LOG_E("Couldn't read data from stdin: %s", strerror(errno));
         return -1;
@@ -118,8 +117,7 @@ int HonggfuzzMain(int argc, char** argv) {
     if (LLVMFuzzerInitialize) {
         LLVMFuzzerInitialize(&argc, &argv);
     }
-
-    if (LLVMFuzzerTestOneInput == NULL) {
+    if (!LLVMFuzzerTestOneInput) {
         LOG_F(
             "Define 'int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)' in your "
             "code to make it work");
