@@ -291,7 +291,6 @@ typedef struct {
     honggfuzz_t* global;
     pid_t pid;
     pid_t persistentPid;
-    fuzzState_t state;
     int64_t timeStartedMillis;
     const char* origFileName;
     char crashFileName[PATH_MAX];

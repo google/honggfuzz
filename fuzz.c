@@ -201,44 +201,33 @@ static bool fuzz_postProcessFile(run_t* run) {
     return true;
 }
 
-static fuzzState_t fuzz_getState(honggfuzz_t* hfuzz) { return ATOMIC_GET(hfuzz->state); }
+static fuzzState_t fuzz_getState(run_t* run) { return ATOMIC_GET(run->global->state); }
 
-static void fuzz_setState(honggfuzz_t* hfuzz, fuzzState_t state) {
-    /* All threads must indicate willingness to switch to _HF_STATE_DYNAMIC_MAIN */
-    if (state == _HF_STATE_DYNAMIC_MAIN) {
-        static size_t cnt = 0;
-        ATOMIC_PRE_INC(cnt);
-        while (ATOMIC_GET(cnt) < hfuzz->threads.threadsMax) {
-            if (fuzz_isTerminating()) {
-                return;
-            }
-            sleep(1);
-        }
-    }
+static void fuzz_setDynamicMainState(run_t* run) {
+    /* All threads need to indicate willingness to switch to the DYNAMIC_MAIN state */
+    static uint32_t cnt = 0;
+    ATOMIC_PRE_INC(cnt);
 
     static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
     MX_SCOPED_LOCK(&state_mutex);
 
-    if (hfuzz->state == state) {
+    if (fuzz_getState(run) == _HF_STATE_DYNAMIC_MAIN) {
         return;
     }
 
-    switch (state) {
-        case _HF_STATE_DYNAMIC_PRE:
-            LOG_I("Entering phase 1/2: Dry Run");
+    for (;;) {
+        /* Check if all threads have reported in for changing state */
+        if (ATOMIC_GET(cnt) == run->global->threads.threadsMax) {
             break;
-        case _HF_STATE_DYNAMIC_MAIN:
-            LOG_I("Entering phase 2/2: Main");
-            break;
-        case _HF_STATE_STATIC:
-            LOG_I("Entering phase: Static");
-            break;
-        default:
-            LOG_I("Entering unknown phase: %d", state);
-            break;
+        }
+        if (fuzz_isTerminating()) {
+            return;
+        }
+        usleep(1000 * 10); /* 10ms */
     }
 
-    ATOMIC_SET(hfuzz->state, state);
+    LOG_I("Entering phase 2/2: Main");
+    ATOMIC_SET(run->global->state, _HF_STATE_DYNAMIC_MAIN);
 }
 
 static bool fuzz_runVerifier(run_t* crashedFuzzer) {
@@ -262,7 +251,6 @@ static bool fuzz_runVerifier(run_t* crashedFuzzer) {
             .global = crashedFuzzer->global,
             .pid = 0,
             .persistentPid = 0,
-            .state = fuzz_getState(crashedFuzzer->global),
             .timeStartedMillis = util_timeNowMillis(),
             .crashFileName = {0},
             .pc = 0ULL,
@@ -379,7 +367,7 @@ static void fuzz_addFileToFileQ(run_t* run) {
     }
 
     /* No need to add files to the new coverage dir, if this is just the dry-run phase */
-    if (run->state == _HF_STATE_DYNAMIC_PRE || run->global->io.covDirNew == NULL) {
+    if (fuzz_getState(run) == _HF_STATE_DYNAMIC_PRE || run->global->io.covDirNew == NULL) {
         return;
     }
 
@@ -502,7 +490,6 @@ static void fuzz_sanCovFeedback(run_t* run) {
 static void fuzz_fuzzLoop(run_t* run) {
     run->pid = 0;
     run->timeStartedMillis = util_timeNowMillis();
-    run->state = fuzz_getState(run->global);
     run->crashFileName[0] = '\0';
     run->pc = 0ULL;
     run->backtrace = 0ULL;
@@ -525,11 +512,10 @@ static void fuzz_fuzzLoop(run_t* run) {
     run->linux.hwCnts.bbCnt = 0ULL;
     run->linux.hwCnts.newBBCnt = 0ULL;
 
-    if (run->state == _HF_STATE_DYNAMIC_PRE) {
+    if (fuzz_getState(run) == _HF_STATE_DYNAMIC_PRE) {
         run->mutationsPerRun = 0U;
         if (fuzz_prepareFile(run, false /* rewind */) == false) {
-            fuzz_setState(run->global, _HF_STATE_DYNAMIC_MAIN);
-            run->state = fuzz_getState(run->global);
+            fuzz_setDynamicMainState(run);
         }
     }
 
@@ -537,7 +523,7 @@ static void fuzz_fuzzLoop(run_t* run) {
         return;
     }
 
-    if (run->state == _HF_STATE_DYNAMIC_MAIN) {
+    if (fuzz_getState(run) == _HF_STATE_DYNAMIC_MAIN) {
         if (run->global->exe.externalCommand) {
             if (!fuzz_prepareFileExternally(run)) {
                 LOG_F("fuzz_prepareFileExternally() failed");
@@ -553,7 +539,7 @@ static void fuzz_fuzzLoop(run_t* run) {
         }
     }
 
-    if (run->state == _HF_STATE_STATIC) {
+    if (fuzz_getState(run) == _HF_STATE_STATIC) {
         if (run->global->exe.externalCommand) {
             if (!fuzz_prepareFileExternally(run)) {
                 LOG_F("fuzz_prepareFileExternally() failed");
@@ -694,9 +680,11 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
     }
 
     if (hfuzz->useSanCov || hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
-        fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_PRE);
+        LOG_I("Entering phase 1/2: Dry Run");
+        hfuzz->state = _HF_STATE_DYNAMIC_PRE;
     } else {
-        fuzz_setState(hfuzz, _HF_STATE_STATIC);
+        LOG_I("Entering phase: Static");
+        hfuzz->state = _HF_STATE_STATIC;
     }
 
     for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
