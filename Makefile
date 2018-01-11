@@ -135,6 +135,7 @@ else ifeq ($(OS),Darwin)
     # OS Darwin
 else
     ARCH := POSIX
+
     ARCH_SRCS := $(sort $(wildcard posix/*.c))
     ARCH_CFLAGS := -std=c11 -I/usr/local/include \
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
