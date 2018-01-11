@@ -30,7 +30,7 @@ __attribute__((weak)) size_t LLVMFuzzerMutate(
     return 0;
 }
 
-static uint8_t buf[_HF_PERF_BITMAP_SIZE_16M] = {0};
+static uint8_t buf[_HF_INPUT_MAX_SIZE] = {0};
 
 void HonggfuzzFetchData(const uint8_t** buf_ptr, size_t* len_ptr) {
     static bool initialized = false;
@@ -89,8 +89,8 @@ static int HonggfuzzRunFromFile(int argc, char** argv) {
         }
     }
 
-    LOG_I(
-        "Accepting input from '%s'\nUsage for fuzzing: honggfuzz -P [flags] -- %s", fname, argv[0]);
+    LOG_I("Accepting input from '%s'", fname);
+    LOG_I("Usage for fuzzing: honggfuzz -P [flags] -- %s", argv[0]);
 
     ssize_t len = files_readFromFd(in_fd, buf, sizeof(buf));
     if (len < 0) {

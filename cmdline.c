@@ -206,6 +206,12 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
         return false;
     }
 
+    if (hfuzz->maxFileSz > _HF_INPUT_MAX_SIZE) {
+        LOG_E("Maximum file size '%zu' bigger than the maximum size '%zu'", hfuzz->maxFileSz,
+            (size_t)_HF_INPUT_MAX_SIZE);
+        return false;
+    }
+
     return true;
 }
 

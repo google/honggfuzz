@@ -83,11 +83,28 @@ bool fuzz_shouldTerminate() {
     return false;
 }
 
-static void fuzz_getFileName(run_t* run) {
-    char bname[PATH_MAX];
-    snprintf(bname, sizeof(bname), "%s", run->global->exe.cmdline[0]);
-    snprintf(run->fileName, PATH_MAX, "%s/honggfuzz.input.%" PRIu32 ".%s.%s",
-        run->global->io.workDir, run->fuzzNo, basename(bname), run->global->io.fileExtn);
+static bool fuzz_checkSizeNRewind(run_t* run) {
+    if (lseek(run->dynamicFileFd, (off_t)0, SEEK_SET) == (off_t)-1) {
+        PLOG_E("lseek(fd=%d, 0, SEEK_SET)", run->dynamicFileFd);
+        return false;
+    }
+    struct stat st;
+    if (fstat(run->dynamicFileFd, &st) == -1) {
+        PLOG_E("fstat(fd=%d)", run->dynamicFileFd);
+        return false;
+    }
+    if (st.st_size <= _HF_INPUT_MAX_SIZE) {
+        run->dynamicFileSz = (size_t)st.st_size;
+    } else {
+        run->dynamicFileSz = _HF_INPUT_MAX_SIZE;
+        LOG_W("External tool created too large of a file, '%zu', truncating it to '%zu'",
+            (size_t)st.st_size, run->dynamicFileSz);
+    }
+    if (ftruncate(run->dynamicFileFd, run->dynamicFileSz) == -1) {
+        PLOG_E("ftruncate(fd=%d, size=%zu)", run->dynamicFileFd, run->dynamicFileSz);
+        return false;
+    }
+    return true;
 }
 
 static bool fuzz_prepareFileDynamically(run_t* run) {
@@ -119,13 +136,6 @@ static bool fuzz_prepareFileDynamically(run_t* run) {
 
     mangle_mangleContent(run);
 
-    if (run->global->persistent == false &&
-        files_writeBufToFile(run->fileName, run->dynamicFile, run->dynamicFileSz,
-            O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC) == false) {
-        LOG_E("Couldn't write buffer to file '%s'", run->fileName);
-        return false;
-    }
-
     return true;
 }
 
@@ -145,79 +155,48 @@ static bool fuzz_prepareFile(run_t* run, bool rewind) {
 
     mangle_mangleContent(run);
 
-    if (run->global->persistent == false &&
-        files_writeBufToFile(run->fileName, run->dynamicFile, run->dynamicFileSz,
-            O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC) == false) {
-        LOG_E("Couldn't write buffer to file '%s'", run->fileName);
-        return false;
-    }
-
     return true;
 }
 
 static bool fuzz_prepareFileExternally(run_t* run) {
-    char fname[PATH_MAX];
-    if (input_getNext(run, fname, true /* rewind */)) {
-        run->origFileName = files_basename(fname);
-        if (files_copyFile(fname, run->fileName, NULL, false /* try_link */) == false) {
-            LOG_E("files_copyFile('%s', '%s')", fname, run->fileName);
-            return false;
-        }
+    static __thread char ofname[PATH_MAX];
+    if (input_getNext(run, ofname, /* rewind= */ true)) {
+        run->origFileName = files_basename(ofname);
     } else {
         run->origFileName = "[EXTERNAL]";
-        int dstfd = open(run->fileName, O_CREAT | O_TRUNC | O_RDWR | O_CLOEXEC, 0644);
-        if (dstfd == -1) {
-            PLOG_E("Couldn't create a temporary file '%s'", run->fileName);
-            return false;
-        }
-        close(dstfd);
     }
 
-    LOG_D("Created '%s' as an input file", run->fileName);
+    char fname[PATH_MAX];
+    snprintf(fname, sizeof(fname), "/dev/fd/%d", run->dynamicFileFd);
 
-    const char* const argv[] = {run->global->exe.externalCommand, run->fileName, NULL};
+    const char* const argv[] = {run->global->exe.externalCommand, fname, NULL};
     if (subproc_System(run, argv) != 0) {
         LOG_E("Subprocess '%s' returned abnormally", run->global->exe.externalCommand);
         return false;
     }
     LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
 
-    ssize_t rsz = files_readFileToBufMax(run->fileName, run->dynamicFile, run->global->maxFileSz);
-    if (rsz < 0) {
-        LOG_W("Couldn't read back '%s' to the buffer", run->fileName);
+    if (!fuzz_checkSizeNRewind(run)) {
         return false;
-    }
-    run->dynamicFileSz = rsz;
-
-    if (run->global->persistent) {
-        unlink(run->fileName);
     }
 
     return true;
 }
 
 static bool fuzz_postProcessFile(run_t* run) {
-    if (run->global->persistent) {
-        if (files_writeBufToFile(run->fileName, run->dynamicFile, run->dynamicFileSz,
-                O_CREAT | O_TRUNC | O_WRONLY | O_CLOEXEC) == false) {
-            LOG_E("Couldn't write file to '%s'", run->fileName);
-            return false;
-        }
-    }
+    char fname[PATH_MAX];
+    snprintf(fname, sizeof(fname), "/dev/fd/%d", run->dynamicFileFd);
 
-    const char* const argv[] = {run->global->exe.postExternalCommand, run->fileName, NULL};
+    const char* const argv[] = {run->global->exe.postExternalCommand, fname, NULL};
     if (subproc_System(run, argv) != 0) {
         LOG_E("Subprocess '%s' returned abnormally", run->global->exe.postExternalCommand);
         return false;
     }
     LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
 
-    ssize_t rsz = files_readFileToBufMax(run->fileName, run->dynamicFile, run->global->maxFileSz);
-    if (rsz < 0) {
-        LOG_W("Couldn't read back '%s' to the buffer", run->fileName);
+    if (!fuzz_checkSizeNRewind(run)) {
         return false;
     }
-    run->dynamicFileSz = rsz;
 
     return true;
 }
@@ -328,19 +307,9 @@ static bool fuzz_runVerifier(run_t* crashedFuzzer) {
             LOG_F("Could not initialize the thread");
         }
 
-        fuzz_getFileName(&vFuzzer);
-        if (files_writeBufToFile(vFuzzer.fileName, crashBuf, crashFileSz,
-                O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC) == false) {
-            LOG_E("Couldn't write buffer to file '%s'", vFuzzer.fileName);
-            return false;
-        }
-
         if (subproc_Run(&vFuzzer) == false) {
             LOG_F("subproc_Run()");
         }
-
-        /* Delete intermediate files generated from verifier */
-        unlink(vFuzzer.fileName);
 
         /* If stack hash doesn't match skip name tag and exit */
         if (crashedFuzzer->backtrace != vFuzzer.backtrace) {
@@ -607,10 +576,6 @@ static void fuzz_fuzzLoop(run_t* run) {
         LOG_F("subproc_Run()");
     }
 
-    if (run->global->persistent == false) {
-        unlink(run->fileName);
-    }
-
     if (run->global->dynFileMethod != _HF_DYNFILE_NONE) {
         fuzz_perfFeedback(run);
     }
@@ -642,7 +607,6 @@ static void* fuzz_threadNew(void* arg) {
         .fuzzNo = fuzzNo,
         .persistentSock = -1,
         .tmOutSignaled = false,
-        .fileName = "[UNSET]",
 
         .linux.attachedPid = 0,
     };
@@ -651,13 +615,20 @@ static void* fuzz_threadNew(void* arg) {
         LOG_F("Couldn't create an input file of size: %zu", hfuzz->maxFileSz);
     }
     defer { close(run.dynamicFileFd); };
-    fuzz_getFileName(&run);
 
     if (arch_archThreadInit(&run) == false) {
         LOG_F("Could not initialize the thread");
     }
 
     for (;;) {
+        /* Reset and rewind the input file to the original maximum size */
+        if (ftruncate(run.dynamicFileFd, hfuzz->maxFileSz) == -1) {
+            PLOG_F("ftruncate(fd=%d, size=%zu)", run.dynamicFileFd, hfuzz->maxFileSz);
+        }
+        if (lseek(run.dynamicFileFd, (off_t)0, SEEK_SET) == (off_t)-1) {
+            PLOG_F("lseek(fd=%d, 0, SEEK_SET)", run.dynamicFileFd);
+        }
+
         /* Check if dry run mode with verifier enabled */
         if (run.global->mutationsPerRun == 0U && run.global->useVerifier) {
             if (ATOMIC_POST_INC(run.global->cnts.mutationsCnt) >= run.global->io.fileCnt) {

@@ -665,8 +665,8 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
 
     if (!SI_FROMUSER(&si) && pc && si.si_addr < run->global->linux.ignoreAddr) {
-        LOG_I("'%s' is interesting (%s), but the si.si_addr is %p (below %p), skipping",
-            run->fileName, arch_sigName(si.si_signo), si.si_addr, run->global->linux.ignoreAddr);
+        LOG_I("Input is interesting (%s), but the si.si_addr is %p (below %p), skipping",
+            arch_sigName(si.si_signo), si.si_addr, run->global->linux.ignoreAddr);
         return;
     }
 
@@ -822,11 +822,11 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
 
     if (files_writeBufToFile(run->crashFileName, run->dynamicFile, run->dynamicFileSz,
             O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC) == false) {
-        LOG_E("Couldn't copy '%s' to '%s'", run->fileName, run->crashFileName);
+        LOG_E("Couldn't write to '%s'", run->crashFileName);
         return;
     }
 
-    LOG_I("Crash: '%s' saved as '%s'", run->fileName, run->crashFileName);
+    LOG_I("Crash: saved as '%s'", run->crashFileName);
 
     ATOMIC_POST_INC(run->global->cnts.uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
@@ -1005,8 +1005,8 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
 
     /* Since crash address is available, apply ignoreAddr filters */
     if (crashAddr < run->global->linux.ignoreAddr) {
-        LOG_I("'%s' is interesting, but the crash addr is %p (below %p), skipping", run->fileName,
-            crashAddr, run->global->linux.ignoreAddr);
+        LOG_I("Input is interesting, but the crash addr is %p (below %p), skipping", crashAddr,
+            run->global->linux.ignoreAddr);
         return;
     }
 
@@ -1046,29 +1046,29 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
         }
     }
 
-    bool dstFileExists = false;
-    if (files_copyFile(run->fileName, run->crashFileName, &dstFileExists, true /* try_link */)) {
-        LOG_I("Ok, that's interesting, saved '%s' as '%s'", run->fileName, run->crashFileName);
-
-        /* Increase unique crashes counters */
-        ATOMIC_POST_INC(run->global->cnts.uniqueCrashesCnt);
-        ATOMIC_CLEAR(run->global->dynFileIterExpire);
+    int fd = open(run->crashFileName, O_WRONLY | O_EXCL | O_CREAT, 0600);
+    if (fd == -1 && errno == EEXIST) {
+        LOG_I("It seems that '%s' already exists, skipping", run->crashFileName);
+        return;
+    } else if (fd == -1) {
+        PLOG_E("Cannot create output file '%s'", run->crashFileName);
+        return;
     } else {
-        if (dstFileExists) {
-            LOG_I("It seems that '%s' already exists, skipping", run->crashFileName);
-
+        defer { close(fd); };
+        if (files_writeToFd(fd, run->dynamicFile, run->dynamicFileSz)) {
+            LOG_I("Ok, that's interesting, saved new crash as '%s'", run->crashFileName);
             /* Clear stack hash so that verifier can understand we hit a duplicate */
             run->backtrace = 0ULL;
+            /* Increase unique crashes counters */
+            ATOMIC_POST_INC(run->global->cnts.uniqueCrashesCnt);
+            ATOMIC_CLEAR(run->global->dynFileIterExpire);
         } else {
-            LOG_E("Couldn't copy '%s' to '%s'", run->fileName, run->crashFileName);
-
+            LOG_E("Couldn't save crash to '%s'", run->crashFileName);
             /* In case of write error, clear crashFileName to so that other monitored TIDs can retry
              */
             memset(run->crashFileName, 0, sizeof(run->crashFileName));
+            return;
         }
-
-        /* Don't bother generating reports for duplicate or non-saved crashes */
-        return;
     }
 
     /* Generate report */

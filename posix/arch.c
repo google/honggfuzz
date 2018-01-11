@@ -129,7 +129,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
             arch_sigs[termsig].descr, run->pid, localtmstr, run->global->io.fileExtn);
     }
 
-    LOG_I("Ok, that's interesting, saving the '%s' as '%s'", run->fileName, newname);
+    LOG_I("Ok, that's interesting, saving input '%s'", newname);
 
     /*
      * All crashes are marked as unique due to lack of information in POSIX arch
@@ -139,7 +139,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
 
     if (files_writeBufToFile(
             newname, run->dynamicFile, run->dynamicFileSz, O_CREAT | O_EXCL | O_WRONLY) == false) {
-        LOG_E("Couldn't copy '%s' to '%s'", run->fileName, run->crashFileName);
+        LOG_E("Couldn't save crash to '%s'", run->crashFileName);
     }
 
     return true;
@@ -152,16 +152,19 @@ bool arch_launchChild(run_t* run) {
     const char* args[ARGS_MAX + 2];
     char argData[PATH_MAX];
 
+    char inputFile[PATH_MAX];
+    snprintf(inputFile, sizeof(inputFile), "/dev/fd/%d", run->dynamicFileFd);
+
     int x;
     for (x = 0; x < ARGS_MAX && x < run->global->exe.argc; x++) {
         if (run->global->persistent || run->global->exe.fuzzStdin) {
             args[x] = run->global->exe.cmdline[x];
         } else if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
-            args[x] = (char*)run->fileName;
+            args[x] = inputFile;
         } else if (strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
             const char* off = strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER);
             snprintf(argData, sizeof(argData), "%.*s%s", (int)(off - run->global->exe.cmdline[x]),
-                run->global->exe.cmdline[x], run->fileName);
+                run->global->exe.cmdline[x], inputFile);
             args[x] = argData;
         } else {
             args[x] = run->global->exe.cmdline[x];
@@ -169,7 +172,7 @@ bool arch_launchChild(run_t* run) {
     }
     args[x++] = NULL;
 
-    LOG_D("Launching '%s' on file '%s'", args[0], run->fileName);
+    LOG_D("Launching '%s' on file '%s'", args[0], inputFile);
 
     /* alarm persists across forks, so disable it here */
     alarm(0);

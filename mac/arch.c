@@ -276,13 +276,13 @@ static bool arch_analyzeSignal(run_t* run, int status) {
         return true;
     }
 
-    if (files_writeBufToFile(run->crashFileName, run->dynamicFile, run->dynamicFileSz,
-            O_CREAT | O_EXCL | O_WRONLY) == false) {
-        LOG_E("Couldn't copy '%s' to '%s'", run->fileName, run->crashFileName);
+    if (!files_writeBufToFile(run->crashFileName, run->dynamicFile, run->dynamicFileSz,
+            O_CREAT | O_EXCL | O_WRONLY)) {
+        LOG_E("Couldn't save crash as '%s'", run->crashFileName);
         return true;
     }
 
-    LOG_I("Crash: '%s' saved as '%s'", run->fileName, run->crashFileName);
+    LOG_I("Crash: saved as '%s'", run->crashFileName);
 
     ATOMIC_POST_INC(run->global->cnts.uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
@@ -300,16 +300,19 @@ bool arch_launchChild(run_t* run) {
     const char* args[ARGS_MAX + 2];
     char argData[PATH_MAX];
 
+    char inputFile[PATH_MAX];
+    snprintf(inputFile, sizeof(inputFile), "/dev/fd/%d", run->dynamicFileFd);
+
     int x;
     for (x = 0; x < ARGS_MAX && x < run->global->exe.argc; x++) {
         if (run->global->persistent || run->global->exe.fuzzStdin) {
             args[x] = run->global->exe.cmdline[x];
         } else if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
-            args[x] = (char*)run->fileName;
+            args[x] = inputFile;
         } else if (strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
             const char* off = strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER);
             snprintf(argData, sizeof(argData), "%.*s%s", (int)(off - run->global->exe.cmdline[x]),
-                run->global->exe.cmdline[x], run->fileName);
+                run->global->exe.cmdline[x], inputFile);
             args[x] = argData;
         } else {
             args[x] = run->global->exe.cmdline[x];
@@ -317,7 +320,7 @@ bool arch_launchChild(run_t* run) {
     }
     args[x++] = NULL;
 
-    LOG_D("Launching '%s' on file '%s'", args[0], run->fileName);
+    LOG_D("Launching '%s'", args[0]);
 
     /*
      * Get child's bootstrap port.

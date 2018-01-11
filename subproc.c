@@ -203,8 +203,18 @@ static bool subproc_PrepareExecv(run_t* run) {
         }
     }
 
+    /* Step 1: dup the input file to _HF_INPUT_FD */
     if (dup2(run->dynamicFileFd, _HF_INPUT_FD) == -1) {
-        PLOG_E("dup2('%d', %d)", run->dynamicFileFd, _HF_INPUT_FD);
+        PLOG_E("dup2('%d', _HF_INPUT_FD='%d')", run->dynamicFileFd, _HF_INPUT_FD);
+        return false;
+    }
+    /*
+     * Step 2: map _HF_INPUT_FD back to run->dynamicFileFd, in order to remove potential O_CLOEXEC
+     * from run->dynamicFileFd
+     */
+    if (dup2(_HF_INPUT_FD, run->dynamicFileFd) == -1) {
+        PLOG_E("dup2(_HF_INPUT_FD='%d', '%d')", _HF_INPUT_FD, run->dynamicFileFd);
+        return false;
     }
 
     sigset_t sset;
@@ -216,8 +226,8 @@ static bool subproc_PrepareExecv(run_t* run) {
     if (run->global->exe.nullifyStdio) {
         util_nullifyStdio();
     }
-    if (run->global->exe.fuzzStdin && !files_redirectStdin(run->fileName)) {
-        PLOG_E("files_redirectStdin('%s') failed", run->fileName);
+    if (run->global->exe.fuzzStdin && dup2(_HF_INPUT_FD, STDIN_FILENO) == -1) {
+        PLOG_E("dup2(_HF_INPUT_FD=%d, STDIN_FILENO=%d)", _HF_INPUT_FD, STDIN_FILENO);
         return false;
     }
 
@@ -307,6 +317,12 @@ static bool subproc_New(run_t* run) {
 }
 
 bool subproc_Run(run_t* run) {
+    /* Truncate input file to the desired size */
+    if (ftruncate(run->dynamicFileFd, run->dynamicFileSz) == -1) {
+        PLOG_E("ftruncate(fd=%d, size=%zu)", run->dynamicFileFd, run->dynamicFileSz);
+        return false;
+    }
+
     if (!subproc_New(run)) {
         LOG_E("subproc_New()");
         return false;

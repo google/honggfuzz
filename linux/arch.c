@@ -150,17 +150,20 @@ bool arch_launchChild(run_t* run) {
 #define ARGS_MAX 512
     const char* args[ARGS_MAX + 2];
     char argData[PATH_MAX];
-    int x = 0;
 
+    char inputFile[PATH_MAX];
+    snprintf(inputFile, sizeof(inputFile), "/dev/fd/%d", run->dynamicFileFd);
+
+    int x = 0;
     for (x = 0; x < ARGS_MAX && x < run->global->exe.argc; x++) {
         if (run->global->persistent || run->global->exe.fuzzStdin) {
             args[x] = run->global->exe.cmdline[x];
         } else if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
-            args[x] = (char*)run->fileName;
+            args[x] = inputFile;
         } else if (strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
             const char* off = strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER);
             snprintf(argData, sizeof(argData), "%.*s%s", (int)(off - run->global->exe.cmdline[x]),
-                run->global->exe.cmdline[x], run->fileName);
+                run->global->exe.cmdline[x], inputFile);
             args[x] = argData;
         } else {
             args[x] = run->global->exe.cmdline[x];
@@ -169,7 +172,7 @@ bool arch_launchChild(run_t* run) {
     args[x++] = NULL;
 
     LOG_D("Launching '%s' on file '%s'", args[0],
-        run->global->persistent ? "PERSISTENT_MODE" : run->fileName);
+        run->global->persistent ? "PERSISTENT_MODE" : inputFile);
 
     /* alarms persist across execve(), so disable it here */
     alarm(0);
@@ -352,11 +355,8 @@ void arch_reapChild(run_t* run) {
             if (run->backtrace) {
                 unlink(crashReport);
             } else {
-                LOG_W(
-                    "Un-handled ASan report due to compiler-rt internal error - retry with '%s' "
-                    "(%s)",
-                    crashReport, run->fileName);
-
+                LOG_W("Un-handled ASan report due to compiler-rt internal error - retry with '%s'",
+                    crashReport);
                 /* Try to parse report file */
                 arch_traceExitAnalyze(run, ptracePid);
             }

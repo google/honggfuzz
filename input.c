@@ -96,6 +96,8 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
     if (hfuzz->maxFileSz == 0U) {
         if (maxSize < 8192) {
             hfuzz->maxFileSz = 8192;
+        } else if (maxSize > _HF_INPUT_MAX_SIZE) {
+            hfuzz->maxFileSz = _HF_INPUT_MAX_SIZE;
         } else {
             hfuzz->maxFileSz = maxSize;
         }

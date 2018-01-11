@@ -69,13 +69,10 @@ __attribute__((constructor)) static void mapBB(void) {
     /* Reset the counters to their initial state */
     instrumentClearNewCov();
 
-    if (fstat(_HF_INPUT_FD, &st) == -1) {
-        PLOG_W("stat(_HF_INPUT_FD=%d)", _HF_INPUT_FD);
-        return;
-    }
-    if ((inputFile = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, _HF_INPUT_FD, 0)) ==
+    if ((inputFile = mmap(NULL, _HF_INPUT_MAX_SIZE, PROT_READ, MAP_SHARED, _HF_INPUT_FD, 0)) ==
         MAP_FAILED) {
-        PLOG_W("mmap of the input file failed");
+        PLOG_W("mmap(fd=%d, size=%zu) of the input file failed", _HF_INPUT_FD,
+            (size_t)_HF_INPUT_MAX_SIZE);
         inputFile = NULL;
     }
 }

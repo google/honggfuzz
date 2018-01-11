@@ -64,6 +64,9 @@
 /* Maximum number of PC guards (=trace-pc-guard) we support */
 #define _HF_PC_GUARD_MAX (1024U * 1024U * 16U)
 
+/* Maximum size of the input file in bytes (128 MiB) */
+#define _HF_INPUT_MAX_SIZE (1024 * 1024 * 128)
+
 /* FD used to represent the input file */
 #define _HF_INPUT_FD 1021
 /* FD used to pass feedback bitmap a process */
@@ -291,7 +294,6 @@ typedef struct {
     fuzzState_t state;
     int64_t timeStartedMillis;
     const char* origFileName;
-    char fileName[PATH_MAX];
     char crashFileName[PATH_MAX];
     uint64_t pc;
     uint64_t backtrace;
