@@ -83,120 +83,9 @@ bool fuzz_shouldTerminate() {
     return false;
 }
 
-static bool fuzz_checkSizeNRewind(run_t* run) {
-    struct stat st;
-    if (fstat(run->dynamicFileFd, &st) == -1) {
-        PLOG_E("fstat(fd=%d)", run->dynamicFileFd);
-        return false;
-    }
-    if ((size_t)st.st_size > run->global->maxFileSz) {
-        LOG_W("External tool created too large of a file, '%zu', truncating it to '%zu'",
-            (size_t)st.st_size, run->global->maxFileSz);
-        mangle_setSize(run, run->global->maxFileSz);
-    } else {
-        mangle_setSize(run, (size_t)st.st_size);
-    }
-    return true;
+static fuzzState_t fuzz_getState(run_t* run) {
+    return ATOMIC_GET(run->global->state);
 }
-
-static bool fuzz_prepareFileDynamically(run_t* run) {
-    run->origFileName = "[DYNAMIC]";
-
-    {
-        MX_SCOPED_RWLOCK_READ(&run->global->dynfileq_mutex);
-
-        if (run->global->dynfileqCnt == 0) {
-            LOG_F(
-                "The dynamic file corpus is empty. Apparently, the initial fuzzing of the "
-                "provided file corpus (-f) has not produced any follow-up files with positive "
-                "coverage and/or CPU counters");
-        }
-
-        if (run->dynfileqCurrent == NULL) {
-            run->dynfileqCurrent = TAILQ_FIRST(&run->global->dynfileq);
-        } else {
-            if (run->dynfileqCurrent == TAILQ_LAST(&run->global->dynfileq, dyns_t)) {
-                run->dynfileqCurrent = TAILQ_FIRST(&run->global->dynfileq);
-            } else {
-                run->dynfileqCurrent = TAILQ_NEXT(run->dynfileqCurrent, pointers);
-            }
-        }
-    }
-
-    mangle_setSize(run, run->dynfileqCurrent->size);
-    memcpy(run->dynamicFile, run->dynfileqCurrent->data, run->dynfileqCurrent->size);
-    mangle_mangleContent(run);
-
-    return true;
-}
-
-static bool fuzz_prepareFile(run_t* run, bool rewind) {
-    mangle_setSize(run, run->global->maxFileSz);
-
-    static __thread char fname[PATH_MAX];
-    if (input_getNext(run, fname, /* rewind= */ rewind) == false) {
-        return false;
-    }
-    run->origFileName = files_basename(fname);
-
-    ssize_t fileSz = files_readFileToBufMax(fname, run->dynamicFile, run->global->maxFileSz);
-    if (fileSz < 0) {
-        LOG_E("Couldn't read contents of '%s'", fname);
-        return false;
-    }
-
-    mangle_setSize(run, fileSz);
-    mangle_mangleContent(run);
-
-    return true;
-}
-
-static bool fuzz_prepareFileExternally(run_t* run) {
-    mangle_setSize(run, (size_t)0);
-
-    static __thread char ofname[PATH_MAX];
-    if (input_getNext(run, ofname, /* rewind= */ true)) {
-        run->origFileName = files_basename(ofname);
-    } else {
-        run->origFileName = "[EXTERNAL]";
-    }
-
-    char fname[PATH_MAX];
-    snprintf(fname, sizeof(fname), "/dev/fd/%d", run->dynamicFileFd);
-
-    const char* const argv[] = {run->global->exe.externalCommand, fname, NULL};
-    if (subproc_System(run, argv) != 0) {
-        LOG_E("Subprocess '%s' returned abnormally", run->global->exe.externalCommand);
-        return false;
-    }
-    LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
-
-    if (!fuzz_checkSizeNRewind(run)) {
-        return false;
-    }
-
-    return true;
-}
-
-static bool fuzz_postProcessFile(run_t* run) {
-    char fname[PATH_MAX];
-    snprintf(fname, sizeof(fname), "/dev/fd/%d", run->dynamicFileFd);
-
-    const char* const argv[] = {run->global->exe.postExternalCommand, fname, NULL};
-    if (subproc_System(run, argv) != 0) {
-        LOG_E("Subprocess '%s' returned abnormally", run->global->exe.postExternalCommand);
-        return false;
-    }
-    LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
-
-    if (!fuzz_checkSizeNRewind(run)) {
-        return false;
-    }
-
-    return true;
-}
-
-static fuzzState_t fuzz_getState(run_t* run) { return ATOMIC_GET(run->global->state); }
 
 static void fuzz_setDynamicMainState(run_t* run) {
     /* All threads need to indicate willingness to switch to the DYNAMIC_MAIN state. Count them! */
@@ -221,7 +110,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
         usleep(1000 * 10); /* Check every 10ms */
     }
 
-    LOG_I("Entering phase 2/2: Main");
+    LOG_I("Entering phase 2/2: Dynamic Main");
     ATOMIC_SET(run->global->state, _HF_STATE_DYNAMIC_MAIN);
 }
 
@@ -263,7 +152,7 @@ static void fuzz_addFileToFileQ(run_t* run) {
     }
 
     /* No need to add files to the new coverage dir, if this is just the dry-run phase */
-    if (fuzz_getState(run) == _HF_STATE_DYNAMIC_PRE || run->global->io.covDirNew == NULL) {
+    if (fuzz_getState(run) == _HF_STATE_DYNAMIC_DRY_RUN || run->global->io.covDirNew == NULL) {
         return;
     }
 
@@ -432,7 +321,9 @@ static bool fuzz_runVerifier(run_t* run) {
         PLOG_E("Couldn't create '%s'", verFile);
         return true;
     }
-    defer { close(fd); };
+    defer {
+        close(fd);
+    };
     if (!files_writeToFd(fd, run->dynamicFile, run->dynamicFileSz)) {
         LOG_E("Couldn't save verified file as '%s'", verFile);
         unlink(verFile);
@@ -441,6 +332,44 @@ static bool fuzz_runVerifier(run_t* run) {
 
     LOG_I("Verified crash for HASH: %" PRIx64 " and saved it as '%s'", backtrace, verFile);
     ATOMIC_POST_INC(run->global->cnts.verifiedCrashesCnt);
+
+    return true;
+}
+
+static bool fuzz_fetchInput(run_t* run) {
+    if (fuzz_getState(run) == _HF_STATE_DYNAMIC_DRY_RUN) {
+        run->mutationsPerRun = 0U;
+        if (!mangle_prepareStaticFile(run, /* rewind= */ false)) {
+            fuzz_setDynamicMainState(run);
+        } else {
+            return true;
+        }
+    }
+
+    if (fuzz_getState(run) == _HF_STATE_DYNAMIC_MAIN) {
+        if (run->global->exe.externalCommand && !mangle_prepareExternalFile(run)) {
+            LOG_E("fuzz_prepareFileExternally() failed");
+            return false;
+        } else if (!mangle_prepareDynamicInput(run)) {
+            LOG_E("fuzz_prepareFileDynamically() failed");
+            return false;
+        }
+    }
+
+    if (fuzz_getState(run) == _HF_STATE_STATIC) {
+        if (run->global->exe.externalCommand && !mangle_prepareExternalFile(run)) {
+            LOG_E("fuzz_prepareFileExternally() failed");
+            return false;
+        } else if (!mangle_prepareStaticFile(run, true /* rewind */)) {
+            LOG_E("fuzz_prepareFile() failed");
+            return false;
+        }
+    }
+
+    if (run->global->exe.postExternalCommand && !mangle_postProcessFile(run)) {
+        LOG_E("fuzz_postProcessFile() failed");
+        return false;
+    }
 
     return true;
 }
@@ -470,53 +399,11 @@ static void fuzz_fuzzLoop(run_t* run) {
     run->linux.hwCnts.bbCnt = 0;
     run->linux.hwCnts.newBBCnt = 0;
 
-    if (fuzz_getState(run) == _HF_STATE_DYNAMIC_PRE) {
-        run->mutationsPerRun = 0U;
-        if (fuzz_prepareFile(run, /* rewind= */ false) == false) {
-            fuzz_setDynamicMainState(run);
-        }
+    if (!fuzz_fetchInput(run)) {
+        LOG_F("Cound't prepare input for fuzzing");
     }
-
-    if (fuzz_isTerminating()) {
-        return;
-    }
-
-    if (fuzz_getState(run) == _HF_STATE_DYNAMIC_MAIN) {
-        if (run->global->exe.externalCommand) {
-            if (!fuzz_prepareFileExternally(run)) {
-                LOG_F("fuzz_prepareFileExternally() failed");
-            }
-        } else if (!fuzz_prepareFileDynamically(run)) {
-            LOG_F("fuzz_prepareFileDynamically() failed");
-        }
-
-        if (run->global->exe.postExternalCommand) {
-            if (!fuzz_postProcessFile(run)) {
-                LOG_F("fuzz_postProcessFile() failed");
-            }
-        }
-    }
-
-    if (fuzz_getState(run) == _HF_STATE_STATIC) {
-        if (run->global->exe.externalCommand) {
-            if (!fuzz_prepareFileExternally(run)) {
-                LOG_F("fuzz_prepareFileExternally() failed");
-            }
-        } else {
-            if (!fuzz_prepareFile(run, true /* rewind */)) {
-                LOG_F("fuzz_prepareFile() failed");
-            }
-        }
-
-        if (run->global->exe.postExternalCommand != NULL) {
-            if (!fuzz_postProcessFile(run)) {
-                LOG_F("fuzz_postProcessFile() failed");
-            }
-        }
-    }
-
-    if (subproc_Run(run) == false) {
-        LOG_F("subproc_Run()");
+    if (!subproc_Run(run)) {
+        LOG_F("Couldn't run fuzzed command");
     }
 
     if (run->global->dynFileMethod != _HF_DYNFILE_NONE) {
@@ -553,7 +440,9 @@ static void* fuzz_threadNew(void* arg) {
              hfuzz->maxFileSz, &run.dynamicFileFd, run.global->io.workDir)) == MAP_FAILED) {
         LOG_F("Couldn't create an input file of size: %zu", hfuzz->maxFileSz);
     }
-    defer { close(run.dynamicFileFd); };
+    defer {
+        close(run.dynamicFileFd);
+    };
 
     if (arch_archThreadInit(&run) == false) {
         LOG_F("Could not initialize the thread");
@@ -623,7 +512,7 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
 
     if (hfuzz->useSanCov || hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         LOG_I("Entering phase 1/2: Dry Run");
-        hfuzz->state = _HF_STATE_DYNAMIC_PRE;
+        hfuzz->state = _HF_STATE_DYNAMIC_DRY_RUN;
     } else {
         LOG_I("Entering phase: Static");
         hfuzz->state = _HF_STATE_STATIC;

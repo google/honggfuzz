@@ -98,7 +98,9 @@ void arch_ptAnalyze(run_t* run) {
     if (ptd == NULL) {
         LOG_F("pt_pkt_alloc_decoder() failed");
     }
-    defer { pt_pkt_free_decoder(ptd); };
+    defer {
+        pt_pkt_free_decoder(ptd);
+    };
 
     errcode = pt_pkt_sync_forward(ptd);
     if (errcode < 0) {

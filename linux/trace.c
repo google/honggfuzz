@@ -615,7 +615,9 @@ static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
      * Unwind and resolve symbols
      */
     funcs_t* funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
-    defer { free(funcs); };
+    defer {
+        free(funcs);
+    };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
 #if !defined(__ANDROID__)
@@ -674,7 +676,9 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
      * Unwind and resolve symbols
      */
     funcs_t* funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
-    defer { free(funcs); };
+    defer {
+        free(funcs);
+    };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
 #if !defined(__ANDROID__)
@@ -848,8 +852,12 @@ static int arch_parseAsanReport(
         PLOG_D("Couldn't open '%s' - R/O mode", crashReport);
         return -1;
     }
-    defer { fclose(fReport); };
-    defer { unlink(crashReportCpy); };
+    defer {
+        fclose(fReport);
+    };
+    defer {
+        unlink(crashReportCpy);
+    };
 
     char header[35] = {0};
     snprintf(header, sizeof(header), "==%d==ERROR: AddressSanitizer:", pid);
@@ -862,7 +870,9 @@ static int arch_parseAsanReport(
 
     char *lineptr = NULL, *cAddr = NULL;
     size_t n = 0;
-    defer { free(lineptr); };
+    defer {
+        free(lineptr);
+    };
     for (;;) {
         if (getline(&lineptr, &n, fReport) == -1) {
             break;
@@ -984,7 +994,9 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     /* If sanitizer produces reports with stack traces (e.g. ASan), they're parsed manually */
     int funcCnt = 0;
     funcs_t* funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
-    defer { free(funcs); };
+    defer {
+        free(funcs);
+    };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
     /* Sanitizers save reports against parent PID */
@@ -1054,7 +1066,9 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
         PLOG_E("Cannot create output file '%s'", run->crashFileName);
         return;
     } else {
-        defer { close(fd); };
+        defer {
+            close(fd);
+        };
         if (files_writeToFd(fd, run->dynamicFile, run->dynamicFileSz)) {
             LOG_I("Ok, that's interesting, saved new crash as '%s'", run->crashFileName);
             /* Clear stack hash so that verifier can understand we hit a duplicate */
@@ -1100,7 +1114,9 @@ static void arch_traceExitAnalyzeData(run_t* run, pid_t pid) {
     char* op = "UNKNOWN";
     int funcCnt = 0;
     funcs_t* funcs = util_Malloc(_HF_MAX_FUNCS * sizeof(funcs_t));
-    defer { free(funcs); };
+    defer {
+        free(funcs);
+    };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
     funcCnt = arch_parseAsanReport(run, pid, funcs, &crashAddr, &op);
@@ -1236,7 +1252,9 @@ static bool arch_listThreads(int tasks[], size_t thrSz, int pid) {
         PLOG_E("Couldn't open dir '%s'", path);
         return false;
     }
-    defer { closedir(dir); };
+    defer {
+        closedir(dir);
+    };
 
     for (;;) {
         errno = 0;

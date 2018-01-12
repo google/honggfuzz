@@ -148,7 +148,7 @@ typedef struct node {
 typedef enum {
     _HF_STATE_UNSET = 0,
     _HF_STATE_STATIC = 1,
-    _HF_STATE_DYNAMIC_PRE = 2,
+    _HF_STATE_DYNAMIC_DRY_RUN = 2,
     _HF_STATE_DYNAMIC_MAIN = 3,
 } fuzzState_t;
 
@@ -331,7 +331,9 @@ typedef struct {
 #define _STRMERGE(a, b) __STRMERGE(a, b)
 #ifdef __clang__
 #if __has_extension(blocks)
-static void __attribute__((unused)) __clang_cleanup_func(void (^*dfunc)(void)) { (*dfunc)(); }
+static void __attribute__((unused)) __clang_cleanup_func(void (^*dfunc)(void)) {
+    (*dfunc)();
+}
 
 #define defer                                        \
     void (^_STRMERGE(__defer_f_, __COUNTER__))(void) \
@@ -351,13 +353,19 @@ static void __attribute__((unused)) __clang_cleanup_func(void (^*dfunc)(void)) {
 
 #define MX_SCOPED_LOCK(m) \
     MX_LOCK(m);           \
-    defer { MX_UNLOCK(m); }
+    defer {               \
+        MX_UNLOCK(m);     \
+    }
 
 #define MX_SCOPED_RWLOCK_READ(m) \
     MX_RWLOCK_READ(m);           \
-    defer { MX_RWLOCK_UNLOCK(m); }
+    defer {                      \
+        MX_RWLOCK_UNLOCK(m);     \
+    }
 #define MX_SCOPED_RWLOCK_WRITE(m) \
     MX_RWLOCK_WRITE(m);           \
-    defer { MX_RWLOCK_UNLOCK(m); }
+    defer {                       \
+        MX_RWLOCK_UNLOCK(m);      \
+    }
 
 #endif

@@ -30,13 +30,18 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
+#include "input.h"
 #include "libhfcommon/common.h"
+#include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
+#include "subproc.h"
 
-void mangle_setSize(run_t* run, size_t sz) {
+static void mangle_setSize(run_t* run, size_t sz) {
     if (sz > run->global->maxFileSz) {
         PLOG_F("Too large size requested: %zu > maxSize: %zu", sz, run->global->maxFileSz);
     }
@@ -589,4 +594,111 @@ void mangle_mangleContent(run_t* run) {
         uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);
         mangleFuncs[choice](run);
     }
+}
+
+static bool mangle_checkSizeNRewind(run_t* run) {
+    struct stat st;
+    if (fstat(run->dynamicFileFd, &st) == -1) {
+        PLOG_E("fstat(fd=%d)", run->dynamicFileFd);
+        return false;
+    }
+    if ((size_t)st.st_size > run->global->maxFileSz) {
+        LOG_W("External tool created too large of a file, '%zu', truncating it to '%zu'",
+            (size_t)st.st_size, run->global->maxFileSz);
+        mangle_setSize(run, run->global->maxFileSz);
+    } else {
+        mangle_setSize(run, (size_t)st.st_size);
+    }
+    return true;
+}
+
+bool mangle_prepareDynamicInput(run_t* run) {
+    run->origFileName = "[DYNAMIC]";
+
+    {
+        MX_SCOPED_RWLOCK_READ(&run->global->dynfileq_mutex);
+
+        if (run->global->dynfileqCnt == 0) {
+            LOG_F(
+                "The dynamic file corpus is empty. Apparently, the initial fuzzing of the "
+                "provided file corpus (-f) has not produced any follow-up files with positive "
+                "coverage and/or CPU counters");
+        }
+
+        if (run->dynfileqCurrent == NULL) {
+            run->dynfileqCurrent = TAILQ_FIRST(&run->global->dynfileq);
+        } else {
+            if (run->dynfileqCurrent == TAILQ_LAST(&run->global->dynfileq, dyns_t)) {
+                run->dynfileqCurrent = TAILQ_FIRST(&run->global->dynfileq);
+            } else {
+                run->dynfileqCurrent = TAILQ_NEXT(run->dynfileqCurrent, pointers);
+            }
+        }
+    }
+
+    mangle_setSize(run, run->dynfileqCurrent->size);
+    memcpy(run->dynamicFile, run->dynfileqCurrent->data, run->dynfileqCurrent->size);
+    mangle_mangleContent(run);
+
+    return true;
+}
+
+bool mangle_prepareStaticFile(run_t* run, bool rewind) {
+    mangle_setSize(run, run->global->maxFileSz);
+
+    static __thread char fname[PATH_MAX];
+    if (input_getNext(run, fname, /* rewind= */ rewind) == false) {
+        return false;
+    }
+    run->origFileName = files_basename(fname);
+
+    ssize_t fileSz = files_readFileToBufMax(fname, run->dynamicFile, run->global->maxFileSz);
+    if (fileSz < 0) {
+        LOG_E("Couldn't read contents of '%s'", fname);
+        return false;
+    }
+
+    mangle_setSize(run, fileSz);
+    mangle_mangleContent(run);
+
+    return true;
+}
+
+bool mangle_prepareExternalFile(run_t* run) {
+    mangle_setSize(run, (size_t)0);
+    run->origFileName = "[EXTERNAL]";
+
+    char fname[PATH_MAX];
+    snprintf(fname, sizeof(fname), "/dev/fd/%d", run->dynamicFileFd);
+
+    const char* const argv[] = {run->global->exe.externalCommand, fname, NULL};
+    if (subproc_System(run, argv) != 0) {
+        LOG_E("Subprocess '%s' returned abnormally", run->global->exe.externalCommand);
+        return false;
+    }
+    LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
+
+    if (!mangle_checkSizeNRewind(run)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool mangle_postProcessFile(run_t* run) {
+    char fname[PATH_MAX];
+    snprintf(fname, sizeof(fname), "/dev/fd/%d", run->dynamicFileFd);
+
+    const char* const argv[] = {run->global->exe.postExternalCommand, fname, NULL};
+    if (subproc_System(run, argv) != 0) {
+        LOG_E("Subprocess '%s' returned abnormally", run->global->exe.postExternalCommand);
+        return false;
+    }
+    LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
+
+    if (!mangle_checkSizeNRewind(run)) {
+        return false;
+    }
+
+    return true;
 }

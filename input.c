@@ -193,11 +193,15 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
         PLOG_W("Couldn't open '%s' - R/O mode", hfuzz->dictionaryFile);
         return false;
     }
-    defer { fclose(fDict); };
+    defer {
+        fclose(fDict);
+    };
 
     char* lineptr = NULL;
     size_t n = 0;
-    defer { free(lineptr); };
+    defer {
+        free(lineptr);
+    };
     for (;;) {
         ssize_t len = getdelim(&lineptr, &n, '\n', fDict);
         if (len == -1) {
@@ -243,11 +247,15 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz) {
         PLOG_W("Couldn't open '%s' - R/O mode", hfuzz->blacklistFile);
         return false;
     }
-    defer { fclose(fBl); };
+    defer {
+        fclose(fBl);
+    };
 
     char* lineptr = NULL;
     /* lineptr can be NULL, but it's fine for free() */
-    defer { free(lineptr); };
+    defer {
+        free(lineptr);
+    };
     size_t n = 0;
     for (;;) {
         if (getline(&lineptr, &n, fBl) == -1) {

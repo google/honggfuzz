@@ -101,7 +101,9 @@ static void util_rndInitThread(void) {
 /*
  * xoroshiro128plus by David Blackman and Sebastiano Vigna
  */
-static inline uint64_t util_RotL(const uint64_t x, int k) { return (x << k) | (x >> (64 - k)); }
+static inline uint64_t util_RotL(const uint64_t x, int k) {
+    return (x << k) | (x >> (64 - k));
+}
 
 static inline uint64_t util_InternalRnd64(void) {
     const uint64_t s0 = rndState[0];

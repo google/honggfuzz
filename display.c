@@ -80,7 +80,9 @@ static unsigned getCpuUse(long num_cpu) {
     if (f == NULL) {
         return 0;
     }
-    defer { fclose(f); };
+    defer {
+        fclose(f);
+    };
     uint64_t userT, niceT, systemT, idleT;
     if (fscanf(f, "cpu  %" PRIu64 "%" PRIu64 "%" PRIu64 "%" PRIu64, &userT, &niceT, &systemT,
             &idleT) != 4) {
@@ -161,7 +163,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         case _HF_STATE_STATIC:
             display_put("\n       Phase : " ESC_BOLD "Main" ESC_RESET);
             break;
-        case _HF_STATE_DYNAMIC_PRE:
+        case _HF_STATE_DYNAMIC_DRY_RUN:
             display_put("\n       Phase : " ESC_BOLD "Dynamic Dry Run (1/2)" ESC_RESET);
             break;
         case _HF_STATE_DYNAMIC_MAIN:
@@ -282,7 +284,9 @@ extern void display_display(honggfuzz_t* hfuzz) {
     display_displayLocked(hfuzz);
 }
 
-extern void display_fini(void) { display_put(ESC_SCROLL_ENABLE ESC_NAV(999, 1)); }
+extern void display_fini(void) {
+    display_put(ESC_SCROLL_ENABLE ESC_NAV(999, 1));
+}
 
 extern void display_init(void) {
     atexit(display_fini);

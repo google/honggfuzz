@@ -196,7 +196,9 @@ static bool getLibPath(
         PLOG_E("mkostemp('%s')", template);
         return false;
     }
-    defer { close(fd); };
+    defer {
+        close(fd);
+    };
 
     if (!files_writeToFd(fd, start, len)) {
         PLOG_E("Couldn't write to '%s'", template);

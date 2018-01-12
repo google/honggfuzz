@@ -293,7 +293,9 @@ static bool arch_analyzeSignal(run_t* run, int status) {
     return true;
 }
 
-pid_t arch_fork(run_t* run HF_ATTR_UNUSED) { return fork(); }
+pid_t arch_fork(run_t* run HF_ATTR_UNUSED) {
+    return fork();
+}
 
 bool arch_launchChild(run_t* run) {
 #define ARGS_MAX 512
@@ -356,9 +358,11 @@ bool arch_launchChild(run_t* run) {
     return false;
 }
 
-void arch_prepareParent(run_t* run HF_ATTR_UNUSED) {}
+void arch_prepareParent(run_t* run HF_ATTR_UNUSED) {
+}
 
-void arch_prepareParentAfterFork(run_t* run HF_ATTR_UNUSED) {}
+void arch_prepareParentAfterFork(run_t* run HF_ATTR_UNUSED) {
+}
 
 void arch_reapChild(run_t* run) {
     /*
@@ -750,4 +754,6 @@ kern_return_t catch_mach_exception_raise_state_identity(
     return KERN_SUCCESS;
 }
 
-bool arch_archThreadInit(run_t* run HF_ATTR_UNUSED) { return true; }
+bool arch_archThreadInit(run_t* run HF_ATTR_UNUSED) {
+    return true;
+}

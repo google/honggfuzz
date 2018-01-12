@@ -77,7 +77,9 @@ static bool cmdlineCheckIfPersistent(const char* fname) {
     return ret;
 }
 
-static const char* cmdlineYesNo(bool yes) { return (yes ? "true" : "false"); }
+static const char* cmdlineYesNo(bool yes) {
+    return (yes ? "true" : "false");
+}
 
 static void cmdlineHelp(const char* pname, struct custom_option* opts) {
     LOG_HELP_BOLD("Usage: %s [options] -- path_to_command [args]", pname);

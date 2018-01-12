@@ -297,7 +297,7 @@ clean:
 
 .PHONY: indent
 indent:
-	clang-format -style="{BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 100, AlignAfterOpenBracket: false}" -i -sort-includes  *.c *.h */*.c */*.h
+	clang-format -style="{BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 100, AlignAfterOpenBracket: false, AllowShortFunctionsOnASingleLine: false}" -i -sort-includes  *.c *.h */*.c */*.h
 
 .PHONY: depend
 depend:
@@ -365,8 +365,9 @@ honggfuzz.o: display.h fuzz.h input.h libhfcommon/files.h
 honggfuzz.o: libhfcommon/common.h libhfcommon/log.h
 input.o: input.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 input.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
-mangle.o: mangle.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
-mangle.o: libhfcommon/log.h
+mangle.o: mangle.h honggfuzz.h libhfcommon/util.h input.h
+mangle.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+mangle.o: libhfcommon/log.h subproc.h
 report.o: report.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 report.o: libhfcommon/log.h
 sancov.o: sancov.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h

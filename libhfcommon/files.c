@@ -112,7 +112,9 @@ ssize_t files_readFromFd(int fd, uint8_t* buf, size_t fileSz) {
     return (ssize_t)readSz;
 }
 
-bool files_exists(const char* fileName) { return (access(fileName, F_OK) != -1); }
+bool files_exists(const char* fileName) {
+    return (access(fileName, F_OK) != -1);
+}
 
 bool files_writePatternToFd(int fd, off_t size, unsigned char p) {
     void* buf = malloc(size);

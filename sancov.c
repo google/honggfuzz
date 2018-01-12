@@ -337,7 +337,9 @@ static bool sancov_sanCovParseRaw(run_t* run) {
         PLOG_E("Couldn't open '%s' - R/O mode", covFile);
         return false;
     }
-    defer { fclose(fCovMap); };
+    defer {
+        fclose(fCovMap);
+    };
 
     /* First line contains PC length (32/64-bit) */
     if (getline(&pLine, &lineSz, fCovMap) == -1) {
@@ -364,7 +366,9 @@ static bool sancov_sanCovParseRaw(run_t* run) {
         mapsBuf = util_Malloc(prevMapsNum * sizeof(memMap_t));
     }
     /* It's OK to free(NULL) */
-    defer { free(mapsBuf); };
+    defer {
+        free(mapsBuf);
+    };
 
     /* Iterate map entries */
     for (;;) {
@@ -426,7 +430,9 @@ static bool sancov_sanCovParseRaw(run_t* run) {
 
     /* Create a quick index array with maps start addresses */
     startMapsIndex = util_Malloc(mapsNum * sizeof(uint64_t));
-    defer { free(startMapsIndex); };
+    defer {
+        free(startMapsIndex);
+    };
 
     /* Sort quick maps index */
     qsort(mapsBuf, mapsNum, sizeof(memMap_t), sancov_qsortCmp);
@@ -591,7 +597,9 @@ static bool sancov_sanCovParse(run_t* run) {
         PLOG_E("opendir('%s')", covFile);
         return false;
     }
-    defer { closedir(pSanCovDir); };
+    defer {
+        closedir(pSanCovDir);
+    };
 
     struct dirent* pDir = NULL;
     while ((pDir = readdir(pSanCovDir)) != NULL) {

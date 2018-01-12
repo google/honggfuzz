@@ -212,9 +212,11 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp(
  * TODO: evaluate, whether it makes sense to implement them
  */
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmpf(
-    float Arg1 HF_ATTR_UNUSED, float Arg2 HF_ATTR_UNUSED) {}
+    float Arg1 HF_ATTR_UNUSED, float Arg2 HF_ATTR_UNUSED) {
+}
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmpd(
-    double Arg1 HF_ATTR_UNUSED, double Arg2 HF_ATTR_UNUSED) {}
+    double Arg1 HF_ATTR_UNUSED, double Arg2 HF_ATTR_UNUSED) {
+}
 
 /*
  * -fsanitize-coverage=indirect-calls
