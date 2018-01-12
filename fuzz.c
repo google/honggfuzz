@@ -84,25 +84,17 @@ bool fuzz_shouldTerminate() {
 }
 
 static bool fuzz_checkSizeNRewind(run_t* run) {
-    if (lseek(run->dynamicFileFd, (off_t)0, SEEK_SET) == (off_t)-1) {
-        PLOG_E("lseek(fd=%d, 0, SEEK_SET)", run->dynamicFileFd);
-        return false;
-    }
     struct stat st;
     if (fstat(run->dynamicFileFd, &st) == -1) {
         PLOG_E("fstat(fd=%d)", run->dynamicFileFd);
         return false;
     }
-    if (st.st_size <= _HF_INPUT_MAX_SIZE) {
-        run->dynamicFileSz = (size_t)st.st_size;
-    } else {
-        run->dynamicFileSz = _HF_INPUT_MAX_SIZE;
+    if ((size_t)st.st_size > run->global->maxFileSz) {
         LOG_W("External tool created too large of a file, '%zu', truncating it to '%zu'",
-            (size_t)st.st_size, run->dynamicFileSz);
-    }
-    if (ftruncate(run->dynamicFileFd, _HF_INPUT_MAX_SIZE) == -1) {
-        PLOG_E("ftruncate(fd=%d, size=%zu)", run->dynamicFileFd, (size_t)_HF_INPUT_MAX_SIZE);
-        return false;
+            (size_t)st.st_size, run->global->maxFileSz);
+        mangle_setSize(run, run->global->maxFileSz);
+    } else {
+        mangle_setSize(run, (size_t)st.st_size);
     }
     return true;
 }
@@ -131,16 +123,15 @@ static bool fuzz_prepareFileDynamically(run_t* run) {
         }
     }
 
+    mangle_setSize(run, run->dynfileqCurrent->size);
     memcpy(run->dynamicFile, run->dynfileqCurrent->data, run->dynfileqCurrent->size);
-    run->dynamicFileSz = run->dynfileqCurrent->size;
-
     mangle_mangleContent(run);
 
     return true;
 }
 
 static bool fuzz_prepareFile(run_t* run, bool rewind) {
-    char fname[PATH_MAX];
+    static __thread char fname[PATH_MAX];
     if (input_getNext(run, fname, /* rewind= */ rewind) == false) {
         return false;
     }
@@ -151,8 +142,8 @@ static bool fuzz_prepareFile(run_t* run, bool rewind) {
         LOG_E("Couldn't read contents of '%s'", fname);
         return false;
     }
-    run->dynamicFileSz = fileSz;
 
+    mangle_setSize(run, fileSz);
     mangle_mangleContent(run);
 
     return true;
@@ -473,6 +464,8 @@ static void fuzz_fuzzLoop(run_t* run) {
     run->linux.hwCnts.bbCnt = 0;
     run->linux.hwCnts.newBBCnt = 0;
 
+    mangle_setSize(run, run->global->maxFileSz);
+
     if (fuzz_getState(run) == _HF_STATE_DYNAMIC_PRE) {
         run->mutationsPerRun = 0U;
         if (fuzz_prepareFile(run, /* rewind= */ false) == false) {
@@ -516,10 +509,6 @@ static void fuzz_fuzzLoop(run_t* run) {
                 LOG_F("fuzz_postProcessFile() failed");
             }
         }
-    }
-    /* Truncate input file to the desired size */
-    if (ftruncate(run->dynamicFileFd, run->dynamicFileSz) == -1) {
-        PLOG_F("ftruncate(fd=%d, size=%zu)", run->dynamicFileFd, run->dynamicFileSz);
     }
 
     if (subproc_Run(run) == false) {
@@ -567,14 +556,6 @@ static void* fuzz_threadNew(void* arg) {
     }
 
     for (;;) {
-        /* Reset and rewind the input file to the original maximum size */
-        if (ftruncate(run.dynamicFileFd, hfuzz->maxFileSz) == -1) {
-            PLOG_F("ftruncate(fd=%d, size=%zu)", run.dynamicFileFd, hfuzz->maxFileSz);
-        }
-        if (lseek(run.dynamicFileFd, (off_t)0, SEEK_SET) == (off_t)-1) {
-            PLOG_F("lseek(fd=%d, 0, SEEK_SET)", run.dynamicFileFd);
-        }
-
         /* Check if dry run mode with verifier enabled */
         if (run.global->mutationsPerRun == 0U && run.global->useVerifier) {
             if (ATOMIC_POST_INC(run.global->cnts.mutationsCnt) >= run.global->io.fileCnt) {

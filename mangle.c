@@ -36,6 +36,19 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 
+void mangle_setSize(run_t* run, size_t sz) {
+    if (sz > run->global->maxFileSz) {
+        PLOG_F("Too large size requested: %zu > maxSize: %zu", sz, run->global->maxFileSz);
+    }
+    if (ftruncate(run->dynamicFileFd, sz) == -1) {
+        PLOG_F("ftruncate(fd=%d, size=%zu)", run->dynamicFileFd, sz);
+    }
+    if (lseek(run->dynamicFileFd, (off_t)0, SEEK_SET) == (off_t)-1) {
+        PLOG_F("lseek(fd=%d, 0, SEEK_SET)", run->dynamicFileFd);
+    }
+    run->dynamicFileSz = sz;
+}
+
 static inline void mangle_Overwrite(run_t* run, const uint8_t* src, size_t off, size_t sz) {
     size_t maxToCopy = run->dynamicFileSz - off;
     if (sz > maxToCopy) {
@@ -74,7 +87,7 @@ static void mangle_Inflate(run_t* run, size_t off, size_t len) {
         len = run->global->maxFileSz - run->dynamicFileSz;
     }
 
-    run->dynamicFileSz += len;
+    mangle_setSize(run, run->dynamicFileSz + len);
     mangle_Move(run, off, off + len, run->dynamicFileSz);
 }
 
@@ -492,7 +505,8 @@ static void mangle_CloneByte(run_t* run) {
 }
 
 static void mangle_Resize(run_t* run) {
-    run->dynamicFileSz = util_rndGet(0, run->global->maxFileSz);
+    size_t sz = util_rndGet(0, run->global->maxFileSz);
+    mangle_setSize(run, sz);
 }
 
 static void mangle_Expand(run_t* run) {
@@ -511,8 +525,8 @@ static void mangle_Shrink(run_t* run) {
     size_t len = util_rndGet(1, run->dynamicFileSz - 1);
     size_t off = util_rndGet(0, len);
 
+    mangle_setSize(run, run->dynamicFileSz - len);
     mangle_Move(run, off + len, off, run->dynamicFileSz);
-    run->dynamicFileSz -= len;
 }
 
 static void mangle_InsertRnd(run_t* run) {

@@ -27,5 +27,6 @@
 #include "honggfuzz.h"
 
 extern void mangle_mangleContent(run_t* run);
+extern void mangle_setSize(run_t* run, size_t sz);
 
 #endif
