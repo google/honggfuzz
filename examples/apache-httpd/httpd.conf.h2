@@ -12,7 +12,7 @@ MaxRequestWorkers 20000
 ListenBacklog 1023
 KeepAliveTimeout 5
 HostnameLookups Off
-ErrorLog /tmp/error.log
+ErrorLog /dev/fd/1
 LogLevel crit
 Listen 127.0.0.1:8080
 PidFile /tmp/apache-pid
