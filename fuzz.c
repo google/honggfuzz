@@ -403,11 +403,7 @@ static bool fuzz_runVerifier(run_t* run) {
     snprintf(verFile, sizeof(verFile), "%s.verified", origCrashPath);
 
     if (files_exists(verFile)) {
-        LOG_D("Crash file to verify '%s' is already verified as '%s'. Removing it", origCrashPath,
-            verFile);
-        if (unlink(origCrashPath) == -1) {
-            PLOG_E("unlink('%s')", origCrashPath);
-        }
+        LOG_D("Crash file to verify '%s' is already verified as '%s'", origCrashPath, verFile);
         return false;
     }
 
@@ -441,10 +437,10 @@ static bool fuzz_runVerifier(run_t* run) {
         PLOG_E("Couldn't create '%s'", verFile);
         return true;
     }
-    close(fd);
-
-    if (rename(origCrashPath, verFile) == -1) {
-        PLOG_E("rename('%s', '%s')", origCrashPath, verFile);
+    defer { close(fd); }
+    if (!files_writeToFd(fd, run->dynamicFile, run->dynamicFileSz)) {
+        LOG_E("Couldn't save verified file as '%s'", verFile);
+        unlink(verFile);
         return true;
     }
 
