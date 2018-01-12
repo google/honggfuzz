@@ -205,14 +205,12 @@ int main(int argc, char** argv) {
         }
         if (hfuzz.timing.runEndTime > 0 && (time(NULL) > hfuzz.timing.runEndTime)) {
             LOG_I("Maximum run time reached, terminating");
-            fuzz_setTerminating();
             break;
         }
         pause();
     }
 
     fuzz_setTerminating();
-
     fuzz_threadsStop(&hfuzz, threads);
 
     /* Clean-up global buffers */

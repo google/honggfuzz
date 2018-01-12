@@ -141,7 +141,7 @@ static bool fuzz_prepareFileDynamically(run_t* run) {
 
 static bool fuzz_prepareFile(run_t* run, bool rewind) {
     char fname[PATH_MAX];
-    if (input_getNext(run, fname, rewind) == false) {
+    if (input_getNext(run, fname, /* rewind= */ rewind) == false) {
         return false;
     }
     run->origFileName = files_basename(fname);
@@ -204,7 +204,7 @@ static bool fuzz_postProcessFile(run_t* run) {
 static fuzzState_t fuzz_getState(run_t* run) { return ATOMIC_GET(run->global->state); }
 
 static void fuzz_setDynamicMainState(run_t* run) {
-    /* All threads need to indicate willingness to switch to the DYNAMIC_MAIN state */
+    /* All threads need to indicate willingness to switch to the DYNAMIC_MAIN state. Count them! */
     static uint32_t cnt = 0;
     ATOMIC_PRE_INC(cnt);
 
@@ -216,14 +216,14 @@ static void fuzz_setDynamicMainState(run_t* run) {
     }
 
     for (;;) {
-        /* Check if all threads have reported in for changing state */
+        /* Check if all threads have already reported in for changing state */
         if (ATOMIC_GET(cnt) == run->global->threads.threadsMax) {
             break;
         }
         if (fuzz_isTerminating()) {
             return;
         }
-        usleep(1000 * 10); /* 10ms */
+        usleep(1000 * 10); /* Check every 10ms */
     }
 
     LOG_I("Entering phase 2/2: Main");
@@ -305,10 +305,7 @@ static void fuzz_perfFeedback(run_t* run) {
     int64_t diff0 = run->global->linux.hwCnts.cpuInstrCnt - run->linux.hwCnts.cpuInstrCnt;
     int64_t diff1 = run->global->linux.hwCnts.cpuBranchCnt - run->linux.hwCnts.cpuBranchCnt;
 
-    /*
-     * Coverage is the primary counter, the rest is secondary, and taken into consideration only
-     * if the coverage counter has not been changed
-     */
+    /* Any increase in coverage (edge, pc, cmp, hw) counters forces adding input to the corpus */
     if (run->linux.hwCnts.newBBCnt > 0 || softCntPc > 0 || softCntEdge > 0 || softCntCmp > 0 ||
         diff0 < 0 || diff1 < 0) {
         if (diff0 < 0) {
@@ -478,7 +475,7 @@ static void fuzz_fuzzLoop(run_t* run) {
 
     if (fuzz_getState(run) == _HF_STATE_DYNAMIC_PRE) {
         run->mutationsPerRun = 0U;
-        if (fuzz_prepareFile(run, false /* rewind */) == false) {
+        if (fuzz_prepareFile(run, /* rewind= */ false) == false) {
             fuzz_setDynamicMainState(run);
         }
     }
