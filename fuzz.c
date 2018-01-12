@@ -438,7 +438,7 @@ static bool fuzz_runVerifier(run_t* run) {
         PLOG_E("Couldn't create '%s'", verFile);
         return true;
     }
-    defer { close(fd); }
+    defer { close(fd); };
     if (!files_writeToFd(fd, run->dynamicFile, run->dynamicFileSz)) {
         LOG_E("Couldn't save verified file as '%s'", verFile);
         unlink(verFile);
