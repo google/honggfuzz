@@ -238,7 +238,7 @@ static bool fuzz_writeCovFile(const char* dir, const uint8_t* data, size_t len) 
     snprintf(fname, sizeof(fname), "%s/%016" PRIx64 "%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov",
         dir, crc64f, crc64r, (uint32_t)len);
 
-    if (access(fname, R_OK) == 0) {
+    if (files_exists(fname) == 0) {
         LOG_D("File '%s' already exists in the output corpus directory '%s'", fname, dir);
         return true;
     }
@@ -389,19 +389,35 @@ static void fuzz_sanCovFeedback(run_t* run) {
     }
 }
 
+/* Return value indicates whether report file should be updated with the current verified crash */
 static bool fuzz_runVerifier(run_t* run) {
+    if (!run->crashFileName[0] || !run->backtrace) {
+        return false;
+    }
+
     uint64_t backtrace = run->backtrace;
+
     char origCrashPath[PATH_MAX];
     snprintf(origCrashPath, sizeof(origCrashPath), "%s", run->crashFileName);
+    /* Workspace is inherited, just append a extra suffix */
+    char verFile[PATH_MAX];
+    snprintf(verFile, sizeof(verFile), "%s.verified", origCrashPath);
+
+    if (files_exists(verFile)) {
+        LOG_D("Crash file to verify '%s' is already verified as '%s'. Removing it", origCrashPath,
+            verFile);
+        if (unlink(origCrashPath) == -1) {
+            PLOG_E("unlink('%s')", origCrashPath);
+        }
+        return false;
+    }
 
     for (int i = 0; i < _HF_VERIFIER_ITER; i++) {
         LOG_I("Launching verifier for HASH: %" PRIx64 " (iteration: %d)", run->backtrace, i);
         run->timeStartedMillis = util_timeNowMillis(), run->backtrace = 0ULL;
         run->access = 0ULL;
         run->exception = 0;
-        run->report[0] = '\0';
         run->mainWorker = false;
-        run->crashFileName[0] = '\0';
 
         if (!subproc_Run(run)) {
             LOG_F("subproc_Run()");
@@ -411,34 +427,30 @@ static bool fuzz_runVerifier(run_t* run) {
         if (run->backtrace != backtrace) {
             LOG_E("Verifier stack mismatch: (original) %" PRIx64 " != (new) %" PRIx64, backtrace,
                 run->backtrace);
-            return false;
+            run->backtrace = backtrace;
+            return true;
         }
     }
-
-    /* Workspace is inherited, just append a extra suffix */
-    char verFile[PATH_MAX];
-    snprintf(verFile, sizeof(verFile), "%s.verified", origCrashPath);
 
     /* Copy file with new suffix & remove original copy */
     int fd = TEMP_FAILURE_RETRY(open(verFile, O_CREAT | O_EXCL | O_WRONLY, 0600));
     if (fd == -1 && errno == EEXIST) {
         LOG_I("It seems that '%s' already exists, skipping", verFile);
-        return true;
+        return false;
     }
     if (fd == -1) {
         PLOG_E("Couldn't create '%s'", verFile);
-        return false;
+        return true;
     }
     close(fd);
 
     if (rename(origCrashPath, verFile) == -1) {
         PLOG_E("rename('%s', '%s')", origCrashPath, verFile);
-        return false;
+        return true;
     }
 
     LOG_I("Verified crash for HASH: %" PRIx64 " and saved it as '%s'", backtrace, verFile);
     ATOMIC_POST_INC(run->global->cnts.verifiedCrashesCnt);
-    unlink(origCrashPath);
 
     return true;
 }
@@ -527,13 +539,9 @@ static void fuzz_fuzzLoop(run_t* run) {
     if (run->global->useSanCov) {
         fuzz_sanCovFeedback(run);
     }
-
-    if (run->global->useVerifier && (run->crashFileName[0] != 0) && run->backtrace) {
-        if (!fuzz_runVerifier(run)) {
-            LOG_W("Failed to verify %s", run->crashFileName);
-        }
+    if (run->global->useVerifier && !fuzz_runVerifier(run)) {
+        return;
     }
-
     report_Report(run);
 }
 
