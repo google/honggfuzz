@@ -317,6 +317,8 @@ static bool subproc_New(run_t* run) {
 }
 
 bool subproc_Run(run_t* run) {
+    run->timeStartedMillis = util_timeNowMillis();
+
     /* Rewind the input file to position 0 */
     if (lseek(run->dynamicFileFd, (off_t)0, SEEK_SET) == (off_t)-1) {
         PLOG_E("lseek(fd=%d, 0, SEEK_SET)", run->dynamicFileFd);

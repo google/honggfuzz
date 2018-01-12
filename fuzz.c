@@ -290,9 +290,9 @@ static void fuzz_perfFeedback(run_t* run) {
 
     MX_SCOPED_LOCK(&run->global->feedback_mutex);
 
-    uint64_t softCntPc = 0UL;
-    uint64_t softCntEdge = 0UL;
-    uint64_t softCntCmp = 0UL;
+    uint64_t softCntPc = 0;
+    uint64_t softCntEdge = 0;
+    uint64_t softCntCmp = 0;
     if (run->global->bbFd != -1) {
         softCntPc = ATOMIC_GET(run->global->feedback->pidFeedbackPc[run->fuzzNo]);
         ATOMIC_CLEAR(run->global->feedback->pidFeedbackPc[run->fuzzNo]);
@@ -409,9 +409,9 @@ static bool fuzz_runVerifier(run_t* run) {
 
     for (int i = 0; i < _HF_VERIFIER_ITER; i++) {
         LOG_I("Launching verifier for HASH: %" PRIx64 " (iteration: %d)", run->backtrace, i);
-        run->timeStartedMillis = util_timeNowMillis();
-        run->backtrace = 0ULL;
-        run->access = 0ULL;
+        run->timeStartedMillis = 0;
+        run->backtrace = 0;
+        run->access = 0;
         run->exception = 0;
         run->mainWorker = false;
 
@@ -453,11 +453,11 @@ static bool fuzz_runVerifier(run_t* run) {
 
 static void fuzz_fuzzLoop(run_t* run) {
     run->pid = 0;
-    run->timeStartedMillis = util_timeNowMillis();
+    run->timeStartedMillis = 0;
     run->crashFileName[0] = '\0';
-    run->pc = 0ULL;
-    run->backtrace = 0ULL;
-    run->access = 0ULL;
+    run->pc = 0;
+    run->backtrace = 0;
+    run->access = 0;
     run->exception = 0;
     run->report[0] = '\0';
     run->mainWorker = true;
@@ -465,16 +465,16 @@ static void fuzz_fuzzLoop(run_t* run) {
     run->mutationsPerRun = run->global->mutationsPerRun;
     run->dynamicFileSz = 0;
 
-    run->sanCovCnts.hitBBCnt = 0ULL;
-    run->sanCovCnts.totalBBCnt = 0ULL;
-    run->sanCovCnts.dsoCnt = 0ULL;
-    run->sanCovCnts.newBBCnt = 0ULL;
-    run->sanCovCnts.crashesCnt = 0ULL;
+    run->sanCovCnts.hitBBCnt = 0;
+    run->sanCovCnts.totalBBCnt = 0;
+    run->sanCovCnts.dsoCnt = 0;
+    run->sanCovCnts.newBBCnt = 0;
+    run->sanCovCnts.crashesCnt = 0;
 
-    run->linux.hwCnts.cpuInstrCnt = 0ULL;
-    run->linux.hwCnts.cpuBranchCnt = 0ULL;
-    run->linux.hwCnts.bbCnt = 0ULL;
-    run->linux.hwCnts.newBBCnt = 0ULL;
+    run->linux.hwCnts.cpuInstrCnt = 0;
+    run->linux.hwCnts.cpuBranchCnt = 0;
+    run->linux.hwCnts.bbCnt = 0;
+    run->linux.hwCnts.newBBCnt = 0;
 
     if (fuzz_getState(run) == _HF_STATE_DYNAMIC_PRE) {
         run->mutationsPerRun = 0U;
