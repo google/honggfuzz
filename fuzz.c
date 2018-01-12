@@ -238,15 +238,14 @@ static bool fuzz_writeCovFile(const char* dir, const uint8_t* data, size_t len) 
     snprintf(fname, sizeof(fname), "%s/%016" PRIx64 "%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov",
         dir, crc64f, crc64r, (uint32_t)len);
 
-    if (files_exists(fname) == 0) {
+    if (files_exists(fname)) {
         LOG_D("File '%s' already exists in the output corpus directory '%s'", fname, dir);
         return true;
     }
 
     LOG_D("Adding file '%s' to the corpus directory '%s'", fname, dir);
 
-    if (files_writeBufToFile(fname, data, len, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC) ==
-        false) {
+    if (!files_writeBufToFile(fname, data, len, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC)) {
         LOG_W("Couldn't write buffer to file '%s'", fname);
         return false;
     }
