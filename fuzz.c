@@ -409,7 +409,8 @@ static bool fuzz_runVerifier(run_t* run) {
 
     for (int i = 0; i < _HF_VERIFIER_ITER; i++) {
         LOG_I("Launching verifier for HASH: %" PRIx64 " (iteration: %d)", run->backtrace, i);
-        run->timeStartedMillis = util_timeNowMillis(), run->backtrace = 0ULL;
+        run->timeStartedMillis = util_timeNowMillis();
+        run->backtrace = 0ULL;
         run->access = 0ULL;
         run->exception = 0;
         run->mainWorker = false;
