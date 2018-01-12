@@ -369,7 +369,7 @@ void arch_reapChild(run_t* run) {
 
 bool arch_archInit(honggfuzz_t* hfuzz) {
     /* Make %'d work */
-    setlocale(LC_NUMERIC, "en_US");
+    setlocale(LC_NUMERIC, "en_US.UTF-8");
 
     if (access(hfuzz->exe.cmdline[0], X_OK) == -1) {
         PLOG_E("File '%s' doesn't seem to be executable", hfuzz->exe.cmdline[0]);

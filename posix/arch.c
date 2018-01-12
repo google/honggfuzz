@@ -26,6 +26,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <locale.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdio.h>
@@ -246,9 +247,11 @@ void arch_reapChild(run_t* run) {
 bool arch_archInit(honggfuzz_t* hfuzz) {
     /* Default is true for all platforms except Android */
     arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
-
     /* Default is false */
     arch_sigs[SIGVTALRM].important = hfuzz->timing.tmoutVTALRM;
+
+    /* Make %'d work */
+    setlocale(LC_NUMERIC, "en_US.UTF-8");
 
     return true;
 }

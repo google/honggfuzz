@@ -50,7 +50,7 @@
 #define ESC_SCROLL_ENABLE "\033[r"
 #define ESC_RESET_SETTINGS "\033[!p"
 
-#if defined(_HF_ARCH_LINUX)
+#if defined(_HF_ARCH_LINUX) || defined(_HF_ARCH_POSIX)
 #define _HF_MONETARY_MOD "'"
 #else
 #define _HF_MONETARY_MOD ""
