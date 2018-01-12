@@ -418,6 +418,8 @@ static bool fuzz_runVerifier(run_t* run) {
             run->backtrace = backtrace;
             return true;
         }
+
+        LOG_I("Verifier for HASH: %" PRIx64 " (iteration: %d). MATCH!", run->backtrace, i);
     }
 
     /* Copy file with new suffix & remove original copy */
