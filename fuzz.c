@@ -289,7 +289,8 @@ static bool fuzz_runVerifier(run_t* run) {
     }
 
     for (int i = 0; i < _HF_VERIFIER_ITER; i++) {
-        LOG_I("Launching verifier for HASH: %" PRIx64 " (iteration: %d)", run->backtrace, i);
+        LOG_I("Launching verifier for HASH: %" PRIx64 " (iteration: %d out of %d)", run->backtrace,
+            i + 1, _HF_VERIFIER_ITER);
         run->timeStartedMillis = 0;
         run->backtrace = 0;
         run->access = 0;
@@ -308,7 +309,8 @@ static bool fuzz_runVerifier(run_t* run) {
             return true;
         }
 
-        LOG_I("Verifier for HASH: %" PRIx64 " (iteration: %d). MATCH!", run->backtrace, i);
+        LOG_I("Verifier for HASH: %" PRIx64 " (iteration: %d, left: %d). MATCH!", run->backtrace,
+            i + 1, _HF_VERIFIER_ITER - i - 1);
     }
 
     /* Copy file with new suffix & remove original copy */
