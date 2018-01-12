@@ -131,6 +131,8 @@ static bool fuzz_prepareFileDynamically(run_t* run) {
 }
 
 static bool fuzz_prepareFile(run_t* run, bool rewind) {
+    mangle_setSize(run, run->global->maxFileSz);
+
     static __thread char fname[PATH_MAX];
     if (input_getNext(run, fname, /* rewind= */ rewind) == false) {
         return false;
@@ -150,6 +152,8 @@ static bool fuzz_prepareFile(run_t* run, bool rewind) {
 }
 
 static bool fuzz_prepareFileExternally(run_t* run) {
+    mangle_setSize(run, (size_t)0);
+
     static __thread char ofname[PATH_MAX];
     if (input_getNext(run, ofname, /* rewind= */ true)) {
         run->origFileName = files_basename(ofname);
@@ -463,8 +467,6 @@ static void fuzz_fuzzLoop(run_t* run) {
     run->linux.hwCnts.cpuBranchCnt = 0;
     run->linux.hwCnts.bbCnt = 0;
     run->linux.hwCnts.newBBCnt = 0;
-
-    mangle_setSize(run, run->global->maxFileSz);
 
     if (fuzz_getState(run) == _HF_STATE_DYNAMIC_PRE) {
         run->mutationsPerRun = 0U;
