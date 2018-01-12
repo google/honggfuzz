@@ -362,7 +362,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     struct custom_option custom_opts[] = {
         { { "help", no_argument, NULL, 'h' }, "Help plz.." },
         { { "input", required_argument, NULL, 'f' }, "Path to a directory containing initial file corpus" },
-        { { "persistent", no_argument, NULL, 'P' }, "Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code)" },
+        { { "persistent", no_argument, NULL, 'P' }, "Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code). This will be auto-detected!!!" },
         { { "instrument", no_argument, NULL, 'z' }, "*DEFAULT-MODE-BY-DEFAULT* Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)" },
         { { "noinst", no_argument, NULL, 'x' }, "Static mode (dry-mode), disable any instrumentation (hw/sw)" },
         { { "sancov", no_argument, NULL, 'C' }, "Enable sanitizer coverage feedback" },
