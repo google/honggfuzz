@@ -230,104 +230,6 @@ static void fuzz_setDynamicMainState(run_t* run) {
     ATOMIC_SET(run->global->state, _HF_STATE_DYNAMIC_MAIN);
 }
 
-static bool fuzz_runVerifier(run_t* crashedFuzzer) {
-    int crashFd = -1;
-    uint8_t* crashBuf = NULL;
-    off_t crashFileSz = 0;
-
-    crashBuf = files_mapFile(crashedFuzzer->crashFileName, &crashFileSz, &crashFd, false);
-    if (crashBuf == NULL) {
-        LOG_E("Couldn't open and map '%s' in R/O mode", crashedFuzzer->crashFileName);
-        return false;
-    }
-    defer {
-        munmap(crashBuf, crashFileSz);
-        close(crashFd);
-    };
-
-    LOG_I("Launching verifier for %" PRIx64 " hash", crashedFuzzer->backtrace);
-    for (int i = 0; i < _HF_VERIFIER_ITER; i++) {
-        run_t vFuzzer = {
-            .global = crashedFuzzer->global,
-            .pid = 0,
-            .persistentPid = 0,
-            .timeStartedMillis = util_timeNowMillis(),
-            .crashFileName = {0},
-            .pc = 0ULL,
-            .backtrace = 0ULL,
-            .access = 0ULL,
-            .exception = 0,
-            .dynfileqCurrent = NULL,
-            .dynamicFileSz = 0,
-            .dynamicFile = NULL,
-            .sanCovCnts =
-                {
-                    .hitBBCnt = 0ULL,
-                    .totalBBCnt = 0ULL,
-                    .dsoCnt = 0ULL,
-                    .iDsoCnt = 0ULL,
-                    .newBBCnt = 0ULL,
-                    .crashesCnt = 0ULL,
-                },
-            .report = {'\0'},
-            .mainWorker = false,
-            .fuzzNo = crashedFuzzer->fuzzNo,
-            .persistentSock = -1,
-            .tmOutSignaled = false,
-
-            .linux =
-                {
-                    .hwCnts =
-                        {
-                            .cpuInstrCnt = 0ULL,
-                            .cpuBranchCnt = 0ULL,
-                            .bbCnt = 0ULL,
-                            .newBBCnt = 0ULL,
-                            .softCntPc = 0ULL,
-                            .softCntEdge = 0ULL,
-                            .softCntCmp = 0ULL,
-                        },
-                    .attachedPid = 0,
-                },
-        };
-
-        if (arch_archThreadInit(&vFuzzer) == false) {
-            LOG_F("Could not initialize the thread");
-        }
-        if (subproc_Run(&vFuzzer) == false) {
-            LOG_F("subproc_Run()");
-        }
-
-        /* If stack hash doesn't match skip name tag and exit */
-        if (crashedFuzzer->backtrace != vFuzzer.backtrace) {
-            LOG_D("Verifier stack hash mismatch");
-            return false;
-        }
-    }
-
-    /* Workspace is inherited, just append a extra suffix */
-    char verFile[PATH_MAX] = {0};
-    snprintf(verFile, sizeof(verFile), "%s.verified", crashedFuzzer->crashFileName);
-
-    /* Copy file with new suffix & remove original copy */
-    bool dstFileExists = false;
-    if (files_copyFile(
-            crashedFuzzer->crashFileName, verFile, &dstFileExists, true /* try_link */)) {
-        LOG_I("Successfully verified, saving as (%s)", verFile);
-        ATOMIC_POST_INC(crashedFuzzer->global->cnts.verifiedCrashesCnt);
-        unlink(crashedFuzzer->crashFileName);
-    } else {
-        if (dstFileExists) {
-            LOG_I("It seems that '%s' already exists, skipping", verFile);
-        } else {
-            LOG_E("Couldn't copy '%s' to '%s'", crashedFuzzer->crashFileName, verFile);
-            return false;
-        }
-    }
-
-    return true;
-}
-
 static bool fuzz_writeCovFile(const char* dir, const uint8_t* data, size_t len) {
     char fname[PATH_MAX];
 
@@ -487,6 +389,60 @@ static void fuzz_sanCovFeedback(run_t* run) {
     }
 }
 
+static bool fuzz_runVerifier(run_t* run) {
+    uint64_t backtrace = run->backtrace;
+    char origCrashPath[PATH_MAX];
+    snprintf(origCrashPath, sizeof(origCrashPath), "%s", run->crashFileName);
+
+    for (int i = 0; i < _HF_VERIFIER_ITER; i++) {
+        LOG_I("Launching verifier for HASH: %" PRIx64 " (iteration: %d)", run->backtrace, i);
+        run->timeStartedMillis = util_timeNowMillis(), run->backtrace = 0ULL;
+        run->access = 0ULL;
+        run->exception = 0;
+        run->report[0] = '\0';
+        run->mainWorker = false;
+        run->crashFileName[0] = '\0';
+
+        if (!subproc_Run(run)) {
+            LOG_F("subproc_Run()");
+        }
+
+        /* If stack hash doesn't match skip name tag and exit */
+        if (run->backtrace != backtrace) {
+            LOG_E("Verifier stack mismatch: (original) %" PRIx64 " != (new) %" PRIx64, backtrace,
+                run->backtrace);
+            return false;
+        }
+    }
+
+    /* Workspace is inherited, just append a extra suffix */
+    char verFile[PATH_MAX];
+    snprintf(verFile, sizeof(verFile), "%s.verified", origCrashPath);
+
+    /* Copy file with new suffix & remove original copy */
+    int fd = TEMP_FAILURE_RETRY(open(verFile, O_CREAT | O_EXCL | O_WRONLY, 0600));
+    if (fd == -1 && errno == EEXIST) {
+        LOG_I("It seems that '%s' already exists, skipping", verFile);
+        return true;
+    }
+    if (fd == -1) {
+        PLOG_E("Couldn't create '%s'", verFile);
+        return false;
+    }
+    close(fd);
+
+    if (rename(origCrashPath, verFile) == -1) {
+        PLOG_E("rename('%s', '%s')", origCrashPath, verFile);
+        return false;
+    }
+
+    LOG_I("Verified crash for HASH: %" PRIx64 " and saved it as '%s'", backtrace, verFile);
+    ATOMIC_POST_INC(run->global->cnts.verifiedCrashesCnt);
+    unlink(origCrashPath);
+
+    return true;
+}
+
 static void fuzz_fuzzLoop(run_t* run) {
     run->pid = 0;
     run->timeStartedMillis = util_timeNowMillis();
@@ -574,7 +530,7 @@ static void fuzz_fuzzLoop(run_t* run) {
 
     if (run->global->useVerifier && (run->crashFileName[0] != 0) && run->backtrace) {
         if (!fuzz_runVerifier(run)) {
-            LOG_I("Failed to verify %s", run->crashFileName);
+            LOG_W("Failed to verify %s", run->crashFileName);
         }
     }
 
