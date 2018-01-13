@@ -340,11 +340,12 @@ static bool fuzz_runVerifier(run_t* run) {
 
 static bool fuzz_fetchInput(run_t* run) {
     if (fuzz_getState(run) == _HF_STATE_DYNAMIC_DRY_RUN) {
+        run->mutationsPerRun = 0U;
         if (mangle_prepareStaticFile(run, /* rewind= */ false)) {
-            run->mutationsPerRun = 0U;
             return true;
         }
         fuzz_setDynamicMainState(run);
+        run->mutationsPerRun = run->global->mutationsPerRun;
     }
 
     if (fuzz_getState(run) == _HF_STATE_DYNAMIC_MAIN) {
