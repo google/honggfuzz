@@ -341,7 +341,7 @@ static bool fuzz_runVerifier(run_t* run) {
 static bool fuzz_fetchInput(run_t* run) {
     if (fuzz_getState(run) == _HF_STATE_DYNAMIC_DRY_RUN) {
         run->mutationsPerRun = 0U;
-        if (mangle_prepareStaticFile(run, /* rewind= */ false)) {
+        if (input_prepareStaticFile(run, /* rewind= */ false)) {
             return true;
         }
         fuzz_setDynamicMainState(run);
@@ -349,27 +349,27 @@ static bool fuzz_fetchInput(run_t* run) {
     }
 
     if (fuzz_getState(run) == _HF_STATE_DYNAMIC_MAIN) {
-        if (run->global->exe.externalCommand && !mangle_prepareExternalFile(run)) {
-            LOG_E("fuzz_prepareFileExternally() failed");
+        if (run->global->exe.externalCommand && !input_prepareExternalFile(run)) {
+            LOG_E("input_prepareFileExternally() failed");
             return false;
-        } else if (!mangle_prepareDynamicInput(run)) {
-            LOG_E("fuzz_prepareFileDynamically() failed");
+        } else if (!input_prepareDynamicInput(run)) {
+            LOG_E("input_prepareFileDynamically() failed");
             return false;
         }
     }
 
     if (fuzz_getState(run) == _HF_STATE_STATIC) {
-        if (run->global->exe.externalCommand && !mangle_prepareExternalFile(run)) {
-            LOG_E("fuzz_prepareFileExternally() failed");
+        if (run->global->exe.externalCommand && !input_prepareExternalFile(run)) {
+            LOG_E("input_prepareFileExternally() failed");
             return false;
-        } else if (!mangle_prepareStaticFile(run, true /* rewind */)) {
-            LOG_E("fuzz_prepareFile() failed");
+        } else if (!input_prepareStaticFile(run, true /* rewind */)) {
+            LOG_E("input_prepareFile() failed");
             return false;
         }
     }
 
-    if (run->global->exe.postExternalCommand && !mangle_postProcessFile(run)) {
-        LOG_E("fuzz_postProcessFile() failed");
+    if (run->global->exe.postExternalCommand && !input_postProcessFile(run)) {
+        LOG_E("input_postProcessFile() failed");
         return false;
     }
 

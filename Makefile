@@ -364,10 +364,10 @@ honggfuzz.o: cmdline.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 honggfuzz.o: display.h fuzz.h input.h libhfcommon/files.h
 honggfuzz.o: libhfcommon/common.h libhfcommon/log.h
 input.o: input.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
-input.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
+input.o: libhfcommon/files.h libhfcommon/common.h mangle.h subproc.h
+input.o: libhfcommon/log.h
 mangle.o: mangle.h honggfuzz.h libhfcommon/util.h input.h
-mangle.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-mangle.o: libhfcommon/log.h subproc.h
+mangle.o: libhfcommon/common.h libhfcommon/log.h
 report.o: report.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 report.o: libhfcommon/log.h
 sancov.o: sancov.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
