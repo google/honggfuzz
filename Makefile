@@ -145,6 +145,7 @@ else
     # OS Posix
 endif
 
+CFLAGS_BLOCKS =
 COMPILER = $(shell $(CC) -v 2>&1 | \
   grep --color=never -oE '((gcc|clang) version|LLVM version.*clang)' | \
   grep --color=never -oE '(clang|gcc)' | head -n1)
@@ -152,8 +153,7 @@ ifeq ($(COMPILER),clang)
   ARCH_CFLAGS += -Wno-initializer-overrides -Wno-unknown-warning-option
   ARCH_CFLAGS += -Wno-gnu-empty-initializer -Wno-format-pedantic
   ARCH_CFLAGS += -Wno-gnu-statement-expression
-  ARCH_CFLAGS += -fblocks
-  CFLAGS_NOBLOCKS = -fno-blocks
+  CFLAGS_BLOCKS = -fblocks
 
   ifneq ($(OS),Darwin)
     ARCH_LDFLAGS += -lBlocksRuntime
@@ -259,7 +259,7 @@ CLEAN_TARGETS := core Makefile.bak \
 all: $(BIN) $(HFUZZ_CC_BIN) $(LHFUZZ_ARCH) $(LCOMMON_ARCH) $(LNETDRIVER_ARCH)
 
 %.o: %.c
-	$(CC) -c $(CFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) $(CFLAGS_BLOCKS) -o $@ $<
 
 %.so: %.c
 	$(CC) -fPIC -shared $(CFLAGS) -o $@ $<
@@ -271,22 +271,22 @@ $(BIN): $(OBJS) $(LCOMMON_ARCH)
 	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
 
 $(HFUZZ_CC_BIN): $(LCOMMON_ARCH) $(LHFUZZ_ARCH) $(LNETDRIVER_ARCH) $(HFUZZ_CC_SRCS)
-	$(LD) -o $@ $(HFUZZ_CC_SRCS) $(LDFLAGS) $(CFLAGS) -D_HFUZZ_INC_PATH=$(HFUZZ_INC)
+	$(LD) -o $@ $(HFUZZ_CC_SRCS) $(LDFLAGS) $(CFLAGS) $(CFLAGS_BLOCKS) -D_HFUZZ_INC_PATH=$(HFUZZ_INC)
 
 $(LCOMMON_OBJS): $(LCOMMON_SRCS)
-	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) $(CFLAGS_NOBLOCKS) -o $@ $(@:.o=.c)
+	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) -o $@ $(@:.o=.c)
 
 $(LCOMMON_ARCH): $(LCOMMON_OBJS)
 	$(AR) rcs $(LCOMMON_ARCH) $(LCOMMON_OBJS)
 
 $(LHFUZZ_OBJS): $(LHFUZZ_SRCS)
-	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) $(CFLAGS_NOBLOCKS) -o $@ $(@:.o=.c)
+	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) -o $@ $(@:.o=.c)
 
 $(LHFUZZ_ARCH): $(LHFUZZ_OBJS) $(LCOMMON_ARCH)
 	$(AR) rcs $(LHFUZZ_ARCH) $(LHFUZZ_OBJS) $(LCOMMON_OBJS)
 
 $(LNETDRIVER_OBJS): $(LNETDRIVER_SRCS)
-	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) $(CFLAGS_NOBLOCKS) -o $@ $(@:.o=.c)
+	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) -o $@ $(@:.o=.c)
 
 $(LNETDRIVER_ARCH): $(LNETDRIVER_OBJS)
 	$(AR) rcs $(LNETDRIVER_ARCH) $(LNETDRIVER_OBJS) $(LCOMMON_OBJS)
