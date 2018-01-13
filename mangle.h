@@ -26,7 +26,6 @@
 
 #include "honggfuzz.h"
 
-extern void mangle_mangleContent(run_t* run);
 extern bool mangle_prepareDynamicInput(run_t* run);
 extern bool mangle_prepareStaticFile(run_t* run, bool rewind);
 extern bool mangle_prepareExternalFile(run_t* run);

@@ -551,7 +551,7 @@ static void mangle_ASCIIVal(run_t* run) {
     mangle_Overwrite(run, (uint8_t*)buf, off, strlen(buf));
 }
 
-void mangle_mangleContent(run_t* run) {
+static void mangle_mangleContent(run_t* run) {
     if (run->mutationsPerRun == 0U) {
         return;
     }
