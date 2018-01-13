@@ -135,13 +135,11 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
     } else {
         pe.exclude_kernel = 1;
     }
-    if (run->global->linux.pid > 0 || run->global->persistent == true) {
-        pe.disabled = 0;
-        pe.enable_on_exec = 0;
-    } else {
+    if (run->global->linux.pid == 0) {
         pe.disabled = 1;
         pe.enable_on_exec = 1;
     }
+    pe.exclude_hv = 1;
     pe.type = PERF_TYPE_HARDWARE;
 
     switch (method) {
