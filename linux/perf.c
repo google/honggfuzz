@@ -198,7 +198,7 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
     pem->aux_offset = pem->data_offset + pem->data_size;
     pem->aux_size = _HF_PERF_AUX_SZ;
     run->linux.perfMmapAux =
-        mmap(NULL, pem->aux_size, PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, pem->aux_offset);
+        mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
     if (run->linux.perfMmapAux == MAP_FAILED) {
         munmap(run->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
         run->linux.perfMmapBuf = NULL;
