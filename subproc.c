@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -325,6 +326,10 @@ bool subproc_Run(run_t* run) {
     }
 
     arch_prepareParent(run);
+
+    if (!run->global->persistent && msync(run->dynamicFile, run->dynamicFileSz, MS_SYNC) == -1) {
+        LOG_W("Couldn't msync(dynamicFile, sz=%zu)", run->dynamicFileSz);
+    }
 
     if (run->global->persistent && !subproc_persistentSendFileIndicator(run)) {
         LOG_W("Could not send file size to the persistent process");
