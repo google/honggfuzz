@@ -495,7 +495,7 @@ static void mangle_CloneByte(run_t* run) {
 }
 
 static void mangle_Resize(run_t* run) {
-    size_t sz = util_rndGet(0, run->global->maxFileSz);
+    size_t sz = util_rndGet(1, run->global->maxFileSz);
     input_setSize(run, sz);
 }
 
@@ -541,17 +541,13 @@ void mangle_mangleContent(run_t* run) {
         return;
     }
 
-    /* 20% chance to change the file size */
-    if ((util_rnd64() % 5) == 0) {
-        mangle_Resize(run);
-    }
-
-    /* No point in modifying it if its size is 0 */
+    /* No point in modifying it, if its size is 0 */
     if (run->dynamicFileSz == 0UL) {
-        return;
+        input_setSize(run, 1UL);
     }
 
     static void (*const mangleFuncs[])(run_t * run) = {
+        mangle_Resize,
         mangle_Byte,
         mangle_Bit,
         mangle_Bytes,
