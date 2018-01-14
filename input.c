@@ -56,9 +56,12 @@ void input_setSize(run_t* run, size_t sz) {
     if (sz > run->global->maxFileSz) {
         PLOG_F("Too large size requested: %zu > maxSize: %zu", sz, run->global->maxFileSz);
     }
+/* Cygwin seems to have problems with resizing mmap()'d files */
+#if !defined(__CYGWIN__)
     if (ftruncate(run->dynamicFileFd, sz) == -1) {
         PLOG_F("ftruncate(fd=%d, size=%zu)", run->dynamicFileFd, sz);
     }
+#endif
     if (lseek(run->dynamicFileFd, (off_t)0, SEEK_SET) == (off_t)-1) {
         PLOG_F("lseek(fd=%d, 0, SEEK_SET)", run->dynamicFileFd);
     }
