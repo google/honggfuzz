@@ -120,7 +120,6 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
 
     if (hfuzz->io.fileCnt == 0U) {
         LOG_W("No usable files in the input directory '%s'", hfuzz->io.inputDir);
-        return false;
     }
 
     LOG_D("Re-read the '%s', maxFileSz:%zu, number of usable files:%zu", hfuzz->io.inputDir,
@@ -136,6 +135,7 @@ bool input_getNext(run_t* run, char* fname, bool rewind) {
     MX_SCOPED_LOCK(&input_mutex);
 
     if (run->global->io.fileCnt == 0U) {
+		LOG_W("No useful files in the input directory");
         return false;
     }
 
@@ -330,10 +330,7 @@ bool input_prepareDynamicInput(run_t* run) {
         MX_SCOPED_RWLOCK_READ(&run->global->dynfileq_mutex);
 
         if (run->global->dynfileqCnt == 0) {
-            LOG_F(
-                "The dynamic file corpus is empty. Apparently, the initial fuzzing of the "
-                "provided file corpus (-f) has not produced any follow-up files with positive "
-                "coverage and/or CPU counters");
+            LOG_F("The dynamic file corpus is empty. This shouldn't happen");
         }
 
         if (run->dynfileqCurrent == NULL) {
@@ -358,7 +355,7 @@ bool input_prepareStaticFile(run_t* run, bool rewind) {
     input_setSize(run, run->global->maxFileSz);
 
     static __thread char fname[PATH_MAX];
-    if (input_getNext(run, fname, /* rewind= */ rewind) == false) {
+    if (!input_getNext(run, fname, /* rewind= */ rewind)) {
         return false;
     }
     run->origFileName = files_basename(fname);

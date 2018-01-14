@@ -83,35 +83,8 @@ bool fuzz_shouldTerminate() {
     return false;
 }
 
-static fuzzState_t fuzz_getState(run_t* run) {
-    return ATOMIC_GET(run->global->state);
-}
-
-static void fuzz_setDynamicMainState(run_t* run) {
-    /* All threads need to indicate willingness to switch to the DYNAMIC_MAIN state. Count them! */
-    static uint32_t cnt = 0;
-    ATOMIC_PRE_INC(cnt);
-
-    static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
-    MX_SCOPED_LOCK(&state_mutex);
-
-    if (fuzz_getState(run) == _HF_STATE_DYNAMIC_MAIN) {
-        return;
-    }
-
-    for (;;) {
-        /* Check if all threads have already reported in for changing state */
-        if (ATOMIC_GET(cnt) == run->global->threads.threadsMax) {
-            break;
-        }
-        if (fuzz_isTerminating()) {
-            return;
-        }
-        usleep(1000 * 10); /* Check every 10ms */
-    }
-
-    LOG_I("Entering phase 2/2: Dynamic Main");
-    ATOMIC_SET(run->global->state, _HF_STATE_DYNAMIC_MAIN);
+static fuzzState_t fuzz_getState(honggfuzz_t* hfuzz) {
+    return ATOMIC_GET(hfuzz->state);
 }
 
 static bool fuzz_writeCovFile(const char* dir, const uint8_t* data, size_t len) {
@@ -137,27 +110,62 @@ static bool fuzz_writeCovFile(const char* dir, const uint8_t* data, size_t len) 
     return true;
 }
 
-static void fuzz_addFileToFileQ(run_t* run) {
+static void fuzz_addFileToFileQ(honggfuzz_t* hfuzz, const uint8_t* data, size_t len) {
     struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t));
-    dynfile->size = run->dynamicFileSz;
-    dynfile->data = (uint8_t*)util_Malloc(run->dynamicFileSz);
-    memcpy(dynfile->data, run->dynamicFile, run->dynamicFileSz);
+    dynfile->size = len;
+    dynfile->data = (uint8_t*)util_Malloc(len);
+    memcpy(dynfile->data, data, len);
 
-    MX_SCOPED_RWLOCK_WRITE(&run->global->dynfileq_mutex);
-    TAILQ_INSERT_TAIL(&run->global->dynfileq, dynfile, pointers);
-    run->global->dynfileqCnt++;
+    MX_SCOPED_RWLOCK_WRITE(&hfuzz->dynfileq_mutex);
+    TAILQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
+    hfuzz->dynfileqCnt++;
 
-    if (!fuzz_writeCovFile(run->global->io.covDirAll, run->dynamicFile, run->dynamicFileSz)) {
-        LOG_E("Couldn't save the coverage data to '%s'", run->global->io.covDirAll);
+    if (!fuzz_writeCovFile(hfuzz->io.covDirAll, data, len)) {
+        LOG_E("Couldn't save the coverage data to '%s'", hfuzz->io.covDirAll);
     }
 
     /* No need to add files to the new coverage dir, if this is just the dry-run phase */
-    if (fuzz_getState(run) == _HF_STATE_DYNAMIC_DRY_RUN || run->global->io.covDirNew == NULL) {
+    if (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_DRY_RUN || hfuzz->io.covDirNew == NULL) {
         return;
     }
 
-    if (!fuzz_writeCovFile(run->global->io.covDirNew, run->dynamicFile, run->dynamicFileSz)) {
-        LOG_E("Couldn't save the new coverage data to '%s'", run->global->io.covDirNew);
+    if (!fuzz_writeCovFile(hfuzz->io.covDirNew, data, len)) {
+        LOG_E("Couldn't save the new coverage data to '%s'", hfuzz->io.covDirNew);
+    }
+}
+
+static void fuzz_setDynamicMainState(run_t* run) {
+    /* All threads need to indicate willingness to switch to the DYNAMIC_MAIN state. Count them! */
+    static uint32_t cnt = 0;
+    ATOMIC_PRE_INC(cnt);
+
+    static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
+    MX_SCOPED_LOCK(&state_mutex);
+
+    if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MAIN) {
+        return;
+    }
+
+    for (;;) {
+        /* Check if all threads have already reported in for changing state */
+        if (ATOMIC_GET(cnt) == run->global->threads.threadsMax) {
+            break;
+        }
+        if (fuzz_isTerminating()) {
+            return;
+        }
+        usleep(1000 * 10); /* Check every 10ms */
+    }
+
+    LOG_I("Entering phase 2/2: Dynamic Main");
+    ATOMIC_SET(run->global->state, _HF_STATE_DYNAMIC_MAIN);
+
+    /*
+     * If the initial fuzzing yielded no useful coverage, just add a single 1-byte file to the
+     * dynamic corpus, so the dynamic phase doesn't fail because of lack of useful inputs
+     */
+    if (run->global->dynfileqCnt == 0) {
+        fuzz_addFileToFileQ(run->global, (const uint8_t*)"\0", 1U);
     }
 }
 
@@ -212,7 +220,7 @@ static void fuzz_perfFeedback(run_t* run) {
             run->global->linux.hwCnts.bbCnt, run->global->linux.hwCnts.softCntEdge,
             run->global->linux.hwCnts.softCntPc, run->global->linux.hwCnts.softCntCmp);
 
-        fuzz_addFileToFileQ(run);
+        fuzz_addFileToFileQ(run->global, run->dynamicFile, run->dynamicFileSz);
     }
 }
 
@@ -265,7 +273,7 @@ static void fuzz_sanCovFeedback(run_t* run) {
         run->global->linux.hwCnts.cpuInstrCnt = run->linux.hwCnts.cpuInstrCnt;
         run->global->linux.hwCnts.cpuBranchCnt = run->linux.hwCnts.cpuBranchCnt;
 
-        fuzz_addFileToFileQ(run);
+        fuzz_addFileToFileQ(run->global, run->dynamicFile, run->dynamicFileSz);
     }
 }
 
@@ -339,7 +347,7 @@ static bool fuzz_runVerifier(run_t* run) {
 }
 
 static bool fuzz_fetchInput(run_t* run) {
-    if (fuzz_getState(run) == _HF_STATE_DYNAMIC_DRY_RUN) {
+    if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_DRY_RUN) {
         run->mutationsPerRun = 0U;
         if (input_prepareStaticFile(run, /* rewind= */ false)) {
             return true;
@@ -348,7 +356,7 @@ static bool fuzz_fetchInput(run_t* run) {
         run->mutationsPerRun = run->global->mutationsPerRun;
     }
 
-    if (fuzz_getState(run) == _HF_STATE_DYNAMIC_MAIN) {
+    if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MAIN) {
         if (run->global->exe.externalCommand && !input_prepareExternalFile(run)) {
             LOG_E("input_prepareFileExternally() failed");
             return false;
@@ -358,7 +366,7 @@ static bool fuzz_fetchInput(run_t* run) {
         }
     }
 
-    if (fuzz_getState(run) == _HF_STATE_STATIC) {
+    if (fuzz_getState(run->global) == _HF_STATE_STATIC) {
         if (run->global->exe.externalCommand && !input_prepareExternalFile(run)) {
             LOG_E("input_prepareFileExternally() failed");
             return false;
