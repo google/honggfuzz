@@ -60,21 +60,23 @@ static bool checkFor_FILE_PLACEHOLDER(const char* const* args) {
 static bool cmdlineCheckIfPersistent(const char* fname) {
     int fd;
     off_t fileSz;
-    int ret = false;
 
     uint8_t* map = files_mapFile(fname, &fileSz, &fd, /* isWriteable= */ false);
-    if (map == MAP_FAILED) {
+    if (!map) {
         LOG_W("Couldn't map file '%s' to check whether it's a persistent binary", fname);
         return false;
     }
+    defer {
+        if (munmap(map, fileSz) == -1) {
+            PLOG_W("munmap(%p, %zu)", map, (size_t)fileSz);
+        }
+        close(fd);
+    };
+
     if (memmem(map, fileSz, _HF_PERSISTENT_SIG, strlen(_HF_PERSISTENT_SIG))) {
-        ret = true;
+        return true;
     }
-    if (munmap(map, fileSz) == -1) {
-        PLOG_W("munmap(%p, %zu)", map, (size_t)fileSz);
-    }
-    close(fd);
-    return ret;
+    return false;
 }
 
 static const char* cmdlineYesNo(bool yes) {

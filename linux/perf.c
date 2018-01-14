@@ -181,9 +181,8 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
         return true;
     }
 #if defined(PERF_ATTR_SIZE_VER5)
-    run->linux.perfMmapBuf =
-        mmap(NULL, _HF_PERF_MAP_SZ + getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0);
-    if (run->linux.perfMmapBuf == MAP_FAILED) {
+    if ((run->linux.perfMmapBuf = mmap(NULL, _HF_PERF_MAP_SZ + getpagesize(),
+             PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0)) == MAP_FAILED) {
         run->linux.perfMmapBuf = NULL;
         PLOG_W(
             "mmap(mmapBuf) failed, sz=%zu, try increasing the kernel.perf_event_mlock_kb sysctl "
@@ -197,9 +196,8 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
     struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
     pem->aux_offset = pem->data_offset + pem->data_size;
     pem->aux_size = _HF_PERF_AUX_SZ;
-    run->linux.perfMmapAux =
-        mmap(NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset);
-    if (run->linux.perfMmapAux == MAP_FAILED) {
+    if ((run->linux.perfMmapAux = mmap(
+             NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset)) == MAP_FAILED) {
         munmap(run->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
         run->linux.perfMmapBuf = NULL;
         PLOG_W(

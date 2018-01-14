@@ -65,7 +65,7 @@ __attribute__((constructor)) static void initializeInstrument(void) {
         PLOG_F("mmap of the feedback structure failed");
     }
 
-    /* Reset the counters to their initial state */
+    /* Reset coverage counters to their initial state */
     instrumentClearNewCov();
 }
 

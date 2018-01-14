@@ -384,7 +384,7 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* dir) {
         snprintf(template, sizeof(template), "%s/hfuzz.XXXXXX", dir);
         if ((*fd = mkostemp(template, O_CLOEXEC)) == -1) {
             PLOG_W("mkstemp('%s')", template);
-            return MAP_FAILED;
+            return NULL;
         }
         unlink(template);
     }
@@ -392,14 +392,14 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* dir) {
         PLOG_W("ftruncate(%d, %zu)", *fd, sz);
         close(*fd);
         *fd = -1;
-        return MAP_FAILED;
+        return NULL;
     }
     void* ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_SHARED, *fd, 0);
     if (ret == MAP_FAILED) {
         PLOG_W("mmap(sz=%zu, fd=%d)", sz, *fd);
         *fd = -1;
         close(*fd);
-        return MAP_FAILED;
+        return NULL;
     }
     return ret;
 }
