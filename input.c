@@ -135,7 +135,7 @@ bool input_getNext(run_t* run, char* fname, bool rewind) {
     MX_SCOPED_LOCK(&input_mutex);
 
     if (run->global->io.fileCnt == 0U) {
-		LOG_W("No useful files in the input directory");
+        LOG_W("No useful files in the input directory");
         return false;
     }
 
@@ -237,11 +237,13 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
         }
         char bufn[1025] = {};
         char bufv[1025] = {};
-        if (sscanf(lineptr, "\"%1024[^\"]", bufv) != 1 &&
-            sscanf(lineptr, "%1024[^=]=\"%1024[^\"]", bufn, bufv) != 2) {
+        if (sscanf(lineptr, "\"%1024s", bufv) != 1 &&
+            sscanf(lineptr, "%1024[^=]=\"%1024s", bufn, bufv) != 2) {
             LOG_W("Incorrect dictionary entry: '%s'. Skipping", lineptr);
             continue;
         }
+
+        LOG_D("Parsing word: '%s'", bufv);
 
         char* s = util_StrDup(bufv);
         struct strings_t* str = (struct strings_t*)util_Malloc(sizeof(struct strings_t));

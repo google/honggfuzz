@@ -287,7 +287,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 
         .dictionaryFile = NULL,
         .dictionaryCnt = 0,
-        .dictqCurrent = NULL,
 
         .state = _HF_STATE_UNSET,
         .feedback = NULL,

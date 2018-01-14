@@ -304,13 +304,12 @@ bool util_isANumber(const char* s) {
 }
 
 size_t util_decodeCString(char* s) {
-    size_t len = strlen(s);
     size_t o = 0;
-    for (size_t i = 0; s[i] != '\0' && s[i] != '"' && i < len; i++, o++) {
+    for (size_t i = 0; s[i] != '\0' && s[i] != '"'; i++, o++) {
         switch (s[i]) {
             case '\\': {
                 i++;
-                if (i >= len) {
+                if (!s[i]) {
                     continue;
                 }
                 switch (s[i]) {
@@ -330,10 +329,13 @@ size_t util_decodeCString(char* s) {
                         s[o] = '\0';
                         break;
                     case 'x': {
-                        /* Yup, this can overflow */
-                        char hex[] = {s[i + 1], s[i + 2], 0};
-                        s[o] = strtoul(hex, NULL, 16);
-                        i += 2;
+                        if (s[i + 1] && s[i + 2]) {
+                            char hex[] = {s[i + 1], s[i + 2], 0};
+                            s[o] = strtoul(hex, NULL, 16);
+                            i += 2;
+                        } else {
+                            s[o] = s[i];
+                        }
                         break;
                     }
                     default:

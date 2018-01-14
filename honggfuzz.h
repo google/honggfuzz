@@ -232,7 +232,6 @@ typedef struct {
     const char* dictionaryFile;
     TAILQ_HEAD(strq_t, strings_t) dictq;
     size_t dictionaryCnt;
-    struct strings_t* dictqCurrent;
 
     fuzzState_t state;
     feedback_t* feedback;
