@@ -18,7 +18,7 @@ __attribute__((used)) const char* LIBHFUZZ_module_main = _HF_PERSISTENT_SIG;
 #if !defined(__CYGWIN__)
 __attribute__((weak))
 #endif /* !defined(__CYGWIN__) */
-main(int argc, char** argv) {
+int main(int argc, char** argv) {
     /*
      * getpid() never returns -2, so it's only to reference the persistent
      * signature, to prevent optimizing it out by clever compiler/link
