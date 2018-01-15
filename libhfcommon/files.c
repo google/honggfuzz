@@ -136,6 +136,14 @@ ssize_t files_readFromFd(int fd, uint8_t* buf, size_t fileSz) {
     return (ssize_t)readSz;
 }
 
+ssize_t files_readFromFdSeek(int fd, uint8_t* buf, size_t fileSz, off_t off) {
+    if (lseek(fd, (off_t)0, SEEK_SET) == (off_t)-1) {
+        PLOG_W("lseek(fd=%d, %lld, SEEK_SET)", fd, (long long int)off);
+        return -1;
+    }
+    return files_readFromFd(fd, buf, fileSz);
+}
+
 bool files_exists(const char* fileName) {
     return (access(fileName, F_OK) != -1);
 }

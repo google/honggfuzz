@@ -184,7 +184,7 @@ void util_getLocalTime(const char* fmt, char* buf, size_t len, time_t tm) {
     }
 }
 
-void util_nullifyStdio(void) {
+void util_closeStdio(bool close_stdin, bool close_stdout, bool close_stderr) {
     int fd = open("/dev/null", O_RDWR);
 
     if (fd == -1) {
@@ -192,11 +192,17 @@ void util_nullifyStdio(void) {
         return;
     }
 
-    dup2(fd, 0);
-    dup2(fd, 1);
-    dup2(fd, 2);
+    if (close_stdin) {
+        dup2(fd, STDIN_FILENO);
+    }
+    if (close_stdout) {
+        dup2(fd, STDOUT_FILENO);
+    }
+    if (close_stderr) {
+        dup2(fd, STDERR_FILENO);
+    }
 
-    if (fd > 2) {
+    if (fd > STDERR_FILENO) {
         close(fd);
     }
 }

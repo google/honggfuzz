@@ -95,7 +95,7 @@ extern int util_vssnprintf(char* str, size_t size, const char* format, va_list a
 
 extern void util_getLocalTime(const char* fmt, char* buf, size_t len, time_t tm);
 
-extern void util_nullifyStdio(void);
+extern void util_closeStdio(bool close_stdin, bool close_stdout, bool close_stderr);
 
 extern uint64_t util_hash(const char* buf, size_t len);
 

@@ -43,6 +43,8 @@ extern bool files_writeStrToFd(int fd, const char* str);
 
 extern ssize_t files_readFromFd(int fd, uint8_t* buf, size_t fileSz);
 
+extern ssize_t files_readFromFdSeek(int fd, uint8_t* buf, size_t fileSz, off_t pos);
+
 extern bool files_writePatternToFd(int fd, off_t size, unsigned char p);
 
 bool files_sendToSocketNB(int fd, const uint8_t* buf, size_t fileSz);

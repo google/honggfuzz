@@ -56,9 +56,6 @@ void input_setSize(run_t* run, size_t sz) {
     if (sz > run->global->maxFileSz) {
         PLOG_F("Too large size requested: %zu > maxSize: %zu", sz, run->global->maxFileSz);
     }
-    if (lseek(run->dynamicFileFd, (off_t)0, SEEK_SET) == (off_t)-1) {
-        PLOG_F("lseek(fd=%d, 0, SEEK_SET)", run->dynamicFileFd);
-    }
     run->dynamicFileSz = sz;
 }
 
@@ -306,26 +303,6 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz) {
     return true;
 }
 
-static bool input_checkSizeNRewind(run_t* run) {
-    struct stat st;
-    if (fstat(run->dynamicFileFd, &st) == -1) {
-        PLOG_E("fstat(fd=%d)", run->dynamicFileFd);
-        return false;
-    }
-    if (((size_t)st.st_size != run->global->maxFileSz) &&
-        ftruncate(run->dynamicFileFd, run->global->maxFileSz) == -1) {
-        LOG_W("ftruncate(fd=%d, sz=%zu)", run->dynamicFileFd, run->global->maxFileSz);
-    }
-    if ((size_t)st.st_size > run->global->maxFileSz) {
-        LOG_W("External tool created too large of a file, '%zu', truncating it to '%zu'",
-            (size_t)st.st_size, run->global->maxFileSz);
-        input_setSize(run, run->global->maxFileSz);
-    } else {
-        input_setSize(run, (size_t)st.st_size);
-    }
-    return true;
-}
-
 bool input_prepareDynamicInput(run_t* run) {
     run->origFileName = "[DYNAMIC]";
 
@@ -355,8 +332,6 @@ bool input_prepareDynamicInput(run_t* run) {
 }
 
 bool input_prepareStaticFile(run_t* run, bool rewind) {
-    input_setSize(run, run->global->maxFileSz);
-
     static __thread char fname[PATH_MAX];
     if (!input_getNext(run, fname, /* rewind= */ rewind)) {
         return false;
@@ -376,11 +351,18 @@ bool input_prepareStaticFile(run_t* run, bool rewind) {
 }
 
 bool input_prepareExternalFile(run_t* run) {
-    input_setSize(run, (size_t)0);
     run->origFileName = "[EXTERNAL]";
 
+    int fd = files_writeBufToTmpFile(run->global->io.workDir, (const uint8_t*)"", 0, 0);
+    defer {
+        close(fd);
+    };
+    if (fd == -1) {
+        LOG_E("Couldn't write input file to a temporary buffer");
+    }
+
     char fname[PATH_MAX];
-    snprintf(fname, sizeof(fname), "/dev/fd/%d", run->dynamicFileFd);
+    snprintf(fname, sizeof(fname), "/dev/fd/%d", fd);
 
     const char* const argv[] = {run->global->exe.externalCommand, fname, NULL};
     if (subproc_System(run, argv) != 0) {
@@ -389,16 +371,28 @@ bool input_prepareExternalFile(run_t* run) {
     }
     LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
 
-    if (!input_checkSizeNRewind(run)) {
+    ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->maxFileSz, 0);
+    if (sz == -1) {
+        LOG_E("Couldn't read file from fd=%d", fd);
         return false;
     }
 
+    input_setSize(run, (size_t)sz);
     return true;
 }
 
 bool input_postProcessFile(run_t* run) {
+    int fd =
+        files_writeBufToTmpFile(run->global->io.workDir, run->dynamicFile, run->dynamicFileSz, 0);
+    defer {
+        close(fd);
+    };
+    if (fd == -1) {
+        LOG_E("Couldn't write input file to a temporary buffer");
+    }
+
     char fname[PATH_MAX];
-    snprintf(fname, sizeof(fname), "/dev/fd/%d", run->dynamicFileFd);
+    snprintf(fname, sizeof(fname), "/dev/fd/%d", fd);
 
     const char* const argv[] = {run->global->exe.postExternalCommand, fname, NULL};
     if (subproc_System(run, argv) != 0) {
@@ -407,9 +401,12 @@ bool input_postProcessFile(run_t* run) {
     }
     LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
 
-    if (!input_checkSizeNRewind(run)) {
+    ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->maxFileSz, 0);
+    if (sz == -1) {
+        LOG_E("Couldn't read file from fd=%d", fd);
         return false;
     }
 
+    input_setSize(run, (size_t)sz);
     return true;
 }

@@ -196,6 +196,10 @@ static bool subproc_PrepareExecv(run_t* run) {
 
     setsid();
 
+    util_closeStdio(/* close_stdin= */ !run->global->exe.fuzzStdin,
+        /* close_stdout= */ run->global->exe.nullifyStdio,
+        /* close_stderr= */ run->global->exe.nullifyStdio);
+
     /* The bitmap structure */
     if (run->global->bbFd != -1 && dup2(run->global->bbFd, _HF_BITMAP_FD) == -1) {
         PLOG_E("dup2(%d, _HF_BITMAP_FD=%d)", run->global->bbFd, _HF_BITMAP_FD);
@@ -203,7 +207,7 @@ static bool subproc_PrepareExecv(run_t* run) {
     }
 
     /* The input file to _HF_INPUT_FD */
-    if (dup2(run->dynamicFileFd, _HF_INPUT_FD) == -1) {
+    if (run->global->persistent && dup2(run->dynamicFileFd, _HF_INPUT_FD) == -1) {
         PLOG_E("dup2('%d', _HF_INPUT_FD='%d')", run->dynamicFileFd, _HF_INPUT_FD);
         return false;
     }
@@ -212,10 +216,6 @@ static bool subproc_PrepareExecv(run_t* run) {
     sigemptyset(&sset);
     if (sigprocmask(SIG_SETMASK, &sset, NULL) == -1) {
         PLOG_W("sigprocmask(empty_set)");
-    }
-
-    if (run->global->exe.nullifyStdio) {
-        util_nullifyStdio();
     }
 
     if (!run->global->persistent) {
