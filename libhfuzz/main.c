@@ -1,5 +1,5 @@
+#include <time.h>
 #include <string.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include "honggfuzz.h"
@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
      * signature, to prevent optimizing it out by clever compiler/link
      * optimizers
      */
-    if (getpid() == -2) {
+    if (time(NULL) == 0) {
       return (int)strlen(LIBHFUZZ_module_main);
     }
     return HonggfuzzMain(argc, argv);
