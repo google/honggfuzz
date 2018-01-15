@@ -32,7 +32,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -197,14 +196,13 @@ static bool subproc_PrepareExecv(run_t* run) {
 
     setsid();
 
-    if (run->global->bbFd != -1) {
-        if (dup2(run->global->bbFd, _HF_BITMAP_FD) == -1) {
-            PLOG_E("dup2('%d', %d)", run->global->bbFd, _HF_BITMAP_FD);
-            return false;
-        }
+    /* The bitmap structure */
+    if (run->global->bbFd != -1 && dup2(run->global->bbFd, _HF_BITMAP_FD) == -1) {
+        PLOG_E("dup2(%d, _HF_BITMAP_FD=%d)", run->global->bbFd, _HF_BITMAP_FD);
+        return false;
     }
 
-    /* Step 1: dup the input file to _HF_INPUT_FD */
+    /* The input file to _HF_INPUT_FD */
     if (dup2(run->dynamicFileFd, _HF_INPUT_FD) == -1) {
         PLOG_E("dup2('%d', _HF_INPUT_FD='%d')", run->dynamicFileFd, _HF_INPUT_FD);
         return false;
