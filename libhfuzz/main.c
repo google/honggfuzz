@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
      * signature, to prevent optimizing it out by clever compiler/link
      * optimizers
      */
-    if (time(NULL) == 0) {
+    if (time(NULL) == -10) {
       return (int)strlen(LIBHFUZZ_module_main);
     }
     return HonggfuzzMain(argc, argv);
