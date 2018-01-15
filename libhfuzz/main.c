@@ -1,4 +1,6 @@
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "honggfuzz.h"
 #include "libhfuzz/persistent.h"
