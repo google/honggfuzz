@@ -304,6 +304,7 @@ typedef struct {
     uint8_t* dynamicFile;
     size_t dynamicFileSz;
     int dynamicFileFd;
+    int dynamicFileCopyFd;
     uint32_t fuzzNo;
     int persistentSock;
     bool tmOutSignaled;

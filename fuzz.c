@@ -397,6 +397,7 @@ static void fuzz_fuzzLoop(run_t* run) {
     run->origFileName = "DYNAMIC";
     run->mutationsPerRun = run->global->mutationsPerRun;
     run->dynamicFileSz = 0;
+    run->dynamicFileCopyFd = -1,
 
     run->sanCovCnts.hitBBCnt = 0;
     run->sanCovCnts.totalBBCnt = 0;

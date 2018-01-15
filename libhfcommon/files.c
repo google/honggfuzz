@@ -81,6 +81,30 @@ bool files_writeBufToFile(const char* fileName, const uint8_t* buf, size_t fileS
     return ret;
 }
 
+int files_writeBufToTmpFile(const char* dir, const uint8_t* buf, size_t fileSz, int flags) {
+    char template[PATH_MAX];
+    snprintf(template, sizeof(template), "%s/hfuzz.XXXXXX", dir);
+    int fd = mkostemp(template, flags);
+    if (fd == -1) {
+        PLOG_W("mkostemp('%s') failed", template);
+        return -1;
+    }
+    if (unlink(template) == -1) {
+        PLOG_W("unlink('%s')", template);
+    }
+    if (!files_writeToFd(fd, buf, fileSz)) {
+        PLOG_W("Couldn't save data to the temporary file");
+        close(fd);
+        return -1;
+    }
+    if (lseek(fd, (off_t)0, SEEK_SET) == (off_t)-1) {
+        PLOG_W("Couldn't rewind file '%s' fd=%d", template, fd);
+        close(fd);
+        return -1;
+    }
+    return fd;
+}
+
 bool files_writeToFd(int fd, const uint8_t* buf, size_t fileSz) {
     size_t writtenSz = 0;
     while (writtenSz < fileSz) {

@@ -209,14 +209,6 @@ static bool subproc_PrepareExecv(run_t* run) {
         PLOG_E("dup2('%d', _HF_INPUT_FD='%d')", run->dynamicFileFd, _HF_INPUT_FD);
         return false;
     }
-    /*
-     * Step 2: map _HF_INPUT_FD back to run->dynamicFileFd, in order to remove potential O_CLOEXEC
-     * from run->dynamicFileFd
-     */
-    if (dup2(_HF_INPUT_FD, run->dynamicFileFd) == -1) {
-        PLOG_E("dup2(_HF_INPUT_FD='%d', '%d')", _HF_INPUT_FD, run->dynamicFileFd);
-        return false;
-    }
 
     sigset_t sset;
     sigemptyset(&sset);
@@ -227,9 +219,17 @@ static bool subproc_PrepareExecv(run_t* run) {
     if (run->global->exe.nullifyStdio) {
         util_nullifyStdio();
     }
-    if (run->global->exe.fuzzStdin && dup2(_HF_INPUT_FD, STDIN_FILENO) == -1) {
-        PLOG_E("dup2(_HF_INPUT_FD=%d, STDIN_FILENO=%d)", _HF_INPUT_FD, STDIN_FILENO);
-        return false;
+
+    if (!run->global->persistent) {
+        if ((run->dynamicFileCopyFd = files_writeBufToTmpFile(
+                 run->global->io.workDir, run->dynamicFile, run->dynamicFileSz, 0)) == -1) {
+            LOG_E("Couldn't save data to a temporary file");
+            return false;
+        }
+        if (run->global->exe.fuzzStdin && dup2(run->dynamicFileCopyFd, STDIN_FILENO) == -1) {
+            PLOG_E("dup2(_HF_INPUT_FD=%d, STDIN_FILENO=%d)", run->dynamicFileCopyFd, STDIN_FILENO);
+            return false;
+        }
     }
 
     return true;
@@ -326,10 +326,6 @@ bool subproc_Run(run_t* run) {
     }
 
     arch_prepareParent(run);
-
-    if (!run->global->persistent && msync(run->dynamicFile, run->dynamicFileSz, MS_SYNC) == -1) {
-        LOG_W("Couldn't msync(dynamicFile, sz=%zu)", run->dynamicFileSz);
-    }
 
     if (run->global->persistent && !subproc_persistentSendFileIndicator(run)) {
         LOG_W("Could not send file size to the persistent process");
