@@ -1,7 +1,3 @@
-#include <time.h>
-#include <string.h>
-#include <unistd.h>
-
 #include "honggfuzz.h"
 #include "libhfuzz/persistent.h"
 
@@ -9,9 +5,8 @@
  * If this signature is visible inside a binary, it's probably a persistent-style fuzzing program.
  * This mode of discover is employed by honggfuzz
  */
-__attribute__((visibility("default")))
-__attribute__((used))
-const char* LIBHFUZZ_module_main = _HF_PERSISTENT_SIG;
+__attribute__((visibility("default"))) __attribute__((used)) const char* LIBHFUZZ_module_main =
+    _HF_PERSISTENT_SIG;
 
 /*
  * Declare it 'weak', so it can be safely linked with regular binaries which

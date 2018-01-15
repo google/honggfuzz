@@ -18,6 +18,7 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 
+__attribute__((visibility("default"))) __attribute__((used))
 const char* const LIBHFUZZ_module_instrument = "LIBHFUZZ_module_instrument";
 
 /*

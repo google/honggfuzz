@@ -20,6 +20,7 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/ns.h"
 
+__attribute__((visibility("default"))) __attribute__((used))
 const char *const LIBHFNETDRIVER_module_netdriver = "LIBHFNETDRIVER_module_netdriver";
 
 #define HF_TCP_PORT_ENV "_HF_TCP_PORT"

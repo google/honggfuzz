@@ -7,6 +7,7 @@
 #include "libhfcommon/common.h"
 #include "libhfuzz/instrument.h"
 
+__attribute__((visibility("default"))) __attribute__((used))
 const char* const LIBHFUZZ_module_memorycmp = "LIBHFUZZ_module_memorycmp";
 
 #if !defined(_HF_USE_RET_ADDR)
