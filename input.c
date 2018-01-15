@@ -56,12 +56,6 @@ void input_setSize(run_t* run, size_t sz) {
     if (sz > run->global->maxFileSz) {
         PLOG_F("Too large size requested: %zu > maxSize: %zu", sz, run->global->maxFileSz);
     }
-/* Cygwin seems to have problems with resizing mmap()'d files */
-#if !defined(__CYGWIN__)
-    if (ftruncate(run->dynamicFileFd, sz) == -1) {
-        PLOG_F("ftruncate(fd=%d, size=%zu)", run->dynamicFileFd, sz);
-    }
-#endif
     if (lseek(run->dynamicFileFd, (off_t)0, SEEK_SET) == (off_t)-1) {
         PLOG_F("lseek(fd=%d, 0, SEEK_SET)", run->dynamicFileFd);
     }
@@ -317,6 +311,10 @@ static bool input_checkSizeNRewind(run_t* run) {
     if (fstat(run->dynamicFileFd, &st) == -1) {
         PLOG_E("fstat(fd=%d)", run->dynamicFileFd);
         return false;
+    }
+    if (((size_t)st.st_size != run->global->maxFileSz) &&
+        ftruncate(run->dynamicFileFd, run->global->maxFileSz) == -1) {
+        LOG_W("ftruncate(fd=%d, sz=%zu)", run->dynamicFileFd, run->global->maxFileSz);
     }
     if ((size_t)st.st_size > run->global->maxFileSz) {
         LOG_W("External tool created too large of a file, '%zu', truncating it to '%zu'",

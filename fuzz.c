@@ -473,6 +473,7 @@ static void* fuzz_threadNew(void* arg) {
             break;
         }
 
+        input_setSize(&run, run.global->maxFileSz);
         fuzz_fuzzLoop(&run);
 
         if (fuzz_isTerminating()) {
