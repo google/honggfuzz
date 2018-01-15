@@ -196,7 +196,7 @@ static bool subproc_PrepareExecv(run_t* run) {
 
     setsid();
 
-    util_closeStdio(/* close_stdin= */ !run->global->exe.fuzzStdin,
+    util_closeStdio(/* close_stdin= */ run->global->exe.nullifyStdio,
         /* close_stdout= */ run->global->exe.nullifyStdio,
         /* close_stderr= */ run->global->exe.nullifyStdio);
 
