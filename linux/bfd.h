@@ -26,6 +26,7 @@
 
 #include <inttypes.h>
 #include <limits.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include "linux/unwind.h"
