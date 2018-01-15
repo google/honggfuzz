@@ -354,12 +354,13 @@ bool input_prepareExternalFile(run_t* run) {
     run->origFileName = "[EXTERNAL]";
 
     int fd = files_writeBufToTmpFile(run->global->io.workDir, (const uint8_t*)"", 0, 0);
+    if (fd == -1) {
+        LOG_E("Couldn't write input file to a temporary buffer");
+        return false;
+    }
     defer {
         close(fd);
     };
-    if (fd == -1) {
-        LOG_E("Couldn't write input file to a temporary buffer");
-    }
 
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "/dev/fd/%d", fd);
@@ -384,12 +385,13 @@ bool input_prepareExternalFile(run_t* run) {
 bool input_postProcessFile(run_t* run) {
     int fd =
         files_writeBufToTmpFile(run->global->io.workDir, run->dynamicFile, run->dynamicFileSz, 0);
+    if (fd == -1) {
+        LOG_E("Couldn't write input file to a temporary buffer");
+        return false;
+    }
     defer {
         close(fd);
     };
-    if (fd == -1) {
-        LOG_E("Couldn't write input file to a temporary buffer");
-    }
 
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "/dev/fd/%d", fd);
