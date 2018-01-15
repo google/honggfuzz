@@ -25,7 +25,7 @@ main(int argc, char** argv) {
      * optimizers
      */
     if (getpid() == -2) {
-      return strlen(LIBHFUZZ_module_main);
+      return (int)strlen(LIBHFUZZ_module_main);
     }
     return HonggfuzzMain(argc, argv);
 }
