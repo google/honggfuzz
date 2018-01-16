@@ -30,6 +30,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/resource.h>
+#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -70,6 +72,25 @@ void sigHandler(int sig) {
     }
 
     ATOMIC_SET(sigReceived, sig);
+}
+
+static void setupRLimits(void) {
+    struct rlimit rlim;
+    if (getrlimit(RLIMIT_NOFILE, &rlim) == -1) {
+        PLOG_W("getrlimit(RLIMIT_NOFILE)");
+        return;
+    }
+    if (rlim.rlim_cur >= 1024) {
+        return;
+    }
+    if (rlim.rlim_max < 1024) {
+        LOG_E("RLIMIT_NOFILE max limit < 1024 (%u). Expect troubles!", (unsigned int)rlim.rlim_max);
+        return;
+    }
+    rlim.rlim_cur = rlim.rlim_max;
+    if (setrlimit(RLIMIT_NOFILE, &rlim) == -1) {
+        PLOG_E("Couldn't setrlimit(RLIMIT_NOFILE, cur=max=%u)", (unsigned int)rlim.rlim_max);
+    }
 }
 
 static void setupMainThreadTimer(void) {
@@ -187,6 +208,7 @@ int main(int argc, char** argv) {
      */
     pthread_t threads[hfuzz.threads.threadsMax];
 
+    setupRLimits();
     setupSignalsPreThreads();
     fuzz_threadsStart(&hfuzz, threads);
     setupSignalsMainThread();
