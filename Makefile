@@ -141,7 +141,7 @@ else
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
                    -funroll-loops
-    ARCH_LDFLAGS := -lpthread -L/usr/local/include -lrt
+    ARCH_LDFLAGS := -lpthread -L/usr/local/lib -lrt
     # OS Posix
 endif
 
