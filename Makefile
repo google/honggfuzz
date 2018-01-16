@@ -36,6 +36,7 @@ HFUZZ_USE_RET_ADDR ?= false
 ifneq ($(HFUZZ_USE_RET_ADDR),false)
     LIBS_CFLAGS += -D_HF_USE_RET_ADDR=$(HFUZZ_USE_RET_ADDR) -Wno-error=frame-address
 endif
+GREP_COLOR ?=
 
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
@@ -76,6 +77,9 @@ ifeq ($(OS),Linux)
     # OS Linux
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
+
+    # MacOS-X grep seem to use colors unconditionally
+    GREP_COLOR = --color=never
 
     # Figure out which crash reporter to use.
     CRASHWRANGLER := third_party/mac
@@ -119,7 +123,7 @@ else ifeq ($(OS),Darwin)
                     -framework CoreServices -framework CrashReporterSupport -framework CoreFoundation \
                     -framework CommerceKit $(CRASH_REPORT)
 
-    XCODE_VER := $(shell xcodebuild -version | grep --color=never "^Xcode" | cut -d " " -f2)
+    XCODE_VER := $(shell xcodebuild -version | grep $(GREP_COLOR) "^Xcode" | cut -d " " -f2)
     ifeq "8.3" "$(word 1, $(sort 8.3 $(XCODE_VER)))"
       ARCH_LDFLAGS += -F/Applications/Xcode.app/Contents/SharedFrameworks \
                       -framework CoreSymbolicationDT \
@@ -147,8 +151,8 @@ endif
 
 CFLAGS_BLOCKS =
 COMPILER = $(shell $(CC) -v 2>&1 | \
-  grep --color=never -oE '((gcc|clang) version|LLVM version.*clang)' | \
-  grep --color=never -oE '(clang|gcc)' | head -n1)
+  grep $(GREP_COLOR) -oE '((gcc|clang) version|LLVM version.*clang)' | \
+  grep $(GREP_COLOR) -oE '(clang|gcc)' | head -n1)
 ifeq ($(COMPILER),clang)
   ARCH_CFLAGS += -Wno-initializer-overrides -Wno-unknown-warning-option
   ARCH_CFLAGS += -Wno-gnu-empty-initializer -Wno-format-pedantic
