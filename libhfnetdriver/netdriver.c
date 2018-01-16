@@ -15,13 +15,14 @@
 #include <sched.h>
 #endif /* defined(_HF_ARCH_LINUX) */
 
+#include "honggfuzz.h"
 #include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
 #include "libhfcommon/ns.h"
 
 __attribute__((visibility("default"))) __attribute__((used))
-const char *const LIBHFNETDRIVER_module_netdriver = "LIBHFNETDRIVER_module_netdriver";
+const char *const LIBHFNETDRIVER_module_netdriver = _HF_NETDRIVER_SIG;
 
 #define HF_TCP_PORT_ENV "_HF_TCP_PORT"
 
@@ -229,6 +230,9 @@ void netDriver_waitForServerReady(uint16_t portno) {
 }
 
 __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
+    /* Make sure LIBHFNETDRIVER_module_netdriver (NetDriver signature) is used */
+    LOG_D("Module: %s", LIBHFNETDRIVER_module_netdriver);
+
     hfnd_globals.tcp_port = HonggfuzzNetDriverPort(*argc, *argv);
     *argc = HonggfuzzNetDriverArgsForServer(
         *argc, *argv, &hfnd_globals.argc_server, &hfnd_globals.argv_server);

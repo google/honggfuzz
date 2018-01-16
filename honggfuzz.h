@@ -82,6 +82,8 @@ static const uint8_t HFdoneTag = 'D';
 
 /* Persistent-binary signature - if found within file, it means it's a persistent mode binary */
 #define _HF_PERSISTENT_SIG "\x01_LIBHFUZZ_PERSISTENT_BINARY_SIGNATURE_\x02\xFF"
+/* HF NetDriver signature - if found within file, it means it's a NetDriver-based binary */
+#define _HF_NETDRIVER_SIG "\x01_LIBHFUZZ_NETDRIVER_BINARY_SIGNATURE_\x02\xFF"
 
 typedef enum {
     _HF_DYNFILE_NONE = 0x0,
@@ -195,6 +197,8 @@ typedef struct {
         bool fuzzStdin;
         char* externalCommand;
         char* postExternalCommand;
+        bool netDriver;
+        bool persistent;
         uint64_t asLimit;
         uint64_t rssLimit;
         uint64_t dataLimit;
@@ -225,7 +229,6 @@ typedef struct {
     size_t mutationsMax;
     size_t maxFileSz;
     char* reportFile;
-    bool persistent;
     bool skipFeedbackOnTimeout;
     bool enableSanitizers;
     bool monitorSIGABRT;

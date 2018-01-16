@@ -17,6 +17,7 @@ __attribute__((visibility("default"))) __attribute__((used)) const char* LIBHFUZ
 __attribute__((weak))
 #endif /* !defined(__CYGWIN__) */
 int main(int argc, char** argv) {
+       /* Make sure the LIBHFUZZ_module_main (persistent) signature) is used */
     LOG_D("Current module: %s", LIBHFUZZ_module_main);
     return HonggfuzzMain(argc, argv);
 }

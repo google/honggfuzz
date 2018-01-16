@@ -160,7 +160,7 @@ bool arch_launchChild(run_t* run) {
 
     int x;
     for (x = 0; x < ARGS_MAX && x < run->global->exe.argc; x++) {
-        if (run->global->persistent || run->global->exe.fuzzStdin) {
+        if (run->global->exe.persistent || run->global->exe.fuzzStdin) {
             args[x] = run->global->exe.cmdline[x];
         } else if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
             args[x] = inputFile;
@@ -193,7 +193,7 @@ void arch_prepareParentAfterFork(run_t* fuzzer HF_ATTR_UNUSED) {
 
 void arch_reapChild(run_t* run) {
     for (;;) {
-        if (run->global->persistent) {
+        if (run->global->exe.persistent) {
             struct pollfd pfd = {
                 .fd = run->persistentSock,
                 .events = POLLIN,
@@ -212,7 +212,7 @@ void arch_reapChild(run_t* run) {
         }
 
         int status;
-        int flags = run->global->persistent ? WNOHANG : 0;
+        int flags = run->global->exe.persistent ? WNOHANG : 0;
         int ret = waitpid(run->pid, &status, flags);
         if (ret == 0) {
             continue;
@@ -230,7 +230,7 @@ void arch_reapChild(run_t* run) {
         }
 
         char strStatus[4096];
-        if (run->global->persistent && ret == run->persistentPid &&
+        if (run->global->exe.persistent && ret == run->persistentPid &&
             (WIFEXITED(status) || WIFSIGNALED(status))) {
             run->persistentPid = 0;
             if (fuzz_isTerminating() == false) {

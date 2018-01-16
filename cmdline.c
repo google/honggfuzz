@@ -57,13 +57,12 @@ static bool checkFor_FILE_PLACEHOLDER(const char* const* args) {
     return false;
 }
 
-static bool cmdlineCheckIfPersistent(const char* fname) {
+static bool cmdlineCheckBinaryType(honggfuzz_t* hfuzz) {
     int fd;
     off_t fileSz;
 
-    uint8_t* map = files_mapFile(fname, &fileSz, &fd, /* isWriteable= */ false);
+    uint8_t* map = files_mapFile(hfuzz->exe.cmdline[0], &fileSz, &fd, /* isWriteable= */ false);
     if (!map) {
-        LOG_W("Couldn't map file '%s' to check whether it's a persistent binary", fname);
         return false;
     }
     defer {
@@ -74,9 +73,15 @@ static bool cmdlineCheckIfPersistent(const char* fname) {
     };
 
     if (memmem(map, fileSz, _HF_PERSISTENT_SIG, strlen(_HF_PERSISTENT_SIG))) {
-        return true;
+        LOG_I("Persistent signature found in '%s'. Enabling persistent fuzzing mode",
+            hfuzz->exe.cmdline[0]);
+        hfuzz->exe.persistent = true;
     }
-    return false;
+    if (memmem(map, fileSz, _HF_NETDRIVER_SIG, strlen(_HF_NETDRIVER_SIG))) {
+        LOG_I("NetDriver signature found '%s'", hfuzz->exe.cmdline[0]);
+        hfuzz->exe.netDriver = true;
+    }
+    return true;
 }
 
 static const char* cmdlineYesNo(bool yes) {
@@ -107,9 +112,9 @@ static void cmdlineHelp(const char* pname, struct custom_option* opts) {
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" Use SANCOV instrumentation:");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -C -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
-    LOG_HELP(" Use persistent mode (libhfuzz/persistent.c) w/o instrumentation:");
+    LOG_HELP(" Use persistent mode (libhfuzz/*) w/o instrumentation:");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -x -- /usr/bin/djpeg_persistent_mode");
-    LOG_HELP(" Use persistent mode (libhfuzz/persistent.c) and compile-time instrumentation:");
+    LOG_HELP(" Use persistent mode (libhfuzz/*) and compile-time instrumentation:");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -- /usr/bin/djpeg_persistent_mode");
 #if defined(_HF_ARCH_LINUX)
     LOG_HELP(
@@ -152,14 +157,14 @@ rlim_t cmdlineParseRLimit(int res, const char* optarg, unsigned long mul) {
 }
 
 static bool cmdlineVerify(honggfuzz_t* hfuzz) {
-    if (!hfuzz->exe.fuzzStdin && !hfuzz->persistent &&
+    if (!hfuzz->exe.fuzzStdin && !hfuzz->exe.persistent &&
         !checkFor_FILE_PLACEHOLDER(hfuzz->exe.cmdline)) {
         LOG_E("You must specify '" _HF_FILE_PLACEHOLDER
-              "' when the -s (stdin fuzzing) or --persistent options are not set");
+              "' if the -s (stdin fuzzing) or --persistent options are not set");
         return false;
     }
 
-    if (hfuzz->exe.fuzzStdin && hfuzz->persistent) {
+    if (hfuzz->exe.fuzzStdin && hfuzz->exe.persistent) {
         LOG_E(
             "Stdin fuzzing (-s) and persistent fuzzing (-P) cannot be specified at the same time");
         return false;
@@ -242,6 +247,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .fuzzStdin = false,
                 .externalCommand = NULL,
                 .postExternalCommand = NULL,
+                .persistent = false,
+                .netDriver = false,
                 .asLimit = 0U,
                 .rssLimit = 0U,
                 .dataLimit = 0U,
@@ -266,7 +273,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .maxFileSz = 0UL,
         .mutationsMax = 0,
         .reportFile = NULL,
-        .persistent = false,
         .skipFeedbackOnTimeout = false,
         .enableSanitizers = false,
 #if defined(__ANDROID__)
@@ -561,7 +567,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->exe.clearEnv = true;
                 break;
             case 'P':
-                hfuzz->persistent = true;
+                hfuzz->exe.persistent = true;
                 break;
             case 'T':
                 hfuzz->timing.tmoutVTALRM = true;
@@ -652,9 +658,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         cmdlineUsage(argv[0], custom_opts);
         return false;
     }
-    if (!hfuzz->persistent && cmdlineCheckIfPersistent(hfuzz->exe.cmdline[0])) {
-        LOG_I("Persistent signature detected, assume it's a persistent fuzzing-mode binary");
-        hfuzz->persistent = true;
+    if (!cmdlineCheckBinaryType(hfuzz)) {
+        LOG_W("Couldn't test binary for signatures");
     }
     if (!cmdlineVerify(hfuzz)) {
         return false;

@@ -391,7 +391,8 @@ libhfcommon/ns.o: libhfcommon/common.h libhfcommon/log.h
 libhfcommon/util.o: libhfcommon/util.h libhfcommon/common.h
 libhfcommon/util.o: libhfcommon/files.h libhfcommon/common.h
 libhfcommon/util.o: libhfcommon/log.h
-libhfnetdriver/netdriver.o: libhfnetdriver/netdriver.h libhfcommon/common.h
+libhfnetdriver/netdriver.o: libhfnetdriver/netdriver.h honggfuzz.h
+libhfnetdriver/netdriver.o: libhfcommon/util.h libhfcommon/common.h
 libhfnetdriver/netdriver.o: libhfcommon/files.h libhfcommon/common.h
 libhfnetdriver/netdriver.o: libhfcommon/log.h libhfcommon/ns.h
 libhfuzz/instrument.o: libhfuzz/instrument.h honggfuzz.h libhfcommon/util.h

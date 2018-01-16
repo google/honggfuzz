@@ -307,7 +307,7 @@ bool arch_launchChild(run_t* run) {
 
     int x;
     for (x = 0; x < ARGS_MAX && x < run->global->exe.argc; x++) {
-        if (run->global->persistent || run->global->exe.fuzzStdin) {
+        if (run->global->exe.persistent || run->global->exe.fuzzStdin) {
             args[x] = run->global->exe.cmdline[x];
         } else if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
             args[x] = inputFile;

@@ -125,7 +125,7 @@ const char* subproc_StatusToStr(int status, char* str, size_t len) {
 }
 
 bool subproc_persistentModeRoundDone(run_t* run) {
-    if (!run->global->persistent) {
+    if (!run->global->exe.persistent) {
         return false;
     }
     uint8_t rcv;
@@ -207,7 +207,7 @@ static bool subproc_PrepareExecv(run_t* run) {
     }
 
     /* The input file to _HF_INPUT_FD */
-    if (run->global->persistent && dup2(run->dynamicFileFd, _HF_INPUT_FD) == -1) {
+    if (run->global->exe.persistent && dup2(run->dynamicFileFd, _HF_INPUT_FD) == -1) {
         PLOG_E("dup2('%d', _HF_INPUT_FD='%d')", run->dynamicFileFd, _HF_INPUT_FD);
         return false;
     }
@@ -218,7 +218,7 @@ static bool subproc_PrepareExecv(run_t* run) {
         PLOG_W("sigprocmask(empty_set)");
     }
 
-    if (!run->global->persistent) {
+    if (!run->global->exe.persistent) {
         if ((run->dynamicFileCopyFd = files_writeBufToTmpFile(
                  run->global->io.workDir, run->dynamicFile, run->dynamicFileSz, 0)) == -1) {
             LOG_E("Couldn't save data to a temporary file");
@@ -241,7 +241,7 @@ static bool subproc_New(run_t* run) {
     run->tmOutSignaled = false;
 
     int sv[2];
-    if (run->global->persistent) {
+    if (run->global->exe.persistent) {
         if (run->persistentSock != -1) {
             close(run->persistentSock);
         }
@@ -280,7 +280,7 @@ static bool subproc_New(run_t* run) {
         alarm(1);
         signal(SIGALRM, SIG_DFL);
 
-        if (run->global->persistent) {
+        if (run->global->exe.persistent) {
             if (dup2(sv[1], _HF_PERSISTENT_FD) == -1) {
                 PLOG_F("dup2('%d', '%d')", sv[1], _HF_PERSISTENT_FD);
             }
@@ -304,7 +304,7 @@ static bool subproc_New(run_t* run) {
     LOG_D("Launched new process, PID: %d, thread: %" PRId32 " (concurrency: %zd)", run->pid,
         run->fuzzNo, run->global->threads.threadsMax);
 
-    if (run->global->persistent) {
+    if (run->global->exe.persistent) {
         close(sv[1]);
         LOG_I("Persistent mode: Launched new persistent PID: %d", (int)run->pid);
         run->persistentPid = run->pid;
@@ -325,7 +325,7 @@ bool subproc_Run(run_t* run) {
 
     arch_prepareParent(run);
 
-    if (run->global->persistent && !subproc_persistentSendFileIndicator(run)) {
+    if (run->global->exe.persistent && !subproc_persistentSendFileIndicator(run)) {
         LOG_W("Could not send file size to the persistent process");
         kill(run->persistentPid, SIGKILL);
     }

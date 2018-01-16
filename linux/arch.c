@@ -59,7 +59,7 @@
 #include "subproc.h"
 
 static inline bool arch_shouldAttach(run_t* run) {
-    if (run->global->persistent && run->linux.attachedPid == run->pid) {
+    if (run->global->exe.persistent && run->linux.attachedPid == run->pid) {
         return false;
     }
     if (run->global->linux.pid > 0 && run->linux.attachedPid == run->global->linux.pid) {
@@ -156,7 +156,7 @@ bool arch_launchChild(run_t* run) {
 
     int x = 0;
     for (x = 0; x < ARGS_MAX && x < run->global->exe.argc; x++) {
-        if (run->global->persistent || run->global->exe.fuzzStdin) {
+        if (run->global->exe.persistent || run->global->exe.fuzzStdin) {
             args[x] = run->global->exe.cmdline[x];
         } else if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
             args[x] = inputFile;
@@ -172,7 +172,7 @@ bool arch_launchChild(run_t* run) {
     args[x++] = NULL;
 
     LOG_D("Launching '%s' on file '%s'", args[0],
-        run->global->persistent ? "PERSISTENT_MODE" : inputFile);
+        run->global->exe.persistent ? "PERSISTENT_MODE" : inputFile);
 
     /* alarms persist across execve(), so disable it here */
     alarm(0);
@@ -195,7 +195,7 @@ bool arch_launchChild(run_t* run) {
 
 void arch_prepareParentAfterFork(run_t* run) {
     /* Parent */
-    if (run->global->persistent) {
+    if (run->global->exe.persistent) {
         const struct f_owner_ex fown = {
             .type = F_OWNER_TID,
             .pid = syscall(__NR_gettid),
@@ -299,7 +299,7 @@ static bool arch_checkWait(run_t* run) {
         LOG_D("PID '%d' returned with status: %s", pid,
             subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
 
-        if (run->global->persistent && pid == run->persistentPid &&
+        if (run->global->exe.persistent && pid == run->persistentPid &&
             (WIFEXITED(status) || WIFSIGNALED(status))) {
             arch_traceAnalyze(run, status, pid);
             run->persistentPid = 0;
