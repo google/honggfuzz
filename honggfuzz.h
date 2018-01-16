@@ -212,6 +212,7 @@ typedef struct {
         time_t timeStart;
         time_t runEndTime;
         time_t tmOut;
+        time_t lastCovUpdate;
         bool tmoutVTALRM;
     } timing;
     bool useScreen;

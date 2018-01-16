@@ -100,6 +100,25 @@ static unsigned getCpuUse(long num_cpu) {
     return cpuUse * 100 / sysconf(_SC_CLK_TCK);
 }
 
+static void display_Duration(time_t start, char* buf, size_t bufSz) {
+    unsigned long elapsed_second = time(NULL) - start;
+
+    unsigned int day, hour, min, second;
+    if (elapsed_second < 24 * 3600) {
+        hour = elapsed_second / 3600;
+        min = (elapsed_second - 3600 * hour) / 60;
+        second = elapsed_second - hour * 3600 - min * 60;
+        snprintf(buf, bufSz, "%u hrs %u min %u sec", hour, min, second);
+    } else {
+        day = elapsed_second / 24 / 3600;
+        elapsed_second = elapsed_second - day * 24 * 3600;
+        hour = elapsed_second / 3600;
+        min = (elapsed_second - 3600 * hour) / 60;
+        second = elapsed_second - hour * 3600 - min * 60;
+        snprintf(buf, bufSz, "%u days %u hrs %u min %u sec", day, hour, min, second);
+    }
+}
+
 static void display_displayLocked(honggfuzz_t* hfuzz) {
     static bool firstDisplay = true;
     if (firstDisplay) {
@@ -107,24 +126,10 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         firstDisplay = false;
     }
 
-    unsigned long elapsed_second = (unsigned long)(time(NULL) - hfuzz->timing.timeStart);
-    unsigned int day, hour, min, second;
-    char time_elapsed_str[64];
-    if (elapsed_second < 24 * 3600) {
-        hour = elapsed_second / 3600;
-        min = (elapsed_second - 3600 * hour) / 60;
-        second = elapsed_second - hour * 3600 - min * 60;
-        snprintf(
-            time_elapsed_str, sizeof(time_elapsed_str), "%u hrs %u min %u sec", hour, min, second);
-    } else {
-        day = elapsed_second / 24 / 3600;
-        elapsed_second = elapsed_second - day * 24 * 3600;
-        hour = elapsed_second / 3600;
-        min = (elapsed_second - 3600 * hour) / 60;
-        second = elapsed_second - hour * 3600 - min * 60;
-        snprintf(time_elapsed_str, sizeof(time_elapsed_str), "%u days %u hrs %u min %u sec", day,
-            hour, min, second);
-    }
+    char startStr[64];
+    display_Duration(ATOMIC_GET(hfuzz->timing.timeStart), startStr, sizeof(startStr));
+    char lastCovStr[64];
+    display_Duration(ATOMIC_GET(hfuzz->timing.lastCovUpdate), lastCovStr, sizeof(lastCovStr));
 
     size_t curr_exec_cnt = ATOMIC_GET(hfuzz->cnts.mutationsCnt);
     /*
@@ -174,7 +179,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
             break;
     }
 
-    display_put("\n    Run Time : " ESC_BOLD "%s" ESC_RESET, time_elapsed_str);
+    display_put("\n    Run Time : " ESC_BOLD "%s" ESC_RESET, startStr);
     if (hfuzz->timing.runEndTime > 0) {
         time_t time_left = hfuzz->timing.runEndTime - time(NULL);
         if (time_left < 0) {
@@ -211,7 +216,10 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     display_put("       Speed : " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET
                 "/sec"
                 " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n",
-        exec_per_sec, elapsed_second ? (curr_exec_cnt / elapsed_second) : 0);
+        exec_per_sec,
+        (time(NULL) - hfuzz->timing.timeStart)
+            ? (curr_exec_cnt / (time(NULL) - hfuzz->timing.timeStart))
+            : 0);
 
     uint64_t crashesCnt = ATOMIC_GET(hfuzz->cnts.crashesCnt);
     /* colored the crash count as red when exist crash */
@@ -222,9 +230,9 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         crashesCnt > 0 ? ESC_RED : "", hfuzz->cnts.crashesCnt, crashesCnt > 0 ? ESC_RED : "",
         ATOMIC_GET(hfuzz->cnts.uniqueCrashesCnt), ATOMIC_GET(hfuzz->cnts.blCrashesCnt),
         ATOMIC_GET(hfuzz->cnts.verifiedCrashesCnt));
-    display_put("    Timeouts : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
-                " [%" _HF_MONETARY_MOD "zu sec.]\n",
-        ATOMIC_GET(hfuzz->cnts.timeoutedCnt), hfuzz->timing.tmOut);
+    display_put("    Timeouts : [%" _HF_MONETARY_MOD "zu sec] " ESC_BOLD "%" _HF_MONETARY_MOD
+                "zu" ESC_RESET ", Last Cov Update: " ESC_BOLD "%s\n" ESC_RESET,
+        ATOMIC_GET(hfuzz->cnts.timeoutedCnt), hfuzz->timing.tmOut, lastCovStr);
     /* Feedback data sources. Common headers. */
     display_put(" Corpus Size : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
                 ", max file size: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",

@@ -111,6 +111,8 @@ static bool fuzz_writeCovFile(const char* dir, const uint8_t* data, size_t len) 
 }
 
 static void fuzz_addFileToFileQ(honggfuzz_t* hfuzz, const uint8_t* data, size_t len) {
+    ATOMIC_SET(hfuzz->timing.lastCovUpdate, time(NULL));
+
     struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t));
     dynfile->size = len;
     dynfile->data = (uint8_t*)util_Malloc(len);

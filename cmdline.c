@@ -254,6 +254,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .runEndTime = 0,
                 .tmOut = 10,
                 .tmoutVTALRM = false,
+                .lastCovUpdate = time(NULL),
             },
         .cmdline_txt[0] = '\0',
         .useScreen = true,
