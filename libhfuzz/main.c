@@ -1,4 +1,5 @@
 #include "honggfuzz.h"
+#include "libhfcommon/log.h"
 #include "libhfuzz/persistent.h"
 
 /*
@@ -16,5 +17,6 @@ __attribute__((visibility("default"))) __attribute__((used)) const char* LIBHFUZ
 __attribute__((weak))
 #endif /* !defined(__CYGWIN__) */
 int main(int argc, char** argv) {
+    LOG_D("Current module: %s", LIBHFUZZ_module_main);
     return HonggfuzzMain(argc, argv);
 }
