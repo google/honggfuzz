@@ -154,6 +154,7 @@ static bool subproc_PrepareExecv(run_t* run) {
     /*
      * The address space limit. If big enough - roughly the size of RAM used
      */
+#ifdef RLIMIT_AS
     if (run->global->exe.asLimit) {
         const struct rlimit rl = {
             .rlim_cur = run->global->exe.asLimit * 1024ULL * 1024ULL,
@@ -163,7 +164,8 @@ static bool subproc_PrepareExecv(run_t* run) {
             PLOG_W("Couldn't enforce the RLIMIT_AS resource limit, ignoring");
         }
     }
-#if defined(RLIMIT_RSS)
+#endif /* ifdef RLIMIT_AS */
+#ifdef RLIMIT_RSS
     if (run->global->exe.rssLimit) {
         const struct rlimit rl = {
             .rlim_cur = run->global->exe.rssLimit * 1024ULL * 1024ULL,
@@ -173,7 +175,8 @@ static bool subproc_PrepareExecv(run_t* run) {
             PLOG_W("Couldn't enforce the RLIMIT_RSS resource limit, ignoring");
         }
     }
-#endif /* defined(RLIMIT_RSS) */
+#endif /* ifdef RLIMIT_RSS */
+#ifdef RLIMIT_DATA
     if (run->global->exe.dataLimit) {
         const struct rlimit rl = {
             .rlim_cur = run->global->exe.dataLimit * 1024ULL * 1024ULL,
@@ -183,6 +186,7 @@ static bool subproc_PrepareExecv(run_t* run) {
             PLOG_W("Couldn't enforce the RLIMIT_DATA resource limit, ignoring");
         }
     }
+#endif /* ifdef RLIMIT_DATA */
 
     if (run->global->exe.clearEnv) {
         environ = NULL;
