@@ -677,7 +677,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         cmdlineYesNo(hfuzz->exe.fuzzStdin), cmdlineYesNo(hfuzz->io.saveUnique),
         hfuzz->mutationsPerRun,
         hfuzz->exe.externalCommand == NULL ? "NULL" : hfuzz->exe.externalCommand,
-        (int)hfuzz->timing.runEndTime, hfuzz->timing.tmOut, hfuzz->mutationsMax,
+        (int)hfuzz->timing.runEndTime, (long)hfuzz->timing.tmOut, hfuzz->mutationsMax,
         hfuzz->threads.threadsMax, hfuzz->io.fileExtn, hfuzz->exe.asLimit, hfuzz->exe.rssLimit,
         hfuzz->exe.dataLimit, hfuzz->exe.cmdline[0], hfuzz->linux.pid,
         cmdlineYesNo(hfuzz->monitorSIGABRT));
