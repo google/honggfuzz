@@ -359,9 +359,11 @@ static bool fuzz_fetchInput(run_t* run) {
     }
 
     if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MAIN) {
-        if (run->global->exe.externalCommand && !input_prepareExternalFile(run)) {
-            LOG_E("input_prepareFileExternally() failed");
-            return false;
+        if (run->global->exe.externalCommand) {
+            if (!input_prepareExternalFile(run)) {
+                LOG_E("input_prepareFileExternally() failed");
+                return false;
+            }
         } else if (!input_prepareDynamicInput(run)) {
             LOG_E("input_prepareFileDynamically() failed");
             return false;
@@ -369,9 +371,11 @@ static bool fuzz_fetchInput(run_t* run) {
     }
 
     if (fuzz_getState(run->global) == _HF_STATE_STATIC) {
-        if (run->global->exe.externalCommand && !input_prepareExternalFile(run)) {
-            LOG_E("input_prepareFileExternally() failed");
-            return false;
+        if (run->global->exe.externalCommand) {
+            if (!input_prepareExternalFile(run)) {
+                LOG_E("input_prepareFileExternally() failed");
+                return false;
+            }
         } else if (!input_prepareStaticFile(run, true /* rewind */)) {
             LOG_E("input_prepareFile() failed");
             return false;
