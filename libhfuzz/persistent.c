@@ -39,9 +39,8 @@ __attribute__((constructor)) static void initializePersistent(void) {
     }
     if ((inputFile = mmap(NULL, _HF_INPUT_MAX_SIZE, PROT_READ, MAP_SHARED, _HF_INPUT_FD, 0)) ==
         MAP_FAILED) {
-        PLOG_W("mmap(fd=%d, size=%zu) of the input file failed", _HF_INPUT_FD,
+        PLOG_F("mmap(fd=%d, size=%zu) of the input file failed", _HF_INPUT_FD,
             (size_t)_HF_INPUT_MAX_SIZE);
-        inputFile = NULL;
     }
 }
 

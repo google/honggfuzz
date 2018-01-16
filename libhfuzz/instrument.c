@@ -63,7 +63,8 @@ __attribute__((constructor)) static void initializeInstrument(void) {
     }
     if ((feedback = mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED,
              _HF_BITMAP_FD, 0)) == MAP_FAILED) {
-        PLOG_F("mmap of the feedback structure failed");
+        PLOG_F("mmap(fd=%d, size=%zu) of the feedback structure failed", _HF_BITMAP_FD,
+            sizeof(feedback_t));
     }
 
     /* Reset coverage counters to their initial state */
