@@ -347,6 +347,10 @@ uint8_t subproc_System(run_t* run, const char* const argv[]) {
     if (!pid) {
         logMutexReset();
 
+        setsid();
+        util_closeStdio(
+            /* close_stdin= */ true, /* close_stdout= */ false, /* close_stderr= */ false);
+
         sigset_t sset;
         sigemptyset(&sset);
         if (sigprocmask(SIG_SETMASK, &sset, NULL) == -1) {
