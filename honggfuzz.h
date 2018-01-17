@@ -330,7 +330,23 @@ typedef struct {
     } linux;
 } run_t;
 
-/* Go-style defer implementation */
+/*
+ * Go-style defer scoped implementation
+ * Example of use:
+ *
+ * {
+ *   int fd = open(fname, O_RDONLY);
+ *   if (fd == -1) {
+ *     error(....);
+ *     return;
+ *   }
+ *   defer { close(fd; };
+ *   ssize_t sz = read(fd, buf, sizeof(buf));
+ *   ...
+ *   ...
+ * }
+ *
+ * */
 #define __STRMERGE(a, b) a##b
 #define _STRMERGE(a, b) __STRMERGE(a, b)
 #ifdef __clang__
@@ -355,6 +371,7 @@ static void __attribute__((unused)) __clang_cleanup_func(void (^*dfunc)(void)) {
 #define defer _DEFER(a, __COUNTER__)
 #endif /* __clang */
 
+/* Block scoped mutexes */
 #define MX_SCOPED_LOCK(m) \
     MX_LOCK(m);           \
     defer {               \
