@@ -332,6 +332,9 @@ typedef struct {
 
 /*
  * Go-style defer scoped implementation
+ *
+ * When compiled with clang, use: -fblocks -lBlocksRuntime
+ *
  * Example of use:
  *
  * {
