@@ -230,9 +230,9 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         crashesCnt > 0 ? ESC_RED : "", hfuzz->cnts.crashesCnt, crashesCnt > 0 ? ESC_RED : "",
         ATOMIC_GET(hfuzz->cnts.uniqueCrashesCnt), ATOMIC_GET(hfuzz->cnts.blCrashesCnt),
         ATOMIC_GET(hfuzz->cnts.verifiedCrashesCnt));
-    display_put("    Timeouts : [%" _HF_MONETARY_MOD "zu sec] " ESC_BOLD "%" _HF_MONETARY_MOD
-                "zu" ESC_RESET ", Last Cov Update: " ESC_BOLD "%s\n" ESC_RESET,
-        ATOMIC_GET(hfuzz->cnts.timeoutedCnt), hfuzz->timing.tmOut, lastCovStr);
+    display_put("    Timeouts : [%lu sec] " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
+                ", Last Cov Update: " ESC_BOLD "%s\n" ESC_RESET,
+        (unsigned long)hfuzz->timing.tmOut, ATOMIC_GET(hfuzz->cnts.timeoutedCnt), lastCovStr);
     /* Feedback data sources. Common headers. */
     display_put(" Corpus Size : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
                 ", max file size: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET "\n",
