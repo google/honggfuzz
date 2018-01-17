@@ -340,13 +340,14 @@ typedef struct {
  *     error(....);
  *     return;
  *   }
- *   defer { close(fd; };
+ *   defer { close(fd); };
  *   ssize_t sz = read(fd, buf, sizeof(buf));
  *   ...
  *   ...
  * }
  *
- * */
+ */
+
 #define __STRMERGE(a, b) a##b
 #define _STRMERGE(a, b) __STRMERGE(a, b)
 #ifdef __clang__
@@ -361,7 +362,9 @@ static void __attribute__((unused)) __clang_cleanup_func(void (^*dfunc)(void)) {
 #else /* __has_extension(blocks) */
 #define defer UNIMPLEMENTED - NO - SUPPORT - FOR - BLOCKS - IN - YOUR - CLANG - ENABLED
 #endif /*  __has_extension(blocks) */
-#else  /* __clang */
+
+#else  /* !__clang__, e.g.: gcc */
+
 #define __block
 #define _DEFER(a, count)                                                                      \
     auto void _STRMERGE(__defer_f_, count)(void* _defer_arg __attribute__((unused)));         \
@@ -369,7 +372,7 @@ static void __attribute__((unused)) __clang_cleanup_func(void (^*dfunc)(void)) {
         __attribute__((unused));                                                              \
     void _STRMERGE(__defer_f_, count)(void* _defer_arg __attribute__((unused)))
 #define defer _DEFER(a, __COUNTER__)
-#endif /* __clang */
+#endif /* __clang__ */
 
 /* Block scoped mutexes */
 #define MX_SCOPED_LOCK(m) \
