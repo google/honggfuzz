@@ -56,7 +56,7 @@
 #define _HF_MONETARY_MOD ""
 #endif
 
-static void display_put(const char* fmt, ...) {
+__attribute__((format(printf, 1, 2))) static void display_put(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     vdprintf(logFd(), fmt, args);
@@ -122,16 +122,18 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         firstDisplay = false;
     }
 
+    const time_t curr_time = time(NULL);
+    const time_t elapsed_sec = curr_time - hfuzz->timing.timeStart;
+
     char lastCovStr[64];
     display_Duration(
-        time(NULL) - ATOMIC_GET(hfuzz->timing.lastCovUpdate), lastCovStr, sizeof(lastCovStr));
+        curr_time - ATOMIC_GET(hfuzz->timing.lastCovUpdate), lastCovStr, sizeof(lastCovStr));
     char timeStr[64];
     if (ATOMIC_GET(hfuzz->timing.runEndTime)) {
         display_Duration(
-            ATOMIC_GET(hfuzz->timing.runEndTime) - time(NULL), timeStr, sizeof(timeStr));
+            ATOMIC_GET(hfuzz->timing.runEndTime) - curr_time, timeStr, sizeof(timeStr));
     } else {
-        display_Duration(
-            time(NULL) - ATOMIC_GET(hfuzz->timing.timeStart), timeStr, sizeof(timeStr));
+        display_Duration(elapsed_sec, timeStr, sizeof(timeStr));
     }
 
     size_t curr_exec_cnt = ATOMIC_GET(hfuzz->cnts.mutationsCnt);
@@ -150,16 +152,16 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     }
 
     static size_t prev_exec_cnt = 0UL;
-    uintptr_t exec_per_sec = curr_exec_cnt - prev_exec_cnt;
+    size_t exec_per_sec = curr_exec_cnt - prev_exec_cnt;
     prev_exec_cnt = curr_exec_cnt;
 
     /* The lock should be acquired before any output is printed on the screen */
     MX_SCOPED_LOCK(logMutexGet());
 
     display_put(ESC_NAV(13, 1) ESC_CLEAR_ABOVE ESC_NAV(1, 1));
-    display_put("-----------------------[ " ESC_BOLD "HONGGFUZZ" ESC_RESET " / " ESC_BOLD
-                "v%s" ESC_RESET " ]---[" ESC_BOLD "%31s " ESC_RESET "]\n",
-        PROG_VERSION, timeStr);
+    display_put("---------------------[" ESC_BOLD "%31s " ESC_RESET "]-------/ " ESC_BOLD
+                "%s %s" ESC_RESET " /-\n",
+        timeStr, PROG_NAME, PROG_VERSION);
     display_put("  Iterations : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
     if (hfuzz->mutationsMax) {
@@ -195,16 +197,14 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     }
     unsigned cpuUse = getCpuUse(num_cpu);
     display_put("     Threads : " ESC_BOLD "%zu" ESC_RESET ", CPUs: " ESC_BOLD "%ld" ESC_RESET
-                ", CPU%: " ESC_BOLD "%u" ESC_RESET "%% (" ESC_BOLD "%u" ESC_RESET "%%/CPU)\n",
+                ", CPU%%: " ESC_BOLD "%u" ESC_RESET "%% (" ESC_BOLD "%lu" ESC_RESET "%%/CPU)\n",
         hfuzz->threads.threadsMax, num_cpu, cpuUse, cpuUse / num_cpu);
 
-    display_put("       Speed : " ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET
+    size_t tot_exec_per_sec = elapsed_sec ? (curr_exec_cnt / elapsed_sec) : 0;
+    display_put("       Speed : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
                 "/sec"
                 " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n",
-        exec_per_sec,
-        (time(NULL) - hfuzz->timing.timeStart)
-            ? (curr_exec_cnt / (time(NULL) - hfuzz->timing.timeStart))
-            : 0);
+        exec_per_sec, tot_exec_per_sec);
 
     uint64_t crashesCnt = ATOMIC_GET(hfuzz->cnts.crashesCnt);
     /* colored the crash count as red when exist crash */
@@ -219,9 +219,9 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
                 "\n" ESC_RESET,
         (unsigned long)hfuzz->timing.tmOut, ATOMIC_GET(hfuzz->cnts.timeoutedCnt));
     /* Feedback data sources. Common headers. */
-    display_put(" Corpus Size : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
-                " entries, max size: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
-                ", input dir: " ESC_BOLD "%zu" ESC_RESET " files\n",
+    display_put(" Corpus Size : entries: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
+                ", max size: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ", input dir: " ESC_BOLD
+                "%zu" ESC_RESET " files\n",
         hfuzz->dynfileqCnt, hfuzz->maxFileSz, ATOMIC_GET(hfuzz->io.fileCnt));
     display_put("  Cov Update : " ESC_BOLD "%s" ESC_RESET " ago\n" ESC_RESET, lastCovStr);
     display_put("    Coverage :");
