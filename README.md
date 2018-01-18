@@ -15,9 +15,13 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
   * [Can fuzz remote/standalone long-lasting processes](https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md) (e.g. network servers like __Apache's httpd__ and __ISC's bind__), though the [persistent fuzzing mode](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md) is suggested instead: as it's faster and multiple instances of a service can be fuzzed at once in this mode
   * It comes with the __[examples](https://github.com/google/honggfuzz/tree/master/examples) directory__, consisting of real world fuzz setups for widely-used software (e.g. Apache and OpenSSL)
 
+---
+
 <p align="center">
  <img src="https://raw.githubusercontent.com/google/honggfuzz/master/screenshot-honggfuzz-1.png" width="75%" height="75%">
 </p>
+
+---
 
 **Code**
 
