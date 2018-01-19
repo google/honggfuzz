@@ -354,6 +354,7 @@ typedef struct {
 #define __STRMERGE(a, b) a##b
 #define _STRMERGE(a, b) __STRMERGE(a, b)
 #ifdef __clang__
+#if __has_extension(blocks)
 static void __attribute__((unused)) __clang_cleanup_func(void (^*dfunc)(void)) {
     (*dfunc)();
 }
@@ -362,7 +363,10 @@ static void __attribute__((unused)) __clang_cleanup_func(void (^*dfunc)(void)) {
     void (^_STRMERGE(__defer_f_, __COUNTER__))(void) \
         __attribute__((cleanup(__clang_cleanup_func))) __attribute__((unused)) = ^
 
-#else /* !__clang__, e.g.: gcc */
+#else /* __has_extension(blocks) */
+#define defer UNIMPLEMENTED - NO - SUPPORT - FOR - BLOCKS - IN - YOUR - CLANG - ENABLED
+#endif /*  __has_extension(blocks) */
+#else  /* !__clang__, e.g.: gcc */
 
 #define __block
 #define _DEFER(a, count)                                                                      \
