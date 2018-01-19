@@ -1,0 +1,11 @@
+OPTIONS * HTTP/1.1
+host:Authorization:1
+connection: Upgrade, HTTP2-Settings
+upgrade: h2c
+http2-settings: AAMAAABkAAQAAP__
+accept: */*
+user-agent: nghttp2/1.25.0
+
+PRI * HTTP/2.0
+
+S

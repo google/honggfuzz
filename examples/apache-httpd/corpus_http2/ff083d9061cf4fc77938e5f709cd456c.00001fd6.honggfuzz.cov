@@ -1,0 +1,347 @@
+GET /cgi-bin/test-cgi HTTP/1.1
+host: 127.0.0.1:8080
+connection: Upgrade, HTTP2-Settings
+upgrade: h2c
+http2-settings: AAMAAABkAAQAAP__
+accept: */*
+user-agent: GET /index.htm'l HTTP/1.1
+If-Modified-Since:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwe:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 124.ve
+
+GET /inde««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««««x.html HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.hvml HTTP/1.1
+If-Modhfie!-Sin)e:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified=minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 114.ve
+
+GET /index.hdml HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwd:uSat-P/1.1
+^f-Modyfied-Since:uSat- 2¹ Oct 2993 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0* 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwe:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwe:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct ml HTTP/1.1
+If-Modhfied-Sinwe:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.hvml HTTP/1.1
+If-Modhfied-Sinwe:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 114.ve
+
+GET /index.html HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odifIfce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.hvml HTTP/1.1
+If-Modhfie!-Sin)e:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified=minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 114.ve
+
+GET /index.hdml HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwd:uSat-P/1.1
+^f-Modyfied-Since:uSat- 2¹ Oct 2993 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0* 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwe:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 124.ve
+
+GET /intxmhdl.e HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwe:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct ml HTTP/1.1
+If-Modhfied-Sinwe:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.hvml HTTP/1.1
+If-Modhfied-Sinwe:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 114.ve
+
+GET /index.html HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwd:uSat-P/1.1
+^f-Modyfied-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0* 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwe:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwe:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 114.ve
+
+GET /index.html HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwd:uSat-P/1.1
+^f-Modyfied-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1dir-Modified-Sinde:t:0*/*
+Host: 124.ve
+GET /index.html HTTP/1.1
+If-ModifiedConnec2994 19:64nghttp2/1:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 114.ve
+
+GET /index.html HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwd:uSat-P/1.1
+^f-Modyfied-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 124.ve
+GET /index.html HTTP/1.1
+If-ModifiedConnection: Kee.2
+;Xpgct:     ÿÿÿÿÿÿ€tion: Kee¿-A)
+Upgrade:%,2
+Host: 127.0.0.1:8080
+Connebtion: [eep-Alivå
+
+||¾¸:ññiÐ‹M> ñ þV> ñ þV> ñ þ>>>>>>>>ÛB„Ø•€8¶______/*
+Host: 12ied-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwd:uSat-P/1.1
+^f-Modyfied-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0* 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwe:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwe:uSat-P/1.1
+^f-Modified-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */.19.0*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 114.ve
+
+GET /index.html HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwd:uSat-P/1.1
+^f-Modyfied-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1dir-Modified-Sinde:t:0*/*
+Host: 124.ve
+GET /index.html HTTP/1.1
+If-ModifiedConnec2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 114.ve
+
+GET /index.html HTTP/1.1
+Ifce:uSat- 29 Oct 2994 19:44:39 EMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modhfied-Sinwd:uSat-P/1.1
+^f-Modyfied-Since:uSat- 2¹ Oct 2994 19:64:39 GMTe:t: */*
+odified-minde:t:0*/*
+Host: 124.ve
+
+GET /index.html HTTP/1.1
+If-Modified-Sinde:t:0*/*
+Host: 124.ve
+GET /index.html HTTP/1.1
+If-ModifiedConnection: Kee.2
+;Xpgct:     ÿÿÿÿÿÿ€tion: Kee¿-A)
+Upgrade:%,2
+Host: 127.0.0.1:8080
+Connebtion: [eep-Alivå
+
+||¾¸:ññiÐ‹M> ñ þV> ñ þV> ñ þ>>>>>>>>ÛB„Ø•€8¶______/*
+Host: 124.ve
+
+
+GET /index.html HTTP/1.1
+If-ModifiedConnection: Kee.2
+EXpgct:     ÿÿÿÿÿÿ€tion: Kee¿-A)
+Upgrade:%,2
+Host: 127.0.0.1:8080
+Connebtion: [eep-Alivå
+
+||¾¸:ññiÐ‹M> ñ þV> ñ þV> ñ þ>>>>>>>>ÛB„Ø•€8¶_____________       _____#¹Ì

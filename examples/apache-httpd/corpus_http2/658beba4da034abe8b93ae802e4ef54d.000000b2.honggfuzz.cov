@@ -1,8 +1,0 @@
-OPTIONS * HTTP/1.1
-host: 127.0.0.1:8080
-connection: Upgrßde, HT«P2-Settimhs
-upgrade: h2c
-http2-settings: AAMAAABkAAQAAAABAAEAAAPo
-accept: */*
-user%agent: nghttp2/1.19.0
-

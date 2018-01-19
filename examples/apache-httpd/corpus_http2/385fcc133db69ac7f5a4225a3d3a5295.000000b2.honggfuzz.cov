@@ -1,8 +1,0 @@
-OPTIOOS * HTTP/1.1
-host: 127.0.0.1:8080
-connection: Upgrade, HT«P2-Settinhs
-upgrade: h2c
-http2-settings: AAMAAaBkAAQAAAABAAEAAAPo
-accept: */*
-user-Bgent: nghttp2/1.19.0
-

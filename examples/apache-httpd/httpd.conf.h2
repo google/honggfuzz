@@ -5,10 +5,13 @@ CacheEnable socache /
 #CacheSocache shmcb:/tmp/data
 Timeout 1
 KeepAlive On
-MaxKeepAliveRequests 1000
+MaxKeepAliveRequests 16
 MaxConnectionsPerChild 0
-ServerLimit 20000
-MaxRequestWorkers 20000
+ServerLimit 1024
+MaxRequestWorkers 16
+StartServers 1
+ThreadLimit 4
+ThreadsPerChild 4
 ListenBacklog 1023
 KeepAliveTimeout 5
 HostnameLookups Off
@@ -21,8 +24,8 @@ H2Direct On
 H2EarlyHints On
 H2Push On
 H2MaxSessionStreams 4096
-H2MinWorkers 128
-H2MaxWorkers 512
+H2MinWorkers 1
+H2MaxWorkers 4
 H2ModernTLSOnly off
 H2PushDiarySize 4096
 H2SerializeHeaders on
@@ -30,7 +33,7 @@ H2StreamMaxMemSize 524288
 H2TLSCoolDownSecs 0
 H2Upgrade On
 H2CopyFiles On
-MaxMemFree 1024
+MaxMemFree 4096
 ServerTokens Full
 TraceEnable on
 ExtendedStatus On
@@ -77,8 +80,8 @@ Header set Set-Cookie testcookie "expr=-z %{req:Cookie}"
 	AllowOverride None
 </Directory>
 <Directory /home/jagger/fuzz/apache/dist/cgi-bin>
-	Options All MultiViews
-	AllowOverride None
+       Options All MultiViews
+       AllowOverride None
 </Directory>
 <Location "/server-status">
     SetHandler server-status
@@ -88,9 +91,9 @@ Header set Set-Cookie testcookie "expr=-z %{req:Cookie}"
     AuthDigestProvider file
     AuthUserFile "/home/jagger/fuzz/apache/dist/digest_pw"
     Require valid-user
-	<Limit OPTIONS>
-  		Require host localhost
-	</Limit>
+       <Limit OPTIONS>
+               Require host localhost
+       </Limit>
 </Location>
 <LocationMatch "/error/(?<NUMBER>[0-9]+)">
     Redirect permanent "/%{env:MATCH_NUMBER}.html"

@@ -1,0 +1,10 @@
+OPTIONS * HTTP/1.1
+host: 127.0.0.1:8∞÷÷÷÷÷÷÷÷÷÷÷ion: Upgrade, HTTP2-Settingsst: 127.0.0.1:8∞80
+connection: Upgrade, HTTP2-Settingsst: 127.0.0.1:8∞80
+connection: Upgrade, HTTP2-Settings
+upgrade: h2c
+http2-settings: AAMAAABkAAQAAAABAAEAAAPo
+accept: */*
+-agent: nghttp2/1.19.0
+
+AppA

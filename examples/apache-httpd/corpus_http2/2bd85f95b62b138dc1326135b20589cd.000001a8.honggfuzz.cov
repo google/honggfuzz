@@ -1,0 +1,10 @@
+GET /dir/ HTTP/1.1
+Host: 127.0.0.1:8080
+Connection: keep-alife
+Cache-Control:S-ax-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/(Ä7.36 (KHTML, like Gecko) Chrome/59.0.3071.109  afari/537.36
+Accept: text/x-ml,applicatioÿ~xhtml+xml,application/xmr).=0.9,image/webp,image'apng,*/*;q=0.8
+DNT: 1
+Accept-Encoding: gzip, deflate, brllaccept-Language: en-US,en;q=0.8,pl;q=0.‘
+
