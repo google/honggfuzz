@@ -50,11 +50,8 @@
 #define ESC_SCROLL_ENABLE "\033[r"
 #define ESC_RESET_SETTINGS "\033[!p"
 
-#if defined(_HF_ARCH_LINUX) || defined(_HF_ARCH_POSIX)
+/* According to MacOSX it's supported there as well */
 #define _HF_MONETARY_MOD "'"
-#else
-#define _HF_MONETARY_MOD ""
-#endif
 
 __attribute__((format(printf, 1, 2))) static void display_put(const char* fmt, ...) {
     va_list args;
