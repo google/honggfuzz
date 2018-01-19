@@ -8,6 +8,8 @@
 extern "C" {
 #endif
 
+#define HFND_TMP_DIR "/tmp/FUZZ"
+
 /*
  * Flags which will be passed to the original program running in a separate thread should go into
  * server_argc/server_argv

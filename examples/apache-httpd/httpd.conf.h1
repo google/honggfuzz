@@ -2,7 +2,7 @@ ServerRoot "/home/jagger/fuzz/apache/dist"
 DocumentRoot "/home/jagger/fuzz/apache/dist/htdocs"
 ServerName 127.0.0.1
 CacheEnable socache /
-#CacheSocache shmcb:/tmp/data
+#CacheSocache shmcb:/tmp/FUZZ/data
 Timeout 1
 KeepAlive On
 MaxKeepAliveRequests 16
@@ -18,7 +18,7 @@ HostnameLookups Off
 ErrorLog /dev/fd/1
 LogLevel crit
 Listen 127.0.0.1:8080
-PidFile /tmp/apache-pid
+PidFile /tmp/FUZZ/apache-pid
 Protocols http/1.1
 H2Direct On
 H2EarlyHints On
@@ -56,7 +56,7 @@ Redirect "/abc" "/"
 RedirectMatch "(.*)\.gif$" "/image/$1.jpg"
 UseCanonicalPhysicalPort On
 HttpProtocolOptions Unsafe LenientMethods Allow0.9
-DavLockDB /tmp/dav.lock
+DavLockDB /tmp/FUZZ/dav.lock
 ProxyStatus On
 ProxyVia On
 Header set MyHeader "%D %t"

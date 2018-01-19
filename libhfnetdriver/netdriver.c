@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 #if defined(_HF_ARCH_LINUX)
 #include <sched.h>
@@ -78,8 +80,11 @@ static void netDriver_initNsIfNeeded(void) {
     if (!nsIfaceUp("lo")) {
         LOG_F("nsIfaceUp('lo') failed");
     }
-    if (!nsMountTmpfs("/tmp")) {
-        LOG_F("nsMountTmpfs('/tmp') failed");
+    if (mkdir(HFND_TMP_DIR, 0755) == -1 && errno != EEXIST) {
+        PLOG_F("mkdir('%s', 0755)", HFND_TMP_DIR);
+    }
+    if (!nsMountTmpfs(HFND_TMP_DIR)) {
+        LOG_F("nsMountTmpfs('%s') failed", HFND_TMP_DIR);
     }
     return;
 #endif /* defined(_HF_ARCH_LINUX) */
