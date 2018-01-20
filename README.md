@@ -1,6 +1,6 @@
-# honggfuzz #
+# honggfuzz
 
-**Description**
+## Description
 
 A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See [USAGE](https://github.com/google/honggfuzz/blob/master/docs/USAGE.md) for more data on the usage.
 
@@ -23,12 +23,12 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
 ---
 
-**Code**
+## Code
 
   * Latest stable version: [1.3](https://github.com/google/honggfuzz/releases), but using the __master__ branch is highly encouraged
   * [Changelog](https://github.com/google/honggfuzz/blob/master/CHANGELOG)
 
-**Requirements**
+## Requirements
 
   * **Linux** - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev), clang-4.0 or higher for software-based coverage modes
   * **FreeBSD** - gmake, clang-3.6 or newer (clang-devel/4.0 suggested)
@@ -38,7 +38,7 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
   * if **Clang/LLVM** is used to compile honggfuzz - link it with the BlocksRuntime Library (libblocksruntime-dev)
 
 
-**Trophies**
+## Trophies
 
 Honggfuzz has been used to find a few interesting security problems in major software packages; An incomplete list:
 
@@ -80,7 +80,8 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * A couple of problems in the [__MATLAB MAT File I/O Library__](https://sourceforge.net/projects/matio): [1](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [2](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [3](https://github.com/tbeu/matio/commit/a55b9c2c01582b712d5a643699a13b5c41687db1), [4](https://github.com/tbeu/matio/commit/3e6283f37652e29e457ab9467f7738a562594b6b), [5](https://github.com/tbeu/matio/commit/783ee496a6914df68e77e6019054ad91e8ed6420)
   * ... and more
 
-**Projects utilizing Honggfuzz**
+## Projects utilizing Honggfuzz
+
   * [__QuickFuzz__ by CIFASIS](http://quickfuzz.org)
   * [__OSS-Fuzz__](https://github.com/google/oss-fuzz)
   * [__Frog And Fuzz__](https://github.com/warsang/FrogAndFuzz/tree/develop)
@@ -92,7 +93,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__honggfuzz-docker-apps__](https://github.com/skysider/honggfuzz_docker_apps)
   * [__FFW - Fuzzing For Worms__](https://github.com/dobin/ffw)
 
-**Examples**
+## Examples
 
 The [examples](https://github.com/google/honggfuzz/tree/master/examples/)
 directory contains code demonstrating (among others) how to use honggfuzz to find bugs in the
@@ -100,7 +101,7 @@ directory contains code demonstrating (among others) how to use honggfuzz to fin
 library and in the [Apache](https://github.com/google/honggfuzz/tree/master/examples/apache-httpd)
 HTTPD web server.
 
-**Other**
+## Other
 
   * User mailing list: [honggfuzz@googlegroups.com](mailto:honggfuzz@googlegroups.com), sign up with [this link](https://groups.google.com/forum/#!forum/honggfuzz).
 
