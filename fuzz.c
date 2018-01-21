@@ -627,8 +627,9 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
         LOG_F("Couldn't prepare sancov options");
     }
 
-    if (!hfuzz->socketFuzzer) {
-        // Dont do dry run
+    if (hfuzz->socketFuzzer) {
+        /* Dont do dry run */
+        LOG_I("Entering phase - Feedback Driven Mode - for the SocketFuzzer");
         hfuzz->state = _HF_STATE_DYNAMIC_MAIN;
     } else {
         if (hfuzz->useSanCov || hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
