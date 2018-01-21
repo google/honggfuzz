@@ -58,7 +58,7 @@ bool fuzz_prepareSocketFuzzer(run_t* run)
     LOG_D("fuzz_prepareSocketFuzzer: SEND Fuzz");
     ret = send(run->global->socketFuzzerData.clientSocket, "Fuzz", 4, 0);
     if(ret < 0) {
-        LOG_F("fuzz_prepareSocketFuzzer: received: %ld", ret);
+        LOG_F("fuzz_prepareSocketFuzzer: received: %zu", ret);
         return false;
     }
 
@@ -82,7 +82,7 @@ int fuzz_waitforSocketFuzzer(run_t* run)
 
     // We dont care what we receive, its just to block here
     if(ret < 0) {
-        LOG_F("fuzz_waitforSocketFuzzer: received: %ld", ret);
+        LOG_F("fuzz_waitforSocketFuzzer: received: %zu", ret);
         return 0;
     }
 
@@ -103,7 +103,7 @@ bool fuzz_notifySocketFuzzerNewCov(honggfuzz_t *hfuzz)
     ret = send(hfuzz->socketFuzzerData.clientSocket, "New!", 4, 0);
     LOG_D("fuzz_notifySocketFuzzer: SEND: New!");
     if(ret < 0) {
-        LOG_F("fuzz_notifySocketFuzzer: sent: %ld", ret);
+        LOG_F("fuzz_notifySocketFuzzer: sent: %zu", ret);
         return false;
     }
 
@@ -117,7 +117,7 @@ bool fuzz_notifySocketFuzzerCrash(run_t* run)
     ret = send(run->global->socketFuzzerData.clientSocket, "Cras", 4, 0);
     LOG_D("fuzz_notifySocketFuzzer: SEND: Crash");
     if(ret < 0) {
-        LOG_F("fuzz_notifySocketFuzzer: sent: %ld", ret);
+        LOG_F("fuzz_notifySocketFuzzer: sent: %zu", ret);
         return false;
     }
 
