@@ -93,32 +93,33 @@ static void netDriver_initNsIfNeeded(void) {
         (int)getpid());
 }
 
+/*
+ * Try to bind the client socket to a random loopback address, to avoid problems with exhausted
+ * ephemeral ports. We out of them, because the TIME_WAIT state is imposed on recently closed TCP
+ * connections originating from the same IP address (127.0.0.1)
+ */
+static void netDriver_bindToRndLoopback(int sock, sa_family_t sa_family) {
+    if (sa_family != AF_INET) {
+        return;
+    }
+    const struct sockaddr_in bsaddr = {
+        .sin_family = AF_INET,
+        .sin_port = htons(0),
+        .sin_addr.s_addr = htonl((((uint32_t)util_rnd64()) & 0x00FFFFFF) | 0x7F000000),
+    };
+    if (bind(sock, (struct sockaddr *)&bsaddr, sizeof(bsaddr)) == -1) {
+        PLOG_W("Could not bind to a random IPv4 Loopback address");
+    }
+}
+
 static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen) {
-    int sock = socket(addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
+    int sock = socket(addr->sa_family, SOCK_STREAM, 0);
     if (sock == -1) {
-        PLOG_D("socket(type=%d, SOCK_STREAM, IPPROTO_TCP)", addr->sa_family);
+        PLOG_D("socket(type=%d, SOCK_STREAM, 0)", addr->sa_family);
         return -1;
     }
-    int sz = (1024 * 1024);
-    if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &sz, sizeof(sz)) == -1) {
-        PLOG_F("setsockopt(type=%d, socket=%d, SOL_SOCKET, SO_SNDBUF, size=%d", addr->sa_family,
-            sock, sz);
-    }
-    if (addr->sa_family == AF_INET) {
-        /*
-         * Try to bind the client socket to a random loopback address, to avoid problems with
-         * exhausted ephemeral ports, which we run out of, due the TIME_WAIT state being imposed on
-         * recently closed TCP connections
-         */
-        struct sockaddr_in bsaddr = {
-            .sin_family = AF_INET,
-            .sin_port = htons(0),
-            .sin_addr.s_addr = htonl((((uint32_t)util_rnd64()) & 0x00FFFFFF) | 0x7F000000),
-        };
-        if (bind(sock, (struct sockaddr *)&bsaddr, sizeof(bsaddr)) == -1) {
-            PLOG_W("Could not bind to a random IPv4 Loopback address");
-        }
-    }
+
+    netDriver_bindToRndLoopback(sock, addr->sa_family);
 
     if (TEMP_FAILURE_RETRY(connect(sock, addr, socklen)) == -1) {
         PLOG_D("connect(type=%d, loopback)", addr->sa_family);
