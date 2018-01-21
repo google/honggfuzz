@@ -22,6 +22,7 @@
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
 #include "libhfcommon/ns.h"
+#include "libhfcommon/util.h"
 
 __attribute__((visibility("default"))) __attribute__((used))
 const char *const LIBHFNETDRIVER_module_netdriver = _HF_NETDRIVER_SIG;
@@ -103,6 +104,22 @@ static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen
         PLOG_F("setsockopt(type=%d, socket=%d, SOL_SOCKET, SO_SNDBUF, size=%d", addr->sa_family,
             sock, sz);
     }
+    if (addr->sa_family == AF_INET) {
+        /*
+         * Try to bind the client socket to a random loopback address, to avoid problems with
+         * exhausted ephemeral ports, which we run out of, due the TIME_WAIT state being imposed on
+         * recently closed TCP connections
+         */
+        struct sockaddr_in bsaddr = {
+            .sin_family = AF_INET,
+            .sin_port = htons(0),
+            .sin_addr.s_addr = htonl((((uint32_t)util_rnd64()) & 0x00FFFFFF) | 0x7F000000),
+        };
+        if (bind(sock, (struct sockaddr *)&bsaddr, sizeof(bsaddr)) == -1) {
+            PLOG_W("Could not bind to a random IPv4 Loopback address");
+        }
+    }
+
     if (TEMP_FAILURE_RETRY(connect(sock, addr, socklen)) == -1) {
         PLOG_D("connect(type=%d, loopback)", addr->sa_family);
         close(sock);
