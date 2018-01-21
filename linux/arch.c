@@ -65,6 +65,9 @@ static inline bool arch_shouldAttach(run_t* run) {
     if (run->global->linux.pid > 0 && run->linux.attachedPid == run->global->linux.pid) {
         return false;
     }
+    if (run->global->socketFuzzer && run->linux.attachedPid == run->pid) {
+        return false;
+    }
     return true;
 }
 
@@ -342,6 +345,12 @@ void arch_reapChild(run_t* run) {
             break;
         }
         if (arch_checkWait(run)) {
+            LOG_D("SocketFuzzer: arch: Crash Identified");
+            run->hasCrashed = true;
+            break;
+        }
+        if (run->global->socketFuzzer) {
+            // Do not wait for new events
             break;
         }
     }
