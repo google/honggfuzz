@@ -356,17 +356,18 @@ android-clean-deps:
 	done
 
 # DO NOT DELETE
-socketfuzzer.o: socketfuzzer.h
+
 cmdline.o: cmdline.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 cmdline.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
 display.o: display.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 display.o: libhfcommon/log.h
 fuzz.o: fuzz.h honggfuzz.h libhfcommon/util.h arch.h input.h
 fuzz.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-fuzz.o: libhfcommon/log.h mangle.h report.h sancov.h sanitizers.h subproc.h
+fuzz.o: libhfcommon/log.h mangle.h report.h sancov.h sanitizers.h
+fuzz.o: socketfuzzer.h subproc.h
 honggfuzz.o: cmdline.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 honggfuzz.o: display.h fuzz.h input.h libhfcommon/files.h
-honggfuzz.o: libhfcommon/common.h libhfcommon/log.h
+honggfuzz.o: libhfcommon/common.h libhfcommon/log.h socketfuzzer.h
 input.o: input.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 input.o: libhfcommon/files.h libhfcommon/common.h mangle.h subproc.h
 input.o: libhfcommon/log.h
@@ -380,6 +381,9 @@ sancov.o: sanitizers.h
 sanitizers.o: sanitizers.h honggfuzz.h libhfcommon/util.h
 sanitizers.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 sanitizers.o: libhfcommon/log.h
+socketfuzzer.o: honggfuzz.h libhfcommon/util.h libhfcommon/common.h
+socketfuzzer.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
+socketfuzzer.o: libhfcommon/ns.h socketfuzzer.h
 subproc.o: subproc.h honggfuzz.h libhfcommon/util.h arch.h fuzz.h
 subproc.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 subproc.o: libhfcommon/log.h
@@ -426,7 +430,7 @@ linux/pt.o: linux/pt.h honggfuzz.h
 linux/trace.o: linux/trace.h honggfuzz.h libhfcommon/util.h
 linux/trace.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 linux/trace.o: libhfcommon/log.h linux/bfd.h linux/unwind.h sancov.h
-linux/trace.o: sanitizers.h subproc.h
+linux/trace.o: sanitizers.h socketfuzzer.h subproc.h
 linux/unwind.o: linux/unwind.h honggfuzz.h libhfcommon/util.h
 linux/unwind.o: libhfcommon/common.h libhfcommon/log.h
 mac/arch.o: arch.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h

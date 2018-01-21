@@ -39,11 +39,11 @@
 #include "display.h"
 #include "fuzz.h"
 #include "input.h"
-#include "socketfuzzer.h"
 #include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
+#include "socketfuzzer.h"
 
 static int sigReceived = 0;
 
@@ -174,8 +174,9 @@ int main(int argc, char** argv) {
     }
 
     if (hfuzz.socketFuzzer) {
-        LOG_I("No input file corpus loaded, the external socket_fuzzer is responsible for "
-              "creating the fuzz data");
+        LOG_I(
+            "No input file corpus loaded, the external socket_fuzzer is responsible for "
+            "creating the fuzz data");
         setupSocketFuzzer(&hfuzz);
     } else if (!input_init(&hfuzz)) {
         LOG_F("Couldn't load input corpus");

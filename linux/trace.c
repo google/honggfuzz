@@ -56,8 +56,8 @@
 #include "linux/unwind.h"
 #include "sancov.h"
 #include "sanitizers.h"
-#include "subproc.h"
 #include "socketfuzzer.h"
+#include "subproc.h"
 
 #if defined(__ANDROID__)
 #include "capstone.h"

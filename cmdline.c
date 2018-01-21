@@ -519,7 +519,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 0x10B:
                 hfuzz->socketFuzzer = true;
-                hfuzz->timing.tmOut = 0; // Disable process timeout checks
+                hfuzz->timing.tmOut = 0;  // Disable process timeout checks
                 break;
             case 'z':
                 hfuzz->dynFileMethod |= _HF_DYNFILE_SOFT;

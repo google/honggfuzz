@@ -55,8 +55,8 @@
 #include "report.h"
 #include "sancov.h"
 #include "sanitizers.h"
-#include "subproc.h"
 #include "socketfuzzer.h"
+#include "subproc.h"
 
 static time_t termTimeStamp = 0;
 
@@ -230,7 +230,7 @@ static void fuzz_perfFeedback(run_t* run) {
 
         fuzz_addFileToFileQ(run->global, run->dynamicFile, run->dynamicFileSz);
 
-        if(run->global->socketFuzzer) {
+        if (run->global->socketFuzzer) {
             LOG_D("SocketFuzzer: fuzz: new BB (perf)");
             fuzz_notifySocketFuzzerNewCov(run->global);
         }
@@ -288,7 +288,7 @@ static void fuzz_sanCovFeedback(run_t* run) {
 
         fuzz_addFileToFileQ(run->global, run->dynamicFile, run->dynamicFileSz);
 
-        if(run->global->socketFuzzer) {
+        if (run->global->socketFuzzer) {
             LOG_D("SocketFuzzer: fuzz: new BB (cov)");
             fuzz_notifySocketFuzzerNewCov(run->global);
         }
@@ -451,7 +451,7 @@ static void fuzz_fuzzLoop(run_t* run) {
     report_Report(run);
 }
 
-static void fuzz_fuzzLoopSocket(run_t * run) {
+static void fuzz_fuzzLoopSocket(run_t* run) {
     run->pid = 0;
     run->timeStartedMillis = 0;
     run->crashFileName[0] = '\0';
@@ -496,7 +496,7 @@ static void fuzz_fuzzLoopSocket(run_t * run) {
     if (!fuzz_waitForExternalInput(run)) {
         /* Fuzzer could not connect to target, and told us to
            restart it. Do it on the next iteration. */
-       LOG_D("------[ 2.1: Target down, will restart it");
+        LOG_D("------[ 2.1: Target down, will restart it");
         run->hasCrashed = true;
         return;
     }
@@ -546,9 +546,9 @@ static void* fuzz_threadNew(void* arg) {
     };
 
     // Do not try to handle input files with socketfuzzer
-    if (! hfuzz->socketFuzzer) {
-        if (!(run.dynamicFile =
-                    files_mapSharedMem(hfuzz->maxFileSz, &run.dynamicFileFd, run.global->io.workDir))) {
+    if (!hfuzz->socketFuzzer) {
+        if (!(run.dynamicFile = files_mapSharedMem(
+                  hfuzz->maxFileSz, &run.dynamicFileFd, run.global->io.workDir))) {
             LOG_F("Couldn't create an input file of size: %zu", hfuzz->maxFileSz);
         }
         defer {
@@ -562,7 +562,7 @@ static void* fuzz_threadNew(void* arg) {
 
     for (;;) {
         /* Check if dry run mode with verifier enabled */
-        if (run.global->mutationsPerRun == 0U && run.global->useVerifier && ! hfuzz->socketFuzzer) {
+        if (run.global->mutationsPerRun == 0U && run.global->useVerifier && !hfuzz->socketFuzzer) {
             if (ATOMIC_POST_INC(run.global->cnts.mutationsCnt) >= run.global->io.fileCnt) {
                 ATOMIC_POST_INC(run.global->threads.threadsFinished);
                 break;
@@ -581,7 +581,6 @@ static void* fuzz_threadNew(void* arg) {
         } else {
             fuzz_fuzzLoop(&run);
         }
-
 
         if (fuzz_isTerminating()) {
             break;

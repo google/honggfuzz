@@ -319,7 +319,6 @@ static bool subproc_New(run_t* run) {
         close(sv[1]);
         LOG_I("Persistent mode: Launched new persistent PID: %d", (int)run->pid);
         run->persistentPid = run->pid;
-
     }
 
     arch_prepareParentAfterFork(run);
