@@ -1,7 +1,7 @@
 # Wordlist for Apache (HTTP/1 and HTTP/2)
 # Format of the dictionary: http://llvm.org/docs/LibFuzzer.html#dictionaries
 
-"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
+"PRI * HTTP/2.0\x0D\x0A\x0D\x0ASM\x0D\x0A\x0D\x0A"
 "GET"
 "PUT"
 "POST"
@@ -36,10 +36,10 @@
 "HTTP/1.0"
 "AAAAAAAAAAAAAAAAA=BBBBBBBBBBBBBBBBBB&CCCCCCCCCCCCCCCCCC=DDDDDDDDDDDDDDDD"
 ","
-"\n"
-"\r"
-"\r\n"
-"\r\n\r\n"
+"\x0A"
+"\x0D"
+"\x0D\x0A"
+"\x0D\x0A\x0D\x0A"
 ":"
 ":"
 
