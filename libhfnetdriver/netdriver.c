@@ -218,7 +218,7 @@ __attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
         if (strcmp(argv[i], "--") == 0) {
             *server_argc = argc - i;
             *server_argv = &argv[i];
-            return argc - i;
+            return i;
         }
     }
 
