@@ -356,7 +356,7 @@ android-clean-deps:
 	done
 
 # DO NOT DELETE
-
+socketfuzzer.o: socketfuzzer.h
 cmdline.o: cmdline.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 cmdline.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
 display.o: display.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h

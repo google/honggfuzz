@@ -57,6 +57,7 @@
 #include "sancov.h"
 #include "sanitizers.h"
 #include "subproc.h"
+#include "socketfuzzer.h"
 
 #if defined(__ANDROID__)
 #include "capstone.h"
@@ -817,6 +818,12 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
             sig_addr, instr, localtmstr, pid, run->global->io.fileExtn);
     }
 
+    /* Target crashed (no duplicate detection yet) */
+    if (run->global->socketFuzzer) {
+        LOG_D("SocketFuzzer: trace: Crash Identified");
+        run->hasCrashed = true;
+    }
+
     if (files_exists(run->crashFileName)) {
         LOG_I("Crash (dup): '%s' already exists, skipping", run->crashFileName);
         // Clear filename so that verifier can understand we hit a duplicate
@@ -830,6 +837,11 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         return;
     }
 
+    /* Unique new crash, notify fuzzer */
+    if (run->global->socketFuzzer) {
+        LOG_D("SocketFuzzer: trace: New Uniqu Crash");
+        fuzz_notifySocketFuzzerCrash(run);
+    }
     LOG_I("Crash: saved as '%s'", run->crashFileName);
 
     ATOMIC_POST_INC(run->global->cnts.uniqueCrashesCnt);

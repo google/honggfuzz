@@ -39,6 +39,7 @@
 #include "display.h"
 #include "fuzz.h"
 #include "input.h"
+#include "socketfuzzer.h"
 #include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
@@ -172,7 +173,11 @@ int main(int argc, char** argv) {
         display_init();
     }
 
-    if (!input_init(&hfuzz)) {
+    if (hfuzz.socketFuzzer) {
+        LOG_I("No input file corpus loaded, the external socket_fuzzer is responsible for "
+              "creating the fuzz data");
+        setupSocketFuzzer(&hfuzz);
+    } else if (!input_init(&hfuzz)) {
         LOG_F("Couldn't load input corpus");
         exit(EXIT_FAILURE);
     }
@@ -246,6 +251,9 @@ int main(int argc, char** argv) {
     }
     if (hfuzz.linux.symsWl) {
         free(hfuzz.linux.symsWl);
+    }
+    if (hfuzz.socketFuzzer) {
+        cleanupSocketFuzzer();
     }
 
     return EXIT_SUCCESS;

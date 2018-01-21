@@ -56,6 +56,7 @@
 #include "sancov.h"
 #include "sanitizers.h"
 #include "subproc.h"
+#include "socketfuzzer.h"
 
 static time_t termTimeStamp = 0;
 
@@ -121,6 +122,11 @@ static void fuzz_addFileToFileQ(honggfuzz_t* hfuzz, const uint8_t* data, size_t 
     MX_SCOPED_RWLOCK_WRITE(&hfuzz->dynfileq_mutex);
     TAILQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
     hfuzz->dynfileqCnt++;
+
+    if (hfuzz->socketFuzzer) {
+        /* Dont add coverage data to files in socketFuzzer mode */
+        return;
+    }
 
     if (!fuzz_writeCovFile(hfuzz->io.covDirAll, data, len)) {
         LOG_E("Couldn't save the coverage data to '%s'", hfuzz->io.covDirAll);
@@ -223,6 +229,11 @@ static void fuzz_perfFeedback(run_t* run) {
             run->global->linux.hwCnts.softCntPc, run->global->linux.hwCnts.softCntCmp);
 
         fuzz_addFileToFileQ(run->global, run->dynamicFile, run->dynamicFileSz);
+
+        if(run->global->socketFuzzer) {
+            LOG_D("SocketFuzzer: fuzz: new BB (perf)");
+            fuzz_notifySocketFuzzerNewCov(run->global);
+        }
     }
 }
 
@@ -276,6 +287,11 @@ static void fuzz_sanCovFeedback(run_t* run) {
         run->global->linux.hwCnts.cpuBranchCnt = run->linux.hwCnts.cpuBranchCnt;
 
         fuzz_addFileToFileQ(run->global, run->dynamicFile, run->dynamicFileSz);
+
+        if(run->global->socketFuzzer) {
+            LOG_D("SocketFuzzer: fuzz: new BB (cov)");
+            fuzz_notifySocketFuzzerNewCov(run->global);
+        }
     }
 }
 
@@ -435,6 +451,81 @@ static void fuzz_fuzzLoop(run_t* run) {
     report_Report(run);
 }
 
+static void fuzz_fuzzLoopSocket(run_t * run) {
+    run->pid = 0;
+    run->timeStartedMillis = 0;
+    run->crashFileName[0] = '\0';
+    run->pc = 0;
+    run->backtrace = 0;
+    run->access = 0;
+    run->exception = 0;
+    run->report[0] = '\0';
+    run->mainWorker = true;
+    run->origFileName = "DYNAMIC";
+    run->mutationsPerRun = run->global->mutationsPerRun;
+    run->dynamicFileSz = 0;
+    run->dynamicFileCopyFd = -1,
+
+    run->sanCovCnts.hitBBCnt = 0;
+    run->sanCovCnts.totalBBCnt = 0;
+    run->sanCovCnts.dsoCnt = 0;
+    run->sanCovCnts.newBBCnt = 0;
+    run->sanCovCnts.crashesCnt = 0;
+
+    run->linux.hwCnts.cpuInstrCnt = 0;
+    run->linux.hwCnts.cpuBranchCnt = 0;
+    run->linux.hwCnts.bbCnt = 0;
+    run->linux.hwCnts.newBBCnt = 0;
+
+    LOG_I("------------------------------------------------------");
+
+    /* First iteration: Start target
+       Other iterations: re-start target, if necessary
+       subproc_Run() will decide by itself if a restart is necessary, via
+       subproc_New()
+    */
+    LOG_D("------[ 1: subproc_run");
+    if (!subproc_Run(run)) {
+        LOG_W("Couldn't run server");
+    }
+
+    /* Tell the external fuzzer to send data to target
+       The fuzzer will notify us when finished; block until then.
+    */
+    LOG_D("------[ 2: fetch input");
+    if (!fuzz_waitForExternalInput(run)) {
+        /* Fuzzer could not connect to target, and told us to
+           restart it. Do it on the next iteration. */
+       LOG_D("------[ 2.1: Target down, will restart it");
+        run->hasCrashed = true;
+        return;
+    }
+
+    LOG_D("------[ 3: feedback");
+    if (run->global->dynFileMethod != _HF_DYNFILE_NONE) {
+        fuzz_perfFeedback(run);
+    }
+    if (run->global->useSanCov) {
+        fuzz_sanCovFeedback(run);
+    }
+    if (run->global->useVerifier && !fuzz_runVerifier(run)) {
+        return;
+    }
+
+    report_Report(run);
+
+    /* Try to identify if the target crashed.
+       This information will be used in the next iteration of
+       this loop, to restart the target if necessary.
+       The fuzzer will be also notified.
+
+       Crash identification does not need to work 100%, as the external fuzzer
+       can also detect timeouts on the target server, and will
+       notify us. */
+    LOG_D("------[ 4: reap child");
+    arch_reapChild(run);
+}
+
 static void* fuzz_threadNew(void* arg) {
     honggfuzz_t* hfuzz = (honggfuzz_t*)arg;
     unsigned int fuzzNo = ATOMIC_POST_INC(hfuzz->threads.threadsActiveCnt);
@@ -453,13 +544,17 @@ static void* fuzz_threadNew(void* arg) {
 
         .linux.attachedPid = 0,
     };
-    if (!(run.dynamicFile =
-                files_mapSharedMem(hfuzz->maxFileSz, &run.dynamicFileFd, run.global->io.workDir))) {
-        LOG_F("Couldn't create an input file of size: %zu", hfuzz->maxFileSz);
+
+    // Do not try to handle input files with socketfuzzer
+    if (! hfuzz->socketFuzzer) {
+        if (!(run.dynamicFile =
+                    files_mapSharedMem(hfuzz->maxFileSz, &run.dynamicFileFd, run.global->io.workDir))) {
+            LOG_F("Couldn't create an input file of size: %zu", hfuzz->maxFileSz);
+        }
+        defer {
+            close(run.dynamicFileFd);
+        };
     }
-    defer {
-        close(run.dynamicFileFd);
-    };
 
     if (arch_archThreadInit(&run) == false) {
         LOG_F("Could not initialize the thread");
@@ -467,7 +562,7 @@ static void* fuzz_threadNew(void* arg) {
 
     for (;;) {
         /* Check if dry run mode with verifier enabled */
-        if (run.global->mutationsPerRun == 0U && run.global->useVerifier) {
+        if (run.global->mutationsPerRun == 0U && run.global->useVerifier && ! hfuzz->socketFuzzer) {
             if (ATOMIC_POST_INC(run.global->cnts.mutationsCnt) >= run.global->io.fileCnt) {
                 ATOMIC_POST_INC(run.global->threads.threadsFinished);
                 break;
@@ -481,7 +576,12 @@ static void* fuzz_threadNew(void* arg) {
         }
 
         input_setSize(&run, run.global->maxFileSz);
-        fuzz_fuzzLoop(&run);
+        if (hfuzz->socketFuzzer) {
+            fuzz_fuzzLoopSocket(&run);
+        } else {
+            fuzz_fuzzLoop(&run);
+        }
+
 
         if (fuzz_isTerminating()) {
             break;
@@ -528,12 +628,17 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
         LOG_F("Couldn't prepare sancov options");
     }
 
-    if (hfuzz->useSanCov || hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
-        LOG_I("Entering phase 1/2: Dry Run");
-        hfuzz->state = _HF_STATE_DYNAMIC_DRY_RUN;
+    if (!hfuzz->socketFuzzer) {
+        // Dont do dry run
+        hfuzz->state = _HF_STATE_DYNAMIC_MAIN;
     } else {
-        LOG_I("Entering phase: Static");
-        hfuzz->state = _HF_STATE_STATIC;
+        if (hfuzz->useSanCov || hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+            LOG_I("Entering phase 1/2: Dry Run");
+            hfuzz->state = _HF_STATE_DYNAMIC_DRY_RUN;
+        } else {
+            LOG_I("Entering phase: Static");
+            hfuzz->state = _HF_STATE_STATIC;
+        }
     }
 
     for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {

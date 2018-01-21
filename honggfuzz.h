@@ -247,6 +247,8 @@ typedef struct {
 
     pthread_mutex_t feedback_mutex;
 
+    bool socketFuzzer;
+
     struct {
         size_t mutationsCnt;
         size_t crashesCnt;
@@ -288,6 +290,11 @@ typedef struct {
         bool useClone;
         sigset_t waitSigSet;
     } linux;
+
+    struct {
+        int serverSocket;
+        int clientSocket;
+    } socketFuzzerData;
 } honggfuzz_t;
 
 typedef struct {
@@ -328,6 +335,8 @@ typedef struct {
         int cpuBranchFd;
         int cpuIptBtsFd;
     } linux;
+
+    bool hasCrashed;
 } run_t;
 
 /*

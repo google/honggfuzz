@@ -239,9 +239,12 @@ static bool subproc_PrepareExecv(run_t* run) {
 
 static bool subproc_New(run_t* run) {
     run->pid = run->persistentPid;
-    if (run->pid != 0) {
+    if (run->pid != 0 && run->hasCrashed == false) {
         return true;
     }
+
+    LOG_D("SocketFuzzer: subproc_new: Start New Process");
+    run->hasCrashed = false;
     run->tmOutSignaled = false;
 
     int sv[2];
@@ -307,11 +310,16 @@ static bool subproc_New(run_t* run) {
     /* Parent */
     LOG_D("Launched new process, PID: %d, thread: %" PRId32 " (concurrency: %zd)", run->pid,
         run->fuzzNo, run->global->threads.threadsMax);
+    if (run->global->socketFuzzer) {
+        // Dont know why, but this is important
+        run->persistentPid = run->pid;
+    }
 
     if (run->global->exe.persistent) {
         close(sv[1]);
         LOG_I("Persistent mode: Launched new persistent PID: %d", (int)run->pid);
         run->persistentPid = run->pid;
+
     }
 
     arch_prepareParentAfterFork(run);
