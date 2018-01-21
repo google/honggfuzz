@@ -551,10 +551,12 @@ static void* fuzz_threadNew(void* arg) {
                   hfuzz->maxFileSz, &run.dynamicFileFd, run.global->io.workDir))) {
             LOG_F("Couldn't create an input file of size: %zu", hfuzz->maxFileSz);
         }
-        defer {
-            close(run.dynamicFileFd);
-        };
     }
+    defer {
+        if (run.dynamicFileFd != -1) {
+            close(run.dynamicFileFd);
+        }
+    };
 
     if (arch_archThreadInit(&run) == false) {
         LOG_F("Could not initialize the thread");
@@ -629,16 +631,14 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
 
     if (hfuzz->socketFuzzer) {
         /* Dont do dry run */
-        LOG_I("Entering phase - Feedback Driven Mode - for the SocketFuzzer");
+        LOG_I("Entering phase - Feedback Driven Mode (SocketFuzzer)");
         hfuzz->state = _HF_STATE_DYNAMIC_MAIN;
+    } else if (hfuzz->useSanCov || hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+        LOG_I("Entering phase 1/2: Dry Run");
+        hfuzz->state = _HF_STATE_DYNAMIC_DRY_RUN;
     } else {
-        if (hfuzz->useSanCov || hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
-            LOG_I("Entering phase 1/2: Dry Run");
-            hfuzz->state = _HF_STATE_DYNAMIC_DRY_RUN;
-        } else {
-            LOG_I("Entering phase: Static");
-            hfuzz->state = _HF_STATE_STATIC;
-        }
+        LOG_I("Entering phase: Static");
+        hfuzz->state = _HF_STATE_STATIC;
     }
 
     for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
