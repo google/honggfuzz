@@ -310,11 +310,11 @@ static bool subproc_New(run_t* run) {
     /* Parent */
     LOG_D("Launched new process, PID: %d, thread: %" PRId32 " (concurrency: %zd)", run->pid,
         run->fuzzNo, run->global->threads.threadsMax);
+
     if (run->global->socketFuzzer) {
-        // Dont know why, but this is important
+        /* (dobin): Don't know why, but this is important */
         run->persistentPid = run->pid;
     }
-
     if (run->global->exe.persistent) {
         close(sv[1]);
         LOG_I("Persistent mode: Launched new persistent PID: %d", (int)run->pid);

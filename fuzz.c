@@ -124,7 +124,7 @@ static void fuzz_addFileToFileQ(honggfuzz_t* hfuzz, const uint8_t* data, size_t 
     hfuzz->dynfileqCnt++;
 
     if (hfuzz->socketFuzzer) {
-        /* Dont add coverage data to files in socketFuzzer mode */
+        /* Don't add coverage data to files in socketFuzzer mode */
         return;
     }
 
@@ -545,7 +545,7 @@ static void* fuzz_threadNew(void* arg) {
         .linux.attachedPid = 0,
     };
 
-    // Do not try to handle input files with socketfuzzer
+    /* Do not try to handle input files with socketfuzzer */
     if (!hfuzz->socketFuzzer) {
         if (!(run.dynamicFile = files_mapSharedMem(
                   hfuzz->maxFileSz, &run.dynamicFileFd, run.global->io.workDir))) {
@@ -630,7 +630,7 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
     }
 
     if (hfuzz->socketFuzzer) {
-        /* Dont do dry run */
+        /* Don't do dry run with socketFuzzer */
         LOG_I("Entering phase - Feedback Driven Mode (SocketFuzzer)");
         hfuzz->state = _HF_STATE_DYNAMIC_MAIN;
     } else if (hfuzz->useSanCov || hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {

@@ -283,7 +283,7 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz) {
         hfuzz->blacklist[hfuzz->blacklistCnt] = strtoull(lineptr, 0, 16);
         LOG_D("Blacklist: loaded %'" PRIu64 "'", hfuzz->blacklist[hfuzz->blacklistCnt]);
 
-        // Verify entries are sorted so we can use interpolation search
+        /* Verify entries are sorted so we can use interpolation search */
         if (hfuzz->blacklistCnt > 1) {
             if (hfuzz->blacklist[hfuzz->blacklistCnt - 1] > hfuzz->blacklist[hfuzz->blacklistCnt]) {
                 LOG_F(
