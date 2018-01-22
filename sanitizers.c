@@ -96,8 +96,6 @@
     "handle_sigill=0:handle_sigfpe=0:allocator_may_return_null=1:"   \
     "symbolize=1:detect_leaks=0:disable_coredump=0"
 
-#define kSAN_SOFT_RSS_LIMIT_MB 8192
-
 /*
  * If the program ends with a signal that ASan does not handle (or can not
  * handle at all, like SIGKILL), coverage data will be lost. This is a big
@@ -121,8 +119,13 @@ static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, char* buf, s
         snprintf(buf, buflen, "%s=%s:%s:%s%s/%s", env, kASAN_OPTS, abortFlag, kSANLOGDIR,
             hfuzz->io.workDir, kLOGPREFIX);
     }
-    if (!hfuzz->exe.netDriver) {
-        util_ssnprintf(buf, buflen, ":%s", "soft_rss_limit_mb=" HF_XSTR(kSAN_SOFT_RSS_LIMIT_MB));
+    /*
+     * It will make ASAN to start background thread to check RSS mem use, which
+     * will prevent the NetDrvier from using unshare(CLONE_NEWNET), which cannot
+     * be used in multi-threaded contexts
+     */
+    if (!hfuzz->exe.netDriver && hfuzz->exe.rssLimit) {
+        util_ssnprintf(buf, buflen, ":soft_rss_limit_mb=%" PRId64, hfuzz->exe.rssLimit);
     }
     if (hfuzz->extSanOpts) {
         util_ssnprintf(buf, buflen, ":%s", hfuzz->extSanOpts);
