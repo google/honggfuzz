@@ -103,18 +103,20 @@ static void cmdlineHelp(const char* pname, struct custom_option* opts) {
     }
     LOG_HELP_BOLD("\nExamples:");
     LOG_HELP(
-        " Run the binary over a mutated file chosen from the directory. Disable fuzzing "
-        "feedback (dry/static mode)");
+        " Run the binary over a mutated file chosen from the directory. Disable fuzzing feedback "
+        "(static mode):");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -x -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" As above, provide input over STDIN:");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -x -s -- /usr/bin/djpeg");
-    LOG_HELP(" Use compile-time instrumentation (libhfuzz/instrument.c):");
+    LOG_HELP(" Use compile-time instrumentation (-fsanitize-coverage=trace-pc-guard,...):");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
-    LOG_HELP(" Use SANCOV instrumentation:");
+    LOG_HELP(" Use SANCOV instrumentation: (-fsanitize-coverage=bb/edge/func)");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -C -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
-    LOG_HELP(" Use persistent mode (libhfuzz/*) w/o instrumentation:");
+    LOG_HELP(" Use persistent mode w/o instrumentation:");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -x -- /usr/bin/djpeg_persistent_mode");
-    LOG_HELP(" Use persistent mode (libhfuzz/*) and compile-time instrumentation:");
+    LOG_HELP(
+        " Use persistent mode and compile-time (-fsanitize-coverage=trace-pc-guard,...) "
+        "instrumentation:");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -- /usr/bin/djpeg_persistent_mode");
 #if defined(_HF_ARCH_LINUX)
     LOG_HELP(
