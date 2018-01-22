@@ -50,8 +50,8 @@
 #define ESC_SCROLL_ENABLE "\033[r"
 #define ESC_RESET_SETTINGS "\033[!p"
 
-/* According to MacOSX it's supported there as well */
-#define _HF_MONETARY_MOD "'"
+/* printf() nonmonetary separator. According to MacOSX's man it's supported there as well */
+#define _HF_NONMON_SEP "'"
 
 __attribute__((format(printf, 1, 2))) static void display_put(const char* fmt, ...) {
     va_list args;
@@ -159,10 +159,10 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     display_put("---------------------[" ESC_BOLD "%31s " ESC_RESET "]-------/ " ESC_BOLD
                 "%s %s" ESC_RESET " /-\n",
         timeStr, PROG_NAME, PROG_VERSION);
-    display_put("  Iterations : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
+    display_put("  Iterations : " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
     if (hfuzz->mutationsMax) {
-        display_put(" (out of: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET " [%.2f%%])",
+        display_put(" (out of: " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET " [%.2f%%])",
             hfuzz->mutationsMax, exeProgress);
     }
     switch (ATOMIC_GET(hfuzz->state)) {
@@ -198,9 +198,9 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         hfuzz->threads.threadsMax, num_cpu, cpuUse, cpuUse / num_cpu);
 
     size_t tot_exec_per_sec = elapsed_sec ? (curr_exec_cnt / elapsed_sec) : 0;
-    display_put("       Speed : " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
+    display_put("       Speed : " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET
                 "/sec"
-                " (avg: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n",
+                " (avg: " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET ")\n",
         exec_per_sec, tot_exec_per_sec);
 
     uint64_t crashesCnt = ATOMIC_GET(hfuzz->cnts.crashesCnt);
@@ -212,41 +212,40 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         crashesCnt > 0 ? ESC_RED : "", hfuzz->cnts.crashesCnt, crashesCnt > 0 ? ESC_RED : "",
         ATOMIC_GET(hfuzz->cnts.uniqueCrashesCnt), ATOMIC_GET(hfuzz->cnts.blCrashesCnt),
         ATOMIC_GET(hfuzz->cnts.verifiedCrashesCnt));
-    display_put("    Timeouts : [%lu sec] " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
-                "\n" ESC_RESET,
-        (unsigned long)hfuzz->timing.tmOut, ATOMIC_GET(hfuzz->cnts.timeoutedCnt));
+    display_put("    Timeouts : " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET " [%lu sec]\n",
+        ATOMIC_GET(hfuzz->cnts.timeoutedCnt), (unsigned long)hfuzz->timing.tmOut);
     /* Feedback data sources. Common headers. */
-    display_put(" Corpus Size : entries: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET
-                ", max size: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ", input dir: " ESC_BOLD
-                "%zu" ESC_RESET " files\n",
+    display_put(" Corpus Size : " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET ", max size: " ESC_BOLD
+                "%" _HF_NONMON_SEP "zu" ESC_RESET " bytes, init corpus: " ESC_BOLD "%zu" ESC_RESET
+                " files\n",
         hfuzz->dynfileqCnt, hfuzz->maxFileSz, ATOMIC_GET(hfuzz->io.fileCnt));
     display_put("  Cov Update : " ESC_BOLD "%s" ESC_RESET " ago\n" ESC_RESET, lastCovStr);
     display_put("    Coverage :");
 
     /* HW perf specific counters */
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        display_put(" hwi: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET,
+        display_put(" hwi: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
             ATOMIC_GET(hfuzz->linux.hwCnts.cpuInstrCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        display_put(" hwb: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET,
+        display_put(" hwb: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
             ATOMIC_GET(hfuzz->linux.hwCnts.cpuBranchCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        display_put(" bts: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET,
+        display_put(" bts: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
             ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        display_put(" ipt: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET,
+        display_put(" ipt: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
             ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_SOFT) {
         uint64_t softCntPc = ATOMIC_GET(hfuzz->linux.hwCnts.softCntPc);
         uint64_t softCntEdge = ATOMIC_GET(hfuzz->linux.hwCnts.softCntEdge);
         uint64_t softCntCmp = ATOMIC_GET(hfuzz->linux.hwCnts.softCntCmp);
-        display_put(" edge: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET, softCntEdge);
-        display_put(" pc: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET, softCntPc);
-        display_put(" cmp: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET, softCntCmp);
+        display_put(" edge: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET, softCntEdge);
+        display_put(" pc: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET, softCntPc);
+        display_put(" cmp: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET, softCntCmp);
     }
 
     /* Sanitizer coverage specific counters */
@@ -254,14 +253,14 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         uint64_t hitBB = ATOMIC_GET(hfuzz->sanCovCnts.hitBBCnt);
         uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
         float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
-        display_put(" #sancov_bb: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET
-                    " (cov: " ESC_BOLD "%.2f" ESC_RESET "%%)",
+        display_put(" #sancov_bb: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET " (cov: " ESC_BOLD
+                    "%.2f" ESC_RESET "%%)",
             hitBB, covPer);
-        display_put(" #dso: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET,
+        display_put(" #dso: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
             ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
-        display_put(" #newbb: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET,
+        display_put(" #newbb: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
             ATOMIC_GET(hfuzz->sanCovCnts.newBBCnt));
-        display_put(" #crashes: " ESC_BOLD "%" _HF_MONETARY_MOD PRIu64 ESC_RESET,
+        display_put(" #crashes: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
             ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
     }
     display_put("\n---------------------------------- [ " ESC_BOLD "LOGS" ESC_RESET
