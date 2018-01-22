@@ -410,7 +410,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "tmout_sigvtalrm", no_argument, NULL, 'T' }, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)" },
         { { "sanitizers", no_argument, NULL, 'S' }, "Enable sanitizers settings (default: false)" },
         { { "san_opts", required_argument, NULL, 0x10A }, "Options appended to the regular *SAN_OPTIONS (default: empty)" },
-        { { "monitor_sigabrt", required_argument, NULL, 0x105 }, "Monitor SIGABRT (default: false, for Android - true, for other platforms)" },
+        { { "monitor_sigabrt", required_argument, NULL, 0x105 }, "Monitor SIGABRT (default: false for Android, true for other platforms)" },
         { { "no_fb_timeout", required_argument, NULL, 0x106 }, "Skip feedback if the process has timeouted (default: false)" },
         { { "exit_upon_crash", no_argument, NULL, 0x107 }, "Exit upon seeing the first crash (default: false)" },
         { { "socket_fuzzer", no_argument, NULL, 0x10b }, "Instrument external fuzzer via socket" },
