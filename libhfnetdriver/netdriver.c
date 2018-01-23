@@ -95,8 +95,9 @@ static void netDriver_initNsIfNeeded(void) {
 
 /*
  * Try to bind the client socket to a random loopback address, to avoid problems with exhausted
- * ephemeral ports. We out of them, because the TIME_WAIT state is imposed on recently closed TCP
- * connections originating from the same IP address (127.0.0.1)
+ * ephemeral ports. We run out of them, because the TIME_WAIT state is imposed on recently closed
+ * TCP connections originating from the same IP address (127.0.0.1), and connecting to the singular
+ * IP address (again, 127.0.0.1) on a single port
  */
 static void netDriver_bindToRndLoopback(int sock, sa_family_t sa_family) {
     if (sa_family != AF_INET) {
@@ -217,6 +218,8 @@ __attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
      */
     for (int i = 0; i < argc; i++) {
         if (strcmp(argv[i], "--") == 0) {
+            /* Replace '--' with argv[0] */
+            argv[i] = argv[0];
             *server_argc = argc - i;
             *server_argv = &argv[i];
             return i;
