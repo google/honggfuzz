@@ -58,12 +58,18 @@ static bool checkFor_FILE_PLACEHOLDER(const char* const* args) {
 }
 
 static bool cmdlineCheckBinaryType(honggfuzz_t* hfuzz) {
+    if (!files_exists(hfuzz->exe.cmdline[0])) {
+        LOG_W("Your fuzzed binary doesn't exist: '%s'", hfuzz->exe.cmdline[0]);
+        return false;
+    }
+
     int fd;
     off_t fileSz;
 
     uint8_t* map = files_mapFile(hfuzz->exe.cmdline[0], &fileSz, &fd, /* isWriteable= */ false);
     if (!map) {
-        return false;
+        /* It's not a critical error */
+        return true;
     }
     defer {
         if (munmap(map, fileSz) == -1) {
@@ -159,6 +165,11 @@ rlim_t cmdlineParseRLimit(int res, const char* optarg, unsigned long mul) {
 }
 
 static bool cmdlineVerify(honggfuzz_t* hfuzz) {
+    if (!cmdlineCheckBinaryType(hfuzz)) {
+        LOG_E("Couldn't test binary for signatures");
+        return false;
+    }
+
     if (!hfuzz->exe.fuzzStdin && !hfuzz->exe.persistent &&
         !checkFor_FILE_PLACEHOLDER(hfuzz->exe.cmdline)) {
         LOG_E("You must specify '" _HF_FILE_PLACEHOLDER
@@ -666,9 +677,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         LOG_E("No fuzz command provided");
         cmdlineUsage(argv[0], custom_opts);
         return false;
-    }
-    if (!cmdlineCheckBinaryType(hfuzz)) {
-        LOG_W("Couldn't test binary for signatures");
     }
     if (!cmdlineVerify(hfuzz)) {
         return false;
