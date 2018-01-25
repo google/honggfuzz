@@ -279,7 +279,7 @@ void display_createTargetStr(honggfuzz_t* hfuzz) {
     }
 
     static char tmpstr[1024 * 128] = {0};
-    util_ssnprintf(tmpstr, sizeof(tmpstr), "%s", hfuzz->exe.cmdline[0]);
+    snprintf(tmpstr, sizeof(tmpstr), "%s", hfuzz->exe.cmdline[0]);
     for (int i = 1; i < hfuzz->exe.argc; i++) {
         util_ssnprintf(tmpstr, sizeof(tmpstr), " %s", hfuzz->exe.cmdline[i]);
     }
