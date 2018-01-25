@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "display.h"
 #include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
@@ -58,14 +59,8 @@ static bool checkFor_FILE_PLACEHOLDER(const char* const* args) {
 }
 
 static bool cmdlineCheckBinaryType(honggfuzz_t* hfuzz) {
-    if (!files_exists(hfuzz->exe.cmdline[0])) {
-        LOG_W("Your fuzzed binary doesn't exist: '%s'", hfuzz->exe.cmdline[0]);
-        return false;
-    }
-
     int fd;
     off_t fileSz;
-
     uint8_t* map = files_mapFile(hfuzz->exe.cmdline[0], &fileSz, &fd, /* isWriteable= */ false);
     if (!map) {
         /* It's not a critical error */
@@ -677,39 +672,32 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         cmdlineUsage(argv[0], custom_opts);
         return false;
     }
+    if (!files_exists(hfuzz->exe.cmdline[0])) {
+        LOG_E("Your fuzzed binary '%s' doesn't seem to exist", hfuzz->exe.cmdline[0]);
+        return false;
+    }
     if (!cmdlineVerify(hfuzz)) {
         return false;
     }
 
+    display_createTargetStr(hfuzz);
+
     LOG_I(
-        "PID: %d, inputDir '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, "
+        "cmdline: '%s' pid: %d, inputDir '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, "
         "mutationsPerRun: %u, "
         "externalCommand: '%s', runEndTime: %d tmOut: %ld, mutationsMax: %zu, "
         "threads.threadsMax: %zu, "
         "fileExtn: '%s', "
         "ASLimit: 0x%" PRIx64 "(MiB), RSSLimit: 0x%" PRIx64 ", DATALimit: 0x%" PRIx64
         ", fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
-        (int)getpid(), hfuzz->io.inputDir, cmdlineYesNo(hfuzz->exe.nullifyStdio),
-        cmdlineYesNo(hfuzz->exe.fuzzStdin), cmdlineYesNo(hfuzz->io.saveUnique),
-        hfuzz->mutationsPerRun,
+        hfuzz->cmdline_txt, (int)getpid(), hfuzz->io.inputDir,
+        cmdlineYesNo(hfuzz->exe.nullifyStdio), cmdlineYesNo(hfuzz->exe.fuzzStdin),
+        cmdlineYesNo(hfuzz->io.saveUnique), hfuzz->mutationsPerRun,
         hfuzz->exe.externalCommand == NULL ? "NULL" : hfuzz->exe.externalCommand,
         (int)hfuzz->timing.runEndTime, (long)hfuzz->timing.tmOut, hfuzz->mutationsMax,
         hfuzz->threads.threadsMax, hfuzz->io.fileExtn, hfuzz->exe.asLimit, hfuzz->exe.rssLimit,
         hfuzz->exe.dataLimit, hfuzz->exe.cmdline[0], hfuzz->linux.pid,
         cmdlineYesNo(hfuzz->monitorSIGABRT));
-
-    snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", hfuzz->exe.cmdline[0]);
-    for (size_t i = 1; hfuzz->exe.cmdline[i]; i++) {
-        util_ssnprintf(
-            hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), " %s", hfuzz->exe.cmdline[i]);
-        if (strlen(hfuzz->cmdline_txt) == (sizeof(hfuzz->cmdline_txt) - 1)) {
-            hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 5] = ' ';
-            hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 4] = '.';
-            hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 3] = '.';
-            hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 2] = '.';
-            hfuzz->cmdline_txt[sizeof(hfuzz->cmdline_txt) - 1] = '\0';
-        }
-    }
 
     return true;
 }

@@ -358,7 +358,8 @@ android-clean-deps:
 # DO NOT DELETE
 
 cmdline.o: cmdline.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
-cmdline.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
+cmdline.o: display.h libhfcommon/files.h libhfcommon/common.h
+cmdline.o: libhfcommon/log.h
 display.o: display.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 display.o: libhfcommon/log.h
 fuzz.o: fuzz.h honggfuzz.h libhfcommon/util.h arch.h input.h

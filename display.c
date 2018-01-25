@@ -271,18 +271,40 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     display_put(ESC_SCROLL(13, 999) ESC_NAV(999, 1));
 }
 
-extern void display_display(honggfuzz_t* hfuzz) {
+void display_createTargetStr(honggfuzz_t* hfuzz) {
+    if (!hfuzz->exe.cmdline[0]) {
+        LOG_W("Your fuzzed binary is not specified");
+        snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "[EMPTY]");
+        return;
+    }
+
+    static char tmpstr[1024 * 128] = {0};
+    for (int i = 0; i < hfuzz->exe.argc; i++) {
+        util_ssnprintf(tmpstr, sizeof(tmpstr), " %s", hfuzz->exe.cmdline[i]);
+    }
+
+    size_t len = strlen(tmpstr);
+    if (len <= (sizeof(hfuzz->cmdline_txt) - 1)) {
+        snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", tmpstr);
+        return;
+    }
+
+    snprintf(
+        hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%.30s ... %s", tmpstr, &tmpstr[len - 25]);
+}
+
+void display_display(honggfuzz_t* hfuzz) {
     if (logIsTTY() == false) {
         return;
     }
     display_displayLocked(hfuzz);
 }
 
-extern void display_fini(void) {
+void display_fini(void) {
     display_put(ESC_SCROLL_ENABLE ESC_NAV(999, 1));
 }
 
-extern void display_init(void) {
+void display_init(void) {
     atexit(display_fini);
     display_put(ESC_NAV(999, 1));
 }
