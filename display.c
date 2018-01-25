@@ -185,7 +185,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         display_put("      Target : [" ESC_BOLD "%d" ESC_RESET "] '" ESC_BOLD "%s" ESC_RESET "'\n",
             hfuzz->linux.pid, hfuzz->linux.pidCmd);
     } else {
-        display_put("      Target : '" ESC_BOLD "%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
+        display_put("      Target : " ESC_BOLD "%s" ESC_RESET "\n", hfuzz->cmdline_txt);
     }
 
     static long num_cpu = 0;
