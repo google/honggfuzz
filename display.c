@@ -290,7 +290,7 @@ void display_createTargetStr(honggfuzz_t* hfuzz) {
     }
 
     snprintf(
-        hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%.30s ... %s", tmpstr, &tmpstr[len - 25]);
+        hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%.32s ... %s", tmpstr, &tmpstr[len - 27]);
 }
 
 void display_display(honggfuzz_t* hfuzz) {

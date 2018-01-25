@@ -222,7 +222,7 @@ typedef struct {
     } timing;
     bool useScreen;
     bool useVerifier;
-    char cmdline_txt[61];
+    char cmdline_txt[65];
     unsigned mutationsPerRun;
     const char* blacklistFile;
     uint64_t* blacklist;
