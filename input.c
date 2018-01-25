@@ -92,7 +92,7 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
             continue;
         }
         if (hfuzz->maxFileSz != 0UL && st.st_size > (off_t)hfuzz->maxFileSz) {
-            LOG_W("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %" PRId64,
+            LOG_D("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %" PRId64,
                 fname, (int64_t)st.st_size, (int64_t)hfuzz->maxFileSz);
         }
         if ((size_t)st.st_size > maxSize) {
