@@ -223,6 +223,9 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     display_put("    Coverage :");
 
     /* HW perf specific counters */
+    if (hfuzz->dynFileMethod == 0 && !hfuzz->useSanCov) {
+        display_put(" [none]");
+    }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
         display_put(" hwi: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
             ATOMIC_GET(hfuzz->linux.hwCnts.cpuInstrCnt));
@@ -265,7 +268,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     }
     display_put("\n---------------------------------- [ " ESC_BOLD "LOGS" ESC_RESET
                 " ] ------------------------------------\n");
-    display_put(ESC_SCROLL(14, 999) ESC_NAV(999, 1));
+    display_put(ESC_SCROLL(13, 999) ESC_NAV(999, 1));
 }
 
 extern void display_display(honggfuzz_t* hfuzz) {
