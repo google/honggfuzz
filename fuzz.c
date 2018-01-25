@@ -442,7 +442,7 @@ static void fuzz_fuzzLoop(run_t* run) {
     if (run->global->dynFileMethod != _HF_DYNFILE_NONE) {
         fuzz_perfFeedback(run);
     }
-    if (run->global->useSanCov) {
+    if (run->global->dynFileMethod & _HF_DYNFILE_SANCOV) {
         fuzz_sanCovFeedback(run);
     }
     if (run->global->useVerifier && !fuzz_runVerifier(run)) {
@@ -505,7 +505,7 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
     if (run->global->dynFileMethod != _HF_DYNFILE_NONE) {
         fuzz_perfFeedback(run);
     }
-    if (run->global->useSanCov) {
+    if (run->global->dynFileMethod & _HF_DYNFILE_SANCOV) {
         fuzz_sanCovFeedback(run);
     }
     if (run->global->useVerifier && !fuzz_runVerifier(run)) {
@@ -633,7 +633,7 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
         /* Don't do dry run with socketFuzzer */
         LOG_I("Entering phase - Feedback Driven Mode (SocketFuzzer)");
         hfuzz->state = _HF_STATE_DYNAMIC_MAIN;
-    } else if (hfuzz->useSanCov || hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+    } else if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
         LOG_I("Entering phase 1/2: Dry Run");
         hfuzz->state = _HF_STATE_DYNAMIC_DRY_RUN;
     } else {

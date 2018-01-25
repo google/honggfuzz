@@ -220,10 +220,10 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
     }
 
     /*
-     * 'enableSanitizers' can be auto enabled when 'useSanCov', although it's probably
+     * 'enableSanitizers' can be auto enabled when san_cov is used, although it's probably
      * better to let user know about the features that each flag control.
      */
-    if (hfuzz->useSanCov == true && hfuzz->enableSanitizers == false) {
+    if ((hfuzz->dynFileMethod & _HF_DYNFILE_SANCOV) && !hfuzz->enableSanitizers) {
         LOG_E("Sanitizer coverage cannot be used without enabling sanitizers '-S/--sanitizers'");
         return false;
     }
@@ -342,7 +342,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 
         .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER,
         .extSanOpts = NULL,
-        .useSanCov = false,
         .covMetadata = NULL,
 
         .report_mutex = PTHREAD_MUTEX_INITIALIZER,
@@ -522,7 +521,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->exe.externalCommand = optarg;
                 break;
             case 'C':
-                hfuzz->useSanCov = true;
+                hfuzz->dynFileMethod |= _HF_DYNFILE_SANCOV;
                 break;
             case 'S':
                 hfuzz->enableSanitizers = true;

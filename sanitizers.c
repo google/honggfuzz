@@ -111,7 +111,7 @@ static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, char* buf, s
 
     if (!hfuzz->enableSanitizers) {
         snprintf(buf, buflen, "%s=%s", env, kSAN_REGULAR);
-    } else if (hfuzz->useSanCov) {
+    } else if (hfuzz->dynFileMethod & _HF_DYNFILE_SANCOV) {
         snprintf(buf, buflen, "%s=%s:%s:%s:%s%s/%s:%s%s/%s", env, kASAN_OPTS, abortFlag,
             kSAN_COV_OPTS, kSANCOVDIR, hfuzz->io.workDir, _HF_SANCOV_DIR, kSANLOGDIR,
             hfuzz->io.workDir, kLOGPREFIX);

@@ -719,7 +719,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
      * If fuzzing with sanitizer coverage feedback increase crashes counter used
      * as metric for dynFile evolution
      */
-    if (run->global->useSanCov) {
+    if (run->global->dynFileMethod & _HF_DYNFILE_SANCOV) {
         run->sanCovCnts.crashesCnt++;
     }
 
@@ -999,7 +999,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
      * If fuzzing with sanitizer coverage feedback increase crashes counter used
      * as metric for dynFile evolution
      */
-    if (run->global->useSanCov) {
+    if (run->global->dynFileMethod & _HF_DYNFILE_SANCOV) {
         run->sanCovCnts.crashesCnt++;
     }
 

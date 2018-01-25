@@ -678,7 +678,7 @@ static bool sancov_sanCovParse(run_t* run) {
  * Enabled methods are controlled from sanitizer flags in arch.c
  */
 void sancov_Analyze(run_t* run) {
-    if (!run->global->useSanCov) {
+    if (!(run->global->dynFileMethod & _HF_DYNFILE_SANCOV)) {
         return;
     }
     /*
@@ -691,7 +691,7 @@ void sancov_Analyze(run_t* run) {
 }
 
 bool sancov_Init(honggfuzz_t* hfuzz) {
-    if (hfuzz->useSanCov == false) {
+    if (!(hfuzz->dynFileMethod & _HF_DYNFILE_SANCOV)) {
         return true;
     }
     sancov_trieCreate(&hfuzz->covMetadata);

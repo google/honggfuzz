@@ -223,7 +223,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     display_put("    Coverage :");
 
     /* HW perf specific counters */
-    if (hfuzz->dynFileMethod == 0 && !hfuzz->useSanCov) {
+    if (hfuzz->dynFileMethod == 0) {
         display_put(" [none]");
     }
     if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
@@ -252,7 +252,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     }
 
     /* Sanitizer coverage specific counters */
-    if (hfuzz->useSanCov) {
+    if (hfuzz->dynFileMethod & _HF_DYNFILE_SANCOV) {
         uint64_t hitBB = ATOMIC_GET(hfuzz->sanCovCnts.hitBBCnt);
         uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
         float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
