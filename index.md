@@ -43,11 +43,11 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 Honggfuzz has been used to find a few interesting security problems in major software packages; An incomplete list:
 
   * [Pre-auth remote crash in __OpenSSH__](https://anongit.mindrot.org/openssh.git/commit/?id=28652bca29046f62c7045e933e6b931de1d16737)
-  * __Apache__
+  * __Apache HTTPD__
     * [Remote crash in __mod\_http2__ • CVE-2017-7659](http://seclists.org/oss-sec/2017/q2/504)
     * [Use-after-free in __mod\_http2__ • CVE-2017-9789](http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-9789)
     * [Memory leak in __mod\_auth\_digest__ • CVE-2017-9788](http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-9788)
-  * __SSL__
+  * Various __SSL__ libs
     * [Remote OOB read in __OpenSSL__ • CVE-2015-1789]( https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-1789)
     * [Remote Use-after-Free (potential RCE, rated as __critical__) in __OpenSSL__ • CVE-2016-6309](https://www.openssl.org/news/secadv/20160926.txt)
     * [Remote OOB write in __OpenSSL__ • CVE-2016-7054](https://www.openssl.org/news/secadv/20161110.txt)
@@ -62,7 +62,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Multiple bugs in the __poppler__ library](http://lists.freedesktop.org/archives/poppler/2010-November/006726.html)
   * [Multiple exploitable bugs in __IDA-Pro__](https://www.hex-rays.com/bugbounty.shtml)
   * [Remote DoS in __Crypto++__ • CVE-2016-9939](http://www.openwall.com/lists/oss-security/2016/12/12/7)
-  * Language interpreters
+  * Programming language interpreters
     * [__PHP/Python/Ruby__](https://github.com/dyjakan/interpreter-bugs)
     * [PHP WDDX](https://bugs.php.net/bug.php?id=74145)
     * [PHP](https://bugs.php.net/bug.php?id=74194)
@@ -77,6 +77,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * [CVE-2010-2519](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2519)
     * [CVE-2010-2520](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2520)
     * [CVE-2010-2527](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2527)
+  * [Infinite loop in __nxginx__](https://github.com/nginx/unit/commit/477e8177b70acb694759e62d830b8a311a736324)
   * A couple of problems in the [__MATLAB MAT File I/O Library__](https://sourceforge.net/projects/matio): [1](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [2](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [3](https://github.com/tbeu/matio/commit/a55b9c2c01582b712d5a643699a13b5c41687db1), [4](https://github.com/tbeu/matio/commit/3e6283f37652e29e457ab9467f7738a562594b6b), [5](https://github.com/tbeu/matio/commit/783ee496a6914df68e77e6019054ad91e8ed6420)
   * ... and more
 
