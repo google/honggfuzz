@@ -95,6 +95,9 @@ static bool isLDMode(int argc, char** argv) {
         if (strcmp(argv[i], "-S") == 0) {
             return false;
         }
+        if (strcmp(argv[i], "--shared") == 0) {
+            return false;
+        }
     }
     return true;
 }
