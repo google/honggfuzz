@@ -119,6 +119,10 @@ static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen
         PLOG_D("socket(type=%d, SOCK_STREAM, 0)", addr->sa_family);
         return -1;
     }
+    int val = 1;
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &val, (socklen_t)sizeof(val)) == -1) {
+        PLOG_W("setsockopt(sock=%d, SOL_SOCKET, SO_REUSEADDR, 1)", sock);
+    }
 
     netDriver_bindToRndLoopback(sock, addr->sa_family);
 
