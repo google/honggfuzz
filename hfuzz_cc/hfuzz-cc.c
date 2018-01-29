@@ -365,6 +365,7 @@ static int ldMode(int argc, char** argv) {
     /* Reference standard honggfuzz libraries (libhfuzz and libhfnetdriver) */
     args[j++] = getLibHFNetDriverPath();
     args[j++] = getLibHfuzzPath();
+    args[j++] = getLibHFNetDriverPath();
 
     /* Pull modules defining the following symbols (if they exist) */
     args[j++] = "-Wl,-u,LIBHFNETDRIVER_module_main",
