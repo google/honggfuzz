@@ -99,8 +99,6 @@ static pid_t arch_clone(uintptr_t flags) {
 }
 
 pid_t arch_fork(run_t* run) {
-    run->global->linux.useClone = true;
-
     pid_t pid = run->global->linux.useClone ? arch_clone(CLONE_UNTRACED | SIGCHLD) : fork();
     if (pid == -1) {
         return pid;
