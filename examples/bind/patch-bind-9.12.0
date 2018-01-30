@@ -49,10 +49,10 @@ index b5c81bd..5d859c5 100644
  #endif /* ENABLE_AFL */
  }
 diff --git a/bin/named/main.c b/bin/named/main.c
-index 4fb0566..a7e74e9 100644
+index 4fb0566..7cbee2d 100644
 --- a/bin/named/main.c
 +++ b/bin/named/main.c
-@@ -1347,13 +1347,253 @@ named_smf_get_instance(char **ins_name, int debug, isc_mem_t *mctx) {
+@@ -1347,13 +1347,255 @@ named_smf_get_instance(char **ins_name, int debug, isc_mem_t *mctx) {
  }
  #endif /* HAVE_LIBSCF */
  
@@ -80,8 +80,8 @@ index 4fb0566..a7e74e9 100644
 +#include <libhfcommon/util.h>
 +#include <libhfuzz/libhfuzz.h>
 +
-+static void unsh(void) {
-+    if (linuxEnterNs(CLONE_NEWUSER | CLONE_NEWNET | CLONE_NEWNS) == false) {
++static void enter_namespaces(void) {
++    if (linuxEnterNs(CLONE_NEWUSER | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWIPC) == false) {
 +        exit(1);
 +    }
 +    if (linuxIfaceUp("lo") == false) {
@@ -299,7 +299,9 @@ index 4fb0566..a7e74e9 100644
 -	isc_result_t result;
 +int main(int argc, char *argv[]) {
 +    if (!getenv("NO_FUZZ")) {
-+        unsh();
++        named_g_fuzz_addr = "127.0.0.1:53";
++        named_g_fuzz_type = isc_fuzz_client;
++        enter_namespaces();
 +        launch_thr();
 +    }
 +
@@ -310,7 +312,7 @@ index 4fb0566..a7e74e9 100644
  #endif
  
  #ifdef HAVE_GPERFTOOLS_PROFILER
-@@ -1402,17 +1642,17 @@ main(int argc, char *argv[]) {
+@@ -1402,17 +1644,17 @@ main(int argc, char *argv[]) {
  
  	parse_command_line(argc, argv);
  
