@@ -49,10 +49,10 @@ index b5c81bd..5d859c5 100644
  #endif /* ENABLE_AFL */
  }
 diff --git a/bin/named/main.c b/bin/named/main.c
-index 4fb0566..7cfcfad 100644
+index 4fb0566..a7e74e9 100644
 --- a/bin/named/main.c
 +++ b/bin/named/main.c
-@@ -1347,11 +1347,250 @@ named_smf_get_instance(char **ins_name, int debug, isc_mem_t *mctx) {
+@@ -1347,13 +1347,253 @@ named_smf_get_instance(char **ins_name, int debug, isc_mem_t *mctx) {
  }
  #endif /* HAVE_LIBSCF */
  
@@ -97,6 +97,10 @@ index 4fb0566..7cfcfad 100644
 +
 +__attribute__((no_sanitize("memory"))) __attribute__((no_sanitize("address"))) static void *
 +bind_thr(void *unused __attribute__((unused))) {
++    while (!named_g_run_done) {
++        usleep(10000);
++    }
++
 +    int myfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
 +    if (myfd == -1) {
 +        perror("socket");
@@ -182,6 +186,11 @@ index 4fb0566..7cfcfad 100644
 +
 +__attribute__((no_sanitize("memory"))) __attribute__((no_sanitize("address"))) static void *
 +connect_thr(void *unused __attribute__((unused))) {
++    while (!named_g_run_done) {
++        usleep(10000);
++    }
++    usleep(100000);
++
 +    for (;;) {
 +        int myfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
 +        if (myfd == -1) {
@@ -274,14 +283,6 @@ index 4fb0566..7cfcfad 100644
 +        exit(1);
 +    }
 +
-+#if 0
-+	while (!named_g_run_done) {
-+		usleep(10000);
-+	}
-+#endif
-+
-+    usleep(600000);
-+
 +    pthread_attr_init(&attr);
 +    pthread_attr_setstacksize(&attr, 1024 * 1024 * 4);
 +    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -304,9 +305,12 @@ index 4fb0566..7cfcfad 100644
 +
 +    isc_result_t result;
  #ifdef HAVE_LIBSCF
- 	char *instance = NULL;
+-	char *instance = NULL;
++    char *instance = NULL;
  #endif
-@@ -1402,17 +1641,17 @@ main(int argc, char *argv[]) {
+ 
+ #ifdef HAVE_GPERFTOOLS_PROFILER
+@@ -1402,17 +1642,17 @@ main(int argc, char *argv[]) {
  
  	parse_command_line(argc, argv);
  
@@ -326,21 +330,50 @@ index 4fb0566..7cfcfad 100644
  	/*
  	 * Warn about common configuration error.
  	 */
-diff --git a/lib/dns/cache.c b/lib/dns/cache.c
-index 9d9fc1a..2d50eae 100644
---- a/lib/dns/cache.c
-+++ b/lib/dns/cache.c
-@@ -1050,8 +1050,8 @@ dns_cache_setcachesize(dns_cache_t *cache, size_t size) {
- 	 * Impose a minimum cache size; pathological things happen if there
- 	 * is too little room.
- 	 */
--	if (size != 0U && size < DNS_CACHE_MINSIZE)
--		size = DNS_CACHE_MINSIZE;
-+//	if (size != 0U && size < DNS_CACHE_MINSIZE)
-+//		size = DNS_CACHE_MINSIZE;
+diff --git a/bin/named/server.c b/bin/named/server.c
+index cdae4d3..2c45d1b 100644
+--- a/bin/named/server.c
++++ b/bin/named/server.c
+@@ -9246,7 +9246,7 @@ run_server(isc_task_t *task, isc_event_t *event) {
+ 	isc_hash_init();
  
- 	LOCK(&cache->lock);
- 	cache->size = size;
+ 	CHECKFATAL(load_zones(server, ISC_TRUE, ISC_FALSE), "loading zones");
+-#ifdef ENABLE_AFL
++#if 1
+ 	named_g_run_done = ISC_TRUE;
+ #endif
+ }
+diff --git a/compile.sh b/compile.sh
+new file mode 100755
+index 0000000..ca0032a
+--- /dev/null
++++ b/compile.sh
+@@ -0,0 +1,25 @@
++#!/bin/sh
++
++set -ex
++
++export CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang
++export CXX=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang++
++export CFLAGS="-fsanitize=address -Wno-logical-not-parentheses -Wno-shift-negative-value -Wno-logical-not-parentheses -g -ggdb -O0"
++./configure \
++		--prefix=/home/jagger/fuzz/bind/dist/ \
++		--enable-threads \
++		--without-gssapi \
++		--disable-chroot \
++		--disable-linux-caps \
++		--enable-seccomp \
++		--without-libtool \
++		--enable-ipv6 \
++		--enable-atomic \
++		--enable-epoll \
++		--enable-afl \
++		--disable-crypto-rand \
++		--disable-backtrace \
++		--with-openssl=no
++
++make clean
++make -j$(nproc)
 diff --git a/lib/dns/request.c b/lib/dns/request.c
 index 0c1df42..7fcde1a 100644
 --- a/lib/dns/request.c
