@@ -347,7 +347,7 @@ index cdae4d3..2c45d1b 100644
  }
 diff --git a/compile.sh b/compile.sh
 new file mode 100755
-index 0000000..ca0032a
+index 0000000..d3c37fb
 --- /dev/null
 +++ b/compile.sh
 @@ -0,0 +1,25 @@
@@ -357,7 +357,7 @@ index 0000000..ca0032a
 +
 +export CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang
 +export CXX=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang++
-+export CFLAGS="-fsanitize=address -Wno-logical-not-parentheses -Wno-shift-negative-value -Wno-logical-not-parentheses -g -ggdb -O0"
++export CFLAGS="-fsanitize=address -Wno-shift-negative-value -Wno-logical-not-parentheses -g -ggdb -O0"
 +./configure \
 +		--prefix=/home/jagger/fuzz/bind/dist/ \
 +		--enable-threads \
