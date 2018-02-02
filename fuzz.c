@@ -135,9 +135,9 @@ static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
     
     len = strlen(hfuzz->inputDir);
     if(strrchr(hfuzz->inputDir+len-1, '/' )){
-        snprintf(cmd, 256, "/bin/cp %s%s %s", hfuzz->inputDir, fuzzer->origFileName, fuzzer->fileName);
+        snprintf(cmd, 256, "/bin/cp '%s%s' %s", hfuzz->inputDir, fuzzer->origFileName, fuzzer->fileName);
     }
-    snprintf(cmd, 256, "/bin/cp %s/%s %s", hfuzz->inputDir, fuzzer->origFileName, fuzzer->fileName);
+    snprintf(cmd, 256, "/bin/cp '%s/%s' %s", hfuzz->inputDir, fuzzer->origFileName, fuzzer->fileName);
     system(cmd);
 
     LOG_I("Created '%s' as an input file", fuzzer->fileName);
