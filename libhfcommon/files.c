@@ -390,7 +390,7 @@ uint8_t* files_mapFileShared(const char* fileName, off_t* fileSz, int* fd) {
     return buf;
 }
 
-void* files_mapSharedMem(size_t sz, int* fd, const char* dir) {
+void* files_mapSharedMem(size_t sz, int* fd, const char* name, const char* dir) {
     *fd = -1;
 
 #if defined(_HF_ARCH_LINUX)
@@ -406,14 +406,14 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* dir) {
 #endif /* !defined(__NR_memfd_create) */
 
 #if defined(__NR_memfd_create)
-    *fd = syscall(__NR_memfd_create, "honggfuzz", (uintptr_t)MFD_CLOEXEC);
+    *fd = syscall(__NR_memfd_create, name, (uintptr_t)MFD_CLOEXEC);
 #endif /* defined__NR_memfd_create) */
 
 #endif /* defined(_HF_ARCH_LINUX) */
 
     if (*fd == -1) {
         char template[PATH_MAX];
-        snprintf(template, sizeof(template), "%s/hfuzz.XXXXXX", dir);
+        snprintf(template, sizeof(template), "%s/%s.XXXXXX", dir, name);
         if ((*fd = mkostemp(template, O_CLOEXEC)) == -1) {
             PLOG_W("mkstemp('%s')", template);
             return NULL;

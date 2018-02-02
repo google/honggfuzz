@@ -202,8 +202,8 @@ int main(int argc, char** argv) {
     }
 
     if (hfuzz.dynFileMethod != _HF_DYNFILE_NONE) {
-        if (!(hfuzz.feedback =
-                    files_mapSharedMem(sizeof(feedback_t), &hfuzz.bbFd, hfuzz.io.workDir))) {
+        if (!(hfuzz.feedback = files_mapSharedMem(
+                  sizeof(feedback_t), &hfuzz.bbFd, "hfuzz-feedback", hfuzz.io.workDir))) {
             LOG_F("files_mapSharedMem(sz=%zu, dir='%s') failed", sizeof(feedback_t),
                 hfuzz.io.workDir);
         }
