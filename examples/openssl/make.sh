@@ -8,7 +8,6 @@ SAN="$2"
 TYPE=`basename "$DIR"`
 HFUZZ_SRC=~/src/honggfuzz/
 OS=`uname -s`
-CLANG_VER=-5.0
 CC="$HFUZZ_SRC/hfuzz_cc/hfuzz-clang"
 CXX="$HFUZZ_SRC/hfuzz_cc/hfuzz-clang++"
 COMMON_FLAGS="-DBORINGSSL_UNSAFE_DETERMINISTIC_MODE -DBORINGSSL_UNSAFE_FUZZER_MODE -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -DBN_DEBUG \
@@ -52,6 +51,6 @@ for x in x509 privkey client server; do
 done
 
 for x in x509 privkey client server; do
-	clang++$CLANG_VER $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "libfuzzer.$TYPE$SAN.$x$SUFFIX" "$LIBSSL" "$LIBCRYPTO" $COMMON_LDFLAGS $SAN_COMPILE -lFuzzer
+	clang++ $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "libfuzzer.$TYPE$SAN.$x$SUFFIX" "$LIBSSL" "$LIBCRYPTO" $COMMON_LDFLAGS $SAN_COMPILE -lFuzzer
 done
 
