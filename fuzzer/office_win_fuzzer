@@ -1,0 +1,1 @@
+riufuzz -q -V -t9 -n1 -e doc -f "/cygdrive/c/Users/Administrator/Desktop/公式doc" -c ../externalfuzzers/ole_fuzz.py -- '/cygdrive/c/Program Files (x86)/Microsoft Office/root/Office16/WINWORD.EXE' @@

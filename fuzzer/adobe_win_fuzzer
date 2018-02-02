@@ -1,0 +1,1 @@
+riufuzz -r 0.0001 -f  /cygdrive/c/Users/Administrator/Desktop/null -V -e pdf -t3 -n1 --  '/cygdrive/c/Program Files (x86)/Adobe/Acrobat Reader DC/Reader/AcroRd32.exe' @@

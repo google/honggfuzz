@@ -1,1 +1,1 @@
-riufuzz -r 0.0001 -f /Volumes/Macintosh/Users/riusksk/bughunt_tools/riufuzz/tools/download_pdf/ -w ../dict/pdf.dict  -V -e pdf -t5 -n3 -- /Applications/Adobe\ Acrobat\ Reader\ DC.app/Contents/MacOS/AdobeReader ___FILE___
+riufuzz -q -r 0.0001 -B acrobat_blacklist -f /Users/jane/riusksk/riufuzz/tools/bing_download/download -V -e pdf -t2 -n5 -- /Applications/Adobe\ Acrobat\ Reader\ DC.app/Contents/MacOS/AdobeReader @@
