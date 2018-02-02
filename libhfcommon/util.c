@@ -143,38 +143,24 @@ void util_rndBuf(uint8_t* buf, size_t sz) {
     }
 }
 
-/*
- * Function has variable length stack size, although already we know it's invoked
- * with relatively small sizes (max is _HF_REPORT_SIZE), thus safe to silent warning.
- */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wframe-larger-than="
 int util_vssnprintf(char* str, size_t size, const char* format, va_list ap) {
-    char buf1[size];
-    char buf2[size];
+    size_t len = strlen(str);
+    if (len >= size) {
+        return len;
+    }
 
-    strncpy(buf1, str, size);
-
-    vsnprintf(buf2, size, format, ap);
-
-    return snprintf(str, size, "%s%s", buf1, buf2);
+    size_t left = size - len;
+    return vsnprintf(&str[len], left, format, ap);
 }
 
 int util_ssnprintf(char* str, size_t size, const char* format, ...) {
-    char buf1[size];
-    char buf2[size];
-
-    snprintf(buf1, sizeof(buf1), "%s", str);
-
     va_list args;
     va_start(args, format);
-    vsnprintf(buf2, size, format, args);
+    int ret = util_vssnprintf(str, size, format, args);
     va_end(args);
 
-    return snprintf(str, size, "%s%s", buf1, buf2);
+    return ret;
 }
-
-#pragma GCC diagnostic pop /* EOF diagnostic ignored "-Wstack-usage=" */
 
 void util_getLocalTime(const char* fmt, char* buf, size_t len, time_t tm) {
     struct tm ltime;
