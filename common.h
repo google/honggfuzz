@@ -178,6 +178,7 @@ typedef enum {
     _HF_STATE_DRY_RUN = 2,
     _HF_STATE_DYNAMIC_PRE = 3,
     _HF_STATE_DYNAMIC_MAIN = 4,
+    _HF_STATE_EXTERN = 5,
 } fuzzState_t;
 
 struct dynfile_t {

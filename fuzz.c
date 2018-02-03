@@ -3,10 +3,9 @@
  * honggfuzz - fuzzing routines
  * -----------------------------------------
  *
- * Author:
- * Robert Swiecki <swiecki@google.com>
- * Felix Gröbert <groebert@google.com>
- * riusksk <riusksk@qq.com>
+ * Author: Robert Swiecki <swiecki@google.com>
+ *         Felix Gröbert <groebert@google.com>
+ *         riusksk <riusksk@qq.com>
  *
  * Copyright 2010-2015 by Google Inc. All Rights Reserved.
  *
@@ -647,7 +646,9 @@ void fuzz_threadsStart(honggfuzz_t * hfuzz, pthread_t * threads)
         fuzz_setState(hfuzz, _HF_STATE_DYNAMIC_PRE);
     } else if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
         fuzz_setState(hfuzz, _HF_STATE_DRY_RUN);
-    } else {
+    } else if (hfuzz->externalCommand) {
+        fuzz_setState(hfuzz, _HF_STATE_EXTERN);
+    }else {
         fuzz_setState(hfuzz, _HF_STATE_STATIC);
     }
 

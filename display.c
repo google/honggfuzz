@@ -4,6 +4,7 @@
  * -----------------------------------------
  *
  * Author: Robert Swiecki <swiecki@google.com>
+ *         riusksk <riusksk@qq.com>
  *
  * Copyright 2010-2015 by Google Inc. All Rights Reserved.
  *
@@ -165,6 +166,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
 
     char *target;
+    char *extern_fuzzer;
     char *time_elapsed_str;
     char *time_remain_str;
     unsigned long elapsed_second;
@@ -220,6 +222,15 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put(" (out of: " ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET " [" ESC_BOLD "%.2f"
             ESC_RESET "%%])", hfuzz->mutationsMax, exeProgress);
     }
+
+    if(strrchr(hfuzz->externalCommand, '/')){
+        extern_fuzzer = strrchr(hfuzz->externalCommand, '/')+1;
+    }else if(strrchr(hfuzz->externalCommand, '\\')){
+		extern_fuzzer = strrchr(hfuzz->externalCommand, '\\')+1;	// cygwin路径中使用'\'
+	}else{
+		extern_fuzzer = hfuzz->externalCommand;
+	}
+
     switch (ATOMIC_GET(hfuzz->state)) {
     case _HF_STATE_STATIC:
         display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "Dumb Fuzzing" ESC_RESET);
@@ -232,6 +243,9 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         break;
     case _HF_STATE_DYNAMIC_MAIN:
         display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "Feedback-driven Fuzzing" ESC_RESET);
+        break;
+    case _HF_STATE_EXTERN:
+        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "External Fuzzer (%s)" ESC_RESET, extern_fuzzer);
         break;
     default:
         display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "Unknown" ESC_RESET);
