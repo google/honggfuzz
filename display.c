@@ -260,9 +260,18 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put(ESC_WHITE "\n    Run Time : " ESC_RESET ESC_BOLD "%s (" ESC_RESET ESC_WHITE "Remain: " ESC_RESET ESC_BOLD "%s)\n" ESC_RESET , time_elapsed_str, time_remain_str);
     }else{
         display_put(ESC_WHITE "\n    Run Time : " ESC_RESET ESC_BOLD "%s\n" ESC_RESET , time_elapsed_str);   
-    } 
+    }
+
+    static char tmpstr[1024] = {0};
+    size_t len = strlen(hfuzz->inputDir);
+    if(len > 40){
+        snprintf(tmpstr, sizeof(tmpstr), "%.32s...%s", hfuzz->inputDir, hfuzz->inputDir+len-10);
+    }else{
+        snprintf(tmpstr, sizeof(tmpstr), "%s", hfuzz->inputDir);
+    }
+    
     display_put(ESC_WHITE "   Input Dir : " ESC_RESET ESC_RED "[% " _HF_MONETARY_MOD "zu] " ESC_RESET ESC_BOLD "'%s" ESC_RESET "'\n",
-                ATOMIC_GET(hfuzz->fileCnt), hfuzz->inputDir != NULL ? hfuzz->inputDir : "[NONE]");
+                ATOMIC_GET(hfuzz->fileCnt), tmpstr);
     /*
     display_put(ESC_WHITE "  Fuzzed Cmd : " ESC_RESET ESC_BOLD "'%s" ESC_RESET "'\n", hfuzz->cmdline_txt);
     if (hfuzz->linux.pid > 0) {
