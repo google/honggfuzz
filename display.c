@@ -108,8 +108,8 @@ static double getCpuUse(long num_cpu)
     return (double)cpuUse / sysconf(_SC_CLK_TCK) * 100;
 }
 
-static char* get_time_elapsed(uint64_t start_time) {
-   
+static char* get_time_elapsed(uint64_t start_time) 
+{
     unsigned long elapsed_second;
     elapsed_second = (unsigned long)(time(NULL) - start_time);
    
@@ -134,8 +134,8 @@ static char* get_time_elapsed(uint64_t start_time) {
     return str_time_elapsed;
 }    
 
-static char* get_time_remain(unsigned long remain_second) {
-   
+static char* get_time_remain(unsigned long remain_second) 
+{   
     unsigned int day, hour, min, second;
     static char str_time_remain[64];
 
@@ -156,6 +156,20 @@ static char* get_time_remain(unsigned long remain_second) {
     }
     return str_time_remain;
 } 
+
+static char* get_filename_in_path(char* path)
+{
+    char *filename;
+
+    if(strrchr(path, '/')){		
+        filename = strrchr(path, '/')+1;
+    }else if(strrchr(path, '\\')){
+		filename = strrchr(path, '\\')+1;	// file path use '\' in cygwin 
+	}else{
+		filename = path;  
+	}
+    return filename;
+}
 
 static void display_displayLocked(honggfuzz_t * hfuzz)
 {
@@ -198,13 +212,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     /* The lock should be acquired before any output is printed on the screen */
     MX_SCOPED_LOCK(logMutexGet());
 
-    if(strrchr(hfuzz->cmdline[0], '/')){		
-        target = strrchr(hfuzz->cmdline[0], '/')+1; // Get rid of the inclined shoulder
-    }else if(strrchr(hfuzz->cmdline[0], '\\')){
-		target = strrchr(hfuzz->cmdline[0], '\\')+1;	// cygwin路径中使用'\'
-	}else{
-		target = hfuzz->cmdline[0];  // only exec file name
-	}
+    target = get_filename_in_path(hfuzz->cmdline[0]);
     hfuzz->target = target;
 
     speed_second =  elapsed_second ? ((float)curr_exec_cnt / elapsed_second) : ((float)ATOMIC_GET(hfuzz->tmOut)/hfuzz->threadsMax);
@@ -223,13 +231,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
             ESC_RESET "%%])", hfuzz->mutationsMax, exeProgress);
     }
 
-    if(strrchr(hfuzz->externalCommand, '/')){
-        extern_fuzzer = strrchr(hfuzz->externalCommand, '/')+1;
-    }else if(strrchr(hfuzz->externalCommand, '\\')){
-		extern_fuzzer = strrchr(hfuzz->externalCommand, '\\')+1;	// cygwin路径中使用'\'
-	}else{
-		extern_fuzzer = hfuzz->externalCommand;
-	}
+    extern_fuzzer = get_filename_in_path(hfuzz->externalCommand);
 
     switch (ATOMIC_GET(hfuzz->state)) {
     case _HF_STATE_STATIC:
