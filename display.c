@@ -267,7 +267,8 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
             ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
     }
     display_put("\n---------------------------------- [ " ESC_BOLD "LOGS" ESC_RESET
-                " ] ------------------/ " ESC_BOLD "%s %s " ESC_RESET "/-", PROG_NAME, PROG_VERSION);
+                " ] ------------------/ " ESC_BOLD "%s %s " ESC_RESET "/-",
+        PROG_NAME, PROG_VERSION);
     display_put(ESC_SCROLL(13, 999) ESC_SCROLL_VERT(999));
 }
 
