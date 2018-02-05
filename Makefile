@@ -105,10 +105,6 @@ else ifeq ($(OS),Darwin)
     OSX_SDK_VERSION := $(shell xcrun --show-sdk-version)
     SDK_NAME :=macosx$(OSX_SDK_VERSION)
     SDK := $(shell xcrun --sdk $(SDK_NAME) --show-sdk-path 2>/dev/null)
-    ifeq (,$(findstring MacOSX.platform,$(SDK)))
-        XC_PATH := $(shell xcode-select -p)
-        $(error $(SDK_NAME) not found in $(XC_PATH))
-    endif
 
     CC := $(shell xcrun --sdk $(SDK_NAME) --find cc)
     LD := $(shell xcrun --sdk $(SDK_NAME) --find cc)
