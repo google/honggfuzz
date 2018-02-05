@@ -269,7 +269,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     display_put("\n---------------------------------- [ " ESC_BOLD "LOGS" ESC_RESET
                 " ] ------------------/ " ESC_BOLD "%s %s " ESC_RESET "/-",
         PROG_NAME, PROG_VERSION);
-    display_put(ESC_SCROLL(1, 999));
+    display_put(ESC_SCROLL(13, 999) ESC_NAV(999, 1));
 }
 
 void display_createTargetStr(honggfuzz_t* hfuzz) {
@@ -303,10 +303,10 @@ void display_display(honggfuzz_t* hfuzz) {
 }
 
 void display_fini(void) {
-    display_put(ESC_SCROLL_ENABLE ESC_SCROLL(1, 999));
+    display_put(ESC_SCROLL_ENABLE ESC_NAV(999, 1));
 }
 
 void display_init(void) {
     atexit(display_fini);
-    display_put(ESC_SCROLL_VERT(999));
+    display_put(ESC_NAV(999, 1));
 }
