@@ -381,7 +381,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
             fuzzer->ext = strrchr(fuzzer->origFileName, '.' ) + 1;
         }else{
             LOG_D("origFileName have not ext name.");
-            fuzzer->ext=".null"; //无后缀名
+            fuzzer->ext=".fuzz"; //无后缀名
         }
     }
     if(!strcmp(hfuzz->fileExtn, "any")){ 
@@ -433,7 +433,7 @@ static void fuzz_fuzzLoop(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         fuzz_sanCovFeedback(hfuzz, fuzzer);
     }
 
-    if (hfuzz->useVerifier && (fuzzer->crashFileName[0] != 0) && fuzzer->backtrace) {
+    if (hfuzz->useVerifier && (fuzzer->crashFileName[0] != 0)) {
         if (!arch_runVerifier(hfuzz, fuzzer)) {
             LOG_I("Failed to verify %s", fuzzer->crashFileName);
         }

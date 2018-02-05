@@ -284,8 +284,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
         return true;
     }
 
-    if (files_writeBufToFile
-        (fuzzer->crashFileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+    if (files_writeBufToFile(fuzzer->crashFileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
          O_CREAT | O_EXCL | O_WRONLY) == false) {
         LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
         return true;

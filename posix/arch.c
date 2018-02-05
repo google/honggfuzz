@@ -49,6 +49,8 @@
 #include "../subproc.h"
 #include "../util.h"
 
+#define ARGS_MAX 512
+
 /*  *INDENT-OFF* */
 struct {
     bool important;
@@ -109,33 +111,54 @@ void arch_getFileName(honggfuzz_t * hfuzz, char *fileName)
              (int)getpid(), (unsigned long int)tv.tv_sec, util_rnd64(), hfuzz->fileExtn);
 }
 
-char* get_str_value(char * input_string, char *check_string)
+char* arch_get_str_value(char * input_string, char *check_string)
 {
     char *pos;
-    if (strstr(input_string, check_string)) {
-        pos = strstr(input_string, check_string);
-        return pos + strlen(check_string);
+    char *tmp;
+    char *newline;
+    char *start;
+    int length;
+    
+    pos = strstr(input_string, check_string);
+    if (pos) {
+        newline = strstr(pos, "\n");
+
+        if (!strcmp(check_string,"Recommended Bug Title:")) {
+            start = strstr(pos, " at ") + 4;
+        } else {
+            start = pos + strlen(check_string) + 1;
+        }
+
+        length = newline - start;
+        tmp = (char *)malloc(ARGS_MAX);
+        memset(tmp, 0, ARGS_MAX);
+        strncpy(tmp, start, length);
+        LOG_D("cdb ret value: %s\n", tmp);
+        return tmp;
     }else{
         return "Unknow";
     }
 }
 
 // cygwin下各磁盘目录会变成 “/cygdrive/磁盘id/”，因此需要还原下，否则文件路径可能无法识别
-char* fix_cygdrive_path(char cyg_path[])
+char* arch_fix_cygdrive_path(char cyg_path[])
 {   
-    if (strstr(cyg_path, "/cygdrive/")) {
-        cyg_path[9] = cyg_path[10];
-        cyg_path[10] = ':';
-        return &cyg_path[9];
-    } else {
-        LOG_W("no cygdrive file path !");
+    static char tmp[PATH_MAX];
+    int offset = strlen("/cygdrive/");
+
+    strncpy(tmp, cyg_path, strlen(cyg_path));
+    *(tmp + strlen(cyg_path)) = '\0';
+
+    if (strstr(tmp, "/cygdrive/")) {
+        tmp[offset-1] = tmp[offset];
+        tmp[offset] = ':';
+        return &tmp[offset-1];
     }
     return &cyg_path[0];
 }
 
 bool arch_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
 {
-    LOG_W("arch_runVerifier");
     int crashFd = -1;
     uint8_t *crashBuf = NULL;
     off_t crashFileSz = 0;
@@ -208,11 +231,6 @@ bool arch_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
             LOG_F("subproc_Run()");
          }
 
-        /* If stack hash doesn't match skip name tag and exit */
-        if (crashedFuzzer->backtrace != vFuzzer.backtrace) {
-            LOG_D("Verifier stack hash mismatch");
-            return false;
-        }
     }
 
     // 上述崩溃验证通过后，使用bugid(需要管理员权限开启PageHeap)或者cdb（可能延时较长）分析崩溃信息，
@@ -224,9 +242,9 @@ bool arch_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     char *description;
     char *hash;
 
-    snprintf(cmd, sizeof(cmd), "cdb -c 'g;g;!load msec.dll;!exploitable -v;q' '%s' %s 2>/dev/null",
-            fix_cygdrive_path(hfuzz->cmdline[0]), fix_cygdrive_path(crashedFuzzer->crashFileName));
-    LOG_W(cmd);
+    snprintf(cmd, sizeof(cmd), "cdb -c 'g;g;!load msec.dll;!exploitable -v;q' '%s' '%s' 2>/dev/null",
+            arch_fix_cygdrive_path(hfuzz->cmdline[0]), arch_fix_cygdrive_path(crashedFuzzer->crashFileName));
+    LOG_D("cmd=%s\n", cmd);
     FILE* pipe = popen(cmd, "r");
     if (!pipe){
           LOG_E("cdb run fail");
@@ -237,12 +255,13 @@ bool arch_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
         if(fgets(buffer, sizeof(buffer), pipe)){
                 strcat(result,buffer);
         }
-    } 
+    }
     pclose(pipe);
+    LOG_D("cdb result: %s", result);
 
-    exploitable = get_str_value(result, "Exploitability Classification:");
-    description = get_str_value(result, "Short Description:");
-    hash = get_str_value(result, "(Hash=");
+    exploitable = arch_get_str_value(result, "Exploitability Classification:");
+    description = arch_get_str_value(result, "Short Description:");
+    hash = arch_get_str_value(result, "Recommended Bug Title:");
 
     char verFile[PATH_MAX] = { 0 };
     if (strcmp(hash,"Unknow") && strcmp(exploitable,"Unknow") && strcmp(description,"Unknow")) {
@@ -250,7 +269,7 @@ bool arch_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     } else {
         snprintf(verFile, sizeof(verFile), "%s.verified", crashedFuzzer->crashFileName);
     }
-
+    LOG_W("%s", verFile);
     /* Copy file with new suffix & remove original copy */
     bool dstFileExists = false;
     if (files_copyFile(crashedFuzzer->crashFileName, verFile, &dstFileExists)) {
@@ -335,18 +354,14 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     char localtmstr[PATH_MAX];
     util_getLocalTime("%F.%H.%M.%S", localtmstr, sizeof(localtmstr), time(NULL));
 
-    char newname[PATH_MAX];
-
     /* If dry run mode, copy file with same name into workspace */
     if (hfuzz->origFlipRate == 0.0L && hfuzz->useVerifier) {
-        snprintf(newname, sizeof(newname), "%s.%s", arch_sigs[termsig].descr, fuzzer->origFileName);
+        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s.%s", arch_sigs[termsig].descr, fuzzer->origFileName);
     } else {
-        snprintf(newname, sizeof(newname), "%s/%s.TIME.%s.orig.%s.%s",
+        snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s.TIME.%s.orig.%s.%s",
                  hfuzz->workDir, arch_sigs[termsig].descr, localtmstr, files_get_filename_in_path(fuzzer->fileName),
                  hfuzz->keepext?fuzzer->ext:hfuzz->fileExtn);
     }
-
-    LOG_I("Crash! Saving the '%s' as '%s'", fuzzer->fileName, newname);
 
     /*
      * All crashes are marked as unique due to lack of information in POSIX arch
@@ -354,8 +369,16 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     ATOMIC_POST_INC(hfuzz->crashesCnt);
     ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
 
-    if (files_writeBufToFile
-        (newname, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
+    if (files_exists(fuzzer->crashFileName)) {
+        LOG_I("It seems that '%s' already exists, skipping", fuzzer->crashFileName);
+        // Clear filename so that verifier can understand we hit a duplicate
+        memset(fuzzer->crashFileName, 0, sizeof(fuzzer->crashFileName));
+        return true;
+    }
+
+    LOG_I("Crash! Saving the '%s' as '%s'", fuzzer->fileName, fuzzer->crashFileName);
+
+    if (files_writeBufToFile(fuzzer->crashFileName, fuzzer->dynamicFile, fuzzer->dynamicFileSz,
          O_CREAT | O_EXCL | O_WRONLY) == false) {
         LOG_E("Couldn't copy '%s' to '%s'", fuzzer->fileName, fuzzer->crashFileName);
     }
@@ -370,7 +393,6 @@ pid_t arch_fork(honggfuzz_t * hfuzz UNUSED, fuzzer_t * fuzzer UNUSED)
 
 bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
 {
-#define ARGS_MAX 512
     char *args[ARGS_MAX + 2];
     char argData[PATH_MAX] = { 0 };
     int x;
@@ -387,12 +409,7 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         if (!hfuzz->fuzzStdin && strcmp(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
         // 有些软件必须使用绝对路径，否则会出错，比如 Adobe Digital Editions
         // cygwin下各磁盘目录会变成 “/cygdrive/磁盘id/”，因此需要还原下，否则目标程序可能无法识别
-        /*
-        current_absolute_path[9] = current_absolute_path[10];
-        current_absolute_path[10] = ':';
-        args[x] = &current_absolute_path[9];
-        */
-        args[x] = fix_cygdrive_path(current_absolute_path);
+        args[x] = arch_fix_cygdrive_path(current_absolute_path);
         strcat(args[x], "/");
         strcat(args[x], fileName);
         LOG_D("args[x]=%s", args[x]);
@@ -454,11 +471,8 @@ void arch_reapChild(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
         int status;
         int flags = hfuzz->persistent ? WNOHANG : 0;
         int ret = waitpid(fuzzer->pid, &status, flags);
-		    //printf("fuzzer pid: %d\n",fuzzer->pid);
-		    //printf("waitpid ret: %d\n", ret);
         if (ret == -1 && errno == EINTR) {
 			  if (hfuzz->tmOut) {
-				//printf("Check time1\n");
                 arch_checkTimeLimit(hfuzz, fuzzer);
             }
             continue;
