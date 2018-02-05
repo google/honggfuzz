@@ -115,12 +115,6 @@ static void display_Duration(time_t elapsed_second, char* buf, size_t bufSz) {
 }
 
 static void display_displayLocked(honggfuzz_t* hfuzz) {
-    static bool firstDisplay = true;
-    if (firstDisplay) {
-        display_put(ESC_CLEAR_ALL);
-        firstDisplay = false;
-    }
-
     const time_t curr_time = time(NULL);
     const time_t elapsed_sec = curr_time - hfuzz->timing.timeStart;
 
@@ -309,5 +303,6 @@ void display_fini(void) {
 
 void display_init(void) {
     atexit(display_fini);
-    display_put(ESC_NAV(500, 1));
+    display_put(ESC_CLEAR_ALL);
+    display_put(ESC_NAV_DOWN(500));
 }
