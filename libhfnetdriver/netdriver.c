@@ -123,10 +123,12 @@ static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &val, (socklen_t)sizeof(val)) == -1) {
         PLOG_W("setsockopt(sock=%d, SOL_SOCKET, SO_REUSEADDR, 1)", sock);
     }
+#if defined(SOL_TCP) && defined(TCP_NODELAY)
     val = 1;
     if (setsockopt(sock, SOL_TCP, TCP_NODELAY, &val, (socklen_t)sizeof(val)) == -1) {
         PLOG_W("setsockopt(sock=%d, SOL_TCP, TCP_NODELAY, 1)", sock);
     }
+#endif /* defined(SOL_TCP) && defined(TCP_NODELAY) */
 
     netDriver_bindToRndLoopback(sock, addr->sa_family);
 
