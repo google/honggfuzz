@@ -1,1 +1,1 @@
-cdb.exe -iaec "-loga c:\crash.log -c \"kv;!load msec.dll;!exploitable -v;q\""
+cdb.exe -iaec "-logo c:\crash.log -c \"!load msec.dll;!exploitable -v;q\""

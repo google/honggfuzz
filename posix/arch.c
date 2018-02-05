@@ -29,6 +29,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -108,8 +109,33 @@ void arch_getFileName(honggfuzz_t * hfuzz, char *fileName)
              (int)getpid(), (unsigned long int)tv.tv_sec, util_rnd64(), hfuzz->fileExtn);
 }
 
+char* get_str_value(char * input_string, char *check_string)
+{
+    char *pos;
+    if (strstr(input_string, check_string)) {
+        pos = strstr(input_string, check_string);
+        return pos + strlen(check_string);
+    }else{
+        return "Unknow";
+    }
+}
+
+// cygwin下各磁盘目录会变成 “/cygdrive/磁盘id/”，因此需要还原下，否则文件路径可能无法识别
+char* fix_cygdrive_path(char cyg_path[])
+{   
+    if (strstr(cyg_path, "/cygdrive/")) {
+        cyg_path[9] = cyg_path[10];
+        cyg_path[10] = ':';
+        return &cyg_path[9];
+    } else {
+        LOG_W("no cygdrive file path !");
+    }
+    return &cyg_path[0];
+}
+
 bool arch_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
 {
+    LOG_W("arch_runVerifier");
     int crashFd = -1;
     uint8_t *crashBuf = NULL;
     off_t crashFileSz = 0;
@@ -191,16 +217,15 @@ bool arch_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
 
     // 上述崩溃验证通过后，使用bugid(需要管理员权限开启PageHeap)或者cdb（可能延时较长）分析崩溃信息，
     // 并将崩溃信息标记到文件名中，同时也可作为去重的依据
-    char buffer[1024*128] = {0};
-    char result[1024*128] = {0};
+    char buffer[1024*32] = {0};
+    char result[1024*32] = {0};
     char cmd[1024] = {0};
     char *exploitable;
     char *description;
     char *hash;
-    char *pos;
 
     snprintf(cmd, sizeof(cmd), "cdb -c 'g;g;!load msec.dll;!exploitable -v;q' '%s' %s 2>/dev/null",
-            hfuzz->cmdline[0], crashedFuzzer->crashFileName);
+            fix_cygdrive_path(hfuzz->cmdline[0]), fix_cygdrive_path(crashedFuzzer->crashFileName));
     LOG_W(cmd);
     FILE* pipe = popen(cmd, "r");
     if (!pipe){
@@ -215,23 +240,9 @@ bool arch_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
     } 
     pclose(pipe);
 
-    if (pos = strstr(result, "Exploitability Classification:")) {
-        exploitable = pos-result+1;
-    }else{
-        exploitable = "Unknow";
-    }
-
-    if (pos = strstr(result, "Short Description:")) {
-        description = pos-result+1;
-    }else{
-        description = "Unknow";
-    }
-
-    if (pos = strstr(result, "(Hash=")) {
-        hash = pos-result+1;
-    } else {
-        hash = "Unknow";
-    }
+    exploitable = get_str_value(result, "Exploitability Classification:");
+    description = get_str_value(result, "Short Description:");
+    hash = get_str_value(result, "(Hash=");
 
     char verFile[PATH_MAX] = { 0 };
     if (strcmp(hash,"Unknow") && strcmp(exploitable,"Unknow") && strcmp(description,"Unknow")) {
@@ -331,7 +342,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
         snprintf(newname, sizeof(newname), "%s.%s", arch_sigs[termsig].descr, fuzzer->origFileName);
     } else {
         snprintf(newname, sizeof(newname), "%s/%s.TIME.%s.orig.%s.%s",
-                 hfuzz->workDir, arch_sigs[termsig].descr, localtmstr,fuzzer->fileName,
+                 hfuzz->workDir, arch_sigs[termsig].descr, localtmstr, files_get_filename_in_path(fuzzer->fileName),
                  hfuzz->keepext?fuzzer->ext:hfuzz->fileExtn);
     }
 
@@ -376,9 +387,12 @@ bool arch_launchChild(honggfuzz_t * hfuzz, char *fileName)
         if (!hfuzz->fuzzStdin && strcmp(hfuzz->cmdline[x], _HF_FILE_PLACEHOLDER) == 0) {
         // 有些软件必须使用绝对路径，否则会出错，比如 Adobe Digital Editions
         // cygwin下各磁盘目录会变成 “/cygdrive/磁盘id/”，因此需要还原下，否则目标程序可能无法识别
+        /*
         current_absolute_path[9] = current_absolute_path[10];
         current_absolute_path[10] = ':';
         args[x] = &current_absolute_path[9];
+        */
+        args[x] = fix_cygdrive_path(current_absolute_path);
         strcat(args[x], "/");
         strcat(args[x], fileName);
         LOG_D("args[x]=%s", args[x]);
