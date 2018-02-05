@@ -26,6 +26,7 @@
 
 #include "common.h"
 #include "display.h"
+#include "files.h"
 
 #include <inttypes.h>
 #include <math.h>
@@ -155,20 +156,6 @@ static char* get_time_remain(unsigned long remain_second)
                  "%u days %02u:%02u:%02u", day, hour, min, second);
     }
     return str_time_remain;
-} 
-
-static char* get_filename_in_path(char* path)
-{
-    char *filename;
-
-    if(strrchr(path, '/')){		
-        filename = strrchr(path, '/')+1;
-    }else if(strrchr(path, '\\')){
-		filename = strrchr(path, '\\')+1;	// file path use '\' in cygwin 
-	}else{
-		filename = path;  
-	}
-    return filename;
 }
 
 static void display_displayLocked(honggfuzz_t * hfuzz)
@@ -212,7 +199,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     /* The lock should be acquired before any output is printed on the screen */
     MX_SCOPED_LOCK(logMutexGet());
 
-    target = get_filename_in_path(hfuzz->cmdline[0]);
+    target = files_get_filename_in_path(hfuzz->cmdline[0]);
     hfuzz->target = target;
 
     speed_second =  elapsed_second ? ((float)curr_exec_cnt / elapsed_second) : ((float)ATOMIC_GET(hfuzz->tmOut)/hfuzz->threadsMax);
@@ -245,7 +232,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "Feedback-driven Fuzzing" ESC_RESET);
         break;
     case _HF_STATE_EXTERN:
-        extern_fuzzer = get_filename_in_path(hfuzz->externalCommand);
+        extern_fuzzer = files_get_filename_in_path(hfuzz->externalCommand);
         display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "External Fuzzer (%s)" ESC_RESET, extern_fuzzer);
         break;
     default:

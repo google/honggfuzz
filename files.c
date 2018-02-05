@@ -613,3 +613,17 @@ struct paths_t *files_getFileFromFileq(honggfuzz_t * hfuzz, size_t index)
     LOG_F("File index: %zu bigger than fileq size", index);
     return NULL;
 }
+
+char *files_get_filename_in_path(char* path)
+{
+    char *filename;
+
+    if(strrchr(path, '/')){		
+        filename = strrchr(path, '/')+1;
+    }else if(strrchr(path, '\\')){
+		filename = strrchr(path, '\\')+1;	// file path use '\' in cygwin 
+	}else{
+		filename = path;  
+	}
+    return filename;
+}
