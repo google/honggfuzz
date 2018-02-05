@@ -492,6 +492,118 @@ bool arch_archInit(honggfuzz_t * hfuzz)
     return true;
 }
 
+void arch_getFileName(honggfuzz_t * hfuzz, char *fileName)
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+
+    snprintf(fileName, PATH_MAX, "%s/honggfuzz.%d.%lu.%" PRIx64 ".%s", hfuzz->workDir,
+             (int)getpid(), (unsigned long int)tv.tv_sec, util_rnd64(), hfuzz->fileExtn);
+}
+
+bool arch_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
+{
+    int crashFd = -1;
+    uint8_t *crashBuf = NULL;
+    off_t crashFileSz = 0;
+
+    crashBuf = files_mapFile(crashedFuzzer->crashFileName, &crashFileSz, &crashFd, false);
+    if (crashBuf == NULL) {
+        LOG_E("Couldn't open and map '%s' in R/O mode", crashedFuzzer->crashFileName);
+        return false;
+    }
+    defer {
+        munmap(crashBuf, crashFileSz);
+        close(crashFd);
+    };
+
+    LOG_I("Launching verifier for %" PRIx64 " hash", crashedFuzzer->backtrace);
+    for (int i = 0; i < _HF_VERIFIER_ITER; i++) {
+        fuzzer_t vFuzzer = {
+            .pid = 0,
+            .persistentPid = 0,
+            .timeStartedMillis = util_timeNowMillis(),
+            .crashFileName = {0},
+            .pc = 0ULL,
+            .backtrace = 0ULL,
+            .access = 0ULL,
+            .exception = 0,
+            .dynamicFileSz = 0,
+            .dynamicFile = NULL,
+            .sanCovCnts = {
+                           .hitBBCnt = 0ULL,
+                           .totalBBCnt = 0ULL,
+                           .dsoCnt = 0ULL,
+                           .iDsoCnt = 0ULL,                          
+                           .newBBCnt = 0ULL,
+                           .lastBBTime = 0ULL,
+                           .crashesCnt = 0ULL,
+                           },
+            .report = {'\0'},
+            .mainWorker = false,
+            .fuzzNo = crashedFuzzer->fuzzNo,
+            .persistentSock = -1,
+            .tmOutSignaled = false,
+
+            .linux = {
+                      .hwCnts = {
+                                 .cpuInstrCnt = 0ULL,
+                                 .cpuBranchCnt = 0ULL,
+                                 .bbCnt = 0ULL,
+                                 .newBBCnt = 0ULL,
+                                 .softCntPc = 0ULL,
+                                 .softCntCmp = 0ULL,
+                                 },
+                      .perfMmapBuf = NULL,
+                      .perfMmapAux = NULL,
+                      .attachedPid = 0,
+                      },
+        };
+
+        if (arch_archThreadInit(hfuzz, &vFuzzer) == false) {
+            LOG_F("Could not initialize the thread");
+        }
+
+        arch_getFileName(hfuzz, vFuzzer.fileName);
+        if (files_writeBufToFile(vFuzzer.fileName, crashBuf, crashFileSz,
+             O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC) == false) {
+            LOG_E("Couldn't write buffer to file '%s'", vFuzzer.fileName);
+            return false;
+        }
+
+        if (subproc_Run(hfuzz, &vFuzzer) == false) {           
+            LOG_F("subproc_Run()");
+         }
+
+        /* If stack hash doesn't match skip name tag and exit */
+        if (crashedFuzzer->backtrace != vFuzzer.backtrace) {
+            LOG_D("Verifier stack hash mismatch");
+            return false;
+        }
+    }
+
+    /* Workspace is inherited, just append a extra suffix */
+    char verFile[PATH_MAX] = { 0 };
+    snprintf(verFile, sizeof(verFile), "%s.verified", crashedFuzzer->crashFileName);
+
+    /* Copy file with new suffix & remove original copy */
+    bool dstFileExists = false;
+    if (files_copyFile(crashedFuzzer->crashFileName, verFile, &dstFileExists)) {
+        LOG_I("Successfully verified, saving as (%s)", verFile);
+        ATOMIC_POST_INC(hfuzz->verifiedCrashesCnt);
+        unlink(crashedFuzzer->crashFileName);
+    } else {
+        if (dstFileExists) {
+            LOG_I("It seems that '%s' already exists, skipping", verFile);
+        } else {
+            LOG_E("Couldn't copy '%s' to '%s'", crashedFuzzer->crashFileName, verFile);
+            return false;
+        }
+    }
+
+    return true;
+}
+
 #ifdef DEBUG
 /*
  * Write the crash report to DEBUG

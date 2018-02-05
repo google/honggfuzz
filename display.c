@@ -265,7 +265,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     static char tmpstr[1024] = {0};
     size_t len = strlen(hfuzz->inputDir);
     if(len > 40){
-        snprintf(tmpstr, sizeof(tmpstr), "%.32s...%s", hfuzz->inputDir, hfuzz->inputDir+len-10);
+        snprintf(tmpstr, sizeof(tmpstr), "%.32s...%s", hfuzz->inputDir, hfuzz->inputDir+len-15);
     }else{
         snprintf(tmpstr, sizeof(tmpstr), "%s", hfuzz->inputDir);
     }

@@ -99,6 +99,165 @@ bool arch_checkCrash() {
     }
 }
 
+void arch_getFileName(honggfuzz_t * hfuzz, char *fileName)
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+
+    snprintf(fileName, PATH_MAX, "%s/honggfuzz.%d.%lu.%" PRIx64 ".%s", hfuzz->workDir,
+             (int)getpid(), (unsigned long int)tv.tv_sec, util_rnd64(), hfuzz->fileExtn);
+}
+
+bool arch_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
+{
+    int crashFd = -1;
+    uint8_t *crashBuf = NULL;
+    off_t crashFileSz = 0;
+
+    crashBuf = files_mapFile(crashedFuzzer->crashFileName, &crashFileSz, &crashFd, false);
+    if (crashBuf == NULL) {
+        LOG_E("Couldn't open and map '%s' in R/O mode", crashedFuzzer->crashFileName);
+        return false;
+    }
+    defer {
+        munmap(crashBuf, crashFileSz);
+        close(crashFd);
+    };
+
+    LOG_I("Launching verifier for %" PRIx64 " hash", crashedFuzzer->backtrace);
+    for (int i = 0; i < _HF_VERIFIER_ITER; i++) {
+        fuzzer_t vFuzzer = {
+            .pid = 0,
+            .persistentPid = 0,
+            .timeStartedMillis = util_timeNowMillis(),
+            .crashFileName = {0},
+            .pc = 0ULL,
+            .backtrace = 0ULL,
+            .access = 0ULL,
+            .exception = 0,
+            .dynamicFileSz = 0,
+            .dynamicFile = NULL,
+            .sanCovCnts = {
+                           .hitBBCnt = 0ULL,
+                           .totalBBCnt = 0ULL,
+                           .dsoCnt = 0ULL,
+                           .iDsoCnt = 0ULL,                          
+                           .newBBCnt = 0ULL,
+                           .lastBBTime = 0ULL,
+                           .crashesCnt = 0ULL,
+                           },
+            .report = {'\0'},
+            .mainWorker = false,
+            .fuzzNo = crashedFuzzer->fuzzNo,
+            .persistentSock = -1,
+            .tmOutSignaled = false,
+
+            .linux = {
+                      .hwCnts = {
+                                 .cpuInstrCnt = 0ULL,
+                                 .cpuBranchCnt = 0ULL,
+                                 .bbCnt = 0ULL,
+                                 .newBBCnt = 0ULL,
+                                 .softCntPc = 0ULL,
+                                 .softCntCmp = 0ULL,
+                                 },
+                      .perfMmapBuf = NULL,
+                      .perfMmapAux = NULL,
+                      .attachedPid = 0,
+                      },
+        };
+
+        if (arch_archThreadInit(hfuzz, &vFuzzer) == false) {
+            LOG_F("Could not initialize the thread");
+        }
+
+        arch_getFileName(hfuzz, vFuzzer.fileName);
+        if (files_writeBufToFile(vFuzzer.fileName, crashBuf, crashFileSz,
+             O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC) == false) {
+            LOG_E("Couldn't write buffer to file '%s'", vFuzzer.fileName);
+            return false;
+        }
+
+        if (subproc_Run(hfuzz, &vFuzzer) == false) {        
+            LOG_F("subproc_Run()");
+         }
+
+        /* If stack hash doesn't match skip name tag and exit */
+        if (crashedFuzzer->backtrace != vFuzzer.backtrace) {
+            LOG_D("Verifier stack hash mismatch");
+            return false;
+        }
+    }
+
+    // 上述崩溃验证通过后，使用bugid(需要管理员权限开启PageHeap)或者cdb（可能延时较长）分析崩溃信息，
+    // 并将崩溃信息标记到文件名中，同时也可作为去重的依据
+    char buffer[1024*128] = {0};
+    char result[1024*128] = {0};
+    char cmd[1024] = {0};
+    char *exploitable;
+    char *description;
+    char *hash;
+    char *pos;
+
+    snprintf(cmd, sizeof(cmd), "cdb -c 'g;g;!load msec.dll;!exploitable -v;q' '%s' %s 2>/dev/null",
+            hfuzz->cmdline[0], crashedFuzzer->crashFileName);
+    LOG_W(cmd);
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe){
+          LOG_E("cdb run fail");
+          return 0;
+    }
+
+    while(!feof(pipe)) {
+        if(fgets(buffer, sizeof(buffer), pipe)){
+                strcat(result,buffer);
+        }
+    } 
+    pclose(pipe);
+
+    if (pos = strstr(result, "Exploitability Classification:")) {
+        exploitable = pos-result+1;
+    }else{
+        exploitable = "Unknow";
+    }
+
+    if (pos = strstr(result, "Short Description:")) {
+        description = pos-result+1;
+    }else{
+        description = "Unknow";
+    }
+
+    if (pos = strstr(result, "(Hash=")) {
+        hash = pos-result+1;
+    } else {
+        hash = "Unknow";
+    }
+
+    char verFile[PATH_MAX] = { 0 };
+    if (strcmp(hash,"Unknow") && strcmp(exploitable,"Unknow") && strcmp(description,"Unknow")) {
+        snprintf(verFile, sizeof(verFile), "%s_%s_%s.%s", exploitable, description, hash, hfuzz->fileExtn);
+    } else {
+        snprintf(verFile, sizeof(verFile), "%s.verified", crashedFuzzer->crashFileName);
+    }
+
+    /* Copy file with new suffix & remove original copy */
+    bool dstFileExists = false;
+    if (files_copyFile(crashedFuzzer->crashFileName, verFile, &dstFileExists)) {
+        LOG_I("Successfully verified, saving as (%s)", verFile);
+        ATOMIC_POST_INC(hfuzz->verifiedCrashesCnt);
+        unlink(crashedFuzzer->crashFileName);
+    } else {
+        if (dstFileExists) {
+            LOG_I("It seems that '%s' already exists, skipping", verFile);
+        } else {
+            LOG_E("Couldn't copy '%s' to '%s'", crashedFuzzer->crashFileName, verFile);
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void delay(int seconds)
 {
    clock_t start = clock();

@@ -75,7 +75,7 @@ static void __attribute__ ((unused)) __clang_cleanup_func(void (^*dfunc) (void))
 #define _HF_THREAD_NO_ENV "HFUZZ_THREAD_NO"
 
 /* Number of crash verifier iterations before tag crash as stable */
-#define _HF_VERIFIER_ITER   5
+#define _HF_VERIFIER_ITER   3
 
 /* Size (in bytes) for report data to be stored in stack before written to file */
 #define _HF_REPORT_SIZE 8192

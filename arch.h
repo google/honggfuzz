@@ -38,4 +38,8 @@ extern void arch_reapChild(honggfuzz_t * fuzz, fuzzer_t * fuzzer);
 
 extern void arch_prepareChild(honggfuzz_t * fuzz, fuzzer_t * fuzzer);
 
+extern void arch_getFileName(honggfuzz_t * hfuzz, char *fileName);
+
+extern bool arch_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer);
+
 #endif                          /* _HF_ARCH_H_ */
