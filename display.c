@@ -45,10 +45,10 @@
 #define ESC_BOLD "\033[1m"
 #define ESC_RED "\033[31m"
 #define ESC_RESET "\033[0m"
-#define ESC_SCROLL(x, y) "\033[" #x ";" #y "r"
-#define ESC_SCROLL_VERT(x) "\033[" #x "d"
+#define ESC_SCROLL_REGION(x, y) "\033[" #x ";" #y "r"
 #define ESC_SCROLL_DISABLE "\033[?7h"
 #define ESC_SCROLL_ENABLE "\033[r"
+#define ESC_NAV_VERT(x) "\033[" #x "B"
 #define ESC_RESET_SETTINGS "\033[!p"
 
 /* printf() nonmonetary separator. According to MacOSX's man it's supported there as well */
@@ -269,7 +269,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     display_put("\n---------------------------------- [ " ESC_BOLD "LOGS" ESC_RESET
                 " ] ------------------/ " ESC_BOLD "%s %s " ESC_RESET "/-",
         PROG_NAME, PROG_VERSION);
-    display_put(ESC_SCROLL(13, 999) ESC_NAV(999, 1));
+    display_put(ESC_SCROLL_REGION(13, 999) ESC_NAV(13, 1) ESC_NAV_VERT(500));
 }
 
 void display_createTargetStr(honggfuzz_t* hfuzz) {
@@ -303,10 +303,10 @@ void display_display(honggfuzz_t* hfuzz) {
 }
 
 void display_fini(void) {
-    display_put(ESC_SCROLL_ENABLE ESC_NAV(999, 1));
+    display_put(ESC_SCROLL_ENABLE ESC_NAV(500, 1));
 }
 
 void display_init(void) {
     atexit(display_fini);
-    display_put(ESC_NAV(999, 1));
+    display_put(ESC_NAV(500, 1));
 }
