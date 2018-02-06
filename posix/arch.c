@@ -342,7 +342,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
 
         // Check Windows GUI app crash
         if(arch_checkCrash()){
-            LOG_W("Process (pid %d) may crash because WerFault.exe process was launched", fuzzer->pid);
+            LOG_W("Process (pid %d) may crash !", fuzzer->pid);
         }else{
             LOG_D("WerFault.exe Process Not Found");
             return true;
