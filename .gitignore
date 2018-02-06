@@ -13,3 +13,5 @@ examples/targets/badcode1
 examples/targets/badcode2
 fuzzer/*_fuzzer
 fuzzer/*_blacklist
+fuzzer/HONGGFUZZ.REPORT.TXT
+fuzzer/honggfuzz.*
