@@ -121,15 +121,22 @@ static bool fuzz_prepareFile(honggfuzz_t * hfuzz, fuzzer_t * fuzzer, int rnd_ind
 
 static bool fuzz_prepareFileExternally(honggfuzz_t * hfuzz, fuzzer_t * fuzzer)
 {
-    char cmd[256];
+    char origfile[PATH_MAX];
     int len = 0;
-    
+    bool dstFileExists = false;
+
     len = strlen(hfuzz->inputDir);
     if(strrchr(hfuzz->inputDir+len-1, '/' )){
-        snprintf(cmd, 256, "/bin/cp '%s%s' %s", hfuzz->inputDir, fuzzer->origFileName, fuzzer->fileName);
+        snprintf(origfile, PATH_MAX, "%s%s", hfuzz->inputDir, fuzzer->origFileName);
+        if (!files_copyFile(origfile, fuzzer->fileName,&dstFileExists)) {
+            return false;
+        } 
+    } else {
+        snprintf(origfile, PATH_MAX, "%s/%s", hfuzz->inputDir, fuzzer->origFileName);
+        if (!files_copyFile(origfile, fuzzer->fileName, &dstFileExists)) {
+            return false;
+        }
     }
-    snprintf(cmd, 256, "/bin/cp '%s/%s' %s", hfuzz->inputDir, fuzzer->origFileName, fuzzer->fileName);
-    system(cmd);
 
     LOG_I("Created '%s' as an input file", fuzzer->fileName);
 
