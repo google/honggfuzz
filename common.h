@@ -38,7 +38,7 @@
 #endif
 
 #define PROG_NAME "riufuzz"
-#define PROG_VERSION "1.0"
+#define PROG_VERSION "1.1"
 #define PROG_AUTHORS "Robert Swiecki <swiecki@google.com> et al.,\nCopyright 2010-2015 by Google Inc. All Rights Reserved."
 #define PROG_MODIFIER "riusksk(@riusksk)\nBlog: http://riusksk.me\n"
 
