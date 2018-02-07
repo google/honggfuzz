@@ -88,11 +88,12 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__Frog And Fuzz__](https://github.com/warsang/FrogAndFuzz/tree/develop)
   * [dyjakan's __interpreters fuzzing__ project](https://github.com/dyjakan/interpreter-bugs)
   * [__riufuzz__: honggfuzz with AFL-like UI](https://github.com/riusksk/riufuzz)
-  * [__h2fuzz__: fuzzing of Apache's HTTP/2 implementation](https://github.com/icing/h2fuzz)
+  * [__h2fuzz__: fuzzing Apache's HTTP/2 implementation](https://github.com/icing/h2fuzz)
   * [__honggfuzz-dharma__: honggfuzz with dharma grammar fuzzer](https://github.com/Sbouber/honggfuzz-dharma)
   * [__Owl__: a system for finding concurrency attacks](https://github.com/hku-systems/owl)
   * [__honggfuzz-docker-apps__](https://github.com/skysider/honggfuzz_docker_apps)
   * [__FFW - Fuzzing For Worms__](https://github.com/dobin/ffw)
+  * [__honggfuzz-rs__: fuzzing Rust with Honggfuzz](https://github.com/PaulGrandperrin/honggfuzz-rs)
 
 ## Examples
 
