@@ -146,6 +146,7 @@ static int execCC(int argc, char** argv) {
             execvp("clang++-9.0", argv);
             execvp("clang++-8.0", argv);
             execvp("clang++-7.0", argv);
+            execvp("clang++-7", argv);
             execvp("clang++-6.0", argv);
             execvp("clang++-5.0", argv);
             execvp("clang++-4.0", argv);
@@ -158,6 +159,7 @@ static int execCC(int argc, char** argv) {
             execvp("clang-9.0", argv);
             execvp("clang-8.0", argv);
             execvp("clang-7.0", argv);
+            execvp("clang-7", argv);
             execvp("clang-6.0", argv);
             execvp("clang-5.0", argv);
             execvp("clang-4.0", argv);
