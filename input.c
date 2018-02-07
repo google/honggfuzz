@@ -304,8 +304,6 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz) {
 }
 
 bool input_prepareDynamicInput(run_t* run) {
-    run->origFileName = "[DYNAMIC]";
-
     {
         MX_SCOPED_RWLOCK_READ(&run->global->dynfileq_mutex);
 
@@ -332,11 +330,11 @@ bool input_prepareDynamicInput(run_t* run) {
 }
 
 bool input_prepareStaticFile(run_t* run, bool rewind) {
-    static __thread char fname[PATH_MAX];
+    char fname[PATH_MAX];
     if (!input_getNext(run, fname, /* rewind= */ rewind)) {
         return false;
     }
-    run->origFileName = files_basename(fname);
+    snprintf(run->origFileName, sizeof(run->origFileName), "%s", fname);
 
     ssize_t fileSz = files_readFileToBufMax(fname, run->dynamicFile, run->global->maxFileSz);
     if (fileSz < 0) {
@@ -351,7 +349,7 @@ bool input_prepareStaticFile(run_t* run, bool rewind) {
 }
 
 bool input_prepareExternalFile(run_t* run) {
-    run->origFileName = "[EXTERNAL]";
+    snprintf(run->origFileName, sizeof(run->origFileName), "[EXTERNAL]");
 
     int fd = files_writeBufToTmpFile(run->global->io.workDir, (const uint8_t*)"", 0, 0);
     if (fd == -1) {

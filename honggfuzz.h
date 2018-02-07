@@ -302,7 +302,7 @@ typedef struct {
     pid_t pid;
     pid_t persistentPid;
     int64_t timeStartedMillis;
-    const char* origFileName;
+    char origFileName[PATH_MAX];
     char crashFileName[PATH_MAX];
     uint64_t pc;
     uint64_t backtrace;
