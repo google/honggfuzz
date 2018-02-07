@@ -333,6 +333,8 @@ static int ldMode(int argc, char** argv) {
 
     commonOpts(&j, args);
 
+/* MacOS X linker doesn't like those */
+#ifndef _HF_ARCH_DARWIN
     /* Intercept common *cmp functions */
     args[j++] = "-Wl,--wrap=strcmp";
     args[j++] = "-Wl,--wrap=strcasecmp";
@@ -362,6 +364,7 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=xmlStrncasecmp";
     args[j++] = "-Wl,--wrap=xmlStrstr";
     args[j++] = "-Wl,--wrap=xmlStrcasestr";
+#endif /* _HF_ARCH_DARWIN */
 
     for (int i = 1; i < argc; i++) {
         args[j++] = argv[i];
