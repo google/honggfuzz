@@ -1,7 +1,9 @@
 *.o
+*.a
 *.so
 *.dylib
 *.dSYM
+*.exe
 honggfuzz
 mac/mach_exc.h
 mac/mach_excUser.c
@@ -15,3 +17,4 @@ fuzzer/*_fuzzer
 fuzzer/*_blacklist
 fuzzer/HONGGFUZZ.REPORT.TXT
 fuzzer/honggfuzz.*
+.vscode/*

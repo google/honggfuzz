@@ -89,7 +89,6 @@ bool arch_checkCrash() {
                 strcat(result,buffer);
         }
     }
-    //printf("%s\n", result);
     //if(strstr(result, "成功")){
     if(strstr(result, "PID")){
         //printf("crash\n");
