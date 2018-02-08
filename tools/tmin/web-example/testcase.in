@@ -1,0 +1,4 @@
+<H1>This is a page that triggers
+<script>top.variable = 1;</script>
+script execution.
+

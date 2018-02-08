@@ -1,0 +1,40 @@
+<HTML>
+<TITLE>Test page</TITLE>
+<SCRIPT>
+var timer;
+var loaded = 0;
+var variable = 0;
+
+function begin_tests() {
+  timer = setInterval('frame_check()',50);
+  loaded = 0;
+  document.getElementById('foo').src = 'data.cgi?' + Math.random();
+}
+
+function frame_check() {
+
+  if (loaded) {
+
+    var g = 'deny.cgi';
+    if (variable == 1) g = 'confirm.cgi';
+    var x = new XMLHttpRequest();
+    x.open('GET',g,false);
+    x.send(null);
+
+    document.getElementById('foo').src = 'data.cgi?' + Math.random();
+    loaded = 0;
+    variable = 0;
+
+  }
+}
+
+function stop_tests() {
+  clearInterval(timer);
+  stop();
+}
+</SCRIPT>
+<INPUT TYPE=SUBMIT VALUE="Begin testing" ONCLICK="begin_tests()">
+<INPUT TYPE=SUBMIT VALUE="STOP NOW!" ONCLICK="stop_tests()">
+<P>
+<IFRAME ID=foo HEIGHT=90% WIDTH=90% onload="loaded = 1">
+</IFRAME>
