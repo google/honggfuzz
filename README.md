@@ -2,7 +2,14 @@
 
 ![](https://img.shields.io/badge/language-c-brightgreen.svg) ![](https://img.shields.io/badge/platform-%7BmacOS%20%7C%20Android%20%7C%20Linux%20%7C%20%20Windows%7D-lightgrey.svg) [![](https://img.shields.io/badge/weibo-@riusksk-red.svg)](http://weibo.com/riusksk) [![](https://img.shields.io/badge/twitter-@riusksk-blue.svg)](https://twitter.com/riusksk)
 
+### Feedback-Driven Mode in Linux
 ![](./screen.png)
+
+### Dry Run Mode in Windows/Cygwin
+![](./dry_run_win.png)
+
+### External Mode in Windows/Cygwin
+![](./external.png)
 
 **2018-02-06 更新说明**
 1. 发布v1.1版本

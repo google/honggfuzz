@@ -233,7 +233,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
         break;
     case _HF_STATE_EXTERN:
         extern_fuzzer = files_get_filename_in_path(hfuzz->externalCommand);
-        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "External Fuzzer (%s)" ESC_RESET, extern_fuzzer);
+        display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "External (%s)" ESC_RESET, extern_fuzzer);
         break;
     default:
         display_put(ESC_WHITE "\n    Run Mode : " ESC_RESET ESC_GREEN ESC_BOLD "Unknown" ESC_RESET);
