@@ -91,13 +91,12 @@ bool arch_isExistProcess(char *name)
                 strcat(result,buffer);
         }
     }
+    pclose(pipe);
 
     //if(strstr(result, "成功")){
-    if(strstr(result, "PID")){ 
-        pclose(pipe);
+    if(strstr(result, "PID")){       
         return true;    // crash
     }else{
-        pclose(pipe);
         return false;   // no crash
     }
 }
