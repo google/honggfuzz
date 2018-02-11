@@ -72,16 +72,18 @@ struct {
 };
 /*  *INDENT-ON* */
 
-/* Return true if windows GUI app crash */
-bool arch_checkCrash() {
+bool arch_isExistProcess(char *name)
+{
     char buffer[128];
     char result[128];
+    char cmd[128];
 
-    //FILE* pipe = popen("taskkill /F /IM WerFault.exe", "r");
-    FILE* pipe = popen("taskkill /F /IM cdb.exe 2>/dev/null", "r");
+    snprintf(cmd, sizeof(cmd), "taskkill /F /IM %s 2>/dev/null", name);
+
+    FILE* pipe = popen(cmd, "r");
     if (!pipe){
           LOG_E("popen fail");
-          return 0;
+          return false;
     }
 
     while(!feof(pipe)) {
@@ -89,16 +91,25 @@ bool arch_checkCrash() {
                 strcat(result,buffer);
         }
     }
+
     //if(strstr(result, "成功")){
-    if(strstr(result, "PID")){
-        //printf("crash\n");
+    if(strstr(result, "PID")){ 
         pclose(pipe);
-        return true;
+        return true;    // crash
     }else{
-        //printf("no crash\n");
         pclose(pipe);
-        return false;
+        return false;   // no crash
     }
+}
+
+/* Return true if windows GUI app crash */
+bool arch_checkCrash() {
+    if (arch_isExistProcess("cdb.exe")) {
+        return true;
+    } else if (arch_isExistProcess("WerFault.exe")) {
+        return true;
+    }
+    return false;
 }
 
 void arch_getFileName(honggfuzz_t * hfuzz, char *fileName)
