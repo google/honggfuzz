@@ -11,6 +11,9 @@
 ### External Mode in Windows/Cygwin
 ![](./external.png)
 
+### Dumb Fuzzing Mode in macOS
+![](./dumb_mac.png)
+
 **2018-02-06 更新说明**
 1. 发布v1.1版本
 2. 增加Windows崩溃样本去重功能
