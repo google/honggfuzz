@@ -105,6 +105,8 @@ bool arch_isExistProcess(char *name)
 bool arch_checkCrash() {
     if (arch_isExistProcess("cdb.exe")) {
         return true;
+    } else if (arch_isExistProcess("DWWIN.EXE")) {
+        return true;
     } else if (arch_isExistProcess("WerFault.exe")) {
         return true;
     }
