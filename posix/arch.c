@@ -81,22 +81,22 @@ bool arch_isExistProcess(char *name)
     snprintf(cmd, sizeof(cmd), "taskkill /F /IM %s 2>/dev/null", name);
 
     FILE* pipe = popen(cmd, "r");
-    if (!pipe){
+    if (!pipe) {
           LOG_E("popen fail");
           return false;
     }
 
-    while(!feof(pipe)) {
-        if(fgets(buffer, 128, pipe)){
+    while (!feof(pipe)) {
+        if (fgets(buffer, 128, pipe)) {
                 strcat(result,buffer);
         }
     }
     pclose(pipe);
 
-    //if(strstr(result, "成功")){
-    if(strstr(result, "PID")){       
+    //if (strstr(result, "成功")) {
+    if (strstr(result, "PID")) {       
         return true;    // crash
-    }else{
+    } else {
         return false;   // no crash
     }
 }
