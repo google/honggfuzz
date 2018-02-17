@@ -300,7 +300,7 @@ indent:
 	clang-format -style="{BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 100, AlignAfterOpenBracket: false, AllowShortFunctionsOnASingleLine: false}" -i -sort-includes  *.c *.h */*.c */*.h
 
 .PHONY: depend
-depend:
+depend: all
 	makedepend -Y. -Y* -- *.c */*.c
 
 .PHONY: android
