@@ -514,11 +514,11 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
     return 1;
 }
 
-void RAND_reset_for_fuzzing(void) __attribute__((weak));
+__attribute__((weak)) void RAND_reset_for_fuzzing(void) {
+}
+
 int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
-    if (RAND_reset_for_fuzzing) {
-        RAND_reset_for_fuzzing();
-    }
+    RAND_reset_for_fuzzing();
 
     SSL* client = SSL_new(ctx);
     SSL_set_tlsext_host_name(client, "localhost");
