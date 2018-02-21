@@ -41,7 +41,9 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include <poll.h>
 
+#include "fuzz.h"
 #include "honggfuzz.h"
 #include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
@@ -365,34 +367,58 @@ void arch_prepareParentAfterFork(run_t* run HF_ATTR_UNUSED) {
 }
 
 void arch_reapChild(run_t* run) {
-    /*
-     * First check manually if we have expired children
-     */
-    subproc_checkTimeLimit(run);
-
-    /*
-     * Now check for signals using wait4
-     */
-    int options = WUNTRACED;
-    if (run->global->timing.tmOut) {
-        options |= WNOHANG;
-    }
-
     for (;;) {
-        int status = 0;
-        while (wait4(run->pid, &status, options, NULL) != run->pid) {
-            if (run->global->timing.tmOut) {
+        if (run->global->exe.persistent) {
+            struct pollfd pfd = {
+                .fd = run->persistentSock,
+                .events = POLLIN,
+            };
+            int r = poll(&pfd, 1, 250 /* 0.25s */);
+            if (r == 0 || (r == -1 && errno == EINTR)) {
                 subproc_checkTimeLimit(run);
-                usleep(0.20 * 1000000);
+                subproc_checkTermination(run);
             }
+            if (r == -1 && errno != EINTR) {
+                PLOG_F("poll(fd=%d)", run->persistentSock);
+            }
+        }
+        if (subproc_persistentModeRoundDone(run) == true) {
+            break;
+        }
+
+        int status;
+        int flags = run->global->exe.persistent ? WNOHANG : 0;
+        int ret = waitpid(run->pid, &status, flags);
+        if (ret == 0) {
+            continue;
+        }
+        if (ret == -1 && errno == EINTR) {
+            subproc_checkTimeLimit(run);
+            continue;
+        }
+        if (ret == -1) {
+            PLOG_W("waitpid(pid=%d)", run->pid);
+            continue;
+        }
+        if (ret != run->pid) {
+            continue;
         }
 
         char strStatus[4096];
+        if (run->global->exe.persistent && ret == run->persistentPid &&
+            (WIFEXITED(status) || WIFSIGNALED(status))) {
+            run->persistentPid = 0;
+            if (fuzz_isTerminating() == false) {
+                LOG_W("Persistent mode: PID %d exited with status: %s", ret,
+                    subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
+            }
+        }
+
         LOG_D("Process (pid %d) came back with status: %s", run->pid,
             subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
 
         if (arch_analyzeSignal(run, status)) {
-            return;
+            break;
         }
     }
 }
