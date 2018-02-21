@@ -87,7 +87,7 @@ else ifeq ($(OS),Darwin)
     ifneq (,$(findstring 10.13,$(OS_VERSION)))
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
     else ifneq (,$(findstring 10.12,$(OS_VERSION)))
-        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
+        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
     else ifneq (,$(findstring 10.11,$(OS_VERSION)))
         # El Capitan didn't break compatibility
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
@@ -103,7 +103,9 @@ else ifeq ($(OS),Darwin)
 
     # Figure out which XCode SDK to use.
     OSX_SDK_VERSION := $(shell xcrun --show-sdk-version)
-    SDK_NAME :=macosx$(OSX_SDK_VERSION)
+    SDK_NAME_V := macosx$(OSX_SDK_VERSION)
+    SDK_V := $(shell xcrun --sdk $(SDK_NAME) --show-sdk-path 2>/dev/null)
+    SDK_NAME := macosx
     SDK := $(shell xcrun --sdk $(SDK_NAME) --show-sdk-path 2>/dev/null)
 
     CC := $(shell xcrun --sdk $(SDK_NAME) --find cc)
@@ -114,7 +116,8 @@ else ifeq ($(OS),Darwin)
                    -Wreturn-type -Wpointer-arith -Wno-gnu-case-range -Wno-gnu-designator \
                    -Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-attributes
     ARCH_LDFLAGS := -F/System/Library/PrivateFrameworks -framework CoreSymbolication -framework IOKit \
-                    -F$(SDK)/System/Library/Frameworks -F$(SDK)/System/Library/PrivateFrameworks \
+                    -F$(SDK_V)/System/Library/Frameworks -F$(SDK_V)/System/Library/PrivateFrameworks \
+                    -F$(SDK)/System/Library/Frameworks \
                     -framework Foundation -framework ApplicationServices -framework Symbolication \
                     -framework CoreServices -framework CrashReporterSupport -framework CoreFoundation \
                     -framework CommerceKit $(CRASH_REPORT)
