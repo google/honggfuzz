@@ -88,7 +88,7 @@ static void setupRLimits(void) {
         LOG_E("RLIMIT_NOFILE max limit < 1024 (%u). Expect troubles!", (unsigned int)rlim.rlim_max);
         return;
     }
-    rlim.rlim_cur = rlim.rlim_max;
+    rlim.rlim_cur = 1024; // we don't need more and there is no easy and portable way to know the limit
     if (setrlimit(RLIMIT_NOFILE, &rlim) == -1) {
         PLOG_E("Couldn't setrlimit(RLIMIT_NOFILE, cur=max=%u)", (unsigned int)rlim.rlim_max);
     }
