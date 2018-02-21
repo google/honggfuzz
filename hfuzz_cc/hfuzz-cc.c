@@ -376,9 +376,14 @@ static int ldMode(int argc, char** argv) {
     args[j++] = getLibHFNetDriverPath();
 
     /* Pull modules defining the following symbols (if they exist) */
+#ifndef _HF_ARCH_DARWIN
     args[j++] = "-Wl,-u,LIBHFNETDRIVER_module_main",
     args[j++] = "-Wl,-u,LIBHFUZZ_module_instrument";
     args[j++] = "-Wl,-u,LIBHFUZZ_module_memorycmp";
+#else  /* _HF_ARCH_DARWIN */
+    args[j++] = "-Wl,-u,_LIBHFUZZ_module_instrument";
+    args[j++] = "-Wl,-u,_LIBHFUZZ_module_memorycmp";
+#endif /* _HF_ARCH_DARWIN */
 
     /* Needed by the libhfcommon */
     args[j++] = "-lpthread";

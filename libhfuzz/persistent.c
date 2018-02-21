@@ -24,11 +24,20 @@
 __attribute__((visibility("default"))) __attribute__((used))
 const char* const LIBHFUZZ_module_persistent = "LIBHFUZZ_module_persistent";
 
-__attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len);
-__attribute__((weak)) int LLVMFuzzerInitialize(int* argc, char*** argv);
+__attribute__((weak)) int LLVMFuzzerInitialize(
+    int* argc HF_ATTR_UNUSED, char*** argv HF_ATTR_UNUSED) {
+    return 1;
+}
 __attribute__((weak)) size_t LLVMFuzzerMutate(
     uint8_t* Data HF_ATTR_UNUSED, size_t Size HF_ATTR_UNUSED, size_t MaxSize HF_ATTR_UNUSED) {
     LOG_F("LLVMFuzzerMutate() is not supported in honggfuzz yet");
+    return 0;
+}
+__attribute__((weak)) int LLVMFuzzerTestOneInput(
+    const uint8_t* buf HF_ATTR_UNUSED, size_t len HF_ATTR_UNUSED) {
+    LOG_F(
+        "Define 'int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)' in your "
+        "code to make it work");
     return 0;
 }
 
@@ -118,14 +127,7 @@ static int HonggfuzzRunFromFile(int argc, char** argv) {
 }
 
 int HonggfuzzMain(int argc, char** argv) {
-    if (LLVMFuzzerInitialize) {
-        LLVMFuzzerInitialize(&argc, &argv);
-    }
-    if (!LLVMFuzzerTestOneInput) {
-        LOG_F(
-            "Define 'int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)' in your "
-            "code to make it work");
-    }
+    LLVMFuzzerInitialize(&argc, &argv);
 
     if (inputFile) {
         HonggfuzzPersistentLoop();

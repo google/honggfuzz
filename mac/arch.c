@@ -28,6 +28,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,7 +42,6 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
-#include <poll.h>
 
 #include "fuzz.h"
 #include "honggfuzz.h"
