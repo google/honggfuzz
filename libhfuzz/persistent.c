@@ -28,11 +28,13 @@ __attribute__((weak)) int LLVMFuzzerInitialize(
     int* argc HF_ATTR_UNUSED, char*** argv HF_ATTR_UNUSED) {
     return 1;
 }
+
 __attribute__((weak)) size_t LLVMFuzzerMutate(
     uint8_t* Data HF_ATTR_UNUSED, size_t Size HF_ATTR_UNUSED, size_t MaxSize HF_ATTR_UNUSED) {
     LOG_F("LLVMFuzzerMutate() is not supported in honggfuzz yet");
     return 0;
 }
+
 __attribute__((weak)) int LLVMFuzzerTestOneInput(
     const uint8_t* buf HF_ATTR_UNUSED, size_t len HF_ATTR_UNUSED) {
     LOG_F(
