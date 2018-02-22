@@ -40,8 +40,9 @@ GREP_COLOR ?=
 
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
+KERNEL ?= $(shell uname -r)
 
-ifeq ($(OS),Linux)
+ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes WSL (Windows Subsystem for Linux)
     ARCH := LINUX
 
     ARCH_CFLAGS := -std=c11 -I/usr/local/include \
