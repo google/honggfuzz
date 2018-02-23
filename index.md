@@ -93,7 +93,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__Owl__: a system for finding concurrency attacks](https://github.com/hku-systems/owl)
   * [__honggfuzz-docker-apps__](https://github.com/skysider/honggfuzz_docker_apps)
   * [__FFW - Fuzzing For Worms__](https://github.com/dobin/ffw)
-  * [__honggfuzz-rs__: fuzzing Rust with Honggfuzz](https://github.com/PaulGrandperrin/honggfuzz-rs)
+  * [__honggfuzz-rs__: fuzzing Rust with Honggfuzz](https://github.com/rust-fuzz/honggfuzz-rs)
 
 ## Examples
 
