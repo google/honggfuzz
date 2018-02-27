@@ -148,9 +148,6 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     size_t exec_per_sec = curr_exec_cnt - prev_exec_cnt;
     prev_exec_cnt = curr_exec_cnt;
 
-    /* The lock should be acquired before any output is printed on the screen */
-    MX_SCOPED_LOCK(logMutexGet());
-
     display_put(ESC_NAV(13, 1) ESC_CLEAR_ABOVE ESC_NAV(1, 1));
     display_put("------------------------[" ESC_BOLD "%31s " ESC_RESET "]----------------------\n",
         timeStr);
@@ -294,6 +291,7 @@ void display_display(honggfuzz_t* hfuzz) {
     if (logIsTTY() == false) {
         return;
     }
+    MX_SCOPED_LOCK(logMutexGet());
     display_displayLocked(hfuzz);
 }
 
