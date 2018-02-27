@@ -382,7 +382,7 @@ void arch_reapChild(run_t* run) {
                 PLOG_F("poll(fd=%d)", run->persistentSock);
             }
         }
-        if (subproc_persistentModeRoundDone(run) == true) {
+        if (subproc_persistentModeRoundDone(run)) {
             break;
         }
 
@@ -408,7 +408,7 @@ void arch_reapChild(run_t* run) {
         if (run->global->exe.persistent && ret == run->persistentPid &&
             (WIFEXITED(status) || WIFSIGNALED(status))) {
             run->persistentPid = 0;
-            if (fuzz_isTerminating() == false) {
+            if (!fuzz_isTerminating()) {
                 LOG_W("Persistent mode: PID %d exited with status: %s", ret,
                     subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
             }

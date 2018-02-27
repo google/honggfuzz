@@ -790,7 +790,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     ATOMIC_POST_ADD(run->global->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
     void* sig_addr = si.si_addr;
-    if (run->global->linux.disableRandomization == false) {
+    if (!run->global->linux.disableRandomization) {
         pc = 0UL;
         sig_addr = NULL;
     }
@@ -831,8 +831,8 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         return;
     }
 
-    if (files_writeBufToFile(run->crashFileName, run->dynamicFile, run->dynamicFileSz,
-            O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC) == false) {
+    if (!files_writeBufToFile(run->crashFileName, run->dynamicFile, run->dynamicFileSz,
+            O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC)) {
         LOG_E("Couldn't write to '%s'", run->crashFileName);
         return;
     }
@@ -891,7 +891,7 @@ static int arch_parseAsanReport(
         }
 
         /* First step is to identify header */
-        if (headerFound == false) {
+        if (!headerFound) {
             if ((strlen(lineptr) > headerSz) && (strncmp(header, lineptr, headerSz) == 0)) {
                 headerFound = true;
 
