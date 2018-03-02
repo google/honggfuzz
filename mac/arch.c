@@ -253,7 +253,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
     }
 
     /* If dry run mode, copy file with same name into workspace */
-    if (run->global->mutationsPerRun == 0U && run->global->useVerifier) {
+    if (run->global->mutate.mutationsPerRun == 0U && run->global->useVerifier) {
         snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.crashDir,
             run->origFileName);
     } else if (run->global->io.saveUnique) {

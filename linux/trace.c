@@ -801,7 +801,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     }
 
     /* If dry run mode, copy file with same name into workspace */
-    if (run->global->mutationsPerRun == 0U && run->global->useVerifier) {
+    if (run->global->mutate.mutationsPerRun == 0U && run->global->useVerifier) {
         snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.crashDir,
             run->origFileName);
     } else if (saveUnique) {
@@ -1049,7 +1049,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     }
 
     /* If dry run mode, copy file with same name into workspace */
-    if (run->global->mutationsPerRun == 0U && run->global->useVerifier) {
+    if (run->global->mutate.mutationsPerRun == 0U && run->global->useVerifier) {
         snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.crashDir,
             run->origFileName);
     } else {

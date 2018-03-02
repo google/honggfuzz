@@ -220,23 +220,25 @@ typedef struct {
         time_t lastCovUpdate;
         bool tmoutVTALRM;
     } timing;
+    struct {
+        const char* dictionaryFile;
+        TAILQ_HEAD(strq_t, strings_t) dictq;
+        size_t dictionaryCnt;
+        size_t mutationsMax;
+        unsigned mutationsPerRun;
+    } mutate;
     bool useScreen;
     bool useVerifier;
     char cmdline_txt[65];
-    unsigned mutationsPerRun;
     const char* blacklistFile;
     uint64_t* blacklist;
     size_t blacklistCnt;
-    size_t mutationsMax;
     size_t maxFileSz;
     char* reportFile;
     bool skipFeedbackOnTimeout;
     bool enableSanitizers;
     bool monitorSIGABRT;
     bool exitUponCrash;
-    const char* dictionaryFile;
-    TAILQ_HEAD(strq_t, strings_t) dictq;
-    size_t dictionaryCnt;
 
     fuzzState_t state;
     feedback_t* feedback;

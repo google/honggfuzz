@@ -197,9 +197,9 @@ bool input_init(honggfuzz_t* hfuzz) {
 }
 
 bool input_parseDictionary(honggfuzz_t* hfuzz) {
-    FILE* fDict = fopen(hfuzz->dictionaryFile, "rb");
+    FILE* fDict = fopen(hfuzz->mutate.dictionaryFile, "rb");
     if (fDict == NULL) {
-        PLOG_W("Couldn't open '%s' - R/O mode", hfuzz->dictionaryFile);
+        PLOG_W("Couldn't open '%s' - R/O mode", hfuzz->mutate.dictionaryFile);
         return false;
     }
     defer {
@@ -243,12 +243,12 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
         struct strings_t* str = (struct strings_t*)util_Malloc(sizeof(struct strings_t));
         str->len = util_decodeCString(s);
         str->s = s;
-        hfuzz->dictionaryCnt += 1;
-        TAILQ_INSERT_TAIL(&hfuzz->dictq, str, pointers);
+        hfuzz->mutate.dictionaryCnt += 1;
+        TAILQ_INSERT_TAIL(&hfuzz->mutate.dictq, str, pointers);
 
         LOG_D("Dictionary: loaded word: '%s' (len=%zu)", str->s, str->len);
     }
-    LOG_I("Loaded %zu words from the dictionary", hfuzz->dictionaryCnt);
+    LOG_I("Loaded %zu words from the dictionary", hfuzz->mutate.dictionaryCnt);
     return true;
 }
 

@@ -371,7 +371,7 @@ static bool fuzz_fetchInput(run_t* run) {
             return true;
         }
         fuzz_setDynamicMainState(run);
-        run->mutationsPerRun = run->global->mutationsPerRun;
+        run->mutationsPerRun = run->global->mutate.mutationsPerRun;
     }
 
     if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MAIN) {
@@ -416,7 +416,7 @@ static void fuzz_fuzzLoop(run_t* run) {
     run->exception = 0;
     run->report[0] = '\0';
     run->mainWorker = true;
-    run->mutationsPerRun = run->global->mutationsPerRun;
+    run->mutationsPerRun = run->global->mutate.mutationsPerRun;
     run->dynamicFileSz = 0;
     run->dynamicFileCopyFd = -1,
 
@@ -460,7 +460,7 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
     run->exception = 0;
     run->report[0] = '\0';
     run->mainWorker = true;
-    run->mutationsPerRun = run->global->mutationsPerRun;
+    run->mutationsPerRun = run->global->mutate.mutationsPerRun;
     run->dynamicFileSz = 0;
     run->dynamicFileCopyFd = -1,
 
@@ -563,15 +563,17 @@ static void* fuzz_threadNew(void* arg) {
 
     for (;;) {
         /* Check if dry run mode with verifier enabled */
-        if (run.global->mutationsPerRun == 0U && run.global->useVerifier && !hfuzz->socketFuzzer) {
+        if (run.global->mutate.mutationsPerRun == 0U && run.global->useVerifier &&
+            !hfuzz->socketFuzzer) {
             if (ATOMIC_POST_INC(run.global->cnts.mutationsCnt) >= run.global->io.fileCnt) {
                 ATOMIC_POST_INC(run.global->threads.threadsFinished);
                 break;
             }
         }
         /* Check for max iterations limit if set */
-        else if ((ATOMIC_POST_INC(run.global->cnts.mutationsCnt) >= run.global->mutationsMax) &&
-                 run.global->mutationsMax) {
+        else if ((ATOMIC_POST_INC(run.global->cnts.mutationsCnt) >=
+                     run.global->mutate.mutationsMax) &&
+                 run.global->mutate.mutationsMax) {
             ATOMIC_POST_INC(run.global->threads.threadsFinished);
             break;
         }

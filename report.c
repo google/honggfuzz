@@ -105,12 +105,12 @@ void report_Report(run_t* run) {
         " targetPid       : %d\n"
         " targetCmd       : %s\n"
         " wordlistFile    : %s\n",
-        localtmstr, run->global->mutationsPerRun,
+        localtmstr, run->global->mutate.mutationsPerRun,
         run->global->exe.externalCommand == NULL ? "NULL" : run->global->exe.externalCommand,
         run->global->exe.fuzzStdin ? "TRUE" : "FALSE", run->global->timing.tmOut,
         run->global->linux.ignoreAddr, run->global->exe.asLimit, run->global->exe.rssLimit,
         run->global->exe.dataLimit, run->global->linux.pid, run->global->linux.pidCmd,
-        run->global->dictionaryFile == NULL ? "NULL" : run->global->dictionaryFile);
+        run->global->mutate.dictionaryFile == NULL ? "NULL" : run->global->mutate.dictionaryFile);
 
 #if defined(_HF_ARCH_LINUX)
     report_printdynFileMethod(run);

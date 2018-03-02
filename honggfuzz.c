@@ -185,8 +185,8 @@ int main(int argc, char** argv) {
         exit(EXIT_FAILURE);
     }
 
-    if (hfuzz.dictionaryFile && (input_parseDictionary(&hfuzz) == false)) {
-        LOG_F("Couldn't parse dictionary file ('%s')", hfuzz.dictionaryFile);
+    if (hfuzz.mutate.dictionaryFile && (input_parseDictionary(&hfuzz) == false)) {
+        LOG_F("Couldn't parse dictionary file ('%s')", hfuzz.mutate.dictionaryFile);
     }
 
     if (hfuzz.blacklistFile && (input_parseBlacklist(&hfuzz) == false)) {

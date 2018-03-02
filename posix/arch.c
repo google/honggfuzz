@@ -123,7 +123,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
     char newname[PATH_MAX];
 
     /* If dry run mode, copy file with same name into workspace */
-    if (run->global->mutationsPerRun == 0U && run->global->useVerifier) {
+    if (run->global->mutate.mutationsPerRun == 0U && run->global->useVerifier) {
         snprintf(newname, sizeof(newname), "%s", run->origFileName);
     } else {
         snprintf(newname, sizeof(newname), "%s/%s.PID.%d.TIME.%s.%s", run->global->io.crashDir,

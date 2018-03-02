@@ -210,7 +210,7 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
         hfuzz->threads.threadsMax = 1;
     }
 
-    if (hfuzz->mutationsPerRun == 0U && hfuzz->useVerifier) {
+    if (hfuzz->mutate.mutationsPerRun == 0U && hfuzz->useVerifier) {
         LOG_I("Verifier enabled with mutationsPerRun == 0, activating the dry run mode");
     }
 
@@ -271,15 +271,20 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .tmoutVTALRM = false,
                 .lastCovUpdate = time(NULL),
             },
+        .mutate =
+            {
+                .mutationsMax = 0,
+                .dictionaryFile = NULL,
+                .dictionaryCnt = 0,
+                .mutationsPerRun = 6U,
+            },
         .cmdline_txt[0] = '\0',
         .useScreen = true,
         .useVerifier = false,
-        .mutationsPerRun = 6U,
         .blacklistFile = NULL,
         .blacklistCnt = 0,
         .blacklist = NULL,
         .maxFileSz = 0UL,
-        .mutationsMax = 0,
         .reportFile = NULL,
         .skipFeedbackOnTimeout = false,
         .enableSanitizers = false,
@@ -299,9 +304,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .mainThread = pthread_self(),
                 .mainPid = getpid(),
             },
-
-        .dictionaryFile = NULL,
-        .dictionaryCnt = 0,
 
         .state = _HF_STATE_UNSET,
         .feedback = NULL,
@@ -375,7 +377,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     *hfuzz = tmp;
 
     TAILQ_INIT(&hfuzz->dynfileq);
-    TAILQ_INIT(&hfuzz->dictq);
+    TAILQ_INIT(&hfuzz->mutate.dictq);
 
     // clang-format off
     struct custom_option custom_opts[] = {
@@ -510,7 +512,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->io.covDirNew = optarg;
                 break;
             case 'r':
-                hfuzz->mutationsPerRun = strtoul(optarg, NULL, 10);
+                hfuzz->mutate.mutationsPerRun = strtoul(optarg, NULL, 10);
                 break;
             case 'c':
                 hfuzz->exe.externalCommand = optarg;
@@ -550,7 +552,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 }
             } break;
             case 'N':
-                hfuzz->mutationsMax = atol(optarg);
+                hfuzz->mutate.mutationsMax = atol(optarg);
                 break;
             case 0x100:
                 hfuzz->exe.asLimit = strtoull(optarg, NULL, 0);
@@ -609,7 +611,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 }
                 break;
             case 'w':
-                hfuzz->dictionaryFile = optarg;
+                hfuzz->mutate.dictionaryFile = optarg;
                 break;
             case 'B':
                 hfuzz->blacklistFile = optarg;
@@ -692,9 +694,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         ", fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
         hfuzz->cmdline_txt, (int)getpid(), hfuzz->io.inputDir,
         cmdlineYesNo(hfuzz->exe.nullifyStdio), cmdlineYesNo(hfuzz->exe.fuzzStdin),
-        cmdlineYesNo(hfuzz->io.saveUnique), hfuzz->mutationsPerRun,
+        cmdlineYesNo(hfuzz->io.saveUnique), hfuzz->mutate.mutationsPerRun,
         hfuzz->exe.externalCommand == NULL ? "NULL" : hfuzz->exe.externalCommand,
-        (int)hfuzz->timing.runEndTime, (long)hfuzz->timing.tmOut, hfuzz->mutationsMax,
+        (int)hfuzz->timing.runEndTime, (long)hfuzz->timing.tmOut, hfuzz->mutate.mutationsMax,
         hfuzz->threads.threadsMax, hfuzz->io.fileExtn, hfuzz->exe.asLimit, hfuzz->exe.rssLimit,
         hfuzz->exe.dataLimit, hfuzz->exe.cmdline[0], hfuzz->linux.pid,
         cmdlineYesNo(hfuzz->monitorSIGABRT));
