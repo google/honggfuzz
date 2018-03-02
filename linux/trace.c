@@ -819,7 +819,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     }
 
     /* Target crashed (no duplicate detection yet) */
-    if (run->global->socketFuzzer) {
+    if (run->global->socketFuzzer.enabled) {
         LOG_D("SocketFuzzer: trace: Crash Identified");
         run->hasCrashed = true;
     }
@@ -838,7 +838,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     }
 
     /* Unique new crash, notify fuzzer */
-    if (run->global->socketFuzzer) {
+    if (run->global->socketFuzzer.enabled) {
         LOG_D("SocketFuzzer: trace: New Uniqu Crash");
         fuzz_notifySocketFuzzerCrash(run);
     }

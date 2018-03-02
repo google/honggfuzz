@@ -177,7 +177,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         display_put("      Target : [" ESC_BOLD "%d" ESC_RESET "] '" ESC_BOLD "%s" ESC_RESET "'\n",
             hfuzz->linux.pid, hfuzz->linux.pidCmd);
     } else {
-        display_put("      Target : " ESC_BOLD "%s" ESC_RESET "\n", hfuzz->cmdline_txt);
+        display_put("      Target : " ESC_BOLD "%s" ESC_RESET "\n", hfuzz->display.cmdline_txt);
     }
 
     static long num_cpu = 0;
@@ -267,7 +267,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
 void display_createTargetStr(honggfuzz_t* hfuzz) {
     if (!hfuzz->exe.cmdline[0]) {
         LOG_W("Your fuzzed binary is not specified");
-        snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "[EMPTY]");
+        snprintf(hfuzz->display.cmdline_txt, sizeof(hfuzz->display.cmdline_txt), "[EMPTY]");
         return;
     }
 
@@ -278,13 +278,13 @@ void display_createTargetStr(honggfuzz_t* hfuzz) {
     }
 
     size_t len = strlen(tmpstr);
-    if (len <= (sizeof(hfuzz->cmdline_txt) - 1)) {
-        snprintf(hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%s", tmpstr);
+    if (len <= (sizeof(hfuzz->display.cmdline_txt) - 1)) {
+        snprintf(hfuzz->display.cmdline_txt, sizeof(hfuzz->display.cmdline_txt), "%s", tmpstr);
         return;
     }
 
-    snprintf(
-        hfuzz->cmdline_txt, sizeof(hfuzz->cmdline_txt), "%.32s.....%s", tmpstr, &tmpstr[len - 27]);
+    snprintf(hfuzz->display.cmdline_txt, sizeof(hfuzz->display.cmdline_txt), "%.32s.....%s", tmpstr,
+        &tmpstr[len - 27]);
 }
 
 void display_display(honggfuzz_t* hfuzz) {

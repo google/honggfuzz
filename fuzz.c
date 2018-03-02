@@ -122,7 +122,7 @@ static void fuzz_addFileToFileQ(honggfuzz_t* hfuzz, const uint8_t* data, size_t 
     TAILQ_INSERT_TAIL(&hfuzz->dynfileq, dynfile, pointers);
     hfuzz->dynfileqCnt++;
 
-    if (hfuzz->socketFuzzer) {
+    if (hfuzz->socketFuzzer.enabled) {
         /* Don't add coverage data to files in socketFuzzer mode */
         return;
     }
@@ -230,7 +230,7 @@ static void fuzz_perfFeedback(run_t* run) {
 
         fuzz_addFileToFileQ(run->global, run->dynamicFile, run->dynamicFileSz);
 
-        if (run->global->socketFuzzer) {
+        if (run->global->socketFuzzer.enabled) {
             LOG_D("SocketFuzzer: fuzz: new BB (perf)");
             fuzz_notifySocketFuzzerNewCov(run->global);
         }
@@ -288,7 +288,7 @@ static void fuzz_sanCovFeedback(run_t* run) {
 
         fuzz_addFileToFileQ(run->global, run->dynamicFile, run->dynamicFileSz);
 
-        if (run->global->socketFuzzer) {
+        if (run->global->socketFuzzer.enabled) {
             LOG_D("SocketFuzzer: fuzz: new BB (cov)");
             fuzz_notifySocketFuzzerNewCov(run->global);
         }
@@ -545,7 +545,7 @@ static void* fuzz_threadNew(void* arg) {
     };
 
     /* Do not try to handle input files with socketfuzzer */
-    if (!hfuzz->socketFuzzer) {
+    if (!hfuzz->socketFuzzer.enabled) {
         if (!(run.dynamicFile = files_mapSharedMem(hfuzz->mutate.maxFileSz, &run.dynamicFileFd,
                   "hfuzz-input", run.global->io.workDir))) {
             LOG_F("Couldn't create an input file of size: %zu", hfuzz->mutate.maxFileSz);
@@ -564,7 +564,7 @@ static void* fuzz_threadNew(void* arg) {
     for (;;) {
         /* Check if dry run mode with verifier enabled */
         if (run.global->mutate.mutationsPerRun == 0U && run.global->useVerifier &&
-            !hfuzz->socketFuzzer) {
+            !hfuzz->socketFuzzer.enabled) {
             if (ATOMIC_POST_INC(run.global->cnts.mutationsCnt) >= run.global->io.fileCnt) {
                 ATOMIC_POST_INC(run.global->threads.threadsFinished);
                 break;
@@ -579,7 +579,7 @@ static void* fuzz_threadNew(void* arg) {
         }
 
         input_setSize(&run, run.global->mutate.maxFileSz);
-        if (hfuzz->socketFuzzer) {
+        if (hfuzz->socketFuzzer.enabled) {
             fuzz_fuzzLoopSocket(&run);
         } else {
             fuzz_fuzzLoop(&run);
@@ -630,7 +630,7 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
         LOG_F("Couldn't prepare sancov options");
     }
 
-    if (hfuzz->socketFuzzer) {
+    if (hfuzz->socketFuzzer.enabled) {
         /* Don't do dry run with socketFuzzer */
         LOG_I("Entering phase - Feedback Driven Mode (SocketFuzzer)");
         hfuzz->state = _HF_STATE_DYNAMIC_MAIN;

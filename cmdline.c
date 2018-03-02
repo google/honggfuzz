@@ -279,8 +279,17 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .mutationsPerRun = 6U,
                 .maxFileSz = 0UL,
             },
-        .cmdline_txt[0] = '\0',
-        .useScreen = true,
+        .display =
+            {
+                .useScreen = true,
+                .cmdline_txt[0] = '\0',
+            },
+        .socketFuzzer =
+            {
+                .enabled = false,
+                .serverSocket = -1,
+                .clientSocket = -1,
+            },
         .useVerifier = false,
         .blacklistFile = NULL,
         .blacklistCnt = 0,
@@ -313,8 +322,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .dynfileq_mutex = PTHREAD_RWLOCK_INITIALIZER,
 
         .feedback_mutex = PTHREAD_MUTEX_INITIALIZER,
-
-        .socketFuzzer = false,
 
         .cnts =
             {
@@ -476,7 +483,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->exe.nullifyStdio = false;
                 break;
             case 'v':
-                hfuzz->useScreen = false;
+                hfuzz->display.useScreen = false;
                 break;
             case 'V':
                 hfuzz->useVerifier = true;
@@ -527,7 +534,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->extSanOpts = optarg;
                 break;
             case 0x10B:
-                hfuzz->socketFuzzer = true;
+                hfuzz->socketFuzzer.enabled = true;
                 hfuzz->timing.tmOut = 0;  // Disable process timeout checks
                 break;
             case 'z':
@@ -692,7 +699,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         "fileExtn: '%s', "
         "ASLimit: 0x%" PRIx64 "(MiB), RSSLimit: 0x%" PRIx64 ", DATALimit: 0x%" PRIx64
         ", fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
-        hfuzz->cmdline_txt, (int)getpid(), hfuzz->io.inputDir,
+        hfuzz->display.cmdline_txt, (int)getpid(), hfuzz->io.inputDir,
         cmdlineYesNo(hfuzz->exe.nullifyStdio), cmdlineYesNo(hfuzz->exe.fuzzStdin),
         cmdlineYesNo(hfuzz->io.saveUnique), hfuzz->mutate.mutationsPerRun,
         hfuzz->exe.externalCommand == NULL ? "NULL" : hfuzz->exe.externalCommand,

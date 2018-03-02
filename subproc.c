@@ -310,7 +310,7 @@ static bool subproc_New(run_t* run) {
     LOG_D("Launched new process, PID: %d, thread: %" PRId32 " (concurrency: %zd)", run->pid,
         run->fuzzNo, run->global->threads.threadsMax);
 
-    if (run->global->socketFuzzer) {
+    if (run->global->socketFuzzer.enabled) {
         /* (dobin): Don't know why, but this is important */
         run->persistentPid = run->pid;
     }

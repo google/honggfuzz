@@ -228,9 +228,17 @@ typedef struct {
         unsigned mutationsPerRun;
         size_t maxFileSz;
     } mutate;
-    bool useScreen;
+    struct {
+        bool useScreen;
+        char cmdline_txt[65];
+    } display;
+    struct {
+        bool enabled;
+        int serverSocket;
+        int clientSocket;
+    } socketFuzzer;
+
     bool useVerifier;
-    char cmdline_txt[65];
     const char* blacklistFile;
     uint64_t* blacklist;
     size_t blacklistCnt;
@@ -249,8 +257,6 @@ typedef struct {
     pthread_rwlock_t dynfileq_mutex;
 
     pthread_mutex_t feedback_mutex;
-
-    bool socketFuzzer;
 
     struct {
         size_t mutationsCnt;
@@ -292,11 +298,6 @@ typedef struct {
         bool useClone;
         sigset_t waitSigSet;
     } linux;
-
-    struct {
-        int serverSocket;
-        int clientSocket;
-    } socketFuzzerData;
 } honggfuzz_t;
 
 typedef struct {

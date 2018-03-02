@@ -54,7 +54,7 @@ bool fuzz_prepareSocketFuzzer(run_t* run) {
 
     // Notify fuzzer that he should send teh things
     LOG_D("fuzz_prepareSocketFuzzer: SEND Fuzz");
-    ret = send(run->global->socketFuzzerData.clientSocket, "Fuzz", 4, 0);
+    ret = send(run->global->socketFuzzer.clientSocket, "Fuzz", 4, 0);
     if (ret < 0) {
         LOG_F("fuzz_prepareSocketFuzzer: received: %zu", ret);
         return false;
@@ -74,7 +74,7 @@ int fuzz_waitforSocketFuzzer(run_t* run) {
 
     // Wait until the external fuzzer did his thing
     bzero(buf, 16);
-    ret = recv(run->global->socketFuzzerData.clientSocket, buf, 4, 0);
+    ret = recv(run->global->socketFuzzer.clientSocket, buf, 4, 0);
     LOG_D("fuzz_waitforSocketFuzzer: RECV: %s", buf);
 
     // We dont care what we receive, its just to block here
@@ -96,7 +96,7 @@ bool fuzz_notifySocketFuzzerNewCov(honggfuzz_t* hfuzz) {
     ssize_t ret;
 
     // Tell the fuzzer that the thing he sent reached new BB's
-    ret = send(hfuzz->socketFuzzerData.clientSocket, "New!", 4, 0);
+    ret = send(hfuzz->socketFuzzer.clientSocket, "New!", 4, 0);
     LOG_D("fuzz_notifySocketFuzzer: SEND: New!");
     if (ret < 0) {
         LOG_F("fuzz_notifySocketFuzzer: sent: %zu", ret);
@@ -109,7 +109,7 @@ bool fuzz_notifySocketFuzzerNewCov(honggfuzz_t* hfuzz) {
 bool fuzz_notifySocketFuzzerCrash(run_t* run) {
     ssize_t ret;
 
-    ret = send(run->global->socketFuzzerData.clientSocket, "Cras", 4, 0);
+    ret = send(run->global->socketFuzzer.clientSocket, "Cras", 4, 0);
     LOG_D("fuzz_notifySocketFuzzer: SEND: Crash");
     if (ret < 0) {
         LOG_F("fuzz_notifySocketFuzzer: sent: %zu", ret);
@@ -148,12 +148,12 @@ bool setupSocketFuzzer(honggfuzz_t* run) {
 
     printf("Waiting for SocketFuzzer connection on socket: %s\n", socketPath);
     t = sizeof(remote);
-    if ((run->socketFuzzerData.clientSocket = accept(s, (struct sockaddr*)&remote, &t)) == -1) {
+    if ((run->socketFuzzer.clientSocket = accept(s, (struct sockaddr*)&remote, &t)) == -1) {
         perror("accept");
         return false;
     }
 
-    run->socketFuzzerData.serverSocket = s;
+    run->socketFuzzer.serverSocket = s;
     printf("A SocketFuzzer client connected. Continuing.\n");
 
     return true;

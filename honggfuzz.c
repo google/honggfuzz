@@ -171,11 +171,11 @@ int main(int argc, char** argv) {
         LOG_F("Parsing of the cmd-line arguments failed");
     }
 
-    if (hfuzz.useScreen) {
+    if (hfuzz.display.useScreen) {
         display_init();
     }
 
-    if (hfuzz.socketFuzzer) {
+    if (hfuzz.socketFuzzer.enabled) {
         LOG_I(
             "No input file corpus loaded, the external socket_fuzzer is responsible for "
             "creating the fuzz data");
@@ -224,7 +224,7 @@ int main(int argc, char** argv) {
     setupMainThreadTimer();
 
     for (;;) {
-        if (hfuzz.useScreen && showDisplay) {
+        if (hfuzz.display.useScreen && showDisplay) {
             display_display(&hfuzz);
             showDisplay = false;
         }
@@ -256,7 +256,7 @@ int main(int argc, char** argv) {
     if (hfuzz.linux.symsWl) {
         free(hfuzz.linux.symsWl);
     }
-    if (hfuzz.socketFuzzer) {
+    if (hfuzz.socketFuzzer.enabled) {
         cleanupSocketFuzzer();
     }
 
