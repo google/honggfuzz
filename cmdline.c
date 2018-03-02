@@ -223,8 +223,8 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
         return false;
     }
 
-    if (hfuzz->maxFileSz > _HF_INPUT_MAX_SIZE) {
-        LOG_E("Maximum file size '%zu' bigger than the maximum size '%zu'", hfuzz->maxFileSz,
+    if (hfuzz->mutate.maxFileSz > _HF_INPUT_MAX_SIZE) {
+        LOG_E("Maximum file size '%zu' bigger than the maximum size '%zu'", hfuzz->mutate.maxFileSz,
             (size_t)_HF_INPUT_MAX_SIZE);
         return false;
     }
@@ -277,6 +277,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .dictionaryFile = NULL,
                 .dictionaryCnt = 0,
                 .mutationsPerRun = 6U,
+                .maxFileSz = 0UL,
             },
         .cmdline_txt[0] = '\0',
         .useScreen = true,
@@ -284,7 +285,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .blacklistFile = NULL,
         .blacklistCnt = 0,
         .blacklist = NULL,
-        .maxFileSz = 0UL,
         .reportFile = NULL,
         .skipFeedbackOnTimeout = false,
         .enableSanitizers = false,
@@ -534,7 +534,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->dynFileMethod |= _HF_DYNFILE_SOFT;
                 break;
             case 'F':
-                hfuzz->maxFileSz = strtoul(optarg, NULL, 0);
+                hfuzz->mutate.maxFileSz = strtoul(optarg, NULL, 0);
                 break;
             case 't':
                 hfuzz->timing.tmOut = atol(optarg);

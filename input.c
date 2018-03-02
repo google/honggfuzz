@@ -53,8 +53,8 @@
 #include "libhfcommon/util.h"
 
 void input_setSize(run_t* run, size_t sz) {
-    if (sz > run->global->maxFileSz) {
-        PLOG_F("Too large size requested: %zu > maxSize: %zu", sz, run->global->maxFileSz);
+    if (sz > run->global->mutate.maxFileSz) {
+        PLOG_F("Too large size requested: %zu > maxSize: %zu", sz, run->global->mutate.maxFileSz);
     }
     run->dynamicFileSz = sz;
 }
@@ -91,9 +91,9 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
             LOG_D("'%s' is not a regular file, skipping", fname);
             continue;
         }
-        if (hfuzz->maxFileSz != 0UL && st.st_size > (off_t)hfuzz->maxFileSz) {
+        if (hfuzz->mutate.maxFileSz != 0UL && st.st_size > (off_t)hfuzz->mutate.maxFileSz) {
             LOG_D("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %" PRId64,
-                fname, (int64_t)st.st_size, (int64_t)hfuzz->maxFileSz);
+                fname, (int64_t)st.st_size, (int64_t)hfuzz->mutate.maxFileSz);
         }
         if ((size_t)st.st_size > maxSize) {
             maxSize = st.st_size;
@@ -102,13 +102,13 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
     }
 
     ATOMIC_SET(hfuzz->io.fileCnt, fileCnt);
-    if (hfuzz->maxFileSz == 0U) {
+    if (hfuzz->mutate.maxFileSz == 0U) {
         if (maxSize < 8192) {
-            hfuzz->maxFileSz = 8192;
+            hfuzz->mutate.maxFileSz = 8192;
         } else if (maxSize > _HF_INPUT_MAX_SIZE) {
-            hfuzz->maxFileSz = _HF_INPUT_MAX_SIZE;
+            hfuzz->mutate.maxFileSz = _HF_INPUT_MAX_SIZE;
         } else {
-            hfuzz->maxFileSz = maxSize;
+            hfuzz->mutate.maxFileSz = maxSize;
         }
     }
 
@@ -117,7 +117,7 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
     }
 
     LOG_D("Re-read the '%s', maxFileSz:%zu, number of usable files:%zu", hfuzz->io.inputDir,
-        hfuzz->maxFileSz, hfuzz->io.fileCnt);
+        hfuzz->mutate.maxFileSz, hfuzz->io.fileCnt);
 
     rewinddir(hfuzz->io.inputDirPtr);
 
@@ -336,7 +336,7 @@ bool input_prepareStaticFile(run_t* run, bool rewind) {
     }
     snprintf(run->origFileName, sizeof(run->origFileName), "%s", fname);
 
-    ssize_t fileSz = files_readFileToBufMax(fname, run->dynamicFile, run->global->maxFileSz);
+    ssize_t fileSz = files_readFileToBufMax(fname, run->dynamicFile, run->global->mutate.maxFileSz);
     if (fileSz < 0) {
         LOG_E("Couldn't read contents of '%s'", fname);
         return false;
@@ -370,7 +370,7 @@ bool input_prepareExternalFile(run_t* run) {
     }
     LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
 
-    ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->maxFileSz, 0);
+    ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->mutate.maxFileSz, 0);
     if (sz == -1) {
         LOG_E("Couldn't read file from fd=%d", fd);
         return false;
@@ -401,7 +401,7 @@ bool input_postProcessFile(run_t* run) {
     }
     LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
 
-    ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->maxFileSz, 0);
+    ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->mutate.maxFileSz, 0);
     if (sz == -1) {
         LOG_E("Couldn't read file from fd=%d", fd);
         return false;

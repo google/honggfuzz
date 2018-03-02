@@ -70,11 +70,11 @@ static inline void mangle_Move(run_t* run, size_t off_from, size_t off_to, size_
 }
 
 static void mangle_Inflate(run_t* run, size_t off, size_t len) {
-    if (run->dynamicFileSz >= run->global->maxFileSz) {
+    if (run->dynamicFileSz >= run->global->mutate.maxFileSz) {
         return;
     }
-    if (len > (run->global->maxFileSz - run->dynamicFileSz)) {
-        len = run->global->maxFileSz - run->dynamicFileSz;
+    if (len > (run->global->mutate.maxFileSz - run->dynamicFileSz)) {
+        len = run->global->mutate.maxFileSz - run->dynamicFileSz;
     }
 
     input_setSize(run, run->dynamicFileSz + len);
@@ -495,7 +495,7 @@ static void mangle_CloneByte(run_t* run) {
 }
 
 static void mangle_Resize(run_t* run) {
-    size_t sz = util_rndGet(1, run->global->maxFileSz);
+    size_t sz = util_rndGet(1, run->global->mutate.maxFileSz);
     input_setSize(run, sz);
 }
 

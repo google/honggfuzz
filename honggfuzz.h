@@ -226,6 +226,7 @@ typedef struct {
         size_t dictionaryCnt;
         size_t mutationsMax;
         unsigned mutationsPerRun;
+        size_t maxFileSz;
     } mutate;
     bool useScreen;
     bool useVerifier;
@@ -233,7 +234,6 @@ typedef struct {
     const char* blacklistFile;
     uint64_t* blacklist;
     size_t blacklistCnt;
-    size_t maxFileSz;
     char* reportFile;
     bool skipFeedbackOnTimeout;
     bool enableSanitizers;
