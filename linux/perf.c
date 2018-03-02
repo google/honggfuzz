@@ -364,20 +364,27 @@ void arch_perfAnalyze(run_t* run) {
 }
 
 bool arch_perfInit(honggfuzz_t* hfuzz HF_ATTR_UNUSED) {
-    uint8_t buf[PATH_MAX + 1];
-    ssize_t sz =
-        files_readFileToBufMax("/sys/bus/event_source/devices/intel_pt/type", buf, sizeof(buf) - 1);
-    if (sz > 0) {
-        buf[sz] = '\0';
-        perfIntelPtPerfType = (int32_t)strtoul((char*)buf, NULL, 10);
-        LOG_D("perfIntelPtPerfType = %" PRIu32, perfIntelPtPerfType);
+    static char const intel_pt_path[] = "/sys/bus/event_source/devices/intel_pt/type";
+    static char const intel_bts_path[] = "/sys/bus/event_source/devices/intel_bts/type";
+
+    if (files_exists(intel_pt_path)) {
+        uint8_t buf[256];
+        ssize_t sz = files_readFileToBufMax(intel_pt_path, buf, sizeof(buf) - 1);
+        if (sz > 0) {
+            buf[sz] = '\0';
+            perfIntelPtPerfType = (int32_t)strtoul((char*)buf, NULL, 10);
+            LOG_D("perfIntelPtPerfType = %" PRIu32, perfIntelPtPerfType);
+        }
     }
-    sz = files_readFileToBufMax(
-        "/sys/bus/event_source/devices/intel_bts/type", buf, sizeof(buf) - 1);
-    if (sz > 0) {
-        buf[sz] = '\0';
-        perfIntelBtsPerfType = (int32_t)strtoul((char*)buf, NULL, 10);
-        LOG_D("perfIntelBtsPerfType = %" PRIu32, perfIntelBtsPerfType);
+
+    if (files_exists(intel_bts_path)) {
+        uint8_t buf[256];
+        ssize_t sz = files_readFileToBufMax(intel_bts_path, buf, sizeof(buf) - 1);
+        if (sz > 0) {
+            buf[sz] = '\0';
+            perfIntelBtsPerfType = (int32_t)strtoul((char*)buf, NULL, 10);
+            LOG_D("perfIntelBtsPerfType = %" PRIu32, perfIntelBtsPerfType);
+        }
     }
     return true;
 }

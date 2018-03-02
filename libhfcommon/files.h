@@ -30,7 +30,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
-extern ssize_t files_readFileToBufMax(char* fileName, uint8_t* buf, size_t fileMaxSz);
+extern ssize_t files_readFileToBufMax(const char* fileName, uint8_t* buf, size_t fileMaxSz);
 
 extern bool files_writeBufToFile(
     const char* fileName, const uint8_t* buf, size_t fileSz, int flags);
