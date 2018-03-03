@@ -267,7 +267,7 @@ struct {
     [SIGBUS].descr = "SIGBUS",
 
     [SIGABRT].important = false,
-    [SIGABRT].descr = "SIGABRT"
+    [SIGABRT].descr = "SIGABRT",
 
     arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
 };
