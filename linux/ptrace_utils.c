@@ -247,7 +247,7 @@ static ssize_t honggfuzz_process_vm_readv(pid_t pid,
 struct {
     const char *descr;
     bool important;
-} const arch_sigs[_NSIG + 1] = {
+} arch_sigs[_NSIG + 1] = {
     [0 ... (_NSIG)].important = false,
     [0 ... (_NSIG)].descr = "UNKNOWN",
 
