@@ -269,7 +269,7 @@ struct {
     [SIGABRT].important = false,
     [SIGABRT].descr = "SIGABRT",
 
-    arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
+    arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT,
 };
 /*  *INDENT-ON* */
 
