@@ -509,7 +509,7 @@ void arch_getFileName(honggfuzz_t * hfuzz, char *fileName)
              (int)getpid(), (unsigned long int)tv.tv_sec, util_rnd64(), hfuzz->fileExtn);
 }
 
-static bool arch_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
+bool arch_runVerifier(honggfuzz_t * hfuzz, fuzzer_t * crashedFuzzer)
 {
     int crashFd = -1;
     uint8_t *crashBuf = NULL;
