@@ -1430,3 +1430,8 @@ void arch_ptraceDetach(pid_t pid)
         ptrace(PTRACE_DETACH, tasks[i], NULL, NULL);
     }
 }
+
+void arch_traceSignalsInit(honggfuzz_t* hfuzz) {
+    /* Default is true for all platforms except Android */
+    arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
+}
