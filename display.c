@@ -157,7 +157,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         display_put(" (out of: " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET " [%.2f%%])",
             hfuzz->mutate.mutationsMax, exeProgress);
     }
-    switch (ATOMIC_GET(hfuzz->state)) {
+    switch (ATOMIC_GET(hfuzz->state.state)) {
         case _HF_STATE_STATIC:
             display_put("\n        Mode : " ESC_BOLD "Static" ESC_RESET "\n");
             break;
@@ -210,31 +210,31 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     display_put(" Corpus Size : " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET ", max size: " ESC_BOLD
                 "%" _HF_NONMON_SEP "zu" ESC_RESET " bytes, init dir: " ESC_BOLD "%" _HF_NONMON_SEP
                 "zu" ESC_RESET " files\n",
-        hfuzz->dynfileqCnt, hfuzz->mutate.maxFileSz, ATOMIC_GET(hfuzz->io.fileCnt));
+        hfuzz->state.dynfileqCnt, hfuzz->mutate.maxFileSz, ATOMIC_GET(hfuzz->io.fileCnt));
     display_put("  Cov Update : " ESC_BOLD "%s" ESC_RESET " ago\n" ESC_RESET, lastCovStr);
     display_put("    Coverage :");
 
     /* HW perf specific counters */
-    if (hfuzz->dynFileMethod == 0) {
+    if (hfuzz->feedback.dynFileMethod == 0) {
         display_put(" [none]");
     }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
+    if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
         display_put(" hwi: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
             ATOMIC_GET(hfuzz->linux.hwCnts.cpuInstrCnt));
     }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
+    if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
         display_put(" hwb: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
             ATOMIC_GET(hfuzz->linux.hwCnts.cpuBranchCnt));
     }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
+    if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         display_put(" bts: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
             ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
+    if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
         display_put(" ipt: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
             ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
     }
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_SOFT) {
+    if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_SOFT) {
         uint64_t softCntPc = ATOMIC_GET(hfuzz->linux.hwCnts.softCntPc);
         uint64_t softCntEdge = ATOMIC_GET(hfuzz->linux.hwCnts.softCntEdge);
         uint64_t softCntCmp = ATOMIC_GET(hfuzz->linux.hwCnts.softCntCmp);
@@ -244,19 +244,19 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     }
 
     /* Sanitizer coverage specific counters */
-    if (hfuzz->dynFileMethod & _HF_DYNFILE_SANCOV) {
-        uint64_t hitBB = ATOMIC_GET(hfuzz->sanCovCnts.hitBBCnt);
-        uint64_t totalBB = ATOMIC_GET(hfuzz->sanCovCnts.totalBBCnt);
+    if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_SANCOV) {
+        uint64_t hitBB = ATOMIC_GET(hfuzz->sanitizer.sanCovCnts.hitBBCnt);
+        uint64_t totalBB = ATOMIC_GET(hfuzz->sanitizer.sanCovCnts.totalBBCnt);
         float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
         display_put(" #sancov_bb: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET " (cov: " ESC_BOLD
                     "%.2f" ESC_RESET "%%)",
             hitBB, covPer);
         display_put(" #dso: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
-            ATOMIC_GET(hfuzz->sanCovCnts.iDsoCnt));
+            ATOMIC_GET(hfuzz->sanitizer.sanCovCnts.iDsoCnt));
         display_put(" #newbb: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
-            ATOMIC_GET(hfuzz->sanCovCnts.newBBCnt));
+            ATOMIC_GET(hfuzz->sanitizer.sanCovCnts.newBBCnt));
         display_put(" #crashes: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
-            ATOMIC_GET(hfuzz->sanCovCnts.crashesCnt));
+            ATOMIC_GET(hfuzz->sanitizer.sanCovCnts.crashesCnt));
     }
     display_put("\n---------------------------------- [ " ESC_BOLD "LOGS" ESC_RESET
                 " ] ------------------/ " ESC_BOLD "%s %s " ESC_RESET "/-",

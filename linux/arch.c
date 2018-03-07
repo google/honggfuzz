@@ -353,7 +353,7 @@ void arch_reapChild(run_t* run) {
         }
     }
 
-    if (run->global->enableSanitizers) {
+    if (run->global->sanitizer.enable) {
         pid_t ptracePid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
         char crashReport[PATH_MAX];
         snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", run->global->io.workDir, kLOGPREFIX,
@@ -423,7 +423,7 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
         break;
     }
 
-    if (hfuzz->dynFileMethod != _HF_DYNFILE_NONE) {
+    if (hfuzz->feedback.dynFileMethod != _HF_DYNFILE_NONE) {
         unsigned long major = 0, minor = 0;
         char* p = NULL;
 
@@ -442,8 +442,8 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
          *  3) Intel's PT and new Intel BTS format require kernel >= 4.1
          */
         unsigned long checkMajor = 3, checkMinor = 7;
-        if ((hfuzz->dynFileMethod & _HF_DYNFILE_BTS_EDGE) ||
-            (hfuzz->dynFileMethod & _HF_DYNFILE_IPT_BLOCK)) {
+        if ((hfuzz->feedback.dynFileMethod & _HF_DYNFILE_BTS_EDGE) ||
+            (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_IPT_BLOCK)) {
             checkMajor = 4;
             checkMinor = 1;
         }
@@ -521,7 +521,7 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
      * increase number of major frames, since top 7-9 frames will be occupied
      * with sanitizer runtime library & libc symbols
      */
-    if (hfuzz->enableSanitizers && hfuzz->monitorSIGABRT) {
+    if (hfuzz->sanitizer.enable && hfuzz->cfg.monitorSIGABRT) {
         hfuzz->linux.numMajorFrames = 14;
     }
 

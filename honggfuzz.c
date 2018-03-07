@@ -189,8 +189,8 @@ int main(int argc, char** argv) {
         LOG_F("Couldn't parse dictionary file ('%s')", hfuzz.mutate.dictionaryFile);
     }
 
-    if (hfuzz.blacklistFile && (input_parseBlacklist(&hfuzz) == false)) {
-        LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.blacklistFile);
+    if (hfuzz.feedback.blacklistFile && (input_parseBlacklist(&hfuzz) == false)) {
+        LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.feedback.blacklistFile);
     }
 #define hfuzzl hfuzz.linux
     if (hfuzzl.symsBlFile &&
@@ -203,9 +203,9 @@ int main(int argc, char** argv) {
         LOG_F("Couldn't parse symbols whitelist file ('%s')", hfuzzl.symsWlFile);
     }
 
-    if (hfuzz.dynFileMethod != _HF_DYNFILE_NONE) {
-        if (!(hfuzz.feedback = files_mapSharedMem(
-                  sizeof(feedback_t), &hfuzz.bbFd, "hfuzz-feedback", hfuzz.io.workDir))) {
+    if (hfuzz.feedback.dynFileMethod != _HF_DYNFILE_NONE) {
+        if (!(hfuzz.feedback.feedbackMap = files_mapSharedMem(
+                  sizeof(feedback_t), &hfuzz.feedback.bbFd, "hfuzz-feedback", hfuzz.io.workDir))) {
             LOG_F("files_mapSharedMem(sz=%zu, dir='%s') failed", sizeof(feedback_t),
                 hfuzz.io.workDir);
         }
@@ -247,8 +247,8 @@ int main(int argc, char** argv) {
     fuzz_threadsStop(&hfuzz, threads);
 
     /* Clean-up global buffers */
-    if (hfuzz.blacklist) {
-        free(hfuzz.blacklist);
+    if (hfuzz.feedback.blacklist) {
+        free(hfuzz.feedback.blacklist);
     }
     if (hfuzz.linux.symsBl) {
         free(hfuzz.linux.symsBl);

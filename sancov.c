@@ -361,7 +361,7 @@ static bool sancov_sanCovParseRaw(run_t* run) {
     }
 
     /* See if #maps is available from previous run to avoid realloc inside loop */
-    uint64_t prevMapsNum = ATOMIC_GET(run->global->sanCovCnts.dsoCnt);
+    uint64_t prevMapsNum = ATOMIC_GET(run->global->sanitizer.sanCovCnts.dsoCnt);
     if (prevMapsNum > 0) {
         mapsBuf = util_Malloc(prevMapsNum * sizeof(memMap_t));
     }
@@ -398,11 +398,11 @@ static bool sancov_sanCovParseRaw(run_t* run) {
 
         /* Interaction with global Trie should mutex wrap to avoid threads races */
         {
-            MX_SCOPED_LOCK(&run->global->sanCov_mutex);
+            MX_SCOPED_LOCK(&run->global->sanitizer.sanCov_mutex);
 
             /* Add entry to Trie with zero data if not already */
-            if (!sancov_trieSearch(run->global->covMetadata->children, mapData.mapName)) {
-                sancov_trieAdd(&run->global->covMetadata, mapData.mapName);
+            if (!sancov_trieSearch(run->global->sanitizer.covMetadata->children, mapData.mapName)) {
+                sancov_trieAdd(&run->global->sanitizer.covMetadata, mapData.mapName);
             }
         }
 
@@ -495,10 +495,10 @@ static bool sancov_sanCovParseRaw(run_t* run) {
 
                     /* Interaction with global Trie should mutex wrap to avoid threads races */
                     {
-                        MX_SCOPED_LOCK(&run->global->sanCov_mutex);
+                        MX_SCOPED_LOCK(&run->global->sanitizer.sanCov_mutex);
 
                         curMap = sancov_trieSearch(
-                            run->global->covMetadata->children, mapsBuf[bestFit].mapName);
+                            run->global->sanitizer.covMetadata->children, mapsBuf[bestFit].mapName);
                         if (curMap == NULL) {
                             LOG_E("Corrupted Trie - '%s' not found", mapsBuf[bestFit].mapName);
                             continue;
@@ -527,7 +527,7 @@ static bool sancov_sanCovParseRaw(run_t* run) {
                 if (!sancov_queryBitmap(curMap->data.pBM, relAddr)) {
                     /* Interaction with global Trie should mutex wrap to avoid threads races */
                     {
-                        MX_SCOPED_LOCK(&run->global->sanCov_mutex);
+                        MX_SCOPED_LOCK(&run->global->sanitizer.sanCov_mutex);
 
                         sancov_setBitmap(curMap->data.pBM, relAddr);
                     }
@@ -678,7 +678,7 @@ static bool sancov_sanCovParse(run_t* run) {
  * Enabled methods are controlled from sanitizer flags in arch.c
  */
 void sancov_Analyze(run_t* run) {
-    if (!(run->global->dynFileMethod & _HF_DYNFILE_SANCOV)) {
+    if (!(run->global->feedback.dynFileMethod & _HF_DYNFILE_SANCOV)) {
         return;
     }
     /*
@@ -691,10 +691,10 @@ void sancov_Analyze(run_t* run) {
 }
 
 bool sancov_Init(honggfuzz_t* hfuzz) {
-    if (!(hfuzz->dynFileMethod & _HF_DYNFILE_SANCOV)) {
+    if (!(hfuzz->feedback.dynFileMethod & _HF_DYNFILE_SANCOV)) {
         return true;
     }
-    sancov_trieCreate(&hfuzz->covMetadata);
+    sancov_trieCreate(&hfuzz->sanitizer.covMetadata);
 
     char sanCovOutDir[PATH_MAX] = {0};
     snprintf(sanCovOutDir, sizeof(sanCovOutDir), "%s/%s", hfuzz->io.workDir, _HF_SANCOV_DIR);

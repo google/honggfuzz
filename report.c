@@ -38,14 +38,16 @@ static int reportFD = -1;
 #if defined(_HF_ARCH_LINUX)
 static void report_printdynFileMethod(run_t* run) {
     dprintf(reportFD, " dynFileMethod: ");
-    if (run->global->dynFileMethod == 0)
+    if (run->global->feedback.dynFileMethod == 0)
         dprintf(reportFD, "NONE\n");
     else {
-        if (run->global->dynFileMethod & _HF_DYNFILE_INSTR_COUNT) dprintf(reportFD, "INSTR_COUNT ");
-        if (run->global->dynFileMethod & _HF_DYNFILE_BRANCH_COUNT)
+        if (run->global->feedback.dynFileMethod & _HF_DYNFILE_INSTR_COUNT)
+            dprintf(reportFD, "INSTR_COUNT ");
+        if (run->global->feedback.dynFileMethod & _HF_DYNFILE_BRANCH_COUNT)
             dprintf(reportFD, "BRANCH_COUNT ");
-        if (run->global->dynFileMethod & _HF_DYNFILE_BTS_EDGE) dprintf(reportFD, "BTS_EDGE_COUNT ");
-        if (run->global->dynFileMethod & _HF_DYNFILE_IPT_BLOCK)
+        if (run->global->feedback.dynFileMethod & _HF_DYNFILE_BTS_EDGE)
+            dprintf(reportFD, "BTS_EDGE_COUNT ");
+        if (run->global->feedback.dynFileMethod & _HF_DYNFILE_IPT_BLOCK)
             dprintf(reportFD, "IPT_BLOCK_COUNT ");
 
         dprintf(reportFD, "\n");
@@ -66,15 +68,15 @@ void report_Report(run_t* run) {
         return;
     }
 
-    MX_SCOPED_LOCK(&run->global->report_mutex);
+    MX_SCOPED_LOCK(&run->global->cfg.report_mutex);
 
     if (reportFD == -1) {
         char reportFName[PATH_MAX];
-        if (run->global->reportFile == NULL) {
+        if (run->global->cfg.reportFile == NULL) {
             snprintf(reportFName, sizeof(reportFName), "%s/%s", run->global->io.workDir,
                 _HF_REPORT_FILE);
         } else {
-            snprintf(reportFName, sizeof(reportFName), "%s", run->global->reportFile);
+            snprintf(reportFName, sizeof(reportFName), "%s", run->global->cfg.reportFile);
         }
 
         reportFD = open(reportFName, O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0644);

@@ -210,7 +210,7 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
         hfuzz->threads.threadsMax = 1;
     }
 
-    if (hfuzz->mutate.mutationsPerRun == 0U && hfuzz->useVerifier) {
+    if (hfuzz->mutate.mutationsPerRun == 0U && hfuzz->cfg.useVerifier) {
         LOG_I("Verifier enabled with mutationsPerRun == 0, activating the dry run mode");
     }
 
@@ -218,7 +218,7 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
      * 'enableSanitizers' can be auto enabled when san_cov is used, although it's probably
      * better to let user know about the features that each flag control.
      */
-    if ((hfuzz->dynFileMethod & _HF_DYNFILE_SANCOV) && !hfuzz->enableSanitizers) {
+    if ((hfuzz->feedback.dynFileMethod & _HF_DYNFILE_SANCOV) && !hfuzz->sanitizer.enable) {
         LOG_E("Sanitizer coverage cannot be used without enabling sanitizers '-S/--sanitizers'");
         return false;
     }
@@ -290,20 +290,35 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .serverSocket = -1,
                 .clientSocket = -1,
             },
-        .useVerifier = false,
-        .blacklistFile = NULL,
-        .blacklistCnt = 0,
-        .blacklist = NULL,
-        .reportFile = NULL,
-        .skipFeedbackOnTimeout = false,
-        .enableSanitizers = false,
+        .cfg =
+            {
+                .useVerifier = false,
+                .exitUponCrash = false,
+                .report_mutex = PTHREAD_MUTEX_INITIALIZER,
+                .reportFile = NULL,
+                .dynFileIterExpire = 0,
 #if defined(__ANDROID__)
-        .monitorSIGABRT = false,
+                .monitorSIGABRT = false,
 #else
-        .monitorSIGABRT = true,
+                .monitorSIGABRT = true,
 #endif
-        .exitUponCrash = false,
-
+            },
+        .sanitizer =
+            {
+                .enable = false,
+                .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER,
+                .extSanOpts = NULL,
+                .covMetadata = NULL,
+                .sanCovCnts =
+                    {
+                        .hitBBCnt = 0ULL,
+                        .totalBBCnt = 0ULL,
+                        .dsoCnt = 0ULL,
+                        .iDsoCnt = 0ULL,
+                        .newBBCnt = 0ULL,
+                        .crashesCnt = 0ULL,
+                    },
+            },
         .threads =
             {
                 .threadsFinished = 0,
@@ -313,16 +328,23 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .mainThread = pthread_self(),
                 .mainPid = getpid(),
             },
-
-        .state = _HF_STATE_UNSET,
-        .feedback = NULL,
-        .bbFd = -1,
-
-        .dynfileqCnt = 0U,
-        .dynfileq_mutex = PTHREAD_RWLOCK_INITIALIZER,
-
-        .feedback_mutex = PTHREAD_MUTEX_INITIALIZER,
-
+        .feedback =
+            {
+                .feedbackMap = NULL,
+                .feedback_mutex = PTHREAD_MUTEX_INITIALIZER,
+                .bbFd = -1,
+                .blacklistFile = NULL,
+                .blacklist = NULL,
+                .blacklistCnt = 0,
+                .skipFeedbackOnTimeout = false,
+                .dynFileMethod = _HF_DYNFILE_SOFT,
+            },
+        .state =
+            {
+                .state = _HF_STATE_UNSET,
+                .dynfileqCnt = 0U,
+                .dynfileq_mutex = PTHREAD_RWLOCK_INITIALIZER,
+            },
         .cnts =
             {
                 .mutationsCnt = 0,
@@ -332,23 +354,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .blCrashesCnt = 0,
                 .timeoutedCnt = 0,
             },
-
-        .dynFileMethod = _HF_DYNFILE_SOFT,
-        .sanCovCnts =
-            {
-                .hitBBCnt = 0ULL,
-                .totalBBCnt = 0ULL,
-                .dsoCnt = 0ULL,
-                .iDsoCnt = 0ULL,
-                .newBBCnt = 0ULL,
-                .crashesCnt = 0ULL,
-            },
-
-        .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER,
-        .extSanOpts = NULL,
-        .covMetadata = NULL,
-
-        .report_mutex = PTHREAD_MUTEX_INITIALIZER,
 
         /* Linux code */
         .linux =
@@ -383,7 +388,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     };
     *hfuzz = tmp;
 
-    TAILQ_INIT(&hfuzz->dynfileq);
+    TAILQ_INIT(&hfuzz->state.dynfileq);
     TAILQ_INIT(&hfuzz->mutate.dictq);
 
     // clang-format off
@@ -477,7 +482,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 }
                 break;
             case 'x':
-                hfuzz->dynFileMethod = _HF_DYNFILE_NONE;
+                hfuzz->feedback.dynFileMethod = _HF_DYNFILE_NONE;
                 break;
             case 'Q':
                 hfuzz->exe.nullifyStdio = false;
@@ -486,7 +491,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->display.useScreen = false;
                 break;
             case 'V':
-                hfuzz->useVerifier = true;
+                hfuzz->cfg.useVerifier = true;
                 break;
             case 's':
                 hfuzz->exe.fuzzStdin = true;
@@ -525,20 +530,20 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->exe.externalCommand = optarg;
                 break;
             case 'C':
-                hfuzz->dynFileMethod |= _HF_DYNFILE_SANCOV;
+                hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_SANCOV;
                 break;
             case 'S':
-                hfuzz->enableSanitizers = true;
+                hfuzz->sanitizer.enable = true;
                 break;
             case 0x10A:
-                hfuzz->extSanOpts = optarg;
+                hfuzz->sanitizer.extSanOpts = optarg;
                 break;
             case 0x10B:
                 hfuzz->socketFuzzer.enabled = true;
                 hfuzz->timing.tmOut = 0;  // Disable process timeout checks
                 break;
             case 'z':
-                hfuzz->dynFileMethod |= _HF_DYNFILE_SOFT;
+                hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_SOFT;
                 break;
             case 'F':
                 hfuzz->mutate.maxFileSz = strtoul(optarg, NULL, 0);
@@ -547,7 +552,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->timing.tmOut = atol(optarg);
                 break;
             case 'R':
-                hfuzz->reportFile = optarg;
+                hfuzz->cfg.reportFile = optarg;
                 break;
             case 'n':
                 hfuzz->threads.threadsMax = atol(optarg);
@@ -575,16 +580,16 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 0x105:
                 if ((strcasecmp(optarg, "0") == 0) || (strcasecmp(optarg, "false") == 0)) {
-                    hfuzz->monitorSIGABRT = false;
+                    hfuzz->cfg.monitorSIGABRT = false;
                 } else {
-                    hfuzz->monitorSIGABRT = true;
+                    hfuzz->cfg.monitorSIGABRT = true;
                 }
                 break;
             case 0x106:
-                hfuzz->skipFeedbackOnTimeout = true;
+                hfuzz->feedback.skipFeedbackOnTimeout = true;
                 break;
             case 0x107:
-                hfuzz->exitUponCrash = true;
+                hfuzz->cfg.exitUponCrash = true;
                 break;
             case 0x108:
                 hfuzz->exe.clearEnv = true;
@@ -621,7 +626,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->mutate.dictionaryFile = optarg;
                 break;
             case 'B':
-                hfuzz->blacklistFile = optarg;
+                hfuzz->feedback.blacklistFile = optarg;
                 break;
 #if defined(_HF_ARCH_LINUX)
             case 0x500:
@@ -640,16 +645,16 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->linux.symsWlFile = optarg;
                 break;
             case 0x510:
-                hfuzz->dynFileMethod |= _HF_DYNFILE_INSTR_COUNT;
+                hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_INSTR_COUNT;
                 break;
             case 0x511:
-                hfuzz->dynFileMethod |= _HF_DYNFILE_BRANCH_COUNT;
+                hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_BRANCH_COUNT;
                 break;
             case 0x513:
-                hfuzz->dynFileMethod |= _HF_DYNFILE_BTS_EDGE;
+                hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_BTS_EDGE;
                 break;
             case 0x514:
-                hfuzz->dynFileMethod |= _HF_DYNFILE_IPT_BLOCK;
+                hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_IPT_BLOCK;
                 break;
             case 0x515:
                 hfuzz->linux.kernelOnly = true;
@@ -706,7 +711,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         (int)hfuzz->timing.runEndTime, (long)hfuzz->timing.tmOut, hfuzz->mutate.mutationsMax,
         hfuzz->threads.threadsMax, hfuzz->io.fileExtn, hfuzz->exe.asLimit, hfuzz->exe.rssLimit,
         hfuzz->exe.dataLimit, hfuzz->exe.cmdline[0], hfuzz->linux.pid,
-        cmdlineYesNo(hfuzz->monitorSIGABRT));
+        cmdlineYesNo(hfuzz->cfg.monitorSIGABRT));
 
     return true;
 }

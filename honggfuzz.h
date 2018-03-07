@@ -180,6 +180,12 @@ typedef struct {
 
 typedef struct {
     struct {
+        fuzzState_t state;
+        size_t dynfileqCnt;
+        pthread_rwlock_t dynfileq_mutex;
+        TAILQ_HEAD(dyns_t, dynfile_t) dynfileq;
+    } state;
+    struct {
         const char* inputDir;
         DIR* inputDirPtr;
         size_t fileCnt;
@@ -237,27 +243,31 @@ typedef struct {
         int serverSocket;
         int clientSocket;
     } socketFuzzer;
-
-    bool useVerifier;
-    const char* blacklistFile;
-    uint64_t* blacklist;
-    size_t blacklistCnt;
-    char* reportFile;
-    bool skipFeedbackOnTimeout;
-    bool enableSanitizers;
-    bool monitorSIGABRT;
-    bool exitUponCrash;
-
-    fuzzState_t state;
-    feedback_t* feedback;
-    int bbFd;
-
-    size_t dynfileqCnt;
-    TAILQ_HEAD(dyns_t, dynfile_t) dynfileq;
-    pthread_rwlock_t dynfileq_mutex;
-
-    pthread_mutex_t feedback_mutex;
-
+    struct {
+        bool useVerifier;
+        bool exitUponCrash;
+        char* reportFile;
+        pthread_mutex_t report_mutex;
+        bool monitorSIGABRT;
+        size_t dynFileIterExpire;
+    } cfg;
+    struct {
+        bool enable;
+        sancovcnt_t sanCovCnts;
+        pthread_mutex_t sanCov_mutex;
+        const char* extSanOpts;
+        node_t* covMetadata;
+    } sanitizer;
+    struct {
+        feedback_t* feedbackMap;
+        int bbFd;
+        pthread_mutex_t feedback_mutex;
+        const char* blacklistFile;
+        uint64_t* blacklist;
+        size_t blacklistCnt;
+        bool skipFeedbackOnTimeout;
+        dynFileMethod_t dynFileMethod;
+    } feedback;
     struct {
         size_t mutationsCnt;
         size_t crashesCnt;
@@ -266,16 +276,6 @@ typedef struct {
         size_t blCrashesCnt;
         size_t timeoutedCnt;
     } cnts;
-
-    dynFileMethod_t dynFileMethod;
-    sancovcnt_t sanCovCnts;
-    pthread_mutex_t sanCov_mutex;
-    const char* extSanOpts;
-    size_t dynFileIterExpire;
-    node_t* covMetadata;
-
-    pthread_mutex_t report_mutex;
-
     /* For the Linux code */
     struct {
         int exeFd;

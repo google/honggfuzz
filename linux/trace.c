@@ -719,7 +719,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
      * If fuzzing with sanitizer coverage feedback increase crashes counter used
      * as metric for dynFile evolution
      */
-    if (run->global->dynFileMethod & _HF_DYNFILE_SANCOV) {
+    if (run->global->feedback.dynFileMethod & _HF_DYNFILE_SANCOV) {
         run->sanCovCnts.crashesCnt++;
     }
 
@@ -767,8 +767,9 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         /*
          * Check if stackhash is blacklisted
          */
-        if (run->global->blacklist && (fastArray64Search(run->global->blacklist,
-                                           run->global->blacklistCnt, run->backtrace) != -1)) {
+        if (run->global->feedback.blacklist &&
+            (fastArray64Search(run->global->feedback.blacklist, run->global->feedback.blacklistCnt,
+                 run->backtrace) != -1)) {
             LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
             ATOMIC_POST_INC(run->global->cnts.blCrashesCnt);
             return;
@@ -787,7 +788,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     }
 
     /* If non-blacklisted crash detected, zero set two MSB */
-    ATOMIC_POST_ADD(run->global->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
+    ATOMIC_POST_ADD(run->global->cfg.dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
     void* sig_addr = si.si_addr;
     if (!run->global->linux.disableRandomization) {
@@ -801,7 +802,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     }
 
     /* If dry run mode, copy file with same name into workspace */
-    if (run->global->mutate.mutationsPerRun == 0U && run->global->useVerifier) {
+    if (run->global->mutate.mutationsPerRun == 0U && run->global->cfg.useVerifier) {
         snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.crashDir,
             run->origFileName);
     } else if (saveUnique) {
@@ -846,7 +847,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
 
     ATOMIC_POST_INC(run->global->cnts.uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
-    ATOMIC_CLEAR(run->global->dynFileIterExpire);
+    ATOMIC_CLEAR(run->global->cfg.dynFileIterExpire);
 
     arch_traceGenerateReport(pid, run, funcs, funcCnt, &si, instr);
 }
@@ -993,13 +994,13 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
 
     /* Increase global crashes counter */
     ATOMIC_POST_INC(run->global->cnts.crashesCnt);
-    ATOMIC_POST_AND(run->global->dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
+    ATOMIC_POST_AND(run->global->cfg.dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
     /*
      * If fuzzing with sanitizer coverage feedback increase crashes counter used
      * as metric for dynFile evolution
      */
-    if (run->global->dynFileMethod & _HF_DYNFILE_SANCOV) {
+    if (run->global->feedback.dynFileMethod & _HF_DYNFILE_SANCOV) {
         run->sanCovCnts.crashesCnt++;
     }
 
@@ -1041,15 +1042,16 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     /*
      * Check if stackhash is blacklisted
      */
-    if (run->global->blacklist && (fastArray64Search(run->global->blacklist,
-                                       run->global->blacklistCnt, run->backtrace) != -1)) {
+    if (run->global->feedback.blacklist &&
+        (fastArray64Search(run->global->feedback.blacklist, run->global->feedback.blacklistCnt,
+             run->backtrace) != -1)) {
         LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
         ATOMIC_POST_INC(run->global->cnts.blCrashesCnt);
         return;
     }
 
     /* If dry run mode, copy file with same name into workspace */
-    if (run->global->mutate.mutationsPerRun == 0U && run->global->useVerifier) {
+    if (run->global->mutate.mutationsPerRun == 0U && run->global->cfg.useVerifier) {
         snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.crashDir,
             run->origFileName);
     } else {
@@ -1087,7 +1089,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
             run->backtrace = 0ULL;
             /* Increase unique crashes counters */
             ATOMIC_POST_INC(run->global->cnts.uniqueCrashesCnt);
-            ATOMIC_CLEAR(run->global->dynFileIterExpire);
+            ATOMIC_CLEAR(run->global->cfg.dynFileIterExpire);
         } else {
             LOG_E("Couldn't save crash to '%s'", run->crashFileName);
             /* In case of write error, clear crashFileName to so that other monitored TIDs can retry
@@ -1334,7 +1336,7 @@ bool arch_traceAttach(run_t* run, pid_t pid) {
         seize_options |= PTRACE_O_EXITKILL;
     }
     /* The event is only used with sanitizers */
-    if (run->global->enableSanitizers) {
+    if (run->global->sanitizer.enable) {
         seize_options |= PTRACE_O_TRACEEXIT;
     }
 
@@ -1394,7 +1396,7 @@ void arch_traceDetach(pid_t pid) {
 
 void arch_traceSignalsInit(honggfuzz_t* hfuzz) {
     /* Default is true for all platforms except Android */
-    arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
+    arch_sigs[SIGABRT].important = hfuzz->cfg.monitorSIGABRT;
 
     /* Default is false */
     arch_sigs[SIGVTALRM].important = hfuzz->timing.tmoutVTALRM;

@@ -253,9 +253,9 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
 }
 
 bool input_parseBlacklist(honggfuzz_t* hfuzz) {
-    FILE* fBl = fopen(hfuzz->blacklistFile, "rb");
+    FILE* fBl = fopen(hfuzz->feedback.blacklistFile, "rb");
     if (fBl == NULL) {
-        PLOG_W("Couldn't open '%s' - R/O mode", hfuzz->blacklistFile);
+        PLOG_W("Couldn't open '%s' - R/O mode", hfuzz->feedback.blacklistFile);
         return false;
     }
     defer {
@@ -273,49 +273,52 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz) {
             break;
         }
 
-        if ((hfuzz->blacklist = util_Realloc(hfuzz->blacklist,
-                 (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]))) == NULL) {
-            PLOG_W(
-                "realloc failed (sz=%zu)", (hfuzz->blacklistCnt + 1) * sizeof(hfuzz->blacklist[0]));
+        if ((hfuzz->feedback.blacklist = util_Realloc(hfuzz->feedback.blacklist,
+                 (hfuzz->feedback.blacklistCnt + 1) * sizeof(hfuzz->feedback.blacklist[0]))) ==
+            NULL) {
+            PLOG_W("realloc failed (sz=%zu)",
+                (hfuzz->feedback.blacklistCnt + 1) * sizeof(hfuzz->feedback.blacklist[0]));
             return false;
         }
 
-        hfuzz->blacklist[hfuzz->blacklistCnt] = strtoull(lineptr, 0, 16);
-        LOG_D("Blacklist: loaded %'" PRIu64 "'", hfuzz->blacklist[hfuzz->blacklistCnt]);
+        hfuzz->feedback.blacklist[hfuzz->feedback.blacklistCnt] = strtoull(lineptr, 0, 16);
+        LOG_D("Blacklist: loaded %'" PRIu64 "'",
+            hfuzz->feedback.blacklist[hfuzz->feedback.blacklistCnt]);
 
         /* Verify entries are sorted so we can use interpolation search */
-        if (hfuzz->blacklistCnt > 1) {
-            if (hfuzz->blacklist[hfuzz->blacklistCnt - 1] > hfuzz->blacklist[hfuzz->blacklistCnt]) {
+        if (hfuzz->feedback.blacklistCnt > 1) {
+            if (hfuzz->feedback.blacklist[hfuzz->feedback.blacklistCnt - 1] >
+                hfuzz->feedback.blacklist[hfuzz->feedback.blacklistCnt]) {
                 LOG_F(
                     "Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort "
                     "records");
                 return false;
             }
         }
-        hfuzz->blacklistCnt += 1;
+        hfuzz->feedback.blacklistCnt += 1;
     }
 
-    if (hfuzz->blacklistCnt > 0) {
-        LOG_I("Loaded %zu stack hash(es) from the blacklist file", hfuzz->blacklistCnt);
+    if (hfuzz->feedback.blacklistCnt > 0) {
+        LOG_I("Loaded %zu stack hash(es) from the blacklist file", hfuzz->feedback.blacklistCnt);
     } else {
-        LOG_F("Empty stack hashes blacklist file '%s'", hfuzz->blacklistFile);
+        LOG_F("Empty stack hashes blacklist file '%s'", hfuzz->feedback.blacklistFile);
     }
     return true;
 }
 
 bool input_prepareDynamicInput(run_t* run) {
     {
-        MX_SCOPED_RWLOCK_READ(&run->global->dynfileq_mutex);
+        MX_SCOPED_RWLOCK_READ(&run->global->state.dynfileq_mutex);
 
-        if (run->global->dynfileqCnt == 0) {
+        if (run->global->state.dynfileqCnt == 0) {
             LOG_F("The dynamic file corpus is empty. This shouldn't happen");
         }
 
         if (run->dynfileqCurrent == NULL) {
-            run->dynfileqCurrent = TAILQ_FIRST(&run->global->dynfileq);
+            run->dynfileqCurrent = TAILQ_FIRST(&run->global->state.dynfileq);
         } else {
-            if (run->dynfileqCurrent == TAILQ_LAST(&run->global->dynfileq, dyns_t)) {
-                run->dynfileqCurrent = TAILQ_FIRST(&run->global->dynfileq);
+            if (run->dynfileqCurrent == TAILQ_LAST(&run->global->state.dynfileq, dyns_t)) {
+                run->dynfileqCurrent = TAILQ_FIRST(&run->global->state.dynfileq);
             } else {
                 run->dynfileqCurrent = TAILQ_NEXT(run->dynfileqCurrent, pointers);
             }

@@ -245,15 +245,16 @@ static bool arch_analyzeSignal(run_t* run, int status) {
     /*
      * Check if stackhash is blacklisted
      */
-    if (run->global->blacklist && (fastArray64Search(run->global->blacklist,
-                                       run->global->blacklistCnt, run->backtrace) != -1)) {
+    if (run->global->feedback.blacklist &&
+        (fastArray64Search(run->global->feedback.blacklist, run->global->feedback.blacklistCnt,
+             run->backtrace) != -1)) {
         LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
         ATOMIC_POST_INC(run->global->cnts.blCrashesCnt);
         return true;
     }
 
     /* If dry run mode, copy file with same name into workspace */
-    if (run->global->mutate.mutationsPerRun == 0U && run->global->useVerifier) {
+    if (run->global->mutate.mutationsPerRun == 0U && run->global->cfg.useVerifier) {
         snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.crashDir,
             run->origFileName);
     } else if (run->global->io.saveUnique) {
@@ -288,7 +289,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
 
     ATOMIC_POST_INC(run->global->cnts.uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
-    ATOMIC_CLEAR(run->global->dynFileIterExpire);
+    ATOMIC_CLEAR(run->global->cfg.dynFileIterExpire);
 
     arch_generateReport(run, termsig);
 
@@ -493,7 +494,7 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
     }
 
     /* Default is true for all platforms except Android */
-    arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
+    arch_sigs[SIGABRT].important = hfuzz->cfg.monitorSIGABRT;
 
     /* Default is false */
     arch_sigs[SIGVTALRM].important = hfuzz->timing.tmoutVTALRM;

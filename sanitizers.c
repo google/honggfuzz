@@ -107,11 +107,11 @@
 #define kSAN_COV_OPTS "coverage=1:coverage_direct=1"
 
 static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, char* buf, size_t buflen) {
-    const char* abortFlag = hfuzz->monitorSIGABRT ? kABORT_ENABLED : kABORT_DISABLED;
+    const char* abortFlag = hfuzz->cfg.monitorSIGABRT ? kABORT_ENABLED : kABORT_DISABLED;
 
-    if (!hfuzz->enableSanitizers) {
+    if (!hfuzz->sanitizer.enable) {
         snprintf(buf, buflen, "%s=%s", env, kSAN_REGULAR);
-    } else if (hfuzz->dynFileMethod & _HF_DYNFILE_SANCOV) {
+    } else if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_SANCOV) {
         snprintf(buf, buflen, "%s=%s:%s:%s:%s%s/%s:%s%s/%s", env, kASAN_OPTS, abortFlag,
             kSAN_COV_OPTS, kSANCOVDIR, hfuzz->io.workDir, _HF_SANCOV_DIR, kSANLOGDIR,
             hfuzz->io.workDir, kLOGPREFIX);
@@ -127,8 +127,8 @@ static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, char* buf, s
     if (!hfuzz->exe.netDriver && hfuzz->exe.rssLimit) {
         util_ssnprintf(buf, buflen, ":soft_rss_limit_mb=%" PRId64, hfuzz->exe.rssLimit);
     }
-    if (hfuzz->extSanOpts) {
-        util_ssnprintf(buf, buflen, ":%s", hfuzz->extSanOpts);
+    if (hfuzz->sanitizer.extSanOpts) {
+        util_ssnprintf(buf, buflen, ":%s", hfuzz->sanitizer.extSanOpts);
     }
 
     for (size_t i = 0; i < ARRAYSIZE(hfuzz->exe.envs); i++) {

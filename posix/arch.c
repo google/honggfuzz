@@ -123,7 +123,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
     char newname[PATH_MAX];
 
     /* If dry run mode, copy file with same name into workspace */
-    if (run->global->mutate.mutationsPerRun == 0U && run->global->useVerifier) {
+    if (run->global->mutate.mutationsPerRun == 0U && run->global->cfg.useVerifier) {
         snprintf(newname, sizeof(newname), "%s", run->origFileName);
     } else {
         snprintf(newname, sizeof(newname), "%s/%s.PID.%d.TIME.%s.%s", run->global->io.crashDir,
@@ -250,7 +250,7 @@ void arch_reapChild(run_t* run) {
 
 bool arch_archInit(honggfuzz_t* hfuzz) {
     /* Default is true for all platforms except Android */
-    arch_sigs[SIGABRT].important = hfuzz->monitorSIGABRT;
+    arch_sigs[SIGABRT].important = hfuzz->cfg.monitorSIGABRT;
     /* Default is false */
     arch_sigs[SIGVTALRM].important = hfuzz->timing.tmoutVTALRM;
 

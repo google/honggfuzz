@@ -204,8 +204,8 @@ static bool subproc_PrepareExecv(run_t* run) {
         /* close_stderr= */ run->global->exe.nullifyStdio);
 
     /* The bitmap structure */
-    if (run->global->bbFd != -1 && dup2(run->global->bbFd, _HF_BITMAP_FD) == -1) {
-        PLOG_E("dup2(%d, _HF_BITMAP_FD=%d)", run->global->bbFd, _HF_BITMAP_FD);
+    if (run->global->feedback.bbFd != -1 && dup2(run->global->feedback.bbFd, _HF_BITMAP_FD) == -1) {
+        PLOG_E("dup2(%d, _HF_BITMAP_FD=%d)", run->global->feedback.bbFd, _HF_BITMAP_FD);
         return false;
     }
 
