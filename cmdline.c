@@ -234,6 +234,21 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
 
 bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     honggfuzz_t tmp = {
+        .state =
+            {
+                .state = _HF_STATE_UNSET,
+                .dynfileqCnt = 0U,
+                .dynfileq_mutex = PTHREAD_RWLOCK_INITIALIZER,
+            },
+        .threads =
+            {
+                .threadsFinished = 0,
+                .threadsMax =
+                    (sysconf(_SC_NPROCESSORS_ONLN) <= 1) ? 1 : sysconf(_SC_NPROCESSORS_ONLN) / 2,
+                .threadsActiveCnt = 0,
+                .mainThread = pthread_self(),
+                .mainPid = getpid(),
+            },
         .io =
             {
                 .inputDir = NULL,
@@ -284,12 +299,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .useScreen = true,
                 .cmdline_txt[0] = '\0',
             },
-        .socketFuzzer =
-            {
-                .enabled = false,
-                .serverSocket = -1,
-                .clientSocket = -1,
-            },
         .cfg =
             {
                 .useVerifier = false,
@@ -319,15 +328,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                         .crashesCnt = 0ULL,
                     },
             },
-        .threads =
-            {
-                .threadsFinished = 0,
-                .threadsMax =
-                    (sysconf(_SC_NPROCESSORS_ONLN) <= 1) ? 1 : sysconf(_SC_NPROCESSORS_ONLN) / 2,
-                .threadsActiveCnt = 0,
-                .mainThread = pthread_self(),
-                .mainPid = getpid(),
-            },
         .feedback =
             {
                 .feedbackMap = NULL,
@@ -339,12 +339,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .skipFeedbackOnTimeout = false,
                 .dynFileMethod = _HF_DYNFILE_SOFT,
             },
-        .state =
-            {
-                .state = _HF_STATE_UNSET,
-                .dynfileqCnt = 0U,
-                .dynfileq_mutex = PTHREAD_RWLOCK_INITIALIZER,
-            },
         .cnts =
             {
                 .mutationsCnt = 0,
@@ -353,6 +347,12 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .verifiedCrashesCnt = 0,
                 .blCrashesCnt = 0,
                 .timeoutedCnt = 0,
+            },
+        .socketFuzzer =
+            {
+                .enabled = false,
+                .serverSocket = -1,
+                .clientSocket = -1,
             },
 
         /* Linux code */

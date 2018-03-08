@@ -186,6 +186,13 @@ typedef struct {
         TAILQ_HEAD(dyns_t, dynfile_t) dynfileq;
     } state;
     struct {
+        size_t threadsMax;
+        size_t threadsFinished;
+        uint32_t threadsActiveCnt;
+        pthread_t mainThread;
+        pid_t mainPid;
+    } threads;
+    struct {
         const char* inputDir;
         DIR* inputDirPtr;
         size_t fileCnt;
@@ -213,13 +220,6 @@ typedef struct {
         char* envs[128];
     } exe;
     struct {
-        size_t threadsMax;
-        size_t threadsFinished;
-        uint32_t threadsActiveCnt;
-        pthread_t mainThread;
-        pid_t mainPid;
-    } threads;
-    struct {
         time_t timeStart;
         time_t runEndTime;
         time_t tmOut;
@@ -238,11 +238,6 @@ typedef struct {
         bool useScreen;
         char cmdline_txt[65];
     } display;
-    struct {
-        bool enabled;
-        int serverSocket;
-        int clientSocket;
-    } socketFuzzer;
     struct {
         bool useVerifier;
         bool exitUponCrash;
@@ -276,6 +271,11 @@ typedef struct {
         size_t blCrashesCnt;
         size_t timeoutedCnt;
     } cnts;
+    struct {
+        bool enabled;
+        int serverSocket;
+        int clientSocket;
+    } socketFuzzer;
     /* For the Linux code */
     struct {
         int exeFd;
