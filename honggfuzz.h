@@ -237,6 +237,7 @@ typedef struct {
     struct {
         bool useScreen;
         char cmdline_txt[65];
+        int64_t lastDisplayMillis;
     } display;
     struct {
         bool useVerifier;

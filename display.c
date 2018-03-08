@@ -115,16 +115,18 @@ static void display_Duration(time_t elapsed_second, char* buf, size_t bufSz) {
 }
 
 static void display_displayLocked(honggfuzz_t* hfuzz) {
-    const time_t curr_time = time(NULL);
-    const time_t elapsed_sec = curr_time - hfuzz->timing.timeStart;
+    const time_t curr_sec = time(NULL);
+    const time_t elapsed_sec = curr_sec - hfuzz->timing.timeStart;
+    const int64_t curr_time_millis = util_timeNowMillis();
+    const int64_t elapsed_millis = curr_time_millis - hfuzz->display.lastDisplayMillis;
+    hfuzz->display.lastDisplayMillis = curr_time_millis;
 
     char lastCovStr[64];
     display_Duration(
-        curr_time - ATOMIC_GET(hfuzz->timing.lastCovUpdate), lastCovStr, sizeof(lastCovStr));
+        curr_sec - ATOMIC_GET(hfuzz->timing.lastCovUpdate), lastCovStr, sizeof(lastCovStr));
     char timeStr[64];
     if (ATOMIC_GET(hfuzz->timing.runEndTime)) {
-        display_Duration(
-            ATOMIC_GET(hfuzz->timing.runEndTime) - curr_time, timeStr, sizeof(timeStr));
+        display_Duration(ATOMIC_GET(hfuzz->timing.runEndTime) - curr_sec, timeStr, sizeof(timeStr));
     } else {
         display_Duration(elapsed_sec, timeStr, sizeof(timeStr));
     }
@@ -145,7 +147,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     }
 
     static size_t prev_exec_cnt = 0UL;
-    size_t exec_per_sec = curr_exec_cnt - prev_exec_cnt;
+    size_t exec_per_millis = elapsed_millis ? ((curr_exec_cnt - prev_exec_cnt) * 1000) / elapsed_millis : 0;
     prev_exec_cnt = curr_exec_cnt;
 
     display_put(ESC_NAV(13, 1) ESC_CLEAR_ABOVE ESC_NAV(1, 1));
@@ -190,10 +192,9 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         hfuzz->threads.threadsMax, num_cpu, cpuUse, cpuUse / num_cpu);
 
     size_t tot_exec_per_sec = elapsed_sec ? (curr_exec_cnt / elapsed_sec) : 0;
-    display_put("       Speed : " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET
-                "/sec"
-                " (avg: " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET ")\n",
-        exec_per_sec, tot_exec_per_sec);
+    display_put("       Speed : " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET "/sec (avg: " ESC_BOLD
+                "%" _HF_NONMON_SEP "zu" ESC_RESET ")\n",
+        exec_per_millis, tot_exec_per_sec);
 
     uint64_t crashesCnt = ATOMIC_GET(hfuzz->cnts.crashesCnt);
     /* colored the crash count as red when exist crash */

@@ -99,7 +99,7 @@ static void setupRLimits(void) {
 static void setupMainThreadTimer(void) {
     const struct itimerval it = {
         .it_value = {.tv_sec = 1, .tv_usec = 0},
-        .it_interval = {.tv_sec = 1, .tv_usec = 0},
+        .it_interval = {.tv_sec = 0, .tv_usec = 1000 * 200},
     };
     if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
         PLOG_F("setitimer(ITIMER_REAL)");

@@ -297,6 +297,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .display =
             {
                 .useScreen = true,
+                .lastDisplayMillis = util_timeNowMillis(),
                 .cmdline_txt[0] = '\0',
             },
         .cfg =
