@@ -180,12 +180,6 @@ typedef struct {
 
 typedef struct {
     struct {
-        fuzzState_t state;
-        size_t dynfileqCnt;
-        pthread_rwlock_t dynfileq_mutex;
-        TAILQ_HEAD(dyns_t, dynfile_t) dynfileq;
-    } state;
-    struct {
         size_t threadsMax;
         size_t threadsFinished;
         uint32_t threadsActiveCnt;
@@ -203,6 +197,9 @@ typedef struct {
         const char* covDirAll;
         const char* covDirNew;
         bool saveUnique;
+        size_t dynfileqCnt;
+        pthread_rwlock_t dynfileq_mutex;
+        TAILQ_HEAD(dyns_t, dynfile_t) dynfileq;
     } io;
     struct {
         int argc;
@@ -255,6 +252,7 @@ typedef struct {
         node_t* covMetadata;
     } sanitizer;
     struct {
+        fuzzState_t state;
         feedback_t* feedbackMap;
         int bbFd;
         pthread_mutex_t feedback_mutex;

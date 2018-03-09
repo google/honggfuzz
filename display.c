@@ -159,7 +159,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         display_put(" (out of: " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET " [%.2f%%])",
             hfuzz->mutate.mutationsMax, exeProgress);
     }
-    switch (ATOMIC_GET(hfuzz->state.state)) {
+    switch (ATOMIC_GET(hfuzz->feedback.state)) {
         case _HF_STATE_STATIC:
             display_put("\n        Mode : " ESC_BOLD "Static" ESC_RESET "\n");
             break;
@@ -211,7 +211,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     display_put(" Corpus Size : " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET ", max size: " ESC_BOLD
                 "%" _HF_NONMON_SEP "zu" ESC_RESET " bytes, init dir: " ESC_BOLD "%" _HF_NONMON_SEP
                 "zu" ESC_RESET " files\n",
-        hfuzz->state.dynfileqCnt, hfuzz->mutate.maxFileSz, ATOMIC_GET(hfuzz->io.fileCnt));
+        hfuzz->io.dynfileqCnt, hfuzz->mutate.maxFileSz, ATOMIC_GET(hfuzz->io.fileCnt));
     display_put("  Cov Update : " ESC_BOLD "%s" ESC_RESET " ago\n" ESC_RESET, lastCovStr);
     display_put("    Coverage :");
 

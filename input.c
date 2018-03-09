@@ -308,17 +308,17 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz) {
 
 bool input_prepareDynamicInput(run_t* run) {
     {
-        MX_SCOPED_RWLOCK_READ(&run->global->state.dynfileq_mutex);
+        MX_SCOPED_RWLOCK_READ(&run->global->io.dynfileq_mutex);
 
-        if (run->global->state.dynfileqCnt == 0) {
+        if (run->global->io.dynfileqCnt == 0) {
             LOG_F("The dynamic file corpus is empty. This shouldn't happen");
         }
 
         if (run->dynfileqCurrent == NULL) {
-            run->dynfileqCurrent = TAILQ_FIRST(&run->global->state.dynfileq);
+            run->dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
         } else {
-            if (run->dynfileqCurrent == TAILQ_LAST(&run->global->state.dynfileq, dyns_t)) {
-                run->dynfileqCurrent = TAILQ_FIRST(&run->global->state.dynfileq);
+            if (run->dynfileqCurrent == TAILQ_LAST(&run->global->io.dynfileq, dyns_t)) {
+                run->dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
             } else {
                 run->dynfileqCurrent = TAILQ_NEXT(run->dynfileqCurrent, pointers);
             }

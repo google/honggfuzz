@@ -84,7 +84,7 @@ bool fuzz_shouldTerminate() {
 }
 
 static fuzzState_t fuzz_getState(honggfuzz_t* hfuzz) {
-    return ATOMIC_GET(hfuzz->state.state);
+    return ATOMIC_GET(hfuzz->feedback.state);
 }
 
 static bool fuzz_writeCovFile(const char* dir, const uint8_t* data, size_t len) {
@@ -118,9 +118,9 @@ static void fuzz_addFileToFileQ(honggfuzz_t* hfuzz, const uint8_t* data, size_t 
     dynfile->data = (uint8_t*)util_Malloc(len);
     memcpy(dynfile->data, data, len);
 
-    MX_SCOPED_RWLOCK_WRITE(&hfuzz->state.dynfileq_mutex);
-    TAILQ_INSERT_TAIL(&hfuzz->state.dynfileq, dynfile, pointers);
-    hfuzz->state.dynfileqCnt++;
+    MX_SCOPED_RWLOCK_WRITE(&hfuzz->io.dynfileq_mutex);
+    TAILQ_INSERT_TAIL(&hfuzz->io.dynfileq, dynfile, pointers);
+    hfuzz->io.dynfileqCnt++;
 
     if (hfuzz->socketFuzzer.enabled) {
         /* Don't add coverage data to files in socketFuzzer mode */
@@ -166,13 +166,13 @@ static void fuzz_setDynamicMainState(run_t* run) {
 
     LOG_I("Entering phase 2/2: Dynamic Main");
     snprintf(run->origFileName, sizeof(run->origFileName), "[DYNAMIC]");
-    ATOMIC_SET(run->global->state.state, _HF_STATE_DYNAMIC_MAIN);
+    ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_MAIN);
 
     /*
      * If the initial fuzzing yielded no useful coverage, just add a single 1-byte file to the
      * dynamic corpus, so the dynamic phase doesn't fail because of lack of useful inputs
      */
-    if (run->global->state.dynfileqCnt == 0) {
+    if (run->global->io.dynfileqCnt == 0) {
         fuzz_addFileToFileQ(run->global, (const uint8_t*)"\0", 1U);
     }
 }
@@ -635,13 +635,13 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
     if (hfuzz->socketFuzzer.enabled) {
         /* Don't do dry run with socketFuzzer */
         LOG_I("Entering phase - Feedback Driven Mode (SocketFuzzer)");
-        hfuzz->state.state = _HF_STATE_DYNAMIC_MAIN;
+        hfuzz->feedback.state = _HF_STATE_DYNAMIC_MAIN;
     } else if (hfuzz->feedback.dynFileMethod != _HF_DYNFILE_NONE) {
         LOG_I("Entering phase 1/2: Dry Run");
-        hfuzz->state.state = _HF_STATE_DYNAMIC_DRY_RUN;
+        hfuzz->feedback.state = _HF_STATE_DYNAMIC_DRY_RUN;
     } else {
         LOG_I("Entering phase: Static");
-        hfuzz->state.state = _HF_STATE_STATIC;
+        hfuzz->feedback.state = _HF_STATE_STATIC;
     }
 
     for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {

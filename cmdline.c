@@ -234,12 +234,6 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
 
 bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     honggfuzz_t tmp = {
-        .state =
-            {
-                .state = _HF_STATE_UNSET,
-                .dynfileqCnt = 0U,
-                .dynfileq_mutex = PTHREAD_RWLOCK_INITIALIZER,
-            },
         .threads =
             {
                 .threadsFinished = 0,
@@ -261,6 +255,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .covDirAll = NULL,
                 .covDirNew = NULL,
                 .saveUnique = true,
+                .dynfileqCnt = 0U,
+                .dynfileq_mutex = PTHREAD_RWLOCK_INITIALIZER,
             },
         .exe =
             {
@@ -339,6 +335,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .blacklistCnt = 0,
                 .skipFeedbackOnTimeout = false,
                 .dynFileMethod = _HF_DYNFILE_SOFT,
+                .state = _HF_STATE_UNSET,
             },
         .cnts =
             {
@@ -389,7 +386,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     };
     *hfuzz = tmp;
 
-    TAILQ_INIT(&hfuzz->state.dynfileq);
+    TAILQ_INIT(&hfuzz->io.dynfileq);
     TAILQ_INIT(&hfuzz->mutate.dictq);
 
     // clang-format off
