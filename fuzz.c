@@ -559,7 +559,7 @@ static void* fuzz_threadNew(void* arg) {
         }
     };
 
-    if (arch_archThreadInit(&run) == false) {
+    if (!arch_archThreadInit(&run)) {
         LOG_F("Could not initialize the thread");
     }
 
