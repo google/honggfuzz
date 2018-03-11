@@ -233,7 +233,7 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
 }
 
 bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
-    honggfuzz_t tmp = {
+    *hfuzz = (honggfuzz_t){
         .threads =
             {
                 .threadsFinished = 0,
@@ -384,7 +384,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .useClone = true,
             },
     };
-    *hfuzz = tmp;
 
     TAILQ_INIT(&hfuzz->io.dynfileq);
     TAILQ_INIT(&hfuzz->mutate.dictq);
