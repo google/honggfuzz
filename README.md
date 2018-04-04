@@ -47,6 +47,9 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * [Remote crash in __mod\_http2__ • CVE-2017-7659](http://seclists.org/oss-sec/2017/q2/504)
     * [Use-after-free in __mod\_http2__ • CVE-2017-9789](http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-9789)
     * [Memory leak in __mod\_auth\_digest__ • CVE-2017-9788](http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-9788)
+    * [Out of bound access • CVE-2018-1301](http://seclists.org/oss-sec/2018/q1/265)
+    * [Write after free in HTTP/2 • CVE-2018-1302](http://seclists.org/oss-sec/2018/q1/268)
+    * [Out of bound read • CVE-2018-1303](http://seclists.org/oss-sec/2018/q1/266)
   * Various __SSL__ libs
     * [Remote OOB read in __OpenSSL__ • CVE-2015-1789]( https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-1789)
     * [Remote Use-after-Free (potential RCE, rated as __critical__) in __OpenSSL__ • CVE-2016-6309](https://www.openssl.org/news/secadv/20160926.txt)
@@ -95,6 +98,8 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__honggfuzz-docker-apps__](https://github.com/skysider/honggfuzz_docker_apps)
   * [__FFW - Fuzzing For Worms__](https://github.com/dobin/ffw)
   * [__honggfuzz-rs__: fuzzing Rust with Honggfuzz](https://github.com/rust-fuzz/honggfuzz-rs)
+  * [__roughenough-fuzz__](https://github.com/int08h/roughenough-fuzz)
+  * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
 
 ## Examples
 
