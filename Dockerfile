@@ -1,4 +1,4 @@
-FROM ubuntu:17.04
+FROM ubuntu:rolling
 
 RUN apt-get -y update && apt-get install -y \
     gcc \
