@@ -98,6 +98,10 @@ static unsigned getCpuUse(long num_cpu, int64_t elapsed_millis) {
     uint64_t allCycles = num_cpu * sysconf(_SC_CLK_TCK) * elapsed_millis / 1000;
     prevIdleT = idleT;
 
+    if (allCycles == 0) {
+        return 0;
+    }
+
     return (allCycles - idleCycles) * num_cpu * 100 / allCycles;
 }
 
