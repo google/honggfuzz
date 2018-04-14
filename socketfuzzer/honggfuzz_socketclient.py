@@ -8,14 +8,17 @@ import random
 
 
 class HonggfuzzSocket:
-    def __init__(self):
+    def __init__(self, pid):
         self.sock = None
+        self.pid = pid
 
 
-    def connect(self, file):
+    def connect(self):
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 
-        server_address = file
+        server_address = "/tmp/honggfuzz_socket"
+        if self.pid is not None:
+            server_address += "." + str(self.pid)
         print( 'connecting to %s' % server_address)
 
         try:
@@ -119,13 +122,13 @@ def sendResp(targetSocketRes, hfSocket):
 
 
 
-def auto():
+def auto(pid):
     print "Auto"
 
-    hfSocket = HonggfuzzSocket()
+    hfSocket = HonggfuzzSocket(pid)
     targetSocket = TargetSocket()
 
-    hfSocket.connect("/tmp/honggfuzz_socket")
+    hfSocket.connect()
 
 
     print ""
@@ -261,8 +264,8 @@ def auto():
         return
 
 
-def interactive():
-    hfSocket = HonggfuzzSocket()
+def interactive(pid):
+    hfSocket = HonggfuzzSocket(pid)
     targetSocket = TargetSocket()
 
     hfSocket.connect("/tmp/honggfuzz_socket")
@@ -305,13 +308,24 @@ def interactive():
 
 
 def main():
-    if len(sys.argv) == 2:
+    mode = None
+    pid = None
+
+    if len(sys.argv) >= 2:
         if sys.argv[1] == "auto":
-            auto()
+            mode = "auto"
         elif sys.argv[1] == "interactive":
-            interactive()
+            mode = "interactive"
+
+    if len(sys.argv) >= 3:
+        pid = int(sys.argv[2])
     else:
-        print "honggfuzz_socketclient.py [auto/interactive]"
+        print "honggfuzz_socketclient.py [auto/interactive] <pid>"
+
+    if mode is "auto":
+        auto(pid)
+    elif mode is "interactive":
+        interactive(pid)
 
 
 main()

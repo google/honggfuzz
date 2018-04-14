@@ -124,8 +124,7 @@ bool setupSocketFuzzer(honggfuzz_t* run) {
     socklen_t t;
     struct sockaddr_un local, remote;
     char socketPath[512];
-    // snprintf(socketPath, sizeof(socketPath), "/tmp/honggfuzz_socket.%i", getpid());
-    snprintf(socketPath, sizeof(socketPath), "/tmp/honggfuzz_socket");
+    snprintf(socketPath, sizeof(socketPath), "/tmp/honggfuzz_socket.%i", getpid());
 
     if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
         perror("socket");
@@ -161,7 +160,6 @@ bool setupSocketFuzzer(honggfuzz_t* run) {
 
 void cleanupSocketFuzzer() {
     char socketPath[512];
-    // snprintf(socketPath, sizeof(socketPath), "/tmp/honggfuzz_socket.%i", getpid());
-    snprintf(socketPath, sizeof(socketPath), "/tmp/honggfuzz_socket");
+    snprintf(socketPath, sizeof(socketPath), "/tmp/honggfuzz_socket.%i", getpid());
     unlink(socketPath);
 }
