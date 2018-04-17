@@ -84,8 +84,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Infinite loop in __NGINX Unit__](https://github.com/nginx/unit/commit/477e8177b70acb694759e62d830b8a311a736324)
   * A couple of problems in the [__MATLAB MAT File I/O Library__](https://sourceforge.net/projects/matio): [1](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [2](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [3](https://github.com/tbeu/matio/commit/a55b9c2c01582b712d5a643699a13b5c41687db1), [4](https://github.com/tbeu/matio/commit/3e6283f37652e29e457ab9467f7738a562594b6b), [5](https://github.com/tbeu/matio/commit/783ee496a6914df68e77e6019054ad91e8ed6420)
   * __Rust__:
-    * [panic() in regex #1](https://github.com/rust-lang/regex/issues/464)
-    * [panic() in regex #2](https://github.com/rust-lang/regex/issues/465)
+    * panic() in regex [#1](https://github.com/rust-lang/regex/issues/464), [#2](https://github.com/rust-lang/regex/issues/465)
   * ... and more
 
 ## Projects utilizing Honggfuzz
@@ -104,6 +103,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__roughenough-fuzz__](https://github.com/int08h/roughenough-fuzz)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
   * [__Monkey HTTP server__](https://github.com/monkey/monkey/blob/master/FUZZ.md)
+  * [__Killerbeez API__](https://github.com/grimm-co/killerbeez-mutators)
 
 ## Examples
 
