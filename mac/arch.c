@@ -166,8 +166,8 @@ static void arch_generateReport(run_t* run, int termsig) {
         run->report, sizeof(run->report), "SIGNAL: %s (%d)\n", arch_sigs[termsig].descr, termsig);
     util_ssnprintf(
         run->report, sizeof(run->report), "EXCEPTION: %s\n", exception_to_string(run->exception));
-    util_ssnprintf(run->report, sizeof(run->report), "FAULT ADDRESS: %p\n", run->access);
-    util_ssnprintf(run->report, sizeof(run->report), "CRASH FRAME PC: %p\n", run->pc);
+    util_ssnprintf(run->report, sizeof(run->report), "FAULT ADDRESS: %" PRIx64 "\n", run->access);
+    util_ssnprintf(run->report, sizeof(run->report), "CRASH FRAME PC: %" PRIx64 "\n", run->pc);
     util_ssnprintf(run->report, sizeof(run->report), "STACK HASH: %016llx\n", run->backtrace);
     if (g_fuzzer_crash_callstack[run->pid]) {
         util_ssnprintf(
