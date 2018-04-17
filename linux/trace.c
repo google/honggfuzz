@@ -1101,7 +1101,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
 
     /* Generate report */
     run->report[0] = '\0';
-    util_ssnprintf(run->report, sizeof(run->report), "EXIT_CODE: %s\n", HF_SAN_EXIT_CODE);
+    util_ssnprintf(run->report, sizeof(run->report), "EXIT_CODE: %i\n", HF_SAN_EXIT_CODE);
     util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->origFileName);
     util_ssnprintf(run->report, sizeof(run->report), "FUZZ_FNAME: %s\n", run->crashFileName);
     util_ssnprintf(run->report, sizeof(run->report), "PID: %d\n", pid);
