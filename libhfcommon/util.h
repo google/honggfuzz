@@ -89,7 +89,8 @@ extern void util_rndBuf(uint8_t* buf, size_t sz);
 
 extern uint64_t util_rnd64(void);
 
-extern int util_ssnprintf(char* str, size_t size, const char* format, ...);
+extern int util_ssnprintf(char* str, size_t size, const char* format, ...)
+    __attribute__((format(printf, 3, 4)));
 
 extern int util_vssnprintf(char* str, size_t size, const char* format, va_list ap);
 

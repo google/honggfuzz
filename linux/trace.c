@@ -575,7 +575,7 @@ static void arch_traceGenerateReport(
     util_ssnprintf(run->report, sizeof(run->report), "FAULT ADDRESS: %p\n",
         SI_FROMUSER(si) ? NULL : si->si_addr);
     util_ssnprintf(run->report, sizeof(run->report), "INSTRUCTION: %s\n", instr);
-    util_ssnprintf(run->report, sizeof(run->report), "STACK HASH: %016llx\n", run->backtrace);
+    util_ssnprintf(run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", run->backtrace);
     util_ssnprintf(run->report, sizeof(run->report), "STACK:\n");
     for (size_t i = 0; i < funcCnt; i++) {
 #ifdef __HF_USE_CAPSTONE__
@@ -587,7 +587,7 @@ static void arch_traceGenerateReport(
         else
             util_ssnprintf(run->report, sizeof(run->report), "[]\n");
 #else
-        util_ssnprintf(run->report, sizeof(run->report), " <" REG_PD REG_PM "> [%s():%u at %s]\n",
+        util_ssnprintf(run->report, sizeof(run->report), " <" REG_PD REG_PM "> [%s():%zu at %s]\n",
             (REG_TYPE)(long)funcs[i].pc, funcs[i].func, funcs[i].line, funcs[i].mapName);
 #endif
     }
@@ -1101,20 +1101,20 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
 
     /* Generate report */
     run->report[0] = '\0';
-    util_ssnprintf(run->report, sizeof(run->report), "EXIT_CODE: %s\n", HF_SAN_EXIT_CODE);
+    util_ssnprintf(run->report, sizeof(run->report), "EXIT_CODE: %d\n", HF_SAN_EXIT_CODE);
     util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->origFileName);
     util_ssnprintf(run->report, sizeof(run->report), "FUZZ_FNAME: %s\n", run->crashFileName);
     util_ssnprintf(run->report, sizeof(run->report), "PID: %d\n", pid);
     util_ssnprintf(run->report, sizeof(run->report), "OPERATION: %s\n", op);
     util_ssnprintf(run->report, sizeof(run->report), "FAULT ADDRESS: %p\n", crashAddr);
     if (funcCnt > 0) {
-        util_ssnprintf(run->report, sizeof(run->report), "STACK HASH: %016llx\n", run->backtrace);
+        util_ssnprintf(run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", run->backtrace);
         util_ssnprintf(run->report, sizeof(run->report), "STACK:\n");
         for (int i = 0; i < funcCnt; i++) {
             util_ssnprintf(run->report, sizeof(run->report), " <" REG_PD REG_PM "> ",
                 (REG_TYPE)(long)funcs[i].pc);
             if (funcs[i].mapName[0] != '\0') {
-                util_ssnprintf(run->report, sizeof(run->report), "[%s + 0x%x]\n", funcs[i].mapName,
+                util_ssnprintf(run->report, sizeof(run->report), "[%s + 0x%zx]\n", funcs[i].mapName,
                     funcs[i].line);
             } else {
                 util_ssnprintf(run->report, sizeof(run->report), "[]\n");
