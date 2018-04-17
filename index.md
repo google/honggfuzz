@@ -47,6 +47,9 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * [Remote crash in __mod\_http2__ • CVE-2017-7659](http://seclists.org/oss-sec/2017/q2/504)
     * [Use-after-free in __mod\_http2__ • CVE-2017-9789](http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-9789)
     * [Memory leak in __mod\_auth\_digest__ • CVE-2017-9788](http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-9788)
+    * [Out of bound access • CVE-2018-1301](http://seclists.org/oss-sec/2018/q1/265)
+    * [Write after free in HTTP/2 • CVE-2018-1302](http://seclists.org/oss-sec/2018/q1/268)
+    * [Out of bound read • CVE-2018-1303](http://seclists.org/oss-sec/2018/q1/266)
   * Various __SSL__ libs
     * [Remote OOB read in __OpenSSL__ • CVE-2015-1789]( https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-1789)
     * [Remote Use-after-Free (potential RCE, rated as __critical__) in __OpenSSL__ • CVE-2016-6309](https://www.openssl.org/news/secadv/20160926.txt)
@@ -66,6 +69,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * [__PHP/Python/Ruby__](https://github.com/dyjakan/interpreter-bugs)
     * [PHP WDDX](https://bugs.php.net/bug.php?id=74145)
     * [PHP](https://bugs.php.net/bug.php?id=74194)
+    * [Perl](https://www.nntp.perl.org/group/perl.perl5.porters/2018/03/msg250072.html)
   * [Double-free in __LibXMP__](https://github.com/cmatsuoka/libxmp/commit/bd1eb5cfcd802820073504c234c3f735e96c3355)
   * [Heap buffer overflow in SAPCAR • CVE-2017-8852](https://www.coresecurity.com/blog/sapcar-heap-buffer-overflow-crash-exploit)
   * [Crashes in __libbass__](http://seclists.org/oss-sec/2017/q4/185)
@@ -79,6 +83,8 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * [CVE-2010-2527](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2527)
   * [Infinite loop in __NGINX Unit__](https://github.com/nginx/unit/commit/477e8177b70acb694759e62d830b8a311a736324)
   * A couple of problems in the [__MATLAB MAT File I/O Library__](https://sourceforge.net/projects/matio): [1](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [2](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [3](https://github.com/tbeu/matio/commit/a55b9c2c01582b712d5a643699a13b5c41687db1), [4](https://github.com/tbeu/matio/commit/3e6283f37652e29e457ab9467f7738a562594b6b), [5](https://github.com/tbeu/matio/commit/783ee496a6914df68e77e6019054ad91e8ed6420)
+  * __Rust__:
+    * panic() in regex [#1](https://github.com/rust-lang/regex/issues/464), [#2](https://github.com/rust-lang/regex/issues/465)
   * ... and more
 
 ## Projects utilizing Honggfuzz
@@ -94,6 +100,10 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__honggfuzz-docker-apps__](https://github.com/skysider/honggfuzz_docker_apps)
   * [__FFW - Fuzzing For Worms__](https://github.com/dobin/ffw)
   * [__honggfuzz-rs__: fuzzing Rust with Honggfuzz](https://github.com/rust-fuzz/honggfuzz-rs)
+  * [__roughenough-fuzz__](https://github.com/int08h/roughenough-fuzz)
+  * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
+  * [__Monkey HTTP server__](https://github.com/monkey/monkey/blob/master/FUZZ.md)
+  * [__Killerbeez API__](https://github.com/grimm-co/killerbeez-mutators)
 
 ## Examples
 
