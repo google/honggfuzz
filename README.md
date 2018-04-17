@@ -103,6 +103,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__honggfuzz-rs__: fuzzing Rust with Honggfuzz](https://github.com/rust-fuzz/honggfuzz-rs)
   * [__roughenough-fuzz__](https://github.com/int08h/roughenough-fuzz)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
+  * [__Monkey HTTP server__](https://github.com/monkey/monkey/blob/master/FUZZ.md)
 
 ## Examples
 
