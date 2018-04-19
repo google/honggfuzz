@@ -1,4 +1,10 @@
-2017-02-22 - Version 1.5
+2017-04-19 - Version 1.6
+        - Fixed Dockerfile
+        - Fixed a few format problems with file reporting
+        - Updated display formatting
+        - Make it work under WSL (Windows Subsystem for Linux)
+
+2017-02-22 - Version 1.5 (rev 3b1b70b)
         - Persistent fuzzing now works with MacOS-X
         - Fixed some examples/ to make it work with MacOS-X
         - Should compile cleanly with newer MacOS-X versions
