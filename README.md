@@ -105,6 +105,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
   * [__Monkey HTTP server__](https://github.com/monkey/monkey/blob/master/FUZZ.md)
   * [__Killerbeez API__](https://github.com/grimm-co/killerbeez-mutators)
+  * [__FuzzM__: a gray box model-based fuzzing framework](a gray box model-based fuzzing framework)
 
 ## Examples
 
