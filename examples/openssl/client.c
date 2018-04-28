@@ -497,7 +497,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
     SSL_CTX_set_verify_depth(ctx, 10);
 
-#if !defined(HF_SSL_IS_LIBRESSL)
+#if !defined(HF_SSL_IS_LIBRESSL) && !defined(HF_SSL_IS_OPENSSL_GE_1_1)
     SSL_CTX_set_psk_client_callback(ctx, psk_callback);
     ret = SSL_CTX_use_psk_identity_hint(ctx, "ABCDEFUZZ");
     assert(ret == 1);
