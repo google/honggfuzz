@@ -497,11 +497,13 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
     SSL_CTX_set_verify_depth(ctx, 10);
 
-#if !defined(HF_SSL_IS_LIBRESSL) && !defined(HF_SSL_IS_OPENSSL_GE_1_1)
+#if defined(HF_SSL_IS_BORINGSSL)
     SSL_CTX_set_psk_client_callback(ctx, psk_callback);
     ret = SSL_CTX_use_psk_identity_hint(ctx, "ABCDEFUZZ");
     assert(ret == 1);
-#endif /* !defined(HF_SSL_IS_LIBRESSL) */
+
+    SSL_CTX_set_early_data_enabled(ctx, 1);
+#endif /* defined(HF_SSL_IS_BORINGSSL) */
 
     SSL_CTX_set_ecdh_auto(ctx, 1);
 
@@ -522,6 +524,10 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
 
     SSL* client = SSL_new(ctx);
     SSL_set_tlsext_host_name(client, "localhost");
+
+#if defined(HF_SSL_IS_BORINGSSL)
+    SSL_set_renegotiate_mode(client, ssl_renegotiate_freely);
+#endif /* defined(HF_SSL_IS_BORINGSSL) */
 
 #if defined(HF_SSL_IS_OPENSSL_GE_1_1) || defined(HF_SSL_IS_BORINGSSL)
     SSL_set_min_proto_version(client, SSL3_VERSION);
