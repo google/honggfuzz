@@ -86,6 +86,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * __Rust__:
     * panic() in regex [#1](https://github.com/rust-lang/regex/issues/464), [#2](https://github.com/rust-lang/regex/issues/465), [#3](https://github.com/rust-lang/regex/issues/465#issuecomment-381412816)
     * panic() in h2 [#1](https://github.com/carllerche/h2/pull/260), [#2](https://github.com/carllerche/h2/pull/261), [#3](https://github.com/carllerche/h2/pull/262)
+    * panic() in sleep-parser [#1](https://github.com/datrs/sleep-parser/issues/3)
   * ... and more
 
 ## Projects utilizing Honggfuzz
