@@ -91,7 +91,7 @@ void arch_ptAnalyze(run_t* run) {
 
     int errcode = pt_cpu_errata(&ptc.errata, &ptc.cpu);
     if (errcode < 0) {
-        LOG_F("pt_errata() failed: %s", pt_errstr(errcode));
+        LOG_F("pt_errata() failed: %s", pt_errstr(-errcode));
     }
 
     struct pt_packet_decoder* ptd = pt_pkt_alloc_decoder(&ptc);
@@ -104,7 +104,7 @@ void arch_ptAnalyze(run_t* run) {
 
     errcode = pt_pkt_sync_forward(ptd);
     if (errcode < 0) {
-        LOG_W("pt_pkt_sync_forward() failed: %s", pt_errstr(errcode));
+        LOG_W("pt_pkt_sync_forward() failed: %s", pt_errstr(-errcode));
         return;
     }
 
@@ -115,7 +115,7 @@ void arch_ptAnalyze(run_t* run) {
             break;
         }
         if (errcode < 0) {
-            LOG_W("pt_pkt_next() failed: %s", pt_errstr(errcode));
+            LOG_W("pt_pkt_next() failed: %s", pt_errstr(-errcode));
             break;
         }
         perf_ptAnalyzePkt(run, &packet);
