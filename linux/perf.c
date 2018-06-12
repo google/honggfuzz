@@ -311,6 +311,9 @@ bool arch_perfEnable(run_t* run) {
 }
 
 static void arch_perfMmapReset(run_t* run) {
+    /* smp_mb() required as per /usr/include/linux/perf_event.h */
+    wmb();
+
     struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
     ATOMIC_SET(pem->data_head, 0);
     ATOMIC_SET(pem->data_tail, 0);
@@ -318,7 +321,6 @@ static void arch_perfMmapReset(run_t* run) {
     ATOMIC_SET(pem->aux_head, 0);
     ATOMIC_SET(pem->aux_tail, 0);
 #endif /* defined(PERF_ATTR_SIZE_VER5) */
-    wmb();
 }
 
 void arch_perfAnalyze(run_t* run) {

@@ -84,6 +84,9 @@ void arch_ptAnalyze(run_t* run) {
     uint64_t aux_tail = ATOMIC_GET(pem->aux_tail);
     uint64_t aux_head = ATOMIC_GET(pem->aux_head);
 
+    /* smp_rmb() required as per /usr/include/linux/perf_event.h */
+    rmb();
+
     struct pt_config ptc;
     pt_config_init(&ptc);
     ptc.begin = &run->linux.perfMmapAux[aux_tail];
