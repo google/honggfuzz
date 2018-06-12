@@ -513,17 +513,6 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
     }
 
     report_Report(run);
-
-    /* Try to identify if the target crashed.
-       This information will be used in the next iteration of
-       this loop, to restart the target if necessary.
-       The fuzzer will be also notified.
-
-       Crash identification does not need to work 100%, as the external fuzzer
-       can also detect timeouts on the target server, and will
-       notify us. */
-    LOG_D("------[ 4: reap child");
-    arch_reapChild(run);
 }
 
 static void* fuzz_threadNew(void* arg) {
