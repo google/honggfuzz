@@ -145,7 +145,7 @@ else
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
                    -funroll-loops
-    ARCH_LDFLAGS := -lpthread -L/usr/local/lib
+    ARCH_LDFLAGS := -pthread -L/usr/local/lib
     # OS Posix
 endif
 
@@ -440,3 +440,15 @@ mac/arch.o: sancov.h subproc.h
 posix/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h
 posix/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 posix/arch.o: libhfcommon/log.h sancov.h subproc.h
+
+PREFIX		?= /usr/local
+BIN_PATH	=$(PREFIX)/bin
+
+install: all
+	mkdir -p -m 755 $${DESTDIR}$(BIN_PATH)
+	install -m 755 honggfuzz $${DESTDIR}$(BIN_PATH)
+	install -m 755 hfuzz_cc/hfuzz-cc $${DESTDIR}$(BIN_PATH)
+	install -m 755 hfuzz_cc/hfuzz-clang $${DESTDIR}$(BIN_PATH)
+	install -m 755 hfuzz_cc/hfuzz-clang++ $${DESTDIR}$(BIN_PATH)
+	install -m 755 hfuzz_cc/hfuzz-gcc $${DESTDIR}$(BIN_PATH)
+	install -m 755 hfuzz_cc/hfuzz-g++ $${DESTDIR}$(BIN_PATH)
