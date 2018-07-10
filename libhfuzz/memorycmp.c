@@ -26,7 +26,7 @@ const char* const LIBHFUZZ_module_memorycmp = "LIBHFUZZ_module_memorycmp";
 #error "Unknown value of _HF_USE_RET_ADDR"
 #endif /* !defined(_HF_USE_RET_ADDR_1) */
 
-static inline int _strcmp(const char* s1, const char* s2, uintptr_t addr) {
+static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
     unsigned int v = 0;
 
     size_t i;
@@ -40,7 +40,7 @@ static inline int _strcmp(const char* s1, const char* s2, uintptr_t addr) {
     return (s1[i] - s2[i]);
 }
 
-static inline int _strcasecmp(const char* s1, const char* s2, uintptr_t addr) {
+static inline int HF_strcasecmp(const char* s1, const char* s2, uintptr_t addr) {
     unsigned int v = 0;
 
     size_t i;
@@ -54,7 +54,7 @@ static inline int _strcasecmp(const char* s1, const char* s2, uintptr_t addr) {
     return (tolower(s1[i]) - tolower(s2[i]));
 }
 
-static inline int _strncmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
+static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
     if (n == 0) {
         return 0;
     }
@@ -77,7 +77,7 @@ static inline int _strncmp(const char* s1, const char* s2, size_t n, uintptr_t a
     return ret;
 }
 
-static inline int _strncasecmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
+static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
     if (n == 0) {
         return 0;
     }
@@ -100,27 +100,27 @@ static inline int _strncasecmp(const char* s1, const char* s2, size_t n, uintptr
     return ret;
 }
 
-static inline char* _strstr(const char* haystack, const char* needle, uintptr_t addr) {
+static inline char* HF_strstr(const char* haystack, const char* needle, uintptr_t addr) {
     size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
-        if (_strncmp(&haystack[i], needle, needle_len, addr) == 0) {
+        if (HF_strncmp(&haystack[i], needle, needle_len, addr) == 0) {
             return (char*)(&haystack[i]);
         }
     }
     return NULL;
 }
 
-static inline char* _strcasestr(const char* haystack, const char* needle, uintptr_t addr) {
+static inline char* HF_strcasestr(const char* haystack, const char* needle, uintptr_t addr) {
     size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
-        if (_strncasecmp(&haystack[i], needle, needle_len, addr) == 0) {
+        if (HF_strncasecmp(&haystack[i], needle, needle_len, addr) == 0) {
             return (char*)(&haystack[i]);
         }
     }
     return NULL;
 }
 
-static inline int _memcmp(const void* m1, const void* m2, size_t n, uintptr_t addr) {
+static inline int HF_memcmp(const void* m1, const void* m2, size_t n, uintptr_t addr) {
     if (n == 0) {
         return 0;
     }
@@ -143,7 +143,7 @@ static inline int _memcmp(const void* m1, const void* m2, size_t n, uintptr_t ad
     return ret;
 }
 
-static inline void* _memmem(const void* haystack, size_t haystacklen, const void* needle,
+static inline void* HF_memmem(const void* haystack, size_t haystacklen, const void* needle,
     size_t needlelen, uintptr_t addr) {
     if (needlelen > haystacklen) {
         return NULL;
@@ -154,7 +154,7 @@ static inline void* _memmem(const void* haystack, size_t haystacklen, const void
 
     const char* h = haystack;
     for (size_t i = 0; i <= (haystacklen - needlelen); i++) {
-        if (_memcmp(&h[i], needle, needlelen, addr) == 0) {
+        if (HF_memcmp(&h[i], needle, needlelen, addr) == 0) {
             return (void*)(&h[i]);
         }
     }
@@ -168,74 +168,74 @@ static inline void* _memmem(const void* haystack, size_t haystacklen, const void
 
 /* Typical libc wrappers */
 HF_WEAK_WRAP(int, strcmp, const char* s1, const char* s2) {
-    return _strcmp(s1, s2, RET_CALL_CHAIN);
+    return HF_strcmp(s1, s2, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(int, strcasecmp, const char* s1, const char* s2) {
-    return _strcasecmp(s1, s2, RET_CALL_CHAIN);
+    return HF_strcasecmp(s1, s2, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(int, strncmp, const char* s1, const char* s2, size_t n) {
-    return _strncmp(s1, s2, n, RET_CALL_CHAIN);
+    return HF_strncmp(s1, s2, n, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(int, strncasecmp, const char* s1, const char* s2, size_t n) {
-    return _strncasecmp(s1, s2, n, RET_CALL_CHAIN);
+    return HF_strncasecmp(s1, s2, n, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(char*, strstr, const char* haystack, const char* needle) {
-    return _strstr(haystack, needle, RET_CALL_CHAIN);
+    return HF_strstr(haystack, needle, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(char*, strcasestr, const char* haystack, const char* needle) {
-    return _strcasestr(haystack, needle, RET_CALL_CHAIN);
+    return HF_strcasestr(haystack, needle, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(int, memcmp, const void* m1, const void* m2, size_t n) {
-    return _memcmp(m1, m2, n, RET_CALL_CHAIN);
+    return HF_memcmp(m1, m2, n, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(int, bcmp, const void* m1, const void* m2, size_t n) {
-    return _memcmp(m1, m2, n, RET_CALL_CHAIN);
+    return HF_memcmp(m1, m2, n, RET_CALL_CHAIN);
 }
 HF_WEAK_WRAP(
     void*, memmem, const void* haystack, size_t haystacklen, const void* needle, size_t needlelen) {
-    return _memmem(haystack, haystacklen, needle, needlelen, RET_CALL_CHAIN);
+    return HF_memmem(haystack, haystacklen, needle, needlelen, RET_CALL_CHAIN);
 }
 
 /*
  * Apache's httpd wrappers
  */
 HF_WEAK_WRAP(int, ap_cstr_casecmp, const char* s1, const char* s2) {
-    return _strcasecmp(s1, s2, RET_CALL_CHAIN);
+    return HF_strcasecmp(s1, s2, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, ap_cstr_casecmpn, const char* s1, const char* s2, size_t n) {
-    return _strncasecmp(s1, s2, n, RET_CALL_CHAIN);
+    return HF_strncasecmp(s1, s2, n, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(const char*, ap_strcasestr, const char* s1, const char* s2) {
-    return _strcasestr(s1, s2, RET_CALL_CHAIN);
+    return HF_strcasestr(s1, s2, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, apr_cstr_casecmp, const char* s1, const char* s2) {
-    return _strcasecmp(s1, s2, RET_CALL_CHAIN);
+    return HF_strcasecmp(s1, s2, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, apr_cstr_casecmpn, const char* s1, const char* s2, size_t n) {
-    return _strncasecmp(s1, s2, n, RET_CALL_CHAIN);
+    return HF_strncasecmp(s1, s2, n, RET_CALL_CHAIN);
 }
 
 /*
  * *SSL wrappers
  */
 HF_WEAK_WRAP(int, CRYPTO_memcmp, const void* m1, const void* m2, size_t len) {
-    return _memcmp(m1, m2, len, RET_CALL_CHAIN);
+    return HF_memcmp(m1, m2, len, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, OPENSSL_memcmp, const void* m1, const void* m2, size_t len) {
-    return _memcmp(m1, m2, len, RET_CALL_CHAIN);
+    return HF_memcmp(m1, m2, len, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, OPENSSL_strcasecmp, const char* s1, const char* s2) {
-    return _strcasecmp(s1, s2, RET_CALL_CHAIN);
+    return HF_strcasecmp(s1, s2, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, OPENSSL_strncasecmp, const char* s1, const char* s2, size_t len) {
-    return _strncasecmp(s1, s2, len, RET_CALL_CHAIN);
+    return HF_strncasecmp(s1, s2, len, RET_CALL_CHAIN);
 }
 
 /*
@@ -254,7 +254,7 @@ HF_WEAK_WRAP(int, xmlStrncmp, const char* s1, const char* s2, int len) {
     if (s2 == NULL) {
         return 1;
     }
-    return _strncmp(s1, s2, (size_t)len, RET_CALL_CHAIN);
+    return HF_strncmp(s1, s2, (size_t)len, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, xmlStrcmp, const char* s1, const char* s2) {
@@ -267,7 +267,7 @@ HF_WEAK_WRAP(int, xmlStrcmp, const char* s1, const char* s2) {
     if (s2 == NULL) {
         return 1;
     }
-    return _strcmp(s1, s2, RET_CALL_CHAIN);
+    return HF_strcmp(s1, s2, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, xmlStrEqual, const char* s1, const char* s2) {
@@ -280,7 +280,7 @@ HF_WEAK_WRAP(int, xmlStrEqual, const char* s1, const char* s2) {
     if (s2 == NULL) {
         return 0;
     }
-    if (_strcmp(s1, s2, RET_CALL_CHAIN) == 0) {
+    if (HF_strcmp(s1, s2, RET_CALL_CHAIN) == 0) {
         return 1;
     }
     return 0;
@@ -296,7 +296,7 @@ HF_WEAK_WRAP(int, xmlStrcasecmp, const char* s1, const char* s2) {
     if (s2 == NULL) {
         return 1;
     }
-    return _strcasecmp(s1, s2, RET_CALL_CHAIN);
+    return HF_strcasecmp(s1, s2, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(int, xmlStrncasecmp, const char* s1, const char* s2, int len) {
@@ -312,7 +312,7 @@ HF_WEAK_WRAP(int, xmlStrncasecmp, const char* s1, const char* s2, int len) {
     if (s2 == NULL) {
         return 1;
     }
-    return _strncasecmp(s1, s2, (size_t)len, RET_CALL_CHAIN);
+    return HF_strncasecmp(s1, s2, (size_t)len, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(const char*, xmlStrstr, const char* haystack, const char* needle) {
@@ -322,7 +322,7 @@ HF_WEAK_WRAP(const char*, xmlStrstr, const char* haystack, const char* needle) {
     if (needle == NULL) {
         return NULL;
     }
-    return _strstr(haystack, needle, RET_CALL_CHAIN);
+    return HF_strstr(haystack, needle, RET_CALL_CHAIN);
 }
 
 HF_WEAK_WRAP(const char*, xmlStrcasestr, const char* haystack, const char* needle) {
@@ -332,5 +332,5 @@ HF_WEAK_WRAP(const char*, xmlStrcasestr, const char* haystack, const char* needl
     if (needle == NULL) {
         return NULL;
     }
-    return _strcasestr(haystack, needle, RET_CALL_CHAIN);
+    return HF_strcasestr(haystack, needle, RET_CALL_CHAIN);
 }
