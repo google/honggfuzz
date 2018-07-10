@@ -284,11 +284,11 @@ int64_t fastArray64Search(uint64_t* array, size_t arraySz, uint64_t key) {
 }
 
 bool util_isANumber(const char* s) {
-    if (!isdigit(s[0])) {
+    if (!isdigit((unsigned char)s[0])) {
         return false;
     }
     for (int i = 0; s[i]; s++) {
-        if (!isdigit(s[i]) && s[i] != 'x') {
+        if (!isdigit((unsigned char)s[i]) && s[i] != 'x') {
             return false;
         }
     }

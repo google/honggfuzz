@@ -44,14 +44,14 @@ static inline int HF_strcasecmp(const char* s1, const char* s2, uintptr_t addr) 
     unsigned int v = 0;
 
     size_t i;
-    for (i = 0; tolower(s1[i]) == tolower(s2[i]); i++) {
+    for (i = 0; tolower((unsigned char)s1[i]) == tolower((unsigned char)s2[i]); i++) {
         if (s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
         v++;
     }
     instrumentUpdateCmpMap(addr, v);
-    return (tolower(s1[i]) - tolower(s2[i]));
+    return (tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]));
 }
 
 static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
@@ -86,8 +86,8 @@ static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, uintp
     int ret = 0;
 
     for (size_t i = 0; i < n; i++) {
-        if (tolower(s1[i]) != tolower(s2[i])) {
-            ret = ret ? ret : (tolower(s1[i]) - tolower(s2[i]));
+        if (tolower((unsigned char)s1[i]) != tolower((unsigned char)s2[i])) {
+            ret = ret ? ret : (tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]));
         } else {
             v++;
         }
