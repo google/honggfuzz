@@ -18,7 +18,7 @@ const char* const LIBHFUZZ_module_memorycmp = "LIBHFUZZ_module_memorycmp";
 #define RET_CALL_CHAIN \
     ((uintptr_t)__builtin_return_address(0)) ^ ((uintptr_t)__builtin_return_address(1) << 12)
 #elif _HF_USE_RET_ADDR == 3
-/* Use mix of three previous returen addresses - unsafe */
+/* Use mix of three previous return addresses - unsafe */
 #define RET_CALL_CHAIN                                                                         \
     ((uintptr_t)__builtin_return_address(0)) ^ ((uintptr_t)__builtin_return_address(1) << 8) ^ \
         ((uintptr_t)__builtin_return_address(2) << 16)
