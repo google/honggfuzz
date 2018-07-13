@@ -221,6 +221,29 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmpd(
 }
 
 /*
+ * -fsanitize-coverage=trace-div
+ */
+void __sanitizer_cov_trace_div8(uint64_t Val) {
+    uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
+    uint8_t v = ((sizeof(Val) * 8) - __builtin_popcountll(Val));
+    uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
+    if (prev < v) {
+        ATOMIC_SET(feedback->bbMapCmp[pos], v);
+        ATOMIC_POST_ADD(feedback->pidFeedbackCmp[my_thread_no], v - prev);
+    }
+}
+
+void __sanitizer_cov_trace_div4(uint32_t Val) {
+    uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
+    uint8_t v = ((sizeof(Val) * 8) - __builtin_popcount(Val));
+    uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
+    if (prev < v) {
+        ATOMIC_SET(feedback->bbMapCmp[pos], v);
+        ATOMIC_POST_ADD(feedback->pidFeedbackCmp[my_thread_no], v - prev);
+    }
+}
+
+/*
  * -fsanitize-coverage=indirect-calls
  */
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(uintptr_t callee) {
