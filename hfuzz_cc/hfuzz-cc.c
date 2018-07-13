@@ -174,7 +174,7 @@ static int execCC(int argc, char** argv) {
 char* getIncPaths(void) {
 #if !defined(_HFUZZ_INC_PATH)
 #error \
-    "You need to define _HFUZZ_INC_PATH to a directory with the directory called 'includes', containing honggfuzz's lib* includes. Typically it's be the build/sources dir"
+    "You need to define _HFUZZ_INC_PATH to a directory with the directory called 'includes', containing honggfuzz's lib* includes. Typically it'd be the build/sources dir"
 #endif
 
     static char path[PATH_MAX];
