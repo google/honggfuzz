@@ -355,6 +355,18 @@ android-clean-deps:
 	  rm -rf "third_party/android/libBlocksRuntime/$$cpu"; \
 	done
 
+PREFIX		?= /usr/local
+BIN_PATH	=$(PREFIX)/bin
+
+install: all
+	mkdir -p -m 755 $${DESTDIR}$(BIN_PATH)
+	install -m 755 honggfuzz $${DESTDIR}$(BIN_PATH)
+	install -m 755 hfuzz_cc/hfuzz-cc $${DESTDIR}$(BIN_PATH)
+	install -m 755 hfuzz_cc/hfuzz-clang $${DESTDIR}$(BIN_PATH)
+	install -m 755 hfuzz_cc/hfuzz-clang++ $${DESTDIR}$(BIN_PATH)
+	install -m 755 hfuzz_cc/hfuzz-gcc $${DESTDIR}$(BIN_PATH)
+	install -m 755 hfuzz_cc/hfuzz-g++ $${DESTDIR}$(BIN_PATH)
+
 # DO NOT DELETE
 
 cmdline.o: cmdline.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
@@ -440,15 +452,3 @@ mac/arch.o: sancov.h subproc.h
 posix/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h
 posix/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 posix/arch.o: libhfcommon/log.h sancov.h subproc.h
-
-PREFIX		?= /usr/local
-BIN_PATH	=$(PREFIX)/bin
-
-install: all
-	mkdir -p -m 755 $${DESTDIR}$(BIN_PATH)
-	install -m 755 honggfuzz $${DESTDIR}$(BIN_PATH)
-	install -m 755 hfuzz_cc/hfuzz-cc $${DESTDIR}$(BIN_PATH)
-	install -m 755 hfuzz_cc/hfuzz-clang $${DESTDIR}$(BIN_PATH)
-	install -m 755 hfuzz_cc/hfuzz-clang++ $${DESTDIR}$(BIN_PATH)
-	install -m 755 hfuzz_cc/hfuzz-gcc $${DESTDIR}$(BIN_PATH)
-	install -m 755 hfuzz_cc/hfuzz-g++ $${DESTDIR}$(BIN_PATH)

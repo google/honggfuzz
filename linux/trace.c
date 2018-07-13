@@ -575,7 +575,8 @@ static void arch_traceGenerateReport(
     util_ssnprintf(run->report, sizeof(run->report), "FAULT ADDRESS: %p\n",
         SI_FROMUSER(si) ? NULL : si->si_addr);
     util_ssnprintf(run->report, sizeof(run->report), "INSTRUCTION: %s\n", instr);
-    util_ssnprintf(run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", run->backtrace);
+    util_ssnprintf(
+        run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", run->backtrace);
     util_ssnprintf(run->report, sizeof(run->report), "STACK:\n");
     for (size_t i = 0; i < funcCnt; i++) {
 #ifdef __HF_USE_CAPSTONE__
@@ -1108,7 +1109,8 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     util_ssnprintf(run->report, sizeof(run->report), "OPERATION: %s\n", op);
     util_ssnprintf(run->report, sizeof(run->report), "FAULT ADDRESS: %p\n", crashAddr);
     if (funcCnt > 0) {
-        util_ssnprintf(run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", run->backtrace);
+        util_ssnprintf(
+            run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", run->backtrace);
         util_ssnprintf(run->report, sizeof(run->report), "STACK:\n");
         for (int i = 0; i < funcCnt; i++) {
             util_ssnprintf(run->report, sizeof(run->report), " <" REG_PD REG_PM "> ",
