@@ -72,8 +72,12 @@ void HonggfuzzFetchData(const uint8_t** buf_ptr, size_t* len_ptr) {
 
     uint64_t rcvLen;
     ssize_t sz = files_readFromFd(_HF_PERSISTENT_FD, (uint8_t*)&rcvLen, sizeof(rcvLen));
+    if (sz == -1) {
+        PLOG_F("readFromFd(fd=%d, size=%zu) failed", _HF_PERSISTENT_FD, sizeof(rcvLen));
+    }
     if (sz != sizeof(rcvLen)) {
-        LOG_F("readFromFd(rcvLen, size=%zu) failed, received=%zd bytes", sizeof(rcvLen), sz);
+        LOG_F("readFromFd(fd=%d, size=%zu) failed, received=%zd bytes", _HF_PERSISTENT_FD,
+            sizeof(rcvLen), sz);
     }
 
     *buf_ptr = inputFile;
