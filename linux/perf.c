@@ -160,7 +160,7 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
         case _HF_DYNFILE_IPT_BLOCK:
             LOG_D("Using: (Intel PT) type=%" PRIu32 " for PID: %d", perfIntelPtPerfType, pid);
             pe.type = perfIntelPtPerfType;
-            pe.config = (1U << 11); /* Disable RETCompression */
+            pe.config = RTIT_CTL_DISRETC;
             break;
         default:
             LOG_E("Unknown perf mode: '%d' for PID: %d", method, pid);
