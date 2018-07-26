@@ -260,5 +260,13 @@ int main(int argc, char** argv) {
         cleanupSocketFuzzer();
     }
 
+    uint64_t exec_per_sec = 0;
+    uint64_t elapsed_sec = time(NULL) - hfuzz.timing.timeStart;
+    if (elapsed_sec) {
+        exec_per_sec = hfuzz.cnts.mutationsCnt / elapsed_sec;
+    }
+    LOG_I("Summary: iters:%zu time:%" PRIu64 " execs/s:%" PRIu64, hfuzz.cnts.mutationsCnt,
+        elapsed_sec, exec_per_sec);
+
     return EXIT_SUCCESS;
 }
