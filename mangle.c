@@ -974,7 +974,7 @@ static void mangle_InsertRndPrintable(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
     size_t len = util_rndGet(1, run->dynamicFileSz - off);
 
-    mangle_Inflate(run, off, len);
+    mangle_InflatePrintable(run, off, len);
     mangle_Move(run, off, off + len, run->dynamicFileSz);
     util_rndBuf(&run->dynamicFile[off], len);
     util_turnToPrintable(&run->dynamicFile[off], len);
