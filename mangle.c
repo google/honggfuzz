@@ -110,8 +110,8 @@ static void mangle_Bytes(run_t* run) {
 
 static void mangle_PrintableBytes(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
-    uint32_t val = (uint32_t)util_rnd64();
-    util_turnToPrintable((uint8_t *)&val, sizeof(val));
+    uint32_t val;
+    util_rndBufPrintable((uint8_t *)&val, sizeof(val));
 
     /* Overwrite with random 2,3,4-byte values */
     size_t toCopy = util_rndGet(2, 4);
@@ -713,8 +713,7 @@ static void mangle_Random(run_t* run) {
 static void mangle_RandomPrintable(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
     size_t len = util_rndGet(1, run->dynamicFileSz - off);
-    util_rndBuf(&run->dynamicFile[off], len);
-    util_turnToPrintable(&run->dynamicFile[off], len);
+    util_rndBufPrintable(&run->dynamicFile[off], len);
 }
 
 static void mangle_AddSub(run_t* run) {

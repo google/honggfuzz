@@ -145,6 +145,12 @@ void util_turnToPrintable(uint8_t* buf, size_t sz) {
     }
 }
 
+void util_rndBufPrintable(uint8_t* buf, size_t sz) {
+    for (size_t i = 0; i < sz; i++) {
+        buf[i] = util_rndPrintable();
+    }
+}
+
 void util_rndBuf(uint8_t* buf, size_t sz) {
     pthread_once(&rndThreadOnce, util_rndInitThread);
     if (sz == 0) {
