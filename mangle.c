@@ -111,7 +111,7 @@ static void mangle_Bytes(run_t* run) {
 static void mangle_PrintableBytes(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
     uint32_t val;
-    util_rndBufPrintable((uint8_t *)&val, sizeof(val));
+    util_rndBufPrintable((uint8_t*)&val, sizeof(val));
 
     /* Overwrite with random 2,3,4-byte values */
     size_t toCopy = util_rndGet(2, 4);
@@ -675,20 +675,19 @@ static void mangle_MagicPrintable(run_t* run) {
     util_turnToPrintable(&run->dynamicFile[off], mangleMagicVals[choice].size);
 }
 
-static void mangle_MemSet(run_t* run) {
+static void mangle_MemSetWithVal(run_t* run, int val) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
     size_t sz = util_rndGet(1, run->dynamicFileSz - off);
-    int val = (int)util_rndGet(0, UINT8_MAX);
 
     memset(&run->dynamicFile[off], val, sz);
 }
 
-static void mangle_MemSetPrintable(run_t* run) {
-    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
-    size_t sz = util_rndGet(1, run->dynamicFileSz - off);
-    int val = (int)util_rndPrintable();
+static void mangle_MemSet(run_t* run) {
+    mangle_MemSetWithVal(run, (int)util_rndGet(0, UINT8_MAX));
+}
 
-    memset(&run->dynamicFile[off], val, sz);
+static void mangle_MemSetPrintable(run_t* run) {
+    mangle_MemSetWithVal(run, (int)util_rndPrintable());
 }
 
 static void mangle_Random(run_t* run) {
@@ -703,15 +702,7 @@ static void mangle_RandomPrintable(run_t* run) {
     util_rndBufPrintable(&run->dynamicFile[off], len);
 }
 
-static void mangle_AddSub(run_t* run) {
-    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
-
-    /* 1,2,4,8 */
-    uint64_t varLen = 1U << util_rndGet(0, 3);
-    if ((run->dynamicFileSz - off) < varLen) {
-        varLen = 1;
-    }
-
+static void mangle_AddSubWithRange(run_t* run, size_t off, uint64_t varLen) {
     int delta = (int)util_rndGet(0, 8192);
     delta -= 4096;
 
@@ -773,6 +764,18 @@ static void mangle_AddSub(run_t* run) {
     }
 }
 
+static void mangle_AddSub(run_t* run) {
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+
+    /* 1,2,4,8 */
+    uint64_t varLen = 1U << util_rndGet(0, 3);
+    if ((run->dynamicFileSz - off) < varLen) {
+        varLen = 1;
+    }
+
+    mangle_AddSubWithRange(run, off, varLen);
+}
+
 static void mangle_AddSubPrintable(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
 
@@ -782,61 +785,7 @@ static void mangle_AddSubPrintable(run_t* run) {
         varLen = 1;
     }
 
-    int delta = (int)util_rndGet(0, 8192);
-    delta -= 4096;
-
-    switch (varLen) {
-        case 1: {
-            run->dynamicFile[off] += delta;
-            break;
-        }
-        case 2: {
-            int16_t val;
-            memcpy(&val, &run->dynamicFile[off], sizeof(val));
-            if (util_rnd64() & 0x1) {
-                val += delta;
-            } else {
-                /* Foreign endianess */
-                val = __builtin_bswap16(val);
-                val += delta;
-                val = __builtin_bswap16(val);
-            }
-            mangle_Overwrite(run, (uint8_t*)&val, off, varLen);
-            break;
-        }
-        case 4: {
-            int32_t val;
-            memcpy(&val, &run->dynamicFile[off], sizeof(val));
-            if (util_rnd64() & 0x1) {
-                val += delta;
-            } else {
-                /* Foreign endianess */
-                val = __builtin_bswap32(val);
-                val += delta;
-                val = __builtin_bswap32(val);
-            }
-            mangle_Overwrite(run, (uint8_t*)&val, off, varLen);
-            break;
-        }
-        case 8: {
-            int64_t val;
-            memcpy(&val, &run->dynamicFile[off], sizeof(val));
-            if (util_rnd64() & 0x1) {
-                val += delta;
-            } else {
-                /* Foreign endianess */
-                val = __builtin_bswap64(val);
-                val += delta;
-                val = __builtin_bswap64(val);
-            }
-            mangle_Overwrite(run, (uint8_t*)&val, off, varLen);
-            break;
-        }
-        default: {
-            LOG_F("Unknown variable length size: %" PRIu64, varLen);
-            break;
-        }
-    }
+    mangle_AddSubWithRange(run, off, varLen);
     util_turnToPrintable((uint8_t *)&run->dynamicFile[off], varLen);
 }
 
