@@ -129,7 +129,7 @@ static void mangle_BitPrintable(run_t* run) {
     util_turnToPrintable(&(run->dynamicFile[off]), 1);
 }
 
-static void mangle_DictionaryInsertNoCheck(run_t *run) {
+static void mangle_DictionaryInsertNoCheck(run_t* run) {
     uint64_t choice = util_rndGet(0, run->global->mutate.dictionaryCnt - 1);
     struct strings_t* str = TAILQ_FIRST(&run->global->mutate.dictq);
     for (uint64_t i = 0; i < choice; i++) {
@@ -158,12 +158,7 @@ static void mangle_DictionaryInsertPrintable(run_t* run) {
     mangle_DictionaryInsertNoCheck(run);
 }
 
-static void mangle_Dictionary(run_t* run) {
-    if (run->global->mutate.dictionaryCnt == 0) {
-        mangle_Bit(run);
-        return;
-    }
-
+static void mangle_DictionaryNoCheck(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
 
     uint64_t choice = util_rndGet(0, run->global->mutate.dictionaryCnt - 1);
@@ -173,7 +168,15 @@ static void mangle_Dictionary(run_t* run) {
     }
 
     mangle_Overwrite(run, (uint8_t*)str->s, off, str->len);
-    /* FIXME */
+}
+
+static void mangle_Dictionary(run_t* run) {
+    if (run->global->mutate.dictionaryCnt == 0) {
+        mangle_Bit(run);
+        return;
+    }
+
+    mangle_DictionaryNoCheck(run);
 }
 
 static void mangle_DictionaryPrintable(run_t* run) {
@@ -182,16 +185,7 @@ static void mangle_DictionaryPrintable(run_t* run) {
         return;
     }
 
-    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
-
-    uint64_t choice = util_rndGet(0, run->global->mutate.dictionaryCnt - 1);
-    struct strings_t* str = TAILQ_FIRST(&run->global->mutate.dictq);
-    for (uint64_t i = 0; i < choice; i++) {
-        str = TAILQ_NEXT(str, pointers);
-    }
-
-    mangle_Overwrite(run, (uint8_t*)str->s, off, str->len);
-    /* FIXME */
+    mangle_DictionaryNoCheck(run);
 }
 
 static void mangle_Magic(run_t* run) {
