@@ -868,8 +868,7 @@ static void mangle_InsertRndPrintable(run_t* run) {
 
     mangle_Inflate(run, off, len);
     mangle_Move(run, off, off + len, run->dynamicFileSz);
-    util_rndBuf(&run->dynamicFile[off], len);
-    util_turnToPrintable(&run->dynamicFile[off], len);
+    util_rndBufPrintable(&run->dynamicFile[off], len);
 }
 
 static void mangle_ASCIIVal(run_t* run) {
