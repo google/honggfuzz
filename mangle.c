@@ -854,18 +854,6 @@ static void mangle_AddSubPrintable(run_t* run) {
     util_turnToPrintable((uint8_t *)&run->dynamicFile[off], varLen);
 }
 
-static void addPrintable(uint8_t *byte) {
-    *byte = ((*byte) - 32 + 1) % 95 + 32;
-}
-
-static void decPrintable(uint8_t *byte) {
-    *byte = ((*byte) - 32 + 94) % 95 + 32;
-}
-
-static void negPrintable(uint8_t *byte) {
-    *byte = 94 - ((*byte) - 32) + 32;
-}
-
 static void mangle_IncByte(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
     run->dynamicFile[off] += (uint8_t)1UL;
@@ -873,7 +861,7 @@ static void mangle_IncByte(run_t* run) {
 
 static void mangle_IncBytePrintable(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
-    addPrintable(&run->dynamicFile[off]);
+    run->dynamicFile[off] = (run->dynamicFile[off] - 32 + 1) % 95 + 32;
 }
 
 static void mangle_DecByte(run_t* run) {
@@ -883,7 +871,7 @@ static void mangle_DecByte(run_t* run) {
 
 static void mangle_DecBytePrintable(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
-    decPrintable(&run->dynamicFile[off]);
+    run->dynamicFile[off] = (run->dynamicFile[off] - 32 + 94) % 95 + 32;
 }
 
 static void mangle_NegByte(run_t* run) {
@@ -893,7 +881,7 @@ static void mangle_NegByte(run_t* run) {
 
 static void mangle_NegBytePrintable(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
-    negPrintable(&run->dynamicFile[off]);
+    run->dynamicFile[off] = 94 - (run->dynamicFile[off] - 32) + 32;
 }
 
 static void mangle_CloneByte(run_t* run) {
