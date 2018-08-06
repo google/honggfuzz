@@ -173,7 +173,8 @@ static void fuzz_setDynamicMainState(run_t* run) {
      * dynamic corpus, so the dynamic phase doesn't fail because of lack of useful inputs
      */
     if (run->global->io.dynfileqCnt == 0) {
-        fuzz_addFileToFileQ(run->global, (const uint8_t*)"\0", 1U);
+        const char *single_byte = run->global->cfg.only_printable ? " " : "\0";
+        fuzz_addFileToFileQ(run->global, (const uint8_t*)single_byte, 1U);
     }
 }
 
