@@ -56,7 +56,11 @@ void input_setSize(run_t* run, size_t sz) {
     if (sz > run->global->mutate.maxFileSz) {
         PLOG_F("Too large size requested: %zu > maxSize: %zu", sz, run->global->mutate.maxFileSz);
     }
+    size_t old_sz = run->dynamicFileSz;
     run->dynamicFileSz = sz;
+    if (run->global->cfg.only_printable && old_sz < sz) {
+        memset(run->dynamicFile, ' ', sz - old_sz);
+    }
 }
 
 static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {

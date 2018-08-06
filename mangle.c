@@ -81,20 +81,6 @@ static void mangle_Inflate(run_t* run, size_t off, size_t len) {
     mangle_Move(run, off, off + len, run->dynamicFileSz);
 }
 
-static void mangle_InflatePrintable(run_t* run, size_t off, size_t len) {
-    if (run->dynamicFileSz >= run->global->mutate.maxFileSz) {
-        return;
-    }
-    if (len > (run->global->mutate.maxFileSz - run->dynamicFileSz)) {
-        len = run->global->mutate.maxFileSz - run->dynamicFileSz;
-    }
-
-    size_t old_sz = run->dynamicFileSz;
-    input_setSize(run, run->dynamicFileSz + len);
-    memset(&run->dynamicFile[old_sz], ' ', len);
-    mangle_Move(run, off, off + len, run->dynamicFileSz);
-}
-
 static void mangle_MemMove(run_t* run) {
     size_t off_from = util_rndGet(0, run->dynamicFileSz - 1);
     size_t off_to = util_rndGet(0, run->dynamicFileSz - 1);
@@ -924,28 +910,11 @@ static void mangle_Resize(run_t* run) {
     input_setSize(run, sz);
 }
 
-static void mangle_ResizePrintable(run_t* run) {
-    size_t old_sz = run->dynamicFileSz;
-    size_t sz = util_rndGet(1, run->global->mutate.maxFileSz);
-    input_setSize(run, sz);
-    if (old_sz < sz) {
-        memset(&run->dynamicFile[old_sz], ' ', sz - old_sz);
-    }
-}
-
 static void mangle_Expand(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
     size_t len = util_rndGet(1, run->dynamicFileSz - off);
 
     mangle_Inflate(run, off, len);
-    mangle_Move(run, off, off + len, run->dynamicFileSz);
-}
-
-static void mangle_ExpandPrintable(run_t* run) {
-    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
-    size_t len = util_rndGet(1, run->dynamicFileSz - off);
-
-    mangle_InflatePrintable(run, off, len);
     mangle_Move(run, off, off + len, run->dynamicFileSz);
 }
 
@@ -974,7 +943,7 @@ static void mangle_InsertRndPrintable(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
     size_t len = util_rndGet(1, run->dynamicFileSz - off);
 
-    mangle_InflatePrintable(run, off, len);
+    mangle_Inflate(run, off, len);
     mangle_Move(run, off, off + len, run->dynamicFileSz);
     util_rndBuf(&run->dynamicFile[off], len);
     util_turnToPrintable(&run->dynamicFile[off], len);
@@ -1013,7 +982,7 @@ static void (*mangleFuncs[])(run_t * run) = {
 void mangle_init(bool only_printable) {
     if (only_printable) {
         static void (*const manglePrintableFuncs[])(run_t * run) = {
-            mangle_ResizePrintable,
+            mangle_Resize,
             mangle_PrintableByte,
             mangle_BitPrintable,
             mangle_PrintableBytes,
@@ -1028,7 +997,7 @@ void mangle_init(bool only_printable) {
             mangle_MemSetPrintable,
             mangle_RandomPrintable,
             mangle_CloneByte,
-            mangle_ExpandPrintable,
+            mangle_Expand,
             mangle_Shrink,
             mangle_InsertRndPrintable,
             mangle_ASCIIVal,
