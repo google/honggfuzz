@@ -133,6 +133,24 @@ uint64_t util_rndGet(uint64_t min, uint64_t max) {
     return ((util_rnd64() % (max - min + 1)) + min);
 }
 
+/* Generate random printable ASCII */
+uint8_t util_rndPrintable(void) {
+    return util_rndGet(32, 126);
+}
+
+/* Turn one byte to a printable ASCII */
+void util_turnToPrintable(uint8_t* buf, size_t sz) {
+    for (size_t i = 0; i < sz; i++)  {
+        buf[i] = buf[i] % 95 + 32;
+    }
+}
+
+void util_rndBufPrintable(uint8_t* buf, size_t sz) {
+    for (size_t i = 0; i < sz; i++) {
+        buf[i] = util_rndPrintable();
+    }
+}
+
 void util_rndBuf(uint8_t* buf, size_t sz) {
     pthread_once(&rndThreadOnce, util_rndInitThread);
     if (sz == 0) {

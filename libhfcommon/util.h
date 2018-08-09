@@ -87,7 +87,13 @@ extern uint64_t util_rndGet(uint64_t min, uint64_t max);
 
 extern void util_rndBuf(uint8_t* buf, size_t sz);
 
+extern void util_rndBufPrintable(uint8_t* buf, size_t sz);
+
 extern uint64_t util_rnd64(void);
+
+extern uint8_t util_rndPrintable(void);
+
+extern void util_turnToPrintable(uint8_t* buf, size_t sz);
 
 extern int util_ssnprintf(char* str, size_t size, const char* format, ...)
     __attribute__((format(printf, 3, 4)));

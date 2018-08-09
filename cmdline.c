@@ -308,6 +308,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 #else
                 .monitorSIGABRT = true,
 #endif
+                .only_printable = false,
             },
         .sanitizer =
             {
@@ -432,6 +433,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "no_fb_timeout", required_argument, NULL, 0x106 }, "Skip feedback if the process has timeouted (default: false)" },
         { { "exit_upon_crash", no_argument, NULL, 0x107 }, "Exit upon seeing the first crash (default: false)" },
         { { "socket_fuzzer", no_argument, NULL, 0x10b }, "Instrument external fuzzer via socket" },
+        { { "only_printable", no_argument, NULL, 'o' }, "Only generate printable inputs" },
 
 #if defined(_HF_ARCH_LINUX)
         { { "linux_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blacklist filter file (one entry per line)" },
@@ -464,7 +466,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     int opt_index = 0;
     for (;;) {
         int c = getopt_long(
-            argc, argv, "-?hQvVsuPxf:dqe:W:r:c:F:t:R:n:N:l:p:g:E:w:B:CzTS", opts, &opt_index);
+            argc, argv, "-?hQvVsuPxf:dqe:W:r:c:F:t:R:n:N:l:p:g:E:w:B:CzTSo", opts, &opt_index);
         if (c < 0) break;
 
         switch (c) {
@@ -538,6 +540,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             case 0x10B:
                 hfuzz->socketFuzzer.enabled = true;
                 hfuzz->timing.tmOut = 0;  // Disable process timeout checks
+                break;
+            case 'o':
+                hfuzz->cfg.only_printable = true;
                 break;
             case 'z':
                 hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_SOFT;
