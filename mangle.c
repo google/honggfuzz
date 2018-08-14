@@ -786,7 +786,7 @@ static void mangle_AddSubPrintable(run_t* run) {
     }
 
     mangle_AddSubWithRange(run, off, varLen);
-    util_turnToPrintable((uint8_t *)&run->dynamicFile[off], varLen);
+    util_turnToPrintable((uint8_t*)&run->dynamicFile[off], varLen);
 }
 
 static void mangle_IncByte(run_t* run) {
@@ -879,7 +879,7 @@ static void mangle_ASCIIVal(run_t* run) {
     mangle_Overwrite(run, (uint8_t*)buf, off, strlen(buf));
 }
 
-static void (*mangleFuncs[])(run_t * run) = {
+static void (*mangleFuncs[])(run_t* run) = {
     mangle_Resize,
     mangle_Byte,
     mangle_Bit,

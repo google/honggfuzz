@@ -140,7 +140,7 @@ uint8_t util_rndPrintable(void) {
 
 /* Turn one byte to a printable ASCII */
 void util_turnToPrintable(uint8_t* buf, size_t sz) {
-    for (size_t i = 0; i < sz; i++)  {
+    for (size_t i = 0; i < sz; i++) {
         buf[i] = buf[i] % 95 + 32;
     }
 }
