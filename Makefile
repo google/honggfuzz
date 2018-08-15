@@ -50,7 +50,7 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
                    -funroll-loops \
                    -D_FILE_OFFSET_BITS=64
     ARCH_LDFLAGS := -L/usr/local/include \
-                    -lpthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt -ldl
+                    -pthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt -ldl
     ARCH_SRCS := $(sort $(wildcard linux/*.c))
     LIBS_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 

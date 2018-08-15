@@ -391,7 +391,7 @@ static int ldMode(int argc, char** argv) {
 #endif /* _HF_ARCH_DARWIN */
 
     /* Needed by the libhfcommon */
-    args[j++] = "-lpthread";
+    args[j++] = "-pthread";
 
     return execCC(j, args);
 }
