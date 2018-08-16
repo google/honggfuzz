@@ -137,6 +137,17 @@ else ifeq ($(OS),Darwin)
     endif
     ARCH_SRCS := $(sort $(wildcard mac/*.c))
     # OS Darwin
+else ifeq ($(OS),NetBSD)
+    ARCH := NETBSD
+
+    ARCH_SRCS := $(sort $(wildcard netbsd/*.c))
+    ARCH_CFLAGS := -std=c11 -I/usr/local/include \
+                   -Wextra -Wno-override-init \
+                   -funroll-loops -D_KERNTYPES
+    ARCH_LDFLAGS := -L/usr/local/include \
+                    -pthread -lcapstone -lrt
+
+    # OS NetBSD
 else
     ARCH := POSIX
 
@@ -246,7 +257,7 @@ else
   endif
 endif
 
-SUBDIR_ROOTS := linux mac posix libhfuzz libhfcommon libhfnetdriver
+SUBDIR_ROOTS := linux mac netbsd posix libhfuzz libhfcommon libhfnetdriver
 DIRS := . $(shell find $(SUBDIR_ROOTS) -type d)
 CLEAN_PATTERNS := *.o *~ core *.a *.dSYM *.la *.so *.dylib
 SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
@@ -449,6 +460,16 @@ linux/unwind.o: libhfcommon/common.h libhfcommon/log.h
 mac/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h libhfcommon/common.h
 mac/arch.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
 mac/arch.o: sancov.h subproc.h
+netbsd/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h
+netbsd/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+netbsd/arch.o: libhfcommon/log.h libhfcommon/ns.h netbsd/trace.h
+netbsd/arch.o: sancov.h sanitizers.h subproc.h
+netbsd/trace.o: netbsd/trace.h honggfuzz.h libhfcommon/util.h
+netbsd/trace.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+netbsd/trace.o: libhfcommon/log.h netbsd/unwind.h sancov.h
+netbsd/trace.o: sanitizers.h socketfuzzer.h subproc.h
+netbsd/unwind.o: netbsd/unwind.h honggfuzz.h libhfcommon/util.h
+netbsd/unwind.o: libhfcommon/common.h libhfcommon/log.h
 posix/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h
 posix/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 posix/arch.o: libhfcommon/log.h sancov.h subproc.h
