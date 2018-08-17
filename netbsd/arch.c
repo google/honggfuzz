@@ -202,7 +202,7 @@ static bool arch_checkWait(run_t* run) {
     /* All queued wait events must be tested when SIGCHLD was delivered */
     for (;;) {
         int status;
-        pid_t pid = TEMP_FAILURE_RETRY(waitpid(WAIT_ANY, &status, WALLSIG | WNOHANG));
+        pid_t pid = TEMP_FAILURE_RETRY(waitpid(ptracePid, &status, WALLSIG | WNOHANG));
         if (pid == 0) {
             return false;
         }
