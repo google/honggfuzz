@@ -855,10 +855,12 @@ static void arch_traceEvent(run_t* run HF_ATTR_UNUSED, pid_t pid) {
         if (ptrace(PT_GET_PROCESS_STATE, pid, &state, sizeof(state)) != -1) {
             switch (state.pe_report_event) {
             case PTRACE_FORK:
-                LOG_D("PID: %d child trap (TRAP_CHLD) : fork (PTRACE_FORK)", pid);
-                break;
             case PTRACE_VFORK:
-                LOG_D("PID: %d child trap (TRAP_CHLD) : vfork (PTRACE_VFORK)", pid);
+                LOG_D("PID: %d child trap (TRAP_CHLD) : fork (%s)", pid, state.pe_report_event == PTRACE_FORK ? "PTRACE_FORK" : "PTRACE_VFORK");
+                /* Do not support fuzzing (v)forkees */
+                int status;
+                waitpid(state.pe_other_pid, &status, 0);
+                ptrace(PT_DETACH, state.pe_other_pid, (void *)1, 0);
                 break;
             case PTRACE_VFORK_DONE:
                 LOG_D("PID: %d child trap (TRAP_CHLD) : vfork (PTRACE_VFORK_DONE)", pid);
@@ -888,7 +890,9 @@ static void arch_traceEvent(run_t* run HF_ATTR_UNUSED, pid_t pid) {
         LOG_E("PID: %d unexpected syscall exit trap (TRAP_SCX)", pid);
         break;
     default:
-        LOG_D("PID: %d unknown trap si_code=%d", pid, info.psi_siginfo.si_code);
+        /* Other trap, pass it over to tracee */
+        sig = SIGTRAP;
+        LOG_D("PID: %d other trap si_code=%d", pid, info.psi_siginfo.si_code);
         break;
     }
 
