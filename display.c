@@ -181,9 +181,17 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
             break;
     }
 
+#if defined(_HF_ARCH_LINUX)
     if (hfuzz->linux.pid > 0) {
         display_put("      Target : [" ESC_BOLD "%d" ESC_RESET "] '" ESC_BOLD "%s" ESC_RESET "'\n",
             hfuzz->linux.pid, hfuzz->linux.pidCmd);
+#elif defined(_HF_ARCH_NETBSD)
+    if (hfuzz->netbsd.pid > 0) {
+        display_put("      Target : [" ESC_BOLD "%d" ESC_RESET "] '" ESC_BOLD "%s" ESC_RESET "'\n",
+            hfuzz->netbsd.pid, hfuzz->netbsd.pidCmd);
+#else
+    if (false) {
+#endif
     } else {
         display_put("      Target : " ESC_BOLD "%s" ESC_RESET "\n", hfuzz->display.cmdline_txt);
     }

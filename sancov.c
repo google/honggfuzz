@@ -309,7 +309,13 @@ static bool sancov_sanCovParseRaw(run_t* run) {
     off_t dataFileSz = 0, pos = 0;
     bool is32bit = true;
     char covFile[PATH_MAX] = {0};
+#if defined(_HF_ARCH_LINUX)
     pid_t targetPid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
+#elif defined(_HF_ARCH_NETBSD)
+    pid_t targetPid = (run->global->netbsd.pid > 0) ? run->global->netbsd.pid : run->pid;
+#else
+    pid_t targetPid = run->pid;
+#endif
 
     /* Fuzzer local runtime data structs - need free() before exit */
     uint64_t* startMapsIndex = NULL;
@@ -424,7 +430,7 @@ static bool sancov_sanCovParseRaw(run_t* run) {
     }
 
     /* Delete .sancov.map file */
-    if (run->global->linux.pid == 0 && run->global->exe.persistent == false) {
+    if (run->global->linux.pid == 0 && run->global->netbsd.pid == 0 && run->global->exe.persistent == false) {
         unlink(covFile);
     }
 
@@ -561,7 +567,7 @@ static bool sancov_sanCovParseRaw(run_t* run) {
     run->sanCovCnts.dsoCnt = mapsNum;
     run->sanCovCnts.iDsoCnt = mapsNum - noCovMapsNum; /* Instrumented DSOs */
 
-    if (run->global->linux.pid == 0 && run->global->exe.persistent == false) {
+    if (run->global->linux.pid == 0 && run->global->netbsd.pid == 0 && run->global->exe.persistent == false) {
         unlink(covFile);
     }
     return true;
@@ -574,7 +580,13 @@ static bool sancov_sanCovParse(run_t* run) {
     bool is32bit = true;
     char covFile[PATH_MAX] = {0};
     DIR* pSanCovDir = NULL;
+#if defined(_HF_ARCH_LINUX)
     pid_t targetPid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
+#elif defined(_HF_ARCH_NETBSD)
+    pid_t targetPid = (run->global->netbsd.pid > 0) ? run->global->netbsd.pid : run->pid;
+#else
+    pid_t targetPid = run->pid;
+#endif
 
     snprintf(covFile, sizeof(covFile), "%s/%s/%s.%d.sancov", run->global->io.workDir,
         _HF_SANCOV_DIR, files_basename(run->global->exe.cmdline[0]), targetPid);
@@ -662,7 +674,7 @@ static bool sancov_sanCovParse(run_t* run) {
     /* Successful parsing - update fuzzer worker counters */
     run->sanCovCnts.hitBBCnt = nBBs;
 
-    if (run->global->linux.pid == 0 && run->global->exe.persistent == false) {
+    if (run->global->linux.pid == 0 && run->global->netbsd.pid == 0 && run->global->exe.persistent == false) {
         unlink(covFile);
     }
     return true;
