@@ -32,6 +32,7 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
   * **Linux** - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev), clang-4.0 or higher for software-based coverage modes
   * **FreeBSD** - gmake, clang-3.6 or newer (clang-devel/4.0 suggested)
+  * **NetBSD** - gmake, clang, capstone, libBlocksRuntime
   * **Android** - Android SDK/NDK. Also see [this detailed doc](https://github.com/google/honggfuzz/blob/master/docs/Android.md) on how to build and run it
   * **Windows** - CygWin
   * **Darwin/OS X** - Xcode 10.8+
