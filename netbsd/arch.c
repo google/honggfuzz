@@ -24,7 +24,6 @@
 #include "arch.h"
 
 #include <sys/param.h>
-#include <sys/types.h>
 #include <sys/ptrace.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
@@ -38,6 +37,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <locale.h>
+#include <poll.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <stdio.h>
@@ -45,7 +45,6 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <poll.h>
 
 #include "fuzz.h"
 #include "libhfcommon/common.h"
@@ -58,7 +57,7 @@
 #include "sanitizers.h"
 #include "subproc.h"
 
-extern char **environ;
+extern char** environ;
 
 static inline bool arch_shouldAttach(run_t* run) {
     if (run->global->exe.persistent && run->netbsd.attachedPid == run->pid) {
@@ -147,7 +146,7 @@ static bool arch_attachToNewPid(run_t* run, pid_t pid) {
     if (!arch_traceAttach(run, pid)) {
         LOG_W("arch_traceAttach(pid=%d) failed", pid);
         kill(pid, SIGKILL);
-	/* TODO: missing wait(2)? */
+        /* TODO: missing wait(2)? */
         return false;
     }
 

@@ -462,13 +462,13 @@ mac/arch.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
 mac/arch.o: sancov.h subproc.h
 netbsd/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h
 netbsd/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-netbsd/arch.o: libhfcommon/log.h libhfcommon/ns.h netbsd/trace.h
-netbsd/arch.o: sancov.h sanitizers.h subproc.h
+netbsd/arch.o: libhfcommon/log.h libhfcommon/ns.h netbsd/trace.h sancov.h
+netbsd/arch.o: sanitizers.h subproc.h
 netbsd/trace.o: netbsd/trace.h honggfuzz.h libhfcommon/util.h
 netbsd/trace.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-netbsd/trace.o: libhfcommon/log.h netbsd/unwind.h sancov.h
-netbsd/trace.o: sanitizers.h socketfuzzer.h subproc.h
-netbsd/unwind.o: netbsd/unwind.h honggfuzz.h libhfcommon/util.h
+netbsd/trace.o: libhfcommon/log.h netbsd/unwind.h sancov.h sanitizers.h
+netbsd/trace.o: socketfuzzer.h subproc.h
+netbsd/unwind.o: linux/unwind.h honggfuzz.h libhfcommon/util.h
 netbsd/unwind.o: libhfcommon/common.h libhfcommon/log.h
 posix/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h
 posix/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
