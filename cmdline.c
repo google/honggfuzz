@@ -204,11 +204,19 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
         return false;
     }
 
+#if defined(_HF_ARCH_LINUX)
     if (hfuzz->linux.pid > 0 || hfuzz->linux.pidFile) {
         LOG_I("PID=%d specified, lowering maximum number of concurrent threads to 1",
             hfuzz->linux.pid);
         hfuzz->threads.threadsMax = 1;
     }
+#elif defined(_HF_ARCH_NETBSD)
+    if (hfuzz->netbsd.pid > 0 || hfuzz->netbsd.pidFile) {
+        LOG_I("PID=%d specified, lowering maximum number of concurrent threads to 1",
+            hfuzz->netbsd.pid);
+        hfuzz->threads.threadsMax = 1;
+    }
+#endif
 
     if (hfuzz->mutate.mutationsPerRun == 0U && hfuzz->cfg.useVerifier) {
         LOG_I("Verifier enabled with mutationsPerRun == 0, activating the dry run mode");
@@ -630,14 +638,26 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                     LOG_E("-p '%s' is not a number", optarg);
                     return false;
                 }
+#if defined(_HF_ARCH_LINUX)
                 hfuzz->linux.pid = atoi(optarg);
                 if (hfuzz->linux.pid < 1) {
                     LOG_E("-p '%d' is invalid", hfuzz->linux.pid);
                     return false;
                 }
+#elif defined(_HF_ARCH_NETBSD)
+                hfuzz->netbsd.pid = atoi(optarg);
+                if (hfuzz->netbsd.pid < 1) {
+                    LOG_E("-p '%d' is invalid", hfuzz->netbsd.pid);
+                    return false;
+                }
+#endif
                 break;
             case 0x502:
+#if defined(_HF_ARCH_LINUX)
                 hfuzz->linux.pidFile = optarg;
+#elif defined(_HF_ARCH_NETBSD)
+                hfuzz->netbsd.pidFile = optarg;
+#endif
                 break;
             case 'E':
                 for (size_t i = 0; i < ARRAYSIZE(hfuzz->exe.envs); i++) {
@@ -739,14 +759,23 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         "threads.threadsMax: %zu, "
         "fileExtn: '%s', "
         "ASLimit: 0x%" PRIx64 "(MiB), RSSLimit: 0x%" PRIx64 ", DATALimit: 0x%" PRIx64
-        ", fuzzExe: '%s', fuzzedPid: %d, monitorSIGABRT: '%s'",
+        ", fuzzExe: '%s', "
+#if defined(_HF_ARCH_LINUX) || defined(_HF_ARCH_NETBSD)
+        "fuzzedPid: %d, "
+#endif
+        "monitorSIGABRT: '%s'",
         hfuzz->display.cmdline_txt, (int)getpid(), hfuzz->io.inputDir,
         cmdlineYesNo(hfuzz->exe.nullifyStdio), cmdlineYesNo(hfuzz->exe.fuzzStdin),
         cmdlineYesNo(hfuzz->io.saveUnique), hfuzz->mutate.mutationsPerRun,
         hfuzz->exe.externalCommand == NULL ? "NULL" : hfuzz->exe.externalCommand,
         (int)hfuzz->timing.runEndTime, (long)hfuzz->timing.tmOut, hfuzz->mutate.mutationsMax,
         hfuzz->threads.threadsMax, hfuzz->io.fileExtn, hfuzz->exe.asLimit, hfuzz->exe.rssLimit,
-        hfuzz->exe.dataLimit, hfuzz->exe.cmdline[0], hfuzz->linux.pid,
+        hfuzz->exe.dataLimit, hfuzz->exe.cmdline[0],
+#if defined(_HF_ARCH_LINUX)
+        hfuzz->linux.pid,
+#elif defined(_HF_ARCH_NETBSD)
+        hfuzz->netbsd.pid,
+#endif
         cmdlineYesNo(hfuzz->cfg.monitorSIGABRT));
 
     return true;

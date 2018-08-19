@@ -260,12 +260,21 @@ int main(int argc, char** argv) {
     if (hfuzz.feedback.blacklist) {
         free(hfuzz.feedback.blacklist);
     }
+#if defined(_HF_ARCH_LINUX)
     if (hfuzz.linux.symsBl) {
         free(hfuzz.linux.symsBl);
     }
     if (hfuzz.linux.symsWl) {
         free(hfuzz.linux.symsWl);
     }
+#elif defined(_HF_ARCH_NETBSD)
+    if (hfuzz.netbsd.symsBl) {
+        free(hfuzz.netbsd.symsBl);
+    }
+    if (hfuzz.netbsd.symsWl) {
+        free(hfuzz.netbsd.symsWl);
+    }
+#endif
     if (hfuzz.socketFuzzer.enabled) {
         cleanupSocketFuzzer();
     }

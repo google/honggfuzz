@@ -141,9 +141,15 @@ static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, char* buf, s
 }
 
 bool sanitizers_Init(honggfuzz_t* hfuzz) {
+#if defined(_HF_ARCH_LINUX)
     if (hfuzz->linux.pid > 0) {
         return true;
     }
+#elif defined(_HF_ARCH_NETBSD)
+    if (hfuzz->netbsd.pid > 0) {
+        return true;
+    }
+#endif
 
     static char asanOpts[4096];
     sanitizers_AddFlag(hfuzz, "ASAN_OPTIONS", asanOpts, sizeof(asanOpts));
