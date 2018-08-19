@@ -2,7 +2,7 @@
 
 This page described how to use honggfuzz in batch mode. The simplest example would be Apache Web Server, which cannot be restarted every time we want to send new input (for performance reasons).
 
-_Note: This currently works with Linux OS only_
+_Note: This currently works with Linux and NetBSD OS only_
 
 # What do we need? #
 
