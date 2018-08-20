@@ -23,7 +23,11 @@
 
 #include "netbsd/trace.h"
 
+// clang-format off
 #include <sys/param.h>
+#include <sys/types.h>
+// clang-format on
+
 #include <sys/ptrace.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
