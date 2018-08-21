@@ -115,7 +115,8 @@ else ifeq ($(OS),Darwin)
                    -x objective-c -pedantic -fblocks \
                    -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
                    -Wreturn-type -Wpointer-arith -Wno-gnu-case-range -Wno-gnu-designator \
-                   -Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-attributes
+                   -Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-attributes \
+                   -Wno-embedded-directive
     ARCH_LDFLAGS := -F/System/Library/PrivateFrameworks -framework CoreSymbolication -framework IOKit \
                     -F$(SDK_V)/System/Library/Frameworks -F$(SDK_V)/System/Library/PrivateFrameworks \
                     -F$(SDK)/System/Library/Frameworks \
