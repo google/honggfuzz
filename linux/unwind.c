@@ -21,7 +21,7 @@
  *
  */
 
-#include "unwind.h"
+#include "netbsd/unwind.h"
 
 #include <endian.h>
 #include <libunwind-ptrace.h>
