@@ -92,7 +92,6 @@ typedef enum {
     _HF_DYNFILE_BTS_EDGE = 0x10,
     _HF_DYNFILE_IPT_BLOCK = 0x20,
     _HF_DYNFILE_SOFT = 0x40,
-    _HF_DYNFILE_SANCOV = 0x80,
 } dynFileMethod_t;
 
 typedef struct {
@@ -104,16 +103,6 @@ typedef struct {
     uint64_t softCntEdge;
     uint64_t softCntCmp;
 } hwcnt_t;
-
-/* Sanitizer coverage specific data structures */
-typedef struct {
-    uint64_t hitBBCnt;
-    uint64_t totalBBCnt;
-    uint64_t dsoCnt;
-    uint64_t iDsoCnt;
-    uint64_t newBBCnt;
-    uint64_t crashesCnt;
-} sancovcnt_t;
 
 typedef struct {
     uint32_t capacity;
@@ -247,8 +236,6 @@ typedef struct {
     } cfg;
     struct {
         bool enable;
-        sancovcnt_t sanCovCnts;
-        pthread_mutex_t sanCov_mutex;
         const char* extSanOpts;
         node_t* covMetadata;
     } sanitizer;
@@ -340,8 +327,6 @@ typedef struct {
 #if !defined(_HF_ARCH_DARWIN)
     timer_t timerId;
 #endif  // !defined(_HF_ARCH_DARWIN)
-
-    sancovcnt_t sanCovCnts;
 
     struct {
         /* For Linux code */

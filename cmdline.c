@@ -111,8 +111,6 @@ static void cmdlineHelp(const char* pname, struct custom_option* opts) {
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -x -s -- /usr/bin/djpeg");
     LOG_HELP(" Use compile-time instrumentation (-fsanitize-coverage=trace-pc-guard,...):");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
-    LOG_HELP(" Use SANCOV instrumentation: (-fsanitize-coverage=bb/edge/func)");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -C -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" Use persistent mode w/o instrumentation:");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -x -- /usr/bin/djpeg_persistent_mode");
     LOG_HELP(
@@ -222,15 +220,6 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
         LOG_I("Verifier enabled with mutationsPerRun == 0, activating the dry run mode");
     }
 
-    /*
-     * 'enableSanitizers' can be auto enabled when san_cov is used, although it's probably
-     * better to let user know about the features that each flag control.
-     */
-    if ((hfuzz->feedback.dynFileMethod & _HF_DYNFILE_SANCOV) && !hfuzz->sanitizer.enable) {
-        LOG_E("Sanitizer coverage cannot be used without enabling sanitizers '-S/--sanitizers'");
-        return false;
-    }
-
     if (hfuzz->mutate.maxFileSz > _HF_INPUT_MAX_SIZE) {
         LOG_E("Maximum file size '%zu' bigger than the maximum size '%zu'", hfuzz->mutate.maxFileSz,
             (size_t)_HF_INPUT_MAX_SIZE);
@@ -321,18 +310,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .sanitizer =
             {
                 .enable = false,
-                .sanCov_mutex = PTHREAD_MUTEX_INITIALIZER,
                 .extSanOpts = NULL,
                 .covMetadata = NULL,
-                .sanCovCnts =
-                    {
-                        .hitBBCnt = 0ULL,
-                        .totalBBCnt = 0ULL,
-                        .dsoCnt = 0ULL,
-                        .iDsoCnt = 0ULL,
-                        .newBBCnt = 0ULL,
-                        .crashesCnt = 0ULL,
-                    },
             },
         .feedback =
             {
@@ -419,7 +398,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "persistent", no_argument, NULL, 'P' }, "Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code). This will be auto-detected!!!" },
         { { "instrument", no_argument, NULL, 'z' }, "*DEFAULT-MODE-BY-DEFAULT* Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)" },
         { { "noinst", no_argument, NULL, 'x' }, "Static mode only, disable any instrumentation (hw/sw) feedback" },
-        { { "sancov", no_argument, NULL, 'C' }, "Enable sanitizer coverage feedback" },
         { { "keep_output", no_argument, NULL, 'Q' }, "Don't close children's stdin, stdout, stderr; can be noisy" },
         { { "timeout", required_argument, NULL, 't' }, "Timeout in seconds (default: 10)" },
         { { "threads", required_argument, NULL, 'n' }, "Number of concurrent fuzzing threads (default: number of CPUs / 2)" },
@@ -497,7 +475,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     int opt_index = 0;
     for (;;) {
         int c = getopt_long(
-            argc, argv, "-?hQvVsuPxf:dqe:W:r:c:F:t:R:n:N:l:p:g:E:w:B:CzTSo", opts, &opt_index);
+            argc, argv, "-?hQvVsuPxf:dqe:W:r:c:F:t:R:n:N:l:p:g:E:w:B:zTSo", opts, &opt_index);
         if (c < 0) break;
 
         switch (c) {
@@ -558,9 +536,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 'c':
                 hfuzz->exe.externalCommand = optarg;
-                break;
-            case 'C':
-                hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_SANCOV;
                 break;
             case 'S':
                 hfuzz->sanitizer.enable = true;

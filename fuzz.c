@@ -52,7 +52,6 @@
 #include "libhfcommon/util.h"
 #include "mangle.h"
 #include "report.h"
-#include "sancov.h"
 #include "sanitizers.h"
 #include "socketfuzzer.h"
 #include "subproc.h"
@@ -238,66 +237,6 @@ static void fuzz_perfFeedback(run_t* run) {
     }
 }
 
-static void fuzz_sanCovFeedback(run_t* run) {
-    if (run->global->feedback.skipFeedbackOnTimeout && run->tmOutSignaled) {
-        return;
-    }
-
-    LOG_D("File size (Best/New): %zu, SanCov feedback (bb,dso): Best: [%" PRIu64 ",%" PRIu64
-          "] / New: [%" PRIu64 ",%" PRIu64 "], newBBs:%" PRIu64,
-        run->dynamicFileSz, run->global->sanitizer.sanCovCnts.hitBBCnt,
-        run->global->sanitizer.sanCovCnts.iDsoCnt, run->sanCovCnts.hitBBCnt,
-        run->sanCovCnts.iDsoCnt, run->sanCovCnts.newBBCnt);
-
-    MX_SCOPED_LOCK(&run->global->feedback.feedback_mutex);
-
-    int64_t diff0 = run->global->linux.hwCnts.cpuInstrCnt - run->linux.hwCnts.cpuInstrCnt;
-    int64_t diff1 = run->global->linux.hwCnts.cpuBranchCnt - run->linux.hwCnts.cpuBranchCnt;
-
-    /*
-     * Keep mutated seed if:
-     *  a) Newly discovered (not met before) BBs
-     *  b) More instrumented DSOs loaded
-     *
-     * TODO: (a) method can significantly assist to further improvements in interesting areas
-     * discovery if combined with seeds pool/queue support. If a runtime queue is maintained
-     * more interesting seeds can be saved between runs instead of instantly discarded
-     * based on current absolute elitism (only one mutated seed is promoted).
-     */
-
-    bool newCov = (run->sanCovCnts.newBBCnt > 0 ||
-                   run->global->sanitizer.sanCovCnts.iDsoCnt < run->sanCovCnts.iDsoCnt);
-
-    if (newCov || (diff0 < 0 || diff1 < 0)) {
-        LOG_I("SanCov Update: fsize:%zu, newBBs:%" PRIu64 ", (Cur,New): %" PRIu64 "/%" PRIu64
-              ",%" PRIu64 "/%" PRIu64,
-            run->dynamicFileSz, run->sanCovCnts.newBBCnt,
-            run->global->sanitizer.sanCovCnts.hitBBCnt, run->global->sanitizer.sanCovCnts.iDsoCnt,
-            run->sanCovCnts.hitBBCnt, run->sanCovCnts.iDsoCnt);
-
-        run->global->sanitizer.sanCovCnts.hitBBCnt += run->sanCovCnts.newBBCnt;
-        run->global->sanitizer.sanCovCnts.dsoCnt = run->sanCovCnts.dsoCnt;
-        run->global->sanitizer.sanCovCnts.iDsoCnt = run->sanCovCnts.iDsoCnt;
-        run->global->sanitizer.sanCovCnts.crashesCnt += run->sanCovCnts.crashesCnt;
-        run->global->sanitizer.sanCovCnts.newBBCnt = run->sanCovCnts.newBBCnt;
-
-        if (run->global->sanitizer.sanCovCnts.totalBBCnt < run->sanCovCnts.totalBBCnt) {
-            /* Keep only the max value (for dlopen cases) to measure total target coverage */
-            run->global->sanitizer.sanCovCnts.totalBBCnt = run->sanCovCnts.totalBBCnt;
-        }
-
-        run->global->linux.hwCnts.cpuInstrCnt = run->linux.hwCnts.cpuInstrCnt;
-        run->global->linux.hwCnts.cpuBranchCnt = run->linux.hwCnts.cpuBranchCnt;
-
-        fuzz_addFileToFileQ(run->global, run->dynamicFile, run->dynamicFileSz);
-
-        if (run->global->socketFuzzer.enabled) {
-            LOG_D("SocketFuzzer: fuzz: new BB (cov)");
-            fuzz_notifySocketFuzzerNewCov(run->global);
-        }
-    }
-}
-
 /* Return value indicates whether report file should be updated with the current verified crash */
 static bool fuzz_runVerifier(run_t* run) {
     if (!run->crashFileName[0] || !run->backtrace) {
@@ -423,12 +362,6 @@ static void fuzz_fuzzLoop(run_t* run) {
     run->dynamicFileSz = 0;
     run->dynamicFileCopyFd = -1,
 
-    run->sanCovCnts.hitBBCnt = 0;
-    run->sanCovCnts.totalBBCnt = 0;
-    run->sanCovCnts.dsoCnt = 0;
-    run->sanCovCnts.newBBCnt = 0;
-    run->sanCovCnts.crashesCnt = 0;
-
     run->linux.hwCnts.cpuInstrCnt = 0;
     run->linux.hwCnts.cpuBranchCnt = 0;
     run->linux.hwCnts.bbCnt = 0;
@@ -443,9 +376,6 @@ static void fuzz_fuzzLoop(run_t* run) {
 
     if (run->global->feedback.dynFileMethod != _HF_DYNFILE_NONE) {
         fuzz_perfFeedback(run);
-    }
-    if (run->global->feedback.dynFileMethod & _HF_DYNFILE_SANCOV) {
-        fuzz_sanCovFeedback(run);
     }
     if (run->global->cfg.useVerifier && !fuzz_runVerifier(run)) {
         return;
@@ -466,12 +396,6 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
     run->mutationsPerRun = run->global->mutate.mutationsPerRun;
     run->dynamicFileSz = 0;
     run->dynamicFileCopyFd = -1,
-
-    run->sanCovCnts.hitBBCnt = 0;
-    run->sanCovCnts.totalBBCnt = 0;
-    run->sanCovCnts.dsoCnt = 0;
-    run->sanCovCnts.newBBCnt = 0;
-    run->sanCovCnts.crashesCnt = 0;
 
     run->linux.hwCnts.cpuInstrCnt = 0;
     run->linux.hwCnts.cpuBranchCnt = 0;
@@ -505,9 +429,6 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
     LOG_D("------[ 3: feedback");
     if (run->global->feedback.dynFileMethod != _HF_DYNFILE_NONE) {
         fuzz_perfFeedback(run);
-    }
-    if (run->global->feedback.dynFileMethod & _HF_DYNFILE_SANCOV) {
-        fuzz_sanCovFeedback(run);
     }
     if (run->global->cfg.useVerifier && !fuzz_runVerifier(run)) {
         return;
@@ -618,9 +539,6 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
     }
     if (!sanitizers_Init(hfuzz)) {
         LOG_F("Couldn't prepare sanitizer options");
-    }
-    if (!sancov_Init(hfuzz)) {
-        LOG_F("Couldn't prepare sancov options");
     }
 
     mangle_init(hfuzz->cfg.only_printable);

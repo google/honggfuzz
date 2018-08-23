@@ -62,8 +62,6 @@ Options:
 	*DEFAULT-MODE-BY-DEFAULT* Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)
  --noinst|-x 
 	Static mode (dry-mode), disable any instrumentation (hw/sw)
- --sancov|-C 
-	Enable sanitizer coverage feedback
  --keep_output|-Q 
 	Don't close children's stdin, stdout, stderr; can be noisy
  --timeout|-t VALUE
@@ -174,8 +172,6 @@ Examples:
   honggfuzz -f input_dir -x -s -- /usr/bin/djpeg
  Use compile-time instrumentation (libhfuzz/instrument.c):
   honggfuzz -f input_dir -- /usr/bin/djpeg ___FILE___
- Use SANCOV instrumentation:
-  honggfuzz -f input_dir -C -- /usr/bin/djpeg ___FILE___
  Use persistent mode (libhfuzz/persistent.c) w/o instrumentation:
   honggfuzz -f input_dir -P -x -- /usr/bin/djpeg_persistent_mode
  Use persistent mode (libhfuzz/persistent.c) and compile-time instrumentation:

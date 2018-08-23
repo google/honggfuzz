@@ -49,7 +49,6 @@
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
-#include "sancov.h"
 #include "subproc.h"
 
 #include <mach/i386/thread_status.h>
@@ -189,10 +188,6 @@ static bool arch_analyzeSignal(run_t* run, int status) {
      */
     if (WIFCONTINUED(status)) {
         return false;
-    }
-
-    if (WIFEXITED(status) || WIFSIGNALED(status)) {
-        sancov_Analyze(run);
     }
 
     /*

@@ -57,7 +57,6 @@
 #include "libhfcommon/ns.h"
 #include "libhfcommon/util.h"
 #include "netbsd/trace.h"
-#include "sancov.h"
 #include "sanitizers.h"
 #include "subproc.h"
 
@@ -296,8 +295,6 @@ void arch_reapChild(run_t* run) {
             }
         }
     }
-
-    sancov_Analyze(run);
 }
 
 bool arch_archInit(honggfuzz_t* hfuzz) {

@@ -54,7 +54,6 @@
 #include "libhfcommon/util.h"
 #include "linux/perf.h"
 #include "linux/trace.h"
-#include "sancov.h"
 #include "sanitizers.h"
 #include "subproc.h"
 
@@ -371,7 +370,6 @@ void arch_reapChild(run_t* run) {
     }
 
     arch_perfAnalyze(run);
-    sancov_Analyze(run);
 }
 
 bool arch_archInit(honggfuzz_t* hfuzz) {

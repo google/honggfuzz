@@ -48,9 +48,6 @@
 /* 'log_path' output directory for sanitizer reports */
 #define kSANLOGDIR "log_path="
 
-/* 'coverage_dir' output directory for coverage data files is set dynamically */
-#define kSANCOVDIR "coverage_dir="
-
 /* Raise SIGABRT on error or continue with exitcode logic */
 #define kABORT_ENABLED "abort_on_error=1"
 #define kABORT_DISABLED "abort_on_error=0"
@@ -111,10 +108,6 @@ static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, char* buf, s
 
     if (!hfuzz->sanitizer.enable) {
         snprintf(buf, buflen, "%s=%s", env, kSAN_REGULAR);
-    } else if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_SANCOV) {
-        snprintf(buf, buflen, "%s=%s:%s:%s:%s%s/%s:%s%s/%s", env, kASAN_OPTS, abortFlag,
-            kSAN_COV_OPTS, kSANCOVDIR, hfuzz->io.workDir, _HF_SANCOV_DIR, kSANLOGDIR,
-            hfuzz->io.workDir, kLOGPREFIX);
     } else {
         snprintf(buf, buflen, "%s=%s:%s:%s%s/%s", env, kASAN_OPTS, abortFlag, kSANLOGDIR,
             hfuzz->io.workDir, kLOGPREFIX);

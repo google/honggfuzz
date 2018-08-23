@@ -258,21 +258,6 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         display_put(" cmp: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET, softCntCmp);
     }
 
-    /* Sanitizer coverage specific counters */
-    if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_SANCOV) {
-        uint64_t hitBB = ATOMIC_GET(hfuzz->sanitizer.sanCovCnts.hitBBCnt);
-        uint64_t totalBB = ATOMIC_GET(hfuzz->sanitizer.sanCovCnts.totalBBCnt);
-        float covPer = totalBB ? (((float)hitBB * 100) / totalBB) : 0.0;
-        display_put(" #sancov_bb: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET " (cov: " ESC_BOLD
-                    "%.2f" ESC_RESET "%%)",
-            hitBB, covPer);
-        display_put(" #dso: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
-            ATOMIC_GET(hfuzz->sanitizer.sanCovCnts.iDsoCnt));
-        display_put(" #newbb: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
-            ATOMIC_GET(hfuzz->sanitizer.sanCovCnts.newBBCnt));
-        display_put(" #crashes: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
-            ATOMIC_GET(hfuzz->sanitizer.sanCovCnts.crashesCnt));
-    }
     display_put("\n---------------------------------- [ " ESC_BOLD "LOGS" ESC_RESET
                 " ] ------------------/ " ESC_BOLD "%s %s " ESC_RESET "/-",
         PROG_NAME, PROG_VERSION);

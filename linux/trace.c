@@ -54,7 +54,6 @@
 #include "libhfcommon/util.h"
 #include "linux/bfd.h"
 #include "linux/unwind.h"
-#include "sancov.h"
 #include "sanitizers.h"
 #include "socketfuzzer.h"
 #include "subproc.h"
@@ -717,14 +716,6 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     arch_hashCallstack(run, funcs, funcCnt, saveUnique);
 
     /*
-     * If fuzzing with sanitizer coverage feedback increase crashes counter used
-     * as metric for dynFile evolution
-     */
-    if (run->global->feedback.dynFileMethod & _HF_DYNFILE_SANCOV) {
-        run->sanCovCnts.crashesCnt++;
-    }
-
-    /*
      * If unique flag is set and single frame crash, disable uniqueness for this crash
      * to always save (timestamp will be added to the filename)
      */
@@ -996,14 +987,6 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     /* Increase global crashes counter */
     ATOMIC_POST_INC(run->global->cnts.crashesCnt);
     ATOMIC_POST_AND(run->global->cfg.dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
-
-    /*
-     * If fuzzing with sanitizer coverage feedback increase crashes counter used
-     * as metric for dynFile evolution
-     */
-    if (run->global->feedback.dynFileMethod & _HF_DYNFILE_SANCOV) {
-        run->sanCovCnts.crashesCnt++;
-    }
 
     /* If sanitizer produces reports with stack traces (e.g. ASan), they're parsed manually */
     int funcCnt = 0;

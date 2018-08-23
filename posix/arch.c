@@ -46,7 +46,6 @@
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
-#include "sancov.h"
 #include "subproc.h"
 
 struct {
@@ -87,10 +86,6 @@ static bool arch_analyzeSignal(run_t* run, int status) {
      */
     if (WIFCONTINUED(status)) {
         return false;
-    }
-
-    if (WIFEXITED(status) || WIFSIGNALED(status)) {
-        sancov_Analyze(run);
     }
 
     /*
