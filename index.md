@@ -7,10 +7,10 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
   * It's __multi-process__ and __multi-threaded__: no need to run multiple copies of your fuzzer, as honggfuzz can unlock potential of all your available CPU cores with a single supervising process. The file corpus is automatically shared and improved between the fuzzing threads and fuzzed processes.
   * It's blazingly fast when in the [persistent fuzzing mode](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)). A simple/empty _LLVMFuzzerTestOneInput_ function can be tested with __up to 1mo iterations per second__ on a relatively modern CPU (e.g. i7-6700K)
   * Has a [solid track record](#trophies) of uncovered security bugs: the __only__ (to the date) __vulnerability in OpenSSL with the [critical](https://www.openssl.org/news/secadv/20160926.txt) score mark__ was discovered by honggfuzz. See the [Trophies](#trophies) paragraph for the summary of findings to the date
-  * Uses low-level interfaces to monitor processes (e.g. _ptrace_ under Linux). As opposed to other fuzzers, it __will discover and report hijacked/ignored signals__ (intercepted and potentially hidden by signal handlers)
+  * Uses low-level interfaces to monitor processes (e.g. _ptrace_ under Linux and NetBSD). As opposed to other fuzzers, it __will discover and report hijacked/ignored signals from crashes__ (intercepted and potentially hidden by a fuzzed program)
   * Easy-to-use, feed it a simple corpus directory (can even be empty) and it will work its way up expanding it utilizing feedback-based coverage metrics
   * Supports several (more than any other coverage-based feedback-driven fuzzer) hardware-based (CPU: branch/instruction counting, __Intel BTS__, __Intel PT__) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) methods known from other fuzzers (libfuzzer, afl)
-  * Works (at least) under GNU/Linux, FreeBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md)
+  * Works (at least) under GNU/Linux, FreeBSD, NetBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md)
   * Supports the __persistent fuzzing mode__ (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that can be found [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)
   * [Can fuzz remote/standalone long-lasting processes](https://github.com/google/honggfuzz/blob/master/docs/AttachingToPid.md) (e.g. network servers like __Apache's httpd__ and __ISC's bind__), though the [persistent fuzzing mode](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md) is suggested instead: as it's faster and multiple instances of a service can be fuzzed with this
   * It comes with the __[examples](https://github.com/google/honggfuzz/tree/master/examples) directory__, consisting of real world fuzz setups for widely-used software (e.g. Apache and OpenSSL)
@@ -25,13 +25,14 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
 ## Code
 
-  * Latest stable version: [1.6](https://github.com/google/honggfuzz/releases)
+  * Latest stable version: [1.7](https://github.com/google/honggfuzz/releases)
   * [Changelog](https://github.com/google/honggfuzz/blob/master/CHANGELOG)
 
 ## Requirements
 
   * **Linux** - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev), clang-4.0 or higher for software-based coverage modes
   * **FreeBSD** - gmake, clang-3.6 or newer (clang-devel/4.0 suggested)
+  * **NetBSD** - gmake, clang, capstone, libBlocksRuntime
   * **Android** - Android SDK/NDK. Also see [this detailed doc](https://github.com/google/honggfuzz/blob/master/docs/Android.md) on how to build and run it
   * **Windows** - CygWin
   * **Darwin/OS X** - Xcode 10.8+
@@ -83,9 +84,13 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * [CVE-2010-2527](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2527)
   * [Infinite loop in __NGINX Unit__](https://github.com/nginx/unit/commit/477e8177b70acb694759e62d830b8a311a736324)
   * A couple of problems in the [__MATLAB MAT File I/O Library__](https://sourceforge.net/projects/matio): [#1](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [#2](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [#3](https://github.com/tbeu/matio/commit/a55b9c2c01582b712d5a643699a13b5c41687db1), [#4](https://github.com/tbeu/matio/commit/3e6283f37652e29e457ab9467f7738a562594b6b), [#5](https://github.com/tbeu/matio/commit/783ee496a6914df68e77e6019054ad91e8ed6420)
+  * [Samba's tdbdump + tdbtool](http://seclists.org/oss-sec/2018/q2/206)
+  * [Crash in __djvulibre__](https://github.com/barak/djvulibre/commit/89d71b01d606e57ecec2c2930c145bb20ba5bbe3)
   * __Rust__:
     * panic() in regex [#1](https://github.com/rust-lang/regex/issues/464), [#2](https://github.com/rust-lang/regex/issues/465), [#3](https://github.com/rust-lang/regex/issues/465#issuecomment-381412816)
     * panic() in h2 [#1](https://github.com/carllerche/h2/pull/260), [#2](https://github.com/carllerche/h2/pull/261), [#3](https://github.com/carllerche/h2/pull/262)
+    * panic() in sleep-parser [#1](https://github.com/datrs/sleep-parser/issues/3)
+    * panic() in lewton [#1](https://github.com/RustAudio/lewton/issues/27)
   * ... and more
 
 ## Projects utilizing Honggfuzz
