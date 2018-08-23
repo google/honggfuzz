@@ -1,4 +1,13 @@
-2017-04-19 - Version 1.6
+2017-08-23 - Version 1.7
+        - Native support for NetBSD
+        - ASCII only fuzzing
+        - Updated corpora for ISC Bind
+        - Printing final stats upon exit
+        - Refreshed support for Intel PT
+        - Support for __sanitizer_cov_trace_div
+        - Updated fuzzing examples for OpenSSL
+
+2017-04-19 - Version 1.6 (rev aeaad48)
         - Fixed Dockerfile
         - Fixed a few format problems with file reporting
         - Updated display formatting
