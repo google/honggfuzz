@@ -179,16 +179,16 @@ endif
 SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
 OBJS := $(SRCS:.c=.o)
 
-LHFUZZ_SRCS := $(wildcard libhfuzz/*.c)
+LHFUZZ_SRCS := $(sort $(wildcard libhfuzz/*.c))
 LHFUZZ_OBJS := $(LHFUZZ_SRCS:.c=.o)
 LHFUZZ_ARCH := libhfuzz/libhfuzz.a
 HFUZZ_INC ?= $(shell pwd)
 
-LCOMMON_SRCS := $(wildcard libhfcommon/*.c)
+LCOMMON_SRCS := $(sort $(wildcard libhfcommon/*.c))
 LCOMMON_OBJS := $(LCOMMON_SRCS:.c=.o)
 LCOMMON_ARCH := libhfcommon/libhfcommon.a
 
-LNETDRIVER_SRCS := $(wildcard libhfnetdriver/*.c)
+LNETDRIVER_SRCS := $(sort $(wildcard libhfnetdriver/*.c))
 LNETDRIVER_OBJS := $(LNETDRIVER_SRCS:.c=.o)
 LNETDRIVER_ARCH := libhfnetdriver/libhfnetdriver.a
 
