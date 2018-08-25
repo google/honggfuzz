@@ -142,11 +142,12 @@ else ifeq ($(OS),NetBSD)
     ARCH := NETBSD
 
     ARCH_SRCS := $(sort $(wildcard netbsd/*.c))
-    ARCH_CFLAGS := -std=c11 -I/usr/local/include \
+    ARCH_CFLAGS := -std=c11 -I/usr/local/include -I/usr/pkg/include \
                    -Wextra -Wno-override-init \
                    -funroll-loops -D_KERNTYPES
-    ARCH_LDFLAGS := -L/usr/local/include \
-                    -pthread -lcapstone -lrt
+    ARCH_LDFLAGS := -L/usr/local/include -L/usr/pkg/lib \
+                    -pthread -lcapstone -lrt \
+                    -Wl,--rpath=/usr/pkg/lib
 
     # OS NetBSD
 else
