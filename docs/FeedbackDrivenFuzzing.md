@@ -44,30 +44,6 @@ There are 2 phases of feedback-driven the fuzzing:
   * Honggfuzz goes through each file in the initial corpus directory (-f). It adds files which hit new code coverage to the dynamic input corpus (as well as saving them on the disk, using *COVERAGE_DATA.PID.pid.RND.time.rnd* pattern
   * Honggfuzz choses randomly files from the dynamic input corpus (in-memory), mutates them, and runs a new fuzzing round (round in persistent mode, exec in non-persistent mode). If the newly created file induces new code path (extends code coverage), it gets added to the dynamic input corpus
 
-# ASAN Code coverage (-C) #
-In order to make this mode work, one needs to compile the fuzzed tool (_xmllint_ here) with _-fsanitize=address -fsanitize-coverage=bb_
-
-```
-$ [honggfuzz_dir]/honggfuzz -C -f IN.corpus/ -- ./xmllint --format --nonet ___FILE___
-============================== STAT ==============================
-Iterations: 1419
-Start time: 2016-03-15 16:43:57 (16 seconds elapsed)
-Input file/dir: 'IN/'
-Fuzzed cmd: './xmllint --format --nonet ___FILE___'
-Fuzzing threads: 3
-Execs per second: 41 (avg: 88)
-Crashes: 0 (unique: 0, blacklist: 0, verified: 0)
-Timeouts: 0
-Number of dynamic files: 251
-Coverage (max):
-  - total hit #bb:  8634 (coverage 11%)
-  - total #dso:     1 (instrumented only)
-  - discovered #bb: 1 (new from input seed)
-  - crashes:        0
-============================== LOGS ==============================
-[2016-03-15T16:49:00+0100][I][2094] fuzz_sanCovFeedback():463 SanCov Update: file size (Cur): 2141, newBBs:9, counters (Cur,New): 8569/1,1666/1
-```
-
 # Compile-time instrumentation with clang/gcc (default mode) #
 
 Here you can use the following:
