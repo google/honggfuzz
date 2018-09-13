@@ -452,7 +452,7 @@ diff -Nur ORIG.bind-9.13.2/lib/isc/random.c bind-9.13.2/lib/isc/random.c
  	RUNTIME_CHECK(isc_once_do(&isc_random_once,
  				  isc_random_initialize) == ISC_R_SUCCESS);
  
-+	for (size_t z = 0; z < buflen; z++) {
++	for (size_t z = 1; z < buflen; z++) {
 +			char * b = (char*)buf;
 +			b[z] = z;
 +	}
