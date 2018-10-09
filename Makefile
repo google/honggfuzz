@@ -145,7 +145,7 @@ else ifeq ($(OS),NetBSD)
     ARCH_CFLAGS := -std=c11 -I/usr/local/include -I/usr/pkg/include \
                    -Wextra -Wno-override-init \
                    -funroll-loops -D_KERNTYPES
-    ARCH_LDFLAGS := -L/usr/local/include -L/usr/pkg/lib \
+    ARCH_LDFLAGS := -L/usr/local/lib -L/usr/pkg/lib \
                     -pthread -lcapstone -lrt \
                     -Wl,--rpath=/usr/pkg/lib
 
