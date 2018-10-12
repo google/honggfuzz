@@ -54,8 +54,10 @@ honggfuzz_t hfuzz;
 
 static void exitWithMsg(const char* msg, int exit_code) {
     HF_ATTR_UNUSED ssize_t sz = write(STDERR_FILENO, msg, strlen(msg));
-    exit(exit_code);
-    abort();
+    for (;;) {
+        exit(exit_code);
+        abort();
+    }
 }
 
 static bool showDisplay = true;
