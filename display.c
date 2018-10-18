@@ -72,7 +72,10 @@ static void display_printKMG(uint64_t val) {
     }
 }
 
-static unsigned getCpuUse(long num_cpu, int64_t elapsed_millis) {
+static unsigned getCpuUse(int numCpus) {
+    static uint64_t prevUserT = 0UL;
+    static uint64_t prevNiceT = 0UL;
+    static uint64_t prevSystemT = 0UL;
     static uint64_t prevIdleT = 0UL;
 
     FILE* f = fopen("/proc/stat", "re");
@@ -89,20 +92,18 @@ static unsigned getCpuUse(long num_cpu, int64_t elapsed_millis) {
         return 0;
     }
 
-    if (prevIdleT == 0UL) {
-        prevIdleT = idleT;
-        return 0;
-    }
-
+    uint64_t userCycles = (userT - prevUserT);
+    uint64_t niceCycles = (niceT - prevNiceT);
+    uint64_t systemCycles = (systemT - prevSystemT);
     uint64_t idleCycles = (idleT - prevIdleT);
-    uint64_t allCycles = num_cpu * sysconf(_SC_CLK_TCK) * elapsed_millis / 1000;
+
+    prevUserT = userT;
+    prevNiceT = niceT;
+    prevSystemT = systemT;
     prevIdleT = idleT;
 
-    if (allCycles == 0) {
-        return 0;
-    }
-
-    return (allCycles - idleCycles) * num_cpu * 100 / allCycles;
+    return ((userCycles + niceCycles + systemCycles) * numCpus * 100) /
+           (userCycles + niceCycles + systemCycles + idleCycles);
 }
 
 static void getDuration(time_t elapsed_second, char* buf, size_t bufSz) {
@@ -200,7 +201,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     if (num_cpu == 0) {
         num_cpu = sysconf(_SC_NPROCESSORS_ONLN);
     }
-    unsigned cpuUse = getCpuUse(num_cpu, elapsed_millis);
+    unsigned cpuUse = getCpuUse(num_cpu);
     display_put("     Threads : " ESC_BOLD "%zu" ESC_RESET ", CPUs: " ESC_BOLD "%ld" ESC_RESET
                 ", CPU%%: " ESC_BOLD "%u" ESC_RESET "%% [" ESC_BOLD "%lu" ESC_RESET "%%/CPU]\n",
         hfuzz->threads.threadsMax, num_cpu, cpuUse, cpuUse / num_cpu);
