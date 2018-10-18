@@ -223,8 +223,8 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     display_put("    Timeouts : " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET " [%lu sec]\n",
         ATOMIC_GET(hfuzz->cnts.timeoutedCnt), (unsigned long)hfuzz->timing.tmOut);
     /* Feedback data sources. Common headers. */
-    display_put(" Corpus Size : " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET ", max size: " ESC_BOLD
-                "%" _HF_NONMON_SEP "zu" ESC_RESET " bytes, init dir: " ESC_BOLD "%" _HF_NONMON_SEP
+    display_put(" Corpus Size : " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET ", max: " ESC_BOLD
+                "%" _HF_NONMON_SEP "zu" ESC_RESET " bytes, init: " ESC_BOLD "%" _HF_NONMON_SEP
                 "zu" ESC_RESET " files\n",
         hfuzz->io.dynfileqCnt, hfuzz->mutate.maxFileSz, ATOMIC_GET(hfuzz->io.fileCnt));
     display_put("  Cov Update : " ESC_BOLD "%s" ESC_RESET " ago\n" ESC_RESET, lastCovStr);
