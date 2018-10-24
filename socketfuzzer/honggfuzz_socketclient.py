@@ -268,7 +268,7 @@ def interactive(pid):
     hfSocket = HonggfuzzSocket(pid)
     targetSocket = TargetSocket()
 
-    hfSocket.connect("/tmp/honggfuzz_socket")
+    hfSocket.connect()
 
     while(True):
         try:
