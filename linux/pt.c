@@ -50,7 +50,7 @@ void perf_ptInit(void) {
     }
     for (;;) {
         char k[1024], t[1024], v[1024];
-        int ret = fscanf(f, "%1024[^\t]%1024[\t]: %1024[^\n]\n", k, t, v);
+        int ret = fscanf(f, "%1023[^\t]%1023[\t]: %1023[^\n]\n", k, t, v);
         if (ret == EOF) {
             break;
         }
