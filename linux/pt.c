@@ -46,7 +46,7 @@ void perf_ptInit(void) {
     FILE* f = fopen("/proc/cpuinfo", "rb");
     if (!f) {
         PLOG_E("Couldn't open '/proc/cpuinfo'");
-		return;
+        return;
     }
     for (;;) {
         char k[1024], t[1024], v[1024];
