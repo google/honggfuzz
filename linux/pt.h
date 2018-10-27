@@ -27,6 +27,7 @@
 #include "honggfuzz.h"
 
 extern void arch_ptAnalyze(run_t* run);
+extern void perf_ptInit(void);
 
 #ifndef BIT
 #define BIT(nr) (1UL << (nr))

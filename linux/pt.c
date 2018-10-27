@@ -25,6 +25,7 @@
 
 #include <inttypes.h>
 #include <linux/perf_event.h>
+#include <stdio.h>
 
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
@@ -33,6 +34,53 @@
 #ifdef _HF_LINUX_INTEL_PT_LIB
 
 #include <intel-pt.h>
+
+struct pt_cpu ptCpu = {
+    .vendor = pcv_unknown,
+    .family = 0,
+    .model = 0,
+    .stepping = 0,
+};
+
+void perf_ptInit(void) {
+    FILE* f = fopen("/proc/cpuinfo", "rb");
+    if (!f) {
+        PLOG_E("Couldn't open '/proc/cpuinfo'");
+    }
+    for (;;) {
+        char k[1024], t[1024], v[1024];
+        int ret = fscanf(f, "%1024[^\t]%1024[\t]: %1024[^\n]\n", k, t, v);
+        if (ret == EOF) {
+            break;
+        }
+        if (ret != 3) {
+            break;
+        }
+        LOG_E("'%s' '%s'", k, v);
+        if (strcmp(k, "vendor_id") == 0) {
+            if (strcmp(v, "GenuineIntel") == 0) {
+                ptCpu.vendor = pcv_intel;
+                LOG_D("IntelPT vendor: Intel");
+            } else {
+                ptCpu.vendor = pcv_unknown;
+                LOG_D("Current processor is not Intel, IntelPT will not work");
+            }
+        }
+        if (strcmp(k, "cpu family") == 0) {
+            ptCpu.family = atoi(v);
+            LOG_D("IntelPT family: %" PRIu16, ptCpu.family);
+        }
+        if (strcmp(k, "model") == 0) {
+            ptCpu.model = atoi(v);
+            LOG_D("IntelPT model: %" PRIu8, ptCpu.model);
+        }
+        if (strcmp(k, "stepping") == 0) {
+            ptCpu.stepping = atoi(v);
+            LOG_D("IntelPT stepping: %" PRIu8, ptCpu.stepping);
+        }
+    }
+    fclose(f);
+}
 
 /* Sign-extend a uint64_t value. */
 inline static uint64_t sext(uint64_t val, uint8_t sign) {
@@ -91,6 +139,7 @@ void arch_ptAnalyze(run_t* run) {
     pt_config_init(&ptc);
     ptc.begin = &run->linux.perfMmapAux[aux_tail];
     ptc.end = &run->linux.perfMmapAux[aux_head - 1];
+    ptc.cpu = ptCpu;
 
     int errcode = pt_cpu_errata(&ptc.errata, &ptc.cpu);
     if (errcode < 0) {

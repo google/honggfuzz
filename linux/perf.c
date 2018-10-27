@@ -392,5 +392,8 @@ bool arch_perfInit(honggfuzz_t* hfuzz HF_ATTR_UNUSED) {
             LOG_D("perfIntelBtsPerfType = %" PRIu32, perfIntelBtsPerfType);
         }
     }
+
+    perf_ptInit();
+
     return true;
 }
