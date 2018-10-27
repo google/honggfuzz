@@ -56,7 +56,6 @@ void perf_ptInit(void) {
         if (ret != 3) {
             break;
         }
-        LOG_E("'%s' '%s'", k, v);
         if (strcmp(k, "vendor_id") == 0) {
             if (strcmp(v, "GenuineIntel") == 0) {
                 ptCpu.vendor = pcv_intel;
