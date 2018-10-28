@@ -177,7 +177,7 @@ void arch_ptAnalyze(run_t* run) {
 #else /* _HF_LINUX_INTEL_PT_LIB */
 
 void perf_ptInit(void) {
-	return;
+    return;
 }
 
 void arch_ptAnalyze(run_t* fuzzer HF_ATTR_UNUSED) {
