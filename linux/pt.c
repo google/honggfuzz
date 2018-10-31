@@ -142,7 +142,7 @@ void arch_ptAnalyze(run_t* run) {
     struct pt_config ptc;
     pt_config_init(&ptc);
     ptc.begin = &run->linux.perfMmapAux[aux_tail];
-    ptc.end = &run->linux.perfMmapAux[aux_head - 1];
+    ptc.end = &run->linux.perfMmapAux[aux_head];
     ptc.cpu = ptCpu;
 
     int errcode = pt_cpu_errata(&ptc.errata, &ptc.cpu);
