@@ -115,7 +115,7 @@ void arch_initSigs(void)
     for (int x = 0; x < NSIG; x++)
         arch_sigs[x].important = false;
 
-    arch_sigs[SIGILL].important = true;
+    arch_sigs[SIGILL].important = false;
     arch_sigs[SIGILL].descr = "SIGILL";
     arch_sigs[SIGFPE].important = true;
     arch_sigs[SIGFPE].descr = "SIGFPE";
