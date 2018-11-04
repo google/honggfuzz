@@ -191,6 +191,11 @@ bool cmdlineParse(int argc, char *argv[], honggfuzz_t * hfuzz)
         .blCrashesCnt = 0,
         .timeoutedCnt = 0,
 
+        .pc_list = {0},
+        .stack_list = {0},
+        .pc_index = 0,
+        .stack_index = 0,
+
         .dynFileMethod = _HF_DYNFILE_NONE,
         .sanCovCnts = {
             .hitBBCnt = 0ULL,

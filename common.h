@@ -266,6 +266,11 @@ typedef struct {
     size_t blCrashesCnt;
     size_t timeoutedCnt;
 
+    uint64_t pc_list[1024];    // 记录崩溃过的所有PC地址，最多记录1024
+    uint64_t stack_list[1024]; // 记录崩溃过的所有Stack回溯地址，最多记录1024
+    size_t pc_index;        // pc_list数据索引值
+    size_t stack_index;     // stack_list数据索引值
+
     dynFileMethod_t dynFileMethod;
     sancovcnt_t sanCovCnts;
     pthread_mutex_t sanCov_mutex;
