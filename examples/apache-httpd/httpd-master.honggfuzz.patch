@@ -13,7 +13,7 @@ index b20aad0..eec5ba2 100644
  else
 diff --git a/hfuzz.compile_and_install.asan.sh b/hfuzz.compile_and_install.asan.sh
 new file mode 100755
-index 0000000..e1f86ce
+index 0000000..f8a9a41
 --- /dev/null
 +++ b/hfuzz.compile_and_install.asan.sh
 @@ -0,0 +1,63 @@
@@ -26,7 +26,7 @@ index 0000000..e1f86ce
 +# Change this to a directory where apache should be installed into
 +INSTALL_PREFIX="$(realpath "$PWD/../dist")"
 +NGHTTP2_VER=1.33.0
-+APR_VER=1.6.3
++APR_VER=1.6.5
 +APR_UTIL_VER=1.6.1
 +CFLAGS_SAN="-fsanitize=address -O3 -ggdb"
 +# Another viable option: few
