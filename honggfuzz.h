@@ -202,6 +202,7 @@ typedef struct {
         uint64_t asLimit;
         uint64_t rssLimit;
         uint64_t dataLimit;
+        uint64_t coreLimit;
         bool clearEnv;
         char* envs[128];
     } exe;
