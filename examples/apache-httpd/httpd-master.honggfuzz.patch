@@ -1,5 +1,5 @@
 diff --git a/configure.in b/configure.in
-index 4315aa1..ea61fe1 100644
+index b20aad0..eec5ba2 100644
 --- a/configure.in
 +++ b/configure.in
 @@ -725,7 +725,7 @@ AC_MSG_CHECKING([for Check to enable unit tests])
@@ -13,7 +13,7 @@ index 4315aa1..ea61fe1 100644
  else
 diff --git a/hfuzz.compile_and_install.asan.sh b/hfuzz.compile_and_install.asan.sh
 new file mode 100755
-index 0000000..6554d24
+index 0000000..f8a9a41
 --- /dev/null
 +++ b/hfuzz.compile_and_install.asan.sh
 @@ -0,0 +1,63 @@
@@ -25,8 +25,8 @@ index 0000000..6554d24
 +HFUZZ_DIR="/home/jagger/src/honggfuzz"
 +# Change this to a directory where apache should be installed into
 +INSTALL_PREFIX="$(realpath "$PWD/../dist")"
-+NGHTTP2_VER=1.29.0
-+APR_VER=1.6.3
++NGHTTP2_VER=1.33.0
++APR_VER=1.6.5
 +APR_UTIL_VER=1.6.1
 +CFLAGS_SAN="-fsanitize=address -O3 -ggdb"
 +# Another viable option: few
@@ -93,26 +93,8 @@ index c887056..1be2d16 100644
      struct ent *c1;
      struct ent *c2;
      int result = 0;
-diff --git a/server/main.c b/server/main.c
-index d0f6b3f..2f9f2b0 100644
---- a/server/main.c
-+++ b/server/main.c
-@@ -484,8 +484,11 @@ static void usage(process_rec *process)
-     destroy_and_exit_process(process, 1);
- }
- 
--int main(int argc, const char * const argv[])
--{
-+#ifdef HFND_FUZZING_ENTRY_FUNCTION
-+ HFND_FUZZING_ENTRY_FUNCTION(int argc, const char *const *argv) {
-+#else
-+ int main(int argc, const char *const *argv) {
-+#endif
-     char c;
-     int showcompile = 0, showdirectives = 0;
-     const char *confname = SERVER_CONFIG_FILE;
 diff --git a/server/request.c b/server/request.c
-index 55c32b2..ea3d771 100644
+index 70812fe..b62272e 100644
 --- a/server/request.c
 +++ b/server/request.c
 @@ -1393,7 +1393,7 @@ AP_DECLARE(int) ap_directory_walk(request_rec *r)
@@ -125,10 +107,10 @@ index 55c32b2..ea3d771 100644
  {
      ap_conf_vector_t *now_merged = NULL;
 diff --git a/server/util_pcre.c b/server/util_pcre.c
-index 73e7fc6..f0d62c4 100644
+index 8254cc4..ef70c43 100644
 --- a/server/util_pcre.c
 +++ b/server/util_pcre.c
-@@ -344,6 +344,7 @@ AP_DECLARE(int) ap_regexec_len(const ap_regex_t *preg, const char *buff,
+@@ -388,6 +388,7 @@ AP_DECLARE(int) ap_regexec_len(const ap_regex_t *preg, const char *buff,
      }
  }
  

@@ -148,26 +148,38 @@ static int execCC(int argc, char** argv) {
             hf_execvp("clang++", argv);
             hf_execvp("clang++-devel", argv);
             hf_execvp("clang++-10.0", argv);
+            hf_execvp("clang++-10", argv);
             hf_execvp("clang++-9.0", argv);
+            hf_execvp("clang++-9", argv);
             hf_execvp("clang++-8.0", argv);
+            hf_execvp("clang++-8", argv);
             hf_execvp("clang++-7.0", argv);
             hf_execvp("clang++-7", argv);
             hf_execvp("clang++-6.0", argv);
+            hf_execvp("clang++-6", argv);
             hf_execvp("clang++-5.0", argv);
+            hf_execvp("clang++-5", argv);
             hf_execvp("clang++-4.0", argv);
+            hf_execvp("clang++-4", argv);
             hf_execvp("clang", argv);
         } else {
             /* Try the default one, then newest ones (hopefully) first */
             hf_execvp("clang", argv);
             hf_execvp("clang-devel", argv);
             hf_execvp("clang-10.0", argv);
+            hf_execvp("clang-10", argv);
             hf_execvp("clang-9.0", argv);
+            hf_execvp("clang-9", argv);
             hf_execvp("clang-8.0", argv);
+            hf_execvp("clang-8", argv);
             hf_execvp("clang-7.0", argv);
             hf_execvp("clang-7", argv);
             hf_execvp("clang-6.0", argv);
+            hf_execvp("clang-6", argv);
             hf_execvp("clang-5.0", argv);
+            hf_execvp("clang-5", argv);
             hf_execvp("clang-4.0", argv);
+            hf_execvp("clang-4", argv);
         }
     }
 
