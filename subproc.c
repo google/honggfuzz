@@ -187,14 +187,12 @@ static bool subproc_PrepareExecv(run_t* run) {
     }
 #endif /* ifdef RLIMIT_DATA */
 #ifdef RLIMIT_CORE
-    if (run->global->exe.dataLimit) {
-        const struct rlimit rl = {
-            .rlim_cur = run->global->exe.coreLimit * 1024ULL * 1024ULL,
-            .rlim_max = run->global->exe.coreLimit * 1024ULL * 1024ULL,
-        };
-        if (setrlimit(RLIMIT_CORE, &rl) == -1) {
-            PLOG_W("Couldn't enforce the RLIMIT_CORE resource limit, ignoring");
-        }
+    const struct rlimit rl = {
+        .rlim_cur = run->global->exe.coreLimit * 1024ULL * 1024ULL,
+        .rlim_max = run->global->exe.coreLimit * 1024ULL * 1024ULL,
+    };
+    if (setrlimit(RLIMIT_CORE, &rl) == -1) {
+        PLOG_W("Couldn't enforce the RLIMIT_CORE resource limit, ignoring");
     }
 #endif /* ifdef RLIMIT_CORE */
 
