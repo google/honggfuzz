@@ -370,7 +370,7 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s.%s", arch_sigs[termsig].descr, fuzzer->origFileName);
     } else {
         snprintf(fuzzer->crashFileName, sizeof(fuzzer->crashFileName), "%s/%s.TIME.%s.orig.%s.%s",
-                 hfuzz->workDir, arch_sigs[termsig].descr, localtmstr, files_get_filename_in_path(fuzzer->fileName),
+                 hfuzz->workDir, arch_sigs[termsig].descr, localtmstr, fuzzer->origFileName,
                  hfuzz->keepext?fuzzer->ext:hfuzz->fileExtn);
     }
 
@@ -380,40 +380,11 @@ static bool arch_analyzeSignal(honggfuzz_t * hfuzz, int status, fuzzer_t * fuzze
     ATOMIC_POST_INC(hfuzz->crashesCnt);
     ATOMIC_POST_INC(hfuzz->uniqueCrashesCnt);
 
-    bool is_uniq = true;
     if (files_exists(fuzzer->crashFileName)) {
         LOG_I("It seems that '%s' already exists, skipping", fuzzer->crashFileName);
         // Clear filename so that verifier can understand we hit a duplicate
         memset(fuzzer->crashFileName, 0, sizeof(fuzzer->crashFileName));
         return true;
-    } else {
-        // 仅依赖文件名去重仍会造成很多重复崩溃，因此改为满足PC或Stack地址相同即为撞洞
-        for (int i=0; i<hfuzz->pc_index; i++) {
-            if (hfuzz->pc_list[i] == fuzzer->pc) {  // 重复
-                is_uniq = false;
-                break;
-            }
-        }
-        if(is_uniq){
-            hfuzz->pc_list[hfuzz->pc_index] = fuzzer->pc;
-            hfuzz->pc_index += 1;
-        }
-
-        for (int j=0; j<hfuzz->stack_index; j++) {
-            if (hfuzz->stack_list[j] == fuzzer->backtrace) {  // 重复
-                is_uniq = false;
-                break;
-            }
-        }
-
-        if (!is_uniq) {
-            LOG_I("It seems that '%s' already exists, skipping", fuzzer->crashFileName);
-            memset(fuzzer->crashFileName, 0, sizeof(fuzzer->crashFileName));
-            return true;
-        } else {
-            hfuzz->stack_list[hfuzz->stack_index] = fuzzer->backtrace;
-            hfuzz->stack_index += 1;
-        }
     }
 
     LOG_I("Crash! Saving the '%s' as '%s'", fuzzer->fileName, fuzzer->crashFileName);
