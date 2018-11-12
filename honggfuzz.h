@@ -52,6 +52,9 @@
 /* Name of envvar which indicates sequential number of fuzzer */
 #define _HF_THREAD_NO_ENV "HFUZZ_THREAD_NO"
 
+/* Name of envvar which indicates that the netDriver should be used */
+#define _HF_THREAD_NETDRIVER_ENV "HFUZZ_USE_NETDRIVER"
+
 /* Number of crash verifier iterations before tag crash as stable */
 #define _HF_VERIFIER_ITER 5
 

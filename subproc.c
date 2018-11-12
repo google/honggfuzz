@@ -205,6 +205,9 @@ static bool subproc_PrepareExecv(run_t* run) {
     char fuzzNo[128];
     snprintf(fuzzNo, sizeof(fuzzNo), "%" PRId32, run->fuzzNo);
     setenv(_HF_THREAD_NO_ENV, fuzzNo, 1);
+    if (run->global->exe.netDriver) {
+        setenv(_HF_THREAD_NETDRIVER_ENV, "1", 1);
+    }
 
     setsid();
 
