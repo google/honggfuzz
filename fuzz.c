@@ -510,7 +510,8 @@ static void* fuzz_threadNew(void* arg) {
         }
     }
 
-    LOG_I("Terminating thread no. #%" PRId32, fuzzNo);
+    LOG_I("Terminating thread no. #%" PRId32 ", left: %zu", fuzzNo,
+        hfuzz->threads.threadsMax - run.global->threads.threadsFinished);
     ATOMIC_POST_INC(run.global->threads.threadsFinished);
     pthread_kill(run.global->threads.mainThread, SIGALRM);
     return NULL;
