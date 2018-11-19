@@ -198,8 +198,8 @@ typedef struct {
         const char* const* cmdline;
         bool nullifyStdio;
         bool fuzzStdin;
-        char* externalCommand;
-        char* postExternalCommand;
+        const char* externalCommand;
+        const char* postExternalCommand;
         bool netDriver;
         bool persistent;
         uint64_t asLimit;
@@ -232,7 +232,7 @@ typedef struct {
     struct {
         bool useVerifier;
         bool exitUponCrash;
-        char* reportFile;
+        const char* reportFile;
         pthread_mutex_t report_mutex;
         bool monitorSIGABRT;
         size_t dynFileIterExpire;
