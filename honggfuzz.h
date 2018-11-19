@@ -240,8 +240,6 @@ typedef struct {
     } cfg;
     struct {
         bool enable;
-        const char* extSanOpts;
-        node_t* covMetadata;
     } sanitizer;
     struct {
         fuzzState_t state;

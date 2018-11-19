@@ -310,8 +310,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .sanitizer =
             {
                 .enable = false,
-                .extSanOpts = NULL,
-                .covMetadata = NULL,
             },
         .feedback =
             {
@@ -433,7 +431,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "monitor_sigabrt", required_argument, NULL, 0x105 }, "Monitor SIGABRT (default: false for Android, true for other platforms)" },
         { { "no_fb_timeout", required_argument, NULL, 0x106 }, "Skip feedback if the process has timeouted (default: false)" },
         { { "exit_upon_crash", no_argument, NULL, 0x107 }, "Exit upon seeing the first crash (default: false)" },
-        { { "san_opts", required_argument, NULL, 0x10A }, "Options appended to the regular *SAN_OPTIONS (default: empty)" },
         { { "socket_fuzzer", no_argument, NULL, 0x10B }, "Instrument external fuzzer via socket" },
         { { "netdriver", no_argument, NULL, 0x10C }, "Use netdriver (libhfnetdriver/). In most cases it will be autodetected through a binary signature" },
         { { "only_printable", no_argument, NULL, 'o' }, "Only generate printable inputs" },
@@ -541,9 +538,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 'S':
                 hfuzz->sanitizer.enable = true;
-                break;
-            case 0x10A:
-                hfuzz->sanitizer.extSanOpts = optarg;
                 break;
             case 0x10B:
                 hfuzz->socketFuzzer.enabled = true;

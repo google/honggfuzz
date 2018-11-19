@@ -137,9 +137,6 @@ static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, char* buf, s
     if (!hfuzz->exe.netDriver && hfuzz->exe.rssLimit) {
         util_ssnprintf(buf, buflen, ":soft_rss_limit_mb=%" PRId64, hfuzz->exe.rssLimit);
     }
-    if (hfuzz->sanitizer.extSanOpts) {
-        util_ssnprintf(buf, buflen, ":%s", hfuzz->sanitizer.extSanOpts);
-    }
 
     for (size_t i = 0; i < ARRAYSIZE(hfuzz->exe.envs); i++) {
         if (hfuzz->exe.envs[i] == NULL) {
