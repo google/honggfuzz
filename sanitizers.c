@@ -91,7 +91,8 @@
 #define kSAN_REGULAR                                                 \
     "abort_on_error=1:handle_segv=0:handle_sigbus=0:handle_abort=0:" \
     "handle_sigill=0:handle_sigfpe=0:allocator_may_return_null=1:"   \
-    "symbolize=1:detect_leaks=0:disable_coredump=0"
+    "symbolize=1:detect_leaks=0:disable_coredump=0:"                 \
+    "detect_odr_violation=0"
 
 /*
  * If the program ends with a signal that ASan does not handle (or can not
