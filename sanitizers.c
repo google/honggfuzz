@@ -106,6 +106,22 @@
 
 static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, char* buf, size_t buflen) {
     const char* abortFlag = hfuzz->cfg.monitorSIGABRT ? kABORT_ENABLED : kABORT_DISABLED;
+    if (getenv(env)) {
+        LOG_W("The '%s' envar is already set. Not overriding it!", env);
+        return;
+    }
+    for (size_t i = 0; i < ARRAYSIZE(hfuzz->exe.envs); i++) {
+        if (hfuzz->exe.envs[i] == NULL) {
+            break;
+        }
+        char san_tmp[32];
+        snprintf(san_tmp, sizeof(san_tmp), "%s=", env);
+        size_t l = strlen(san_tmp);
+        if (strncmp(hfuzz->exe.envs[i], san_tmp, l) == 0) {
+            LOG_D("The '%s' envar is set by user. Not overriding it!", env);
+            return;
+        }
+    }
 
     if (!hfuzz->sanitizer.enable) {
         snprintf(buf, buflen, "%s=%s", env, kSAN_REGULAR);
