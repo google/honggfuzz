@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "cmdline.h"
 #include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
@@ -110,18 +111,6 @@ static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, char* buf, s
         LOG_W("The '%s' envar is already set. Not overriding it!", env);
         return;
     }
-    for (size_t i = 0; i < ARRAYSIZE(hfuzz->exe.envs); i++) {
-        if (hfuzz->exe.envs[i] == NULL) {
-            break;
-        }
-        char san_tmp[32];
-        snprintf(san_tmp, sizeof(san_tmp), "%s=", env);
-        size_t l = strlen(san_tmp);
-        if (strncmp(hfuzz->exe.envs[i], san_tmp, l) == 0) {
-            LOG_D("The '%s' envar is set by user. Not overriding it!", env);
-            return;
-        }
-    }
 
     if (!hfuzz->sanitizer.enable) {
         snprintf(buf, buflen, "%s=%s", env, kSAN_REGULAR);
@@ -138,12 +127,7 @@ static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, char* buf, s
         util_ssnprintf(buf, buflen, ":soft_rss_limit_mb=%" PRId64, hfuzz->exe.rssLimit);
     }
 
-    for (size_t i = 0; i < ARRAYSIZE(hfuzz->exe.envs); i++) {
-        if (hfuzz->exe.envs[i] == NULL) {
-            hfuzz->exe.envs[i] = buf;
-            break;
-        }
-    }
+    cmdlineAddEnv(hfuzz, buf);
     LOG_D("%s", env);
 }
 

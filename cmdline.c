@@ -31,6 +31,7 @@
 #include <sched.h>
 #endif /* defined(_HF_ARCH_LINUX) */
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -134,6 +135,29 @@ static void cmdlineHelp(const char* pname, struct custom_option* opts) {
 static void cmdlineUsage(const char* pname, struct custom_option* opts) {
     cmdlineHelp(pname, opts);
     exit(0);
+}
+
+bool cmdlineAddEnv(honggfuzz_t* hfuzz, char* env) {
+    size_t enveqlen = strlen(env);
+    const char* eqpos = strchr(env, '=');
+    if (eqpos) {
+        enveqlen = (uintptr_t)eqpos - (uintptr_t)env + 1;
+    }
+
+    for (size_t i = 0; i < ARRAYSIZE(hfuzz->exe.envs); i++) {
+        if (hfuzz->exe.envs[i] == NULL) {
+            LOG_D("Adding envar '%s'", env);
+            hfuzz->exe.envs[i] = env;
+            return true;
+        }
+        if (strncmp(hfuzz->exe.envs[i], env, enveqlen) == 0) {
+            LOG_W("Replacing envar '%s' with '%s'", hfuzz->exe.envs[i], env);
+            hfuzz->exe.envs[i] = env;
+            return true;
+        }
+    }
+    LOG_E("No more space for new envars");
+    return false;
 }
 
 rlim_t cmdlineParseRLimit(int res, const char* optarg, unsigned long mul) {
@@ -269,7 +293,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .rssLimit = 0U,
                 .dataLimit = 0U,
                 .clearEnv = false,
-                .envs[0] = NULL,
+                .envs = {},
             },
         .timing =
             {
@@ -637,11 +661,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 #endif
                 break;
             case 'E':
-                for (size_t i = 0; i < ARRAYSIZE(hfuzz->exe.envs); i++) {
-                    if (hfuzz->exe.envs[i] == NULL) {
-                        hfuzz->exe.envs[i] = optarg;
-                        break;
-                    }
+                if (!cmdlineAddEnv(hfuzz, optarg)) {
+                    return false;
                 }
                 break;
             case 'w':

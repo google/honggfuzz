@@ -30,6 +30,8 @@
 
 rlim_t cmdlineParseRLimit(int res, const char* optarg, unsigned long mul);
 
+bool cmdlineAddEnv(honggfuzz_t* hfuzz, char* env);
+
 bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz);
 
 #endif /* _HF_CMDLINE_H_ */

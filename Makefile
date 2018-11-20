@@ -403,7 +403,7 @@ mangle.o: mangle.h honggfuzz.h libhfcommon/util.h input.h
 mangle.o: libhfcommon/common.h libhfcommon/log.h
 report.o: report.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 report.o: libhfcommon/log.h
-sanitizers.o: sanitizers.h honggfuzz.h libhfcommon/util.h
+sanitizers.o: sanitizers.h honggfuzz.h libhfcommon/util.h cmdline.h
 sanitizers.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 sanitizers.o: libhfcommon/log.h
 socketfuzzer.o: honggfuzz.h libhfcommon/util.h libhfcommon/common.h
