@@ -156,7 +156,7 @@ bool cmdlineAddEnv(honggfuzz_t* hfuzz, char* env) {
             return true;
         }
     }
-    LOG_E("No more space for new envars");
+    LOG_E("No more space for new envars (max.%zu)", ARRAYSIZE(hfuzz->exe.envs));
     return false;
 }
 
