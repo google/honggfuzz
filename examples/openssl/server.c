@@ -436,7 +436,7 @@ unsigned int psk_callback(
     return max_psk_len;
 }
 
-#if defined(HF_SSL_IS_OPENSSL_GE_1_1)
+#if defined(HF_SSL_IS_OPENSSL)
 static int srp_callback(SSL* s, int* ad, void* arg) {
     if (strcmp(SSL_get_srp_username(s), "USER") != 0) {
         *ad = SSL_AD_INTERNAL_ERROR;
@@ -448,7 +448,7 @@ static int srp_callback(SSL* s, int* ad, void* arg) {
     }
     return SSL_ERROR_NONE;
 }
-#endif /* defined(HF_SSL_IS_OPENSSL_GE_1_1) */
+#endif /* defined(HF_SSL_IS_OPENSSL) */
 
 int alpn_callback(SSL* ssl, const unsigned char** out, unsigned char* outlen,
     const unsigned char* in, unsigned int inlen, void* arg) {
@@ -540,12 +540,12 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
     assert(ret == 1);
 #endif /* !defined(HF_SSL_IS_LIBRESSL) */
 
-#if defined(HF_SSL_IS_OPENSSL_GE_1_1)
+#if defined(HF_SSL_IS_OPENSSL)
     ret = SSL_CTX_set_srp_username_callback(ctx, srp_callback);
     assert(ret == 1);
     ret = SSL_CTX_set_srp_cb_arg(ctx, NULL);
     assert(ret == 1);
-#endif /* defined(HF_SSL_IS_OPENSSL_GE_1_1) */
+#endif /* defined(HF_SSL_IS_OPENSSL) */
 
     SSL_CTX_set_alpn_select_cb(ctx, alpn_callback, NULL);
     SSL_CTX_set_next_protos_advertised_cb(ctx, npn_callback, NULL);

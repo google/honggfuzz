@@ -19,6 +19,10 @@ extern "C" {
     OPENSSL_VERSION_NUMBER >= 0x10100000
 #define HF_SSL_IS_OPENSSL_GE_1_1 1
 #endif
+#if !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION) && \
+    defined(OPENSSL_VERSION_NUMBER)
+#define HF_SSL_IS_OPENSSL
+#endif
 
 #define FUZZTIME 1485898104
 time_t __wrap_time(time_t* t) {
@@ -28,9 +32,9 @@ time_t __wrap_time(time_t* t) {
 
 #if defined(HF_SSL_IS_BORINGSSL)
 static int hf_rnd(unsigned char* buf, size_t num)
-#else  /* defined(HF_SSL_IS_OPENSSL) */
+#else  /* defined(HF_SSL_IS_BORINGSSL) */
 static int hf_rnd(unsigned char* buf, int num)
-#endif /* defined(HF_SSL_IS_OPENSSL) */
+#endif /* defined(HF_SSL_IS_BORINGSSL) */
 {
     for (size_t v = 0; v < num; v++) {
         buf[v] = v + 1;
