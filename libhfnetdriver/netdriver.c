@@ -269,7 +269,7 @@ void netDriver_waitForServerReady(uint16_t portno) {
 __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
     if (getenv(HFND_SKIP_FUZZING_ENV)) {
         LOG_I(
-            "Honggfuzz Net Driver (pid=%d): '%s is set, skipping fuzzing, calling main() directly",
+            "Honggfuzz Net Driver (pid=%d): '%s' is set, skipping fuzzing, calling main() directly",
             getpid(), HFND_SKIP_FUZZING_ENV);
         if (!HonggfuzzNetDriver_main) {
             LOG_F(
