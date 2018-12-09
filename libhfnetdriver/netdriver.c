@@ -27,7 +27,8 @@
 __attribute__((visibility("default"))) __attribute__((used))
 const char *const LIBHFNETDRIVER_module_netdriver = _HF_NETDRIVER_SIG;
 
-#define HF_TCP_PORT_ENV "_HF_TCP_PORT"
+#define HFND_TCP_PORT_ENV "HFND_TCP_PORT"
+#define HFND_SKIP_FUZZING_ENV "HFND_SKIP_FUZZING"
 
 static char *initial_server_argv[] = {"fuzzer", NULL};
 
@@ -181,22 +182,22 @@ int netDriver_sockConn(uint16_t portno) {
  */
 __attribute__((weak)) uint16_t HonggfuzzNetDriverPort(
     int argc HF_ATTR_UNUSED, char **argv HF_ATTR_UNUSED) {
-    const char *port_str = getenv(HF_TCP_PORT_ENV);
+    const char *port_str = getenv(HFND_TCP_PORT_ENV);
     if (port_str == NULL) {
         return hfnd_globals.tcp_port;
     }
     errno = 0;
     signed long portsl = strtol(port_str, NULL, 0);
     if (errno != 0) {
-        PLOG_F("Couldn't convert '%s'='%s' to a number", HF_TCP_PORT_ENV, port_str);
+        PLOG_F("Couldn't convert '%s'='%s' to a number", HFND_TCP_PORT_ENV, port_str);
     }
 
     if (portsl < 1) {
-        LOG_F(
-            "Specified TCP port '%s'='%s' (%ld) cannot be < 1", HF_TCP_PORT_ENV, port_str, portsl);
+        LOG_F("Specified TCP port '%s'='%s' (%ld) cannot be < 1", HFND_TCP_PORT_ENV, port_str,
+            portsl);
     }
     if (portsl > 65535) {
-        LOG_F("Specified TCP port '%s'='%s' (%ld) cannot be > 65535", HF_TCP_PORT_ENV, port_str,
+        LOG_F("Specified TCP port '%s'='%s' (%ld) cannot be > 65535", HFND_TCP_PORT_ENV, port_str,
             portsl);
     }
 
@@ -266,6 +267,19 @@ void netDriver_waitForServerReady(uint16_t portno) {
 }
 
 __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
+    if (getenv(HFND_SKIP_FUZZING_ENV)) {
+        LOG_I(
+            "Honggfuzz Net Driver (pid=%d): '%s is set, skipping fuzzing, calling main() directly",
+            getpid(), HFND_SKIP_FUZZING_ENV);
+        if (!HonggfuzzNetDriver_main) {
+            LOG_F(
+                "Honggfuzz Net Driver (pid=%d): HonggfuzzNetDriver_main was not defined in your "
+                "code",
+                getpid());
+        }
+        exit(HonggfuzzNetDriver_main(*argc, *argv));
+    }
+
     /* Make sure LIBHFNETDRIVER_module_netdriver (NetDriver signature) is used */
     LOG_D("Module: %s", LIBHFNETDRIVER_module_netdriver);
 
