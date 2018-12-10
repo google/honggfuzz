@@ -381,6 +381,8 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=xmlStrncasecmp";
     args[j++] = "-Wl,--wrap=xmlStrstr";
     args[j++] = "-Wl,--wrap=xmlStrcasestr";
+    /* Some Samba functions */
+    args[j++] = "-Wl,--wrap=memcmp_const_time";
 #endif /* _HF_ARCH_DARWIN */
 
     for (int i = 1; i < argc; i++) {

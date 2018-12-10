@@ -334,3 +334,10 @@ HF_WEAK_WRAP(const char*, xmlStrcasestr, const char* haystack, const char* needl
     }
     return HF_strcasestr(haystack, needle, RET_CALL_CHAIN);
 }
+
+/*
+ * Samba wrappers
+ */
+HF_WEAK_WRAP(int, memcmp_const_time, const void* s1, const void* s2, size_t n) {
+    return HF_memcmp(s1, s2, n, RET_CALL_CHAIN);
+}
