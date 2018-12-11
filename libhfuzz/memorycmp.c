@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
@@ -340,4 +341,14 @@ HF_WEAK_WRAP(const char*, xmlStrcasestr, const char* haystack, const char* needl
  */
 HF_WEAK_WRAP(int, memcmp_const_time, const void* s1, const void* s2, size_t n) {
     return HF_memcmp(s1, s2, n, RET_CALL_CHAIN);
+}
+
+HF_WEAK_WRAP(bool, strcsequal, const void* s1, const void* s2) {
+    if (s1 == s2) {
+        return true;
+    }
+    if (!s1 || !s2) {
+        return false;
+    }
+    return HF_strcmp(s1, s2, RET_CALL_CHAIN);
 }
