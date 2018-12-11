@@ -350,5 +350,5 @@ HF_WEAK_WRAP(bool, strcsequal, const void* s1, const void* s2) {
     if (!s1 || !s2) {
         return false;
     }
-    return HF_strcmp(s1, s2, RET_CALL_CHAIN);
+    return (HF_strcmp(s1, s2, RET_CALL_CHAIN) == 0);
 }
