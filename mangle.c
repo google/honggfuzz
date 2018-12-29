@@ -942,7 +942,7 @@ void mangle_mangleContent(run_t* run) {
         input_setSize(run, 1UL);
     }
 
-    /* Max number of stacked changes is 6 */
+    /* Max number of stacked changes, by default, is 6 */
     uint64_t changesCnt = util_rndGet(1, run->global->mutate.mutationsPerRun);
 
     for (uint64_t x = 0; x < changesCnt; x++) {
