@@ -651,6 +651,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                     LOG_E("-p '%d' is invalid", hfuzz->netbsd.pid);
                     return false;
                 }
+#else
+                LOG_E("-p not supported on this platform");
+                return false;
 #endif
                 break;
             case 0x502:
