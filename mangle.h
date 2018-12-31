@@ -26,7 +26,6 @@
 
 #include "honggfuzz.h"
 
-extern void mangle_init(bool only_printable);
 extern void mangle_mangleContent(run_t* run);
 
 #endif

@@ -542,8 +542,6 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
         LOG_F("Couldn't prepare sanitizer options");
     }
 
-    mangle_init(hfuzz->cfg.only_printable);
-
     if (hfuzz->socketFuzzer.enabled) {
         /* Don't do dry run with socketFuzzer */
         LOG_I("Entering phase - Feedback Driven Mode (SocketFuzzer)");

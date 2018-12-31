@@ -879,60 +879,51 @@ static void mangle_ASCIIVal(run_t* run) {
     mangle_Overwrite(run, (uint8_t*)buf, off, strlen(buf));
 }
 
-static void (*mangleFuncs[])(run_t* run) = {
-    mangle_Resize,
-    mangle_Byte,
-    mangle_Bit,
-    mangle_Bytes,
-    mangle_Magic,
-    mangle_IncByte,
-    mangle_DecByte,
-    mangle_NegByte,
-    mangle_AddSub,
-    mangle_Dictionary,
-    mangle_DictionaryInsert,
-    mangle_MemMove,
-    mangle_MemSet,
-    mangle_Random,
-    mangle_CloneByte,
-    mangle_Expand,
-    mangle_Shrink,
-    mangle_InsertRnd,
-    mangle_ASCIIVal,
-};
-
-void mangle_init(bool only_printable) {
-    if (only_printable) {
-        static void (*const manglePrintableFuncs[])(run_t * run) = {
-            mangle_Resize,
-            mangle_PrintableByte,
-            mangle_BitPrintable,
-            mangle_PrintableBytes,
-            mangle_MagicPrintable,
-            mangle_IncBytePrintable,
-            mangle_DecBytePrintable,
-            mangle_NegBytePrintable,
-            mangle_AddSubPrintable,
-            mangle_DictionaryPrintable,
-            mangle_DictionaryInsertPrintable,
-            mangle_MemMove,
-            mangle_MemSetPrintable,
-            mangle_RandomPrintable,
-            mangle_CloneByte,
-            mangle_Expand,
-            mangle_Shrink,
-            mangle_InsertRndPrintable,
-            mangle_ASCIIVal,
-        };
-
-        if (ARRAYSIZE(mangleFuncs) != ARRAYSIZE(manglePrintableFuncs)) {
-            LOG_F("mangle function list sizes are different")
-        }
-        memcpy(mangleFuncs, manglePrintableFuncs, sizeof(mangleFuncs));
-    }
-}
-
 void mangle_mangleContent(run_t* run) {
+    static void (*const mangleFuncs[])(run_t * run) = {
+        mangle_Resize,
+        mangle_Byte,
+        mangle_Bit,
+        mangle_Bytes,
+        mangle_Magic,
+        mangle_IncByte,
+        mangle_DecByte,
+        mangle_NegByte,
+        mangle_AddSub,
+        mangle_Dictionary,
+        mangle_DictionaryInsert,
+        mangle_MemMove,
+        mangle_MemSet,
+        mangle_Random,
+        mangle_CloneByte,
+        mangle_Expand,
+        mangle_Shrink,
+        mangle_InsertRnd,
+        mangle_ASCIIVal,
+    };
+
+    static void (*const manglePrintableFuncs[])(run_t * run) = {
+        mangle_Resize,
+        mangle_PrintableByte,
+        mangle_BitPrintable,
+        mangle_PrintableBytes,
+        mangle_MagicPrintable,
+        mangle_IncBytePrintable,
+        mangle_DecBytePrintable,
+        mangle_NegBytePrintable,
+        mangle_AddSubPrintable,
+        mangle_DictionaryPrintable,
+        mangle_DictionaryInsertPrintable,
+        mangle_MemMove,
+        mangle_MemSetPrintable,
+        mangle_RandomPrintable,
+        mangle_CloneByte,
+        mangle_Expand,
+        mangle_Shrink,
+        mangle_InsertRndPrintable,
+        mangle_ASCIIVal,
+    };
+
     if (run->mutationsPerRun == 0U) {
         return;
     }
@@ -942,11 +933,18 @@ void mangle_mangleContent(run_t* run) {
         input_setSize(run, 1UL);
     }
 
-    /* Max number of stacked changes, by default, is 6 */
+    /* Max number of stacked changes is, by default, 6 */
     uint64_t changesCnt = util_rndGet(1, run->global->mutate.mutationsPerRun);
 
-    for (uint64_t x = 0; x < changesCnt; x++) {
-        uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);
-        mangleFuncs[choice](run);
+    if (run->global->cfg.only_printable) {
+        for (uint64_t x = 0; x < changesCnt; x++) {
+            uint64_t choice = util_rndGet(0, ARRAYSIZE(manglePrintableFuncs) - 1);
+            manglePrintableFuncs[choice](run);
+        }
+    } else {
+        for (uint64_t x = 0; x < changesCnt; x++) {
+            uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);
+            mangleFuncs[choice](run);
+        }
     }
 }
