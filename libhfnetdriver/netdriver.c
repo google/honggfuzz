@@ -309,7 +309,7 @@ __attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
     /*
      * Indicate EOF (via the FIN flag) to the TCP server
      *
-     * Well-behaved TCP servers should process the input and responsd/close the TCP connection at
+     * Well-behaved TCP servers should process the input and respond/close the TCP connection at
      * this point
      */
     if (TEMP_FAILURE_RETRY(shutdown(sock, SHUT_WR)) == -1) {
