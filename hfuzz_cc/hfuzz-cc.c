@@ -408,13 +408,9 @@ static int ldMode(int argc, char** argv) {
     /* Needed by the libhfcommon */
     args[j++] = "-pthread";
 
-    /*
-     * Enable it at some point in the future, when clang-4 will become obsolete.
-     */
+    /* Enable it at some point in the future, once clang-4 becomes obsolete */
 #if 0
-   /*
-    * Disable LLVM's libFuzzer
-    */
+    /* Disable LLVM's libFuzzer */
     if (!isGCC) {
         args[j++] = "-fno-sanitize=fuzzer";
     }
