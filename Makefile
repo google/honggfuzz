@@ -29,7 +29,7 @@ HFUZZ_CC_SRCS := hfuzz_cc/hfuzz-cc.c
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wno-format-truncation -I.
 COMMON_LDFLAGS := -lm libhfcommon/libhfcommon.a
 COMMON_SRCS := $(sort $(wildcard *.c))
-CFLAGS ?= -O3
+CFLAGS ?= -O3 -march=native
 LDFLAGS ?=
 LIBS_CFLAGS ?= -fPIC -fno-stack-protector -fno-builtin -D__NO_STRING_INLINES -D__NO_INLINE__
 HFUZZ_USE_RET_ADDR ?= false
