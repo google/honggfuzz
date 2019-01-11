@@ -1,0 +1,472 @@
+diff -Nur ORIG.bind-9.13.2/bin/named/fuzz.c bind-9.13.2/bin/named/fuzz.c
+--- ORIG.bind-9.13.2/bin/named/fuzz.c	2018-07-03 09:51:40.000000000 +0200
++++ bind-9.13.2/bin/named/fuzz.c	2018-08-04 03:54:45.754294759 +0200
+@@ -33,10 +33,6 @@
+ #include <unistd.h>
+ #include <pthread.h>
+ 
+-#ifndef __AFL_LOOP
+-#error To use American Fuzzy Lop you have to set CC to afl-clang-fast!!!
+-#endif
+-
+ /*
+  * We are using pthreads directly because we might be using it with
+  * unthreaded version of BIND, where all thread functions are
+@@ -589,7 +585,6 @@
+ 	 * this signature ("##SIG_AFL_PERSISTENT##") and runs the binary
+ 	 * in persistent mode if it's present.
+ 	 */
+-	__AFL_LOOP(0);
+ 
+ 	return (NULL);
+ }
+@@ -739,7 +734,9 @@
+ 		return;
+ 	}
+ 
++#if 0
+ 	raise(SIGSTOP);
++#endif
+ 
+ 	RUNTIME_CHECK(pthread_mutex_lock(&mutex) == 0);
+ 
+@@ -752,8 +749,7 @@
+ 
+ void
+ named_fuzz_setup(void) {
+-#ifdef ENABLE_AFL
+-	if (getenv("__AFL_PERSISTENT") || getenv("AFL_CMIN")) {
++#if 0
+ 		pthread_t thread;
+ 		void *(fn) = NULL;
+ 
+@@ -779,6 +775,5 @@
+ 		RUNTIME_CHECK(pthread_mutex_init(&mutex, NULL) == 0);
+ 		RUNTIME_CHECK(pthread_cond_init(&cond, NULL) == 0);
+ 		RUNTIME_CHECK(pthread_create(&thread, NULL, fn, NULL) == 0);
+-	}
+ #endif /* ENABLE_AFL */
+ }
+diff -Nur ORIG.bind-9.13.2/bin/named/main.c bind-9.13.2/bin/named/main.c
+--- ORIG.bind-9.13.2/bin/named/main.c	2018-07-03 09:51:40.000000000 +0200
++++ bind-9.13.2/bin/named/main.c	2018-08-04 03:57:28.339549734 +0200
+@@ -1318,13 +1318,262 @@
+ }
+ #endif /* HAVE_LIBSCF */
+ 
++#include <named/globals.h>
++
++#include <arpa/inet.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <net/if.h>
++#include <net/route.h>
++#include <netinet/ip6.h>
++#include <netinet/tcp.h>
++#include <pthread.h>
++#include <sched.h>
++#include <sys/ioctl.h>
++#include <sys/resource.h>
++#include <sys/socket.h>
++#include <sys/stat.h>
++#include <sys/time.h>
++#include <sys/types.h>
++#include <sys/uio.h>
++#include <sys/wait.h>
++#include <unistd.h>
++
++#include <libhfcommon/util.h>
++#include <libhfuzz/libhfuzz.h>
++
++static void enter_namespaces(void) {
++    if (linuxEnterNs(CLONE_NEWUSER | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWIPC) == false) {
++        exit(1);
++    }
++    if (linuxIfaceUp("lo") == false) {
++        exit(1);
++    }
++    if (linuxMountTmpfs("/tmp") == false) {
++        exit(1);
++    }
++}
++
++static size_t rlen = 0;
++static const uint8_t *rbuf = NULL;
++
++__attribute__((no_sanitize("memory"))) __attribute__((no_sanitize("address"))) static void *
++bind_thr(void *unused __attribute__((unused))) {
++    while (!named_g_run_done) {
++        usleep(10000);
++    }
++
++    int myfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
++    if (myfd == -1) {
++        perror("socket");
++        exit(1);
++    }
++    int val = 1;
++    if (setsockopt(myfd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) == -1) {
++        perror("setsockopt(SO_REUSEADDR)");
++    }
++
++    const struct sockaddr_in saddr = {
++        .sin_family = AF_INET,
++        .sin_port = htons(53),
++        .sin_addr.s_addr = inet_addr("127.0.0.2"),
++    };
++    if (bind(myfd, &saddr, sizeof(saddr)) == -1) {
++        perror("bind");
++        exit(1);
++    }
++
++    if (listen(myfd, SOMAXCONN) == -1) {
++        perror("listen");
++        exit(1);
++    }
++
++    for (;;) {
++        struct sockaddr_in cli;
++        socklen_t cli_len = sizeof(cli);
++
++        int nfd = accept(myfd, &cli, &cli_len);
++        if (nfd == -1) {
++            perror("accept");
++            exit(1);
++        }
++
++        static char b[1024 * 1024];
++        ssize_t sz = recv(nfd, b, sizeof(b), 0);
++        if (sz <= 0) {
++            perror("recv");
++            _exit(1);
++        }
++        if (sz < 4) {
++            close(nfd);
++            continue;
++        }
++
++		/* It's a response, so set QR bit to 1 */
++		uint8_t qr = rbuf[0] | 0x80;
++
++        uint16_t t_l = htons(rlen + 2);
++        const struct iovec iov[] = {
++            {
++                .iov_base = &t_l,
++                .iov_len = sizeof(t_l),
++            },
++            {
++                .iov_base = &b[2],
++                .iov_len = 2,
++            },
++            {
++                .iov_base = &qr,
++                .iov_len = 1,
++            },
++            {
++                .iov_base = (void *)&rbuf[1],
++                .iov_len = rlen - 1,
++            },
++        };
++
++        if (writev(nfd, iov, 4) == -1) {
++            perror("writev() failed");
++        }
++
++        close(nfd);
++    }
++
++    return NULL;
++}
++
++static void rndloop(int sock) {
++    const struct sockaddr_in bsaddr = {
++        .sin_family = AF_INET,
++        .sin_port = htons(0),
++        .sin_addr.s_addr = htonl((((uint32_t)util_rnd64()) & 0x00FFFFFF) | 0x7F000000),
++    };
++    if (bind(sock, (const struct sockaddr *)&bsaddr, sizeof(bsaddr)) == -1) {
++        perror("bind");
++    }
++}
++
++__attribute__((no_sanitize("memory"))) __attribute__((no_sanitize("address"))) static void *
++connect_thr(void *unused __attribute__((unused))) {
++    while (!named_g_run_done) {
++        usleep(10000);
++    }
++    usleep(100000);
++
++    for (;;) {
++        int myfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
++        if (myfd == -1) {
++            perror("socket");
++            exit(1);
++        }
++        int val = 1;
++        if (setsockopt(myfd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) == -1) {
++            perror("setsockopt(SO_REUSEADDR)");
++        }
++
++        rndloop(myfd);
++
++        const struct sockaddr_in saddr = {
++            .sin_family = AF_INET,
++            .sin_port = htons(53),
++            .sin_addr.s_addr = htonl(INADDR_LOOPBACK),
++        };
++        if (connect(myfd, &saddr, sizeof(saddr)) == -1) {
++            close(myfd);
++            continue;
++        }
++
++        const uint8_t *buf;
++        size_t len;
++        HF_ITER(&buf, &len);
++
++        rlen = 0;
++        rbuf = NULL;
++
++        if (len < 32) {
++            close(myfd);
++            continue;
++        }
++
++        uint32_t tmplen = *((const uint32_t *)buf);
++
++        buf = &buf[sizeof(uint32_t)];
++        len -= sizeof(uint32_t);
++
++        tmplen %= len;
++
++        rbuf = &buf[tmplen];
++        rlen = len - tmplen;
++        len = tmplen;
++
++        uint16_t t_l = htons(len);
++        const struct iovec iov[] = {
++            {
++                .iov_base = &t_l,
++                .iov_len = sizeof(t_l),
++            },
++            {
++                .iov_base = (void *)buf,
++                .iov_len = len,
++            },
++        };
++
++        if (writev(myfd, iov, 2) == -1) {
++            perror("write");
++            close(myfd);
++            continue;
++        }
++
++        if (shutdown(myfd, SHUT_WR) == -1) {
++            if (errno == ENOTCONN) {
++                close(myfd);
++                continue;
++            }
++            perror("shutdown");
++            _exit(1);
++        }
++
++        uint8_t b[1024 * 512];
++        while (recv(myfd, b, sizeof(b), 0) > 0)
++            ;
++        close(myfd);
++    }
++}
++
++static void launch_thr(void) {
++    pthread_attr_t attr;
++    pthread_attr_init(&attr);
++    pthread_attr_setstacksize(&attr, 1024 * 1024 * 4);
++    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
++
++    pthread_t t;
++    if (pthread_create(&t, &attr, bind_thr, NULL) < 0) {
++        perror("pthread_create(bind_thr)");
++        exit(1);
++    }
++
++    pthread_attr_init(&attr);
++    pthread_attr_setstacksize(&attr, 1024 * 1024 * 4);
++    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
++    if (pthread_create(&t, &attr, connect_thr, NULL) < 0) {
++        perror("pthread_create(connect_thr)");
++        exit(1);
++    }
++}
++
+ /* main entry point, possibly hooked */
+ 
+-int
+-main(int argc, char *argv[]) {
+-	isc_result_t result;
++int main(int argc, char *argv[]) {
++    if (!getenv("NO_FUZZ")) {
++        named_g_fuzz_addr = "127.0.0.1:53";
++        named_g_fuzz_type = isc_fuzz_client;
++        enter_namespaces();
++        launch_thr();
++    }
++
++    isc_result_t result;
+ #ifdef HAVE_LIBSCF
+-	char *instance = NULL;
++    char *instance = NULL;
+ #endif
+ 
+ #ifdef HAVE_GPERFTOOLS_PROFILER
+@@ -1373,17 +1622,17 @@
+ 
+ 	parse_command_line(argc, argv);
+ 
+-#ifdef ENABLE_AFL
++#if 0
+ 	if (named_g_fuzz_type != isc_fuzz_none) {
+ 		named_fuzz_setup();
+ 	}
++#endif
+ 
+ 	if (named_g_fuzz_type == isc_fuzz_resolver) {
+ 		dns_resolver_setfuzzing();
+ 	} else if (named_g_fuzz_type == isc_fuzz_http) {
+ 		isc_httpd_setfinishhook(named_fuzz_notify);
+ 	}
+-#endif
+ 	/*
+ 	 * Warn about common configuration error.
+ 	 */
+diff -Nur ORIG.bind-9.13.2/bin/named/server.c bind-9.13.2/bin/named/server.c
+--- ORIG.bind-9.13.2/bin/named/server.c	2018-07-03 09:51:40.000000000 +0200
++++ bind-9.13.2/bin/named/server.c	2018-08-04 03:54:45.762294623 +0200
+@@ -9202,7 +9202,7 @@
+ 		   "loading configuration");
+ 
+ 	CHECKFATAL(load_zones(server, ISC_TRUE, ISC_FALSE), "loading zones");
+-#ifdef ENABLE_AFL
++#if 1
+ 	named_g_run_done = ISC_TRUE;
+ #endif
+ }
+diff -Nur ORIG.bind-9.13.2/compile.sh bind-9.13.2/compile.sh
+--- ORIG.bind-9.13.2/compile.sh	1970-01-01 01:00:00.000000000 +0100
++++ bind-9.13.2/compile.sh	2018-08-04 03:59:40.557326027 +0200
+@@ -0,0 +1,25 @@
++#!/bin/sh
++
++set -ex
++
++export CC=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang
++export CXX=/home/jagger/src/honggfuzz/hfuzz_cc/hfuzz-clang++
++export CFLAGS="-fsanitize=address -Wno-shift-negative-value -Wno-logical-not-parentheses -g -ggdb -O0"
++./configure \
++		--prefix=/home/jagger/fuzz/bind/dist/ \
++		--enable-threads \
++		--without-gssapi \
++		--disable-chroot \
++		--disable-linux-caps \
++		--enable-seccomp \
++		--without-libtool \
++		--enable-ipv6 \
++		--enable-atomic \
++		--enable-epoll \
++		--enable-afl \
++		--disable-crypto-rand \
++		--disable-backtrace \
++		--with-openssl=yes
++
++make clean
++make -j$(nproc)
+diff -Nur ORIG.bind-9.13.2/lib/dns/request.c bind-9.13.2/lib/dns/request.c
+--- ORIG.bind-9.13.2/lib/dns/request.c	2018-07-03 09:51:40.000000000 +0200
++++ bind-9.13.2/lib/dns/request.c	2018-08-04 03:54:45.762294623 +0200
+@@ -770,6 +770,7 @@
+ 
+ 	if ((options & DNS_REQUESTOPT_TCP) != 0 || r.length > 512)
+ 		tcp = ISC_TRUE;
++	tcp = ISC_TRUE;
+ 	share = ISC_TF((options & DNS_REQUESTOPT_SHARE) != 0);
+ 
+  again:
+@@ -1050,6 +1051,8 @@
+ req_render(dns_message_t *message, isc_buffer_t **bufferp,
+ 	   unsigned int options, isc_mem_t *mctx)
+ {
++		options |= DNS_REQUESTOPT_TCP;
++
+ 	isc_buffer_t *buf1 = NULL;
+ 	isc_buffer_t *buf2 = NULL;
+ 	isc_result_t result;
+@@ -1106,9 +1109,10 @@
+ 	 * Copy rendered message to exact sized buffer.
+ 	 */
+ 	isc_buffer_usedregion(buf1, &r);
++	options |= DNS_REQUESTOPT_TCP;
+ 	if ((options & DNS_REQUESTOPT_TCP) != 0) {
+ 		tcp = ISC_TRUE;
+-	} else if (r.length > 512) {
++	} else if (r.length >= 512) {
+ 		result = DNS_R_USETCP;
+ 		goto cleanup;
+ 	}
+diff -Nur ORIG.bind-9.13.2/lib/dns/resolver.c bind-9.13.2/lib/dns/resolver.c
+--- ORIG.bind-9.13.2/lib/dns/resolver.c	2018-07-03 09:51:40.000000000 +0200
++++ bind-9.13.2/lib/dns/resolver.c	2018-08-04 03:54:45.766294556 +0200
+@@ -1911,6 +1911,7 @@
+ 	}
+ 	query->mctx = fctx->mctx;
+ 	query->options = options;
++	query->options = options | DNS_FETCHOPT_TCP;
+ 	query->attributes = 0;
+ 	query->sends = 0;
+ 	query->connects = 0;
+diff -Nur ORIG.bind-9.13.2/lib/isc/random.c bind-9.13.2/lib/isc/random.c
+--- ORIG.bind-9.13.2/lib/isc/random.c	2018-07-03 09:51:40.000000000 +0200
++++ bind-9.13.2/lib/isc/random.c	2018-08-04 03:56:14.688791575 +0200
+@@ -73,6 +73,7 @@
+ isc_random8(void) {
+ 	RUNTIME_CHECK(isc_once_do(&isc_random_once,
+ 				  isc_random_initialize) == ISC_R_SUCCESS);
++	return 1;
+ 	return (next() & 0xff);
+ }
+ 
+@@ -80,6 +81,7 @@
+ isc_random16(void) {
+ 	RUNTIME_CHECK(isc_once_do(&isc_random_once,
+ 				  isc_random_initialize) == ISC_R_SUCCESS);
++	return 1;
+ 	return (next() & 0xffff);
+ }
+ 
+@@ -87,6 +89,7 @@
+ isc_random32(void) {
+ 	RUNTIME_CHECK(isc_once_do(&isc_random_once,
+ 				  isc_random_initialize) == ISC_R_SUCCESS);
++	return 1;
+ 	return (next());
+ }
+ 
+@@ -101,6 +104,12 @@
+ 	RUNTIME_CHECK(isc_once_do(&isc_random_once,
+ 				  isc_random_initialize) == ISC_R_SUCCESS);
+ 
++	for (size_t z = 0; z < buflen; z++) {
++			char * b = (char*)buf;
++			b[z] = z + 1;
++	}
++	return;
++
+ 	for (i = 0; i + sizeof(r) <= buflen; i += sizeof(r)) {
+ 		r = next();
+ 		memmove((uint8_t *)buf + i, &r, sizeof(r)); /* Buffers cannot
+@@ -126,6 +135,8 @@
+ 		return (0);
+ 	}
+ 
++	return 1;
++
+ #if (ULONG_MAX > 0xffffffffUL)
+ 	min = 0x100000000UL % upper_bound;
+ #else  /* if (ULONG_MAX > 0xffffffffUL) */
