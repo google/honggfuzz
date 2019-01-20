@@ -53,6 +53,13 @@ static bool useASAN() {
     return false;
 }
 
+static bool useFNoSanitize() {
+    if (getenv("HFUZZ_CC_NOFSANITIZE")) {
+        return true;
+    }
+    return false;
+}
+
 static bool useMSAN() {
     if (getenv("HFUZZ_CC_MSAN")) {
         return true;
@@ -408,13 +415,13 @@ static int ldMode(int argc, char** argv) {
     /* Needed by the libhfcommon */
     args[j++] = "-pthread";
 
-    /* Enable it at some point in the future, once clang-4 becomes obsolete */
-#if 0
-    /* Disable LLVM's libFuzzer */
-    if (!isGCC) {
+    /*
+     * Disable -fsanitize=fuzzer
+     * Enable it at some point universally, once clang-4 becomes obsolete
+     */
+    if (!isGCC && useFNoSanitize()) {
         args[j++] = "-fno-sanitize=fuzzer";
     }
-#endif
 
     return execCC(j, args);
 }
