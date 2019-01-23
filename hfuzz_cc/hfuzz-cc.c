@@ -166,8 +166,6 @@ static int execCC(int argc, char** argv) {
             hf_execvp("clang++-6", argv);
             hf_execvp("clang++-5.0", argv);
             hf_execvp("clang++-5", argv);
-            hf_execvp("clang++-4.0", argv);
-            hf_execvp("clang++-4", argv);
             hf_execvp("clang", argv);
         } else {
             /* Try the default one, then newest ones (hopefully) first */
@@ -185,8 +183,6 @@ static int execCC(int argc, char** argv) {
             hf_execvp("clang-6", argv);
             hf_execvp("clang-5.0", argv);
             hf_execvp("clang-5", argv);
-            hf_execvp("clang-4.0", argv);
-            hf_execvp("clang-4", argv);
         }
     }
 
