@@ -102,8 +102,12 @@ static unsigned getCpuUse(int numCpus) {
     prevSystemT = systemT;
     prevIdleT = idleT;
 
-    return ((userCycles + niceCycles + systemCycles) * numCpus * 100) /
-           (userCycles + niceCycles + systemCycles + idleCycles);
+    uint64_t allCycles = userCycles + niceCycles + systemCycles + idleCycles;
+    if (allCycles == 0) {
+        return 0;
+    }
+
+    return ((userCycles + niceCycles + systemCycles) * numCpus * 100) / (allCycles);
 }
 
 static void getDuration(time_t elapsed_second, char* buf, size_t bufSz) {
@@ -147,9 +151,9 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     if (hfuzz->mutate.mutationsMax > 0 && curr_exec_cnt > hfuzz->mutate.mutationsMax) {
         curr_exec_cnt = hfuzz->mutate.mutationsMax;
     }
-    float exeProgress = 0.0f;
+    double exeProgress = 0.0f;
     if (hfuzz->mutate.mutationsMax > 0) {
-        exeProgress = ((float)curr_exec_cnt * 100 / hfuzz->mutate.mutationsMax);
+        exeProgress = ((double)curr_exec_cnt * 100 / hfuzz->mutate.mutationsMax);
     }
 
     static size_t prev_exec_cnt = 0UL;
@@ -163,7 +167,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     display_put("  Iterations : " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
     if (hfuzz->mutate.mutationsMax) {
-        display_put(" (out of: " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET " [%.2f%%])",
+        display_put(" (out of: " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET " [%.2lf%%])",
             hfuzz->mutate.mutationsMax, exeProgress);
     }
     switch (ATOMIC_GET(hfuzz->feedback.state)) {
@@ -199,6 +203,9 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     static long num_cpu = 0;
     if (num_cpu == 0) {
         num_cpu = sysconf(_SC_NPROCESSORS_ONLN);
+    }
+    if (num_cpu <= 0) {
+        num_cpu = 1;
     }
     unsigned cpuUse = getCpuUse(num_cpu);
     display_put("     Threads : " ESC_BOLD "%zu" ESC_RESET ", CPUs: " ESC_BOLD "%ld" ESC_RESET
