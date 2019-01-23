@@ -8,7 +8,8 @@
 extern "C" {
 #endif
 
-#define HFND_TMP_DIR "/tmp/FUZZ"
+#define HFND_TMP_DIR_OLD "/tmp/FUZZ"
+#define HFND_TMP_DIR "/tmp/HFND_TMP_DIR"
 
 /*
  * Flags which will be passed to the original program running in a separate thread should go into

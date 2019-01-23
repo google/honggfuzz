@@ -49,6 +49,9 @@ bool nsEnter(uintptr_t cloneFlags) {
 
     if (unshare(cloneFlags) == -1) {
         PLOG_E("unshare(0x%tx)", cloneFlags);
+        if (cloneFlags | CLONE_NEWUSER) {
+            LOG_W("Executing 'sysctl -w kernel.unprivileged_userns_clone=1' might help with this");
+        }
         return false;
     }
 

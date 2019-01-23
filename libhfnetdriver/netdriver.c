@@ -82,8 +82,14 @@ static void netDriver_initNsIfNeeded(void) {
     if (!nsIfaceUp("lo")) {
         LOG_F("nsIfaceUp('lo') failed");
     }
+    if (mkdir(HFND_TMP_DIR_OLD, 0755) == -1 && errno != EEXIST) {
+        PLOG_F("mkdir('%s', 0755)", HFND_TMP_DIR_OLD);
+    }
     if (mkdir(HFND_TMP_DIR, 0755) == -1 && errno != EEXIST) {
         PLOG_F("mkdir('%s', 0755)", HFND_TMP_DIR);
+    }
+    if (!nsMountTmpfs(HFND_TMP_DIR_OLD)) {
+        LOG_F("nsMountTmpfs('%s') failed", HFND_TMP_DIR_OLD);
     }
     if (!nsMountTmpfs(HFND_TMP_DIR)) {
         LOG_F("nsMountTmpfs('%s') failed", HFND_TMP_DIR);
@@ -287,8 +293,10 @@ __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
     *argc = HonggfuzzNetDriverArgsForServer(
         *argc, *argv, &hfnd_globals.argc_server, &hfnd_globals.argv_server);
 
-    LOG_I("Honggfuzz Net Driver (pid=%d): TCP port:%d will be used", (int)getpid(),
-        hfnd_globals.tcp_port);
+    LOG_I(
+        "Honggfuzz Net Driver (pid=%d): TCP port %d will be used. You can change the destination "
+        "TCP port by setting the %s envvar.",
+        (int)getpid(), hfnd_globals.tcp_port, HFND_TCP_PORT_ENV);
 
     netDriver_initNsIfNeeded();
     netDriver_startOriginalProgramInThread();
