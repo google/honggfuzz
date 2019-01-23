@@ -450,7 +450,6 @@ bool files_readPidFromFile(const char* fileName, pid_t* pidPtr) {
     if (ret == -1) {
         if (lineSz == 0) {
             LOG_W("Empty PID file (%s)", fileName);
-            fclose(fPID);
             free(lineptr);
             return false;
         }
