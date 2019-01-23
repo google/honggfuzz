@@ -151,9 +151,9 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     if (hfuzz->mutate.mutationsMax > 0 && curr_exec_cnt > hfuzz->mutate.mutationsMax) {
         curr_exec_cnt = hfuzz->mutate.mutationsMax;
     }
-    double exeProgress = 0.0f;
+    int exeProgress = 0;
     if (hfuzz->mutate.mutationsMax > 0) {
-        exeProgress = ((double)curr_exec_cnt * 100 / hfuzz->mutate.mutationsMax);
+        exeProgress = (curr_exec_cnt * 100) / hfuzz->mutate.mutationsMax;
     }
 
     static size_t prev_exec_cnt = 0UL;
@@ -167,7 +167,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     display_put("  Iterations : " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
     if (hfuzz->mutate.mutationsMax) {
-        display_put(" (out of: " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET " [%.2lf%%])",
+        display_put(" (out of: " ESC_BOLD "%" _HF_NONMON_SEP "zu" ESC_RESET " [%d%%])",
             hfuzz->mutate.mutationsMax, exeProgress);
     }
     switch (ATOMIC_GET(hfuzz->feedback.state)) {
