@@ -184,30 +184,11 @@ int netDriver_sockConn(uint16_t portno) {
 
 /*
  * Decide which TCP port should be used for sending inputs
- * Define this function in your code to provide custom TCP port choice
  */
 __attribute__((weak)) uint16_t HonggfuzzNetDriverPort(
     int argc HF_ATTR_UNUSED, char **argv HF_ATTR_UNUSED) {
-    const char *port_str = getenv(HFND_TCP_PORT_ENV);
-    if (port_str == NULL) {
-        return hfnd_globals.tcp_port;
-    }
-    errno = 0;
-    signed long portsl = strtol(port_str, NULL, 0);
-    if (errno != 0) {
-        PLOG_F("Couldn't convert '%s'='%s' to a number", HFND_TCP_PORT_ENV, port_str);
-    }
-
-    if (portsl < 1) {
-        LOG_F("Specified TCP port '%s'='%s' (%ld) cannot be < 1", HFND_TCP_PORT_ENV, port_str,
-            portsl);
-    }
-    if (portsl > 65535) {
-        LOG_F("Specified TCP port '%s'='%s' (%ld) cannot be > 65535", HFND_TCP_PORT_ENV, port_str,
-            portsl);
-    }
-
-    return (uint16_t)portsl;
+    /* Return the default port (8080) */
+    return hfnd_globals.tcp_port;
 }
 
 /*
@@ -272,6 +253,28 @@ void netDriver_waitForServerReady(uint16_t portno) {
         (int)getpid(), portno);
 }
 
+uint16_t netDriver_getTCPPort(int argc, char **argv) {
+    const char *port_str = getenv(HFND_TCP_PORT_ENV);
+    if (port_str) {
+        errno = 0;
+        signed long portsl = strtol(port_str, NULL, 0);
+        if (errno != 0) {
+            PLOG_F("Couldn't convert '%s'='%s' to a number", HFND_TCP_PORT_ENV, port_str);
+        }
+        if (portsl < 1) {
+            LOG_F("Specified TCP port '%s'='%s' (%ld) cannot be < 1", HFND_TCP_PORT_ENV, port_str,
+                portsl);
+        }
+        if (portsl > 65535) {
+            LOG_F("Specified TCP port '%s'='%s' (%ld) cannot be > 65535", HFND_TCP_PORT_ENV,
+                port_str, portsl);
+        }
+        return (uint16_t)portsl;
+    }
+
+    return HonggfuzzNetDriverPort(argc, argv);
+}
+
 __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
     if (getenv(HFND_SKIP_FUZZING_ENV)) {
         LOG_I(
@@ -289,13 +292,12 @@ __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
     /* Make sure LIBHFNETDRIVER_module_netdriver (NetDriver signature) is used */
     LOG_D("Module: %s", LIBHFNETDRIVER_module_netdriver);
 
-    hfnd_globals.tcp_port = HonggfuzzNetDriverPort(*argc, *argv);
+    hfnd_globals.tcp_port = netDriver_getTCPPort(*argc, *argv);
     *argc = HonggfuzzNetDriverArgsForServer(
         *argc, *argv, &hfnd_globals.argc_server, &hfnd_globals.argv_server);
 
     LOG_I(
-        "Honggfuzz Net Driver (pid=%d): TCP port %d will be used. You can change the destination "
-        "TCP port by setting the %s envvar.",
+        "Honggfuzz Net Driver (pid=%d): TCP port %d will be used. You can change the server's TCP port by setting the %s envvar",
         (int)getpid(), hfnd_globals.tcp_port, HFND_TCP_PORT_ENV);
 
     netDriver_initNsIfNeeded();
