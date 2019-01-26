@@ -62,7 +62,7 @@ static void netDriver_startOriginalProgramInThread(void) {
     pthread_attr_t attr;
 
     pthread_attr_init(&attr);
-    pthread_attr_setstacksize(&attr, 1024 * 1024 * 8);
+    pthread_attr_setstacksize(&attr, 1024ULL * 1024ULL * 8ULL);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
     if (pthread_create(&t, &attr, netDriver_mainProgram, NULL) != 0) {
@@ -149,12 +149,13 @@ static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen
     return sock;
 }
 
-int netDriver_sockConn(sa_family_t sa_family, uint16_t portno) {
+int netDriver_sockConnLoopback(sa_family_t sa_family, uint16_t portno) {
     if (portno < 1) {
         LOG_F("Specified TCP port (%d) cannot be < 1", portno);
     }
 
     if (sa_family == AF_INET) {
+        /* IPv4's 127.0.0.1 */
         const struct sockaddr_in saddr4 = {
             .sin_family = AF_INET,
             .sin_port = htons(portno),
@@ -164,7 +165,7 @@ int netDriver_sockConn(sa_family_t sa_family, uint16_t portno) {
     }
 
     if (sa_family == AF_INET6) {
-        /* Next, try IPv6's ::1 */
+        /* IPv6's ::1 */
         const struct sockaddr_in6 saddr6 = {
             .sin6_family = AF_INET6,
             .sin6_port = htons(portno),
@@ -233,13 +234,13 @@ __attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
 static void netDriver_waitForServerReady(uint16_t portno) {
     for (;;) {
         int fd = -1;
-        fd = netDriver_sockConn(AF_INET, portno);
+        fd = netDriver_sockConnLoopback(AF_INET, portno);
         if (fd >= 0) {
             hfnd_globals.sa_family = AF_INET;
             close(fd);
             return;
         }
-        fd = netDriver_sockConn(AF_INET6, portno);
+        fd = netDriver_sockConnLoopback(AF_INET6, portno);
         if (fd >= 0) {
             hfnd_globals.sa_family = AF_INET6;
             close(fd);
@@ -316,7 +317,7 @@ __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
 }
 
 __attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
-    int sock = netDriver_sockConn(hfnd_globals.sa_family, hfnd_globals.tcp_port);
+    int sock = netDriver_sockConnLoopback(hfnd_globals.sa_family, hfnd_globals.tcp_port);
     if (sock == -1) {
         LOG_F("Couldn't connect to the server TCP port");
     }
@@ -341,9 +342,10 @@ __attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
 
     /*
      * Try to read data from the server, assuming that an early TCP close would sometimes cause the
-     * TCP server to drop the input data, instead of processing it
+     * TCP server to drop the input data, instead of processing it. Use BSS to avoid putting
+     * pressure on the stack size
      */
-    static char b[1024 * 1024 * 8];
+    static char b[1024ULL * 1024ULL * 4ULL];
     while (TEMP_FAILURE_RETRY(recv(sock, b, sizeof(b), MSG_WAITALL)) > 0)
         ;
 
