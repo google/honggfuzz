@@ -33,13 +33,15 @@ const char *const LIBHFNETDRIVER_module_netdriver = _HF_NETDRIVER_SIG;
 static char *initial_server_argv[] = {"fuzzer", NULL};
 
 static struct {
-    uint16_t tcp_port;
     int argc_server;
     char **argv_server;
+    uint16_t tcp_port;
+    sa_family_t sa_family;
 } hfnd_globals = {
-    .tcp_port = 8080,
     .argc_server = 1,
     .argv_server = initial_server_argv,
+    .tcp_port = 0,
+    .sa_family = AF_UNSPEC,
 };
 
 __attribute__((weak)) int HonggfuzzNetDriver_main(
@@ -140,45 +142,40 @@ static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen
     netDriver_bindToRndLoopback(sock, addr->sa_family);
 
     if (TEMP_FAILURE_RETRY(connect(sock, addr, socklen)) == -1) {
-        PLOG_D("connect(type=%d, loopback)", addr->sa_family);
+        PLOG_W("connect(type=%d, loopback)", addr->sa_family);
         close(sock);
         return -1;
     }
     return sock;
 }
 
-int netDriver_sockConn(uint16_t portno) {
-    int sock = -1;
-
+int netDriver_sockConn(sa_family_t sa_family, uint16_t portno) {
     if (portno < 1) {
         LOG_F("Specified TCP port (%d) cannot be < 1", portno);
     }
 
-    /* Try IPv4's 127.0.0.1 first */
-    const struct sockaddr_in saddr4 = {
-        .sin_family = AF_INET,
-        .sin_port = htons(portno),
-        .sin_addr.s_addr = htonl(INADDR_LOOPBACK),
-    };
-    if ((sock = netDriver_sockConnAddr((const struct sockaddr *)&saddr4, sizeof(saddr4))) != -1) {
-        return sock;
+    if (sa_family == AF_INET) {
+        const struct sockaddr_in saddr4 = {
+            .sin_family = AF_INET,
+            .sin_port = htons(portno),
+            .sin_addr.s_addr = htonl(INADDR_LOOPBACK),
+        };
+        return netDriver_sockConnAddr((const struct sockaddr *)&saddr4, sizeof(saddr4));
     }
 
-    /* Next, try IPv6's ::1 */
-    const struct sockaddr_in6 saddr6 = {
-        .sin6_family = AF_INET6,
-        .sin6_port = htons(portno),
-        .sin6_flowinfo = 0,
-        .sin6_addr = in6addr_loopback,
-        .sin6_scope_id = 0,
-    };
-    if ((sock = netDriver_sockConnAddr((const struct sockaddr *)&saddr6, sizeof(saddr6))) != -1) {
-        return sock;
+    if (sa_family == AF_INET6) {
+        /* Next, try IPv6's ::1 */
+        const struct sockaddr_in6 saddr6 = {
+            .sin6_family = AF_INET6,
+            .sin6_port = htons(portno),
+            .sin6_flowinfo = 0,
+            .sin6_addr = in6addr_loopback,
+            .sin6_scope_id = 0,
+        };
+        return netDriver_sockConnAddr((const struct sockaddr *)&saddr6, sizeof(saddr6));
     }
 
-    LOG_W("Honggfuzz Net Driver (pid=%d): couldn't connect(loopback, port:%" PRIu16 ")",
-        (int)getpid(), portno);
-
+    LOG_E("Unknown SA_FAMILY=%d specified", (int)sa_family);
     return -1;
 }
 
@@ -188,7 +185,7 @@ int netDriver_sockConn(uint16_t portno) {
 __attribute__((weak)) uint16_t HonggfuzzNetDriverPort(
     int argc HF_ATTR_UNUSED, char **argv HF_ATTR_UNUSED) {
     /* Return the default port (8080) */
-    return hfnd_globals.tcp_port;
+    return 8080;
 }
 
 /*
@@ -233,24 +230,28 @@ __attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
     return argc;
 }
 
-void netDriver_waitForServerReady(uint16_t portno) {
+static void netDriver_waitForServerReady(uint16_t portno) {
     for (;;) {
-        int fd = netDriver_sockConn(portno);
+        int fd = -1;
+        fd = netDriver_sockConn(AF_INET, portno);
         if (fd >= 0) {
+            hfnd_globals.sa_family = AF_INET;
             close(fd);
-            break;
+            return;
+        }
+        fd = netDriver_sockConn(AF_INET6, portno);
+        if (fd >= 0) {
+            hfnd_globals.sa_family = AF_INET6;
+            close(fd);
+            return;
         }
         LOG_I(
             "Honggfuzz Net Driver (pid=%d): Waiting for the TCP server process to start accepting "
-            "TCP connections at 127.0.0.1:%" PRIu16 ". Sleeping for 0.5 seconds ...",
-            (int)getpid(), portno);
+            "TCP connections at TCP4:127.0.0.1:%" PRIu16 " or at TCP6:[::1]:%" PRIu16
+            ".Sleeping for 0.5 seconds ...",
+            (int)getpid(), portno, portno);
         usleep(500000U);
     }
-
-    LOG_I(
-        "Honggfuzz Net Driver (pid=%d): The TCP server process is ready to accept connections at "
-        "127.0.0.1:%" PRIu16 ". TCP fuzzing starts now!",
-        (int)getpid(), portno);
 }
 
 uint16_t netDriver_getTCPPort(int argc, char **argv) {
@@ -304,11 +305,18 @@ __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
     netDriver_initNsIfNeeded();
     netDriver_startOriginalProgramInThread();
     netDriver_waitForServerReady(hfnd_globals.tcp_port);
+
+    LOG_I(
+        "Honggfuzz Net Driver (pid=%d): The TCP server process is ready to accept connections at "
+        "%s:%" PRIu16 ". TCP fuzzing starts now!",
+        (int)getpid(), (hfnd_globals.sa_family == AF_INET ? "TCP4:127.0.0.1" : "[::1]"),
+        hfnd_globals.tcp_port);
+
     return 0;
 }
 
 __attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
-    int sock = netDriver_sockConn(hfnd_globals.tcp_port);
+    int sock = netDriver_sockConn(hfnd_globals.sa_family, hfnd_globals.tcp_port);
     if (sock == -1) {
         LOG_F("Couldn't connect to the server TCP port");
     }

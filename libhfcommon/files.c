@@ -465,3 +465,15 @@ bool files_readPidFromFile(const char* fileName, pid_t* pidPtr) {
 
     return true;
 }
+
+sa_family_t files_sockFamily(int sock) {
+    struct sockaddr addr;
+    socklen_t addrlen = sizeof(addr);
+
+    if (getsockname(sock, &addr, &addrlen) == -1) {
+        PLOG_W("getsockname(sock=%d)", sock);
+        return AF_UNSPEC;
+    }
+
+    return addr.sa_family;
+}
