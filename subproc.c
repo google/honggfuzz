@@ -227,6 +227,13 @@ static bool subproc_PrepareExecv(run_t* run) {
         return false;
     }
 
+    /* The log FD */
+    if ((run->global->exe.netDriver || run->global->exe.persistent) &&
+        dup2(logFd(), _HF_LOG_FD) == -1) {
+        PLOG_E("dup2(%d, _HF_LOG_FD=%d)", logFd(), _HF_LOG_FD);
+        return false;
+    }
+
     sigset_t sset;
     sigemptyset(&sset);
     if (sigprocmask(SIG_SETMASK, &sset, NULL) == -1) {

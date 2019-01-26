@@ -70,6 +70,8 @@
 /* Maximum size of the input file in bytes (128 MiB) */
 #define _HF_INPUT_MAX_SIZE (1024 * 1024 * 128)
 
+/* FD used to log inside the child process */
+#define _HF_LOG_FD 1020
 /* FD used to represent the input file */
 #define _HF_INPUT_FD 1021
 /* FD used to pass feedback bitmap a process */

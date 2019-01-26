@@ -82,6 +82,8 @@ extern void logStop(int sig);
 
 extern bool logIsTTY(void);
 
+extern void logRedirectLogFD(int fd);
+
 extern int logFd(void);
 
 extern pthread_mutex_t* logMutexGet(void);

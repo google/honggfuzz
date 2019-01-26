@@ -2,6 +2,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -40,6 +41,10 @@ feedback_t* feedback = &bbMapFb;
 uint32_t my_thread_no = 0;
 
 __attribute__((constructor)) static void initializeInstrument(void) {
+    if (fcntl(_HF_LOG_FD, F_GETFD) != -1) {
+        logRedirectLogFD(_HF_LOG_FD);
+    }
+
     char* my_thread_no_str = getenv(_HF_THREAD_NO_ENV);
     if (my_thread_no_str == NULL) {
         return;
