@@ -56,7 +56,9 @@ static void exitWithMsg(const char* msg, int exit_code) {
     HF_ATTR_UNUSED ssize_t sz = write(STDERR_FILENO, msg, strlen(msg));
     for (;;) {
         exit(exit_code);
+        _exit(exit_code);
         abort();
+        __builtin_trap();
     }
 }
 

@@ -297,7 +297,8 @@ __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
         *argc, *argv, &hfnd_globals.argc_server, &hfnd_globals.argv_server);
 
     LOG_I(
-        "Honggfuzz Net Driver (pid=%d): TCP port %d will be used. You can change the server's TCP port by setting the %s envvar",
+        "Honggfuzz Net Driver (pid=%d): TCP port %d will be used. You can change the server's TCP "
+        "port by setting the %s envvar",
         (int)getpid(), hfnd_globals.tcp_port, HFND_TCP_PORT_ENV);
 
     netDriver_initNsIfNeeded();
