@@ -249,7 +249,7 @@ static void netDriver_waitForServerReady(uint16_t portno) {
         LOG_I(
             "Honggfuzz Net Driver (pid=%d): Waiting for the TCP server process to start accepting "
             "TCP connections at TCP4:127.0.0.1:%" PRIu16 " or at TCP6:[::1]:%" PRIu16
-            ".Sleeping for 0.5 seconds ...",
+            ". Sleeping for 0.5 seconds ...",
             (int)getpid(), portno, portno);
         usleep(500000U);
     }
