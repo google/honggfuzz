@@ -47,7 +47,7 @@
 #define _HF_REPORT_FILE "HONGGFUZZ.REPORT.TXT"
 
 /* Default stack-size of created threads. */
-#define _HF_PTHREAD_STACKSIZE (1024 * 1024 * 2) /* 2MB */
+#define _HF_PTHREAD_STACKSIZE (1024ULL * 1024ULL * 2ULL) /* 2MB */
 
 /* Name of envvar which indicates sequential number of fuzzer */
 #define _HF_THREAD_NO_ENV "HFUZZ_THREAD_NO"
@@ -63,12 +63,12 @@
 
 /* Perf bitmap size */
 #define _HF_PERF_BITMAP_SIZE_16M (1024U * 1024U * 16U)
-#define _HF_PERF_BITMAP_BITSZ_MASK 0x7ffffff
+#define _HF_PERF_BITMAP_BITSZ_MASK 0x7FFFFFFULL
 /* Maximum number of PC guards (=trace-pc-guard) we support */
-#define _HF_PC_GUARD_MAX (1024U * 1024U * 16U)
+#define _HF_PC_GUARD_MAX (1024ULL * 1024ULL * 64ULL)
 
 /* Maximum size of the input file in bytes (128 MiB) */
-#define _HF_INPUT_MAX_SIZE (1024 * 1024 * 128)
+#define _HF_INPUT_MAX_SIZE (1024ULL * 1024ULL * 128ULL)
 
 /* FD used to log inside the child process */
 #define _HF_LOG_FD 1020
