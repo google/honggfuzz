@@ -261,10 +261,14 @@ static bool subproc_PrepareExecv(run_t* run) {
     }
 
     /* The log FD */
-    if ((run->global->exe.netDriver || run->global->exe.persistent) &&
-        dup2(logFd(), _HF_LOG_FD) == -1) {
-        PLOG_E("dup2(%d, _HF_LOG_FD=%d)", logFd(), _HF_LOG_FD);
-        return false;
+    if ((run->global->exe.netDriver || run->global->exe.persistent)) {
+        if (dup2(logFd(), _HF_LOG_FD) == -1) {
+            PLOG_E("dup2(%d, _HF_LOG_FD=%d)", logFd(), _HF_LOG_FD);
+            return false;
+        }
+        char llstr[32];
+        snprintf(llstr, sizeof(llstr), "%d", logGetLevel());
+        setenv(_HF_LOG_LEVEL_ENV, llstr, 1);
     }
 
     sigset_t sset;

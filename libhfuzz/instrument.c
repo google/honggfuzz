@@ -42,12 +42,17 @@ uint32_t my_thread_no = 0;
 
 __attribute__((constructor)) static void initializeInstrument(void) {
     if (fcntl(_HF_LOG_FD, F_GETFD) != -1) {
-        logRedirectLogFD(_HF_LOG_FD);
+        enum llevel_t ll = INFO;
+        const char* llstr = getenv(_HF_LOG_LEVEL_ENV);
+        if (llstr) {
+            ll = atoi(llstr);
+        }
+        logInitLogFile(NULL, _HF_LOG_FD, ll);
     }
 
     char* my_thread_no_str = getenv(_HF_THREAD_NO_ENV);
     if (my_thread_no_str == NULL) {
-        return;
+        LOG_W("The '%s' envvar is not set", _HF_THREAD_NO_ENV);
     }
     my_thread_no = atoi(my_thread_no_str);
 
@@ -63,7 +68,7 @@ __attribute__((constructor)) static void initializeInstrument(void) {
     if (st.st_size != sizeof(feedback_t)) {
         LOG_F(
             "size of the feedback structure mismatch: st.size != sizeof(feedback_t) (%zu != %zu). "
-            "Link your fuzzed binaries with the newest honggfuzz sources (libhfuzz.a)\n",
+            "Link your fuzzed binaries with the newest honggfuzz sources via hfuzz-clang(++)",
             (size_t)st.st_size, sizeof(feedback_t));
     }
     if ((feedback = mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED,

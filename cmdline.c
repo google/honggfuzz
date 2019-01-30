@@ -679,9 +679,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         }
     }
 
-    if (!logInitLogFile(logfile, ll)) {
-        return false;
-    }
+    logInitLogFile(logfile, -1, ll);
+
     hfuzz->exe.argc = argc - optind;
     hfuzz->exe.cmdline = (const char* const*)&argv[optind];
     if (hfuzz->exe.argc <= 0) {

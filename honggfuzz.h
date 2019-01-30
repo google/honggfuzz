@@ -55,6 +55,9 @@
 /* Name of envvar which indicates that the netDriver should be used */
 #define _HF_THREAD_NETDRIVER_ENV "HFUZZ_USE_NETDRIVER"
 
+/* Name of envvar which indicates honggfuzz's log level in use */
+#define _HF_LOG_LEVEL_ENV "HFUZZ_LOG_LEVEL"
+
 /* Number of crash verifier iterations before tag crash as stable */
 #define _HF_VERIFIER_ITER 5
 

@@ -54,7 +54,6 @@ enum llevel_t log_level = INFO;
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 __attribute__((constructor)) static void log_init(void) {
-    log_level = INFO;
     log_fd = fcntl(log_fd, F_DUPFD_CLOEXEC, 0);
     if (log_fd == -1) {
         log_fd = STDERR_FILENO;
@@ -66,21 +65,21 @@ __attribute__((constructor)) static void log_init(void) {
  * Log to stderr by default. Use a dup()d fd, because in the future we'll associate the
  * connection socket with fd (0, 1, 2).
  */
-bool logInitLogFile(const char* logfile, enum llevel_t ll) {
+void logInitLogFile(const char* logfile, int fd, enum llevel_t ll) {
     log_level = ll;
 
-    if (logfile == NULL) {
-        return true;
+    if (logfile) {
+        log_fd = open(logfile, O_CREAT | O_RDWR | O_TRUNC, 0640);
+        if (log_fd == -1) {
+            log_fd = STDERR_FILENO;
+            PLOG_E("Couldn't open logfile open('%s')", logfile);
+        }
+    }
+    if (fd != -1) {
+        log_fd = fd;
     }
 
-    log_fd = open(logfile, O_CREAT | O_RDWR | O_TRUNC, 0640);
-    if (log_fd == -1) {
-        log_fd = STDERR_FILENO;
-        PLOG_E("Couldn't open logfile open('%s')", logfile);
-        return false;
-    }
     log_fd_isatty = (isatty(log_fd) == 1 ? true : false);
-    return true;
 }
 
 void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt, ...) {
@@ -175,4 +174,8 @@ bool logIsTTY(void) {
 
 int logFd(void) {
     return log_fd;
+}
+
+enum llevel_t logGetLevel(void) {
+    return log_level;
 }
