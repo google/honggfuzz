@@ -137,7 +137,9 @@ static bool arch_checkWait(run_t* run) {
     /* All queued wait events must be tested when SIGCHLD was delivered */
     for (;;) {
         int status;
-        pid_t pid = TEMP_FAILURE_RETRY(waitpid(run->pid, &status, WALLSIG | WNOHANG));
+        /* Wait for the whole process group of run->pid */
+        pid_t pid =
+            TEMP_FAILURE_RETRY(wait4(-(run->pid), &status, WALLSIG | WNOHANG | WTRAPPED, NULL));
         if (pid == 0) {
             return false;
         }
@@ -146,7 +148,7 @@ static bool arch_checkWait(run_t* run) {
             return true;
         }
         if (pid == -1) {
-            PLOG_F("waitpid() failed");
+            PLOG_F("wait4(pid=-%d) failed", (int)run->pid);
         }
 
         arch_traceAnalyze(run, status, pid);
@@ -157,15 +159,13 @@ static bool arch_checkWait(run_t* run) {
 
         if (pid == run->pid && (WIFEXITED(status) || WIFSIGNALED(status))) {
             if (run->global->exe.persistent) {
-                if (fuzz_isTerminating() == false) {
+                if (!fuzz_isTerminating()) {
                     LOG_W("Persistent mode: PID %d exited with status: %s", pid,
                         subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
                 }
             }
             return true;
         }
-
-        arch_traceAnalyze(run, status, pid);
     }
 }
 

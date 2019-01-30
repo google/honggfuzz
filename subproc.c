@@ -242,6 +242,7 @@ static bool subproc_PrepareExecv(run_t* run) {
         setenv(_HF_THREAD_NETDRIVER_ENV, "1", 1);
     }
 
+    /* Make sure it's a new process group / session, so waitpid can wait for -(run->pid) */
     setsid();
 
     util_closeStdio(/* close_stdin= */ run->global->exe.nullifyStdio,

@@ -644,9 +644,11 @@ void arch_traceAnalyze(run_t* run, int status, pid_t pid) {
 }
 
 bool arch_traceWaitForPidStop(pid_t pid) {
+    LOG_D("Waiting for pid=%d to stop", (int)pid);
+
     for (;;) {
         int status;
-        pid_t ret = wait4(pid, &status, __WALL | WUNTRACED, NULL);
+        pid_t ret = wait4(pid, &status, __WALL | WUNTRACED | WTRAPPED, NULL);
         if (ret == -1 && errno == EINTR) {
             continue;
         }
@@ -658,20 +660,31 @@ bool arch_traceWaitForPidStop(pid_t pid) {
             LOG_W("PID %d not in a stopped state - status:%d", pid, status);
             return false;
         }
+
+        LOG_D("pid=%d stopped", (int)pid);
         return true;
     }
 }
 
 bool arch_traceAttach(run_t* run) {
-    ptrace_event_t event;
-
+    if (!arch_traceWaitForPidStop(run->pid)) {
+        return false;
+    }
     if (ptrace(PT_ATTACH, run->pid, NULL, 0) == -1) {
         PLOG_W("Couldn't ptrace(PT_ATTACH) to pid: %d", (int)run->pid);
         return false;
     }
+    if (!arch_traceWaitForPidStop(run->pid)) {
+        return false;
+    }
 
-    event.pe_set_event = PTRACE_FORK | PTRACE_VFORK | PTRACE_VFORK_DONE;
-
+    ptrace_event_t event = {
+        /*
+         * NetBSD 8.0 seems to support PTRACE_FORK only:
+         *          .pe_set_event = PTRACE_FORK | PTRACE_VFORK | PTRACE_VFORK_DONE,
+         */
+        .pe_set_event = PTRACE_FORK,
+    };
     if (ptrace(PT_SET_EVENT_MASK, run->pid, &event, sizeof(event)) == -1) {
         PLOG_W("Couldn't ptrace(PT_SET_EVENT_MASK) to pid: %d", (int)run->pid);
         return false;
