@@ -29,86 +29,74 @@ const char* const LIBHFUZZ_module_memorycmp = "LIBHFUZZ_module_memorycmp";
 
 static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
     unsigned int v = 0;
-
-    size_t i;
-    for (i = 0; s1[i] == s2[i]; i++) {
+    for (size_t i = 0; s1[i] == s2[i]; i++) {
         if (s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
         v++;
     }
     instrumentUpdateCmpMap(addr, v);
-    return (s1[i] - s2[i]);
+    return __builtin_strcmp(s1, s2);
 }
 
 static inline int HF_strcasecmp(const char* s1, const char* s2, uintptr_t addr) {
     unsigned int v = 0;
-
-    size_t i;
-    for (i = 0; tolower((unsigned char)s1[i]) == tolower((unsigned char)s2[i]); i++) {
+    for (size_t i = 0; tolower((unsigned char)s1[i]) == tolower((unsigned char)s2[i]); i++) {
         if (s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
         v++;
     }
     instrumentUpdateCmpMap(addr, v);
-    return (tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]));
+    return __builtin_strcasecmp(s1, s2);
 }
 
 static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
     if (n == 0) {
-        return 0;
+        return __builtin_strncmp(s1, s2, n);
     }
 
     unsigned int v = 0;
-    int ret = 0;
-
     for (size_t i = 0; i < n; i++) {
         if (s1[i] != s2[i]) {
-            ret = ret ? ret : ((unsigned char)s1[i] - (unsigned char)s2[i]);
-        } else {
-            v++;
+            break;
         }
         if (s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
+        v++;
     }
-
     instrumentUpdateCmpMap(addr, v);
-    return ret;
+    return __builtin_strncmp(s1, s2, n);
 }
 
 static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
     if (n == 0) {
-        return 0;
+        return __builtin_strncasecmp(s1, s2, n);
     }
 
     unsigned int v = 0;
-    int ret = 0;
-
     for (size_t i = 0; i < n; i++) {
         if (tolower((unsigned char)s1[i]) != tolower((unsigned char)s2[i])) {
-            ret = ret ? ret : (tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]));
-        } else {
-            v++;
+            break;
         }
         if (s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
+        v++;
     }
-
     instrumentUpdateCmpMap(addr, v);
-    return ret;
+    return __builtin_strncasecmp(s1, s2, n);
 }
 
 static inline char* HF_strstr(const char* haystack, const char* needle, uintptr_t addr) {
     size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
         if (HF_strncmp(&haystack[i], needle, needle_len, addr) == 0) {
-            return (char*)(&haystack[i]);
+            break;
         }
     }
-    return NULL;
+    return __builtin_strstr(haystack, needle);
 }
 
 static inline char* HF_strcasestr(const char* haystack, const char* needle, uintptr_t addr) {
@@ -123,25 +111,22 @@ static inline char* HF_strcasestr(const char* haystack, const char* needle, uint
 
 static inline int HF_memcmp(const void* m1, const void* m2, size_t n, uintptr_t addr) {
     if (n == 0) {
-        return 0;
+        return __builtin_memcmp(m1, m2, n);
     }
-
-    unsigned int v = 0;
-    int ret = 0;
 
     const unsigned char* s1 = (const unsigned char*)m1;
     const unsigned char* s2 = (const unsigned char*)m2;
 
+    unsigned int v = 0;
     for (size_t i = 0; i < n; i++) {
         if (s1[i] != s2[i]) {
-            ret = ret ? ret : (s1[i] - s2[i]);
-        } else {
-            v++;
+            break;
         }
+        v++;
     }
 
     instrumentUpdateCmpMap(addr, v);
-    return ret;
+    return __builtin_memcmp(m1, m2, n);
 }
 
 static inline void* HF_memmem(const void* haystack, size_t haystacklen, const void* needle,
@@ -160,6 +145,14 @@ static inline void* HF_memmem(const void* haystack, size_t haystacklen, const vo
         }
     }
     return NULL;
+}
+
+static inline char* HF_strcpy(char* dest, const char* src, uintptr_t addr) {
+    uint32_t len = strlen(src);
+    if (len > 0) {
+        instrumentUpdateCmpMap(addr, (sizeof(len) * 8) - __builtin_clz(len));
+    }
+    return __builtin_strcpy(dest, src);
 }
 
 /* Define a weak function x, as well as __wrap_x pointing to x */
@@ -195,6 +188,9 @@ HF_WEAK_WRAP(int, bcmp, const void* m1, const void* m2, size_t n) {
 HF_WEAK_WRAP(
     void*, memmem, const void* haystack, size_t haystacklen, const void* needle, size_t needlelen) {
     return HF_memmem(haystack, haystacklen, needle, needlelen, RET_CALL_CHAIN);
+}
+HF_WEAK_WRAP(void*, strcpy, char* dest, const char* src) {
+    return HF_strcpy(dest, src, RET_CALL_CHAIN);
 }
 
 /*
