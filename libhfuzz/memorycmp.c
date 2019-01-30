@@ -57,10 +57,6 @@ static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t
 }
 
 static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
-    if (n == 0) {
-        return __builtin_strncasecmp(s1, s2, n);
-    }
-
     unsigned int v = 0;
     for (size_t i = 0; i < n; i++) {
         if (tolower((unsigned char)s1[i]) != tolower((unsigned char)s2[i])) {
@@ -96,10 +92,6 @@ static inline char* HF_strcasestr(const char* haystack, const char* needle, uint
 }
 
 static inline int HF_memcmp(const void* m1, const void* m2, size_t n, uintptr_t addr) {
-    if (n == 0) {
-        return __builtin_memcmp(m1, m2, n);
-    }
-
     const unsigned char* s1 = (const unsigned char*)m1;
     const unsigned char* s2 = (const unsigned char*)m2;
 
@@ -136,6 +128,7 @@ static inline void* HF_memmem(const void* haystack, size_t haystacklen, const vo
 static inline char* HF_strcpy(char* dest, const char* src, uintptr_t addr) {
     uint32_t len = strlen(src);
     if (len > 0) {
+        /* The longer the 'src's len, the better */
         instrumentUpdateCmpMap(addr, (sizeof(len) * 8) - __builtin_clz(len));
     }
     return __builtin_strcpy(dest, src);
