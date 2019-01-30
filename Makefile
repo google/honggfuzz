@@ -32,10 +32,6 @@ COMMON_SRCS := $(sort $(wildcard *.c))
 CFLAGS ?= -O3 -mtune=native
 LDFLAGS ?=
 LIBS_CFLAGS ?= -fPIC -fno-stack-protector -fno-builtin -D__NO_STRING_INLINES -D__NO_INLINE__
-HFUZZ_USE_RET_ADDR ?= false
-ifneq ($(HFUZZ_USE_RET_ADDR),false)
-    LIBS_CFLAGS += -D_HF_USE_RET_ADDR=$(HFUZZ_USE_RET_ADDR) -Wno-error=frame-address
-endif
 GREP_COLOR ?=
 
 OS ?= $(shell uname -s)

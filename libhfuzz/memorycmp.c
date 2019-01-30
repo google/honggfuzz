@@ -11,21 +11,7 @@
 __attribute__((visibility("default"))) __attribute__((used))
 const char* const LIBHFUZZ_module_memorycmp = "LIBHFUZZ_module_memorycmp";
 
-#if !defined(_HF_USE_RET_ADDR)
-/* Use just single ret-address */
 #define RET_CALL_CHAIN (uintptr_t) __builtin_return_address(0)
-#elif _HF_USE_RET_ADDR == 2
-/* Use mix of two previous return addresses - unsafe */
-#define RET_CALL_CHAIN \
-    ((uintptr_t)__builtin_return_address(0)) ^ ((uintptr_t)__builtin_return_address(1) << 12)
-#elif _HF_USE_RET_ADDR == 3
-/* Use mix of three previous return addresses - unsafe */
-#define RET_CALL_CHAIN                                                                         \
-    ((uintptr_t)__builtin_return_address(0)) ^ ((uintptr_t)__builtin_return_address(1) << 8) ^ \
-        ((uintptr_t)__builtin_return_address(2) << 16)
-#else
-#error "Unknown value of _HF_USE_RET_ADDR"
-#endif /* !defined(_HF_USE_RET_ADDR_1) */
 
 static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
     unsigned int v = 0;
