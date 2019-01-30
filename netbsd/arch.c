@@ -57,7 +57,6 @@
 #include "libhfcommon/ns.h"
 #include "libhfcommon/util.h"
 #include "netbsd/trace.h"
-#include "sanitizers.h"
 #include "subproc.h"
 
 extern char** environ;
@@ -126,72 +125,19 @@ void arch_prepareParentAfterFork(run_t* run) {
             PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", run->persistentSock);
         }
     }
+    if (!arch_traceAttach(run)) {
+        LOG_F("Couldn't attach to pid=%d", (int)run->pid);
+    }
 }
 
-static bool arch_attachToNewPid(run_t* run, pid_t pid) {
-    if (!arch_shouldAttach(run)) {
-        return true;
-    }
-    run->netbsd.attachedPid = pid;
-    if (!arch_traceAttach(run, pid)) {
-        LOG_W("arch_traceAttach(pid=%d) failed", pid);
-        kill(pid, SIGKILL);
-        /* TODO: missing wait(2)? */
-        return false;
-    }
-
-    return true;
-}
-
-void arch_prepareParent(run_t* run) {
-    pid_t ptracePid = (run->global->netbsd.pid > 0) ? run->global->netbsd.pid : run->pid;
-    pid_t childPid = run->pid;
-
-    if (!arch_attachToNewPid(run, ptracePid)) {
-        LOG_E("Couldn't attach to PID=%d", (int)ptracePid);
-    }
-
-    /* A long-lived process could have already exited, and we wouldn't know */
-    if (childPid != ptracePid && kill(ptracePid, 0) == -1) {
-        if (run->global->netbsd.pidFile) {
-            /* If pid from file, check again for cases of auto-restart daemons that update it */
-            /*
-             * TODO: Investigate if we need to delay here, so that target process has
-             * enough time to restart. Tricky to answer since is target dependent.
-             */
-            if (files_readPidFromFile(run->global->netbsd.pidFile, &run->global->netbsd.pid) ==
-                false) {
-                LOG_F("Failed to read new PID from file - abort");
-            } else {
-                if (kill(run->global->netbsd.pid, 0) == -1) {
-                    PLOG_F("Liveness of PID %d read from file questioned - abort",
-                        run->global->netbsd.pid);
-                } else {
-                    LOG_D("Monitor PID has been updated (pid=%d)", run->global->netbsd.pid);
-                    ptracePid = run->global->netbsd.pid;
-                }
-            }
-        }
-    }
-
-    if (childPid != ptracePid) {
-        if (arch_traceWaitForPidStop(childPid) == false) {
-            LOG_F("PID: %d not in a stopped state", childPid);
-        }
-        if (kill(childPid, SIGCONT) == -1) {
-            PLOG_F("Restarting PID: %d failed", childPid);
-        }
-    }
+void arch_prepareParent(run_t* run HF_ATTR_UNUSED) {
 }
 
 static bool arch_checkWait(run_t* run) {
-    pid_t ptracePid = (run->global->netbsd.pid > 0) ? run->global->netbsd.pid : run->pid;
-    pid_t childPid = run->pid;
-
     /* All queued wait events must be tested when SIGCHLD was delivered */
     for (;;) {
         int status;
-        pid_t pid = TEMP_FAILURE_RETRY(waitpid(ptracePid, &status, WALLSIG | WNOHANG));
+        pid_t pid = TEMP_FAILURE_RETRY(waitpid(run->pid, &status, WALLSIG | WNOHANG));
         if (pid == 0) {
             return false;
         }
@@ -203,32 +149,20 @@ static bool arch_checkWait(run_t* run) {
             PLOG_F("waitpid() failed");
         }
 
+        arch_traceAnalyze(run, status, pid);
+
         char statusStr[4096];
-        LOG_D("PID '%d' returned with status: %s", pid,
+        LOG_D("pid=%d returned with status: %s", pid,
             subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
 
-        if (run->global->exe.persistent && pid == run->persistentPid &&
-            (WIFEXITED(status) || WIFSIGNALED(status))) {
-            arch_traceAnalyze(run, status, pid);
-            run->persistentPid = 0;
-            if (fuzz_isTerminating() == false) {
-                LOG_W("Persistent mode: PID %d exited with status: %s", pid,
-                    subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
+        if (pid == run->pid && (WIFEXITED(status) || WIFSIGNALED(status))) {
+            if (run->global->exe.persistent) {
+                if (fuzz_isTerminating() == false) {
+                    LOG_W("Persistent mode: PID %d exited with status: %s", pid,
+                        subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
+                }
             }
             return true;
-        }
-
-        if (ptracePid == childPid) {
-            arch_traceAnalyze(run, status, pid);
-            continue;
-        }
-
-        if (pid == childPid && (WIFEXITED(status) || WIFSIGNALED(status))) {
-            return true;
-        }
-
-        if (pid == childPid) {
-            continue;
         }
 
         arch_traceAnalyze(run, status, pid);
@@ -237,6 +171,10 @@ static bool arch_checkWait(run_t* run) {
 
 void arch_reapChild(run_t* run) {
     for (;;) {
+        if (subproc_persistentModeStateMachine(run)) {
+            break;
+        }
+
         if (run->global->exe.persistent) {
             struct pollfd pfd = {
                 .fd = run->persistentSock,
@@ -251,34 +189,9 @@ void arch_reapChild(run_t* run) {
                 PLOG_F("poll(fd=%d)", run->persistentSock);
             }
         }
-
-        if (subproc_persistentModeRoundDone(run)) {
-            break;
-        }
         if (arch_checkWait(run)) {
-            LOG_D("SocketFuzzer: arch: Crash Identified");
+            run->pid = 0;
             break;
-        }
-        if (run->global->socketFuzzer.enabled) {
-            // Do not wait for new events
-            break;
-        }
-    }
-
-    if (run->global->sanitizer.enable) {
-        pid_t ptracePid = (run->global->netbsd.pid > 0) ? run->global->netbsd.pid : run->pid;
-        char crashReport[PATH_MAX];
-        snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", run->global->io.workDir, kLOGPREFIX,
-            ptracePid);
-        if (files_exists(crashReport)) {
-            if (run->backtrace) {
-                unlink(crashReport);
-            } else {
-                LOG_W("Un-handled ASan report due to compiler-rt internal error - retry with '%s'",
-                    crashReport);
-                /* Try to parse report file */
-                arch_traceExitAnalyze(run, ptracePid);
-            }
         }
     }
 }
@@ -301,38 +214,8 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
     sigaddset(&hfuzz->netbsd.waitSigSet, SIGIO);
     sigaddset(&hfuzz->netbsd.waitSigSet, SIGCHLD);
 
-    /* If remote pid, resolve command using procfs */
-    if (hfuzz->netbsd.pid > 0) {
-        char procCmd[PATH_MAX] = {0};
-        snprintf(procCmd, sizeof(procCmd), "/proc/%d/cmdline", hfuzz->netbsd.pid);
-
-        ssize_t sz = files_readFileToBufMax(
-            procCmd, (uint8_t*)hfuzz->netbsd.pidCmd, sizeof(hfuzz->netbsd.pidCmd) - 1);
-        if (sz < 1) {
-            LOG_E("Couldn't read '%s'", procCmd);
-            return false;
-        }
-
-        /* Make human readable */
-        for (size_t i = 0; i < ((size_t)sz - 1); i++) {
-            if (hfuzz->netbsd.pidCmd[i] == '\0') {
-                hfuzz->netbsd.pidCmd[i] = ' ';
-            }
-        }
-        hfuzz->netbsd.pidCmd[sz] = '\0';
-    }
-
     /* Updates the important signal array based on input args */
     arch_traceSignalsInit(hfuzz);
-
-    /*
-     * If sanitizer fuzzing enabled and SIGABRT is monitored (abort_on_error=1),
-     * increase number of major frames, since top 7-9 frames will be occupied
-     * with sanitizer runtime library & libc symbols
-     */
-    if (hfuzz->sanitizer.enable && hfuzz->cfg.monitorSIGABRT) {
-        hfuzz->netbsd.numMajorFrames = 14;
-    }
 
     return true;
 }
