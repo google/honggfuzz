@@ -66,11 +66,11 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
         ARCH_LDFLAGS += -lipt
     endif
     ifdef WARN_LIBRARY
-        $(info ***************************************************************)
-        $(info Development libraries which are most likely missing on your OS )
-        $(info resulting in a failed build, though this is not always correct:)
+        $(info --------------------------------------------------------)
+        $(info Libraries which are most likely missing on your OS, what)
+        $(info might result in a failed build. (just a guess)          )
         $(info $(WARN_LIBRARY))
-        $(info ***************************************************************)
+        $(info --------------------------------------------------------)
     endif
     # OS Linux
 else ifeq ($(OS),Darwin)
