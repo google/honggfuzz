@@ -63,7 +63,7 @@ static void exitWithMsg(const char* msg, int exit_code) {
 }
 
 static bool showDisplay = true;
-void sigHandler(int sig) {
+static void sigHandler(int sig) {
     /* We should not terminate upon SIGALRM delivery */
     if (sig == SIGALRM) {
         if (fuzz_shouldTerminate()) {
@@ -190,9 +190,8 @@ int main(int argc, char** argv) {
     }
 
     if (hfuzz.socketFuzzer.enabled) {
-        LOG_I(
-            "No input file corpus loaded, the external socket_fuzzer is responsible for "
-            "creating the fuzz data");
+        LOG_I("No input file corpus loaded, the external socket_fuzzer is responsible for "
+              "creating the fuzz data");
         setupSocketFuzzer(&hfuzz);
     } else if (!input_init(&hfuzz)) {
         LOG_F("Couldn't load input corpus");

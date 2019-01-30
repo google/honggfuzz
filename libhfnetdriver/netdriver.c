@@ -222,9 +222,8 @@ __attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
         }
     }
 
-    LOG_I(
-        "Honggfuzz Net Driver (pid=%d): No '--' was found in the commandline, and therefore no "
-        "arguments will be passed to the TCP server program",
+    LOG_I("Honggfuzz Net Driver (pid=%d): No '--' was found in the commandline, and therefore no "
+          "arguments will be passed to the TCP server program",
         (int)getpid());
     *server_argc = 1;
     *server_argv = &argv[0];
@@ -283,9 +282,8 @@ __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
             "Honggfuzz Net Driver (pid=%d): '%s' is set, skipping fuzzing, calling main() directly",
             getpid(), HFND_SKIP_FUZZING_ENV);
         if (!HonggfuzzNetDriver_main) {
-            LOG_F(
-                "Honggfuzz Net Driver (pid=%d): HonggfuzzNetDriver_main was not defined in your "
-                "code",
+            LOG_F("Honggfuzz Net Driver (pid=%d): HonggfuzzNetDriver_main was not defined in your "
+                  "code",
                 getpid());
         }
         exit(HonggfuzzNetDriver_main(*argc, *argv));
@@ -307,9 +305,8 @@ __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
     netDriver_startOriginalProgramInThread();
     netDriver_waitForServerReady(hfnd_globals.tcp_port);
 
-    LOG_I(
-        "Honggfuzz Net Driver (pid=%d): The TCP server process is ready to accept connections at "
-        "%s:%" PRIu16 ". TCP fuzzing starts now!",
+    LOG_I("Honggfuzz Net Driver (pid=%d): The TCP server process is ready to accept connections at "
+          "%s:%" PRIu16 ". TCP fuzzing starts now!",
         (int)getpid(), (hfnd_globals.sa_family == AF_INET ? "TCP4:127.0.0.1" : "[::1]"),
         hfnd_globals.tcp_port);
 

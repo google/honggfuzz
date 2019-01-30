@@ -102,7 +102,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
     if (!WIFSIGNALED(status)) {
         LOG_E("Process (pid %d) exited with the following status %d, please report that as a bug",
             run->pid, status);
-        return true;
+        return false;
     }
 
     int termsig = WTERMSIG(status);
@@ -188,6 +188,10 @@ void arch_prepareParentAfterFork(run_t* fuzzer HF_ATTR_UNUSED) {
 
 void arch_reapChild(run_t* run) {
     for (;;) {
+        if (subproc_persistentModeStateMachine(run)) {
+            break;
+        }
+
         if (run->global->exe.persistent) {
             struct pollfd pfd = {
                 .fd = run->persistentSock,
@@ -201,9 +205,6 @@ void arch_reapChild(run_t* run) {
             if (r == -1 && errno != EINTR) {
                 PLOG_F("poll(fd=%d)", run->persistentSock);
             }
-        }
-        if (subproc_persistentModeRoundDone(run) == true) {
-            break;
         }
 
         int status;
@@ -225,10 +226,9 @@ void arch_reapChild(run_t* run) {
         }
 
         char strStatus[4096];
-        if (run->global->exe.persistent && ret == run->persistentPid &&
+        if (run->global->exe.persistent && ret == run->pid &&
             (WIFEXITED(status) || WIFSIGNALED(status))) {
-            run->persistentPid = 0;
-            if (fuzz_isTerminating() == false) {
+            if (!fuzz_isTerminating()) {
                 LOG_W("Persistent mode: PID %d exited with status: %s", ret,
                     subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
             }
@@ -238,6 +238,7 @@ void arch_reapChild(run_t* run) {
             subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
 
         if (arch_analyzeSignal(run, status)) {
+            run->pid = 0;
             break;
         }
     }

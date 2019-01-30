@@ -349,7 +349,6 @@ static bool fuzz_fetchInput(run_t* run) {
 }
 
 static void fuzz_fuzzLoop(run_t* run) {
-    run->pid = 0;
     run->timeStartedMillis = 0;
     run->crashFileName[0] = '\0';
     run->pc = 0;
@@ -360,7 +359,8 @@ static void fuzz_fuzzLoop(run_t* run) {
     run->mainWorker = true;
     run->mutationsPerRun = run->global->mutate.mutationsPerRun;
     run->dynamicFileSz = 0;
-    run->dynamicFileCopyFd = -1,
+    run->dynamicFileCopyFd = -1;
+    run->tmOutSignaled = false;
 
     run->linux.hwCnts.cpuInstrCnt = 0;
     run->linux.hwCnts.cpuBranchCnt = 0;
@@ -395,7 +395,8 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
     run->mainWorker = true;
     run->mutationsPerRun = run->global->mutate.mutationsPerRun;
     run->dynamicFileSz = 0;
-    run->dynamicFileCopyFd = -1,
+    run->dynamicFileCopyFd = -1;
+    run->tmOutSignaled = false;
 
     run->linux.hwCnts.cpuInstrCnt = 0;
     run->linux.hwCnts.cpuBranchCnt = 0;
@@ -422,7 +423,6 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
         /* Fuzzer could not connect to target, and told us to
            restart it. Do it on the next iteration. */
         LOG_D("------[ 2.1: Target down, will restart it");
-        run->hasCrashed = true;
         return;
     }
 
@@ -445,7 +445,6 @@ static void* fuzz_threadNew(void* arg) {
     run_t run = {
         .global = hfuzz,
         .pid = 0,
-        .persistentPid = 0,
         .dynfileqCurrent = NULL,
         .dynamicFile = NULL,
         .dynamicFileFd = -1,
@@ -453,9 +452,6 @@ static void* fuzz_threadNew(void* arg) {
         .persistentSock = -1,
         .tmOutSignaled = false,
         .origFileName = "[DYNAMIC]",
-
-        .linux.attachedPid = 0,
-        .netbsd.attachedPid = 0,
     };
 
     /* Do not try to handle input files with socketfuzzer */
@@ -508,6 +504,10 @@ static void* fuzz_threadNew(void* arg) {
             fuzz_setTerminating();
             break;
         }
+    }
+
+    if (run.pid) {
+        kill(run.pid, SIGKILL);
     }
 
     LOG_I("Terminating thread no. #%" PRId32 ", left: %zu", fuzzNo,

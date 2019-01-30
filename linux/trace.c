@@ -814,7 +814,6 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     /* Target crashed (no duplicate detection yet) */
     if (run->global->socketFuzzer.enabled) {
         LOG_D("SocketFuzzer: trace: Crash Identified");
-        run->hasCrashed = true;
     }
 
     if (files_exists(run->crashFileName)) {
@@ -977,7 +976,6 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     REG_TYPE pc = 0;
     void* crashAddr = 0;
     char* op = "UNKNOWN";
-    pid_t targetPid = (run->global->linux.pid > 0) ? run->global->linux.pid : run->pid;
 
     /* Save only the first hit for each worker */
     if (run->crashFileName[0] != '\0') {
@@ -997,7 +995,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
     /* Sanitizers save reports against parent PID */
-    if (targetPid != pid) {
+    if (run->pid != pid) {
         return;
     }
     funcCnt = arch_parseAsanReport(run, pid, funcs, &crashAddr, &op);
@@ -1308,7 +1306,7 @@ bool arch_traceWaitForPidStop(pid_t pid) {
 }
 
 #define MAX_THREAD_IN_TASK 4096
-bool arch_traceAttach(run_t* run, pid_t pid) {
+bool arch_traceAttach(run_t* run) {
 /*
  * It should be present since, at least, Linux kernel 3.8, but
  * not always defined in kernel-headers
@@ -1316,47 +1314,45 @@ bool arch_traceAttach(run_t* run, pid_t pid) {
 #if !defined(PTRACE_O_EXITKILL)
 #define PTRACE_O_EXITKILL (1 << 20)
 #endif /* !defined(PTRACE_O_EXITKILL) */
-    long seize_options = PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK;
-    if (run->global->linux.pid == 0) {
-        seize_options |= PTRACE_O_EXITKILL;
-    }
+    long seize_options =
+        PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_EXITKILL;
     /* The event is only used with sanitizers */
     if (run->global->sanitizer.enable) {
         seize_options |= PTRACE_O_TRACEEXIT;
     }
 
-    if (run->global->linux.pid == 0 && !arch_traceWaitForPidStop(pid)) {
+    if (!arch_traceWaitForPidStop(run->pid)) {
         return false;
     }
 
-    if (ptrace(PTRACE_SEIZE, pid, NULL, seize_options) == -1) {
-        PLOG_W("Couldn't ptrace(PTRACE_SEIZE) to pid: %d", pid);
+    if (ptrace(PTRACE_SEIZE, run->pid, NULL, seize_options) == -1) {
+        PLOG_W("Couldn't ptrace(PTRACE_SEIZE) to pid: %d", (int)run->pid);
         return false;
     }
 
-    LOG_D("Attached to PID: %d", pid);
-
-    /* It only makes sense to attach to threads with -p */
-    if (run->global->linux.pid == 0) {
-        return true;
-    }
+    LOG_D("Attached to PID: %d", (int)run->pid);
 
     int tasks[MAX_THREAD_IN_TASK + 1] = {0};
-    if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, pid)) {
-        LOG_E("Couldn't read thread list for pid '%d'", pid);
+    if (!arch_listThreads(tasks, MAX_THREAD_IN_TASK, run->pid)) {
+        LOG_E("Couldn't read thread list for pid '%d'", run->pid);
         return false;
     }
 
     for (int i = 0; i < MAX_THREAD_IN_TASK && tasks[i]; i++) {
-        if (tasks[i] == pid) {
+        if (tasks[i] == run->pid) {
             continue;
         }
         if (ptrace(PTRACE_SEIZE, tasks[i], NULL, seize_options) == -1) {
             PLOG_W("Couldn't ptrace(PTRACE_SEIZE) to pid: %d", tasks[i]);
             continue;
         }
-        LOG_D("Attached to PID: %d (thread_group:%d)", tasks[i], pid);
+        LOG_D("Attached to PID: %d (thread_group:%d)", tasks[i], run->pid);
     }
+
+    if (ptrace(PTRACE_CONT, run->pid, NULL, NULL) == -1) {
+        PLOG_W("ptrace(PTRACE_CONT) to pid: %d", (int)run->pid);
+    }
+
     return true;
 }
 

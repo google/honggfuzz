@@ -100,16 +100,9 @@ void report_Report(run_t* run) {
 #if defined(_HF_ARCH_LINUX) || defined(_HF_ARCH_NETBSD)
         " ignoreAddr      : %p\n"
 #endif
-        " ASLimit         : %" PRIu64
-        " (MiB)\n"
-        " RSSLimit        : %" PRIu64
-        " (MiB)\n"
-        " DATALimit       : %" PRIu64
-        " (MiB)\n"
-#if defined(_HF_ARCH_LINUX) || defined(_HF_ARCH_NETBSD)
-        " targetPid       : %d\n"
-        " targetCmd       : %s\n"
-#endif
+        " ASLimit         : %" PRIu64 " (MiB)\n"
+        " RSSLimit        : %" PRIu64 " (MiB)\n"
+        " DATALimit       : %" PRIu64 " (MiB)\n"
         " wordlistFile    : %s\n",
         localtmstr, run->global->mutate.mutationsPerRun,
         run->global->exe.externalCommand == NULL ? "NULL" : run->global->exe.externalCommand,
@@ -120,11 +113,6 @@ void report_Report(run_t* run) {
         run->global->netbsd.ignoreAddr,
 #endif
         run->global->exe.asLimit, run->global->exe.rssLimit, run->global->exe.dataLimit,
-#if defined(_HF_ARCH_LINUX)
-        run->global->linux.pid, run->global->linux.pidCmd,
-#elif defined(_HF_ARCH_NETBSD)
-        run->global->netbsd.pid, run->global->netbsd.pidCmd,
-#endif
         run->global->mutate.dictionaryFile == NULL ? "NULL" : run->global->mutate.dictionaryFile);
 
 #if defined(_HF_ARCH_LINUX)

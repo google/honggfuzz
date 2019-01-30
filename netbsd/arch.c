@@ -62,19 +62,6 @@
 
 extern char** environ;
 
-static inline bool arch_shouldAttach(run_t* run) {
-    if (run->global->exe.persistent && run->netbsd.attachedPid == run->pid) {
-        return false;
-    }
-    if (run->global->netbsd.pid > 0 && run->netbsd.attachedPid == run->global->netbsd.pid) {
-        return false;
-    }
-    if (run->global->socketFuzzer.enabled && run->netbsd.attachedPid == run->pid) {
-        return false;
-    }
-    return true;
-}
-
 pid_t arch_fork(run_t* run HF_ATTR_UNUSED) {
     pid_t pid = fork();
     if (pid == -1) {
@@ -270,7 +257,6 @@ void arch_reapChild(run_t* run) {
         }
         if (arch_checkWait(run)) {
             LOG_D("SocketFuzzer: arch: Crash Identified");
-            run->hasCrashed = true;
             break;
         }
         if (run->global->socketFuzzer.enabled) {

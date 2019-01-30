@@ -114,7 +114,7 @@ static long perf_event_open(
 }
 
 static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* perfFd) {
-    LOG_D("Enabling PERF for PID=%d method=%x", pid, method);
+    LOG_D("Enabling PERF for pid=%d method=%x", pid, method);
 
     if (*perfFd != -1) {
         LOG_F("The PERF FD is already initialized, possibly conflicting perf types enabled");
@@ -135,8 +135,8 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
     } else {
         pe.exclude_kernel = 1;
     }
-    if (run->global->linux.pid == 0) {
-        pe.disabled = 1;
+    pe.disabled = 1;
+    if (!run->global->exe.persistent) {
         pe.enable_on_exec = 1;
     }
     pe.exclude_hv = 1;
@@ -144,26 +144,26 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
 
     switch (method) {
         case _HF_DYNFILE_INSTR_COUNT:
-            LOG_D("Using: PERF_COUNT_HW_INSTRUCTIONS for PID: %d", pid);
+            LOG_D("Using: PERF_COUNT_HW_INSTRUCTIONS for pid=%d", (int)pid);
             pe.config = PERF_COUNT_HW_INSTRUCTIONS;
             pe.inherit = 1;
             break;
         case _HF_DYNFILE_BRANCH_COUNT:
-            LOG_D("Using: PERF_COUNT_HW_BRANCH_INSTRUCTIONS for PID: %d", pid);
+            LOG_D("Using: PERF_COUNT_HW_BRANCH_INSTRUCTIONS for pid=%d", (int)pid);
             pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
             pe.inherit = 1;
             break;
         case _HF_DYNFILE_BTS_EDGE:
-            LOG_D("Using: (Intel BTS) type=%" PRIu32 " for PID: %d", perfIntelBtsPerfType, pid);
+            LOG_D("Using: (Intel BTS) type=%" PRIu32 " for pid=%d", perfIntelBtsPerfType, (int)pid);
             pe.type = perfIntelBtsPerfType;
             break;
         case _HF_DYNFILE_IPT_BLOCK:
-            LOG_D("Using: (Intel PT) type=%" PRIu32 " for PID: %d", perfIntelPtPerfType, pid);
+            LOG_D("Using: (Intel PT) type=%" PRIu32 " for pid=%d", perfIntelPtPerfType, (int)pid);
             pe.type = perfIntelPtPerfType;
             pe.config = RTIT_CTL_DISRETC;
             break;
         default:
-            LOG_E("Unknown perf mode: '%d' for PID: %d", method, pid);
+            LOG_E("Unknown perf mode: '%d' for pid=%d", method, (int)pid);
             return false;
             break;
     }
@@ -173,7 +173,7 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
 #endif
     *perfFd = perf_event_open(&pe, pid, -1, -1, PERF_FLAG_FD_CLOEXEC);
     if (*perfFd == -1) {
-        PLOG_F("perf_event_open() failed");
+        PLOG_E("perf_event_open() failed");
         return false;
     }
 
@@ -184,9 +184,8 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
     if ((run->linux.perfMmapBuf = mmap(NULL, _HF_PERF_MAP_SZ + getpagesize(),
              PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0)) == MAP_FAILED) {
         run->linux.perfMmapBuf = NULL;
-        PLOG_W(
-            "mmap(mmapBuf) failed, sz=%zu, try increasing the kernel.perf_event_mlock_kb sysctl "
-            "(up to even 300000000)",
+        PLOG_W("mmap(mmapBuf) failed, sz=%zu, try increasing the kernel.perf_event_mlock_kb sysctl "
+               "(up to even 300000000)",
             (size_t)_HF_PERF_MAP_SZ + getpagesize());
         close(*perfFd);
         *perfFd = -1;
@@ -214,32 +213,32 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
     return true;
 }
 
-bool arch_perfOpen(pid_t pid, run_t* run) {
+bool arch_perfOpen(run_t* run) {
     if (run->global->feedback.dynFileMethod == _HF_DYNFILE_NONE) {
         return true;
     }
 
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        if (arch_perfCreate(run, pid, _HF_DYNFILE_INSTR_COUNT, &run->linux.cpuInstrFd) == false) {
-            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_INSTR_COUNT)", pid);
+        if (!arch_perfCreate(run, run->pid, _HF_DYNFILE_INSTR_COUNT, &run->linux.cpuInstrFd)) {
+            LOG_E("Cannot set up perf for pid=%d (_HF_DYNFILE_INSTR_COUNT)", (int)run->pid);
             goto out;
         }
     }
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        if (arch_perfCreate(run, pid, _HF_DYNFILE_BRANCH_COUNT, &run->linux.cpuBranchFd) == false) {
-            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BRANCH_COUNT)", pid);
+        if (!arch_perfCreate(run, run->pid, _HF_DYNFILE_BRANCH_COUNT, &run->linux.cpuBranchFd)) {
+            LOG_E("Cannot set up perf for pid=%d (_HF_DYNFILE_BRANCH_COUNT)", (int)run->pid);
             goto out;
         }
     }
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        if (arch_perfCreate(run, pid, _HF_DYNFILE_BTS_EDGE, &run->linux.cpuIptBtsFd) == false) {
-            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_BTS_EDGE)", pid);
+        if (!arch_perfCreate(run, run->pid, _HF_DYNFILE_BTS_EDGE, &run->linux.cpuIptBtsFd)) {
+            LOG_E("Cannot set up perf for pid=%d (_HF_DYNFILE_BTS_EDGE)", (int)run->pid);
             goto out;
         }
     }
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        if (arch_perfCreate(run, pid, _HF_DYNFILE_IPT_BLOCK, &run->linux.cpuIptBtsFd) == false) {
-            LOG_E("Cannot set up perf for PID=%d (_HF_DYNFILE_IPT_BLOCK)", pid);
+        if (!arch_perfCreate(run, run->pid, _HF_DYNFILE_IPT_BLOCK, &run->linux.cpuIptBtsFd)) {
+            LOG_E("Cannot set up perf for pid=%d (_HF_DYNFILE_IPT_BLOCK)", (int)run->pid);
             goto out;
         }
     }
@@ -291,6 +290,10 @@ void arch_perfClose(run_t* run) {
 
 bool arch_perfEnable(run_t* run) {
     if (run->global->feedback.dynFileMethod == _HF_DYNFILE_NONE) {
+        return true;
+    }
+    /* It's enabled on exec in such scenario */
+    if (!run->global->exe.persistent) {
         return true;
     }
 

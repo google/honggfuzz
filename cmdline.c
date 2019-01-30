@@ -114,9 +114,8 @@ static void cmdlineHelp(const char* pname, struct custom_option* opts) {
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" Use persistent mode w/o instrumentation:");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -x -- /usr/bin/djpeg_persistent_mode");
-    LOG_HELP(
-        " Use persistent mode and compile-time (-fsanitize-coverage=trace-pc-guard,...) "
-        "instrumentation:");
+    LOG_HELP(" Use persistent mode and compile-time (-fsanitize-coverage=trace-pc-guard,...) "
+             "instrumentation:");
     LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -- /usr/bin/djpeg_persistent_mode");
 #if defined(_HF_ARCH_LINUX)
     LOG_HELP(
@@ -225,20 +224,6 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
         PLOG_E("Couldn't create the crash directory '%s'", hfuzz->io.crashDir);
         return false;
     }
-
-#if defined(_HF_ARCH_LINUX)
-    if (hfuzz->linux.pid > 0 || hfuzz->linux.pidFile) {
-        LOG_I("PID=%d specified, lowering maximum number of concurrent threads to 1",
-            hfuzz->linux.pid);
-        hfuzz->threads.threadsMax = 1;
-    }
-#elif defined(_HF_ARCH_NETBSD)
-    if (hfuzz->netbsd.pid > 0 || hfuzz->netbsd.pidFile) {
-        LOG_I("PID=%d specified, lowering maximum number of concurrent threads to 1",
-            hfuzz->netbsd.pid);
-        hfuzz->threads.threadsMax = 1;
-    }
-#endif
 
     if (hfuzz->mutate.mutationsPerRun == 0U && hfuzz->cfg.useVerifier) {
         LOG_I("Verifier enabled with mutationsPerRun == 0, activating the dry run mode");
@@ -380,9 +365,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .disableRandomization = true,
                 .ignoreAddr = NULL,
                 .numMajorFrames = 7,
-                .pid = 0,
-                .pidFile = NULL,
-                .pidCmd = {},
                 .symsBlFile = NULL,
                 .symsBlCnt = 0,
                 .symsBl = NULL,
@@ -398,9 +380,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             {
                 .ignoreAddr = NULL,
                 .numMajorFrames = 7,
-                .pid = 0,
-                .pidFile = NULL,
-                .pidCmd = {},
                 .symsBlFile = NULL,
                 .symsBlCnt = 0,
                 .symsBl = NULL,
@@ -462,8 +441,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 #if defined(_HF_ARCH_LINUX)
         { { "linux_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blacklist filter file (one entry per line)" },
         { { "linux_symbols_wl", required_argument, NULL, 0x505 }, "Symbols whitelist filter file (one entry per line)" },
-        { { "linux_pid", required_argument, NULL, 'p' }, "Attach to a pid (and its thread group)" },
-        { { "linux_file_pid", required_argument, NULL, 0x502 }, "Attach to pid (and its thread group) read from file" },
         { { "linux_addr_low_limit", required_argument, NULL, 0x500 }, "Address limit (from si.si_addr) below which crashes are not reported, (default: 0)" },
         { { "linux_keep_aslr", no_argument, NULL, 0x501 }, "Don't disable ASLR randomization, might be useful with MSAN" },
         { { "linux_perf_ignore_above", required_argument, NULL, 0x503 }, "Ignore perf events which report IPs above this address" },
@@ -480,8 +457,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 #if defined(_HF_ARCH_NETBSD)
         { { "netbsd_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blacklist filter file (one entry per line)" },
         { { "netbsd_symbols_wl", required_argument, NULL, 0x505 }, "Symbols whitelist filter file (one entry per line)" },
-        { { "netbsd_pid", required_argument, NULL, 'p' }, "Attach to a pid (and its thread group)" },
-        { { "netbsd_file_pid", required_argument, NULL, 0x502 }, "Attach to pid (and its thread group) read from file" },
         { { "netbsd_addr_low_limit", required_argument, NULL, 0x500 }, "Address limit (from si.si_addr) below which crashes are not reported, (default: 0)" },
 #endif // defined(_HF_ARCH_NETBSD)
         { { 0, 0, 0, 0 }, NULL },
@@ -634,35 +609,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             case 'T':
                 hfuzz->timing.tmoutVTALRM = true;
                 break;
-            case 'p':
-                if (util_isANumber(optarg) == false) {
-                    LOG_E("-p '%s' is not a number", optarg);
-                    return false;
-                }
-#if defined(_HF_ARCH_LINUX)
-                hfuzz->linux.pid = atoi(optarg);
-                if (hfuzz->linux.pid < 1) {
-                    LOG_E("-p '%d' is invalid", hfuzz->linux.pid);
-                    return false;
-                }
-#elif defined(_HF_ARCH_NETBSD)
-                hfuzz->netbsd.pid = atoi(optarg);
-                if (hfuzz->netbsd.pid < 1) {
-                    LOG_E("-p '%d' is invalid", hfuzz->netbsd.pid);
-                    return false;
-                }
-#else
-                LOG_E("-p not supported on this platform");
-                return false;
-#endif
-                break;
-            case 0x502:
-#if defined(_HF_ARCH_LINUX)
-                hfuzz->linux.pidFile = optarg;
-#elif defined(_HF_ARCH_NETBSD)
-                hfuzz->netbsd.pidFile = optarg;
-#endif
-                break;
             case 'E':
                 if (!cmdlineAddEnv(hfuzz, optarg)) {
                     return false;
@@ -753,31 +699,12 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 
     display_createTargetStr(hfuzz);
 
-    LOG_I(
-        "cmdline: '%s' pid: %d, inputDir '%s', nullifyStdio: %s, fuzzStdin: %s, saveUnique: %s, "
-        "mutationsPerRun: %u, "
-        "externalCommand: '%s', runEndTime: %d tmOut: %ld, mutationsMax: %zu, "
-        "threads.threadsMax: %zu, "
-        "fileExtn: '%s', "
-        "ASLimit: 0x%" PRIx64 "(MiB), RSSLimit: 0x%" PRIx64 ", DATALimit: 0x%" PRIx64
-        ", fuzzExe: '%s', "
-#if defined(_HF_ARCH_LINUX) || defined(_HF_ARCH_NETBSD)
-        "fuzzedPid: %d, "
-#endif
-        "monitorSIGABRT: '%s'",
-        hfuzz->display.cmdline_txt, (int)getpid(), hfuzz->io.inputDir,
-        cmdlineYesNo(hfuzz->exe.nullifyStdio), cmdlineYesNo(hfuzz->exe.fuzzStdin),
-        cmdlineYesNo(hfuzz->io.saveUnique), hfuzz->mutate.mutationsPerRun,
-        hfuzz->exe.externalCommand == NULL ? "NULL" : hfuzz->exe.externalCommand,
-        (int)hfuzz->timing.runEndTime, (long)hfuzz->timing.tmOut, hfuzz->mutate.mutationsMax,
-        hfuzz->threads.threadsMax, hfuzz->io.fileExtn, hfuzz->exe.asLimit, hfuzz->exe.rssLimit,
-        hfuzz->exe.dataLimit, hfuzz->exe.cmdline[0],
-#if defined(_HF_ARCH_LINUX)
-        hfuzz->linux.pid,
-#elif defined(_HF_ARCH_NETBSD)
-        hfuzz->netbsd.pid,
-#endif
-        cmdlineYesNo(hfuzz->cfg.monitorSIGABRT));
+    LOG_I("cmdline:'%s', bin:'%s' inputDir:'%s', fuzzStdin:%s, mutationsPerRun:%u, "
+          "externalCommand:'%s', timeout:%ld, mutationsMax:%zu, threadsMax:%zu",
+        hfuzz->display.cmdline_txt, hfuzz->exe.cmdline[0], hfuzz->io.inputDir,
+        cmdlineYesNo(hfuzz->exe.fuzzStdin), hfuzz->mutate.mutationsPerRun,
+        !hfuzz->exe.externalCommand ? "" : hfuzz->exe.externalCommand, (long)hfuzz->timing.tmOut,
+        hfuzz->mutate.mutationsMax, hfuzz->threads.threadsMax);
 
     return true;
 }

@@ -184,21 +184,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
             display_put("\n        Mode : " ESC_BOLD "Unknown" ESC_RESET "\n");
             break;
     }
-
-#if defined(_HF_ARCH_LINUX)
-    if (hfuzz->linux.pid > 0) {
-        display_put("      Target : [" ESC_BOLD "%d" ESC_RESET "] '" ESC_BOLD "%s" ESC_RESET "'\n",
-            hfuzz->linux.pid, hfuzz->linux.pidCmd);
-#elif defined(_HF_ARCH_NETBSD)
-    if (hfuzz->netbsd.pid > 0) {
-        display_put("      Target : [" ESC_BOLD "%d" ESC_RESET "] '" ESC_BOLD "%s" ESC_RESET "'\n",
-            hfuzz->netbsd.pid, hfuzz->netbsd.pidCmd);
-#else
-    if (false) {
-#endif
-    } else {
-        display_put("      Target : " ESC_BOLD "%s" ESC_RESET "\n", hfuzz->display.cmdline_txt);
-    }
+    display_put("      Target : " ESC_BOLD "%s" ESC_RESET "\n", hfuzz->display.cmdline_txt);
 
     static long num_cpu = 0;
     if (num_cpu == 0) {
@@ -219,8 +205,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
 
     uint64_t crashesCnt = ATOMIC_GET(hfuzz->cnts.crashesCnt);
     /* colored the crash count as red when exist crash */
-    display_put("     Crashes : " ESC_BOLD
-                "%s"
+    display_put("     Crashes : " ESC_BOLD "%s"
                 "%zu" ESC_RESET " [unique: %s" ESC_BOLD "%zu" ESC_RESET ", blacklist: " ESC_BOLD
                 "%zu" ESC_RESET ", verified: " ESC_BOLD "%zu" ESC_RESET "]\n",
         crashesCnt > 0 ? ESC_RED : "", hfuzz->cnts.crashesCnt, crashesCnt > 0 ? ESC_RED : "",

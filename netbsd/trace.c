@@ -138,9 +138,8 @@ static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, register_t pc
         io.piod_addr = buf + bytes_read;
 
         if (ptrace(PT_IO, pid, &io, 0) == -1) {
-            PLOG_W(
-                "Couldn't read process memory on pid %d, "
-                "piod_op: %d offs: %p addr: %p piod_len: %zu",
+            PLOG_W("Couldn't read process memory on pid %d, "
+                   "piod_op: %d offs: %p addr: %p piod_len: %zu",
                 pid, io.piod_op, io.piod_offs, io.piod_addr, io.piod_len);
             break;
         }
@@ -491,7 +490,6 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     /* Target crashed (no duplicate detection yet) */
     if (run->global->socketFuzzer.enabled) {
         LOG_D("SocketFuzzer: trace: Crash Identified");
-        run->hasCrashed = true;
     }
 
     if (files_exists(run->crashFileName)) {
@@ -867,9 +865,8 @@ static void arch_traceEvent(run_t* run HF_ATTR_UNUSED, pid_t pid) {
                             "PID: %d unexpected lwp trap (TRAP_LWP) : exit (PTRACE_LWP_EXIT)", pid);
                         break;
                     default:
-                        LOG_D(
-                            "PID: %d unknown child/lwp trap (TRAP_LWP/TRAP_CHLD) : unknown "
-                            "pe_report_event=%d",
+                        LOG_D("PID: %d unknown child/lwp trap (TRAP_LWP/TRAP_CHLD) : unknown "
+                              "pe_report_event=%d",
                             pid, state.pe_report_event);
                         break;
                 }

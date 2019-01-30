@@ -79,8 +79,8 @@
 /* FD used to pass data to a persistent process */
 #define _HF_PERSISTENT_FD 1023
 
-/* Message indicating that the fuzz process has finished processing data (fuzzed->fuzzer) */
-static const uint8_t HFdoneTag = 'D';
+/* Message indicating that the fuzzed process is ready for new data */
+static const uint8_t HFReadyTag = 'R';
 
 /* Maximum number of active fuzzing threads */
 #define _HF_THREAD_MAX 1024U
@@ -275,9 +275,6 @@ typedef struct {
         bool disableRandomization;
         void* ignoreAddr;
         size_t numMajorFrames;
-        pid_t pid;
-        const char* pidFile;
-        char pidCmd[55];
         const char* symsBlFile;
         char** symsBl;
         size_t symsBlCnt;
@@ -293,9 +290,6 @@ typedef struct {
     struct {
         void* ignoreAddr;
         size_t numMajorFrames;
-        pid_t pid;
-        const char* pidFile;
-        char pidCmd[55];
         const char* symsBlFile;
         char** symsBl;
         size_t symsBlCnt;
@@ -306,10 +300,16 @@ typedef struct {
     } netbsd;
 } honggfuzz_t;
 
+typedef enum {
+    _HF_RS_UNKNOWN = 0,
+    _HF_RS_WAITING_FOR_INITIAL_READY = 1,
+    _HF_RS_WAITING_FOR_READY = 2,
+    _HF_RS_SEND_DATA = 3,
+} runState_t;
+
 typedef struct {
     honggfuzz_t* global;
     pid_t pid;
-    pid_t persistentPid;
     int64_t timeStartedMillis;
     char origFileName[PATH_MAX];
     char crashFileName[PATH_MAX];
@@ -327,6 +327,8 @@ typedef struct {
     int dynamicFileCopyFd;
     uint32_t fuzzNo;
     int persistentSock;
+    bool waitingForReady;
+    runState_t runState;
     bool tmOutSignaled;
 #if !defined(_HF_ARCH_DARWIN)
     timer_t timerId;
@@ -337,7 +339,6 @@ typedef struct {
         uint8_t* perfMmapBuf;
         uint8_t* perfMmapAux;
         hwcnt_t hwCnts;
-        pid_t attachedPid;
         int cpuInstrFd;
         int cpuBranchFd;
         int cpuIptBtsFd;
@@ -348,13 +349,10 @@ typedef struct {
         uint8_t* perfMmapBuf;
         uint8_t* perfMmapAux;
         hwcnt_t hwCnts;
-        pid_t attachedPid;
         int cpuInstrFd;
         int cpuBranchFd;
         int cpuIptBtsFd;
     } netbsd;
-
-    bool hasCrashed;
 } run_t;
 
 /*

@@ -37,9 +37,8 @@ __attribute__((weak)) size_t LLVMFuzzerMutate(
 
 __attribute__((weak)) int LLVMFuzzerTestOneInput(
     const uint8_t* buf HF_ATTR_UNUSED, size_t len HF_ATTR_UNUSED) {
-    LOG_F(
-        "Define 'int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)' in your "
-        "code to make it work");
+    LOG_F("Define 'int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len)' in your "
+          "code to make it work");
     return 0;
 }
 
@@ -56,18 +55,8 @@ __attribute__((constructor)) static void initializePersistent(void) {
 }
 
 void HonggfuzzFetchData(const uint8_t** buf_ptr, size_t* len_ptr) {
-    static bool initialized = false;
-    if (initialized) {
-        if (!files_writeToFd(_HF_PERSISTENT_FD, &HFdoneTag, sizeof(HFdoneTag))) {
-            LOG_F("writeToFd(size=%zu, doneTag) failed", sizeof(HFdoneTag));
-        }
-    } else {
-        /*
-         * Start coverage feedback from this point only (ignore coverage obtained during process
-         * start-up)
-         */
-        instrumentClearNewCov();
-        initialized = true;
+    if (!files_writeToFd(_HF_PERSISTENT_FD, &HFReadyTag, sizeof(HFReadyTag))) {
+        LOG_F("writeToFd(size=%zu, readyTag) failed", sizeof(HFReadyTag));
     }
 
     uint64_t rcvLen;
@@ -96,6 +85,8 @@ static void HonggfuzzRunOneInput(const uint8_t* buf, size_t len) {
 }
 
 static void HonggfuzzPersistentLoop(void) {
+    instrumentClearNewCov();
+
     for (;;) {
         size_t len;
         const uint8_t* buf;

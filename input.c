@@ -293,9 +293,8 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz) {
         if (hfuzz->feedback.blacklistCnt > 1) {
             if (hfuzz->feedback.blacklist[hfuzz->feedback.blacklistCnt - 1] >
                 hfuzz->feedback.blacklist[hfuzz->feedback.blacklistCnt]) {
-                LOG_F(
-                    "Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort "
-                    "records");
+                LOG_F("Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort "
+                      "records");
                 return false;
             }
         }
