@@ -307,7 +307,7 @@ __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
     LOG_I("Honggfuzz Net Driver (pid=%d): The TCP server process is ready to accept connections at "
           "%s:%" PRIu16 ". TCP fuzzing starts now!",
-        (int)getpid(), (hfnd_globals.sa_family == AF_INET ? "TCP4:127.0.0.1" : "[::1]"),
+        (int)getpid(), (hfnd_globals.sa_family == AF_INET ? "TCP4:127.0.0.1" : "TCP6:[::1]"),
         hfnd_globals.tcp_port);
 
     return 0;
