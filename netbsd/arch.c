@@ -205,15 +205,6 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
         return false;
     }
 
-    /*
-     * Set the bitmask (once) of interesting signals, that this thread will be waiting for
-     * (with sigsuspend). Do it once here, to save precious CPU cycles, as this cannot be
-     * a statically initialized const variable
-     */
-    sigemptyset(&hfuzz->netbsd.waitSigSet);
-    sigaddset(&hfuzz->netbsd.waitSigSet, SIGIO);
-    sigaddset(&hfuzz->netbsd.waitSigSet, SIGCHLD);
-
     /* Updates the important signal array based on input args */
     arch_traceSignalsInit(hfuzz);
 

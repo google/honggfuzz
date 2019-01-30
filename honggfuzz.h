@@ -299,7 +299,6 @@ typedef struct {
         const char* symsWlFile;
         char** symsWl;
         size_t symsWlCnt;
-        sigset_t waitSigSet;
     } netbsd;
 } honggfuzz_t;
 
