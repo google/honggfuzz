@@ -42,10 +42,6 @@ static inline int HF_strcasecmp(const char* s1, const char* s2, uintptr_t addr) 
 }
 
 static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
-    if (n == 0) {
-        return 0;
-    }
-
     unsigned int v = 0;
 
     size_t i;
@@ -60,14 +56,13 @@ static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t
     }
 
     instrumentUpdateCmpMap(addr, v);
+    if (i == n) {
+        return 0;
+    }
     return (unsigned char)s1[i] - (unsigned char)s2[i];
 }
 
 static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
-    if (n == 0) {
-        return 0;
-    }
-
     unsigned int v = 0;
 
     size_t i;
@@ -82,12 +77,18 @@ static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, uintp
     }
 
     instrumentUpdateCmpMap(addr, v);
+    if (i == n) {
+        return 0;
+    }
     return tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]);
 }
 
-static inline char* HF_strstr(
-    const char* haystack, const char* needle, uintptr_t addr HF_ATTR_UNUSED) {
+static inline char* HF_strstr(const char* haystack, const char* needle, uintptr_t addr) {
     size_t needle_len = strlen(needle);
+    if (needle_len == 0) {
+        return (char*)haystack;
+    }
+
     const char* h = haystack;
     for (; (h = strchr(h, needle[0])) != NULL; h++) {
         if (HF_strncmp(h, needle, needle_len, addr) == 0) {
