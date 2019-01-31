@@ -31,7 +31,7 @@ COMMON_LDFLAGS := -lm libhfcommon/libhfcommon.a
 COMMON_SRCS := $(sort $(wildcard *.c))
 CFLAGS ?= -O3 -mtune=native
 LDFLAGS ?=
-LIBS_CFLAGS ?= -fPIC -fno-stack-protector -fno-builtin -D__NO_STRING_INLINES -D__NO_INLINE__
+LIBS_CFLAGS ?= -fPIC -fno-stack-protector
 GREP_COLOR ?=
 
 OS ?= $(shell uname -s)

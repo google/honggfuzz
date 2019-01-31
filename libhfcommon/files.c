@@ -327,7 +327,7 @@ size_t files_parseSymbolFilter(const char* srcFile, char*** filterList) {
             symbolsRead = 0;
             break;
         }
-        strncpy((*filterList)[symbolsRead], lineptr, strlen(lineptr));
+        snprintf((*filterList)[symbolsRead], strlen(lineptr), "%s", lineptr);
         symbolsRead++;
     }
 
