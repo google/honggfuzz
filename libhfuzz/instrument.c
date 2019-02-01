@@ -52,10 +52,10 @@ __attribute__((constructor)) static void initializeInstrument(void) {
 
     char* my_thread_no_str = getenv(_HF_THREAD_NO_ENV);
     if (my_thread_no_str == NULL) {
-        LOG_W("The '%s' envvar is not set", _HF_THREAD_NO_ENV);
-    } else {
-        my_thread_no = atoi(my_thread_no_str);
+        LOG_D("The '%s' envvar is not set", _HF_THREAD_NO_ENV);
+        return;
     }
+    my_thread_no = atoi(my_thread_no_str);
 
     if (my_thread_no >= _HF_THREAD_MAX) {
         LOG_F("Received (via envvar) my_thread_no > _HF_THREAD_MAX (%" PRIu32 " > %d)\n",
