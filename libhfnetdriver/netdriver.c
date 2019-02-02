@@ -125,7 +125,8 @@ static void netDriver_bindToRndLoopback(int sock, sa_family_t sa_family) {
 static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen) {
     int sock = socket(addr->sa_family, SOCK_STREAM, 0);
     if (sock == -1) {
-        PLOG_D("socket(type=%d, SOCK_STREAM, 0)", addr->sa_family);
+        PLOG_D("socket(type=%d for dst_addr='%s', SOCK_STREAM, 0)", addr->sa_family,
+            files_sockAddrToStr(addr));
         return -1;
     }
     int val = 1;
@@ -143,7 +144,7 @@ static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen
 
     LOG_D("Connecting to '%s'", files_sockAddrToStr(addr));
     if (TEMP_FAILURE_RETRY(connect(sock, addr, socklen)) == -1) {
-        PLOG_W("connect(type=%d, addr='%s')", addr->sa_family, files_sockAddrToStr(addr));
+        PLOG_W("connect(addr='%s')", files_sockAddrToStr(addr));
         close(sock);
         return -1;
     }
