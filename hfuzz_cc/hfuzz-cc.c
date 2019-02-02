@@ -362,6 +362,7 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=memcmp";
     args[j++] = "-Wl,--wrap=bcmp";
     args[j++] = "-Wl,--wrap=memmem";
+    args[j++] = "-Wl,--wrap=strcpy";
     /* Apache's httpd mem/str cmp functions */
     args[j++] = "-Wl,--wrap=ap_cstr_casecmp";
     args[j++] = "-Wl,--wrap=ap_cstr_casecmpn";

@@ -127,6 +127,18 @@ static inline void* HF_memmem(const void* haystack, size_t haystacklen, const vo
     return NULL;
 }
 
+static inline char* HF_strcpy(char* dest, const char* src, uintptr_t addr) {
+    size_t len = strlen(src);
+    uint32_t v = 0;
+    /* __builtin_clz(0) is undefined */
+    if (len > 0) {
+        v = (sizeof(v) * 8) - __builtin_clz(len);
+    }
+    instrumentUpdateCmpMap(addr, v);
+
+    return memcpy(dest, src, len + 1);
+}
+
 /* Define a weak function x, as well as __wrap_x pointing to x */
 #define XVAL(x) x
 #define HF_WEAK_WRAP(ret, func, ...) \
@@ -160,6 +172,9 @@ HF_WEAK_WRAP(int, bcmp, const void* m1, const void* m2, size_t n) {
 HF_WEAK_WRAP(
     void*, memmem, const void* haystack, size_t haystacklen, const void* needle, size_t needlelen) {
     return HF_memmem(haystack, haystacklen, needle, needlelen, RET_CALL_CHAIN);
+}
+HF_WEAK_WRAP(char*, strcpy, char* dest, const char* src) {
+    return HF_strcpy(dest, src, RET_CALL_CHAIN);
 }
 
 /*
