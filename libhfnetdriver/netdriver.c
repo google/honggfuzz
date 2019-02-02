@@ -141,8 +141,9 @@ static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen
 
     netDriver_bindToRndLoopback(sock, addr->sa_family);
 
+    LOG_D("Connecting to '%s'", files_sockAddrToStr(addr));
     if (TEMP_FAILURE_RETRY(connect(sock, addr, socklen)) == -1) {
-        PLOG_W("connect(type=%d, loopback)", addr->sa_family);
+        PLOG_W("connect(type=%d, addr='%s')", addr->sa_family, files_sockAddrToStr(addr));
         close(sock);
         return -1;
     }

@@ -23,6 +23,7 @@
 
 #include "libhfcommon/files.h"
 
+#include <arpa/inet.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -476,4 +477,30 @@ sa_family_t files_sockFamily(int sock) {
     }
 
     return addr.sa_family;
+}
+
+const char* files_sockAddrToStr(const struct sockaddr* sa) {
+    static __thread char str[4096];
+
+    if (sa->sa_family == AF_INET) {
+        struct sockaddr_in* sin = (struct sockaddr_in*)sa;
+        if (inet_ntop(sin->sin_family, &sin->sin_addr.s_addr, str, sizeof(str))) {
+            util_ssnprintf(str, sizeof(str), "/%hd", ntohs(sin->sin_port));
+        } else {
+            snprintf(str, sizeof(str), "IPv4 addr conversion failed");
+        }
+        return str;
+    }
+    if (sa->sa_family == AF_INET6) {
+        struct sockaddr_in6* sin6 = (struct sockaddr_in6*)sa;
+        if (inet_ntop(sin6->sin6_family, sin6->sin6_addr.s6_addr, str, sizeof(str))) {
+            util_ssnprintf(str, sizeof(str), "/%hd", ntohs(sin6->sin6_port));
+        } else {
+            snprintf(str, sizeof(str), "IPv6 addr conversion failed");
+        }
+        return str;
+    }
+
+    snprintf(str, sizeof(str), "Unsupported sockaddr family=%d", (int)sa->sa_family);
+    return str;
 }
