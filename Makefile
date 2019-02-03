@@ -67,9 +67,9 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
     endif
     ifdef WARN_LIBRARY
         $(info --------------------------------------------------------)
-        $(info Libraries which are most likely missing on your OS, what)
-        $(info might result in a failed build. (just a guess)          )
-        $(info $(WARN_LIBRARY))
+        $(info Libraries which are most likely missing on your OS.     )
+        $(info This can result in linking/compilation errors.          )
+        $(info > $(WARN_LIBRARY))
         $(info --------------------------------------------------------)
     endif
     # OS Linux
