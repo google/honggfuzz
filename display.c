@@ -173,6 +173,9 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     unsigned long elapsed_second;
     unsigned long remain_second;
     float speed_second;
+    unsigned int TITLE_LEN = 78;
+    unsigned int LEFT_TITLE_LEN = 41;
+    int remain_title_len;
 
     elapsed_second = (unsigned long)(time(NULL) - hfuzz->timeStart);
     time_elapsed_str = get_time_elapsed(hfuzz->timeStart);
@@ -193,7 +196,7 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     }
 
     static size_t prev_exec_cnt = 0UL;
-    uintptr_t exec_per_sec = curr_exec_cnt - prev_exec_cnt;
+    //uintptr_t exec_per_sec = curr_exec_cnt - prev_exec_cnt;
     prev_exec_cnt = curr_exec_cnt;
 
     /* The lock should be acquired before any output is printed on the screen */
@@ -209,8 +212,18 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
     time_remain_str = get_time_remain(remain_second);
 
     display_put(ESC_NAV(11, 1) ESC_CLEAR_ABOVE ESC_NAV(1, 1));
-    display_put("-------------------------[ " ESC_BOLD ESC_YELLOW "%s " ESC_RESET ESC_BOLD"v%s "  ESC_PINK "(%s)" ESC_RESET" ]-------------------------\n",
+    display_put("-------------------------[ " ESC_BOLD ESC_YELLOW "%s " ESC_RESET ESC_BOLD"v%s "  ESC_PINK "(%s)" ESC_RESET" ]",
                 PROG_NAME, PROG_VERSION, target );
+    remain_title_len = TITLE_LEN - LEFT_TITLE_LEN - strlen(target) - 3;
+    if (remain_title_len) {
+        for(int i=0;i<remain_title_len;i++){
+            printf("-");
+        }
+    } else {
+        LOG_W("target name very long!");
+    }
+    printf("\n");
+
     display_put(ESC_WHITE "  Iterations : " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET, curr_exec_cnt);
     display_printKMG(curr_exec_cnt);
     if (hfuzz->mutationsMax) {
@@ -274,9 +287,8 @@ static void display_displayLocked(honggfuzz_t * hfuzz)
                 ", " ESC_WHITE "CPU: " ESC_RESET ESC_BOLD "%.1lf" ESC_RESET "%%\n",
                 hfuzz->threadsMax, num_cpu, cpuUse / num_cpu);
 
-    display_put(ESC_WHITE "       Speed : " ESC_RESET ESC_BOLD "% " _HF_MONETARY_MOD "zu" ESC_RESET "/sec"
-                " (" ESC_WHITE "avg: " ESC_RESET ESC_BOLD "%" _HF_MONETARY_MOD "zu" ESC_RESET ")\n", exec_per_sec,
-                elapsed_second ? (curr_exec_cnt / elapsed_second) : 0);
+    display_put(ESC_WHITE "       Speed : " ESC_RESET ESC_BOLD "%.2f" ESC_RESET ESC_WHITE "/sec" ESC_RESET"\n", 
+                elapsed_second ? ((float_t)curr_exec_cnt / elapsed_second) : 0);
 
     uint64_t crashesCnt = ATOMIC_GET(hfuzz->crashesCnt);
     /* colored the crash count as red when exist crash */
