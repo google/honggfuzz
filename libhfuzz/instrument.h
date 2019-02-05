@@ -26,7 +26,7 @@
 
 #include <inttypes.h>
 
-void instrumentUpdateCmpMap(uintptr_t addr, unsigned int n);
+void instrumentUpdateCmpMap(uintptr_t addr, uint32_t v);
 void instrumentClearNewCov();
 
 #endif /* ifdef _HF_LIBHFUZZ_INSTRUMENT_H_ */
