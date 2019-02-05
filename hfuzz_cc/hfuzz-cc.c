@@ -52,13 +52,6 @@ static bool useASAN() {
     return false;
 }
 
-static bool useFNoSanitize() {
-    if (getenv("HFUZZ_CC_NOFSANITIZE")) {
-        return true;
-    }
-    return false;
-}
-
 static bool useMSAN() {
     if (getenv("HFUZZ_CC_MSAN")) {
         return true;
@@ -106,6 +99,15 @@ static bool isLDMode(int argc, char** argv) {
         }
     }
     return true;
+}
+
+static bool isFSanitizeFuzzer(int argc, char** argv) {
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-fsanitize=fuzzer") == 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 static int hf_execvp(const char* file, char** argv) {
@@ -409,11 +411,8 @@ static int ldMode(int argc, char** argv) {
     /* Needed by the libhfcommon */
     args[j++] = "-pthread";
 
-    /*
-     * Disable -fsanitize=fuzzer
-     * Enable it at some point universally, once clang-4 becomes obsolete
-     */
-    if (!isGCC && useFNoSanitize()) {
+    /* Disable -fsanitize=fuzzer */
+    if (isFSanitizeFuzzer(argc, argv)) {
         args[j++] = "-fno-sanitize=fuzzer";
     }
 

@@ -269,7 +269,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(uintptr_t callee
 }
 
 /*
- * In LLVM-4.0 it marked (probably mistakenly) as non-weak symbol, so we need to mark it as weak
+ * In LLVM-4.0 it's marked (probably mistakenly) as non-weak symbol, so we need to mark it as weak
  * here
  */
 __attribute__((weak)) ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_indir_call16(
