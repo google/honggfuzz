@@ -36,7 +36,7 @@ static const char* const cdjpeg_message_table[] = {
 	NULL
 };
 
-static uint64_t max_total_pixels = 100000000ULL; /* 100M */
+static uint64_t max_total_pixels = 1000000000ULL; /* 1G */
 int LLVMFuzzerInitialize(int* argc, char*** argv) {
     null_fd = open("/dev/null", O_WRONLY);
 
