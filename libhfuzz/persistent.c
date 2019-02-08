@@ -19,10 +19,8 @@
 #include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
+#include "libhfuzz/fetch.h"
 #include "libhfuzz/instrument.h"
-
-__attribute__((visibility("default"))) __attribute__((used))
-const char* const LIBHFUZZ_module_persistent = "LIBHFUZZ_module_persistent";
 
 __attribute__((weak)) int LLVMFuzzerInitialize(
     int* argc HF_ATTR_UNUSED, char*** argv HF_ATTR_UNUSED) {
@@ -54,25 +52,6 @@ __attribute__((constructor)) static void initializePersistent(void) {
     }
 }
 
-void HonggfuzzFetchData(const uint8_t** buf_ptr, size_t* len_ptr) {
-    if (!files_writeToFd(_HF_PERSISTENT_FD, &HFReadyTag, sizeof(HFReadyTag))) {
-        LOG_F("writeToFd(size=%zu, readyTag) failed", sizeof(HFReadyTag));
-    }
-
-    uint64_t rcvLen;
-    ssize_t sz = files_readFromFd(_HF_PERSISTENT_FD, (uint8_t*)&rcvLen, sizeof(rcvLen));
-    if (sz == -1) {
-        PLOG_F("readFromFd(fd=%d, size=%zu) failed", _HF_PERSISTENT_FD, sizeof(rcvLen));
-    }
-    if (sz != sizeof(rcvLen)) {
-        LOG_F("readFromFd(fd=%d, size=%zu) failed, received=%zd bytes", _HF_PERSISTENT_FD,
-            sizeof(rcvLen), sz);
-    }
-
-    *buf_ptr = inputFile;
-    *len_ptr = (size_t)rcvLen;
-}
-
 void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr) {
     HonggfuzzFetchData(buf_ptr, len_ptr);
 }
@@ -85,8 +64,6 @@ static void HonggfuzzRunOneInput(const uint8_t* buf, size_t len) {
 }
 
 static void HonggfuzzPersistentLoop(void) {
-    instrumentClearNewCov();
-
     for (;;) {
         size_t len;
         const uint8_t* buf;
@@ -126,10 +103,23 @@ static int HonggfuzzRunFromFile(int argc, char** argv) {
 
 int HonggfuzzMain(int argc, char** argv) {
     LLVMFuzzerInitialize(&argc, &argv);
+    instrumentClearNewCov();
 
-    if (inputFile) {
-        HonggfuzzPersistentLoop();
+    if (!fetchIsInputAvailable()) {
+        return HonggfuzzRunFromFile(argc, argv);
     }
 
-    return HonggfuzzRunFromFile(argc, argv);
+    HonggfuzzPersistentLoop();
+    return 0;
+}
+
+/*
+ * Declare it 'weak', so it can be safely linked with regular binaries which
+ * implement their own main()
+ */
+#if !defined(__CYGWIN__)
+__attribute__((weak))
+#endif /* !defined(__CYGWIN__) */
+int main(int argc, char** argv) {
+    return HonggfuzzMain(argc, argv);
 }

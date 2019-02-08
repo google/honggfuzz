@@ -24,8 +24,7 @@ extern "C" {
 #endif /* __has_feature(memory_sanitizer) */
 #endif /* defined(__clang__) */
 
-void fatal(const char* s, ...)
-{
+void fatal(const char* s, ...) {
     va_list args;
     va_start(args, s);
     vfprintf(stderr, s, args);
@@ -43,8 +42,7 @@ typedef struct {
 size_t total_alloc = 0ULL;
 int null_fd = -1;
 
-void png_user_read_data(png_structp png_ptr, png_bytep data, png_size_t length)
-{
+void png_user_read_data(png_structp png_ptr, png_bytep data, png_size_t length) {
 #if defined(__clang__)
 #if __has_feature(memory_sanitizer)
     __msan_poison(data, length);
@@ -62,14 +60,12 @@ void png_user_read_data(png_structp png_ptr, png_bytep data, png_size_t length)
     f->off += length;
 }
 
-int LLVMFuzzerInitialize(int* argc, char*** argv)
-{
+int LLVMFuzzerInitialize(int* argc, char*** argv) {
     null_fd = open("/dev/null", O_WRONLY);
     return 0;
 }
 
-int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
-{
+int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
     png_structp png_ptr = NULL;
     png_infop info_ptr = NULL;
 
@@ -116,7 +112,8 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
     png_uint_32 width, ret, res_x, res_y;
     double file_gamma;
     png_uint_16p hist;
-    int bit_depth, color_type, interlace_method, compression_method, filter_method, unit_type, num_palette, num_text;
+    int bit_depth, color_type, interlace_method, compression_method, filter_method, unit_type,
+        num_palette, num_text;
     png_textp text_ptr;
     png_colorp palette;
     png_timep mod_time;

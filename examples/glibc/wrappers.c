@@ -1,6 +1,7 @@
 #define AL(x) __attribute__((weak, alias("alias_func"))) void x(void);
 
-__attribute__((weak)) __attribute__((no_instrument_function)) void alias_func(void) {}
+__attribute__((weak)) __attribute__((no_instrument_function)) void alias_func(void) {
+}
 
 AL(__cyg_profile_func_enter)
 AL(__cyg_profile_func_exit)

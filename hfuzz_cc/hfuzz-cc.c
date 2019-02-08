@@ -404,6 +404,7 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,-u,LIBHFUZZ_module_instrument";
     args[j++] = "-Wl,-u,LIBHFUZZ_module_memorycmp";
 #else  /* _HF_ARCH_DARWIN */
+    args[j++] = "-Wl,-u,_LIBHFNETDRIVER_module_main",
     args[j++] = "-Wl,-u,_LIBHFUZZ_module_instrument";
     args[j++] = "-Wl,-u,_LIBHFUZZ_module_memorycmp";
 #endif /* _HF_ARCH_DARWIN */

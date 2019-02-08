@@ -21,8 +21,7 @@ static int fd_tty_write;
 static int fd_tty_read;
 static int fd_log;
 
-int LLVMFuzzerInitialize(int* argc, char*** argv)
-{
+int LLVMFuzzerInitialize(int* argc, char*** argv) {
     fd_tty_write = open("/dev/tty", O_RDWR | O_DSYNC);
     if (fd_tty_write == -1) {
         perror("open('/dev/tty'), O_RDWR | O_DSYNC");
@@ -41,8 +40,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv)
     return 0;
 }
 
-static bool isInteresting(const char* s, size_t len)
-{
+static bool isInteresting(const char* s, size_t len) {
     for (size_t i = 0; i < len; i++) {
         if (s[i] == '[') {
             continue;
@@ -76,8 +74,7 @@ static bool isInteresting(const char* s, size_t len)
     return false;
 }
 
-int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
-{
+int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
     write(fd_tty_write, buf, len);
 
     for (;;) {

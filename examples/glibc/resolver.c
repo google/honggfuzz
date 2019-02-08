@@ -78,9 +78,9 @@ static void *getdata(void *unused) {
             continue;
         }
 
-		/* Copy the TCP len to the beginning of the reply packet */
+        /* Copy the TCP len to the beginning of the reply packet */
         *((uint16_t *)rbuf) = htons(rlen - 2);
-		/* Copy the DNS request ID back */
+        /* Copy the DNS request ID back */
         memcpy((char *)&rbuf[2], &b[2], 2);
 
         if (send(nfd, rbuf, rlen, MSG_NOSIGNAL) == -1) {
@@ -111,7 +111,7 @@ static void launchthr(void) {
 
 /* main entry point, possibly hooked */
 int main(int argc, char *argv[]) {
-	/* Use TCP connections for DNS */
+    /* Use TCP connections for DNS */
     setenv("RES_OPTIONS", "use-vc", 1);
     res_init();
 
@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
         launchthr();
     }
 
-	/* Wait for the DNS server to set up */
+    /* Wait for the DNS server to set up */
     usleep(100000);
 
     for (;;) {
@@ -149,13 +149,13 @@ int main(int argc, char *argv[]) {
         strncpy(b, buf, len);
         b[len] = '\0';
 
-		gethostbyname(b);
+        gethostbyname(b);
 
         struct hostent he;
         struct hostent *result;
         char sbuf[1024 * 32];
 
-		extern int h_errno;
+        extern int h_errno;
         gethostbyname2_r(b, AF_INET, &he, sbuf, sizeof(sbuf), &result, &h_errno);
         gethostbyname2_r(b, AF_INET6, &he, sbuf, sizeof(sbuf), &result, &h_errno);
 
