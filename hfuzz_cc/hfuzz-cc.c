@@ -400,10 +400,9 @@ static int ldMode(int argc, char** argv) {
 
     /* Pull modules defining the following symbols (if they exist) */
 #ifdef _HF_ARCH_DARWIN
-    args[j++] = "-Wl,-undefined,dynamic_lookup";
-    args[j++] = "-Wl,-u,_LIBHFNETDRIVER_module_main",
-    args[j++] = "-Wl,-u,_LIBHFUZZ_module_instrument";
-    args[j++] = "-Wl,-u,_LIBHFUZZ_module_memorycmp";
+    args[j++] = "-Wl,-U,_LIBHFNETDRIVER_module_main",
+    args[j++] = "-Wl,-U,_LIBHFUZZ_module_instrument";
+    args[j++] = "-Wl,-U,_LIBHFUZZ_module_memorycmp";
 #else  /* _HF_ARCH_DARWIN */
     args[j++] = "-Wl,-u,LIBHFNETDRIVER_module_main",
     args[j++] = "-Wl,-u,LIBHFUZZ_module_instrument";
