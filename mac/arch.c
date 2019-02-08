@@ -391,6 +391,7 @@ void arch_reapChild(run_t* run) {
         }
         if (ret == -1 && errno == EINTR) {
             subproc_checkTimeLimit(run);
+            subproc_checkTermination(run);
             continue;
         }
         if (ret == -1) {
