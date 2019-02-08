@@ -33,8 +33,7 @@ void jpegErrorExit(j_common_ptr cinfo) {
 
 static const char* const cdjpeg_message_table[] = {
 #include "cderror.h"
-	NULL
-};
+    NULL};
 
 static uint64_t max_total_pixels = 1000000000ULL; /* 1G */
 int LLVMFuzzerInitialize(int* argc, char*** argv) {
@@ -49,7 +48,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
 
     jpeg_create_decompress(&cinfo);
 
-	/* If there are any arguments provided, limit width*height to this value */
+    /* If there are any arguments provided, limit width*height to this value */
     if (*argc > 1) {
         max_total_pixels = strtoull((*argv)[1], NULL, 0);
     }
@@ -76,7 +75,8 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
     jpeg_start_decompress(&cinfo);
 
     int row_stride = cinfo.output_width * cinfo.output_components;
-    JSAMPARRAY buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr)&cinfo, JPOOL_IMAGE, row_stride, 1);
+    JSAMPARRAY buffer =
+        (*cinfo.mem->alloc_sarray)((j_common_ptr)&cinfo, JPOOL_IMAGE, row_stride, 1);
     while (cinfo.output_scanline < cinfo.output_height) {
 #if defined(__clang__)
 #if __has_feature(memory_sanitizer)

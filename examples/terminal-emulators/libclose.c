@@ -10,16 +10,14 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-int close(int fd)
-{
+int close(int fd) {
     if (fd == 1022 || fd == 1023) {
         return 0;
     }
     return syscall(__NR_close, fd);
 }
 
-int fcntl(int __fd, int __cmd, ...)
-{
+int fcntl(int __fd, int __cmd, ...) {
     va_list ap;
     va_start(ap, __cmd);
     int a1 = va_arg(ap, int);

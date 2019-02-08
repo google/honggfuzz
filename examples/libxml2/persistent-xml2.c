@@ -12,15 +12,14 @@ extern "C" {
 
 FILE* null_file = NULL;
 
-int LLVMFuzzerInitialize(int* argc, char*** argv)
-{
+int LLVMFuzzerInitialize(int* argc, char*** argv) {
     null_file = fopen("/dev/null", "w");
     return 0;
 }
 
-int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len)
-{
-    xmlDocPtr p = xmlReadMemory((const char*)buf, len, "http://www.google.com", "UTF-8", XML_PARSE_RECOVER | XML_PARSE_NONET);
+int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
+    xmlDocPtr p = xmlReadMemory((const char*)buf, len, "http://www.google.com", "UTF-8",
+        XML_PARSE_RECOVER | XML_PARSE_NONET);
     if (!p) {
         return 0;
     }
