@@ -42,7 +42,9 @@ static int hf_rnd(unsigned char* buf, int num)
     return 1;
 }
 
-static int hf_stat(void) { return 1; }
+static int hf_stat(void) {
+    return 1;
+}
 
 static RAND_METHOD hf_method = {
     NULL,
@@ -53,7 +55,9 @@ static RAND_METHOD hf_method = {
     hf_stat,
 };
 
-static void HFResetRand(void) { RAND_set_rand_method(&hf_method); }
+static void HFResetRand(void) {
+    RAND_set_rand_method(&hf_method);
+}
 
 #if defined(HF_SSL_FROM_STDIN)
 int LLVMFuzzerInitialize(int* argc, char*** argv) __attribute__((weak));

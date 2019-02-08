@@ -560,8 +560,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
     return 1;
 }
 
-__attribute__((weak)) void RAND_reset_for_fuzzing(void) {
-};
+__attribute__((weak)) void RAND_reset_for_fuzzing(void){};
 
 int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
     RAND_reset_for_fuzzing();
