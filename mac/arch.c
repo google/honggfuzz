@@ -402,8 +402,7 @@ void arch_reapChild(run_t* run) {
         }
 
         char strStatus[4096];
-        if (run->global->exe.persistent && ret == run->persistentPid &&
-            (WIFEXITED(status) || WIFSIGNALED(status))) {
+        if (run->global->exe.persistent && (WIFEXITED(status) || WIFSIGNALED(status))) {
             if (!fuzz_isTerminating()) {
                 LOG_W("Persistent mode: PID %d exited with status: %s", ret,
                     subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
