@@ -439,36 +439,6 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name, const char* dir) 
     return ret;
 }
 
-bool files_readPidFromFile(const char* fileName, pid_t* pidPtr) {
-    FILE* fPID = fopen(fileName, "rbe");
-    if (fPID == NULL) {
-        PLOG_W("Couldn't fopen('%s', mode='rbe')", fileName);
-        return false;
-    }
-
-    char* lineptr = NULL;
-    size_t lineSz = 0;
-    ssize_t ret = getline(&lineptr, &lineSz, fPID);
-    fclose(fPID);
-    if (ret == -1) {
-        if (lineSz == 0) {
-            LOG_W("Empty PID file (%s)", fileName);
-            fclose(fPID);
-            free(lineptr);
-            return false;
-        }
-    }
-
-    *pidPtr = atoi(lineptr);
-    free(lineptr);
-    if (*pidPtr < 1) {
-        LOG_W("Invalid PID read from '%s' file", fileName);
-        return false;
-    }
-
-    return true;
-}
-
 sa_family_t files_sockFamily(int sock) {
     struct sockaddr addr;
     socklen_t addrlen = sizeof(addr);

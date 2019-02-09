@@ -65,8 +65,6 @@ extern uint8_t* files_mapFileShared(const char* fileName, off_t* fileSz, int* fd
 
 extern void* files_mapSharedMem(size_t sz, int* fd, const char* name, const char* dir);
 
-extern bool files_readPidFromFile(const char* fileName, pid_t* pidPtr);
-
 extern size_t files_parseSymbolFilter(const char* inFIle, char*** filterList);
 
 extern sa_family_t files_sockFamily(int sock);
