@@ -177,7 +177,9 @@ bool subproc_persistentModeStateMachine(run_t* run) {
                 /* The current persistent round is done */
                 return true;
             }; break;
-            default: { LOG_F("Unknown runState: %d", run->runState); }; break;
+            default: {
+                LOG_F("Unknown runState: %d", run->runState);
+            }; break;
         }
     }
 }
