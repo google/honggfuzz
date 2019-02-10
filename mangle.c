@@ -947,9 +947,4 @@ void mangle_mangleContent(run_t* run) {
             mangleFuncs[choice](run);
         }
     }
-
-    /* Add NUL-byte to the buffer if smaller than the max size */
-    if (run->dynamicFileSz < run->global->mutate.maxFileSz) {
-        run->dynamicFile[run->dynamicFileSz] = '\0';
-    }
 }

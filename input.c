@@ -56,12 +56,8 @@ void input_setSize(run_t* run, size_t sz) {
     if (sz > run->global->mutate.maxFileSz) {
         PLOG_F("Too large size requested: %zu > maxSize: %zu", sz, run->global->mutate.maxFileSz);
     }
-    if (sz < run->dynamicFileSz) {
-        if (run->global->cfg.only_printable) {
-            memset(&run->dynamicFile[sz], ' ', run->dynamicFileSz - sz);
-        } else {
-            memset(&run->dynamicFile[sz], '\x00', run->dynamicFileSz - sz);
-        }
+    if (TEMP_FAILURE_RETRY(ftruncate(run->dynamicFileFd, sz)) == -1) {
+        PLOG_W("ftruncate(run->dynamicFileFd=%d, sz=%zu)", run->dynamicFileFd, sz);
     }
     run->dynamicFileSz = sz;
 }
