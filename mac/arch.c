@@ -386,7 +386,7 @@ void arch_reapChild(run_t* run) {
 
         int status;
         int flags = run->global->exe.persistent ? WNOHANG : 0;
-        int ret = waitpid(-(run->pid), &status, flags);
+        int ret = waitpid(run->pid, &status, flags);
         if (ret == 0) {
             continue;
         }
