@@ -261,20 +261,14 @@ void arch_reapChild(run_t* run) {
             break;
         }
 
-        static const struct timespec ts = {
-            .tv_sec = 0L,
-            .tv_nsec = 250000000L,
-        };
-        int sig = sigtimedwait(&run->global->linux.waitSigSet, NULL, &ts);
+        subproc_checkTimeLimit(run);
+        subproc_checkTermination(run);
+
+        int sig = sigwaitinfo(&run->global->linux.waitSigSet, NULL);
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
-            PLOG_F("sigtimedwait(SIGIO|SIGCHLD, 0.25s)");
-        }
-        if (sig == -1) {
-            subproc_checkTimeLimit(run);
-            subproc_checkTermination(run);
+            PLOG_F("sigtimedwait(SIGIO|SIGCHLD|SIGUSR1, 0.25s)");
         }
         if (arch_checkWait(run)) {
-            LOG_D("SocketFuzzer: arch: Crash Identified");
             run->pid = 0;
             break;
         }
@@ -326,8 +320,9 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
      * a statically initialized const variable
      */
     sigemptyset(&hfuzz->linux.waitSigSet);
-    sigaddset(&hfuzz->linux.waitSigSet, SIGIO);
-    sigaddset(&hfuzz->linux.waitSigSet, SIGCHLD);
+    sigaddset(&hfuzz->linux.waitSigSet, SIGIO);   /* Persistent socket data */
+    sigaddset(&hfuzz->linux.waitSigSet, SIGCHLD); /* Child event */
+    sigaddset(&hfuzz->linux.waitSigSet, SIGUSR1); /* Ping from the main thread */
 
     for (;;) {
         __attribute__((weak)) const char* gnu_get_libc_version(void);
@@ -351,6 +346,8 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
         }
         LOG_D("Glibc version:'%s', OK", gversion);
         hfuzz->linux.useClone = false;
+        /* TODO  - REMOVE */
+        hfuzz->linux.useClone = true;
         break;
     }
 

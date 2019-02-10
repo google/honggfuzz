@@ -72,6 +72,10 @@ static void sigHandler(int sig) {
         showDisplay = true;
         return;
     }
+    /* Do nothing with pings from the main thread */
+    if (sig == SIGUSR1) {
+        return;
+    }
 
     if (ATOMIC_GET(sigReceived) != 0) {
         exitWithMsg("Repeated termination signal caugth\n", EXIT_FAILURE);
@@ -120,7 +124,6 @@ static void setupSignalsPreThreads(void) {
     sigaddset(&ss, SIGALRM);
     sigaddset(&ss, SIGPIPE);
     sigaddset(&ss, SIGIO);
-    sigaddset(&ss, SIGCHLD);
     if (sigprocmask(SIG_BLOCK, &ss, NULL) != 0) {
         PLOG_F("pthread_sigmask(SIG_BLOCK)");
     }
@@ -143,6 +146,9 @@ static void setupSignalsMainThread(void) {
     }
     if (sigaction(SIGALRM, &sa, NULL) == -1) {
         PLOG_F("sigaction(SIGQUIT) failed");
+    }
+    if (sigaction(SIGUSR1, &sa, NULL) == -1) {
+        PLOG_F("sigaction(SIGUSR1) failed");
     }
     /* Unblock signals which should be handled by the main thread */
     sigset_t ss;
@@ -240,6 +246,13 @@ int main(int argc, char** argv) {
         if (hfuzz.display.useScreen && showDisplay) {
             display_display(&hfuzz);
             showDisplay = false;
+        }
+        /* Ping all threads with USR1, so they can check e.g. time limits, by returning with EINTR
+         * from wait() */
+        for (size_t i = 0; i < hfuzz.threads.threadsMax; i++) {
+            if (pthread_kill(threads[i], SIGUSR1) != 0) {
+                PLOG_W("pthread_kill(thread=%zu, SIGUSR1)", i);
+            }
         }
         if (ATOMIC_GET(sigReceived) > 0) {
             LOG_I("Signal %d (%s) received, terminating", ATOMIC_GET(sigReceived),

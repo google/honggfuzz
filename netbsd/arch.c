@@ -137,10 +137,16 @@ static bool arch_checkWait(run_t* run) {
     /* All queued wait events must be tested when SIGCHLD was delivered */
     for (;;) {
         int status;
+        int wflags = WALLSIG | WNOHANG | WTRAPPED;
+        if (run->global->exe.persistent) {
+            wflags |= WNOHANG;
+        }
         /* Wait for the whole process group of run->pid */
-        pid_t pid =
-            TEMP_FAILURE_RETRY(wait4(-(run->pid), &status, WALLSIG | WNOHANG | WTRAPPED, NULL));
+        pid_t pid = wait4(-(run->pid), &status, wflags, NULL);
         if (pid == 0) {
+            return false;
+        }
+        if (pid == -1 && errno == EINTR) {
             return false;
         }
         if (pid == -1 && errno == ECHILD) {
@@ -175,16 +181,15 @@ void arch_reapChild(run_t* run) {
             break;
         }
 
+        subproc_checkTimeLimit(run);
+        subproc_checkTermination(run);
+
         if (run->global->exe.persistent) {
             struct pollfd pfd = {
                 .fd = run->persistentSock,
                 .events = POLLIN,
             };
             int r = poll(&pfd, 1, 250 /* 0.25s */);
-            if (r == 0 || (r == -1 && errno == EINTR)) {
-                subproc_checkTimeLimit(run);
-                subproc_checkTermination(run);
-            }
             if (r == -1 && errno != EINTR) {
                 PLOG_F("poll(fd=%d)", run->persistentSock);
             }

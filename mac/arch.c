@@ -368,6 +368,9 @@ void arch_reapChild(run_t* run) {
             break;
         }
 
+        subproc_checkTimeLimit(run);
+        subproc_checkTermination(run);
+
         if (run->global->exe.persistent) {
             struct pollfd pfd = {
                 .fd = run->persistentSock,
@@ -375,8 +378,6 @@ void arch_reapChild(run_t* run) {
             };
             int r = poll(&pfd, 1, 250 /* 0.25s */);
             if (r == 0 || (r == -1 && errno == EINTR)) {
-                subproc_checkTimeLimit(run);
-                subproc_checkTermination(run);
             }
             if (r == -1 && errno != EINTR) {
                 PLOG_F("poll(fd=%d)", run->persistentSock);
@@ -385,13 +386,11 @@ void arch_reapChild(run_t* run) {
 
         int status;
         int flags = run->global->exe.persistent ? WNOHANG : 0;
-        int ret = waitpid(run->pid, &status, flags);
+        int ret = waitpid(-(run->pid), &status, flags);
         if (ret == 0) {
             continue;
         }
         if (ret == -1 && errno == EINTR) {
-            subproc_checkTimeLimit(run);
-            subproc_checkTermination(run);
             continue;
         }
         if (ret == -1) {
