@@ -57,7 +57,7 @@
 #include "sanitizers.h"
 #include "subproc.h"
 
-static uint8_t arch_clone_stack[128 * 1024];
+static uint8_t arch_clone_stack[128 * 1024] __attribute__((aligned(__BIGGEST_ALIGNMENT__)));
 static __thread jmp_buf env;
 
 HF_ATTR_NO_SANITIZE_ADDRESS
@@ -437,6 +437,10 @@ bool arch_archThreadInit(run_t* run) {
     run->linux.cpuInstrFd = -1;
     run->linux.cpuBranchFd = -1;
     run->linux.cpuIptBtsFd = -1;
+
+    if (prctl(PR_SET_CHILD_SUBREAPER, 1UL, 0UL, 0UL, 0UL) == -1) {
+        PLOG_W("prctl(PR_SET_CHILD_SUBREAPER, 1)");
+    }
 
     return true;
 }
