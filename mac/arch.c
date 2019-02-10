@@ -393,6 +393,10 @@ void arch_reapChild(run_t* run) {
         if (ret == -1 && errno == EINTR) {
             continue;
         }
+        if (ret == -1 && errno == ECHILD) {
+            run->pid = 0;
+            break;
+        }
         if (ret == -1) {
             PLOG_W("waitpid(pid=%d)", run->pid);
             continue;
