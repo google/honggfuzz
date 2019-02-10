@@ -137,7 +137,7 @@ static bool arch_checkWait(run_t* run) {
     /* All queued wait events must be tested when SIGCHLD was delivered */
     for (;;) {
         int status;
-        int wflags = WALLSIG | WNOHANG | WTRAPPED;
+        int wflags = WALLSIG | WTRAPPED | WEXITED;
         if (run->global->exe.persistent) {
             wflags |= WNOHANG;
         }
