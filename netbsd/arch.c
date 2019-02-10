@@ -137,12 +137,12 @@ static bool arch_checkWait(run_t* run) {
     /* All queued wait events must be tested when SIGCHLD was delivered */
     for (;;) {
         int status;
-        int wflags = WALLSIG | WTRAPPED | WEXITED;
+        int wflags = WALLSIG | WALTSIG | WTRAPPED | WEXITED | WUNTRACED | WCONTINUED | WSTOPPED;
         if (run->global->exe.persistent) {
             wflags |= WNOHANG;
         }
         /* Wait for the whole process group of run->pid */
-        pid_t pid = wait4(-(run->pid), &status, wflags, NULL);
+        pid_t pid = wait6(P_SID, run->pid, &status, wflags, NULL, NULL);
         if (pid == 0) {
             return false;
         }
@@ -154,7 +154,7 @@ static bool arch_checkWait(run_t* run) {
             return true;
         }
         if (pid == -1) {
-            PLOG_F("wait4(pid=-%d) failed", (int)run->pid);
+            PLOG_F("wait6(pid/session=%d) failed", (int)run->pid);
         }
 
         arch_traceAnalyze(run, status, pid);
