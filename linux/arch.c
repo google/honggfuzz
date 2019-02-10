@@ -264,9 +264,10 @@ void arch_reapChild(run_t* run) {
         subproc_checkTimeLimit(run);
         subproc_checkTermination(run);
 
+        /* Return with SIGIO, SIGCHLD and with SIGUSR1 */
         int sig = sigwaitinfo(&run->global->linux.waitSigSet, NULL);
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
-            PLOG_F("sigtimedwait(SIGIO|SIGCHLD|SIGUSR1, 0.25s)");
+            PLOG_F("sigwaitinfo(SIGIO|SIGCHLD|SIGUSR1)");
         }
         if (arch_checkWait(run)) {
             run->pid = 0;
