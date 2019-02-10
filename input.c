@@ -341,6 +341,7 @@ bool input_prepareStaticFile(run_t* run, bool rewind) {
     }
     snprintf(run->origFileName, sizeof(run->origFileName), "%s", fname);
 
+    input_setSize(run, run->global->mutate.maxFileSz);
     ssize_t fileSz = files_readFileToBufMax(fname, run->dynamicFile, run->global->mutate.maxFileSz);
     if (fileSz < 0) {
         LOG_E("Couldn't read contents of '%s'", fname);
@@ -375,6 +376,7 @@ bool input_prepareExternalFile(run_t* run) {
     }
     LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
 
+    input_setSize(run, run->global->mutate.maxFileSz);
     ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->mutate.maxFileSz, 0);
     if (sz == -1) {
         LOG_E("Couldn't read file from fd=%d", fd);
@@ -406,6 +408,7 @@ bool input_postProcessFile(run_t* run) {
     }
     LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
 
+    input_setSize(run, run->global->mutate.maxFileSz);
     ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->mutate.maxFileSz, 0);
     if (sz == -1) {
         LOG_E("Couldn't read file from fd=%d", fd);
