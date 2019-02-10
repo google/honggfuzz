@@ -347,8 +347,6 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
         }
         LOG_D("Glibc version:'%s', OK", gversion);
         hfuzz->linux.useClone = false;
-        /* TODO  - REMOVE */
-        hfuzz->linux.useClone = true;
         break;
     }
 
