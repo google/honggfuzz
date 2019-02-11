@@ -269,6 +269,7 @@ void arch_reapChild(run_t* run) {
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
             PLOG_F("sigwaitinfo(SIGIO|SIGCHLD|SIGUSR1)");
         }
+
         if (arch_checkWait(run)) {
             run->pid = 0;
             break;
@@ -278,7 +279,6 @@ void arch_reapChild(run_t* run) {
             break;
         }
     }
-
     if (run->global->sanitizer.enable) {
         char crashReport[PATH_MAX];
         snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", run->global->io.workDir, kLOGPREFIX,

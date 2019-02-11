@@ -6,7 +6,7 @@
  * Authors: Robert Swiecki <swiecki@google.com>
  *          Felix Gröbert <groebert@google.com>
  *
- * Copyright 2010-2018 by Google Inc. All Rights Reserved.
+ * Copyright 2010-2019 by Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -124,6 +124,7 @@ static void setupSignalsPreThreads(void) {
     sigaddset(&ss, SIGALRM);
     sigaddset(&ss, SIGPIPE);
     sigaddset(&ss, SIGIO);
+    sigaddset(&ss, SIGCHLD);
     if (sigprocmask(SIG_BLOCK, &ss, NULL) != 0) {
         PLOG_F("pthread_sigmask(SIG_BLOCK)");
     }
@@ -170,6 +171,14 @@ static void printSummary(honggfuzz_t* hfuzz) {
     }
     LOG_I("Summary iterations:%zu time:%" PRIu64 " speed:%" PRIu64, hfuzz->cnts.mutationsCnt,
         elapsed_sec, exec_per_sec);
+}
+
+static void pingThreads(honggfuzz_t* hfuzz, pthread_t* threads) {
+    for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
+        if (pthread_kill(threads[i], SIGUSR1) != 0) {
+            PLOG_W("pthread_kill(thread=%zu, SIGUSR1)", i);
+        }
+    }
 }
 
 int main(int argc, char** argv) {
@@ -247,13 +256,12 @@ int main(int argc, char** argv) {
             display_display(&hfuzz);
             showDisplay = false;
         }
-        /* Ping all threads with USR1, so they can check e.g. time limits, by returning with EINTR
-         * from wait() */
-        for (size_t i = 0; i < hfuzz.threads.threadsMax; i++) {
-            if (pthread_kill(threads[i], SIGUSR1) != 0) {
-                PLOG_W("pthread_kill(thread=%zu, SIGUSR1)", i);
-            }
-        }
+        /*
+         * Ping all threads with USR1, so they can check e.g. time limits, by returning with EINTR
+         * from wait()
+         */
+        pingThreads(&hfuzz, threads);
+
         if (ATOMIC_GET(sigReceived) > 0) {
             LOG_I("Signal %d (%s) received, terminating", ATOMIC_GET(sigReceived),
                 strsignal(ATOMIC_GET(sigReceived)));
@@ -270,6 +278,9 @@ int main(int argc, char** argv) {
     }
 
     fuzz_setTerminating();
+
+    /* Ping threads one last time */
+    pingThreads(&hfuzz, threads);
     fuzz_threadsStop(&hfuzz, threads);
 
     /* Clean-up global buffers */
