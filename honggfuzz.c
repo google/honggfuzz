@@ -125,8 +125,8 @@ static void setupSignalsPreThreads(void) {
     sigaddset(&ss, SIGPIPE);
     sigaddset(&ss, SIGIO);
     sigaddset(&ss, SIGCHLD);
-    if (sigprocmask(SIG_BLOCK, &ss, NULL) != 0) {
-        PLOG_F("pthread_sigmask(SIG_BLOCK)");
+    if (sigprocmask(SIG_SETMASK, &ss, NULL) != 0) {
+        PLOG_F("pthread_sigmask(SIG_SETMASK)");
     }
 }
 
