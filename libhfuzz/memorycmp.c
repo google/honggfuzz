@@ -17,10 +17,10 @@ static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
     size_t i;
     for (i = 0; s1[i] == s2[i]; i++) {
         if (s1[i] == '\0' || s2[i] == '\0') {
-            instrumentUpdateCmpMap(addr, i);
             break;
         }
     }
+    instrumentUpdateCmpMap(addr, i);
     return ((unsigned char)s1[i] - (unsigned char)s2[i]);
 }
 
@@ -28,10 +28,10 @@ static inline int HF_strcasecmp(const char* s1, const char* s2, uintptr_t addr) 
     size_t i;
     for (i = 0; tolower((unsigned char)s1[i]) == tolower((unsigned char)s2[i]); i++) {
         if (s1[i] == '\0' || s2[i] == '\0') {
-            instrumentUpdateCmpMap(addr, i);
             break;
         }
     }
+    instrumentUpdateCmpMap(addr, i);
     return (tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]));
 }
 
@@ -39,11 +39,11 @@ static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t
     size_t i;
     for (i = 0; i < n; i++) {
         if ((s1[i] != s2[i]) || s1[i] == '\0' || s2[i] == '\0') {
-            instrumentUpdateCmpMap(addr, i);
             break;
         }
     }
 
+    instrumentUpdateCmpMap(addr, i);
     if (i == n) {
         return 0;
     }
@@ -55,11 +55,11 @@ static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, uintp
     for (i = 0; i < n; i++) {
         if ((tolower((unsigned char)s1[i]) != tolower((unsigned char)s2[i])) || s1[i] == '\0' ||
             s2[i] == '\0') {
-            instrumentUpdateCmpMap(addr, i);
             break;
         }
     }
 
+    instrumentUpdateCmpMap(addr, i);
     if (i == n) {
         return 0;
     }
@@ -98,14 +98,14 @@ static inline int HF_memcmp(const void* m1, const void* m2, size_t n, uintptr_t 
     size_t i;
     for (i = 0; i < n; i++) {
         if (s1[i] != s2[i]) {
-            instrumentUpdateCmpMap(addr, i);
             break;
         }
     }
+
+    instrumentUpdateCmpMap(addr, i);
     if (i == n) {
         return 0;
     }
-
     return ((unsigned char)s1[i] - (unsigned char)s2[i]);
 }
 
@@ -129,8 +129,8 @@ static inline void* HF_memmem(const void* haystack, size_t haystacklen, const vo
 
 static inline char* HF_strcpy(char* dest, const char* src, uintptr_t addr) {
     size_t len = strlen(src);
-    instrumentUpdateCmpMap(addr, len);
 
+    instrumentUpdateCmpMap(addr, len);
     return memcpy(dest, src, len + 1);
 }
 
