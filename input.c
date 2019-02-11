@@ -56,8 +56,9 @@ void input_setSize(run_t* run, size_t sz) {
     if (sz > run->global->mutate.maxFileSz) {
         PLOG_F("Too large size requested: %zu > maxSize: %zu", sz, run->global->mutate.maxFileSz);
     }
-#if !defined(__CYGWIN__)
     /* ftruncate of a mmaped file fails under CygWin */
+#if !defined(__CYGWIN__)
+    /* ftruncate for each change of a dynamic file size might be expensive though */
     if (TEMP_FAILURE_RETRY(ftruncate(run->dynamicFileFd, sz)) == -1) {
         PLOG_W("ftruncate(run->dynamicFileFd=%d, sz=%zu)", run->dynamicFileFd, sz);
     }
