@@ -59,7 +59,6 @@ void input_setSize(run_t* run, size_t sz) {
 #if !defined(__CYGWIN__)
     /* ftruncate of a mmaped file fails under CygWin */
     if (TEMP_FAILURE_RETRY(ftruncate(run->dynamicFileFd, sz)) == -1) {
-        PLOG_D("ftruncate(run->dynamicFileFd=%d, sz=%zu)", run->dynamicFileFd, sz);
         PLOG_W("ftruncate(run->dynamicFileFd=%d, sz=%zu)", run->dynamicFileFd, sz);
     }
 #endif /* !defined(__CYGWIN__) */
