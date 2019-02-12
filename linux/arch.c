@@ -264,8 +264,12 @@ void arch_reapChild(run_t* run) {
         subproc_checkTimeLimit(run);
         subproc_checkTermination(run);
 
+        const struct timespec ts = {
+            .tv_sec = 0ULL,
+            .tv_nsec = (1000ULL * 1000ULL * 250ULL),
+        };
         /* Return with SIGIO, SIGCHLD and with SIGUSR1 */
-        int sig = sigwaitinfo(&run->global->exe.waitSigSet, NULL);
+        int sig = sigtimedwait(&run->global->exe.waitSigSet, NULL, &ts /* 0.25s */);
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
             PLOG_F("sigwaitinfo(SIGIO|SIGCHLD|SIGUSR1)");
         }
