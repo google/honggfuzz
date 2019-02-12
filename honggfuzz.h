@@ -213,6 +213,7 @@ typedef struct {
         uint64_t coreLimit;
         bool clearEnv;
         char* envs[128];
+        sigset_t waitSigSet;
     } exe;
     struct {
         time_t timeStart;
@@ -287,7 +288,6 @@ typedef struct {
         uintptr_t cloneFlags;
         bool kernelOnly;
         bool useClone;
-        sigset_t waitSigSet;
     } linux;
     /* For the NetBSD code */
     struct {

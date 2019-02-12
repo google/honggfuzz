@@ -265,7 +265,7 @@ void arch_reapChild(run_t* run) {
         subproc_checkTermination(run);
 
         /* Return with SIGIO, SIGCHLD and with SIGUSR1 */
-        int sig = sigwaitinfo(&run->global->linux.waitSigSet, NULL);
+        int sig = sigwaitinfo(&run->global->exe.waitSigSet, NULL);
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
             PLOG_F("sigwaitinfo(SIGIO|SIGCHLD|SIGUSR1)");
         }
@@ -314,16 +314,6 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
         PLOG_E("Cannot open the executable binary: %s)", hfuzz->exe.cmdline[0]);
         return false;
     }
-
-    /*
-     * Set the bitmask (once) of interesting signals, that this thread will be waiting for
-     * (with sigsuspend). Do it once here, to save precious CPU cycles, as this cannot be
-     * a statically initialized const variable
-     */
-    sigemptyset(&hfuzz->linux.waitSigSet);
-    sigaddset(&hfuzz->linux.waitSigSet, SIGIO);   /* Persistent socket data */
-    sigaddset(&hfuzz->linux.waitSigSet, SIGCHLD); /* Child event */
-    sigaddset(&hfuzz->linux.waitSigSet, SIGUSR1); /* Ping from the main thread */
 
     for (;;) {
         __attribute__((weak)) const char* gnu_get_libc_version(void);
