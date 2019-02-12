@@ -106,8 +106,16 @@ static void setupRLimits(void) {
 
 static void setupMainThreadTimer(void) {
     const struct itimerval it = {
-        .it_value = {.tv_sec = 1, .tv_usec = 0},
-        .it_interval = {.tv_sec = 0, .tv_usec = 1000 * 200},
+        .it_value =
+            {
+                .tv_sec = 1,
+                .tv_usec = 0,
+            },
+        .it_interval =
+            {
+                .tv_sec = 0,
+                .tv_usec = 1000ULL * 200ULL,
+            },
     };
     if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
         PLOG_F("setitimer(ITIMER_REAL)");
@@ -123,7 +131,9 @@ static void setupSignalsPreThreads(void) {
     sigaddset(&ss, SIGQUIT);
     sigaddset(&ss, SIGALRM);
     sigaddset(&ss, SIGPIPE);
+    /* Linux/arch uses it to discover events from persistent fuzzing processes */
     sigaddset(&ss, SIGIO);
+    /* Be it here, to let worker threads catch SIGCHLD via sigwaitinfo */
     sigaddset(&ss, SIGCHLD);
     if (sigprocmask(SIG_SETMASK, &ss, NULL) != 0) {
         PLOG_F("pthread_sigmask(SIG_SETMASK)");
