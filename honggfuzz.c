@@ -214,9 +214,9 @@ static void* signalThread(void* arg) {
     }
 
     for (;;) {
-        int sig = sigwaitinfo(&ss, NULL);
-        if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
-            PLOG_F("sigwaitinfo(SIGCHLD)");
+        int sig;
+        if (sigwait(&ss, &sig) != 0) {
+            PLOG_F("sigwait(SIGCHLD)");
         }
         if (fuzz_isTerminating()) {
             break;
