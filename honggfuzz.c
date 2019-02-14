@@ -315,16 +315,18 @@ int main(int argc, char** argv) {
             LOG_I("Maximum run time reached, terminating");
             break;
         }
+        pingThreads(&hfuzz);
         pause();
     }
 
     fuzz_setTerminating();
 
+    /* Ping threads one last time */
     void* retval;
     if (pthread_join(sigthread, &retval) != 0) {
         PLOG_W("Couldn't stop the signal thread");
     }
-    /* Ping threads one last time */
+    pingThreads(&hfuzz);
     fuzz_threadsStop(&hfuzz);
 
     /* Clean-up global buffers */
