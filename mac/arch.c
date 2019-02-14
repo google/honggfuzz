@@ -384,9 +384,9 @@ void arch_reapChild(run_t* run) {
             }
         } else {
             /* Return with SIGIO, SIGCHLD and with SIGUSR1 */
-            int sig = sigwaitinfo(&run->global->exe.waitSigSet, NULL);
-            if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
-                PLOG_F("sigwaitinfo(SIGIO|SIGCHLD|SIGUSR1)");
+            int sig;
+            if (sigwait(&run->global->exe.waitSigSet, &sig) != 0) {
+                PLOG_F("sigwait(SIGIO|SIGCHLD|SIGUSR1)");
             }
         }
 
