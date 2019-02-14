@@ -214,13 +214,9 @@ static void* signalThread(void* arg) {
     }
 
     for (;;) {
-        const struct timespec ts = {
-            .tv_sec = 0,
-            .tv_nsec = (1000ULL * 1000ULL * 250ULL),
-        };
-        int sig = sigtimedwait(&ss, NULL, &ts /* 0.25s */);
+        int sig = sigwaitinfo(&ss, NULL, &ts);
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
-            PLOG_F("sigtimedwait(SIGCHLD)");
+            PLOG_F("sigwaitinfo(SIGCHLD)");
         }
         if (fuzz_isTerminating()) {
             break;
