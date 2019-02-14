@@ -279,7 +279,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .dataLimit = 0U,
                 .clearEnv = false,
                 .envs = {},
-                .waitSigSet = {},
             },
         .timing =
             {
