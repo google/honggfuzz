@@ -412,13 +412,16 @@ uint8_t subproc_System(run_t* run, const char* const argv[]) {
         return 255;
     }
 
-    int status;
     int flags = 0;
 #if defined(__WNOTHREAD)
     flags |= __WNOTHREAD;
 #endif /* defined(__WNOTHREAD) */
+#if defined(__WALL)
+    flags |= __WALL;
+#endif /* defined(__WALL) */
 
     for (;;) {
+        int status;
         int ret = wait4(pid, &status, flags, NULL);
         if (ret == -1 && errno == EINTR) {
             continue;
