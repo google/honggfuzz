@@ -214,7 +214,7 @@ static void* signalThread(void* arg) {
     }
 
     for (;;) {
-        int sig = sigwaitinfo(&ss, NULL, &ts);
+        int sig = sigwaitinfo(&ss, NULL);
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
             PLOG_F("sigwaitinfo(SIGCHLD)");
         }
