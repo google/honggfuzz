@@ -436,5 +436,13 @@ bool arch_archThreadInit(run_t* run) {
         PLOG_W("prctl(PR_SET_CHILD_SUBREAPER, 1)");
     }
 
+    sigset_t ss;
+    sigemptyset(&ss);
+    sigaddset(&ss, SIGUSR1);
+    if (pthread_sigmask(SIG_BLOCK, &ss, NULL) != 0) {
+        PLOG_W("Couldn't block SIGUSR1");
+        return false;
+    }
+
     return true;
 }

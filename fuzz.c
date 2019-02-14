@@ -517,24 +517,7 @@ static void* fuzz_threadNew(void* arg) {
     return NULL;
 }
 
-static void fuzz_runThread(honggfuzz_t* hfuzz, pthread_t* thread, void* (*thread_func)(void*)) {
-    pthread_attr_t attr;
-
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-    pthread_attr_setstacksize(&attr, _HF_PTHREAD_STACKSIZE);
-    pthread_attr_setguardsize(&attr, (size_t)sysconf(_SC_PAGESIZE));
-
-    if (pthread_create(thread, &attr, thread_func, (void*)hfuzz) < 0) {
-        PLOG_F("Couldn't create a new thread");
-    }
-
-    pthread_attr_destroy(&attr);
-
-    return;
-}
-
-void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
+void fuzz_threadsStart(honggfuzz_t* hfuzz) {
     if (!arch_archInit(hfuzz)) {
         LOG_F("Couldn't prepare arch for fuzzing");
     }
@@ -555,14 +538,16 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz, pthread_t* threads) {
     }
 
     for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
-        fuzz_runThread(hfuzz, &threads[i], fuzz_threadNew);
+        if (!subproc_runThread(hfuzz, &hfuzz->threads.threads[i], fuzz_threadNew)) {
+            PLOG_F("Couldn't run a thread #%zu", i);
+        }
     }
 }
 
-void fuzz_threadsStop(honggfuzz_t* hfuzz, pthread_t* threads) {
+void fuzz_threadsStop(honggfuzz_t* hfuzz) {
     for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
         void* retval;
-        if (pthread_join(threads[i], &retval) != 0) {
+        if (pthread_join(hfuzz->threads.threads[i], &retval) != 0) {
             PLOG_F("Couldn't pthread_join() thread: %zu", i);
         }
     }

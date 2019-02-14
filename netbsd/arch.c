@@ -137,12 +137,10 @@ static bool arch_checkWait(run_t* run) {
     /* All queued wait events must be tested when SIGCHLD was delivered */
     for (;;) {
         int status;
-        int wflags = WALLSIG | WALTSIG | WTRAPPED | WEXITED | WUNTRACED | WCONTINUED | WSTOPPED;
-        if (run->global->exe.persistent) {
-            wflags |= WNOHANG;
-        }
         /* Wait for the whole process group of run->pid */
-        pid_t pid = wait6(P_SID, run->pid, &status, wflags, NULL, NULL);
+        pid_t pid = wait6(P_SID, run->pid, &status,
+            WALLSIG | WALTSIG | WTRAPPED | WEXITED | WUNTRACED | WCONTINUED | WSTOPPED | WNOHANG,
+            NULL, NULL);
         if (pid == 0) {
             return false;
         }
@@ -193,7 +191,18 @@ void arch_reapChild(run_t* run) {
             if (r == -1 && errno != EINTR) {
                 PLOG_F("poll(fd=%d)", run->persistentSock);
             }
+        } else {
+            /* Return with SIGIO, SIGCHLD and with SIGUSR1 */
+            const struct timespec ts = {
+                .tv_sec = 0ULL,
+                .tv_nsec = (1000ULL * 1000ULL * 250ULL),
+            };
+            int sig = sigtimedwait(&run->global->exe.waitSigSet, NULL, &ts /* 0.25s */);
+            if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
+                PLOG_F("sigtimedwait(SIGIO|SIGCHLD|SIGUSR1)");
+            }
         }
+
         if (arch_checkWait(run)) {
             run->pid = 0;
             break;

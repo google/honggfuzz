@@ -485,3 +485,21 @@ void subproc_checkTermination(run_t* run) {
         kill(run->pid, SIGKILL);
     }
 }
+
+bool subproc_runThread(honggfuzz_t* hfuzz, pthread_t* thread, void* (*thread_func)(void*)) {
+    pthread_attr_t attr;
+
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    pthread_attr_setstacksize(&attr, _HF_PTHREAD_STACKSIZE);
+    pthread_attr_setguardsize(&attr, (size_t)sysconf(_SC_PAGESIZE));
+
+    if (pthread_create(thread, &attr, thread_func, (void*)hfuzz) < 0) {
+        PLOG_W("Couldn't create a new thread");
+        return false;
+    }
+
+    pthread_attr_destroy(&attr);
+
+    return true;
+}

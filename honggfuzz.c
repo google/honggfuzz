@@ -22,6 +22,7 @@
  *
  */
 
+#include <errno.h>
 #include <getopt.h>
 #include <inttypes.h>
 #include <signal.h>
@@ -43,6 +44,7 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 #include "socketfuzzer.h"
+#include "subproc.h"
 
 static int sigReceived = 0;
 
@@ -74,6 +76,10 @@ static void sigHandler(int sig) {
     }
     /* Do nothing with pings from the main thread */
     if (sig == SIGUSR1) {
+        return;
+    }
+    /* It's handled in the signal thread */
+    if (sig == SIGCHLD) {
         return;
     }
 
@@ -133,14 +139,14 @@ static void setupSignalsPreThreads(void) {
     sigaddset(&ss, SIGPIPE);
     /* Linux/arch uses it to discover events from persistent fuzzing processes */
     sigaddset(&ss, SIGIO);
-    /* Be it here, to let worker threads catch SIGCHLD via sigwaitinfo */
+    /* Let the signal thread catch SIGCHLD */
     sigaddset(&ss, SIGCHLD);
+    /* This is checked for via sigwaitinfo/sigtimedwait */
+    sigaddset(&ss, SIGUSR1);
     if (sigprocmask(SIG_SETMASK, &ss, NULL) != 0) {
         PLOG_F("pthread_sigmask(SIG_SETMASK)");
     }
-}
 
-static void setupSignalsMainThread(void) {
     struct sigaction sa = {
         .sa_handler = sigHandler,
         .sa_flags = 0,
@@ -161,6 +167,12 @@ static void setupSignalsMainThread(void) {
     if (sigaction(SIGUSR1, &sa, NULL) == -1) {
         PLOG_F("sigaction(SIGUSR1) failed");
     }
+    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+        PLOG_F("sigaction(SIGCHLD) failed");
+    }
+}
+
+static void setupSignalsMainThread(void) {
     /* Unblock signals which should be handled by the main thread */
     sigset_t ss;
     sigemptyset(&ss);
@@ -183,12 +195,40 @@ static void printSummary(honggfuzz_t* hfuzz) {
         elapsed_sec, exec_per_sec);
 }
 
-static void pingThreads(honggfuzz_t* hfuzz, pthread_t* threads) {
+static void pingThreads(honggfuzz_t* hfuzz) {
     for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
-        if (pthread_kill(threads[i], SIGUSR1) != 0) {
+        if (pthread_kill(hfuzz->threads.threads[i], SIGUSR1) != 0) {
             PLOG_W("pthread_kill(thread=%zu, SIGUSR1)", i);
         }
     }
+}
+
+static void* signalThread(void* arg) {
+    honggfuzz_t* hfuzz = (honggfuzz_t*)arg;
+
+    sigset_t ss;
+    sigemptyset(&ss);
+    sigaddset(&ss, SIGCHLD);
+    if (pthread_sigmask(SIG_UNBLOCK, &ss, NULL) != 0) {
+        PLOG_F("Couldn't unblock SIGCHLD in the signal thread");
+    }
+
+    for (;;) {
+        const struct timespec ts = {
+            .tv_sec = 0,
+            .tv_nsec = (1000ULL * 1000ULL * 250ULL),
+        };
+        int sig = sigtimedwait(&ss, NULL, &ts /* 0.25s */);
+        if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
+            PLOG_F("sigtimedwait(SIGCHLD)");
+        }
+        if (fuzz_isTerminating()) {
+            break;
+        }
+        pingThreads(hfuzz);
+    }
+
+    return NULL;
 }
 
 int main(int argc, char** argv) {
@@ -249,14 +289,15 @@ int main(int argc, char** argv) {
         }
     }
 
-    /*
-     * So far, so good
-     */
-    pthread_t threads[hfuzz.threads.threadsMax];
-
     setupRLimits();
     setupSignalsPreThreads();
-    fuzz_threadsStart(&hfuzz, threads);
+    fuzz_threadsStart(&hfuzz);
+
+    pthread_t sigthread;
+    if (!subproc_runThread(&hfuzz, &sigthread, signalThread)) {
+        LOG_F("Couldn't start the signal thread");
+    }
+
     setupSignalsMainThread();
 
     setupMainThreadTimer();
@@ -266,12 +307,6 @@ int main(int argc, char** argv) {
             display_display(&hfuzz);
             showDisplay = false;
         }
-        /*
-         * Ping all threads with USR1, so they can check e.g. time limits, by returning with EINTR
-         * from wait()
-         */
-        pingThreads(&hfuzz, threads);
-
         if (ATOMIC_GET(sigReceived) > 0) {
             LOG_I("Signal %d (%s) received, terminating", ATOMIC_GET(sigReceived),
                 strsignal(ATOMIC_GET(sigReceived)));
@@ -289,9 +324,12 @@ int main(int argc, char** argv) {
 
     fuzz_setTerminating();
 
+    void* retval;
+    if (pthread_join(sigthread, &retval) != 0) {
+        PLOG_W("Couldn't stop the signal thread");
+    }
     /* Ping threads one last time */
-    pingThreads(&hfuzz, threads);
-    fuzz_threadsStop(&hfuzz, threads);
+    fuzz_threadsStop(&hfuzz);
 
     /* Clean-up global buffers */
     if (hfuzz.feedback.blacklist) {

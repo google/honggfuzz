@@ -182,6 +182,7 @@ typedef struct {
         uint32_t threadsActiveCnt;
         pthread_t mainThread;
         pid_t mainPid;
+        pthread_t threads[_HF_THREAD_MAX];
     } threads;
     struct {
         const char* inputDir;

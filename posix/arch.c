@@ -204,11 +204,20 @@ void arch_reapChild(run_t* run) {
             if (r == -1 && errno != EINTR) {
                 PLOG_F("poll(fd=%d)", run->persistentSock);
             }
+        } else {
+            /* Return with SIGIO, SIGCHLD and with SIGUSR1 */
+            const struct timespec ts = {
+                .tv_sec = 0ULL,
+                .tv_nsec = (1000ULL * 1000ULL * 250ULL),
+            };
+            int sig = sigtimedwait(&run->global->exe.waitSigSet, NULL, &ts /* 0.25s */);
+            if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
+                PLOG_F("sigtimedwait(SIGIO|SIGCHLD|SIGUSR1)");
+            }
         }
 
         int status;
-        int flags = run->global->exe.persistent ? WNOHANG : 0;
-        int ret = waitpid(run->pid, &status, flags);
+        int ret = waitpid(run->pid, &status, WNOHANG);
         if (ret == 0) {
             continue;
         }
