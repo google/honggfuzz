@@ -197,7 +197,7 @@ static void printSummary(honggfuzz_t* hfuzz) {
 
 static void pingThreads(honggfuzz_t* hfuzz) {
     for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
-        if (pthread_kill(hfuzz->threads.threads[i], SIGUSR1) != 0) {
+        if (pthread_kill(hfuzz->threads.threads[i], SIGUSR1) != 0 && errno != EINTR) {
             PLOG_W("pthread_kill(thread=%zu, SIGUSR1)", i);
         }
     }
@@ -215,13 +215,15 @@ static void* signalThread(void* arg) {
 
     for (;;) {
         int sig;
-        if (sigwait(&ss, &sig) != 0) {
+        if (sigwait(&ss, &sig) != 0 && errno != EINTR) {
             PLOG_F("sigwait(SIGCHLD)");
         }
         if (fuzz_isTerminating()) {
             break;
         }
-        pingThreads(hfuzz);
+        if (sig == SIGCHLD) {
+            pingThreads(hfuzz);
+        }
     }
 
     return NULL;
@@ -321,11 +323,11 @@ int main(int argc, char** argv) {
 
     fuzz_setTerminating();
 
-    /* Ping threads one last time */
     void* retval;
     if (pthread_join(sigthread, &retval) != 0) {
         PLOG_W("Couldn't stop the signal thread");
     }
+    /* Ping threads one last time */
     pingThreads(&hfuzz);
     fuzz_threadsStop(&hfuzz);
 
