@@ -214,6 +214,10 @@ HF_WEAK_WRAP(int, OPENSSL_strncasecmp, const char* s1, const char* s2, size_t le
     return HF_strncasecmp(s1, s2, len, RET_CALL_CHAIN);
 }
 
+HF_WEAK_WRAP(int32_t, memcmpct, const void* s1, const void* s2, size_t len) {
+    return HF_memcmp(s1, s2, len, RET_CALL_CHAIN);
+}
+
 /*
  * libXML wrappers
  */

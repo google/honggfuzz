@@ -376,6 +376,7 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=OPENSSL_memcmp";
     args[j++] = "-Wl,--wrap=OPENSSL_strcasecmp";
     args[j++] = "-Wl,--wrap=OPENSSL_strncasecmp";
+    args[j++] = "-Wl,--wrap=memcmpct";
     /* Frequently used libXML2 functions */
     args[j++] = "-Wl,--wrap=xmlStrncmp";
     args[j++] = "-Wl,--wrap=xmlStrcmp";

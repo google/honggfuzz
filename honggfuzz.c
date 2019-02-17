@@ -229,16 +229,6 @@ static void* signalThread(void* arg) {
     return NULL;
 }
 
-static void stopSignalThread(pthread_t* thread) {
-    if (pthread_kill(*thread, SIGCHLD) != 0) {
-        PLOG_W("pthread_kill(signal_thread, SIGCHLD)");
-    }
-    void* retval;
-    if (pthread_join(*thread, &retval) != 0) {
-        PLOG_W("Couldn't stop the signal thread");
-    }
-}
-
 int main(int argc, char** argv) {
     /*
      * Work around CygWin/MinGW
@@ -333,7 +323,6 @@ int main(int argc, char** argv) {
 
     fuzz_setTerminating();
 
-    stopSignalThread(&sigthread);
     /* Ping threads one last time */
     pingThreads(&hfuzz);
     fuzz_threadsStop(&hfuzz);
