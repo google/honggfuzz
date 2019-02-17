@@ -490,7 +490,7 @@ bool subproc_runThread(honggfuzz_t* hfuzz, pthread_t* thread, void* (*thread_fun
     pthread_attr_t attr;
 
     pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     pthread_attr_setstacksize(&attr, _HF_PTHREAD_STACKSIZE);
     pthread_attr_setguardsize(&attr, (size_t)sysconf(_SC_PAGESIZE));
 
