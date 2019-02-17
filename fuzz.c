@@ -301,7 +301,7 @@ static bool fuzz_runVerifier(run_t* run) {
     }
 
     LOG_I("Verified crash for HASH: %" PRIx64 " and saved it as '%s'", backtrace, verFile);
-    ATOMIC_POST_INC(run->global->cnts.verifiedCrashesCnt);
+    ATOMIC_PRE_INC(run->global->cnts.verifiedCrashesCnt);
 
     return true;
 }
@@ -476,7 +476,6 @@ static void* fuzz_threadNew(void* arg) {
         if (run.global->mutate.mutationsPerRun == 0U && run.global->cfg.useVerifier &&
             !hfuzz->socketFuzzer.enabled) {
             if (ATOMIC_POST_INC(run.global->cnts.mutationsCnt) >= run.global->io.fileCnt) {
-                ATOMIC_POST_INC(run.global->threads.threadsFinished);
                 break;
             }
         }
@@ -484,7 +483,6 @@ static void* fuzz_threadNew(void* arg) {
         else if ((ATOMIC_POST_INC(run.global->cnts.mutationsCnt) >=
                      run.global->mutate.mutationsMax) &&
                  run.global->mutate.mutationsMax) {
-            ATOMIC_POST_INC(run.global->threads.threadsFinished);
             break;
         }
 
@@ -511,9 +509,8 @@ static void* fuzz_threadNew(void* arg) {
     }
 
     LOG_I("Terminating thread no. #%" PRId32 ", left: %zu", fuzzNo,
-        hfuzz->threads.threadsMax - run.global->threads.threadsFinished);
+        hfuzz->threads.threadsMax - ATOMIC_GET(run.global->threads.threadsFinished));
     ATOMIC_POST_INC(run.global->threads.threadsFinished);
-    pthread_kill(run.global->threads.mainThread, SIGALRM);
     return NULL;
 }
 
@@ -542,14 +539,4 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz) {
             PLOG_F("Couldn't run a thread #%zu", i);
         }
     }
-}
-
-void fuzz_threadsStop(honggfuzz_t* hfuzz) {
-    for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
-        void* retval;
-        if (pthread_join(hfuzz->threads.threads[i], &retval) != 0) {
-            PLOG_F("Couldn't pthread_join() thread: %zu", i);
-        }
-    }
-    LOG_I("All threads done");
 }

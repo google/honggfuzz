@@ -297,7 +297,6 @@ int main(int argc, char** argv) {
     }
 
     setupSignalsMainThread();
-
     setupMainThreadTimer();
 
     for (;;) {
@@ -323,9 +322,13 @@ int main(int argc, char** argv) {
 
     fuzz_setTerminating();
 
-    /* Ping threads one last time */
-    pingThreads(&hfuzz);
-    fuzz_threadsStop(&hfuzz);
+    for (;;) {
+        if (ATOMIC_GET(hfuzz.threads.threadsFinished) >= hfuzz.threads.threadsMax) {
+            break;
+        }
+        pingThreads(&hfuzz);
+        usleep(50000); /* 50ms */
+    }
 
     /* Clean-up global buffers */
     if (hfuzz.feedback.blacklist) {
