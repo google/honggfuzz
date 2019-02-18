@@ -1,4 +1,12 @@
-2017-08-23 - Version 1.7
+2019-02-23 - Version 1.8
+        - Native support for NetBSD
+		- Multiple smaller changes wrt threading - e.g. introducing the signal thread
+		- Removed the support for -p (pid fuzzing), honggfuzz net driver, or persistent fuzzing mode should be used instead
+		- Reimplementation of memory comparison routines, now verified with glibc's test-suite
+		- Improved hfuzz-cc/clang/gcc - e.g. for the MacOSX platform, also using -fno-sanitize=fuzzer if -fsanitize=fuzzer is specified, + some samba code wrappers
+		- Examples: new corpora for some of those, new patch for ISC Bind (9.13.5)
+
+2018-08-23 - Version 1.7
         - Native support for NetBSD
         - ASCII only fuzzing
         - Updated corpora for ISC Bind
@@ -7,18 +15,18 @@
         - Support for __sanitizer_cov_trace_div
         - Updated fuzzing examples for OpenSSL
 
-2017-04-19 - Version 1.6 (rev aeaad48)
+2018-04-19 - Version 1.6 (rev aeaad48)
         - Fixed Dockerfile
         - Fixed a few format problems with file reporting
         - Updated display formatting
         - Make it work under WSL (Windows Subsystem for Linux)
 
-2017-02-22 - Version 1.5 (rev 3b1b70b)
+2018-02-22 - Version 1.5 (rev 3b1b70b)
         - Persistent fuzzing now works with MacOS-X
         - Fixed some examples/ to make it work with MacOS-X
         - Should compile cleanly with newer MacOS-X versions
 
-2017-02-07 - Version 1.4 (rev 28c7d9e)
+2018-02-07 - Version 1.4 (rev 28c7d9e)
         - Socketfuzzer by @dobin
         - TCP fuzzer (HonggFuzzer NetDriver) in libhfnetdriver
         - Display: changed layout a bit
