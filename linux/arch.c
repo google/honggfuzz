@@ -207,6 +207,7 @@ void arch_prepareParentAfterFork(run_t* run) {
         }
     }
 
+    arch_perfClose(run);
     if (!arch_perfOpen(run)) {
         LOG_F("Couldn't open perf event for pid=%d", (int)run->pid);
     }
@@ -299,9 +300,6 @@ void arch_reapChild(run_t* run) {
         }
     }
 
-    if (run->pid == 0) {
-        arch_perfClose(run);
-    }
     arch_perfAnalyze(run);
 }
 
