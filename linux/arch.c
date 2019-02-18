@@ -299,10 +299,10 @@ void arch_reapChild(run_t* run) {
         }
     }
 
-    arch_perfAnalyze(run);
-    if (!run->global->exe.persistent) {
+    if (run->pid == 0) {
         arch_perfClose(run);
     }
+    arch_perfAnalyze(run);
 }
 
 bool arch_archInit(honggfuzz_t* hfuzz) {
