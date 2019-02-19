@@ -337,6 +337,11 @@ static int ccMode(int argc, char** argv) {
         args[j++] = argv[i];
     }
 
+    /* Disable -fsanitize=fuzzer */
+    if (isFSanitizeFuzzer(argc, argv)) {
+        args[j++] = "-fno-sanitize=fuzzer";
+    }
+
     return execCC(j, args);
 }
 
