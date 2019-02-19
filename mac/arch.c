@@ -182,12 +182,12 @@ static void arch_generateReport(run_t* run, int termsig) {
  * Returns true if a process exited (so, presumably, we can delete an input
  * file)
  */
-static bool arch_analyzeSignal(run_t* run, int status) {
+static void arch_analyzeSignal(run_t* run, int status) {
     /*
      * Resumed by delivery of SIGCONT
      */
     if (WIFCONTINUED(status)) {
-        return false;
+        return;
     }
 
     /*
@@ -195,7 +195,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
      */
     if (WIFEXITED(status)) {
         LOG_D("Process (pid %d) exited normally with status %d", run->pid, WEXITSTATUS(status));
-        return true;
+        return;
     }
 
     /*
@@ -204,14 +204,14 @@ static bool arch_analyzeSignal(run_t* run, int status) {
     if (!WIFSIGNALED(status)) {
         LOG_E("Process (pid %d) exited with the following status %d, please report that as a bug",
             run->pid, status);
-        return true;
+        return;
     }
 
     int termsig = WTERMSIG(status);
     LOG_D("Process (pid %d) killed by signal %d '%s'", run->pid, termsig, strsignal(termsig));
     if (!arch_sigs[termsig].important) {
         LOG_D("It's not that important signal, skipping");
-        return true;
+        return;
     }
 
     /*
@@ -245,7 +245,7 @@ static bool arch_analyzeSignal(run_t* run, int status) {
              run->backtrace) != -1)) {
         LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
         ATOMIC_POST_INC(run->global->cnts.blCrashesCnt);
-        return true;
+        return;
     }
 
     /* If dry run mode, copy file with same name into workspace */
@@ -271,13 +271,13 @@ static bool arch_analyzeSignal(run_t* run, int status) {
         LOG_I("Crash (dup): '%s' already exists, skipping", run->crashFileName);
         // Clear filename so that verifier can understand we hit a duplicate
         memset(run->crashFileName, 0, sizeof(run->crashFileName));
-        return true;
+        return;
     }
 
     if (!files_writeBufToFile(run->crashFileName, run->dynamicFile, run->dynamicFileSz,
             O_CREAT | O_EXCL | O_WRONLY)) {
         LOG_E("Couldn't save crash as '%s'", run->crashFileName);
-        return true;
+        return;
     }
 
     LOG_I("Crash: saved as '%s'", run->crashFileName);
@@ -287,8 +287,6 @@ static bool arch_analyzeSignal(run_t* run, int status) {
     ATOMIC_CLEAR(run->global->cfg.dynFileIterExpire);
 
     arch_generateReport(run, termsig);
-
-    return true;
 }
 
 pid_t arch_fork(run_t* run HF_ATTR_UNUSED) {
@@ -362,6 +360,44 @@ void arch_prepareParent(run_t* run HF_ATTR_UNUSED) {
 void arch_prepareParentAfterFork(run_t* run HF_ATTR_UNUSED) {
 }
 
+static bool arch_checkWait(run_t* run) {
+    /* All queued wait events must be tested when SIGCHLD was delivered */
+    for (;;) {
+        int status;
+        /* Wait for the whole process group of run->pid */
+        pid_t pid = waiti4(-(run->pid), &status, WNOHANG, NULL);
+        if (pid == 0) {
+            return false;
+        }
+        if (pid == -1 && errno == EINTR) {
+            return false;
+        }
+        if (pid == -1 && errno == ECHILD) {
+            LOG_D("No more processes to track");
+            return true;
+        }
+        if (pid == -1) {
+            PLOG_F("wait6(pid/session=%d) failed", (int)run->pid);
+        }
+
+        arch_analyzeSignal(run, status);
+
+        char statusStr[4096];
+        LOG_D("pid=%d returned with status: %s", pid,
+            subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
+
+        if (pid == run->pid && (WIFEXITED(status) || WIFSIGNALED(status))) {
+            if (run->global->exe.persistent) {
+                if (!fuzz_isTerminating()) {
+                    LOG_W("Persistent mode: PID %d exited with status: %s", pid,
+                        subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
+                }
+            }
+            return true;
+        }
+    }
+}
+
 void arch_reapChild(run_t* run) {
     for (;;) {
         if (subproc_persistentModeStateMachine(run)) {
@@ -390,38 +426,7 @@ void arch_reapChild(run_t* run) {
             }
         }
 
-        int status;
-        int ret = waitpid(run->pid, &status, WNOHANG);
-        if (ret == 0) {
-            continue;
-        }
-        if (ret == -1 && errno == EINTR) {
-            continue;
-        }
-        if (ret == -1 && errno == ECHILD) {
-            run->pid = 0;
-            break;
-        }
-        if (ret == -1) {
-            PLOG_W("waitpid(pid=%d)", run->pid);
-            continue;
-        }
-        if (ret != run->pid) {
-            continue;
-        }
-
-        char strStatus[4096];
-        if (run->global->exe.persistent && (WIFEXITED(status) || WIFSIGNALED(status))) {
-            if (!fuzz_isTerminating()) {
-                LOG_W("Persistent mode: PID %d exited with status: %s", ret,
-                    subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
-            }
-        }
-
-        LOG_D("Process (pid %d) came back with status: %s", run->pid,
-            subproc_StatusToStr(status, strStatus, sizeof(strStatus)));
-
-        if (arch_analyzeSignal(run, status)) {
+        if (checkWait(run)) {
             run->pid = 0;
             break;
         }
