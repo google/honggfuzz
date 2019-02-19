@@ -365,11 +365,8 @@ static bool arch_checkWait(run_t* run) {
     for (;;) {
         int status;
         /* Wait for the whole process group of run->pid */
-        pid_t pid = wait4(-(run->pid), &status, WNOHANG, NULL);
+        pid_t pid = TEMP_FAILURE_RETRY(wait4(-(run->pid), &status, WNOHANG, NULL));
         if (pid == 0) {
-            return false;
-        }
-        if (pid == -1 && errno == EINTR) {
             return false;
         }
         if (pid == -1 && errno == ECHILD) {
@@ -377,7 +374,7 @@ static bool arch_checkWait(run_t* run) {
             return true;
         }
         if (pid == -1) {
-            PLOG_F("wait6(pid/session=%d) failed", (int)run->pid);
+            PLOG_F("wait4(pid/session=%d) failed", (int)run->pid);
         }
 
         arch_analyzeSignal(run, status);

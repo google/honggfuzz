@@ -138,13 +138,10 @@ static bool arch_checkWait(run_t* run) {
     for (;;) {
         int status;
         /* Wait for the whole process group of run->pid */
-        pid_t pid = wait6(P_SID, run->pid, &status,
+        pid_t pid = TEMP_FAILURE_RETRY(wait6(P_SID, run->pid, &status,
             WALLSIG | WALTSIG | WTRAPPED | WEXITED | WUNTRACED | WCONTINUED | WSTOPPED | WNOHANG,
-            NULL, NULL);
+            NULL, NULL));
         if (pid == 0) {
-            return false;
-        }
-        if (pid == -1 && errno == EINTR) {
             return false;
         }
         if (pid == -1 && errno == ECHILD) {
