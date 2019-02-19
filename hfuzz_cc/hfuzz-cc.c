@@ -247,7 +247,7 @@ static bool getLibPath(
     return true;
 }
 
-static char* getLibHfuzzPath() {
+static char* getLibHFuzzPath() {
     extern uint8_t lhfuzz_start __asm__("lhfuzz_start");
     extern uint8_t lhfuzz_end __asm__("lhfuzz_end");
 
@@ -396,7 +396,7 @@ static int ldMode(int argc, char** argv) {
 
     /* Reference standard honggfuzz libraries (libhfuzz and libhfnetdriver) */
     args[j++] = getLibHFNetDriverPath();
-    args[j++] = getLibHfuzzPath();
+    args[j++] = getLibHFuzzPath();
     args[j++] = getLibHFNetDriverPath();
 
     /* Pull modules defining the following symbols (if they exist) */
