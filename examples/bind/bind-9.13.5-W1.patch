@@ -98,6 +98,10 @@ diff -Nur ORIG.bind-9.13.5-W1/bin/named/main.c bind-9.13.5-W1/bin/named/main.c
 +            close(nfd);
 +            continue;
 +        }
++        if (rbuf < 1) {
++            close(nfd);
++            continue;
++        }
 +
 +        /* It's a response, so set QR bit to 1 */
 +        uint8_t qr = rbuf[0] | 0x80;
