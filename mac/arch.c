@@ -365,7 +365,7 @@ static bool arch_checkWait(run_t* run) {
     for (;;) {
         int status;
         /* Wait for the whole process group of run->pid */
-        pid_t pid = waiti4(-(run->pid), &status, WNOHANG, NULL);
+        pid_t pid = wait4(-(run->pid), &status, WNOHANG, NULL);
         if (pid == 0) {
             return false;
         }
@@ -426,7 +426,7 @@ void arch_reapChild(run_t* run) {
             }
         }
 
-        if (checkWait(run)) {
+        if (arch_checkWait(run)) {
             run->pid = 0;
             break;
         }
