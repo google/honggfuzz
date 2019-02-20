@@ -828,11 +828,6 @@ static void mangle_CloneByte(run_t* run) {
     run->dynamicFile[off2] = tmp;
 }
 
-static void mangle_Resize(run_t* run) {
-    size_t sz = util_rndGet(1, run->global->mutate.maxFileSz);
-    input_setSize(run, sz);
-}
-
 static void mangle_Expand(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
     size_t len = util_rndGet(1, run->dynamicFileSz - off);
@@ -881,7 +876,6 @@ static void mangle_ASCIIVal(run_t* run) {
 
 void mangle_mangleContent(run_t* run) {
     static void (*const mangleFuncs[])(run_t * run) = {
-        mangle_Resize,
         mangle_Byte,
         mangle_Bit,
         mangle_Bytes,
@@ -903,7 +897,6 @@ void mangle_mangleContent(run_t* run) {
     };
 
     static void (*const manglePrintableFuncs[])(run_t * run) = {
-        mangle_Resize,
         mangle_PrintableByte,
         mangle_BitPrintable,
         mangle_PrintableBytes,
