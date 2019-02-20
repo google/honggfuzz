@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -24,14 +25,14 @@ static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
 
 static inline int HF_strcasecmp(const char* s1, const char* s2, uintptr_t addr) {
     size_t i;
-    for (i = 0; __builtin_tolower((unsigned char)s1[i]) == __builtin_tolower((unsigned char)s2[i]);
+    for (i = 0; tolower((unsigned char)s1[i]) == tolower((unsigned char)s2[i]);
          i++) {
         if (s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
     }
     instrumentUpdateCmpMap(addr, i);
-    return (__builtin_tolower((unsigned char)s1[i]) - __builtin_tolower((unsigned char)s2[i]));
+    return (tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]));
 }
 
 static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
@@ -52,7 +53,7 @@ static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t
 static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
     size_t i;
     for (i = 0; i < n; i++) {
-        if ((__builtin_tolower((unsigned char)s1[i]) != __builtin_tolower((unsigned char)s2[i])) ||
+        if ((tolower((unsigned char)s1[i]) != tolower((unsigned char)s2[i])) ||
             s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
@@ -62,7 +63,7 @@ static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, uintp
     if (i == n) {
         return 0;
     }
-    return __builtin_tolower((unsigned char)s1[i]) - __builtin_tolower((unsigned char)s2[i]);
+    return tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]);
 }
 
 static inline char* HF_strstr(const char* haystack, const char* needle, uintptr_t addr) {
