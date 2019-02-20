@@ -25,8 +25,7 @@ static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
 
 static inline int HF_strcasecmp(const char* s1, const char* s2, uintptr_t addr) {
     size_t i;
-    for (i = 0; tolower((unsigned char)s1[i]) == tolower((unsigned char)s2[i]);
-         i++) {
+    for (i = 0; tolower((unsigned char)s1[i]) == tolower((unsigned char)s2[i]); i++) {
         if (s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
@@ -53,8 +52,8 @@ static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t
 static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
     size_t i;
     for (i = 0; i < n; i++) {
-        if ((tolower((unsigned char)s1[i]) != tolower((unsigned char)s2[i])) ||
-            s1[i] == '\0' || s2[i] == '\0') {
+        if ((tolower((unsigned char)s1[i]) != tolower((unsigned char)s2[i])) || s1[i] == '\0' ||
+            s2[i] == '\0') {
             break;
         }
     }

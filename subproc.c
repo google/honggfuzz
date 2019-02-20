@@ -423,10 +423,7 @@ uint8_t subproc_System(run_t* run, const char* const argv[]) {
 
     for (;;) {
         int status;
-        int ret = wait4(pid, &status, flags, NULL);
-        if (ret == -1 && errno == EINTR) {
-            continue;
-        }
+        int ret = TEMP_FAILURE_RETRY(wait4(pid, &status, flags, NULL));
         if (ret == -1) {
             PLOG_E("wait4() for process pid=%d", (int)pid);
             return 255;
