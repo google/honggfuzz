@@ -325,7 +325,7 @@ __attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
         LOG_F("Couldn't connect to the server TCP port");
     }
     if (!files_sendToSocket(sock, buf, len)) {
-        PLOG_E("files_sendToSocket(sock=%d, len=%zu) failed", sock, len);
+        PLOG_W("files_sendToSocket(sock=%d, len=%zu) failed", sock, len);
         close(sock);
         return 0;
     }
