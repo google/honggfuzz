@@ -45,6 +45,7 @@ extern void subproc_checkTimeLimit(run_t* run);
 
 extern void subproc_checkTermination(run_t* run);
 
-bool subproc_runThread(honggfuzz_t* hfuzz, pthread_t* thread, void* (*thread_func)(void*));
+bool subproc_runThread(
+    honggfuzz_t* hfuzz, pthread_t* thread, void* (*thread_func)(void*), bool joinable);
 
 #endif

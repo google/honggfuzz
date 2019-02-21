@@ -423,10 +423,7 @@ uint8_t subproc_System(run_t* run, const char* const argv[]) {
 
     for (;;) {
         int status;
-        int ret = wait4(pid, &status, flags, NULL);
-        if (ret == -1 && errno == EINTR) {
-            continue;
-        }
+        int ret = TEMP_FAILURE_RETRY(wait4(pid, &status, flags, NULL));
         if (ret == -1) {
             PLOG_E("wait4() for process pid=%d", (int)pid);
             return 255;
@@ -487,11 +484,13 @@ void subproc_checkTermination(run_t* run) {
     }
 }
 
-bool subproc_runThread(honggfuzz_t* hfuzz, pthread_t* thread, void* (*thread_func)(void*)) {
+bool subproc_runThread(
+    honggfuzz_t* hfuzz, pthread_t* thread, void* (*thread_func)(void*), bool joinable) {
     pthread_attr_t attr;
 
     pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    pthread_attr_setdetachstate(
+        &attr, joinable ? PTHREAD_CREATE_JOINABLE : PTHREAD_CREATE_DETACHED);
     pthread_attr_setstacksize(&attr, _HF_PTHREAD_STACKSIZE);
     pthread_attr_setguardsize(&attr, (size_t)sysconf(_SC_PAGESIZE));
 
