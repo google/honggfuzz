@@ -64,14 +64,12 @@ static void exitWithMsg(const char* msg, int exit_code) {
     }
 }
 
-static bool showDisplay = true;
 static void sigHandler(int sig) {
     /* We should not terminate upon SIGALRM delivery */
     if (sig == SIGALRM) {
         if (fuzz_shouldTerminate()) {
             exitWithMsg("Terminating forcefully\n", EXIT_FAILURE);
         }
-        showDisplay = true;
         return;
     }
     /* Do nothing with pings from the main thread */
@@ -300,9 +298,8 @@ int main(int argc, char** argv) {
     setupMainThreadTimer();
 
     for (;;) {
-        if (hfuzz.display.useScreen && showDisplay) {
+        if (hfuzz.display.useScreen) {
             display_display(&hfuzz);
-            showDisplay = false;
         }
         if (ATOMIC_GET(sigReceived) > 0) {
             LOG_I("Signal %d (%s) received, terminating", ATOMIC_GET(sigReceived),
