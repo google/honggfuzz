@@ -484,11 +484,13 @@ void subproc_checkTermination(run_t* run) {
     }
 }
 
-bool subproc_runThread(honggfuzz_t* hfuzz, pthread_t* thread, void* (*thread_func)(void*)) {
+bool subproc_runThread(
+    honggfuzz_t* hfuzz, pthread_t* thread, void* (*thread_func)(void*), bool joinable) {
     pthread_attr_t attr;
 
     pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    pthread_attr_setdetachstate(
+        &attr, joinable ? PTHREAD_CREATE_JOINABLE : PTHREAD_CREATE_DETACHED);
     pthread_attr_setstacksize(&attr, _HF_PTHREAD_STACKSIZE);
     pthread_attr_setguardsize(&attr, (size_t)sysconf(_SC_PAGESIZE));
 

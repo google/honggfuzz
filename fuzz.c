@@ -535,7 +535,8 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz) {
     }
 
     for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
-        if (!subproc_runThread(hfuzz, &hfuzz->threads.threads[i], fuzz_threadNew)) {
+        if (!subproc_runThread(
+                hfuzz, &hfuzz->threads.threads[i], fuzz_threadNew, /* joinable= */ true)) {
             PLOG_F("Couldn't run a thread #%zu", i);
         }
     }

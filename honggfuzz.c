@@ -219,6 +219,7 @@ static void* signalThread(void* arg) {
         if (fuzz_isTerminating()) {
             break;
         }
+
         if (sig == SIGCHLD) {
             pingThreads(hfuzz);
         }
@@ -290,7 +291,7 @@ int main(int argc, char** argv) {
     fuzz_threadsStart(&hfuzz);
 
     pthread_t sigthread;
-    if (!subproc_runThread(&hfuzz, &sigthread, signalThread)) {
+    if (!subproc_runThread(&hfuzz, &sigthread, signalThread, /* joinable= */ false)) {
         LOG_F("Couldn't start the signal thread");
     }
 
