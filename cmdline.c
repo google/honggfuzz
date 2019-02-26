@@ -243,8 +243,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .threads =
             {
                 .threadsFinished = 0,
-                .threadsMax =
-                    (sysconf(_SC_NPROCESSORS_ONLN) <= 1) ? 1 : sysconf(_SC_NPROCESSORS_ONLN) / 2,
+                .threadsMax = ({
+                    long ncpus = sysconf(_SC_NPROCESSORS_ONLN);
+                    (ncpus <= 1 ? 1 : ncpus / 2);
+                }),
                 .threadsActiveCnt = 0,
                 .mainThread = pthread_self(),
                 .mainPid = getpid(),
@@ -561,7 +563,12 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->cfg.reportFile = optarg;
                 break;
             case 'n':
-                hfuzz->threads.threadsMax = atol(optarg);
+                if (optarg[0] == 'a') {
+                    long ncpus = sysconf(_SC_NPROCESSORS_ONLN);
+                    hfuzz->threads.threadsMax = (ncpus < 1 ? 1 : ncpus);
+                } else {
+                    hfuzz->threads.threadsMax = atol(optarg);
+                }
                 break;
             case 0x109: {
                 time_t p = atol(optarg);
