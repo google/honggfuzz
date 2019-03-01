@@ -180,6 +180,13 @@ int util_ssnprintf(char* str, size_t size, const char* format, ...) {
     return ret;
 }
 
+bool util_strStartsWith(const char* str, const char* tofind) {
+    if (strncmp(str, tofind, strlen(tofind)) == 0) {
+        return true;
+    }
+    return false;
+}
+
 void util_getLocalTime(const char* fmt, char* buf, size_t len, time_t tm) {
     struct tm ltime;
     localtime_r(&tm, &ltime);
