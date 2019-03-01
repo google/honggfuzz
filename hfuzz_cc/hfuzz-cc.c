@@ -307,13 +307,11 @@ static void commonOpts(int* j, char** args) {
     /* Make it possible to use the libhfnetdriver */
     args[(*j)++] = "-DHFND_FUZZING_ENTRY_FUNCTION_CXX(x,y)="
                    "extern \"C\" int HonggfuzzNetDriver_main(x,y);"
-                   "extern const char* LIBHFNETDRIVER_module_netdriver;"
-                   "const char** LIBHFNETDRIVER_module_main = &LIBHFNETDRIVER_module_netdriver;"
+                   "extern const char* LIBHFNETDRIVER_module_netdriver __attribute__((used));"
                    "int HonggfuzzNetDriver_main(x,y)";
     args[(*j)++] = "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)="
                    "int HonggfuzzNetDriver_main(x,y);"
-                   "extern const char* LIBHFNETDRIVER_module_netdriver;"
-                   "const char** LIBHFNETDRIVER_module_main = &LIBHFNETDRIVER_module_netdriver;"
+                   "extern const char* LIBHFNETDRIVER_module_netdriver __attribute__((used));"
                    "int HonggfuzzNetDriver_main(x,y)";
 
     if (useM32()) {
@@ -395,6 +393,17 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=strcsequal";
 #endif /* _HF_ARCH_DARWIN */
 
+    /* Pull modules defining the following symbols (if they exist) */
+#ifdef _HF_ARCH_DARWIN
+    args[j++] = "-Wl,-U,_HonggfuzzNetDriver_main";
+    args[j++] = "-Wl,-U,_LIBHFUZZ_module_instrument";
+    args[j++] = "-Wl,-U,_LIBHFUZZ_module_memorycmp";
+#else  /* _HF_ARCH_DARWIN */
+    args[j++] = "-Wl,-u,HonggfuzzNetDriver_main";
+    args[j++] = "-Wl,-u,LIBHFUZZ_module_instrument";
+    args[j++] = "-Wl,-u,LIBHFUZZ_module_memorycmp";
+#endif /* _HF_ARCH_DARWIN */
+
     for (int i = 1; i < argc; i++) {
         args[j++] = argv[i];
     }
@@ -403,17 +412,6 @@ static int ldMode(int argc, char** argv) {
     args[j++] = getLibHFNetDriverPath();
     args[j++] = getLibHFuzzPath();
     args[j++] = getLibHFNetDriverPath();
-
-    /* Pull modules defining the following symbols (if they exist) */
-#ifdef _HF_ARCH_DARWIN
-    args[j++] = "-Wl,-U,_LIBHFNETDRIVER_module_main",
-    args[j++] = "-Wl,-U,_LIBHFUZZ_module_instrument";
-    args[j++] = "-Wl,-U,_LIBHFUZZ_module_memorycmp";
-#else  /* _HF_ARCH_DARWIN */
-    args[j++] = "-Wl,-u,LIBHFNETDRIVER_module_main",
-    args[j++] = "-Wl,-u,LIBHFUZZ_module_instrument";
-    args[j++] = "-Wl,-u,LIBHFUZZ_module_memorycmp";
-#endif /* _HF_ARCH_DARWIN */
 
     /* Needed by the libhfcommon */
     args[j++] = "-pthread";
