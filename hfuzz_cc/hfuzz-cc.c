@@ -306,12 +306,14 @@ static void commonOpts(int* j, char** args) {
 
     /* Make it possible to use the libhfnetdriver */
     args[(*j)++] = "-DHFND_FUZZING_ENTRY_FUNCTION_CXX(x,y)="
+                   "extern const char* LIBHFNETDRIVER_module_netdriver;"
+                   "const char** LIBHFNETDRIVER_tmp1 = &LIBHFNETDRIVER_module_netdriver;"
                    "extern \"C\" int HonggfuzzNetDriver_main(x,y);"
-                   "extern const char* LIBHFNETDRIVER_module_netdriver __attribute__((used));"
                    "int HonggfuzzNetDriver_main(x,y)";
     args[(*j)++] = "-DHFND_FUZZING_ENTRY_FUNCTION(x,y)="
+                   "extern const char* LIBHFNETDRIVER_module_netdriver;"
+                   "const char** LIBHFNETDRIVER_tmp1 = &LIBHFNETDRIVER_module_netdriver;"
                    "int HonggfuzzNetDriver_main(x,y);"
-                   "extern const char* LIBHFNETDRIVER_module_netdriver __attribute__((used));"
                    "int HonggfuzzNetDriver_main(x,y)";
 
     if (useM32()) {
