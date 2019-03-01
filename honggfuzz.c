@@ -178,7 +178,7 @@ static void setupSignalsMainThread(void) {
     sigaddset(&ss, SIGINT);
     sigaddset(&ss, SIGQUIT);
     sigaddset(&ss, SIGALRM);
-    if (sigprocmask(SIG_UNBLOCK, &ss, NULL) != 0) {
+    if (pthread_sigmask(SIG_UNBLOCK, &ss, NULL) != 0) {
         PLOG_F("pthread_sigmask(SIG_UNBLOCK)");
     }
 }
