@@ -142,7 +142,7 @@ static void setupSignalsPreThreads(void) {
     /* This is checked for via sigwaitinfo/sigtimedwait */
     sigaddset(&ss, SIGUSR1);
     if (sigprocmask(SIG_SETMASK, &ss, NULL) != 0) {
-        PLOG_F("pthread_sigmask(SIG_SETMASK)");
+        PLOG_F("sigprocmask(SIG_SETMASK)");
     }
 
     struct sigaction sa = {
