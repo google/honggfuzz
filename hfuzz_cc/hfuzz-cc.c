@@ -73,8 +73,8 @@ static bool useM32() {
     return false;
 }
 
-static bool useGccGE8() {
-    if (getenv("HFUZZ_CC_USE_GCC_GE_8")) {
+static bool useBelowGCC8() {
+    if (getenv("HFUZZ_CC_USE_GCC_BELOW_8")) {
         return true;
     }
     return false;
@@ -279,11 +279,11 @@ static char* getLibHFNetDriverPath() {
 static void commonOpts(int* j, char** args) {
     args[(*j)++] = getIncPaths();
     if (isGCC) {
-        if (useGccGE8()) {
-            /* gcc-8 offers trace-cmp as well, but it's not that widely used yet */
+        if (useBelowGCC8()) {
+            /* trace-pc is the best that gcc-6/7 currently offers */
             args[(*j)++] = "-fsanitize-coverage=trace-pc,trace-cmp";
         } else {
-            /* trace-pc is the best that gcc-6/7 currently offers */
+            /* gcc-8+ offers trace-cmp as well, but it's not that widely used yet */
             args[(*j)++] = "-fsanitize-coverage=trace-pc";
         }
     } else {
