@@ -250,7 +250,7 @@ void util_sleepForMSec(uint64_t msec) {
     }
     struct timespec ts = {
         .tv_sec = msec / 1000U,
-        .tv_nsec = msec % 1000U,
+        .tv_nsec = (msec % 1000U) * 1000000U,
     };
     TEMP_FAILURE_RETRY(nanosleep(&ts, &ts));
 }
