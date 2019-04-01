@@ -256,7 +256,12 @@ static void netDriver_waitForServerReady(uint16_t portno) {
             "connections at TCP4:127.0.0.1:%" PRIu16 " or at TCP6:[::1]:%" PRIu16
             ". Sleeping for 0.5 seconds ...",
             (int)getpid(), portno, portno);
-        usleep(500000U);
+
+        struct timespec ts = {
+            .tv_sec = 0,
+            .tv_nsec = 500000000ULL,
+        };
+        TEMP_FAILURE_RETRY(nanosleep(&ts, &ts));
     }
 }
 
