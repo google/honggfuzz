@@ -152,6 +152,9 @@ static void fuzz_setDynamicMainState(run_t* run) {
         return;
     }
 
+    LOG_I("Entering phase 2/3: Switching to the Dynamic Main");
+    ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_SWITCH_TO_MAIN);
+
     for (;;) {
         /* Check if all threads have already reported in for changing state */
         if (ATOMIC_GET(cnt) == run->global->threads.threadsMax) {
@@ -163,7 +166,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
         usleep(1000 * 10); /* Check every 10ms */
     }
 
-    LOG_I("Entering phase 2/2: Dynamic Main");
+    LOG_I("Entering phase 3/3: Dynamic Main");
     snprintf(run->origFileName, sizeof(run->origFileName), "[DYNAMIC]");
     ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_MAIN);
 
@@ -307,13 +310,16 @@ static bool fuzz_runVerifier(run_t* run) {
 }
 
 static bool fuzz_fetchInput(run_t* run) {
-    if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_DRY_RUN) {
-        run->mutationsPerRun = 0U;
-        if (input_prepareStaticFile(run, /* rewind= */ false)) {
-            return true;
+    {
+        fuzzState_t st = fuzz_getState(run->global);
+        if (st == _HF_STATE_DYNAMIC_DRY_RUN || st == _HF_STATE_DYNAMIC_SWITCH_TO_MAIN) {
+            run->mutationsPerRun = 0U;
+            if (input_prepareStaticFile(run, /* rewind= */ false)) {
+                return true;
+            }
+            fuzz_setDynamicMainState(run);
+            run->mutationsPerRun = run->global->mutate.mutationsPerRun;
         }
-        fuzz_setDynamicMainState(run);
-        run->mutationsPerRun = run->global->mutate.mutationsPerRun;
     }
 
     if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MAIN) {
@@ -527,7 +533,7 @@ void fuzz_threadsStart(honggfuzz_t* hfuzz) {
         LOG_I("Entering phase - Feedback Driven Mode (SocketFuzzer)");
         hfuzz->feedback.state = _HF_STATE_DYNAMIC_MAIN;
     } else if (hfuzz->feedback.dynFileMethod != _HF_DYNFILE_NONE) {
-        LOG_I("Entering phase 1/2: Dry Run");
+        LOG_I("Entering phase 1/3: Dry Run");
         hfuzz->feedback.state = _HF_STATE_DYNAMIC_DRY_RUN;
     } else {
         LOG_I("Entering phase: Static");
