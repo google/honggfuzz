@@ -257,11 +257,7 @@ static void netDriver_waitForServerReady(uint16_t portno) {
             ". Sleeping for 0.5 seconds ...",
             (int)getpid(), portno, portno);
 
-        struct timespec ts = {
-            .tv_sec = 0,
-            .tv_nsec = 500000000ULL,
-        };
-        TEMP_FAILURE_RETRY(nanosleep(&ts, &ts));
+        util_sleepForMSec(500);
     }
 }
 

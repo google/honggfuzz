@@ -24,6 +24,8 @@
 #include "libhfcommon/util.h"
 
 #include <ctype.h>
+#include <errno.h>
+#include <error.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <math.h>
@@ -240,6 +242,17 @@ int64_t util_timeNowMillis(void) {
     }
 
     return (((int64_t)tv.tv_sec * 1000LL) + ((int64_t)tv.tv_usec / 1000LL));
+}
+
+void util_sleepForMSec(uint64_t msec) {
+    if (msec == 0) {
+        return;
+    }
+    struct timespec ts = {
+        .tv_sec = msec / 1000U,
+        .tv_nsec = msec % 1000U,
+    };
+    TEMP_FAILURE_RETRY(nanosleep(&ts, &ts));
 }
 
 uint64_t util_getUINT32(const uint8_t* buf) {

@@ -325,7 +325,7 @@ int main(int argc, char** argv) {
             break;
         }
         pingThreads(&hfuzz);
-        usleep(50000); /* 50ms */
+        util_sleepForMSec(50); /* 50ms */
     }
 
     /* Clean-up global buffers */

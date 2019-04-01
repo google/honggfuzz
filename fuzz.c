@@ -163,7 +163,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
         if (fuzz_isTerminating()) {
             return;
         }
-        usleep(1000 * 10); /* Check every 10ms */
+        util_sleepForMSec(10); /* Check every 10ms */
     }
 
     LOG_I("Entering phase 3/3: Dynamic Main");
