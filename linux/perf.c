@@ -251,7 +251,7 @@ out:
     close(run->linux.cpuBranchFd);
     run->linux.cpuBranchFd = -1;
     close(run->linux.cpuIptBtsFd);
-    run->linux.cpuIptBtsFd = 1;
+    run->linux.cpuIptBtsFd = -1;
 
     return false;
 }
