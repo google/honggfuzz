@@ -199,6 +199,7 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
              NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset)) == MAP_FAILED) {
         munmap(run->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
         run->linux.perfMmapBuf = NULL;
+        run->linux.perfMmapAux = NULL;
         PLOG_W(
             "mmap(mmapAuxBuf) failed, try increasing the kernel.perf_event_mlock_kb sysctl (up to "
             "even 300000000)");
