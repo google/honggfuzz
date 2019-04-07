@@ -152,7 +152,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
         return;
     }
 
-    LOG_I("Entering phase 2/3: Switching to the Dynamic Main");
+    LOG_I("Entering phase 2/3: Switching to Dynamic Main (Feedback Driven Mode)");
     ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_SWITCH_TO_MAIN);
 
     for (;;) {
@@ -166,7 +166,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
         util_sleepForMSec(10); /* Check every 10ms */
     }
 
-    LOG_I("Entering phase 3/3: Dynamic Main");
+    LOG_I("Entering phase 3/3: Dynamic Main ((Feedback Driven Mode)");
     snprintf(run->origFileName, sizeof(run->origFileName), "[DYNAMIC]");
     ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_MAIN);
 
