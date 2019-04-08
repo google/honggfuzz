@@ -314,7 +314,7 @@ static bool fuzz_fetchInput(run_t* run) {
         fuzzState_t st = fuzz_getState(run->global);
         if (st == _HF_STATE_DYNAMIC_DRY_RUN || st == _HF_STATE_DYNAMIC_SWITCH_TO_MAIN) {
             run->mutationsPerRun = 0U;
-            if (input_prepareStaticFile(run, /* rewind= */ false)) {
+            if (input_prepareStaticFile(run, /* rewind= */ false, true)) {
                 return true;
             }
             fuzz_setDynamicMainState(run);
@@ -328,7 +328,12 @@ static bool fuzz_fetchInput(run_t* run) {
                 LOG_E("input_prepareFileExternally() failed");
                 return false;
             }
-        } else if (!input_prepareDynamicInput(run)) {
+        } else if (run->global->exe.feedbackMutateCommand){
+            if (!input_prepareDynamicInput(run, false)){
+                LOG_E("input_prepareFileDynamically() failed");
+                return false;
+            }
+        } else if (!input_prepareDynamicInput(run, true)) {
             LOG_E("input_prepareFileDynamically() failed");
             return false;
         }
@@ -340,7 +345,12 @@ static bool fuzz_fetchInput(run_t* run) {
                 LOG_E("input_prepareFileExternally() failed");
                 return false;
             }
-        } else if (!input_prepareStaticFile(run, true /* rewind */)) {
+        } else if (run->global->exe.feedbackMutateCommand){
+            if (!input_prepareStaticFile(run, true, false)){
+                LOG_E("input_prepareFileDynamically() failed");
+                return false;
+            }
+        } else if (!input_prepareStaticFile(run, true /* rewind */, true)) {
             LOG_E("input_prepareFile() failed");
             return false;
         }
@@ -348,6 +358,11 @@ static bool fuzz_fetchInput(run_t* run) {
 
     if (run->global->exe.postExternalCommand && !input_postProcessFile(run)) {
         LOG_E("input_postProcessFile() failed");
+        return false;
+    }
+
+    if (run->global->exe.feedbackMutateCommand && !input_feedbackMutateFile(run)) {
+        LOG_E("input_feedbackMutateFile() failed");
         return false;
     }
 

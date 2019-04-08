@@ -31,9 +31,10 @@ extern bool input_getNext(run_t* run, char* fname, bool rewind);
 extern bool input_init(honggfuzz_t* hfuzz);
 extern bool input_parseDictionary(honggfuzz_t* hfuzz);
 extern bool input_parseBlacklist(honggfuzz_t* hfuzz);
-extern bool input_prepareDynamicInput(run_t* run);
-extern bool input_prepareStaticFile(run_t* run, bool rewind);
+extern bool input_prepareDynamicInput(run_t* run, bool need_mangele);
+extern bool input_prepareStaticFile(run_t* run, bool rewind, bool need_mangele);
 extern bool input_prepareExternalFile(run_t* run);
 extern bool input_postProcessFile(run_t* run);
+extern bool input_feedbackMutateFile(run_t* run);
 
 #endif /* ifndef _HF_INPUT_H_ */
