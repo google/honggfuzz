@@ -207,6 +207,7 @@ typedef struct {
         bool fuzzStdin;
         const char* externalCommand;
         const char* postExternalCommand;
+        const char* feedbackMutateCommand;
         bool netDriver;
         bool persistent;
         uint64_t asLimit;
