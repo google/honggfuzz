@@ -37,7 +37,6 @@ bool fuzz_waitForExternalInput(run_t* run) {
     /* tell the external fuzzer to do his thing */
     if (!fuzz_prepareSocketFuzzer(run)) {
         LOG_F("fuzz_prepareSocketFuzzer() failed");
-        return false;
     }
 
     /* the external fuzzer may inform us of a crash */
@@ -50,17 +49,10 @@ bool fuzz_waitForExternalInput(run_t* run) {
 }
 
 bool fuzz_prepareSocketFuzzer(run_t* run) {
-    ssize_t ret;
-
     // Notify fuzzer that he should send teh things
     LOG_D("fuzz_prepareSocketFuzzer: SEND Fuzz");
-    ret = send(run->global->socketFuzzer.clientSocket, "Fuzz", 4, 0);
-    if (ret < 0) {
-        LOG_F("fuzz_prepareSocketFuzzer: received: %zu", ret);
-        return false;
-    }
-
-    return true;
+    return files_sendToSocket(
+        run->global->socketFuzzer.clientSocket, (uint8_t*)"Fuzz", strlen("Fuzz"));
 }
 
 /* Return values:
@@ -70,17 +62,16 @@ bool fuzz_prepareSocketFuzzer(run_t* run) {
 */
 int fuzz_waitforSocketFuzzer(run_t* run) {
     ssize_t ret;
-    char buf[16];
+    uint8_t buf[16];
 
     // Wait until the external fuzzer did his thing
     bzero(buf, 16);
-    ret = recv(run->global->socketFuzzer.clientSocket, buf, 4, 0);
+    ret = files_readFromFd(run->global->socketFuzzer.clientSocket, buf, 4);
     LOG_D("fuzz_waitforSocketFuzzer: RECV: %s", buf);
 
     // We dont care what we receive, its just to block here
     if (ret < 0) {
         LOG_F("fuzz_waitforSocketFuzzer: received: %zu", ret);
-        return 0;
     }
 
     if (memcmp(buf, "okay", 4) == 0) {
@@ -93,27 +84,21 @@ int fuzz_waitforSocketFuzzer(run_t* run) {
 }
 
 bool fuzz_notifySocketFuzzerNewCov(honggfuzz_t* hfuzz) {
-    ssize_t ret;
-
     // Tell the fuzzer that the thing he sent reached new BB's
-    ret = send(hfuzz->socketFuzzer.clientSocket, "New!", 4, 0);
+    bool ret = files_sendToSocket(hfuzz->socketFuzzer.clientSocket, (uint8_t*)"New!", 4);
     LOG_D("fuzz_notifySocketFuzzer: SEND: New!");
-    if (ret < 0) {
-        LOG_F("fuzz_notifySocketFuzzer: sent: %zu", ret);
-        return false;
+    if (!ret) {
+        LOG_F("fuzz_notifySocketFuzzer");
     }
 
     return true;
 }
 
 bool fuzz_notifySocketFuzzerCrash(run_t* run) {
-    ssize_t ret;
-
-    ret = send(run->global->socketFuzzer.clientSocket, "Cras", 4, 0);
+    bool ret = files_sendToSocket(run->global->socketFuzzer.clientSocket, (uint8_t*)"Cras", 4);
     LOG_D("fuzz_notifySocketFuzzer: SEND: Crash");
-    if (ret < 0) {
-        LOG_F("fuzz_notifySocketFuzzer: sent: %zu", ret);
-        return false;
+    if (!ret) {
+        LOG_F("fuzz_notifySocketFuzzer");
     }
 
     return true;
@@ -147,7 +132,8 @@ bool setupSocketFuzzer(honggfuzz_t* run) {
 
     printf("Waiting for SocketFuzzer connection on socket: %s\n", socketPath);
     t = sizeof(remote);
-    if ((run->socketFuzzer.clientSocket = accept(s, (struct sockaddr*)&remote, &t)) == -1) {
+    if ((run->socketFuzzer.clientSocket =
+                TEMP_FAILURE_RETRY(accept(s, (struct sockaddr*)&remote, &t))) == -1) {
         perror("accept");
         return false;
     }

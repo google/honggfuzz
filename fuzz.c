@@ -328,8 +328,8 @@ static bool fuzz_fetchInput(run_t* run) {
                 LOG_E("input_prepareFileExternally() failed");
                 return false;
             }
-        } else if (run->global->exe.feedbackMutateCommand){
-            if (!input_prepareDynamicInput(run, false)){
+        } else if (run->global->exe.feedbackMutateCommand) {
+            if (!input_prepareDynamicInput(run, false)) {
                 LOG_E("input_prepareFileDynamically() failed");
                 return false;
             }
@@ -345,8 +345,8 @@ static bool fuzz_fetchInput(run_t* run) {
                 LOG_E("input_prepareFileExternally() failed");
                 return false;
             }
-        } else if (run->global->exe.feedbackMutateCommand){
-            if (!input_prepareStaticFile(run, true, false)){
+        } else if (run->global->exe.feedbackMutateCommand) {
+            if (!input_prepareStaticFile(run, true, false)) {
                 LOG_E("input_prepareFileDynamically() failed");
                 return false;
             }

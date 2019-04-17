@@ -332,8 +332,7 @@ bool input_prepareDynamicInput(run_t* run, bool need_mangele) {
 
     input_setSize(run, run->dynfileqCurrent->size);
     memcpy(run->dynamicFile, run->dynfileqCurrent->data, run->dynfileqCurrent->size);
-    if (need_mangele)
-        mangle_mangleContent(run);
+    if (need_mangele) mangle_mangleContent(run);
 
     return true;
 }
@@ -353,8 +352,7 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool need_mangele) {
     }
 
     input_setSize(run, fileSz);
-    if (need_mangele)
-        mangle_mangleContent(run);
+    if (need_mangele) mangle_mangleContent(run);
 
     return true;
 }

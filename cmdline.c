@@ -598,7 +598,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 0x110:
                 hfuzz->exe.feedbackMutateCommand = optarg;
-                break;    
+                break;
             case 0x105:
                 if ((strcasecmp(optarg, "0") == 0) || (strcasecmp(optarg, "false") == 0)) {
                     hfuzz->cfg.monitorSIGABRT = false;
