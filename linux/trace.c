@@ -1054,7 +1054,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
         }
     }
 
-    int fd = open(run->crashFileName, O_WRONLY | O_EXCL | O_CREAT, 0600);
+    int fd = TEMP_FAILURE_RETRY(open(run->crashFileName, O_WRONLY | O_EXCL | O_CREAT, 0600));
     if (fd == -1 && errno == EEXIST) {
         LOG_I("It seems that '%s' already exists, skipping", run->crashFileName);
         return;
