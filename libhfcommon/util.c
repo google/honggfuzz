@@ -206,13 +206,13 @@ void util_closeStdio(bool close_stdin, bool close_stdout, bool close_stderr) {
     }
 
     if (close_stdin) {
-        dup2(fd, STDIN_FILENO);
+        TEMP_FAILURE_RETRY(dup2(fd, STDIN_FILENO));
     }
     if (close_stdout) {
-        dup2(fd, STDOUT_FILENO);
+        TEMP_FAILURE_RETRY(dup2(fd, STDOUT_FILENO));
     }
     if (close_stderr) {
-        dup2(fd, STDERR_FILENO);
+        TEMP_FAILURE_RETRY(dup2(fd, STDERR_FILENO));
     }
 
     if (fd > STDERR_FILENO) {
