@@ -23,6 +23,7 @@
 
 #include "report.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -79,7 +80,8 @@ void report_Report(run_t* run) {
             snprintf(reportFName, sizeof(reportFName), "%s", run->global->cfg.reportFile);
         }
 
-        reportFD = open(reportFName, O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0644);
+        reportFD =
+            TEMP_FAILURE_RETRY(open(reportFName, O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0644));
         if (reportFD == -1) {
             PLOG_F("Couldn't open('%s') for writing", reportFName);
         }

@@ -183,7 +183,7 @@ bool input_init(honggfuzz_t* hfuzz) {
         return false;
     }
 
-    int dir_fd = open(hfuzz->io.inputDir, O_DIRECTORY | O_RDONLY | O_CLOEXEC);
+    int dir_fd = TEMP_FAILURE_RETRY(open(hfuzz->io.inputDir, O_DIRECTORY | O_RDONLY | O_CLOEXEC));
     if (dir_fd == -1) {
         PLOG_W("open('%s', O_DIRECTORY|O_RDONLY|O_CLOEXEC)", hfuzz->io.inputDir);
         return false;
