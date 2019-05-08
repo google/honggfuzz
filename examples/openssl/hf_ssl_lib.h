@@ -24,12 +24,6 @@ extern "C" {
 #define HF_SSL_IS_OPENSSL
 #endif
 
-#define FUZZTIME 1485898104
-time_t __wrap_time(time_t* t) {
-    if (t != NULL) *t = FUZZTIME;
-    return FUZZTIME;
-}
-
 #if defined(HF_SSL_IS_BORINGSSL)
 static int hf_rnd(unsigned char* buf, size_t num)
 #else  /* defined(HF_SSL_IS_BORINGSSL) */
