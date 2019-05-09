@@ -300,7 +300,7 @@ diff -Nur ORIG.bind-9.14.1/compile.sh bind-9.14.1/compile.sh
 +
 +export CC="$HOME"/src/honggfuzz/hfuzz_cc/hfuzz-clang
 +export CXX="$HOME"/src/honggfuzz/hfuzz_cc/hfuzz-clang++
-+export CFLAGS="-fsanitize=address -Wno-shift-negative-value -Wno-logical-not-parentheses -g -ggdb -O0"
++export CFLAGS="-fsanitize=address -Wno-shift-negative-value -Wno-logical-not-parentheses -g -ggdb -O0 -D__AFL_COMPILER"
 +./configure \
 +		--prefix="$HOME"/fuzz/bind/dist/ \
 +		--without-gssapi \
