@@ -8,6 +8,7 @@ extern "C" {
 #include <openssl/err.h>
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
+#include <openssl/tls1.h>
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
@@ -524,6 +525,17 @@ static int npn_callback(SSL* ssl, const uint8_t** out, unsigned* out_len, void* 
     return SSL_TLSEXT_ERR_OK;
 }
 
+static int session_id_callback(
+#if defined(HF_SSL_IS_LIBRESSL)
+    const
+#endif /* defined(HF_SSL_IS_LIBRESSL) */
+    SSL* ssl,
+    unsigned char* id, unsigned int* id_len) {
+    static unsigned char sess_cnt = 'A';
+    memset(id, sess_cnt++, *id_len);
+    return 1;
+}
+
 int LLVMFuzzerInitialize(int* argc, char*** argv) {
     HFInit();
     HFResetRand();
@@ -607,6 +619,10 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
     opts |= SSL_OP_ALL;
     SSL_CTX_set_options(ctx, opts);
 
+#if !defined(HF_SSL_IS_BORINGSSL)
+    SSL_CTX_set_generate_session_id(ctx, session_id_callback);
+#endif /* !defined(HF_SSL_IS_BORINGSSL) */
+
     return 1;
 }
 
@@ -617,10 +633,8 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
 
     SSL* server = SSL_new(ctx);
 
-#if defined(HF_SSL_IS_OPENSSL_GE_1_1) || defined(HF_SSL_IS_BORINGSSL)
     SSL_set_min_proto_version(server, SSL3_VERSION);
     SSL_set_max_proto_version(server, TLS1_3_VERSION);
-#endif  // defined(HF_SSL_IS_OPENSSL_GE_1_1) || defined(HF_SSL_IS_BORINGSSL)
 
 #if defined(HF_SSL_FROM_STDIN)
     BIO* in = BIO_new(BIO_s_fd());

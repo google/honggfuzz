@@ -579,10 +579,8 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
     SSL_set_renegotiate_mode(client, ssl_renegotiate_freely);
 #endif /* defined(HF_SSL_IS_BORINGSSL) */
 
-#if defined(HF_SSL_IS_OPENSSL_GE_1_1) || defined(HF_SSL_IS_BORINGSSL)
     SSL_set_min_proto_version(client, SSL3_VERSION);
     SSL_set_max_proto_version(client, TLS1_3_VERSION);
-#endif  // defined(HF_SSL_IS_OPENSSL_GE_1_1) || defined(HF_SSL_IS_BORINGSSL)
 
 #if defined(HF_SSL_FROM_STDIN)
     BIO* in = BIO_new(BIO_s_fd());
