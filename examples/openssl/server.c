@@ -593,7 +593,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
     X509_free(cert);
 
     SSL_CTX_set_cert_store(ctx, store);
-    SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
     SSL_CTX_set_verify_depth(ctx, 10);
 
 #if !defined(HF_SSL_IS_LIBRESSL)
