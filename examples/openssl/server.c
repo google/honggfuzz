@@ -612,6 +612,15 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
     SSL_CTX_set_alpn_select_cb(ctx, alpn_callback, NULL);
     SSL_CTX_set_next_protos_advertised_cb(ctx, npn_callback, NULL);
     SSL_CTX_set_ecdh_auto(ctx, 1);
+    SSL_CTX_set_min_proto_version(ctx, SSL3_VERSION);
+    SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION);
+#if defined(HF_SSL_IS_OPENSSL_GE_1_1)
+    SSL_CTX_enable_ct(ctx, SSL_CT_VALIDATION_STRICT);
+    SSL_CTX_set_max_early_data(ctx, 1024);
+#endif /* defined(HF_SSL_IS_OPENSSL_GE_1_1) */
+#if !defined(HF_SSL_IS_BORINGSSL)
+    SSL_CTX_set_dh_auto(ctx, 1);
+#endif /* !defined(HF_SSL_IS_BORINGSSL) */
 
     long opts = SSL_CTX_get_options(ctx);
     opts |= SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION;
@@ -633,9 +642,6 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
 
     SSL* server = SSL_new(ctx);
 
-    SSL_set_min_proto_version(server, SSL3_VERSION);
-    SSL_set_max_proto_version(server, TLS1_3_VERSION);
-
 #if defined(HF_SSL_FROM_STDIN)
     BIO* in = BIO_new(BIO_s_fd());
     BIO_set_fd(in, 0, BIO_NOCLOSE);
@@ -651,10 +657,6 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
     SSL_set_accept_state(server);
 
 #if defined(HF_SSL_IS_OPENSSL_GE_1_1)
-    SSL_enable_ct(server, SSL_CT_VALIDATION_STRICT);
-    SSL_set_dh_auto(server, 1);
-
-    SSL_set_max_early_data(server, 1024);
     for (;;) {
         size_t sz;
         uint8_t edata_rbuf[128];
