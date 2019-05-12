@@ -562,7 +562,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
     SSL_CTX_set_timeout(ctx, 3);
 
 #if defined(HF_SSL_IS_OPENSSL_GE_1_1)
-    SSL_CTX_enable_ct(ctx, SSL_CT_VALIDATION_STRICT);
+    SSL_CTX_enable_ct(ctx, SSL_CT_VALIDATION_PERMISSIVE);
     SSL_CTX_set_max_early_data(ctx, 1024);
 #endif /* defined(HF_SSL_IS_OPENSSL_GE_1_1) */
 #if !defined(HF_SSL_IS_BORINGSSL)
