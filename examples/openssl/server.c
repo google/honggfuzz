@@ -612,8 +612,10 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
     SSL_CTX_set_alpn_select_cb(ctx, alpn_callback, NULL);
     SSL_CTX_set_next_protos_advertised_cb(ctx, npn_callback, NULL);
     SSL_CTX_set_ecdh_auto(ctx, 1);
+#if defined(TLS1_3_VERSION)
     SSL_CTX_set_min_proto_version(ctx, SSL3_VERSION);
     SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION);
+#endif /* defined(TLS1_3_VERSION) */
     SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_BOTH);
     SSL_CTX_set_timeout(ctx, 3);
 
@@ -621,19 +623,17 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
     SSL_CTX_enable_ct(ctx, SSL_CT_VALIDATION_STRICT);
     SSL_CTX_set_max_early_data(ctx, 1024);
 #endif /* defined(HF_SSL_IS_OPENSSL_GE_1_1) */
-#if !defined(HF_SSL_IS_BORINGSSL)
+
+#if defined(HF_SSL_IS_OPENSSL_GE_1_1) || defined(HF_SSL_IS_LIBRESSL)
     SSL_CTX_set_dh_auto(ctx, 1);
-#endif /* !defined(HF_SSL_IS_BORINGSSL) */
+    SSL_CTX_set_generate_session_id(ctx, session_id_callback);
+#endif /* defined(HF_SSL_IS_OPENSSL_GE_1_1) || defined(HF_SSL_IS_LIBRESSL) */
 
     long opts = SSL_CTX_get_options(ctx);
     opts |= SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION;
     opts |= SSL_OP_LEGACY_SERVER_CONNECT;
     opts |= SSL_OP_ALL;
     SSL_CTX_set_options(ctx, opts);
-
-#if !defined(HF_SSL_IS_BORINGSSL)
-    SSL_CTX_set_generate_session_id(ctx, session_id_callback);
-#endif /* !defined(HF_SSL_IS_BORINGSSL) */
 
     return 1;
 }
