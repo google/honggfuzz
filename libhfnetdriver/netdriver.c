@@ -44,11 +44,7 @@ static struct {
     .sa_family = AF_UNSPEC,
 };
 
-__attribute__((weak)) int HonggfuzzNetDriver_main(
-    int argc HF_ATTR_UNUSED, char **argv HF_ATTR_UNUSED) {
-    LOG_F("The HonggfuzzNetDriver_main function was not defined in your code");
-    return EXIT_FAILURE;
-}
+extern int HonggfuzzNetDriver_main(int argc, char **argv);
 
 static void *netDriver_mainProgram(void *unused HF_ATTR_UNUSED) {
     int ret = HonggfuzzNetDriver_main(hfnd_globals.argc_server, hfnd_globals.argv_server);
@@ -288,11 +284,6 @@ __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
         LOG_I(
             "Honggfuzz Net Driver (pid=%d): '%s' is set, skipping fuzzing, calling main() directly",
             getpid(), HFND_SKIP_FUZZING_ENV);
-        if (!HonggfuzzNetDriver_main) {
-            LOG_F("Honggfuzz Net Driver (pid=%d): HonggfuzzNetDriver_main was not defined in your "
-                  "code",
-                getpid());
-        }
         exit(HonggfuzzNetDriver_main(*argc, *argv));
     }
 
