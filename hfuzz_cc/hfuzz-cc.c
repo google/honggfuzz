@@ -395,11 +395,9 @@ static int ldMode(int argc, char** argv) {
 
     /* Pull modules defining the following symbols (if they exist) */
 #ifdef _HF_ARCH_DARWIN
-    args[j++] = "-Wl,-U,_HonggfuzzNetDriver_main";
     args[j++] = "-Wl,-U,_LIBHFUZZ_module_instrument";
     args[j++] = "-Wl,-U,_LIBHFUZZ_module_memorycmp";
 #else  /* _HF_ARCH_DARWIN */
-    args[j++] = "-Wl,-u,HonggfuzzNetDriver_main";
     args[j++] = "-Wl,-u,LIBHFUZZ_module_instrument";
     args[j++] = "-Wl,-u,LIBHFUZZ_module_memorycmp";
 #endif /* _HF_ARCH_DARWIN */
