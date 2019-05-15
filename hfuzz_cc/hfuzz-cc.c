@@ -103,7 +103,7 @@ static bool isLDMode(int argc, char** argv) {
 
 static bool isFSanitizeFuzzer(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
-        if (util_strStartsWith(argv[i], "-fsanitize=") && strstr(argv[1], "fuzzer")) {
+        if (util_strStartsWith(argv[i], "-fsanitize=") && strstr(argv[i], "fuzzer")) {
             return true;
         }
     }
