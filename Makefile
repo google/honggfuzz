@@ -403,9 +403,9 @@ report.o: libhfcommon/log.h
 sanitizers.o: sanitizers.h honggfuzz.h libhfcommon/util.h cmdline.h
 sanitizers.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 sanitizers.o: libhfcommon/log.h
-socketfuzzer.o: honggfuzz.h libhfcommon/util.h libhfcommon/common.h
-socketfuzzer.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
-socketfuzzer.o: libhfcommon/ns.h socketfuzzer.h
+socketfuzzer.o: socketfuzzer.h honggfuzz.h libhfcommon/util.h
+socketfuzzer.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+socketfuzzer.o: libhfcommon/log.h libhfcommon/ns.h
 subproc.o: subproc.h honggfuzz.h libhfcommon/util.h arch.h fuzz.h
 subproc.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 subproc.o: libhfcommon/log.h
@@ -434,10 +434,10 @@ libhfuzz/linux.o: libhfcommon/common.h libhfcommon/files.h
 libhfuzz/linux.o: libhfcommon/common.h libhfcommon/log.h libhfcommon/ns.h
 libhfuzz/linux.o: libhfuzz/libhfuzz.h
 libhfuzz/memorycmp.o: libhfcommon/common.h libhfuzz/instrument.h
-libhfuzz/persistent.o: libhfuzz/libhfuzz.h honggfuzz.h libhfcommon/util.h
-libhfuzz/persistent.o: libhfcommon/common.h libhfcommon/files.h
-libhfuzz/persistent.o: libhfcommon/common.h libhfcommon/log.h
-libhfuzz/persistent.o: libhfuzz/fetch.h libhfuzz/instrument.h
+libhfuzz/persistent.o: honggfuzz.h libhfcommon/util.h libhfcommon/common.h
+libhfuzz/persistent.o: libhfcommon/files.h libhfcommon/common.h
+libhfuzz/persistent.o: libhfcommon/log.h libhfuzz/fetch.h
+libhfuzz/persistent.o: libhfuzz/instrument.h libhfuzz/libhfuzz.h
 linux/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h
 linux/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 linux/arch.o: libhfcommon/log.h libhfcommon/ns.h linux/perf.h linux/trace.h
@@ -448,8 +448,8 @@ linux/bfd.o: libhfcommon/log.h
 linux/perf.o: linux/perf.h honggfuzz.h libhfcommon/util.h
 linux/perf.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 linux/perf.o: libhfcommon/log.h linux/pt.h
-linux/pt.o: libhfcommon/common.h libhfcommon/log.h libhfcommon/util.h
-linux/pt.o: linux/pt.h honggfuzz.h
+linux/pt.o: linux/pt.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
+linux/pt.o: libhfcommon/log.h
 linux/trace.o: linux/trace.h honggfuzz.h libhfcommon/util.h
 linux/trace.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 linux/trace.o: libhfcommon/log.h linux/bfd.h linux/unwind.h sanitizers.h

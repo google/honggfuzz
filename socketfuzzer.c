@@ -1,3 +1,5 @@
+#include "socketfuzzer.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -11,17 +13,12 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/param.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
-
-#include <errno.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <sys/un.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "honggfuzz.h"
@@ -30,8 +27,6 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/ns.h"
 #include "libhfcommon/util.h"
-
-#include "socketfuzzer.h"
 
 bool fuzz_waitForExternalInput(run_t* run) {
     /* tell the external fuzzer to do his thing */

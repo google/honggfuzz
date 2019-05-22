@@ -24,12 +24,12 @@
 #ifndef _HF_COMMON_FILES_H_
 #define _HF_COMMON_FILES_H_
 
-#include "common.h"
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+#include "common.h"
 
 extern ssize_t files_readFileToBufMax(const char* fileName, uint8_t* buf, size_t fileMaxSz);
 

@@ -24,7 +24,7 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
 ## Code
 
-  * Latest stable version: [1.8](https://github.com/google/honggfuzz/releases)
+  * Latest stable version: [1.9](https://github.com/google/honggfuzz/releases)
   * [Changelog](https://github.com/google/honggfuzz/blob/master/CHANGELOG)
 
 ## Requirements
@@ -90,6 +90,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * panic() in h2 [#1](https://github.com/carllerche/h2/pull/260), [#2](https://github.com/carllerche/h2/pull/261), [#3](https://github.com/carllerche/h2/pull/262)
     * panic() in sleep-parser [#1](https://github.com/datrs/sleep-parser/issues/3)
     * panic() in lewton [#1](https://github.com/RustAudio/lewton/issues/27)
+    * panic()/DoS in Ethereum-Parity [#1](https://srlabs.de/bites/ethereum_dos/)
   * ... and more
 
 ## Projects utilizing Honggfuzz
@@ -112,6 +113,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__FuzzM__: a gray box model-based fuzzing framework](https://github.com/collins-research/FuzzM)
   * [__FuzzOS__: by Mozilla Security](https://github.com/MozillaSecurity/fuzzos)
   * [__Android__: by OHA](https://android.googlesource.com/platform/external/honggfuzz)
+  * [__QDBI__: by Quarkslab](https://project.inria.fr/FranceJapanICST/files/2019/04/19-Kyoto-Fuzzing_Binaries_using_Dynamic_Instrumentation.pdf)
 
 ## Examples
 

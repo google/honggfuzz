@@ -1,5 +1,3 @@
-#include "libhfuzz/libhfuzz.h"
-
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -21,6 +19,7 @@
 #include "libhfcommon/log.h"
 #include "libhfuzz/fetch.h"
 #include "libhfuzz/instrument.h"
+#include "libhfuzz/libhfuzz.h"
 
 __attribute__((weak)) int LLVMFuzzerInitialize(
     int* argc HF_ATTR_UNUSED, char*** argv HF_ATTR_UNUSED) {
