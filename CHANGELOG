@@ -6,11 +6,11 @@
 
 2019-02-23 - Version 1.8
         - Native support for NetBSD
-		- Multiple smaller changes wrt threading - e.g. introducing the signal thread
-		- Removed the support for -p (pid fuzzing), honggfuzz net driver, or persistent fuzzing mode should be used instead
-		- Reimplementation of memory comparison routines, now verified with glibc's test-suite
-		- Improved hfuzz-cc/clang/gcc - e.g. for the MacOSX platform, also using -fno-sanitize=fuzzer if -fsanitize=fuzzer is specified, + some samba code wrappers
-		- Examples: new corpora for some of those, new patch for ISC Bind (9.13.5)
+        - Multiple smaller changes wrt threading - e.g. introducing the signal thread
+        - Removed the support for -p (pid fuzzing), honggfuzz net driver, or persistent fuzzing mode should be used instead
+        - Reimplementation of memory comparison routines, now verified with glibc's test-suite
+        - Improved hfuzz-cc/clang/gcc - e.g. for the MacOSX platform, also using -fno-sanitize=fuzzer if -fsanitize=fuzzer is specified, + some samba code wrappers
+        - Examples: new corpora for some of those, new patch for ISC Bind (9.13.5)
 
 2018-08-23 - Version 1.7
         - Native support for NetBSD
