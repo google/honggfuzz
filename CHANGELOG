@@ -1,3 +1,9 @@
+2019-05-22 - Version 1.9
+        - Don't include netdriver if not needed
+        - Updated examples (bind/openssl)
+        - Add missing TEMP_FAILURE_RETRY() wrappers
+        - Add additional _HF_STATE_DYNAMIC_SWITCH_TO_MAIN state
+
 2019-02-23 - Version 1.8
         - Native support for NetBSD
 		- Multiple smaller changes wrt threading - e.g. introducing the signal thread
