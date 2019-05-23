@@ -36,6 +36,12 @@ __asm__("\n"
         "lhfnetdriver_start:\n"
         "   .incbin \"libhfnetdriver/libhfnetdriver.a\"\n"
         "lhfnetdriver_end:\n"
+        "\n"
+        "   .global lhfcommon_start\n"
+        "   .global lhfcommon_end\n"
+        "lhfcommon_start:\n"
+        "   .incbin \"libhfcommon/libhfcommon.a\"\n"
+        "lhfcommon_end:\n"
         "\n");
 
 static const char* _basename(const char* path) {
@@ -276,6 +282,20 @@ static char* getLibHFNetDriverPath() {
     return path;
 }
 
+static char* getLibHFCommonPath() {
+    extern uint8_t lhfcommon_start __asm__("lhfcommon_start");
+    extern uint8_t lhfcommon_end __asm__("lhfcommon_end");
+
+    static char path[PATH_MAX] = {};
+    if (path[0]) {
+        return path;
+    }
+    if (!getLibPath("libhfuzz", "HFUZZ_LHFCOMMON_PATH", &lhfcommon_start, &lhfcommon_end, path)) {
+        LOG_F("Couldn't create the temporary libhcommon.a");
+    }
+    return path;
+}
+
 static void commonOpts(int* j, char** args) {
     args[(*j)++] = getIncPaths();
     if (isGCC) {
@@ -411,7 +431,7 @@ static int ldMode(int argc, char** argv) {
     /* Reference standard honggfuzz libraries (libhfuzz and libhfnetdriver) */
     args[j++] = getLibHFNetDriverPath();
     args[j++] = getLibHFuzzPath();
-    args[j++] = getLibHFNetDriverPath();
+    args[j++] = getLibHFCommonPath();
 
     /* Needed by the libhfcommon */
     args[j++] = "-pthread";

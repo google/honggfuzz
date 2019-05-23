@@ -279,7 +279,7 @@ uint16_t netDriver_getTCPPort(int argc, char **argv) {
     return HonggfuzzNetDriverPort(argc, argv);
 }
 
-__attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
+int LLVMFuzzerInitialize(int *argc, char ***argv) {
     if (getenv(HFND_SKIP_FUZZING_ENV)) {
         LOG_I(
             "Honggfuzz Net Driver (pid=%d): '%s' is set, skipping fuzzing, calling main() directly",
@@ -311,7 +311,7 @@ __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv) {
     return 0;
 }
 
-__attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
+int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
     int sock = netDriver_sockConnLoopback(hfnd_globals.sa_family, hfnd_globals.tcp_port);
     if (sock == -1) {
         LOG_F("Couldn't connect to the server TCP port");
