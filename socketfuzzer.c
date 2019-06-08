@@ -29,9 +29,16 @@
 #include "libhfcommon/util.h"
 
 bool fuzz_waitForExternalInput(run_t* run) {
+    /* if the target crashed, we need to identify here and return false,
+        so honggfuzz will restart it, and the fuzzing loop */
+    if(run->crashFileName[0] != '\0') {
+        LOG_E("Target has crashed.");
+        return false;
+    }
+
     /* tell the external fuzzer to do his thing */
     if (!fuzz_prepareSocketFuzzer(run)) {
-        LOG_F("fuzz_prepareSocketFuzzer() failed");
+        LOG_E("fuzz_prepareSocketFuzzer() failed");
     }
 
     /* the external fuzzer may inform us of a crash */
@@ -66,13 +73,20 @@ int fuzz_waitforSocketFuzzer(run_t* run) {
 
     // We dont care what we receive, its just to block here
     if (ret < 0) {
-        LOG_F("fuzz_waitforSocketFuzzer: received: %zu", ret);
+        LOG_E("fuzz_waitforSocketFuzzer: received: %zu", ret);
     }
 
     if (memcmp(buf, "okay", 4) == 0) {
         return 1;
     } else if (memcmp(buf, "bad!", 4) == 0) {
         return 2;
+    } else if (memcmp(buf, "halt", 4) == 0) {
+        LOG_D("External fuzzer ordered us to shut down.");
+        if (run->pid) {
+            kill(run->pid, SIGKILL);
+        }
+        exit(0);
+
     }
 
     return 0;
@@ -83,7 +97,7 @@ bool fuzz_notifySocketFuzzerNewCov(honggfuzz_t* hfuzz) {
     bool ret = files_sendToSocket(hfuzz->socketFuzzer.clientSocket, (uint8_t*)"New!", 4);
     LOG_D("fuzz_notifySocketFuzzer: SEND: New!");
     if (!ret) {
-        LOG_F("fuzz_notifySocketFuzzer");
+        LOG_E("fuzz_notifySocketFuzzer");
     }
 
     return true;
@@ -93,7 +107,7 @@ bool fuzz_notifySocketFuzzerCrash(run_t* run) {
     bool ret = files_sendToSocket(run->global->socketFuzzer.clientSocket, (uint8_t*)"Cras", 4);
     LOG_D("fuzz_notifySocketFuzzer: SEND: Crash");
     if (!ret) {
-        LOG_F("fuzz_notifySocketFuzzer");
+        LOG_E("fuzz_notifySocketFuzzer");
     }
 
     return true;
