@@ -192,6 +192,9 @@ static void fuzz_perfFeedback(run_t* run) {
         run->linux.hwCnts.newBBCnt, run->global->linux.hwCnts.bbCnt);
 
     MX_SCOPED_LOCK(&run->global->feedback.feedback_mutex);
+    defer {
+        wmb();
+    };
 
     uint64_t softCntPc = 0;
     uint64_t softCntEdge = 0;
