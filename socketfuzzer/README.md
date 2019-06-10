@@ -1,8 +1,10 @@
 # Honggfuzz - SocketClient
 
-Implement an external fuzzer to fuzz network servers or similar.
+Use Honggfuzz as Code-Coverage tool, and implement an external fuzzer which
+interacts with the target (usually a network server). The actual fuzzer and 
+honggfuzz communicate via a local socket. 
 
-Tested on Ubuntu 17.04.
+Tested on Ubuntu 17.04, 18.04.
 
 
 ## Protocol
@@ -16,6 +18,8 @@ HonggFuzz      <->       FFW
              "New!" -->
              "Cras" -->
          <-- "bad!"
+...
+         <-- "halt"
 ```
 
 * "Fuzz": HongFuzz tells FFW to send its network messages to the target server
@@ -23,6 +27,7 @@ HonggFuzz      <->       FFW
 * "New!": HonggFuzz tells FFW that new basic blocks have been reached
 * "Cras": HonggFuzz tells FFW that the target has crashed
 * "bad!": FFW tells Honggfuzz that the server is crashed
+* "halt": Fuzzing finished, shutdown HonggFuzz in an orderly manner.
 
 ## Overview
 
@@ -89,38 +94,73 @@ Send to target: 5
 Automatic test, successful run:
 ```
 $ ./unittest.sh
-Auto
-connecting to /tmp/honggfuzz_socket
+Auto Test
+connecting to /tmp/honggfuzz_socket.24916
 
 Test: 0 - initial
+A SocketFuzzer client connected. Continuing.
   ok: Fuzz
 
-Test: 1 - first new BB
+Test: 1 - expecting first new BB
+# vulnserver_cov: Listening on port: 5001
+# vulnserver_cov: New client connected
+# vulnserver_cov: Received data with len: 6 on state: 0
+# vulnserver_cov: Auth success
+# vulnserver_cov: Closing...
   ok: New!
   ok: Fuzz
 
-Test: 2 - second new BB
+Test: 2 - expecting second new BB
+# vulnserver_cov: New client connected
+# vulnserver_cov: Received data with len: 6 on state: 0
+# vulnserver_cov: Handledata1: BBBBBB
+# vulnserver_cov: Closing...
   ok: New!
   ok: Fuzz
 
-Test: 3 - repeat second msg, no new BB
+Test: 3 - repeat second msg, expecting no new BB
+# vulnserver_cov: New client connected
+# vulnserver_cov: Received data with len: 6 on state: 0
+# vulnserver_cov: Handledata1: BBBBBB
+# vulnserver_cov: Closing...
   ok: Fuzz
 
-Test: 4 - crash stack
+Test: 4 - crash stack, expect new BB, then crash notification
+# vulnserver_cov: New client connected
+# vulnserver_cov: Received data with len: 128 on state: 0
+# vulnserver_cov: Handledata1: BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB�
+  ok: New!
   ok: Cras
   ok: Fuzz
 
-Test: 5 - resend second, no new BB
+Test: 5 - resend second, expecting no new BB
+# vulnserver_cov: Listening on port: 5001
   ok: Fuzz
 
-Test: 6 - send three, new BB
+Test: 6 - send three, expecting new BB
+# vulnserver_cov: New client connected
+# vulnserver_cov: Received data with len: 6 on state: 0
+# vulnserver_cov: Handledata2: CCCCCC
+# vulnserver_cov: Closing...
   ok: New!
   ok: Fuzz
 
 Test: 7 - send four, new BB
+# vulnserver_cov: New client connected
+# vulnserver_cov: Received data with len: 6 on state: 0
+# vulnserver_cov: Handledata3: 6
+# vulnserver_cov: Closing...
   ok: New!
   ok: Fuzz
 
-Test: 8 - send four again, no new BB
+Test: 8 - fake unresponsive server
+  ok: Fuzz
+
+Test: 9 - send four again, no new BB
+# vulnserver_cov: New client connected
+# vulnserver_cov: Received data with len: 6 on state: 0
+# vulnserver_cov: Handledata3: 6
+# vulnserver_cov: Closing...
+# vulnserver_cov: Listening on port: 5001
   ok: Fuzz
 ```

@@ -405,7 +405,6 @@ static void fuzz_fuzzLoop(run_t* run) {
 }
 
 static void fuzz_fuzzLoopSocket(run_t* run) {
-    run->pid = 0;
     run->timeStartedMillis = 0;
     run->crashFileName[0] = '\0';
     run->pc = 0;
@@ -442,8 +441,11 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
     LOG_D("------[ 2: fetch input");
     if (!fuzz_waitForExternalInput(run)) {
         /* Fuzzer could not connect to target, and told us to
-           restart it. Do it on the next iteration. */
+           restart it. Do it on the next iteration. 
+           or: it crashed by fuzzing. Restart it too.
+           */
         LOG_D("------[ 2.1: Target down, will restart it");
+        run->pid = 0; // make subproc_Run() restart it on next iteration
         return;
     }
 
@@ -507,10 +509,10 @@ static void* fuzz_threadNew(void* arg) {
             break;
         }
 
-        input_setSize(&run, run.global->mutate.maxFileSz);
         if (hfuzz->socketFuzzer.enabled) {
             fuzz_fuzzLoopSocket(&run);
         } else {
+            input_setSize(&run, run.global->mutate.maxFileSz);
             fuzz_fuzzLoop(&run);
         }
 

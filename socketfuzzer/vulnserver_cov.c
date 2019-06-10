@@ -10,7 +10,7 @@
 
 /* Do nothing with first message */
 void handleData0(char *data, int len) {
-    printf("Auth success\n");
+    printf("# vulnserver_cov: Auth success\n");
 }
 
 /* Second message is stack based buffer overflow */
@@ -18,7 +18,7 @@ void handleData1(char *data, int len) {
     char buff[8];
     bzero(buff, 8);
     memcpy(buff, data, len);
-    printf("Handledata1: %s\n", buff);
+    printf("# vulnserver_cov: Handledata1: %s\n", buff);
 }
 
 /* Third message is heap overflow */
@@ -26,19 +26,23 @@ void handleData2(char *data, int len) {
     char *buff = malloc(8);
     bzero(buff, 8);
     memcpy(buff, data, len);
-    printf("Handledata2: %s\n", buff);
+    printf("# vulnserver_cov: Handledata2: %s\n", buff);
     free(buff);
 }
 
 void handleData3(char *data, int len) {
-    printf("Meh: %i\n", len);
+    printf("# vulnserver_cov: Handledata3: %i\n", len);
 }
 
 void handleData4(char *data, int len) {
-    printf("Blah: %i\n", len);
+    printf("# vulnserver_cov: Handledata4: %i\n", len);
 }
 
-void doprocessing(int sock) {
+void handleData5(char *data, int len) {
+    printf("# vulnserver_cov: Handledata5: %i\n", len);
+}
+
+void doprocessing(int sock, int serversock) {
     char data[1024];
     int n = 0;
     int len = 0;
@@ -51,7 +55,7 @@ void doprocessing(int sock) {
             return;
         }
 
-        printf("Received data with len: %i on state: %i\n", len, n);
+        printf("# vulnserver_cov: Received data with len: %i on state: %i\n", len, n);
         switch (data[0]) {
             case 'A':
                 handleData0(data, len);
@@ -72,6 +76,12 @@ void doprocessing(int sock) {
             case 'E':
                 handleData4(data, len);
                 write(sock, "ok", 2);
+                break;
+            case 'F':
+                handleData5(data, len);
+                write(sock, "ok", 2);
+                // close the main server socket whoooops
+                close(serversock);
                 break;
             default:
                 return;
@@ -95,24 +105,24 @@ int main(int argc, char *argv[]) {
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        perror("ERROR opening socket");
+        perror("# vulnserver_cov: ERROR opening socket");
         exit(1);
     }
 
     int reuse = 1;
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, (const char *)&reuse, sizeof(reuse)) < 0)
-        perror("setsockopt(SO_REUSEPORT) failed");
+        perror("# vulnserver_cov: setsockopt(SO_REUSEPORT) failed");
 
     bzero((char *)&serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(portno);
 
-    printf("Listening on port: %i\n", portno);
+    printf("# vulnserver_cov: Listening on port: %i\n", portno);
 
     /* Now bind the host address using bind() call.*/
     if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-        perror("ERROR on binding");
+        perror("# vulnserver_cov: ERROR on binding");
         exit(1);
     }
 
@@ -122,12 +132,12 @@ int main(int argc, char *argv[]) {
     while (1) {
         newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
         if (newsockfd < 0) {
-            perror("ERROR on accept");
+            perror("# vulnserver_cov: ERROR on accept");
             exit(1);
         }
-        printf("New client connected\n");
-        doprocessing(newsockfd);
-        printf("Closing...\n");
+        printf("# vulnserver_cov: New client connected\n");
+        doprocessing(newsockfd, sockfd);
+        printf("# vulnserver_cov: Closing...\n");
         shutdown(newsockfd, 2);
         close(newsockfd);
     }
