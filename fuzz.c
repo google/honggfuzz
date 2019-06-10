@@ -441,11 +441,11 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
     LOG_D("------[ 2: fetch input");
     if (!fuzz_waitForExternalInput(run)) {
         /* Fuzzer could not connect to target, and told us to
-           restart it. Do it on the next iteration. 
+           restart it. Do it on the next iteration.
            or: it crashed by fuzzing. Restart it too.
            */
         LOG_D("------[ 2.1: Target down, will restart it");
-        run->pid = 0; // make subproc_Run() restart it on next iteration
+        run->pid = 0;  // make subproc_Run() restart it on next iteration
         return;
     }
 

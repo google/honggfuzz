@@ -31,7 +31,7 @@
 bool fuzz_waitForExternalInput(run_t* run) {
     /* if the target crashed, we need to identify here and return false,
         so honggfuzz will restart it, and the fuzzing loop */
-    if(run->crashFileName[0] != '\0') {
+    if (run->crashFileName[0] != '\0') {
         LOG_E("Target has crashed.");
         return false;
     }
@@ -86,7 +86,6 @@ int fuzz_waitforSocketFuzzer(run_t* run) {
             kill(run->pid, SIGKILL);
         }
         exit(0);
-
     }
 
     return 0;
