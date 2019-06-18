@@ -91,6 +91,9 @@ static bool isLDMode(int argc, char** argv) {
         if (strcmp(argv[i], "--version") == 0) {
             return false;
         }
+        if (strcmp(argv[i], "--target-help") == 0) {
+            return false;
+        }
         if (strcmp(argv[i], "-c") == 0) {
             return false;
         }
