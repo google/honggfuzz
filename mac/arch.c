@@ -361,8 +361,7 @@ static bool arch_checkWait(run_t* run) {
     /* All queued wait events must be tested when SIGCHLD was delivered */
     for (;;) {
         int status;
-        /* Wait for the whole process group of run->pid */
-        pid_t pid = TEMP_FAILURE_RETRY(wait4(-(run->pid), &status, WNOHANG, NULL));
+        pid_t pid = TEMP_FAILURE_RETRY(wait4(run->pid, &status, WNOHANG, NULL));
         if (pid == 0) {
             return false;
         }
