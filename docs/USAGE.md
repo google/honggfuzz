@@ -77,8 +77,8 @@ Options:
 	Disable ANSI console; use simple log output
  --verifier|-V 
 	Enable crashes verifier
- --debug_level|-d VALUE
-	Debug level (0 - FATAL ... 4 - DEBUG), (default: '3' [INFO])
+ --debug|-d
+	Show debug messages (level >= 4)
  --extension|-e VALUE
 	Input file extension (e.g. 'swf'), (default: 'fuzz')
  --workspace|-W VALUE
