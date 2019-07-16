@@ -86,6 +86,8 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Samba's tdbdump + tdbtool](http://seclists.org/oss-sec/2018/q2/206)
   * [Crash in __djvulibre__](https://github.com/barak/djvulibre/commit/89d71b01d606e57ecec2c2930c145bb20ba5bbe3)
   * [Multiple crashes in __VLC__](https://www.pentestpartners.com/security-blog/double-free-rce-in-vlc-a-honggfuzz-how-to/)
+  * [Buffer overflow in __ClassiCube__](https://github.com/UnknownShadow200/ClassiCube/issues/591)
+  * [Crash in __MPV__](https://github.com/mpv-player/mpv/issues/6808)
   * __Rust__:
     * panic() in regex [#1](https://github.com/rust-lang/regex/issues/464), [#2](https://github.com/rust-lang/regex/issues/465), [#3](https://github.com/rust-lang/regex/issues/465#issuecomment-381412816)
     * panic() in h2 [#1](https://github.com/carllerche/h2/pull/260), [#2](https://github.com/carllerche/h2/pull/261), [#3](https://github.com/carllerche/h2/pull/262)
@@ -109,12 +111,14 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__honggfuzz-rs__: fuzzing Rust with Honggfuzz](https://github.com/rust-fuzz/honggfuzz-rs)
   * [__roughenough-fuzz__](https://github.com/int08h/roughenough-fuzz)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
+    * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
   * [__Monkey__: a HTTP server](https://github.com/monkey/monkey/blob/master/FUZZ.md)
   * [__Killerbeez API__](https://github.com/grimm-co/killerbeez-mutators)
   * [__FuzzM__: a gray box model-based fuzzing framework](https://github.com/collins-research/FuzzM)
   * [__FuzzOS__: by Mozilla Security](https://github.com/MozillaSecurity/fuzzos)
   * [__Android__: by OHA](https://android.googlesource.com/platform/external/honggfuzz)
   * [__QDBI__: by Quarkslab](https://project.inria.fr/FranceJapanICST/files/2019/04/19-Kyoto-Fuzzing_Binaries_using_Dynamic_Instrumentation.pdf)
+  * [__fuzzer-test-suite__: by Google](https://github.com/google/fuzzer-test-suite)
 
 ## Examples
 
