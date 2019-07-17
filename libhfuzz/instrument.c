@@ -333,14 +333,14 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard(uint32_t* guard)
         return;
     }
 #endif /* defined(__ANDROID__) */
-    if (*guard == 0U) {
+    if (ATOMIC_GET(*guard) == 0U) {
         return;
     }
     bool prev = ATOMIC_XCHG(feedback->pcGuardMap[*guard], true);
     if (prev == false) {
         ATOMIC_PRE_INC_RELAXED(feedback->pidFeedbackEdge[my_thread_no]);
     }
-    *guard = 0U;
+    ATOMIC_SET(*guard, 0U);
 }
 
 void instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
