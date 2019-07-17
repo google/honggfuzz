@@ -191,6 +191,7 @@ typedef struct {
         size_t fileCnt;
         const char* fileExtn;
         bool fileCntDone;
+        size_t new_units_added;
         const char* workDir;
         const char* crashDir;
         const char* covDirAll;
@@ -223,6 +224,7 @@ typedef struct {
         time_t runEndTime;
         time_t tmOut;
         time_t lastCovUpdate;
+        int64_t timeOfLongestUnitInMilliseconds;
         bool tmoutVTALRM;
     } timing;
     struct {
@@ -245,6 +247,7 @@ typedef struct {
         pthread_mutex_t report_mutex;
         bool monitorSIGABRT;
         size_t dynFileIterExpire;
+        int64_t reportSlowUnits;
         bool only_printable;
     } cfg;
     struct {

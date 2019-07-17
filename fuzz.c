@@ -120,6 +120,7 @@ static void fuzz_addFileToFileQ(honggfuzz_t* hfuzz, const uint8_t* data, size_t 
     MX_SCOPED_RWLOCK_WRITE(&hfuzz->io.dynfileq_mutex);
     TAILQ_INSERT_TAIL(&hfuzz->io.dynfileq, dynfile, pointers);
     hfuzz->io.dynfileqCnt++;
+    hfuzz->io.new_units_added++;
 
     if (hfuzz->socketFuzzer.enabled) {
         /* Don't add coverage data to files in socketFuzzer mode */
@@ -168,6 +169,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
 
     LOG_I("Entering phase 3/3: Dynamic Main (Feedback Driven Mode)");
     snprintf(run->origFileName, sizeof(run->origFileName), "[DYNAMIC]");
+    run->global->io.new_units_added = 0;
     ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_MAIN);
 
     /*
