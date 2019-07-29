@@ -94,6 +94,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * panic() in sleep-parser [#1](https://github.com/datrs/sleep-parser/issues/3)
     * panic() in lewton [#1](https://github.com/RustAudio/lewton/issues/27)
     * panic()/DoS in Ethereum-Parity [#1](https://srlabs.de/bites/ethereum_dos/)
+    * crashes in rust-bitcoin/rust-lightning [#1](https://github.com/rust-bitcoin/rust-lightning/commit/a9aa3c37fe182dd266e0faebc788e0c9ee724783)
   * ... and more
 
 ## Projects utilizing Honggfuzz
