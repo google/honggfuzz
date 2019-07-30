@@ -298,7 +298,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
     guards_initialized = true;
     static uint32_t n = 1U;
 
-    /* Make sure that the feedback struct is mmapped */
+    /* Make sure that the feedback struct is already mmap()'d */
     localInit();
 
     for (uint32_t* x = start; x < stop; x++, n++) {
@@ -307,7 +307,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
                   " (current module:%tu start:%p stop:%p)\n",
                 n, ((uintptr_t)stop - (uintptr_t)start) / sizeof(start), start, stop);
         }
-        /* If the corresponding PC was already hit, map this specific guard as uniteresting (0) */
+        /* If the corresponding PC was already hit, map this specific guard as uninteresting (0) */
         *x = ATOMIC_GET(feedback->pcGuardMap[n]) ? 0U : n;
     }
 }
