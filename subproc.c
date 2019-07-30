@@ -173,6 +173,12 @@ bool subproc_persistentModeStateMachine(run_t* run) {
                 if (!subproc_persistentGetReady(run)) {
                     return false;
                 }
+                int64_t curMillis = util_timeNowMillis();
+                int64_t diffMillis = curMillis - run->timeStartedMillis;
+                if (diffMillis > (ATOMIC_GET(run->global->timing.timeOfLongestUnitInMilliseconds) * 1.1) && diffMillis > run->global->cfg.reportSlowUnits) {
+                    LOG_D("Found new slowest unit, runs in %" PRId64 " ms", diffMillis);
+                    ATOMIC_SET(run->global->timing.timeOfLongestUnitInMilliseconds, diffMillis);
+                }
                 run->runState = _HF_RS_SEND_DATA;
                 /* The current persistent round is done */
                 return true;
