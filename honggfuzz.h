@@ -191,7 +191,7 @@ typedef struct {
         size_t fileCnt;
         const char* fileExtn;
         bool fileCntDone;
-        size_t new_units_added;
+        size_t newUnitsAdded;
         const char* workDir;
         const char* crashDir;
         const char* covDirAll;

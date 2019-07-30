@@ -191,10 +191,10 @@ static void printSummary(honggfuzz_t* hfuzz) {
     }
     LOG_I("Summary iterations:%zu time:%" PRIu64 " speed:%" PRIu64 " "
           "crashes_count:%zu timeout_count:%zu new_units_added:%zu "
-          "slowest_unit_ms:%" PRId64 ,
-          hfuzz->cnts.mutationsCnt, elapsed_sec, exec_per_sec,
-          hfuzz->cnts.crashesCnt, hfuzz->cnts.timeoutedCnt, hfuzz->io.new_units_added,
-          hfuzz->timing.timeOfLongestUnitInMilliseconds);
+          "slowest_unit_ms:%" PRId64,
+        hfuzz->cnts.mutationsCnt, elapsed_sec, exec_per_sec, hfuzz->cnts.crashesCnt,
+        hfuzz->cnts.timeoutedCnt, hfuzz->io.newUnitsAdded,
+        hfuzz->timing.timeOfLongestUnitInMilliseconds);
 }
 
 static void pingThreads(honggfuzz_t* hfuzz) {

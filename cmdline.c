@@ -257,6 +257,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .inputDirPtr = NULL,
                 .fileCnt = 0,
                 .fileCntDone = false,
+                .newUnitsAdded = 0,
                 .fileExtn = "fuzz",
                 .workDir = NULL,
                 .crashDir = NULL,

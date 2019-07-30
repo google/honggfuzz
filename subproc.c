@@ -175,7 +175,9 @@ bool subproc_persistentModeStateMachine(run_t* run) {
                 }
                 int64_t curMillis = util_timeNowMillis();
                 int64_t diffMillis = curMillis - run->timeStartedMillis;
-                if (diffMillis > (ATOMIC_GET(run->global->timing.timeOfLongestUnitInMilliseconds) * 1.1) && diffMillis > run->global->cfg.reportSlowUnits) {
+                if (diffMillis >
+                        (ATOMIC_GET(run->global->timing.timeOfLongestUnitInMilliseconds) * 1.1) &&
+                    diffMillis > run->global->cfg.reportSlowUnits) {
                     LOG_D("Found new slowest unit, runs in %" PRId64 " ms", diffMillis);
                     ATOMIC_SET(run->global->timing.timeOfLongestUnitInMilliseconds, diffMillis);
                 }
