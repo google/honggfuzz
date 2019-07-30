@@ -131,8 +131,7 @@ static void fuzz_addFileToFileQ(honggfuzz_t* hfuzz, const uint8_t* data, size_t 
     }
 
     /* No need to add files to the new coverage dir, if it's not the main phase */
-    if (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_DRY_RUN ||
-        fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_SWITCH_TO_MAIN) {
+    if (fuzz_getState(hfuzz) != _HF_STATE_DYNAMIC_MAIN) {
         return;
     }
 
