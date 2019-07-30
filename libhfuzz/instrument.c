@@ -40,7 +40,7 @@ static feedback_t bbMapFb;
 feedback_t* feedback = &bbMapFb;
 uint32_t my_thread_no = 0;
 
-__attribute__((constructor)) static void initializeInstrument(void) {
+static void initializeInstrument(void) {
     if (fcntl(_HF_LOG_FD, F_GETFD) != -1) {
         enum llevel_t ll = INFO;
         const char* llstr = getenv(_HF_LOG_LEVEL_ENV);
@@ -80,6 +80,11 @@ __attribute__((constructor)) static void initializeInstrument(void) {
 
     /* Reset coverage counters to their initial state */
     instrumentClearNewCov();
+}
+
+static __thread pthread_once_t localInitOnce = PTHREAD_ONCE_INIT;
+__attribute__((constructor)) void localInit(void) {
+    pthread_once(&localInitOnce, initializeInstrument);
 }
 
 /* Reset the counters of newly discovered edges/pcs/features */
@@ -292,14 +297,17 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
     uint32_t* start, uint32_t* stop) {
     guards_initialized = true;
     static uint32_t n = 1U;
+
+    /* Make sure that the feedback struct is mmapped */
+    localInit();
+
     for (uint32_t* x = start; x < stop; x++, n++) {
         if (n >= _HF_PC_GUARD_MAX) {
             LOG_F("This process has too many PC guards:%" PRIu32
                   " (current module:%tu start:%p stop:%p)\n",
                 n, ((uintptr_t)stop - (uintptr_t)start) / sizeof(start), start, stop);
         }
-        /* If the corresponding PC was already hit, map this specific guard as non-interesting (0)
-         */
+        /* If the corresponding PC was already hit, map this specific guard as uniteresting (0) */
         *x = ATOMIC_GET(feedback->pcGuardMap[n]) ? 0U : n;
     }
 }
