@@ -189,12 +189,14 @@ static void printSummary(honggfuzz_t* hfuzz) {
     if (elapsed_sec) {
         exec_per_sec = hfuzz->cnts.mutationsCnt / elapsed_sec;
     }
+    uint64_t branch_percent_cov = (100*hfuzz->linux.hwCnts.softCntEdge) / hfuzz->feedback.feedbackMap->guardNb;
     LOG_I("Summary iterations:%zu time:%" PRIu64 " speed:%" PRIu64 " "
           "crashes_count:%zu timeout_count:%zu new_units_added:%zu "
-          "slowest_unit_ms:%" PRId64,
+          "slowest_unit_ms:%" PRId64 " guard_nb:%" PRIu64 " branch_coverage_percent:%" PRIu64,
         hfuzz->cnts.mutationsCnt, elapsed_sec, exec_per_sec, hfuzz->cnts.crashesCnt,
         hfuzz->cnts.timeoutedCnt, hfuzz->io.newUnitsAdded,
-        hfuzz->timing.timeOfLongestUnitInMilliseconds);
+        hfuzz->timing.timeOfLongestUnitInMilliseconds, hfuzz->feedback.feedbackMap->guardNb,
+        branch_percent_cov);
 }
 
 static void pingThreads(honggfuzz_t* hfuzz) {
