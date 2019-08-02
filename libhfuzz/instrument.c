@@ -311,9 +311,9 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
         *x = ATOMIC_GET(feedback->pcGuardMap[n]) ? 0U : n;
     }
 
-    /*stores the number of guards for statistics purpose*/
-    if (ATOMIC_GET(feedback->guardNb) < n-1){
-        ATOMIC_SET(feedback->guardNb, n-1);
+    /* Store number of guards for statistical purposes */
+    if (ATOMIC_GET(feedback->guardNb) < n - 1) {
+        ATOMIC_SET(feedback->guardNb, n - 1);
     }
 }
 
