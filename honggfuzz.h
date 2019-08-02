@@ -248,7 +248,6 @@ typedef struct {
         pthread_mutex_t report_mutex;
         bool monitorSIGABRT;
         size_t dynFileIterExpire;
-        int64_t reportSlowUnits;
         bool only_printable;
     } cfg;
     struct {

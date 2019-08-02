@@ -314,7 +314,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .report_mutex = PTHREAD_MUTEX_INITIALIZER,
                 .reportFile = NULL,
                 .dynFileIterExpire = 0,
-                .reportSlowUnits = 10000LL,
 #if defined(__ANDROID__)
                 .monitorSIGABRT = false,
 #else
@@ -444,7 +443,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "socket_fuzzer", no_argument, NULL, 0x10B }, "Instrument external fuzzer via socket" },
         { { "netdriver", no_argument, NULL, 0x10C }, "Use netdriver (libhfnetdriver/). In most cases it will be autodetected through a binary signature" },
         { { "only_printable", no_argument, NULL, 'o' }, "Only generate printable inputs" },
-        { { "report_slow_units", required_argument, NULL, 0x10D}, "Report slowest units if they run for more than this number of milliseconds (default: 10'000)"},
 
 #if defined(_HF_ARCH_LINUX)
         { { "linux_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blacklist filter file (one entry per line)" },
@@ -567,9 +565,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 'R':
                 hfuzz->cfg.reportFile = optarg;
-                break;
-            case 0x10D:
-                hfuzz->cfg.reportSlowUnits = strtoll(optarg, NULL, 10);
                 break;
             case 'n':
                 if (optarg[0] == 'a') {
