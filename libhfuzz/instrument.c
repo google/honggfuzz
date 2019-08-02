@@ -310,6 +310,11 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
         /* If the corresponding PC was already hit, map this specific guard as uninteresting (0) */
         *x = ATOMIC_GET(feedback->pcGuardMap[n]) ? 0U : n;
     }
+
+    /*stores the number of guards for statistics purpose*/
+    if (ATOMIC_GET(feedback->guardNb) < n-1){
+        ATOMIC_SET(feedback->guardNb, n-1);
+    }
 }
 
 ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {

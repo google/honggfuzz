@@ -174,6 +174,7 @@ typedef struct {
     uint64_t pidFeedbackPc[_HF_THREAD_MAX];
     uint64_t pidFeedbackEdge[_HF_THREAD_MAX];
     uint64_t pidFeedbackCmp[_HF_THREAD_MAX];
+    uint64_t guardNb;
 } feedback_t;
 
 typedef struct {
