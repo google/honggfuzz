@@ -189,10 +189,9 @@ static void printSummary(honggfuzz_t* hfuzz) {
     if (elapsed_sec) {
         exec_per_sec = hfuzz->cnts.mutationsCnt / elapsed_sec;
     }
+    uint64_t guardNb = ATOMIC_GET(hfuzz->feedback.feedbackMap->guardNb);
     uint64_t branch_percent_cov =
-        hfuzz->feedback.feedbackMap->guardNb
-            ? ((100 * hfuzz->linux.hwCnts.softCntEdge) / hfuzz->feedback.feedbackMap->guardNb)
-            : 0;
+        guardNb ? ((100 * ATOMIC_GET(hfuzz->linux.hwCnts.softCntEdge)) / guardNb) : 0;
     LOG_I("Summary iterations:%zu time:%" PRIu64 " speed:%" PRIu64 " "
           "crashes_count:%zu timeout_count:%zu new_units_added:%zu "
           "slowest_unit_ms:%" PRId64 " guard_nb:%" PRIu64 " branch_coverage_percent:%" PRIu64,
