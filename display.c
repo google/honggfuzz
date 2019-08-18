@@ -63,7 +63,9 @@ __attribute__((format(printf, 1, 2))) static void display_put(const char* fmt, .
 }
 
 static void display_printKMG(uint64_t val) {
-    if (val >= 1000000000UL) {
+    if (val >= 1000000000000ULL) {
+        display_put(" [%.02LfT]", (long double)val / 1000000000.0L);
+    } else if (val >= 1000000000UL) {
         display_put(" [%.02LfG]", (long double)val / 1000000000.0L);
     } else if (val >= 1000000UL) {
         display_put(" [%.02LfM]", (long double)val / 1000000.0L);
