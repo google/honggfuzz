@@ -83,7 +83,9 @@ static void initializeInstrument(void) {
 }
 
 static __thread pthread_once_t localInitOnce = PTHREAD_ONCE_INIT;
-__attribute__((constructor)) void localInit(void) {
+
+extern void hfuzzInstrumentInit(void);
+__attribute__((constructor)) void hfuzzInstrumentInit(void) {
     pthread_once(&localInitOnce, initializeInstrument);
 }
 
@@ -114,12 +116,20 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __cyg_profile_func_exit(
 /*
  * -fsanitize-coverage=trace-pc
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc(void) {
-    register uintptr_t ret = (uintptr_t)__builtin_return_address(0) & _HF_PERF_BITMAP_BITSZ_MASK;
+ATTRIBUTE_X86_REQUIRE_SSE42 static inline void hfuzz_trace_pc_internal(uintptr_t pc) {
+    register uintptr_t ret = pc & _HF_PERF_BITMAP_BITSZ_MASK;
     register uint8_t prev = ATOMIC_BTS(feedback->bbMapPc, ret);
     if (!prev) {
         ATOMIC_PRE_INC_RELAXED(feedback->pidFeedbackPc[my_thread_no]);
     }
+}
+
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc(void) {
+    hfuzz_trace_pc_internal((uintptr_t)__builtin_return_address(0));
+}
+
+ATTRIBUTE_X86_REQUIRE_SSE42 void hfuzz_trace_pc(uintptr_t pc) {
+    hfuzz_trace_pc_internal(pc);
 }
 
 /*
@@ -145,8 +155,9 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint1
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
-    uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
+ATTRIBUTE_X86_REQUIRE_SSE42 static inline void hfuzz_trace_cmp4_internal(
+    uintptr_t pc, uint32_t Arg1, uint32_t Arg2) {
+    uintptr_t pos = pc % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
     uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
     if (prev < v) {
@@ -155,14 +166,31 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint3
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
-    uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
+    hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+}
+
+ATTRIBUTE_X86_REQUIRE_SSE42 void hfuzz_trace_cmp4(uintptr_t pc, uint32_t Arg1, uint32_t Arg2) {
+    hfuzz_trace_cmp4_internal(pc, Arg1, Arg2);
+}
+
+ATTRIBUTE_X86_REQUIRE_SSE42 static inline void hfuzz_trace_cmp8_internal(
+    uintptr_t pc, uint64_t Arg1, uint64_t Arg2) {
+    uintptr_t pos = pc % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcountll(Arg1 ^ Arg2));
     uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
     if (prev < v) {
         ATOMIC_SET(feedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(feedback->pidFeedbackCmp[my_thread_no], v - prev);
     }
+}
+
+ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
+    hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+}
+
+ATTRIBUTE_X86_REQUIRE_SSE42 void hfuzz_trace_cmp8(uintptr_t pc, uint64_t Arg1, uint64_t Arg2) {
+    hfuzz_trace_cmp8_internal(pc, Arg1, Arg2);
 }
 
 /*
@@ -299,7 +327,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
     static uint32_t n = 1U;
 
     /* Make sure that the feedback struct is already mmap()'d */
-    localInit();
+    hfuzzInstrumentInit();
 
     for (uint32_t* x = start; x < stop; x++, n++) {
         if (n >= _HF_PC_GUARD_MAX) {
