@@ -77,7 +77,7 @@ static int HonggfuzzRunFromFile(int argc, char** argv) {
     const char* fname = "[STDIN]";
     if (argc > 1) {
         fname = argv[argc - 1];
-        if ((in_fd = open(argv[argc - 1], O_RDONLY)) == -1) {
+        if ((in_fd = TEMP_FAILURE_RETRY(open(argv[argc - 1], O_RDONLY))) == -1) {
             PLOG_W("Cannot open '%s' as input, using stdin", argv[argc - 1]);
             in_fd = STDIN_FILENO;
             fname = "[STDIN]";
