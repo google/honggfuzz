@@ -299,8 +299,12 @@ void display_fini(void) {
     display_put(ESC_SCROLL_RESET ESC_NAV_DOWN(500));
 }
 
-void display_init(void) {
-    atexit(display_fini);
+void display_clear(void) {
     display_put(ESC_CLEAR_ALL);
     display_put(ESC_NAV_DOWN(500));
+}
+
+void display_init(void) {
+    atexit(display_fini);
+    display_clear();
 }

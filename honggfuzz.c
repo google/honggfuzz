@@ -47,6 +47,7 @@
 #include "subproc.h"
 
 static int sigReceived = 0;
+static bool clearWin = false;
 
 /*
  * CygWin/MinGW incorrectly copies stack during fork(), so we need to keep some
@@ -72,6 +73,11 @@ static void sigHandler(int sig) {
         }
         return;
     }
+    if (sig == SIGWINCH) {
+        ATOMIC_SET(clearWin, true);
+        return;
+    }
+
     /* Do nothing with pings from the main thread */
     if (sig == SIGUSR1) {
         return;
@@ -141,6 +147,7 @@ static void setupSignalsPreThreads(void) {
     sigaddset(&ss, SIGCHLD);
     /* This is checked for via sigwaitinfo/sigtimedwait */
     sigaddset(&ss, SIGUSR1);
+    sigaddset(&ss, SIGWINCH);
     if (sigprocmask(SIG_SETMASK, &ss, NULL) != 0) {
         PLOG_F("sigprocmask(SIG_SETMASK)");
     }
@@ -168,6 +175,9 @@ static void setupSignalsPreThreads(void) {
     if (sigaction(SIGCHLD, &sa, NULL) == -1) {
         PLOG_F("sigaction(SIGCHLD) failed");
     }
+    if (sigaction(SIGWINCH, &sa, NULL) == -1) {
+        PLOG_F("sigaction(SIGWINCH) failed");
+    }
 }
 
 static void setupSignalsMainThread(void) {
@@ -178,6 +188,7 @@ static void setupSignalsMainThread(void) {
     sigaddset(&ss, SIGINT);
     sigaddset(&ss, SIGQUIT);
     sigaddset(&ss, SIGALRM);
+    sigaddset(&ss, SIGWINCH);
     if (pthread_sigmask(SIG_UNBLOCK, &ss, NULL) != 0) {
         PLOG_F("pthread_sigmask(SIG_UNBLOCK)");
     }
@@ -308,6 +319,9 @@ int main(int argc, char** argv) {
 
     for (;;) {
         if (hfuzz.display.useScreen) {
+            if (ATOMIC_XCHG(clearWin, false)) {
+                display_clear();
+            }
             display_display(&hfuzz);
         }
         if (ATOMIC_GET(sigReceived) > 0) {
