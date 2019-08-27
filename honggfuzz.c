@@ -194,7 +194,8 @@ static void printSummary(honggfuzz_t* hfuzz) {
         guardNb ? ((100 * ATOMIC_GET(hfuzz->linux.hwCnts.softCntEdge)) / guardNb) : 0;
     struct rusage usage;
     if (getrusage(RUSAGE_CHILDREN, &usage)){ 
-        PLOG_F("getrusage  failed");
+        PLOG_W("getrusage  failed");
+        usage.ru_maxrss = 0; // 0 means something went wrong with rusage
     }
     LOG_I("Summary iterations:%zu time:%" PRIu64 " speed:%" PRIu64 " "
           "crashes_count:%zu timeout_count:%zu new_units_added:%zu "
