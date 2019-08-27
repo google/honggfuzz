@@ -89,7 +89,7 @@ static __thread pthread_once_t rndThreadOnce = PTHREAD_ONCE_INIT;
 static __thread uint64_t rndState[2];
 
 static void util_rndInitThread(void) {
-    int fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
+    int fd = TEMP_FAILURE_RETRY(open("/dev/urandom", O_RDONLY | O_CLOEXEC));
     if (fd == -1) {
         PLOG_F("Couldn't open /dev/urandom for reading");
     }
@@ -197,8 +197,7 @@ void util_getLocalTime(const char* fmt, char* buf, size_t len, time_t tm) {
 }
 
 void util_closeStdio(bool close_stdin, bool close_stdout, bool close_stderr) {
-    int fd = open("/dev/null", O_RDWR);
-
+    int fd = TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
     if (fd == -1) {
         PLOG_E("Couldn't open '/dev/null'");
         return;

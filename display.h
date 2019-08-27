@@ -28,6 +28,7 @@
 
 extern void display_display(honggfuzz_t* hfuzz);
 extern void display_init(void);
+extern void display_clear(void);
 extern void display_createTargetStr(honggfuzz_t* hfuzz);
 
 #endif

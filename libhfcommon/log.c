@@ -69,7 +69,7 @@ void logInitLogFile(const char* logfile, int fd, enum llevel_t ll) {
     log_level = ll;
 
     if (logfile) {
-        log_fd = open(logfile, O_CREAT | O_RDWR | O_TRUNC, 0640);
+        log_fd = TEMP_FAILURE_RETRY(open(logfile, O_CREAT | O_RDWR | O_TRUNC, 0640));
         if (log_fd == -1) {
             log_fd = STDERR_FILENO;
             PLOG_E("Couldn't open logfile open('%s')", logfile);
