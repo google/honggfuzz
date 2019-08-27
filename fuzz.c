@@ -385,7 +385,6 @@ static void fuzz_fuzzLoop(run_t* run) {
     run->mainWorker = true;
     run->mutationsPerRun = run->global->mutate.mutationsPerRun;
     run->dynamicFileSz = 0;
-    run->dynamicFileCopyFd = -1;
     run->tmOutSignaled = false;
 
     run->linux.hwCnts.cpuInstrCnt = 0;
@@ -420,7 +419,6 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
     run->mainWorker = true;
     run->mutationsPerRun = run->global->mutate.mutationsPerRun;
     run->dynamicFileSz = 0;
-    run->dynamicFileCopyFd = -1;
     run->tmOutSignaled = false;
 
     run->linux.hwCnts.cpuInstrCnt = 0;

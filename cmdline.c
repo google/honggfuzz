@@ -193,12 +193,6 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
         return false;
     }
 
-    if (hfuzz->exe.fuzzStdin && hfuzz->exe.persistent) {
-        LOG_E(
-            "Stdin fuzzing (-s) and persistent fuzzing (-P) cannot be specified at the same time");
-        return false;
-    }
-
     if (hfuzz->threads.threadsMax >= _HF_THREAD_MAX) {
         LOG_E("Too many fuzzing threads specified %zu (>= _HF_THREAD_MAX (%u))",
             hfuzz->threads.threadsMax, _HF_THREAD_MAX);

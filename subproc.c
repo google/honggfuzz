@@ -263,6 +263,10 @@ static bool subproc_PrepareExecv(run_t* run) {
         PLOG_E("dup2('%d', _HF_INPUT_FD='%d')", run->dynamicFileFd, _HF_INPUT_FD);
         return false;
     }
+    if (lseek(run->dynamicFileFd, 0, SEEK_SET) == (off_t)-1) {
+        PLOG_E("lseek(fileFd=%d, 0, SEEK_SET)", run->dynamicFileFd);
+        return false;
+    }
 
     /* The log FD */
     if ((run->global->exe.netDriver || run->global->exe.persistent)) {
@@ -281,17 +285,10 @@ static bool subproc_PrepareExecv(run_t* run) {
         PLOG_W("sigprocmask(empty_set)");
     }
 
-    if (!run->global->exe.persistent) {
-        if ((run->dynamicFileCopyFd = files_writeBufToTmpFile(
-                 run->global->io.workDir, run->dynamicFile, run->dynamicFileSz, 0)) == -1) {
-            LOG_E("Couldn't save data to a temporary file");
-            return false;
-        }
-        if (run->global->exe.fuzzStdin &&
-            TEMP_FAILURE_RETRY(dup2(run->dynamicFileCopyFd, STDIN_FILENO)) == -1) {
-            PLOG_E("dup2(_HF_INPUT_FD=%d, STDIN_FILENO=%d)", run->dynamicFileCopyFd, STDIN_FILENO);
-            return false;
-        }
+    if (run->global->exe.fuzzStdin &&
+        TEMP_FAILURE_RETRY(dup2(run->dynamicFileFd, STDIN_FILENO)) == -1) {
+        PLOG_E("dup2(_HF_INPUT_FD=%d, STDIN_FILENO=%d)", run->dynamicFileFd, STDIN_FILENO);
+        return false;
     }
 
     return true;

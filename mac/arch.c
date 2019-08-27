@@ -296,13 +296,11 @@ bool arch_launchChild(run_t* run) {
     char argData[PATH_MAX];
 
     char inputFile[PATH_MAX];
-    snprintf(inputFile, sizeof(inputFile), "/dev/fd/%d", run->dynamicFileCopyFd);
+    snprintf(inputFile, sizeof(inputFile), "/dev/fd/%d", run->dynamicFileFd);
 
     int x;
     for (x = 0; x < ARGS_MAX && x < run->global->exe.argc; x++) {
-        if (run->global->exe.persistent || run->global->exe.fuzzStdin) {
-            args[x] = run->global->exe.cmdline[x];
-        } else if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
+        if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
             args[x] = inputFile;
         } else if (strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
             const char* off = strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER);
