@@ -853,7 +853,7 @@ static void mangle_Resize(run_t* run) {
     size_t oldsz = run->dynamicFileSz;
 
     input_setSize(run, newsz);
-    if (newsz > run->dynamicFileSz) {
+    if (newsz > oldsz) {
         util_rndBuf(&run->dynamicFile[oldsz], newsz - oldsz);
     }
 }
