@@ -135,9 +135,7 @@ bool arch_launchChild(run_t* run) {
 #define ARGS_MAX 512
     const char* args[ARGS_MAX + 2];
     char argData[PATH_MAX];
-
-    char inputFile[PATH_MAX];
-    snprintf(inputFile, sizeof(inputFile), "/dev/fd/%d", _HF_INPUT_FD);
+    const char inputFile[] = "/dev/fd/" HF_XSTR(_HF_INPUT_FD);
 
     int x = 0;
     for (x = 0; x < ARGS_MAX && x < run->global->exe.argc; x++) {

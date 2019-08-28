@@ -850,7 +850,7 @@ static void mangle_Shrink(run_t* run) {
 
 static void mangle_Resize(run_t* run) {
     size_t newsz = util_rndGet(1, run->global->mutate.maxFileSz);
-	size_t oldsz = run->dynamicFileSz;
+    size_t oldsz = run->dynamicFileSz;
 
     input_setSize(run, newsz);
     if (newsz > run->dynamicFileSz) {
@@ -860,7 +860,7 @@ static void mangle_Resize(run_t* run) {
 
 static void mangle_ResizePrintable(run_t* run) {
     size_t newsz = util_rndGet(1, run->global->mutate.maxFileSz);
-	size_t oldsz = run->dynamicFileSz;
+    size_t oldsz = run->dynamicFileSz;
 
     input_setSize(run, newsz);
     if (newsz > oldsz) {
