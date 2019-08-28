@@ -79,7 +79,7 @@ bool arch_launchChild(run_t* run) {
     char argData[PATH_MAX];
 
     char inputFile[PATH_MAX];
-    snprintf(inputFile, sizeof(inputFile), "/dev/fd/%d", run->dynamicFileFd);
+    snprintf(inputFile, sizeof(inputFile), "/dev/fd/%d", _HF_INPUT_FD);
 
     int x = 0;
     for (x = 0; x < ARGS_MAX && x < run->global->exe.argc; x++) {
