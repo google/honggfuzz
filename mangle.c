@@ -848,6 +848,26 @@ static void mangle_Shrink(run_t* run) {
     mangle_Move(run, off + len, off, run->dynamicFileSz);
 }
 
+static void mangle_Resize(run_t* run) {
+    size_t newsz = util_rndGet(1, run->global->mutate.maxFileSz);
+	size_t oldsz = run->dynamicFileSz;
+
+    input_setSize(run, newsz);
+    if (newsz > run->dynamicFileSz) {
+        util_rndBuf(&run->dynamicFile[oldsz], newsz - oldsz);
+    }
+}
+
+static void mangle_ResizePrintable(run_t* run) {
+    size_t newsz = util_rndGet(1, run->global->mutate.maxFileSz);
+	size_t oldsz = run->dynamicFileSz;
+
+    input_setSize(run, newsz);
+    if (newsz > oldsz) {
+        util_rndBufPrintable(&run->dynamicFile[oldsz], newsz - oldsz);
+    }
+}
+
 static void mangle_InsertRnd(run_t* run) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
     size_t len = util_rndGet(1, run->dynamicFileSz - off);
@@ -921,20 +941,17 @@ void mangle_mangleContent(run_t* run) {
         return;
     }
 
-    /* No point in modifying it, if its size is 0 */
-    if (run->dynamicFileSz == 0UL) {
-        input_setSize(run, 1UL);
-    }
-
     /* Max number of stacked changes is, by default, 6 */
     uint64_t changesCnt = util_rndGet(1, run->global->mutate.mutationsPerRun);
 
     if (run->global->cfg.only_printable) {
+        mangle_ResizePrintable(run);
         for (uint64_t x = 0; x < changesCnt; x++) {
             uint64_t choice = util_rndGet(0, ARRAYSIZE(manglePrintableFuncs) - 1);
             manglePrintableFuncs[choice](run);
         }
     } else {
+        mangle_Resize(run);
         for (uint64_t x = 0; x < changesCnt; x++) {
             uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);
             mangleFuncs[choice](run);
