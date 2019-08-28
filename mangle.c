@@ -912,6 +912,7 @@ void mangle_mangleContent(run_t* run) {
         mangle_CloneByte,
         mangle_Expand,
         mangle_Shrink,
+        mangle_Resize,
         mangle_InsertRnd,
         mangle_ASCIIVal,
     };
@@ -933,6 +934,7 @@ void mangle_mangleContent(run_t* run) {
         mangle_CloneByte,
         mangle_Expand,
         mangle_Shrink,
+        mangle_ResizePrintable,
         mangle_InsertRndPrintable,
         mangle_ASCIIVal,
     };
