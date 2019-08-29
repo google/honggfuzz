@@ -250,9 +250,8 @@ static bool subproc_PrepareExecv(run_t* run) {
         /* close_stdout= */ run->global->exe.nullifyStdio,
         /* close_stderr= */ run->global->exe.nullifyStdio);
 
-    /* The bitmap structure */
-    if (run->global->feedback.bbFd != -1 &&
-        TEMP_FAILURE_RETRY(dup2(run->global->feedback.bbFd, _HF_BITMAP_FD)) == -1) {
+    /* The bitmap/feedback structure */
+    if (TEMP_FAILURE_RETRY(dup2(run->global->feedback.bbFd, _HF_BITMAP_FD)) == -1) {
         PLOG_E("dup2(%d, _HF_BITMAP_FD=%d)", run->global->feedback.bbFd, _HF_BITMAP_FD);
         return false;
     }

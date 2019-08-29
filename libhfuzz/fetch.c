@@ -51,6 +51,10 @@ void HonggfuzzFetchData(const uint8_t** buf_ptr, size_t* len_ptr) {
 
     *buf_ptr = inputFile;
     *len_ptr = (size_t)rcvLen;
+
+    if (lseek(_HF_INPUT_FD, (off_t)0, SEEK_SET) == -1) {
+        PLOG_W("lseek(_HF_INPUT_FD=%d, 0)", _HF_INPUT_FD);
+    }
 }
 
 bool fetchIsInputAvailable(void) {

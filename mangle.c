@@ -849,21 +849,65 @@ static void mangle_Shrink(run_t* run) {
 }
 
 static void mangle_Resize(run_t* run) {
-    size_t newsz = util_rndGet(1, run->global->mutate.maxFileSz);
     size_t oldsz = run->dynamicFileSz;
+    uint64_t v = util_rndGet(0, 16);
+    ssize_t newsz = 0;
 
-    input_setSize(run, newsz);
-    if (newsz > run->dynamicFileSz) {
+    switch (v) {
+        case 0:
+            newsz = (ssize_t)util_rndGet(1, run->global->mutate.maxFileSz);
+            break;
+        case 1 ... 8:
+            newsz = oldsz + v;
+            break;
+        case 9 ... 16:
+            newsz = oldsz + 8 - v;
+            break;
+        default:
+            LOG_F("Illegal value from util_rndGet: %" PRIu64, v);
+            break;
+    }
+    if (newsz < 1) {
+        newsz = 1;
+    }
+    if (newsz > (ssize_t)run->global->mutate.maxFileSz) {
+        newsz = run->global->mutate.maxFileSz;
+    }
+
+    input_setSize(run, (size_t)newsz);
+    if (newsz > (ssize_t)oldsz) {
         util_rndBuf(&run->dynamicFile[oldsz], newsz - oldsz);
     }
 }
 
 static void mangle_ResizePrintable(run_t* run) {
-    size_t newsz = util_rndGet(1, run->global->mutate.maxFileSz);
     size_t oldsz = run->dynamicFileSz;
+    uint64_t v = util_rndGet(0, 16);
+    ssize_t newsz = 0;
 
-    input_setSize(run, newsz);
-    if (newsz > oldsz) {
+    switch (v) {
+        case 0:
+            newsz = (ssize_t)util_rndGet(1, run->global->mutate.maxFileSz);
+            break;
+        case 1 ... 8:
+            newsz = oldsz + v;
+            break;
+        case 9 ... 16:
+            newsz = oldsz + 8 - v;
+            break;
+        default:
+            LOG_F("Illegal value from util_rndGet: %" PRIx64, v);
+            break;
+    }
+    if (newsz < 1) {
+        newsz = 1;
+    }
+    if (newsz > (ssize_t)run->global->mutate.maxFileSz) {
+        newsz = run->global->mutate.maxFileSz;
+    }
+
+    input_setSize(run, (size_t)newsz);
+    if (newsz > (ssize_t)oldsz) {
         util_rndBufPrintable(&run->dynamicFile[oldsz], newsz - oldsz);
     }
 }
@@ -912,6 +956,7 @@ void mangle_mangleContent(run_t* run) {
         mangle_CloneByte,
         mangle_Expand,
         mangle_Shrink,
+        mangle_Resize,
         mangle_InsertRnd,
         mangle_ASCIIVal,
     };
@@ -933,6 +978,7 @@ void mangle_mangleContent(run_t* run) {
         mangle_CloneByte,
         mangle_Expand,
         mangle_Shrink,
+        mangle_ResizePrintable,
         mangle_InsertRndPrintable,
         mangle_ASCIIVal,
     };
