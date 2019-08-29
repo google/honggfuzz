@@ -254,7 +254,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
         uint64_t guardNb = ATOMIC_GET(hfuzz->feedback.feedbackMap->guardNb);
         display_put(" edge: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET "/" ESC_BOLD
                     "%" _HF_NONMON_SEP PRIu64 ESC_RESET " (%" PRId64 "%%)",
-            softCntEdge, guardNb, softCntEdge ? ((softCntEdge * 100) / softCntEdge) : 0);
+            softCntEdge, guardNb, guardNb ? ((softCntEdge * 100) / guardNb) : 0);
         display_put(" pc: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET, softCntPc);
         display_put(" cmp: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET, softCntCmp);
     }
