@@ -311,7 +311,7 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz) {
     return true;
 }
 
-bool input_prepareDynamicInput(run_t* run, bool need_mangele) {
+bool input_prepareDynamicInput(run_t* run, bool need_mangle) {
     {
         MX_SCOPED_RWLOCK_READ(&run->global->io.dynfileq_mutex);
 
@@ -332,7 +332,9 @@ bool input_prepareDynamicInput(run_t* run, bool need_mangele) {
 
     input_setSize(run, run->dynfileqCurrent->size);
     memcpy(run->dynamicFile, run->dynfileqCurrent->data, run->dynfileqCurrent->size);
-    if (need_mangele) mangle_mangleContent(run);
+    if (need_mangle) {
+        mangle_mangleContent(run);
+    }
 
     return true;
 }
