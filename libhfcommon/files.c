@@ -422,7 +422,9 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
             PLOG_W("shm_open(SHM_ANON, O_RDWR, 0600)");
         }
     }
-#endif
+#endif /* defined(SHM_ANON) */
+#if !defined(_HF_ARCH_DARWIN)
+    /* shm objects under MacOSX are 'a-typical' */
     if (*fd == -1) {
         char tmpname[PATH_MAX];
         struct timeval tv;
@@ -435,6 +437,7 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
             shm_unlink(tmpname);
         }
     }
+#endif /* !defined(_HF_ARCH_DARWIN) */
     if (*fd == -1) {
         char template[PATH_MAX];
         snprintf(template, sizeof(template), "/tmp/%s.XXXXXX", name);
