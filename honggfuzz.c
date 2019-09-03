@@ -229,14 +229,21 @@ static void* signalThread(void* arg) {
     }
 
     for (;;) {
-        int sig;
-        if (sigwait(&ss, &sig) != 0 && errno != EINTR) {
+        int sig = 0;
+        errno = 0;
+        int ret = sigwait(&ss, &sig);
+        if (ret == EINTR) {
+            continue;
+        }
+        if (ret != 0 && errno == EINTR) {
+            continue;
+        }
+        if (ret != 0) {
             PLOG_F("sigwait(SIGCHLD)");
         }
         if (fuzz_isTerminating()) {
             break;
         }
-
         if (sig == SIGCHLD) {
             pingThreads(hfuzz);
         }
