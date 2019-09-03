@@ -184,15 +184,7 @@ static bool arch_checkWait(run_t* run) {
     /* All queued wait events must be tested when SIGCHLD was delivered */
     for (;;) {
         int status;
-        int wflags = WNOHANG;
-#if defined(__WNOTHREAD)
-        wflags |= __WNOTHREAD;
-#endif /* defined(__WNOTHREAD) */
-#if defined(__WALL)
-        wflags |= __WALL;
-#endif /* defined(__WALL) */
-
-        pid_t pid = TEMP_FAILURE_RETRY(waitpid(run->pid, &status, wflags));
+        pid_t pid = TEMP_FAILURE_RETRY(waitpid(run->pid, &status, WNOHANG));
         if (pid == 0) {
             return false;
         }
