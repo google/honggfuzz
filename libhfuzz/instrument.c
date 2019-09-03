@@ -72,8 +72,16 @@ static void initializeInstrument(void) {
             "Link your fuzzed binaries with the newest honggfuzz sources via hfuzz-clang(++)",
             (size_t)st.st_size, sizeof(feedback_t));
     }
-    if ((feedback = mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, MAP_SHARED,
-             _HF_BITMAP_FD, 0)) == MAP_FAILED) {
+    int mmapflags = MAP_SHARED;
+#if defined(MAP_NOSYNC)
+    /*
+     * Some kind of bug in FreeBSD kernel. Without this flag, the shm_open() memory will cause a lot
+     * of troubles to the calling process when mmap()'d
+     */
+    mmapflags |= MAP_NOSYNC;
+#endif /* defined(MAP_NOSYNC) */
+    if ((feedback = mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, mmapflags, _HF_BITMAP_FD,
+             0)) == MAP_FAILED) {
         PLOG_F("mmap(fd=%d, size=%zu) of the feedback structure failed", _HF_BITMAP_FD,
             sizeof(feedback_t));
     }

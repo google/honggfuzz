@@ -384,7 +384,15 @@ uint8_t* files_mapFileShared(const char* fileName, off_t* fileSz, int* fd) {
     }
 
     uint8_t* buf;
-    if ((buf = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, *fd, 0)) == MAP_FAILED) {
+    int mmapflags = MAP_SHARED;
+#if defined(MAP_NOSYNC)
+    /*
+     * Some kind of bug in FreeBSD kernel. Without this flag, the shm_open() memory will cause a lot
+     * of troubles to the calling process when mmap()'d
+     */
+    mmapflags |= MAP_NOSYNC;
+#endif /* defined(MAP_NOSYNC) */
+    if ((buf = mmap(NULL, st.st_size, PROT_READ, mmapflags, *fd, 0)) == MAP_FAILED) {
         PLOG_W("Couldn't mmap() the '%s' file", fileName);
         close(*fd);
         return NULL;
