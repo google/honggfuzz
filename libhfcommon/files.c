@@ -453,7 +453,15 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
         *fd = -1;
         return NULL;
     }
-    void* ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_SHARED, *fd, 0);
+    int mmapflags = MAP_SHARED;
+#if defined(MAP_NOSYNC)
+    /*
+     * Some kind of bug in FreeBSD kernel. Without this flag, the shm_open() memory will cause a lot
+     * of troubles to the calling process when mmap()'d
+     */
+    mmapflags |= MAP_NOSYNC;
+#endif /* defined(MAP_NOSYNC) */
+    void* ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, mmapflags, *fd, 0);
     if (ret == MAP_FAILED) {
         PLOG_W("mmap(sz=%zu, fd=%d)", sz, *fd);
         *fd = -1;
