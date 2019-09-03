@@ -241,14 +241,14 @@ void arch_reapChild(run_t* run) {
                 PLOG_F("poll(fd=%d)", run->persistentSock);
             }
         } else {
-            /* Return with SIGIO, SIGCHLD and with SIGUSR1 */
+            /* Return with SIGIO, SIGCHLD */
             const struct timespec ts = {
                 .tv_sec = 0ULL,
                 .tv_nsec = (1000ULL * 1000ULL * 250ULL),
             };
             int sig = sigtimedwait(&run->global->exe.waitSigSet, NULL, &ts /* 0.25s */);
             if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
-                PLOG_F("sigtimedwait(SIGIO|SIGCHLD|SIGUSR1)");
+                PLOG_F("sigtimedwait(SIGIO|SIGCHLD)");
             }
         }
 

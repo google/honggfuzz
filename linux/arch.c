@@ -263,10 +263,10 @@ void arch_reapChild(run_t* run) {
             .tv_sec = 0ULL,
             .tv_nsec = (1000ULL * 1000ULL * 250ULL),
         };
-        /* Return with SIGIO, SIGCHLD and with SIGUSR1 */
+        /* Return with SIGIO, SIGCHLD */
         int sig = sigtimedwait(&run->global->exe.waitSigSet, NULL, &ts /* 0.25s */);
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
-            PLOG_F("sigwaitinfo(SIGIO|SIGCHLD|SIGUSR1)");
+            PLOG_F("sigwaitinfo(SIGIO|SIGCHLD)");
         }
 
         if (arch_checkWait(run)) {
@@ -426,14 +426,6 @@ bool arch_archThreadInit(run_t* run) {
 
     if (prctl(PR_SET_CHILD_SUBREAPER, 1UL, 0UL, 0UL, 0UL) == -1) {
         PLOG_W("prctl(PR_SET_CHILD_SUBREAPER, 1)");
-    }
-
-    sigset_t ss;
-    sigemptyset(&ss);
-    sigaddset(&ss, SIGUSR1);
-    if (pthread_sigmask(SIG_BLOCK, &ss, NULL) != 0) {
-        PLOG_W("Couldn't block SIGUSR1");
-        return false;
     }
 
     return true;

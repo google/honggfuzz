@@ -408,10 +408,10 @@ void arch_reapChild(run_t* run) {
                 PLOG_F("poll(fd=%d)", run->persistentSock);
             }
         } else {
-            /* Return with SIGIO, SIGCHLD and with SIGUSR1 */
+            /* Return with SIGIO, SIGCHLD */
             int sig;
             if (sigwait(&run->global->exe.waitSigSet, &sig) != 0) {
-                PLOG_F("sigwait(SIGIO|SIGCHLD|SIGUSR1)");
+                PLOG_F("sigwait(SIGIO|SIGCHLD)");
             }
         }
 

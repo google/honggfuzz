@@ -78,10 +78,6 @@ static void sigHandler(int sig) {
         return;
     }
 
-    /* Do nothing with pings from the main thread */
-    if (sig == SIGUSR1) {
-        return;
-    }
     /* It's handled in the signal thread */
     if (sig == SIGCHLD) {
         return;
@@ -146,7 +142,6 @@ static void setupSignalsPreThreads(void) {
     /* Let the signal thread catch SIGCHLD */
     sigaddset(&ss, SIGCHLD);
     /* This is checked for via sigwaitinfo/sigtimedwait */
-    sigaddset(&ss, SIGUSR1);
     sigaddset(&ss, SIGWINCH);
     if (sigprocmask(SIG_SETMASK, &ss, NULL) != 0) {
         PLOG_F("sigprocmask(SIG_SETMASK)");
@@ -168,9 +163,6 @@ static void setupSignalsPreThreads(void) {
     }
     if (sigaction(SIGALRM, &sa, NULL) == -1) {
         PLOG_F("sigaction(SIGQUIT) failed");
-    }
-    if (sigaction(SIGUSR1, &sa, NULL) == -1) {
-        PLOG_F("sigaction(SIGUSR1) failed");
     }
     if (sigaction(SIGCHLD, &sa, NULL) == -1) {
         PLOG_F("sigaction(SIGCHLD) failed");
@@ -220,8 +212,8 @@ static void printSummary(honggfuzz_t* hfuzz) {
 
 static void pingThreads(honggfuzz_t* hfuzz) {
     for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
-        if (pthread_kill(hfuzz->threads.threads[i], SIGUSR1) != 0 && errno != EINTR) {
-            PLOG_W("pthread_kill(thread=%zu, SIGUSR1)", i);
+        if (pthread_kill(hfuzz->threads.threads[i], SIGCHLD) != 0 && errno != EINTR) {
+            PLOG_W("pthread_kill(thread=%zu, SIGCHLD)", i);
         }
     }
 }

@@ -708,7 +708,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 
     sigemptyset(&hfuzz->exe.waitSigSet);
     sigaddset(&hfuzz->exe.waitSigSet, SIGIO);   /* Persistent socket data */
-    sigaddset(&hfuzz->exe.waitSigSet, SIGUSR1); /* Ping from the signal thread */
+    sigaddset(&hfuzz->exe.waitSigSet, SIGCHLD); /* Ping from the signal thread */
 
     LOG_I("cmdline:'%s', bin:'%s' inputDir:'%s', fuzzStdin:%s, mutationsPerRun:%u, "
           "externalCommand:'%s', timeout:%ld, mutationsMax:%zu, threadsMax:%zu",
