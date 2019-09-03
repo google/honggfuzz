@@ -397,7 +397,7 @@ uint8_t* files_mapFileShared(const char* fileName, off_t* fileSz, int* fd) {
 void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
     *fd = -1;
 
-#if defined(_HF_ARCH_LINUX)
+#if defined(_HF_ARCH_LINUXZ)
 
 #if !defined(MFD_CLOEXEC) /* sys/memfd.h is not always present */
 #define MFD_CLOEXEC 0x0001U
@@ -418,8 +418,8 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
 /* SHM_ANON is available with some *BSD OSes */
 #if defined(SHM_ANON)
     if (*fd == -1) {
-        if ((*fd = shm_open(SHM_ANON, O_RDWR, 0600)) == -1) {
-            PLOG_W("shm_open(SHM_ANON, O_RDWR, 0600)");
+        if ((*fd = shm_open(SHM_ANON, O_RDWR | O_CLOEXEC, 0600)) == -1) {
+            PLOG_W("shm_open(SHM_ANON, O_RDWR|O_CLOEXEC, 0600)");
         }
     }
 #endif /* defined(SHM_ANON) */
@@ -431,8 +431,8 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
         gettimeofday(&tv, NULL);
         snprintf(tmpname, sizeof(tmpname), "/%s%lx%lx%d", name, (unsigned long)tv.tv_sec,
             (unsigned long)tv.tv_usec, (int)getpid());
-        if ((*fd = shm_open(tmpname, O_RDWR | O_CREAT | O_EXCL, 0600)) == -1) {
-            PLOG_W("shm_open('%s', O_RDWR|O_CREAT|O_EXCL, 0600)", tmpname);
+        if ((*fd = shm_open(tmpname, O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC, 0600)) == -1) {
+            PLOG_W("shm_open('%s', O_RDWR|O_CREAT|O_EXCL|O_CLOEXEC, 0600)", tmpname);
         } else {
             shm_unlink(tmpname);
         }
