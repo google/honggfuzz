@@ -339,7 +339,7 @@ bool input_prepareDynamicInput(run_t* run, bool need_mangle) {
     return true;
 }
 
-bool input_prepareStaticFile(run_t* run, bool rewind, bool need_mangele) {
+bool input_prepareStaticFile(run_t* run, bool rewind, bool need_mangle) {
     char fname[PATH_MAX];
     if (!input_getNext(run, fname, /* rewind= */ rewind)) {
         return false;
@@ -354,7 +354,9 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool need_mangele) {
     }
 
     input_setSize(run, fileSz);
-    if (need_mangele) mangle_mangleContent(run);
+    if (need_mangle) {
+        mangle_mangleContent(run);
+    }
 
     return true;
 }
