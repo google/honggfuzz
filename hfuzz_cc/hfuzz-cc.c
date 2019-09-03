@@ -438,7 +438,9 @@ static int ldMode(int argc, char** argv) {
 
     /* Needed by the libhfcommon */
     args[j++] = "-pthread";
+#ifndef _HF_ARCH_DARWIN
     args[j++] = "-lrt";
+#endif /* _HF_ARCH_DARWIN */
 
     /* Disable -fsanitize=fuzzer */
     if (isFSanitizeFuzzer(argc, argv)) {
