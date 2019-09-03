@@ -235,7 +235,7 @@ static void* signalThread(void* arg) {
         if (ret == EINTR) {
             continue;
         }
-        if (errno == EINTR) {
+        if (ret != 0 && errno == EINTR) {
             continue;
         }
         if (ret != 0) {
