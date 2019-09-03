@@ -397,7 +397,7 @@ uint8_t* files_mapFileShared(const char* fileName, off_t* fileSz, int* fd) {
 void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
     *fd = -1;
 
-#if defined(_HF_ARCH_LINUXZ)
+#if defined(_HF_ARCH_LINUX)
 
 #if !defined(MFD_CLOEXEC) /* sys/memfd.h is not always present */
 #define MFD_CLOEXEC 0x0001U
