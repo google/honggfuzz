@@ -329,6 +329,11 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
     /* Make sure that the feedback struct is already mmap()'d */
     hfuzzInstrumentInit();
 
+	/* If this module was already initialized, skip it */
+	if (*start > 0) {
+		return;
+	}
+
     for (uint32_t* x = start; x < stop; x++, n++) {
         if (n >= _HF_PC_GUARD_MAX) {
             LOG_F("This process has too many PC guards:%" PRIu32
