@@ -427,7 +427,7 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
         char tmpname[PATH_MAX];
         struct timeval tv;
         gettimeofday(&tv, NULL);
-        snprintf(tmpname, sizeof(tmpname), "%s%lx%lx%d", name, (unsigned long)tv.tv_sec,
+        snprintf(tmpname, sizeof(tmpname), "/%s%lx%lx%d", name, (unsigned long)tv.tv_sec,
             (unsigned long)tv.tv_usec, (int)getpid());
         if ((*fd = shm_open(tmpname, O_RDWR | O_CREAT | O_EXCL, 0600)) == -1) {
             PLOG_W("shm_open('%s', O_RDWR|O_CREAT|O_EXCL, 0600)", tmpname);
