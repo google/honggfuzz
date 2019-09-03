@@ -480,8 +480,8 @@ static void* fuzz_threadNew(void* arg) {
 
     /* Do not try to handle input files with socketfuzzer */
     if (!hfuzz->socketFuzzer.enabled) {
-        if (!(run.dynamicFile = files_mapSharedMem(hfuzz->mutate.maxFileSz, &run.dynamicFileFd,
-                  "hfuzz-input", run.global->io.workDir))) {
+        if (!(run.dynamicFile = files_mapSharedMem(
+                  hfuzz->mutate.maxFileSz, &run.dynamicFileFd, "hfuzz-input"))) {
             LOG_F("Couldn't create an input file of size: %zu", hfuzz->mutate.maxFileSz);
         }
     }

@@ -41,6 +41,7 @@
 #if defined(_HF_ARCH_LINUX)
 #include <sys/syscall.h>
 #endif /* defined(_HF_ARCH_LINUX) */
+#include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -393,7 +394,7 @@ uint8_t* files_mapFileShared(const char* fileName, off_t* fileSz, int* fd) {
     return buf;
 }
 
-void* files_mapSharedMem(size_t sz, int* fd, const char* name, const char* dir) {
+void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
     *fd = -1;
 
 #if defined(_HF_ARCH_LINUX)
@@ -418,13 +419,25 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name, const char* dir) 
 #if defined(SHM_ANON)
     if (*fd == -1) {
         if ((*fd = shm_open(SHM_ANON, O_RDWR, 0600)) == -1) {
-            PLOG_E("OOO");
+            PLOG_W("shm_open(SHM_ANON, O_RDWR, 0600)");
         }
     }
 #endif
     if (*fd == -1) {
+        char tmpname[PATH_MAX];
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        snprintf(tmpname, sizeof(tmpname), "%s%lx%lx%d", name, (unsigned long)tv.tv_sec,
+            (unsigned long)tv.tv_usec, (int)getpid());
+        if ((*fd = shm_open(tmpname, O_RDWR | O_CREAT | O_EXCL, 0600)) == -1) {
+            PLOG_W("shm_open('%s', O_RDWR|O_CREAT|O_EXCL, 0600)", tmpname);
+        } else {
+            shm_unlink(tmpname);
+        }
+    }
+    if (*fd == -1) {
         char template[PATH_MAX];
-        snprintf(template, sizeof(template), "%s/%s.XXXXXX", dir, name);
+        snprintf(template, sizeof(template), "/tmp/%s.XXXXXX", name);
         if ((*fd = mkostemp(template, O_CLOEXEC)) == -1) {
             PLOG_W("mkstemp('%s')", template);
             return NULL;
