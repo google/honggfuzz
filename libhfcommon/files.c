@@ -414,6 +414,14 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name, const char* dir) 
 
 #endif /* defined(_HF_ARCH_LINUX) */
 
+/* SHM_ANON is available with some *BSD OSes */
+#if defined(SHM_ANON)
+    if (*fd == -1) {
+        if ((*fd = shm_open(SHM_ANON, O_RDWR, 0600)) == -1) {
+            PLOG_E("OOO");
+        }
+    }
+#endif
     if (*fd == -1) {
         char template[PATH_MAX];
         snprintf(template, sizeof(template), "%s/%s.XXXXXX", dir, name);
