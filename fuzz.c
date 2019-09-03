@@ -168,10 +168,6 @@ static void fuzz_setDynamicMainState(run_t* run) {
         util_sleepForMSec(10); /* Check every 10ms */
     }
 
-    LOG_I("Entering phase 3/3: Dynamic Main (Feedback Driven Mode)");
-    snprintf(run->origFileName, sizeof(run->origFileName), "[DYNAMIC]");
-    ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_MAIN);
-
     /*
      * If the initial fuzzing yielded no useful coverage, just add a single 1-byte file to the
      * dynamic corpus, so the dynamic phase doesn't fail because of lack of useful inputs
@@ -180,6 +176,10 @@ static void fuzz_setDynamicMainState(run_t* run) {
         const char* single_byte = run->global->cfg.only_printable ? " " : "\0";
         fuzz_addFileToFileQ(run->global, (const uint8_t*)single_byte, 1U);
     }
+
+    LOG_I("Entering phase 3/3: Dynamic Main (Feedback Driven Mode)");
+    snprintf(run->origFileName, sizeof(run->origFileName), "[DYNAMIC]");
+    ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_MAIN);
 }
 
 static void fuzz_perfFeedback(run_t* run) {
