@@ -370,7 +370,7 @@ uint8_t* files_mapFile(const char* fileName, off_t* fileSz, int* fd, bool isWrit
     return buf;
 }
 
-void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
+void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore) {
     *fd = -1;
 
 #if defined(_HF_ARCH_LINUX)
@@ -446,6 +446,18 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
     }
     if (posix_madvise(ret, sz, POSIX_MADV_RANDOM) == -1) {
         PLOG_W("posix_madvise(sz=%zu, POSIX_MADV_RANDOM)", sz);
+    }
+    if (nocore) {
+#if defined(MADV_DONTDUMP)
+        if (madvise(ret, sz, MADV_DONTDUMP) == -1) {
+            PLOG_W("madvise(sz=%zu, MADV_DONTDUMP)", sz);
+        }
+#endif /* defined(MADV_DONTDUMP) */
+#if defined(MADV_NOCORE)
+        if (madvise(ret, sz, MADV_NOCORE) == -1) {
+            PLOG_W("madvise(sz=%zu, MADV_NOCORE)", sz);
+        }
+#endif /* defined(MADV_NOCORE) */
     }
     return ret;
 }
