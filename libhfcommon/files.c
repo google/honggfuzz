@@ -431,7 +431,7 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
         }
     }
 #endif /* defined(SHM_ANON) */
-#if !defined(_HF_ARCH_DARWIN)
+#if !defined(_HF_ARCH_DARWIN) && !defined(__ANDROID__)
     /* shm objects under MacOSX are 'a-typical' */
     if (*fd == -1) {
         char tmpname[PATH_MAX];
@@ -445,7 +445,7 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
             shm_unlink(tmpname);
         }
     }
-#endif /* !defined(_HF_ARCH_DARWIN) */
+#endif /* !defined(_HF_ARCH_DARWIN) && !defined(__ANDROID__) */
     if (*fd == -1) {
         char template[PATH_MAX];
         snprintf(template, sizeof(template), "/tmp/%s.XXXXXX", name);
