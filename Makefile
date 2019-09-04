@@ -157,7 +157,12 @@ else
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
                    -funroll-loops
-    ARCH_LDFLAGS := -pthread -lrt -L/usr/local/lib
+ifeq ($(OS),OpenBSD)
+    ARCH_LDFLAGS := -L/usr/local/lib -pthread
+else
+    ARCH_LDFLAGS := -L/usr/local/lib -pthread -lrt
+    # OS OpenBSD
+endif
     # OS Posix
 endif
 

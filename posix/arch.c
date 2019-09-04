@@ -234,13 +234,11 @@ void arch_reapChild(run_t* run) {
             }
         } else {
             /* Return with SIGIO, SIGCHLD */
-            const struct timespec ts = {
-                .tv_sec = 0ULL,
-                .tv_nsec = (1000ULL * 1000ULL * 250ULL),
-            };
-            int sig = sigtimedwait(&run->global->exe.waitSigSet, NULL, &ts /* 0.25s */);
-            if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
-                PLOG_F("sigtimedwait(SIGIO|SIGCHLD)");
+            errno = 0;
+            int sig;
+            int ret = sigwait(&run->global->exe.waitSigSet, &sig);
+            if (ret != 0 && ret != EINTR) {
+                PLOG_F("sigwait(SIGIO|SIGCHLD)");
             }
         }
 
