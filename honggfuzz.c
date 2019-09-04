@@ -303,7 +303,7 @@ int main(int argc, char** argv) {
     }
 
     if (!(hfuzz.feedback.feedbackMap = files_mapSharedMem(
-              sizeof(feedback_t), &hfuzz.feedback.bbFd, "hfuzz-feedback", /* nocore= */ false))) {
+              sizeof(feedback_t), &hfuzz.feedback.bbFd, "hfuzz-feedback", /* nocore= */ true))) {
         LOG_F("files_mapSharedMem(sz=%zu, dir='%s') failed", sizeof(feedback_t), hfuzz.io.workDir);
     }
 
