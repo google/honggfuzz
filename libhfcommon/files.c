@@ -480,6 +480,9 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
         close(*fd);
         return NULL;
     }
+    if (posix_madvise(ret, sz, POSIX_MADV_RANDOM) == -1) {
+        PLOG_W("posix_madvise(sz=%zu, POSIX_MADV_RANDOM)", sz);
+    }
     return ret;
 }
 
