@@ -392,6 +392,10 @@ uint8_t* files_mapFileShared(const char* fileName, off_t* fileSz, int* fd) {
      */
     mmapflags |= MAP_NOSYNC;
 #endif /* defined(MAP_NOSYNC) */
+#if defined(MAP_HASSEMAPHORE)
+    /* We use mutexes, so.. */
+    mmapflags |= MAP_HASSEMAPHORE;
+#endif /* defined(MAP_HASSEMAPHORE) */
     if ((buf = mmap(NULL, st.st_size, PROT_READ, mmapflags, *fd, 0)) == MAP_FAILED) {
         PLOG_W("Couldn't mmap() the '%s' file", fileName);
         close(*fd);
