@@ -61,8 +61,6 @@ extern bool files_copyFile(
 
 extern uint8_t* files_mapFile(const char* fileName, off_t* fileSz, int* fd, bool isWritable);
 
-extern uint8_t* files_mapFileShared(const char* fileName, off_t* fileSz, int* fd);
-
 extern void* files_mapSharedMem(size_t sz, int* fd, const char* name);
 
 extern size_t files_parseSymbolFilter(const char* inFIle, char*** filterList);

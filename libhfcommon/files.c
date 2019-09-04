@@ -370,42 +370,6 @@ uint8_t* files_mapFile(const char* fileName, off_t* fileSz, int* fd, bool isWrit
     return buf;
 }
 
-uint8_t* files_mapFileShared(const char* fileName, off_t* fileSz, int* fd) {
-    if ((*fd = TEMP_FAILURE_RETRY(open(fileName, O_RDONLY))) == -1) {
-        PLOG_W("Couldn't open() '%s' file in R/O mode", fileName);
-        return NULL;
-    }
-
-    struct stat st;
-    if (fstat(*fd, &st) == -1) {
-        PLOG_W("Couldn't stat() the '%s' file", fileName);
-        close(*fd);
-        return NULL;
-    }
-
-    uint8_t* buf;
-    int mmapflags = MAP_SHARED;
-#if defined(MAP_NOSYNC)
-    /*
-     * Some kind of bug in FreeBSD kernel. Without this flag, the shm_open() memory will cause a lot
-     * of troubles to the calling process when mmap()'d
-     */
-    mmapflags |= MAP_NOSYNC;
-#endif /* defined(MAP_NOSYNC) */
-#if defined(MAP_HASSEMAPHORE)
-    /* We use mutexes, so.. */
-    mmapflags |= MAP_HASSEMAPHORE;
-#endif /* defined(MAP_HASSEMAPHORE) */
-    if ((buf = mmap(NULL, st.st_size, PROT_READ, mmapflags, *fd, 0)) == MAP_FAILED) {
-        PLOG_W("Couldn't mmap() the '%s' file", fileName);
-        close(*fd);
-        return NULL;
-    }
-
-    *fileSz = st.st_size;
-    return buf;
-}
-
 void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
     *fd = -1;
 
