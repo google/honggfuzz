@@ -513,7 +513,6 @@ static void* fuzz_threadNew(void* arg) {
         if (hfuzz->socketFuzzer.enabled) {
             fuzz_fuzzLoopSocket(&run);
         } else {
-            input_setSize(&run, run.global->mutate.maxFileSz);
             fuzz_fuzzLoop(&run);
         }
 
