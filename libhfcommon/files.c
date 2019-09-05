@@ -437,6 +437,14 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore) {
      */
     mmapflags |= MAP_NOSYNC;
 #endif /* defined(MAP_NOSYNC) */
+    if (nocore) {
+#if defined(MAP_CONCEAL)
+        mmapflags |= MAP_CONCEAL;
+#endif /* defined(MAP_CONCEAL) */
+#if defined(MAP_NOCORE)
+        mmapflags |= MAP_NOCORE;
+#endif /* defined(MAP_NOCORE) */
+    }
     void* ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, mmapflags, *fd, 0);
     if (ret == MAP_FAILED) {
         PLOG_W("mmap(sz=%zu, fd=%d)", sz, *fd);
