@@ -437,6 +437,10 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore) {
      */
     mmapflags |= MAP_NOSYNC;
 #endif /* defined(MAP_NOSYNC) */
+#if defined(MAP_HASSEMAPHORE)
+    mmapflags |= MAP_HASSEMAPHORE;
+    /* Our shared/mmap'd pages can have mutexes in them */
+#endif /* defined(MAP_HASSEMAPHORE) */
     if (nocore) {
 #if defined(MAP_CONCEAL)
         mmapflags |= MAP_CONCEAL;
