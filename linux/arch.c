@@ -122,6 +122,13 @@ bool arch_launchChild(run_t* run) {
         return false;
     }
 
+    /* Increase our OOM score, so fuzzed processes die faster */
+    static const char score100[] = "+500";
+    if (!files_writeBufToFile(
+            "/proc/self/oom_score_adj", (uint8_t*)score100, strlen(score100), O_WRONLY)) {
+        LOG_W("Couldn't increase our oom_score");
+    }
+
     /*
      * Disable ASLR:
      * This might fail in Docker, as Docker blocks __NR_personality. Consequently
