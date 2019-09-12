@@ -382,7 +382,6 @@ static void fuzz_fuzzLoop(run_t* run) {
     run->report[0] = '\0';
     run->mainWorker = true;
     run->mutationsPerRun = run->global->mutate.mutationsPerRun;
-    run->dynamicFileSz = 0;
     run->tmOutSignaled = false;
 
     run->linux.hwCnts.cpuInstrCnt = 0;
@@ -416,7 +415,6 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
     run->report[0] = '\0';
     run->mainWorker = true;
     run->mutationsPerRun = run->global->mutate.mutationsPerRun;
-    run->dynamicFileSz = 0;
     run->tmOutSignaled = false;
 
     run->linux.hwCnts.cpuInstrCnt = 0;
@@ -480,8 +478,8 @@ static void* fuzz_threadNew(void* arg) {
 
     /* Do not try to handle input files with socketfuzzer */
     if (!hfuzz->socketFuzzer.enabled) {
-        if (!(run.dynamicFile = files_mapSharedMem(
-                  hfuzz->mutate.maxFileSz, &run.dynamicFileFd, "hfuzz-input"))) {
+        if (!(run.dynamicFile = files_mapSharedMem(hfuzz->mutate.maxFileSz, &run.dynamicFileFd,
+                  "hfuzz-input", /* nocore= */ true))) {
             LOG_F("Couldn't create an input file of size: %zu", hfuzz->mutate.maxFileSz);
         }
     }
@@ -513,7 +511,6 @@ static void* fuzz_threadNew(void* arg) {
         if (hfuzz->socketFuzzer.enabled) {
             fuzz_fuzzLoopSocket(&run);
         } else {
-            input_setSize(&run, run.global->mutate.maxFileSz);
             fuzz_fuzzLoop(&run);
         }
 

@@ -370,39 +370,7 @@ uint8_t* files_mapFile(const char* fileName, off_t* fileSz, int* fd, bool isWrit
     return buf;
 }
 
-uint8_t* files_mapFileShared(const char* fileName, off_t* fileSz, int* fd) {
-    if ((*fd = TEMP_FAILURE_RETRY(open(fileName, O_RDONLY))) == -1) {
-        PLOG_W("Couldn't open() '%s' file in R/O mode", fileName);
-        return NULL;
-    }
-
-    struct stat st;
-    if (fstat(*fd, &st) == -1) {
-        PLOG_W("Couldn't stat() the '%s' file", fileName);
-        close(*fd);
-        return NULL;
-    }
-
-    uint8_t* buf;
-    int mmapflags = MAP_SHARED;
-#if defined(MAP_NOSYNC)
-    /*
-     * Some kind of bug in FreeBSD kernel. Without this flag, the shm_open() memory will cause a lot
-     * of troubles to the calling process when mmap()'d
-     */
-    mmapflags |= MAP_NOSYNC;
-#endif /* defined(MAP_NOSYNC) */
-    if ((buf = mmap(NULL, st.st_size, PROT_READ, mmapflags, *fd, 0)) == MAP_FAILED) {
-        PLOG_W("Couldn't mmap() the '%s' file", fileName);
-        close(*fd);
-        return NULL;
-    }
-
-    *fileSz = st.st_size;
-    return buf;
-}
-
-void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
+void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore) {
     *fd = -1;
 
 #if defined(_HF_ARCH_LINUX)
@@ -431,7 +399,7 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
         }
     }
 #endif /* defined(SHM_ANON) */
-#if !defined(_HF_ARCH_DARWIN)
+#if !defined(_HF_ARCH_DARWIN) && !defined(__ANDROID__)
     /* shm objects under MacOSX are 'a-typical' */
     if (*fd == -1) {
         char tmpname[PATH_MAX];
@@ -445,7 +413,7 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
             shm_unlink(tmpname);
         }
     }
-#endif /* !defined(_HF_ARCH_DARWIN) */
+#endif /* !defined(_HF_ARCH_DARWIN) && !defined(__ANDROID__) */
     if (*fd == -1) {
         char template[PATH_MAX];
         snprintf(template, sizeof(template), "/tmp/%s.XXXXXX", name);
@@ -469,12 +437,39 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name) {
      */
     mmapflags |= MAP_NOSYNC;
 #endif /* defined(MAP_NOSYNC) */
+#if defined(MAP_HASSEMAPHORE)
+    mmapflags |= MAP_HASSEMAPHORE;
+    /* Our shared/mmap'd pages can have mutexes in them */
+#endif /* defined(MAP_HASSEMAPHORE) */
+    if (nocore) {
+#if defined(MAP_CONCEAL)
+        mmapflags |= MAP_CONCEAL;
+#endif /* defined(MAP_CONCEAL) */
+#if defined(MAP_NOCORE)
+        mmapflags |= MAP_NOCORE;
+#endif /* defined(MAP_NOCORE) */
+    }
     void* ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, mmapflags, *fd, 0);
     if (ret == MAP_FAILED) {
         PLOG_W("mmap(sz=%zu, fd=%d)", sz, *fd);
         *fd = -1;
         close(*fd);
         return NULL;
+    }
+    if (posix_madvise(ret, sz, POSIX_MADV_RANDOM) == -1) {
+        PLOG_W("posix_madvise(sz=%zu, POSIX_MADV_RANDOM)", sz);
+    }
+    if (nocore) {
+#if defined(MADV_DONTDUMP)
+        if (madvise(ret, sz, MADV_DONTDUMP) == -1) {
+            PLOG_W("madvise(sz=%zu, MADV_DONTDUMP)", sz);
+        }
+#endif /* defined(MADV_DONTDUMP) */
+#if defined(MADV_NOCORE)
+        if (madvise(ret, sz, MADV_NOCORE) == -1) {
+            PLOG_W("madvise(sz=%zu, MADV_NOCORE)", sz);
+        }
+#endif /* defined(MADV_NOCORE) */
     }
     return ret;
 }

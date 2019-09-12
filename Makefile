@@ -50,12 +50,6 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
     ARCH_SRCS := $(sort $(wildcard linux/*.c))
     LIBS_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 
-    ifeq ("$(wildcard /usr/include/bfd.h)","")
-        WARN_LIBRARY += binutils-devel
-    endif
-    ifeq ("$(wildcard /usr/include/libunwind-ptrace.h)","")
-        WARN_LIBRARY += libunwind-devel/libunwind8-devel
-    endif
     ifeq ("$(wildcard /usr/local/include/intel-pt.h)","/usr/local/include/intel-pt.h")
         ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
         ARCH_CFLAGS += -I/usr/local/include
@@ -64,13 +58,6 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
     ifeq ("$(wildcard /usr/include/intel-pt.h)","/usr/include/intel-pt.h")
         ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
         ARCH_LDFLAGS += -lipt
-    endif
-    ifdef WARN_LIBRARY
-        $(info --------------------------------------------------------)
-        $(info Libraries which are most likely missing on your OS.     )
-        $(info This can result in linking/compilation errors.          )
-        $(info > $(WARN_LIBRARY))
-        $(info --------------------------------------------------------)
     endif
     # OS Linux
 else ifeq ($(OS),Darwin)
@@ -157,7 +144,12 @@ else
                    -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
                    -funroll-loops
-    ARCH_LDFLAGS := -pthread -lrt -L/usr/local/lib
+ifeq ($(OS),OpenBSD)
+    ARCH_LDFLAGS := -L/usr/local/lib -pthread
+else
+    ARCH_LDFLAGS := -L/usr/local/lib -pthread -lrt
+    # OS OpenBSD
+endif
     # OS Posix
 endif
 

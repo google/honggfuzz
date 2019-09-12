@@ -438,9 +438,9 @@ static int ldMode(int argc, char** argv) {
 
     /* Needed by the libhfcommon */
     args[j++] = "-pthread";
-#ifndef _HF_ARCH_DARWIN
+#if !defined(_HF_ARCH_DARWIN) && !defined(__OpenBSD__)
     args[j++] = "-lrt";
-#endif /* _HF_ARCH_DARWIN */
+#endif /* !defined(_HF_ARCH_DARWIN) && !defined(__OpenBSD__) */
 
     /* Disable -fsanitize=fuzzer */
     if (isFSanitizeFuzzer(argc, argv)) {

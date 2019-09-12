@@ -53,6 +53,9 @@
 #include "libhfcommon/util.h"
 
 void input_setSize(run_t* run, size_t sz) {
+    if (run->dynamicFileSz == sz) {
+        return;
+    }
     if (sz > run->global->mutate.maxFileSz) {
         PLOG_F("Too large size requested: %zu > maxSize: %zu", sz, run->global->mutate.maxFileSz);
     }

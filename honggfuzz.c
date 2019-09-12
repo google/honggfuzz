@@ -200,10 +200,15 @@ static void printSummary(honggfuzz_t* hfuzz) {
         PLOG_W("getrusage  failed");
         usage.ru_maxrss = 0;  // 0 means something went wrong with rusage
     }
+#ifdef _HF_ARCH_DARWIN
+    usage.ru_maxrss >>= 20;
+#else
+    usage.ru_maxrss >>= 10;
+#endif
     LOG_I("Summary iterations:%zu time:%" PRIu64 " speed:%" PRIu64 " "
           "crashes_count:%zu timeout_count:%zu new_units_added:%zu "
           "slowest_unit_ms:%" PRId64 " guard_nb:%" PRIu64 " branch_coverage_percent:%" PRIu64 " "
-          "peak_rss_mb:%zu",
+          "peak_rss_mb:%lu",
         hfuzz->cnts.mutationsCnt, elapsed_sec, exec_per_sec, hfuzz->cnts.crashesCnt,
         hfuzz->cnts.timeoutedCnt, hfuzz->io.newUnitsAdded,
         hfuzz->timing.timeOfLongestUnitInMilliseconds, hfuzz->feedback.feedbackMap->guardNb,
@@ -302,8 +307,8 @@ int main(int argc, char** argv) {
         LOG_F("Couldn't parse symbols whitelist file ('%s')", hfuzzl.symsWlFile);
     }
 
-    if (!(hfuzz.feedback.feedbackMap =
-                files_mapSharedMem(sizeof(feedback_t), &hfuzz.feedback.bbFd, "hfuzz-feedback"))) {
+    if (!(hfuzz.feedback.feedbackMap = files_mapSharedMem(
+              sizeof(feedback_t), &hfuzz.feedback.bbFd, "hfuzz-feedback", /* nocore= */ true))) {
         LOG_F("files_mapSharedMem(sz=%zu, dir='%s') failed", sizeof(feedback_t), hfuzz.io.workDir);
     }
 
