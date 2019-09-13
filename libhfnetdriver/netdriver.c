@@ -134,11 +134,13 @@ static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen
     if (setsockopt(sock, SOL_TCP, TCP_NODELAY, &val, (socklen_t)sizeof(val)) == -1) {
         PLOG_W("setsockopt(sock=%d, SOL_TCP, TCP_NODELAY, %d)", sock, val);
     }
-#endif                         /* defined(SOL_TCP) && defined(TCP_NODELAY) */
-    val = (1024ULL * 1024ULL); /* 1MiB */
-    if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &val, (socklen_t)sizeof(val)) == -1) {
-        PLOG_D("setsockopt(sock=%d, SOL_SOCKET, SO_SNDBUF, %d)", sock, val);
+#endif /* defined(SOL_TCP) && defined(TCP_NODELAY) */
+#if defined(SOL_TCP) && defined(TCP_QUICKACK)
+    val = 1;
+    if (setsockopt(sock, SOL_TCP, TCP_QUICKACK, &val, (socklen_t)sizeof(val)) == -1) {
+        PLOG_D("setsockopt(sock=%d, SOL_TCP, TCP_QUICKACK, %d)", sock, val);
     }
+#endif /* defined(SOL_TCP) && defined(TCP_QUICKACK) */
 
     netDriver_bindToRndLoopback(sock, addr->sa_family);
 
