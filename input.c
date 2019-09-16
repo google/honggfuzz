@@ -192,8 +192,8 @@ bool input_init(honggfuzz_t* hfuzz) {
         return false;
     }
     if ((hfuzz->io.inputDirPtr = fdopendir(dir_fd)) == NULL) {
+        PLOG_W("fdopendir(dir='%s', fd=%d)", hfuzz->io.inputDir, dir_fd);
         close(dir_fd);
-        PLOG_W("opendir('%s')", hfuzz->io.inputDir);
         return false;
     }
     if (input_getDirStatsAndRewind(hfuzz) == false) {
