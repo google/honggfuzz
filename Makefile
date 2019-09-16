@@ -421,6 +421,7 @@ libhfuzz/fetch.o: libhfuzz/fetch.h honggfuzz.h libhfcommon/util.h
 libhfuzz/fetch.o: libhfcommon/common.h libhfcommon/files.h
 libhfuzz/fetch.o: libhfcommon/common.h libhfcommon/log.h
 libhfuzz/instrument.o: libhfuzz/instrument.h honggfuzz.h libhfcommon/util.h
+libhfuzz/instrument.o: libhfcommon/common.h libhfcommon/files.h
 libhfuzz/instrument.o: libhfcommon/common.h libhfcommon/log.h
 libhfuzz/linux.o: libhfcommon/common.h libhfcommon/files.h
 libhfuzz/linux.o: libhfcommon/common.h libhfcommon/log.h libhfcommon/ns.h

@@ -44,7 +44,8 @@ __attribute__((constructor)) static void initializePersistent(void) {
     if (fcntl(_HF_INPUT_FD, F_GETFD) == -1 && errno == EBADF) {
         return;
     }
-    if ((inputFile = mmap(NULL, _HF_INPUT_MAX_SIZE, PROT_READ, MAP_SHARED, _HF_INPUT_FD, 0)) ==
+    int mflags = files_getTmpMapFlags(MAP_SHARED, /* nocore= */ false);
+    if ((inputFile = mmap(NULL, _HF_INPUT_MAX_SIZE, PROT_READ, mflags, _HF_INPUT_FD, 0)) ==
         MAP_FAILED) {
         PLOG_F("mmap(fd=%d, size=%zu) of the input file failed", _HF_INPUT_FD,
             (size_t)_HF_INPUT_MAX_SIZE);

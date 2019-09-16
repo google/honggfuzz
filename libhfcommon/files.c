@@ -280,6 +280,30 @@ uint8_t* files_mapFile(const char* fileName, off_t* fileSz, int* fd, bool isWrit
     return buf;
 }
 
+/* mmap flags for various OSs, when mmap'ing a temporary file or a shared mem */
+int files_getTmpMapFlags(int flag, bool nocore) {
+#if defined(MAP_NOSYNC)
+    /*
+     * Some kind of bug in FreeBSD kernel. Without this flag, the shm_open() memory will cause a lot
+     * of troubles to the calling process when mmap()'d
+     */
+    flag |= MAP_NOSYNC;
+#endif /* defined(MAP_NOSYNC) */
+#if defined(MAP_HASSEMAPHORE)
+    flag |= MAP_HASSEMAPHORE;
+    /* Our shared/mmap'd pages can have mutexes in them */
+#endif /* defined(MAP_HASSEMAPHORE) */
+    if (nocore) {
+#if defined(MAP_CONCEAL)
+        flag |= MAP_CONCEAL;
+#endif /* defined(MAP_CONCEAL) */
+#if defined(MAP_NOCORE)
+        flag |= MAP_NOCORE;
+#endif /* defined(MAP_NOCORE) */
+    }
+    return flag;
+}
+
 void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore) {
     *fd = -1;
 
@@ -339,27 +363,8 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore) {
         *fd = -1;
         return NULL;
     }
-    int mmapflags = MAP_SHARED;
-#if defined(MAP_NOSYNC)
-    /*
-     * Some kind of bug in FreeBSD kernel. Without this flag, the shm_open() memory will cause a lot
-     * of troubles to the calling process when mmap()'d
-     */
-    mmapflags |= MAP_NOSYNC;
-#endif /* defined(MAP_NOSYNC) */
-#if defined(MAP_HASSEMAPHORE)
-    mmapflags |= MAP_HASSEMAPHORE;
-    /* Our shared/mmap'd pages can have mutexes in them */
-#endif /* defined(MAP_HASSEMAPHORE) */
-    if (nocore) {
-#if defined(MAP_CONCEAL)
-        mmapflags |= MAP_CONCEAL;
-#endif /* defined(MAP_CONCEAL) */
-#if defined(MAP_NOCORE)
-        mmapflags |= MAP_NOCORE;
-#endif /* defined(MAP_NOCORE) */
-    }
-    void* ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, mmapflags, *fd, 0);
+    int mflags = files_getTmpMapFlags(MAP_SHARED, /* nocore= */ true);
+    void* ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, mflags, *fd, 0);
     if (ret == MAP_FAILED) {
         PLOG_W("mmap(sz=%zu, fd=%d)", sz, *fd);
         *fd = -1;

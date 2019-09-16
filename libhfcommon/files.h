@@ -58,6 +58,8 @@ extern const char* files_basename(const char* path);
 
 extern uint8_t* files_mapFile(const char* fileName, off_t* fileSz, int* fd, bool isWritable);
 
+extern int files_getTmpMapFlags(int flag, bool nocore);
+
 extern void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore);
 
 extern size_t files_parseSymbolFilter(const char* inFIle, char*** filterList);
