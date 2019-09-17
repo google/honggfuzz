@@ -257,6 +257,44 @@ static void* signalThread(void* arg) {
     return NULL;
 }
 
+static void mainThreadLoop(honggfuzz_t* hfuzz) {
+    setupSignalsMainThread();
+    setupMainThreadTimer();
+
+    for (;;) {
+        if (hfuzz->display.useScreen) {
+            if (ATOMIC_XCHG(clearWin, false)) {
+                display_clear();
+            }
+            display_display(hfuzz);
+        }
+        if (ATOMIC_GET(sigReceived) > 0) {
+            LOG_I("Signal %d (%s) received, terminating", ATOMIC_GET(sigReceived),
+                strsignal(ATOMIC_GET(sigReceived)));
+            break;
+        }
+        if (ATOMIC_GET(hfuzz->threads.threadsFinished) >= hfuzz->threads.threadsMax) {
+            break;
+        }
+        if (hfuzz->timing.runEndTime > 0 && (time(NULL) > hfuzz->timing.runEndTime)) {
+            LOG_I("Maximum run time reached, terminating");
+            break;
+        }
+        pingThreads(hfuzz);
+        pause();
+    }
+
+    fuzz_setTerminating();
+
+    for (;;) {
+        if (ATOMIC_GET(hfuzz->threads.threadsFinished) >= hfuzz->threads.threadsMax) {
+            break;
+        }
+        pingThreads(hfuzz);
+        util_sleepForMSec(50); /* 50ms */
+    }
+}
+
 int main(int argc, char** argv) {
     /*
      * Work around CygWin/MinGW
@@ -321,41 +359,7 @@ int main(int argc, char** argv) {
         LOG_F("Couldn't start the signal thread");
     }
 
-    setupSignalsMainThread();
-    setupMainThreadTimer();
-
-    for (;;) {
-        if (hfuzz.display.useScreen) {
-            if (ATOMIC_XCHG(clearWin, false)) {
-                display_clear();
-            }
-            display_display(&hfuzz);
-        }
-        if (ATOMIC_GET(sigReceived) > 0) {
-            LOG_I("Signal %d (%s) received, terminating", ATOMIC_GET(sigReceived),
-                strsignal(ATOMIC_GET(sigReceived)));
-            break;
-        }
-        if (ATOMIC_GET(hfuzz.threads.threadsFinished) >= hfuzz.threads.threadsMax) {
-            break;
-        }
-        if (hfuzz.timing.runEndTime > 0 && (time(NULL) > hfuzz.timing.runEndTime)) {
-            LOG_I("Maximum run time reached, terminating");
-            break;
-        }
-        pingThreads(&hfuzz);
-        pause();
-    }
-
-    fuzz_setTerminating();
-
-    for (;;) {
-        if (ATOMIC_GET(hfuzz.threads.threadsFinished) >= hfuzz.threads.threadsMax) {
-            break;
-        }
-        pingThreads(&hfuzz);
-        util_sleepForMSec(50); /* 50ms */
-    }
+    mainThreadLoop(&hfuzz);
 
     /* Clean-up global buffers */
     if (hfuzz.feedback.blacklist) {
