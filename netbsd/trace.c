@@ -56,7 +56,6 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 #include "netbsd/unwind.h"
-#include "socketfuzzer.h"
 #include "subproc.h"
 
 #include <capstone/capstone.h>
@@ -486,11 +485,6 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
             info.psi_siginfo.si_code, sig_addr, instr, localtmstr, pid, run->global->io.fileExtn);
     }
 
-    /* Target crashed (no duplicate detection yet) */
-    if (run->global->socketFuzzer.enabled) {
-        LOG_D("SocketFuzzer: trace: Crash Identified");
-    }
-
     if (files_exists(run->crashFileName)) {
         LOG_I("Crash (dup): '%s' already exists, skipping", run->crashFileName);
         // Clear filename so that verifier can understand we hit a duplicate
@@ -504,11 +498,6 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         return;
     }
 
-    /* Unique new crash, notify fuzzer */
-    if (run->global->socketFuzzer.enabled) {
-        LOG_D("SocketFuzzer: trace: New Uniqu Crash");
-        fuzz_notifySocketFuzzerCrash(run);
-    }
     LOG_I("Crash: saved as '%s'", run->crashFileName);
 
     ATOMIC_POST_INC(run->global->cnts.uniqueCrashesCnt);
