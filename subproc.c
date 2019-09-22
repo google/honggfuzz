@@ -257,13 +257,12 @@ static bool subproc_PrepareExecv(run_t* run) {
     }
 
     /* The input file to _HF_INPUT_FD */
-    if (run->global->exe.persistent &&
-        TEMP_FAILURE_RETRY(dup2(run->dynamicFileFd, _HF_INPUT_FD)) == -1) {
+    if (TEMP_FAILURE_RETRY(dup2(run->dynamicFileFd, _HF_INPUT_FD)) == -1) {
         PLOG_E("dup2('%d', _HF_INPUT_FD='%d')", run->dynamicFileFd, _HF_INPUT_FD);
         return false;
     }
-    if (lseek(run->dynamicFileFd, 0, SEEK_SET) == (off_t)-1) {
-        PLOG_E("lseek(fileFd=%d, 0, SEEK_SET)", run->dynamicFileFd);
+    if (lseek(_HF_INPUT_FD, 0, SEEK_SET) == (off_t)-1) {
+        PLOG_E("lseek(_HF_INPUT_FD=%d, 0, SEEK_SET)", _HF_INPUT_FD);
         return false;
     }
 
