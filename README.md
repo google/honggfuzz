@@ -89,6 +89,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Buffer overflow in __ClassiCube__](https://github.com/UnknownShadow200/ClassiCube/issues/591)
   * [Crash in __MPV__](https://github.com/mpv-player/mpv/issues/6808)
   * [Heap buffer-overflow in __picoc__](https://gitlab.com/zsaleeba/picoc/issues/44)
+  * Crashes in __OpenCOBOL__: [#1](https://sourceforge.net/p/open-cobol/bugs/586/), [#2](https://sourceforge.net/p/open-cobol/bugs/587/)
   * __Rust__:
     * panic() in regex [#1](https://github.com/rust-lang/regex/issues/464), [#2](https://github.com/rust-lang/regex/issues/465), [#3](https://github.com/rust-lang/regex/issues/465#issuecomment-381412816)
     * panic() in h2 [#1](https://github.com/carllerche/h2/pull/260), [#2](https://github.com/carllerche/h2/pull/261), [#3](https://github.com/carllerche/h2/pull/262)
@@ -121,6 +122,9 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__Android__: by OHA](https://android.googlesource.com/platform/external/honggfuzz)
   * [__QDBI__: by Quarkslab](https://project.inria.fr/FranceJapanICST/files/2019/04/19-Kyoto-Fuzzing_Binaries_using_Dynamic_Instrumentation.pdf)
   * [__fuzzer-test-suite__: by Google](https://github.com/google/fuzzer-test-suite)
+  * [__DeepState__: by Trail-of-Bits](https://github.com/trailofbits/deepstate)
+  * [__DeepState__: by Trail-of-Bits](https://github.com/trailofbits/deepstate)
+  * [__Quiche-HTTP/3__: by Cloudflare](https://github.com/cloudflare/quiche/pull/179)
 
 ## Examples
 
