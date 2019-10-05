@@ -147,15 +147,17 @@ typedef struct node {
 
 typedef enum {
     _HF_STATE_UNSET = 0,
-    _HF_STATE_STATIC = 1,
-    _HF_STATE_DYNAMIC_DRY_RUN = 2,
-    _HF_STATE_DYNAMIC_SWITCH_TO_MAIN = 3,
-    _HF_STATE_DYNAMIC_MAIN = 4,
+    _HF_STATE_STATIC,
+    _HF_STATE_DYNAMIC_DRY_RUN,
+    _HF_STATE_DYNAMIC_MAIN,
+    _HF_STATE_DYNAMIC_MINIMIZE,
 } fuzzState_t;
 
 struct dynfile_t {
     uint8_t* data;
     size_t size;
+    uint64_t covCnt;
+    char path[PATH_MAX];
     TAILQ_ENTRY(dynfile_t)
     pointers;
 };
@@ -249,6 +251,8 @@ typedef struct {
         bool monitorSIGABRT;
         size_t dynFileIterExpire;
         bool only_printable;
+        bool minimize;
+        bool switchingToFDM;
     } cfg;
     struct {
         bool enable;

@@ -109,12 +109,15 @@ static bool fuzz_writeCovFile(const char* dir, const uint8_t* data, size_t len) 
     return true;
 }
 
-static void fuzz_addFileToFileQ(honggfuzz_t* hfuzz, const uint8_t* data, size_t len) {
+static void fuzz_addFileToFileQ(
+    honggfuzz_t* hfuzz, const uint8_t* data, size_t len, uint64_t covCnt, const char* path) {
     ATOMIC_SET(hfuzz->timing.lastCovUpdate, time(NULL));
 
     struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t));
     dynfile->size = len;
     dynfile->data = (uint8_t*)util_Malloc(len);
+    dynfile->covCnt = covCnt;
+    snprintf(dynfile->path, sizeof(dynfile->path), "%s", path);
     memcpy(dynfile->data, data, len);
 
     MX_SCOPED_RWLOCK_WRITE(&hfuzz->io.dynfileq_mutex);
@@ -150,12 +153,13 @@ static void fuzz_setDynamicMainState(run_t* run) {
     static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
     MX_SCOPED_LOCK(&state_mutex);
 
-    if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MAIN) {
+    if (fuzz_getState(run->global) != _HF_STATE_DYNAMIC_DRY_RUN) {
+        /* Already switched out of the Dry Run */
         return;
     }
 
-    LOG_I("Entering phase 2/3: Switching to Dynamic Main (Feedback Driven Mode)");
-    ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_SWITCH_TO_MAIN);
+    LOG_I("Entering phase 2/3: Switching to the Feedback Driven Mode");
+    ATOMIC_SET(run->global->cfg.switchingToFDM, true);
 
     for (;;) {
         /* Check if all threads have already reported in for changing state */
@@ -168,15 +172,23 @@ static void fuzz_setDynamicMainState(run_t* run) {
         util_sleepForMSec(10); /* Check every 10ms */
     }
 
+    ATOMIC_SET(run->global->cfg.switchingToFDM, false);
+
+    if (run->global->cfg.minimize) {
+        LOG_I("Entering phase 3/3: Corpus Minimization (Feedback Driven Mode)");
+        ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_MINIMIZE);
+        return;
+    }
+
     /*
      * If the initial fuzzing yielded no useful coverage, just add a single 1-byte file to the
      * dynamic corpus, so the dynamic phase doesn't fail because of lack of useful inputs
      */
     if (run->global->io.dynfileqCnt == 0) {
         const char* single_byte = run->global->cfg.only_printable ? " " : "\0";
-        fuzz_addFileToFileQ(run->global, (const uint8_t*)single_byte, 1U);
+        fuzz_addFileToFileQ(run->global, (const uint8_t*)single_byte, /* size= */ 1U,
+            /* covCnt= */ 0, /* path= */ NULL);
     }
-
     LOG_I("Entering phase 3/3: Dynamic Main (Feedback Driven Mode)");
     snprintf(run->origFileName, sizeof(run->origFileName), "[DYNAMIC]");
     ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_MAIN);
@@ -234,7 +246,9 @@ static void fuzz_perfFeedback(run_t* run) {
             run->global->linux.hwCnts.bbCnt, run->global->linux.hwCnts.softCntEdge,
             run->global->linux.hwCnts.softCntPc, run->global->linux.hwCnts.softCntCmp);
 
-        fuzz_addFileToFileQ(run->global, run->dynamicFile, run->dynamicFileSz);
+        uint64_t totalCovCnt = run->linux.hwCnts.newBBCnt + softCntPc + softCntEdge;
+        fuzz_addFileToFileQ(
+            run->global, run->dynamicFile, run->dynamicFileSz, totalCovCnt, run->origFileName);
 
         if (run->global->socketFuzzer.enabled) {
             LOG_D("SocketFuzzer: fuzz: new BB (perf)");
@@ -315,7 +329,7 @@ static bool fuzz_runVerifier(run_t* run) {
 static bool fuzz_fetchInput(run_t* run) {
     {
         fuzzState_t st = fuzz_getState(run->global);
-        if (st == _HF_STATE_DYNAMIC_DRY_RUN || st == _HF_STATE_DYNAMIC_SWITCH_TO_MAIN) {
+        if (st == _HF_STATE_DYNAMIC_DRY_RUN) {
             run->mutationsPerRun = 0U;
             if (input_prepareStaticFile(run, /* rewind= */ false, true)) {
                 return true;
@@ -324,6 +338,12 @@ static bool fuzz_fetchInput(run_t* run) {
             run->mutationsPerRun = run->global->mutate.mutationsPerRun;
         }
     }
+
+	if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MINIMIZE) {
+
+
+
+	}
 
     if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MAIN) {
         if (run->global->exe.externalCommand) {

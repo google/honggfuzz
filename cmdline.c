@@ -314,6 +314,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .monitorSIGABRT = true,
 #endif
                 .only_printable = false,
+                .minimize = false,
+                .switchingToFDM = false,
             },
         .sanitizer =
             {
@@ -397,6 +399,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "input", required_argument, NULL, 'f' }, "Path to a directory containing initial file corpus" },
         { { "persistent", no_argument, NULL, 'P' }, "Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code). This will be auto-detected!!!" },
         { { "instrument", no_argument, NULL, 'z' }, "*DEFAULT-MODE-BY-DEFAULT* Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)" },
+        { { "minimize", no_argument, NULL, 'M' }, "Minimize the input corpus. It will most likely delete some corpus files!" },
         { { "noinst", no_argument, NULL, 'x' }, "Static mode only, disable any instrumentation (hw/sw) feedback" },
         { { "keep_output", no_argument, NULL, 'Q' }, "Don't close children's stdin, stdout, stderr; can be noisy" },
         { { "timeout", required_argument, NULL, 't' }, "Timeout in seconds (default: 10)" },
@@ -473,7 +476,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     int opt_index = 0;
     for (;;) {
         int c = getopt_long(
-            argc, argv, "-?hQvVsuPxf:dqe:W:r:c:F:t:R:n:N:l:p:g:E:w:B:zTSo", opts, &opt_index);
+            argc, argv, "-?hQvVsuPxf:dqe:W:r:c:F:t:R:n:N:l:p:g:E:w:B:zMTSo", opts, &opt_index);
         if (c < 0) break;
 
         switch (c) {
@@ -550,6 +553,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 'z':
                 hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_SOFT;
+                break;
+            case 'M':
+                hfuzz->cfg.minimize = true;
                 break;
             case 'F':
                 hfuzz->mutate.maxFileSz = strtoul(optarg, NULL, 0);
@@ -705,10 +711,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     }
 
     display_createTargetStr(hfuzz);
-
-    sigemptyset(&hfuzz->exe.waitSigSet);
-    sigaddset(&hfuzz->exe.waitSigSet, SIGIO);   /* Persistent socket data */
-    sigaddset(&hfuzz->exe.waitSigSet, SIGCHLD); /* Ping from the signal thread */
 
     LOG_I("cmdline:'%s', bin:'%s' inputDir:'%s', fuzzStdin:%s, mutationsPerRun:%u, "
           "externalCommand:'%s', timeout:%ld, mutationsMax:%zu, threadsMax:%zu",

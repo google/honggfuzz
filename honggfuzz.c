@@ -314,6 +314,10 @@ int main(int argc, char** argv) {
         LOG_F("Parsing of the cmd-line arguments failed");
     }
 
+    sigemptyset(&hfuzz.exe.waitSigSet);
+    sigaddset(&hfuzz.exe.waitSigSet, SIGIO);   /* Persistent socket data */
+    sigaddset(&hfuzz.exe.waitSigSet, SIGCHLD); /* Ping from the signal thread */
+
     if (hfuzz.display.useScreen) {
         display_init();
     }
