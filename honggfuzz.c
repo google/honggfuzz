@@ -313,6 +313,10 @@ int main(int argc, char** argv) {
     if (cmdlineParse(argc, myargs, &hfuzz) == false) {
         LOG_F("Parsing of the cmd-line arguments failed");
     }
+    if (hfuzz.cfg.minimize) {
+        LOG_I("Minimization mode enabled. Setting number of threads to 1");
+        hfuzz.threads.threadsMax = 1;
+    }
 
     sigemptyset(&hfuzz.exe.waitSigSet);
     sigaddset(&hfuzz.exe.waitSigSet, SIGIO);   /* Persistent socket data */

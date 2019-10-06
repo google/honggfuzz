@@ -202,6 +202,7 @@ typedef struct {
         bool saveUnique;
         size_t dynfileqCnt;
         pthread_rwlock_t dynfileq_mutex;
+        struct dynfile_t* dynfileqCurrent;
         TAILQ_HEAD(dyns_t, dynfile_t) dynfileq;
     } io;
     struct {
@@ -332,7 +333,6 @@ typedef struct {
     char report[_HF_REPORT_SIZE];
     bool mainWorker;
     unsigned mutationsPerRun;
-    struct dynfile_t* dynfileqCurrent;
     uint8_t* dynamicFile;
     size_t dynamicFileSz;
     int dynamicFileFd;

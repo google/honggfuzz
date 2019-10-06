@@ -260,6 +260,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .saveUnique = true,
                 .dynfileqCnt = 0U,
                 .dynfileq_mutex = PTHREAD_RWLOCK_INITIALIZER,
+                .dynfileqCurrent = NULL,
             },
         .exe =
             {

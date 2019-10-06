@@ -164,7 +164,6 @@ bool input_getNext(run_t* run, char* fname, bool rewind) {
         }
 
         snprintf(fname, PATH_MAX, "%s/%s", run->global->io.inputDir, entry->d_name);
-
         struct stat st;
         if (stat(fname, &st) == -1) {
             LOG_W("Couldn't stat() the '%s' file", fname);
@@ -314,35 +313,34 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz) {
     return true;
 }
 
-bool input_prepareDynamicInput(run_t* run, bool need_mangle) {
+bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
+    struct dynfile_t* current = NULL;
+
     {
-        MX_SCOPED_RWLOCK_READ(&run->global->io.dynfileq_mutex);
+        MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 
         if (run->global->io.dynfileqCnt == 0) {
-            LOG_F("The dynamic file corpus is empty. This shouldn't happen");
+            LOG_E("The dynamic file corpus is empty. This shouldn't happen");
         }
 
-        if (run->dynfileqCurrent == NULL) {
-            run->dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
-        } else {
-            if (run->dynfileqCurrent == TAILQ_LAST(&run->global->io.dynfileq, dyns_t)) {
-                run->dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
-            } else {
-                run->dynfileqCurrent = TAILQ_NEXT(run->dynfileqCurrent, pointers);
-            }
+        if (run->global->io.dynfileqCurrent == NULL) {
+            run->global->io.dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
         }
+        current = run->global->io.dynfileqCurrent;
+        run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
     }
 
-    input_setSize(run, run->dynfileqCurrent->size);
-    memcpy(run->dynamicFile, run->dynfileqCurrent->data, run->dynfileqCurrent->size);
-    if (need_mangle) {
+    input_setSize(run, current->size);
+    memcpy(run->dynamicFile, current->data, current->size);
+
+    if (needs_mangle) {
         mangle_mangleContent(run);
     }
 
     return true;
 }
 
-bool input_prepareStaticFile(run_t* run, bool rewind, bool need_mangle) {
+bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
     char fname[PATH_MAX];
     if (!input_getNext(run, fname, /* rewind= */ rewind)) {
         return false;
@@ -357,11 +355,17 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool need_mangle) {
     }
 
     input_setSize(run, fileSz);
-    if (need_mangle) {
+    if (needs_mangle) {
         mangle_mangleContent(run);
     }
 
     return true;
+}
+
+void input_removeStaticFile(const char* path) {
+    if (unlink(path) == -1) {
+        PLOG_E("unlink('%s') failed", path);
+    }
 }
 
 bool input_prepareExternalFile(run_t* run) {
@@ -426,6 +430,28 @@ bool input_postProcessFile(run_t* run) {
     }
 
     input_setSize(run, (size_t)sz);
+    return true;
+}
+
+bool input_prepareDynamicFileForMinimization(run_t* run) {
+    MX_SCOPED_RWLOCK_READ(&run->global->io.dynfileq_mutex);
+
+    struct dynfile_t* current = NULL;
+
+    if (run->global->io.dynfileqCnt == 0) {
+        LOG_F("The dynamic file corpus is empty (fro minimization). This shouldn't happen");
+    }
+
+    if (run->global->io.dynfileqCurrent == NULL) {
+        run->global->io.dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
+    }
+    current = run->global->io.dynfileqCurrent;
+    run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
+
+    input_setSize(run, current->size);
+    memcpy(run->dynamicFile, current->data, current->size);
+    snprintf(run->origFileName, sizeof(run->origFileName), "%s", current->path);
+
     return true;
 }
 
