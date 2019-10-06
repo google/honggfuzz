@@ -154,21 +154,19 @@ typedef enum {
 } fuzzState_t;
 
 struct dynfile_t {
-    uint8_t* data;
     size_t size;
     uint64_t cov1l;
     uint64_t cov2l;
     uint64_t cov3l;
     char path[PATH_MAX];
-    TAILQ_ENTRY(dynfile_t)
-    pointers;
+    TAILQ_ENTRY(dynfile_t) pointers;
+    uint8_t data[];
 };
 
 struct strings_t {
     char* s;
     size_t len;
-    TAILQ_ENTRY(strings_t)
-    pointers;
+    TAILQ_ENTRY(strings_t) pointers;
 };
 
 typedef struct {

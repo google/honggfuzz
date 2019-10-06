@@ -515,27 +515,8 @@ void input_sortDynamicInput(honggfuzz_t* hfuzz) {
                 continue;
             }
 
-            uint8_t* data = item->data;
-            size_t size = item->size;
-            uint64_t cov1l = item->cov1l;
-            uint64_t cov2l = item->cov2l;
-            uint64_t cov3l = item->cov3l;
-            char path[PATH_MAX];
-            snprintf(path, sizeof(path), "%s", item->path);
-
-            item->data = itemnext->data;
-            item->size = itemnext->size;
-            item->cov1l = itemnext->cov1l;
-            item->cov2l = itemnext->cov2l;
-            item->cov3l = itemnext->cov3l;
-            snprintf(item->path, sizeof(item->path), "%s", itemnext->path);
-
-            itemnext->data = data;
-            itemnext->size = size;
-            itemnext->cov1l = cov1l;
-            itemnext->cov2l = cov2l;
-            itemnext->cov3l = cov3l;
-            snprintf(itemnext->path, sizeof(itemnext->path), "%s", path);
+            TAILQ_REMOVE(&hfuzz->io.dynfileq, itemnext, pointers);
+            TAILQ_INSERT_BEFORE(item, itemnext, pointers);
         }
     }
 }

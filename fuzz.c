@@ -113,9 +113,8 @@ static void fuzz_addFileToFileQ(honggfuzz_t* hfuzz, const uint8_t* data, size_t 
     uint64_t cov2l, uint64_t cov3l, const char* path) {
     ATOMIC_SET(hfuzz->timing.lastCovUpdate, time(NULL));
 
-    struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t));
+    struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t) + len);
     dynfile->size = len;
-    dynfile->data = (uint8_t*)util_Malloc(len);
     dynfile->cov1l = cov1l;
     dynfile->cov2l = cov2l;
     dynfile->cov3l = cov3l;
