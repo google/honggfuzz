@@ -216,16 +216,16 @@ static void fuzz_perfFeedbackForMinimization(run_t* run) {
         softCntPc + softCntEdge + softCntCmp + cpuInstr + cpuBranch, run->origFileName);
 
     ATOMIC_SET(run->global->feedback.feedbackMap->pidFeedbackPc[run->fuzzNo], 0);
-    memset(run->global->feedback.feedbackMap->pidFeedbackPc, '\0',
-        sizeof(run->global->feedback.feedbackMap->pidFeedbackPc));
+    memset(run->global->feedback.feedbackMap->bbMapPc, '\0',
+        sizeof(run->global->feedback.feedbackMap->bbMapPc));
 
     ATOMIC_SET(run->global->feedback.feedbackMap->pidFeedbackEdge[run->fuzzNo], 0);
-    memset(run->global->feedback.feedbackMap->pidFeedbackEdge, '\0',
-        sizeof(run->global->feedback.feedbackMap->pidFeedbackEdge));
+    memset(run->global->feedback.feedbackMap->pcGuardMap, '\0',
+        sizeof(run->global->feedback.feedbackMap->pcGuardMap));
 
     ATOMIC_SET(run->global->feedback.feedbackMap->pidFeedbackCmp[run->fuzzNo], 0);
-    memset(run->global->feedback.feedbackMap->pidFeedbackCmp, '\0',
-        sizeof(run->global->feedback.feedbackMap->pidFeedbackCmp));
+    memset(run->global->feedback.feedbackMap->bbMapCmp, '\0',
+        sizeof(run->global->feedback.feedbackMap->bbMapCmp));
 
     memset(&run->global->linux.hwCnts, '\0', sizeof(run->global->linux.hwCnts));
 }
@@ -245,14 +245,13 @@ static void fuzz_perfFeedback(run_t* run) {
         return;
     }
 
-    uint64_t softCntPc = 0;
-    uint64_t softCntEdge = 0;
-    uint64_t softCntCmp = 0;
-    softCntPc = ATOMIC_GET(run->global->feedback.feedbackMap->pidFeedbackPc[run->fuzzNo]);
+    uint64_t softCntPc = ATOMIC_GET(run->global->feedback.feedbackMap->pidFeedbackPc[run->fuzzNo]);
     ATOMIC_CLEAR(run->global->feedback.feedbackMap->pidFeedbackPc[run->fuzzNo]);
-    softCntEdge = ATOMIC_GET(run->global->feedback.feedbackMap->pidFeedbackEdge[run->fuzzNo]);
+    uint64_t softCntEdge =
+        ATOMIC_GET(run->global->feedback.feedbackMap->pidFeedbackEdge[run->fuzzNo]);
     ATOMIC_CLEAR(run->global->feedback.feedbackMap->pidFeedbackEdge[run->fuzzNo]);
-    softCntCmp = ATOMIC_GET(run->global->feedback.feedbackMap->pidFeedbackCmp[run->fuzzNo]);
+    uint64_t softCntCmp =
+        ATOMIC_GET(run->global->feedback.feedbackMap->pidFeedbackCmp[run->fuzzNo]);
     ATOMIC_CLEAR(run->global->feedback.feedbackMap->pidFeedbackCmp[run->fuzzNo]);
 
     int64_t diff0 = run->global->linux.hwCnts.cpuInstrCnt - run->linux.hwCnts.cpuInstrCnt;

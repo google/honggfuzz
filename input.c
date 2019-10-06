@@ -436,8 +436,6 @@ bool input_postProcessFile(run_t* run) {
 bool input_prepareDynamicFileForMinimization(run_t* run) {
     MX_SCOPED_RWLOCK_READ(&run->global->io.dynfileq_mutex);
 
-    struct dynfile_t* current = NULL;
-
     if (run->global->io.dynfileqCnt == 0) {
         LOG_F("The dynamic file corpus is empty (fro minimization). This shouldn't happen");
     }
@@ -445,12 +443,16 @@ bool input_prepareDynamicFileForMinimization(run_t* run) {
     if (run->global->io.dynfileqCurrent == NULL) {
         run->global->io.dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
     }
-    current = run->global->io.dynfileqCurrent;
     run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
+    if (run->global->io.dynfileqCurrent == NULL) {
+        return false;
+    }
 
-    input_setSize(run, current->size);
-    memcpy(run->dynamicFile, current->data, current->size);
-    snprintf(run->origFileName, sizeof(run->origFileName), "%s", current->path);
+    input_setSize(run, run->global->io.dynfileqCurrent->size);
+    memcpy(run->dynamicFile, run->global->io.dynfileqCurrent->data,
+        run->global->io.dynfileqCurrent->size);
+    snprintf(
+        run->origFileName, sizeof(run->origFileName), "%s", run->global->io.dynfileqCurrent->path);
 
     return true;
 }
