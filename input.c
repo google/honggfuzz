@@ -434,7 +434,7 @@ bool input_postProcessFile(run_t* run) {
 }
 
 bool input_prepareDynamicFileForMinimization(run_t* run) {
-    MX_SCOPED_RWLOCK_READ(&run->global->io.dynfileq_mutex);
+    MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 
     if (run->global->io.dynfileqCnt == 0) {
         LOG_F("The dynamic file corpus is empty (fro minimization). This shouldn't happen");
