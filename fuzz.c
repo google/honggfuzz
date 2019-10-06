@@ -208,8 +208,8 @@ static void fuzz_perfFeedbackForMinimization(run_t* run) {
         ATOMIC_GET(run->global->feedback.feedbackMap->pidFeedbackEdge[run->fuzzNo]);
     uint64_t softCntCmp =
         ATOMIC_GET(run->global->feedback.feedbackMap->pidFeedbackCmp[run->fuzzNo]);
-    uint64_t cpuInstr = run->global->linux.hwCnts.cpuInstrCnt;
-    uint64_t cpuBranch = run->global->linux.hwCnts.cpuBranchCnt;
+    uint64_t cpuInstr = run->linux.hwCnts.cpuInstrCnt;
+    uint64_t cpuBranch = run->linux.hwCnts.cpuBranchCnt;
 
     LOG_I("Corpus Minimization, len:%zu (i,b,hw,ed,ip,cmp): %" PRIu64 "/%" PRIu64 "/%" PRIu64
           "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
