@@ -441,7 +441,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "exit_upon_crash", no_argument, NULL, 0x107 }, "Exit upon seeing the first crash (default: false)" },
         { { "socket_fuzzer", no_argument, NULL, 0x10B }, "Instrument external fuzzer via socket" },
         { { "netdriver", no_argument, NULL, 0x10C }, "Use netdriver (libhfnetdriver/). In most cases it will be autodetected through a binary signature" },
-        { { "only_printable", no_argument, NULL, 'o' }, "Only generate printable inputs" },
+        { { "only_printable", no_argument, NULL, 0x10D }, "Only generate printable inputs" },
 
 #if defined(_HF_ARCH_LINUX)
         { { "linux_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blacklist filter file (one entry per line)" },
@@ -478,7 +478,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     int opt_index = 0;
     for (;;) {
         int c = getopt_long(
-            argc, argv, "-?hQvVsuPxf:dqe:W:r:c:F:t:R:n:N:l:p:g:E:w:B:zMTSo", opts, &opt_index);
+            argc, argv, "-?hQvVsuPxf:dqe:W:r:c:F:t:R:n:N:l:p:g:E:w:B:zMTS", opts, &opt_index);
         if (c < 0) break;
 
         switch (c) {
@@ -547,7 +547,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             case 0x10C:
                 hfuzz->exe.netDriver = true;
                 break;
-            case 'o':
+            case 0x10D:
                 hfuzz->cfg.only_printable = true;
                 break;
             case 'z':
