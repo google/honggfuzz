@@ -504,14 +504,14 @@ void input_sortDynamicInput(honggfuzz_t* hfuzz) {
             if (itemnext == NULL) {
                 continue;
             }
-            if (item->cov1l >= itemnext->cov1l) {
+            if (itemnext->cov1l < item->cov1l) {
                 continue;
             }
-            if (item->cov1l == itemnext->cov1l && item->cov2l >= itemnext->cov2l) {
+            if (itemnext->cov1l == item->cov1l && itemnext->cov2l < item->cov2l) {
                 continue;
             }
-            if (item->cov1l == itemnext->cov1l && item->cov2l == itemnext->cov2l &&
-                item->cov3l >= itemnext->cov3l) {
+            if (itemnext->cov1l == item->cov1l && itemnext->cov2l == item->cov2l &&
+                itemnext->cov3l < item->cov3l) {
                 continue;
             }
 
