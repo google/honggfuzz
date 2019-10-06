@@ -492,6 +492,7 @@ bool input_feedbackMutateFile(run_t* run) {
     return true;
 }
 
+/* Yes, the bubblesort :) */
 void input_sortDynamicInput(honggfuzz_t* hfuzz) {
     LOG_I("Sorting %zu dynamic entries by coverage", hfuzz->io.dynfileqCnt);
 
