@@ -109,14 +109,16 @@ static bool fuzz_writeCovFile(const char* dir, const uint8_t* data, size_t len) 
     return true;
 }
 
-static void fuzz_addFileToFileQ(
-    honggfuzz_t* hfuzz, const uint8_t* data, size_t len, uint64_t covCnt, const char* path) {
+static void fuzz_addFileToFileQ(honggfuzz_t* hfuzz, const uint8_t* data, size_t len, uint64_t cov1l,
+    uint64_t cov2l, uint64_t cov3l, const char* path) {
     ATOMIC_SET(hfuzz->timing.lastCovUpdate, time(NULL));
 
     struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t));
     dynfile->size = len;
     dynfile->data = (uint8_t*)util_Malloc(len);
-    dynfile->covCnt = covCnt;
+    dynfile->cov1l = cov1l;
+    dynfile->cov2l = cov2l;
+    dynfile->cov3l = cov3l;
     snprintf(dynfile->path, sizeof(dynfile->path), "%s", path);
     memcpy(dynfile->data, data, len);
 
@@ -192,7 +194,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
     if (run->global->io.dynfileqCnt == 0) {
         const char* single_byte = run->global->cfg.only_printable ? " " : "\0";
         fuzz_addFileToFileQ(run->global, (const uint8_t*)single_byte, /* size= */ 1U,
-            /* covCnt= */ 0, /* path= */ "[DYNAMIC]");
+            /* cov1l/2l/3l= */ 0, 0, 0, /* path= */ "[DYNAMIC]");
     }
     snprintf(run->origFileName, sizeof(run->origFileName), "[DYNAMIC]");
     LOG_I("Entering phase 3/3: Dynamic Main (Feedback Driven Mode)");
@@ -213,16 +215,12 @@ static void fuzz_perfFeedbackForMinimization(run_t* run) {
         run->dynamicFileSz, cpuInstr, cpuBranch, run->linux.hwCnts.newBBCnt, softCntEdge, softCntPc,
         softCntCmp);
 
-    uint64_t totCov = softCntEdge + softCntPc;
-    if (totCov == 0) {
-        totCov = softCntCmp;
-    }
-    if (totCov == 0) {
-        totCov = cpuInstr + cpuBranch;
-    }
+    uint64_t cov1l = softCntEdge + softCntPc;
+    uint64_t cov2l = cpuInstr + cpuBranch;
+    uint64_t cov3l = softCntCmp;
 
     fuzz_addFileToFileQ(
-        run->global, run->dynamicFile, run->dynamicFileSz, totCov, run->origFileName);
+        run->global, run->dynamicFile, run->dynamicFileSz, cov1l, cov2l, cov3l, run->origFileName);
 
     ATOMIC_SET(run->global->feedback.feedbackMap->pidFeedbackPc[run->fuzzNo], 0);
     memset(run->global->feedback.feedbackMap->bbMapPc, '\0',
@@ -290,8 +288,8 @@ static void fuzz_perfFeedback(run_t* run) {
             run->global->linux.hwCnts.softCntPc, run->global->linux.hwCnts.softCntCmp);
 
         if (!run->global->cfg.minimize) {
-            fuzz_addFileToFileQ(
-                run->global, run->dynamicFile, run->dynamicFileSz, /* covCnt= */ 0, "[DYNAMIC]");
+            fuzz_addFileToFileQ(run->global, run->dynamicFile, run->dynamicFileSz,
+                /* cov1l/2l/3l= */ 0, 0, 0, "[DYNAMIC]");
         }
 
         if (run->global->socketFuzzer.enabled) {

@@ -448,8 +448,9 @@ bool input_prepareDynamicFileForMinimization(run_t* run) {
         return false;
     }
 
-    LOG_I("Testing file '%s' with coverage goodness of %" PRIu64,
-        run->global->io.dynfileqCurrent->path, run->global->io.dynfileqCurrent->covCnt);
+    LOG_I("Testing file '%s' with coverage goodness of %" PRIu64 "/%" PRIu64 "/%" PRIu64,
+        run->global->io.dynfileqCurrent->path, run->global->io.dynfileqCurrent->cov1l,
+        run->global->io.dynfileqCurrent->cov2l, run->global->io.dynfileqCurrent->cov3l);
 
     input_setSize(run, run->global->io.dynfileqCurrent->size);
     memcpy(run->dynamicFile, run->global->io.dynfileqCurrent->data,
@@ -503,24 +504,37 @@ void input_sortDynamicInput(honggfuzz_t* hfuzz) {
             if (itemnext == NULL) {
                 continue;
             }
-            if (item->covCnt >= itemnext->covCnt) {
+            if (item->cov1l >= itemnext->cov1l) {
+                continue;
+            }
+            if (item->cov1l == itemnext->cov1l && item->cov2l >= itemnext->cov2l) {
+                continue;
+            }
+            if (item->cov1l == itemnext->cov1l && item->cov2l == itemnext->cov2l &&
+                item->cov3l >= itemnext->cov3l) {
                 continue;
             }
 
             uint8_t* data = item->data;
             size_t size = item->size;
-            uint64_t covCnt = item->covCnt;
+            uint64_t cov1l = item->cov1l;
+            uint64_t cov2l = item->cov2l;
+            uint64_t cov3l = item->cov3l;
             char path[PATH_MAX];
             snprintf(path, sizeof(path), "%s", item->path);
 
             item->data = itemnext->data;
             item->size = itemnext->size;
-            item->covCnt = itemnext->covCnt;
+            item->cov1l = itemnext->cov1l;
+            item->cov2l = itemnext->cov2l;
+            item->cov3l = itemnext->cov3l;
             snprintf(item->path, sizeof(item->path), "%s", itemnext->path);
 
             itemnext->data = data;
             itemnext->size = size;
-            itemnext->covCnt = covCnt;
+            itemnext->cov1l = cov1l;
+            itemnext->cov2l = cov2l;
+            itemnext->cov3l = cov3l;
             snprintf(itemnext->path, sizeof(itemnext->path), "%s", path);
         }
     }
