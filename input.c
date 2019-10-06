@@ -448,6 +448,9 @@ bool input_prepareDynamicFileForMinimization(run_t* run) {
         return false;
     }
 
+    LOG_I("Testing file '%s' with coverage goodness of %" PRIu64,
+        run->global->io.dynfileqCurrent->path, run->global->io.dynfileqCurrent->covCnt);
+
     input_setSize(run, run->global->io.dynfileqCurrent->size);
     memcpy(run->dynamicFile, run->global->io.dynfileqCurrent->data,
         run->global->io.dynfileqCurrent->size);
@@ -487,4 +490,37 @@ bool input_feedbackMutateFile(run_t* run) {
 
     input_setSize(run, (size_t)sz);
     return true;
+}
+
+void input_sortDynamicInput(honggfuzz_t* hfuzz) {
+    LOG_I("Sorting %zu dynamic entries by coverage", hfuzz->io.dynfileqCnt);
+
+    for (size_t i = 0; i < hfuzz->io.dynfileqCnt; i++) {
+        struct dynfile_t* item = NULL;
+        TAILQ_FOREACH(item, &hfuzz->io.dynfileq, pointers) {
+            struct dynfile_t* itemnext = TAILQ_NEXT(item, pointers);
+            if (itemnext == NULL) {
+                continue;
+            }
+            if (item->covCnt >= itemnext->covCnt) {
+                continue;
+            }
+
+            uint8_t* data = item->data;
+            size_t size = item->size;
+            uint64_t covCnt = item->covCnt;
+            char path[PATH_MAX];
+            snprintf(path, sizeof(path), "%s", item->path);
+
+            item->data = itemnext->data;
+            item->size = itemnext->size;
+            item->covCnt = itemnext->covCnt;
+            snprintf(item->path, sizeof(item->path), "%s", itemnext->path);
+
+            itemnext->data = data;
+            itemnext->size = size;
+            itemnext->covCnt = covCnt;
+            snprintf(itemnext->path, sizeof(itemnext->path), "%s", path);
+        }
+    }
 }

@@ -180,6 +180,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
 
     if (run->global->cfg.minimize) {
         LOG_I("Entering phase 3/3: Corpus Minimization");
+        input_sortDynamicInput(run->global);
         ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_MINIMIZE);
         return;
     }
@@ -212,8 +213,16 @@ static void fuzz_perfFeedbackForMinimization(run_t* run) {
         run->dynamicFileSz, cpuInstr, cpuBranch, run->linux.hwCnts.newBBCnt, softCntEdge, softCntPc,
         softCntCmp);
 
-    fuzz_addFileToFileQ(run->global, run->dynamicFile, run->dynamicFileSz,
-        softCntPc + softCntEdge + softCntCmp + cpuInstr + cpuBranch, run->origFileName);
+    uint64_t totCov = softCntEdge + softCntPc;
+    if (totCov == 0) {
+        totCov = softCntCmp;
+    }
+    if (totCov == 0) {
+        totCov = cpuInstr + cpuBranch;
+    }
+
+    fuzz_addFileToFileQ(
+        run->global, run->dynamicFile, run->dynamicFileSz, totCov, run->origFileName);
 
     ATOMIC_SET(run->global->feedback.feedbackMap->pidFeedbackPc[run->fuzzNo], 0);
     memset(run->global->feedback.feedbackMap->bbMapPc, '\0',
