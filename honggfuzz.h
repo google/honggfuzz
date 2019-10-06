@@ -192,6 +192,7 @@ typedef struct {
     } threads;
     struct {
         const char* inputDir;
+        const char* outputDir;
         DIR* inputDirPtr;
         size_t fileCnt;
         const char* fileExtn;
@@ -199,7 +200,6 @@ typedef struct {
         size_t newUnitsAdded;
         const char* workDir;
         const char* crashDir;
-        const char* covDirAll;
         const char* covDirNew;
         bool saveUnique;
         size_t dynfileqCnt;

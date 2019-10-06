@@ -248,6 +248,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .io =
             {
                 .inputDir = NULL,
+                .outputDir = NULL,
                 .inputDirPtr = NULL,
                 .fileCnt = 0,
                 .fileCntDone = false,
@@ -255,7 +256,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .fileExtn = "fuzz",
                 .workDir = NULL,
                 .crashDir = NULL,
-                .covDirAll = NULL,
                 .covDirNew = NULL,
                 .saveUnique = true,
                 .dynfileqCnt = 0U,
@@ -398,9 +398,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     struct custom_option custom_opts[] = {
         { { "help", no_argument, NULL, 'h' }, "Help plz.." },
         { { "input", required_argument, NULL, 'f' }, "Path to a directory containing initial file corpus" },
+        { { "output", required_argument, NULL, 0x601 }, "Output data (dynamic coverage corpus, or the minimized coverage corpus) is written to this directory (default: input directory is used)" },
         { { "persistent", no_argument, NULL, 'P' }, "Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code). This will be auto-detected!!!" },
         { { "instrument", no_argument, NULL, 'z' }, "*DEFAULT-MODE-BY-DEFAULT* Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)" },
-        { { "minimize", no_argument, NULL, 'M' }, "Minimize the input corpus. It will most likely delete some corpus files!" },
+        { { "minimize", no_argument, NULL, 'M' }, "Minimize the input corpus. It will most likely delete some input corpus files if no --output is used!" },
         { { "noinst", no_argument, NULL, 'x' }, "Static mode only, disable any instrumentation (hw/sw) feedback" },
         { { "keep_output", no_argument, NULL, 'Q' }, "Don't close children's stdin, stdout, stderr; can be noisy" },
         { { "timeout", required_argument, NULL, 't' }, "Timeout in seconds (default: 10)" },
@@ -415,7 +416,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "extension", required_argument, NULL, 'e' }, "Input file extension (e.g. 'swf'), (default: 'fuzz')" },
         { { "workspace", required_argument, NULL, 'W' }, "Workspace directory to save crashes & runtime files (default: '.')" },
         { { "crashdir", required_argument, NULL, 0x600 }, "Directory where crashes are saved to (default: workspace directory)" },
-        { { "covdir_all", required_argument, NULL, 0x601 }, "Coverage is written to a separate directory (default: input directory)" },
+        { { "covdir_all", required_argument, NULL, 0x601 }, "** DEPRECATED ** use --output" },
         { { "covdir_new", required_argument, NULL, 0x602 }, "New coverage (beyond the dry-run fuzzing phase) is written to this separate directory" },
         { { "dict", required_argument, NULL, 'w' }, "Dictionary file. Format:http://llvm.org/docs/LibFuzzer.html#dictionaries" },
         { { "stackhash_bl", required_argument, NULL, 'B' }, "Stackhashes blacklist file (one entry per line)" },
@@ -487,9 +488,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 'f':
                 hfuzz->io.inputDir = optarg;
-                if (hfuzz->io.covDirAll == NULL) {
-                    hfuzz->io.covDirAll = optarg;
-                }
                 break;
             case 'x':
                 hfuzz->feedback.dynFileMethod = _HF_DYNFILE_NONE;
@@ -528,7 +526,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->io.crashDir = optarg;
                 break;
             case 0x601:
-                hfuzz->io.covDirAll = optarg;
+                hfuzz->io.outputDir = optarg;
                 break;
             case 0x602:
                 hfuzz->io.covDirNew = optarg;

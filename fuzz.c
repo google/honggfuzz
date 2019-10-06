@@ -135,8 +135,9 @@ static void fuzz_addFileToFileQ(honggfuzz_t* hfuzz, const uint8_t* data, size_t 
         return;
     }
 
-    if (!fuzz_writeCovFile(hfuzz->io.covDirAll, data, len)) {
-        LOG_E("Couldn't save the coverage data to '%s'", hfuzz->io.covDirAll);
+    const char* outDir = hfuzz->io.outputDir ? hfuzz->io.outputDir : hfuzz->io.inputDir;
+    if (!fuzz_writeCovFile(outDir, data, len)) {
+        LOG_E("Couldn't save the coverage data to '%s'", hfuzz->io.outputDir);
     }
 
     /* No need to add files to the new coverage dir, if it's not the main phase */
@@ -210,7 +211,7 @@ static void fuzz_perfFeedbackForMinimization(run_t* run) {
     uint64_t cpuInstr = run->global->linux.hwCnts.cpuInstrCnt;
     uint64_t cpuBranch = run->global->linux.hwCnts.cpuBranchCnt;
 
-    LOG_I("Minimization Cov, Size:%zu (i,b,hw,ed,ip,cmp): %" PRIu64 "/%" PRIu64 "/%" PRIu64
+    LOG_I("Corpus Minimization, len:%zu (i,b,hw,ed,ip,cmp): %" PRIu64 "/%" PRIu64 "/%" PRIu64
           "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
         run->dynamicFileSz, cpuInstr, cpuBranch, run->linux.hwCnts.newBBCnt, softCntEdge, softCntPc,
         softCntCmp);
@@ -278,16 +279,25 @@ static void fuzz_perfFeedback(run_t* run) {
         run->global->linux.hwCnts.softCntEdge += softCntEdge;
         run->global->linux.hwCnts.softCntCmp += softCntCmp;
 
-        LOG_I("Size:%zu (i,b,hw,ed,ip,cmp): %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
-              "/%" PRIu64 "/%" PRIu64 ", Tot:%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
-              "/%" PRIu64 "/%" PRIu64,
-            run->dynamicFileSz, run->linux.hwCnts.cpuInstrCnt, run->linux.hwCnts.cpuBranchCnt,
-            run->linux.hwCnts.newBBCnt, softCntEdge, softCntPc, softCntCmp,
-            run->global->linux.hwCnts.cpuInstrCnt, run->global->linux.hwCnts.cpuBranchCnt,
-            run->global->linux.hwCnts.bbCnt, run->global->linux.hwCnts.softCntEdge,
-            run->global->linux.hwCnts.softCntPc, run->global->linux.hwCnts.softCntCmp);
+        if (run->global->cfg.minimize) {
+            if (run->global->io.outputDir) {
+                LOG_I("Saving interesting input '%s' to the '%s' directory", run->origFileName,
+                    run->global->io.outputDir);
+                if (!fuzz_writeCovFile(
+                        run->global->io.outputDir, run->dynamicFile, run->dynamicFileSz)) {
+                    LOG_E("Couldn't save the coverage data to '%s'", run->global->io.outputDir);
+                }
+            }
+        } else {
+            LOG_I("Size:%zu (i,b,hw,ed,ip,cmp): %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
+                  "/%" PRIu64 "/%" PRIu64 ", Tot:%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
+                  "/%" PRIu64 "/%" PRIu64,
+                run->dynamicFileSz, run->linux.hwCnts.cpuInstrCnt, run->linux.hwCnts.cpuBranchCnt,
+                run->linux.hwCnts.newBBCnt, softCntEdge, softCntPc, softCntCmp,
+                run->global->linux.hwCnts.cpuInstrCnt, run->global->linux.hwCnts.cpuBranchCnt,
+                run->global->linux.hwCnts.bbCnt, run->global->linux.hwCnts.softCntEdge,
+                run->global->linux.hwCnts.softCntPc, run->global->linux.hwCnts.softCntCmp);
 
-        if (!run->global->cfg.minimize) {
             fuzz_addFileToFileQ(run->global, run->dynamicFile, run->dynamicFileSz,
                 /* cov1l/2l/3l= */ 0, 0, 0, "[DYNAMIC]");
         }
@@ -297,8 +307,10 @@ static void fuzz_perfFeedback(run_t* run) {
             fuzz_notifySocketFuzzerNewCov(run->global);
         }
     } else if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MINIMIZE) {
-        LOG_I("Removing uninteresting file '%s' from the input corpus", run->origFileName);
-        input_removeStaticFile(run->origFileName);
+        if (run->global->io.outputDir == NULL) {
+            LOG_I("Removing uninteresting file '%s' from the input corpus", run->origFileName);
+            input_removeStaticFile(run->origFileName);
+        }
     }
 }
 
