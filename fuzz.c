@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <libgen.h>
+#include <math.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stddef.h>
@@ -129,7 +130,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
     if (run->global->io.dynfileqCnt == 0) {
         const char* single_byte = run->global->cfg.only_printable ? " " : "\0";
         input_addDynamicInput(run->global, (const uint8_t*)single_byte, /* size= */ 1U,
-            /* cov */ (uint64_t[3]){0, 0, 0}, /* path= */ "[DYNAMIC]");
+            /* cov */ (uint64_t[4]){0, 0, 0, 0}, /* path= */ "[DYNAMIC]");
     }
     snprintf(run->origFileName, sizeof(run->origFileName), "[DYNAMIC]");
     LOG_I("Entering phase 3/3: Dynamic Main (Feedback Driven Mode)");
@@ -150,10 +151,11 @@ static void fuzz_perfFeedbackForMinimization(run_t* run) {
         run->dynamicFileSz, cpuInstr, cpuBranch, run->linux.hwCnts.newBBCnt, softCntEdge, softCntPc,
         softCntCmp);
 
-    uint64_t cov[3] = {
+    uint64_t cov[4] = {
         [0] = softCntEdge + softCntPc,
-        [1] = cpuInstr + cpuBranch,
-        [2] = softCntCmp,
+        [1] = 64U - (uint64_t)log2l(run->dynamicFileSz), /* The smaller input size, the better */
+        [2] = cpuInstr + cpuBranch,
+        [3] = softCntCmp,
     };
     input_addDynamicInput(
         run->global, run->dynamicFile, run->dynamicFileSz, cov, run->origFileName);

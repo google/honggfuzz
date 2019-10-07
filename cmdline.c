@@ -398,10 +398,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     struct custom_option custom_opts[] = {
         { { "help", no_argument, NULL, 'h' }, "Help plz.." },
         { { "input", required_argument, NULL, 'f' }, "Path to a directory containing initial file corpus" },
-        { { "output", required_argument, NULL, 0x601 }, "Output data (dynamic coverage corpus, or the minimized coverage corpus) is written to this directory (default: input directory is used)" },
+        { { "output", required_argument, NULL, 0x601 }, "Output data (new dynamic coverage corpus, or the minimized coverage corpus) is written to this directory (default: input directory is used)" },
         { { "persistent", no_argument, NULL, 'P' }, "Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code). This will be auto-detected!!!" },
         { { "instrument", no_argument, NULL, 'z' }, "*DEFAULT-MODE-BY-DEFAULT* Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)" },
-        { { "minimize", no_argument, NULL, 'M' }, "Minimize the input corpus. It will most likely delete some corpus files (from the input directory) if no --output is used!" },
+        { { "minimize", no_argument, NULL, 'M' }, "Minimize the input corpus. It will most likely delete some corpus files (from the --input directory) if no --output is used!" },
         { { "noinst", no_argument, NULL, 'x' }, "Static mode only, disable any instrumentation (hw/sw) feedback" },
         { { "keep_output", no_argument, NULL, 'Q' }, "Don't close children's stdin, stdout, stderr; can be noisy" },
         { { "timeout", required_argument, NULL, 't' }, "Timeout in seconds (default: 10)" },
@@ -487,7 +487,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 cmdlineUsage(argv[0], custom_opts);
                 break;
             case 'f':
-            case 'i':
+            case 'i': /* Synonym for -f, stands for -i(input) */
                 hfuzz->io.inputDir = optarg;
                 break;
             case 'x':
@@ -543,7 +543,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 0x10B:
                 hfuzz->socketFuzzer.enabled = true;
-                hfuzz->timing.tmOut = 0;  // Disable process timeout checks
+                hfuzz->timing.tmOut = 0; /* Disable process timeout checks */
                 break;
             case 0x10C:
                 hfuzz->exe.netDriver = true;

@@ -331,16 +331,14 @@ bool input_writeCovFile(const char* dir, const uint8_t* data, size_t len) {
 }
 
 void input_addDynamicInput(
-    honggfuzz_t* hfuzz, const uint8_t* data, size_t len, uint64_t cov[3], const char* path) {
+    honggfuzz_t* hfuzz, const uint8_t* data, size_t len, uint64_t cov[4], const char* path) {
     ATOMIC_SET(hfuzz->timing.lastCovUpdate, time(NULL));
 
     struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t) + len);
     dynfile->size = len;
-    dynfile->cov[0] = cov[0];
-    dynfile->cov[1] = cov[1];
-    dynfile->cov[2] = cov[2];
-    snprintf(dynfile->path, sizeof(dynfile->path), "%s", path);
+    memcpy(dynfile->cov, cov, sizeof(dynfile->cov));
     memcpy(dynfile->data, data, len);
+    snprintf(dynfile->path, sizeof(dynfile->path), "%s", path);
 
     MX_SCOPED_RWLOCK_WRITE(&hfuzz->io.dynfileq_mutex);
     TAILQ_INSERT_TAIL(&hfuzz->io.dynfileq, dynfile, pointers);
@@ -575,6 +573,10 @@ void input_sortDynamicInput(honggfuzz_t* hfuzz) {
             }
             if (itemnext->cov[0] == item->cov[0] && itemnext->cov[1] == item->cov[1] &&
                 itemnext->cov[2] < item->cov[2]) {
+                continue;
+            }
+            if (itemnext->cov[0] == item->cov[0] && itemnext->cov[1] == item->cov[1] &&
+                itemnext->cov[2] == item->cov[2] && itemnext->cov[3] < item->cov[3]) {
                 continue;
             }
 
