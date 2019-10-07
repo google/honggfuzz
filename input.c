@@ -458,7 +458,7 @@ bool input_prepareExternalFile(run_t* run) {
     return true;
 }
 
-bool input_postProcessFile(run_t* run) {
+bool input_postProcessFile(run_t* run, const char* cmd) {
     int fd =
         files_writeBufToTmpFile(run->global->io.workDir, run->dynamicFile, run->dynamicFileSz, 0);
     if (fd == -1) {
@@ -472,12 +472,12 @@ bool input_postProcessFile(run_t* run) {
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "/dev/fd/%d", fd);
 
-    const char* const argv[] = {run->global->exe.postExternalCommand, fname, NULL};
+    const char* const argv[] = {cmd, fname, NULL};
     if (subproc_System(run, argv) != 0) {
-        LOG_E("Subprocess '%s' returned abnormally", run->global->exe.postExternalCommand);
+        LOG_E("Subprocess '%s' returned abnormally", cmd);
         return false;
     }
-    LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
+    LOG_D("Subporcess '%s' finished with success", cmd);
 
     input_setSize(run, run->global->mutate.maxFileSz);
     ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->mutate.maxFileSz, 0);
@@ -517,38 +517,6 @@ bool input_prepareDynamicFileForMinimization(run_t* run) {
     snprintf(
         run->origFileName, sizeof(run->origFileName), "%s", run->global->io.dynfileqCurrent->path);
 
-    return true;
-}
-
-bool input_feedbackMutateFile(run_t* run) {
-    int fd =
-        files_writeBufToTmpFile(run->global->io.workDir, run->dynamicFile, run->dynamicFileSz, 0);
-    if (fd == -1) {
-        LOG_E("Couldn't write input file to a temporary buffer");
-        return false;
-    }
-    defer {
-        close(fd);
-    };
-
-    char fname[PATH_MAX];
-    snprintf(fname, sizeof(fname), "/dev/fd/%d", fd);
-
-    const char* const argv[] = {run->global->exe.feedbackMutateCommand, fname, NULL};
-    if (subproc_System(run, argv) != 0) {
-        LOG_E("Subprocess '%s' returned abnormally", run->global->exe.feedbackMutateCommand);
-        return false;
-    }
-    LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
-
-    input_setSize(run, run->global->mutate.maxFileSz);
-    ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->mutate.maxFileSz, 0);
-    if (sz == -1) {
-        LOG_E("Couldn't read file from fd=%d", fd);
-        return false;
-    }
-
-    input_setSize(run, (size_t)sz);
     return true;
 }
 

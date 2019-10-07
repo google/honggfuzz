@@ -372,13 +372,15 @@ static bool fuzz_fetchInput(run_t* run) {
         }
     }
 
-    if (run->global->exe.postExternalCommand && !input_postProcessFile(run)) {
-        LOG_E("input_postProcessFile() failed");
+    if (run->global->exe.postExternalCommand &&
+        !input_postProcessFile(run, run->global->exe.postExternalCommand)) {
+        LOG_E("input_postProcessFile('%s') failed", run->global->exe.postExternalCommand);
         return false;
     }
 
-    if (run->global->exe.feedbackMutateCommand && !input_feedbackMutateFile(run)) {
-        LOG_E("input_feedbackMutateFile() failed");
+    if (run->global->exe.feedbackMutateCommand &&
+        !input_postProcessFile(run, run->global->exe.feedbackMutateCommand)) {
+        LOG_E("input_postProcessFile('%s') failed", run->global->exe.feedbackMutateCommand);
         return false;
     }
 
