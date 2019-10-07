@@ -46,7 +46,7 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
                    -funroll-loops \
                    -D_FILE_OFFSET_BITS=64
     ARCH_LDFLAGS := -L/usr/local/include \
-                    -pthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt -ldl
+                    -pthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt -ldl -lm
     ARCH_SRCS := $(sort $(wildcard linux/*.c))
     LIBS_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 
@@ -145,9 +145,9 @@ else
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
                    -funroll-loops
 ifeq ($(OS),OpenBSD)
-    ARCH_LDFLAGS := -L/usr/local/lib -pthread
+    ARCH_LDFLAGS := -L/usr/local/lib -pthread -lm
 else
-    ARCH_LDFLAGS := -L/usr/local/lib -pthread -lrt
+    ARCH_LDFLAGS := -L/usr/local/lib -pthread -lrt -lm
     # OS OpenBSD
 endif
     # OS Posix
