@@ -1,4 +1,4 @@
-# Fuzzing OpenSSL #
+# Fuzzing libjpeg(-turbo) #
 
 **Requirements**
 
@@ -6,7 +6,7 @@
   * clang-5.0, or newer
   * libjpeg9, or libjpeg-turbo
 
-**Preparation (for OpenSSL 1.1.0/master)**
+**Preparation**
 
 1. Compile honggfuzz
 2. Unpack/Clone libjpeg(-turbo)
