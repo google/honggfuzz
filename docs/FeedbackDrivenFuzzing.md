@@ -73,7 +73,7 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len) {
 ```
 $ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang -c fuzzedlib.c -o fuzzedlib.o
 $ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang test.c fuzzedlib.o -o test
-$ [honggfuzz_dir]/honggfuzz -P -f INPUT.corpus -- ./test
+$ [honggfuzz_dir]/honggfuzz -i input_corpus -P -- ./test
 ```
 
 `LLVMFuzzerInitialize(int *argc, char **argv)` is supported as well
@@ -101,16 +101,16 @@ int main(void) {
 ```
 $ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang -c fuzzedlib.c -o fuzzedlib.o
 $ [honggfuzz_dir]/honggfuzz/hfuzz_cc/hfuzz-clang test.c fuzzedlib.o -o test
-$ [honggfuzz_dir]/honggfuzz -P -f INPUT.corpus -- ./test
+$ [honggfuzz_dir]/honggfuzz -i input_corpus -P -- ./test
 ```
 
 Example:
 ```
-$ [honggfuzz_dir]/honggfuzz -P -f IN.server/ -- ./persistent.server.openssl.1.0.2i.asan
+$ [honggfuzz_dir]/honggfuzz -i input_corpus -P -- ./persistent.server.openssl.1.0.2i.asan
 ------------------------------[ honggfuzz v0.8 ]------------------------------
       Iterations : 3,275,169 [3.28M]
         Run Time : 2 hrs 17 min 16 sec (since: 2016-09-27 07:30:04)
-       Input Dir : 'IN.server/'
+       Input Dir : 'input_corpus'
       Fuzzed Cmd : './persistent.server.openssl.1.0.2i.asan'
  Fuzzing Threads : 2, CPUs: 8, CPU: 759.0% (94.9%/CPU)
    Speed (Round) : 86/sec (avg: 397)
@@ -130,11 +130,11 @@ PS. You can also use a non-persistent mode here (without the __-P__ flag), in wh
 This mode will take into consideration pairs (tuples) of jumps, recording unique from-to jump pairs. The data is taken from the Intel BTS CPU registers.
 
 ```
-$ [honggfuzz_dir]/honggfuzz --linux_perf_bts_edge -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
+$ [honggfuzz_dir]/honggfuzz --linux_perf_bts_edge -i input_corpus -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 1
 Start time: 2016-02-16 18:37:08 (1 seconds elapsed)
-Input file/dir: 'IN/'
+Input file/dir: 'input_corpus'
 Fuzzed cmd: '/usr/bin/xmllint -format ___FILE___'
 Fuzzing threads: 2
 Execs per second: 1 (avg: 1)
@@ -152,7 +152,7 @@ Coverage (max):
 This mode will utilize Interl's PT (Process Trace) subsystem, which should be way faster than BTS (Branch Trace Store), but will currently produce less precise results.
 
 ```
-$ [honggfuzz_dir]/honggfuzz --linux_perf_ipt_block -f IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
+$ [honggfuzz_dir]/honggfuzz --linux_perf_ipt_block -i IN.corpus/ -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 0
 Start time: 2016-02-16 18:38:45 (0 seconds elapsed)
@@ -173,11 +173,11 @@ Coverage (max):
 This mode tries to maximize the number of instructions taken during each process iteration. The counters will be taken from the Linux perf subsystems. Intel, AMD and even other CPU architectures are supported for this mode.
 
 ```
-$ [honggfuzz_dir]/honggfuzz --linux_perf_instr -f IN.corpus -- /usr/bin/xmllint -format ___FILE___
+$ [honggfuzz_dir]/honggfuzz --linux_perf_instr -i input_corpus -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 2776
 Start time: 2016-02-16 18:40:51 (3 seconds elapsed)
-Input file/dir: 'CURRENT_BEST'
+Input file/dir: 'input_corpus'
 Fuzzed cmd: '/usr/bin/xmllint -format ___FILE___'
 Fuzzing threads: 2
 Execs per second: 922 (avg: 925)
@@ -198,11 +198,11 @@ Coverage (max):
 As above, it will try to maximize the number of branches taken by CPU on behalf of the fuzzed process (here: djpeg.static) while performing each fuzzing iteration. Intel, AMD and even other CPU architectures are supported for this mode.
 
 ```
-$ [honggfuzz_dir]/honggfuzz --linux_perf_branch -f IN/ -F 2500 -- /usr/bin/xmllint -format ___FILE___
+$ [honggfuzz_dir]/honggfuzz --linux_perf_branch -i input_corpus -F 2500 -- /usr/bin/xmllint -format ___FILE___
 ============================== STAT ==============================
 Iterations: 0
 Start time: 2016-02-16 18:39:41 (0 seconds elapsed)
-Input file/dir: 'IN/'
+Input file/dir: 'input_corpus'
 Fuzzed cmd: '/usr/bin/xmllint -format ___FILE___'
 Fuzzing threads: 2
 Execs per second: 0 (avg: 0)

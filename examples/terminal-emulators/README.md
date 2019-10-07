@@ -54,7 +54,7 @@ $ echo A >IN/1
 ## Step 4: Launch it! ##
 
 ```
-$ /home/jagger/src/honggfuzz/honggfuzz -z -P -f IN/ -E LD_PRELOAD=/home/jagger/src/honggfuzz/examples/terminal-emulators/libclose.so -- xterm-327/xterm -e /home/jagger/src/honggfuzz/examples/terminal-emulators/terminal-test
+$ /home/jagger/src/honggfuzz/honggfuzz -z -P -i IN/ -E LD_PRELOAD=/home/jagger/src/honggfuzz/examples/terminal-emulators/libclose.so -- xterm-327/xterm -e /home/jagger/src/honggfuzz/examples/terminal-emulators/terminal-test
 ```
 
 Typical output:

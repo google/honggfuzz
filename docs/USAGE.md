@@ -53,38 +53,48 @@ Usage: ./honggfuzz [options] -- path_to_command [args]
 Options:
  --help|-h 
 	Help plz..
- --input|-f VALUE
+ --input|-i VALUE
 	Path to a directory containing initial file corpus
+ --output VALUE
+	Output data (new dynamic coverage corpus, or the minimized coverage corpus) is written to this directory (default: input directory is used)
  --persistent|-P 
-	Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code)
+	Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code). This will be auto-detected!!!
  --instrument|-z 
 	*DEFAULT-MODE-BY-DEFAULT* Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)
+ --minimize|-M 
+	Minimize the input corpus. It will most likely delete some corpus files (from the --input directory) if no --output is used!
  --noinst|-x 
-	Static mode (dry-mode), disable any instrumentation (hw/sw)
+	Static mode only, disable any instrumentation (hw/sw) feedback
  --keep_output|-Q 
 	Don't close children's stdin, stdout, stderr; can be noisy
  --timeout|-t VALUE
-	Timeout in seconds (default: '10')
+	Timeout in seconds (default: 10)
  --threads|-n VALUE
 	Number of concurrent fuzzing threads (default: number of CPUs / 2)
  --stdin_input|-s 
 	Provide fuzzing input on STDIN, instead of ___FILE___
  --mutations_per_run|-r VALUE
-	Maximal number of mutations per one run (default: '6')
+	Maximal number of mutations per one run (default: 6)
  --logfile|-l VALUE
 	Log file
  --verbose|-v 
 	Disable ANSI console; use simple log output
  --verifier|-V 
 	Enable crashes verifier
- --debug|-d
+ --debug|-d 
 	Show debug messages (level >= 4)
+ --quiet|-q 
+	Show only warnings and more serious messages (level <= 1)
  --extension|-e VALUE
 	Input file extension (e.g. 'swf'), (default: 'fuzz')
  --workspace|-W VALUE
 	Workspace directory to save crashes & runtime files (default: '.')
- --covdir VALUE
-	New coverage is written to a separate directory (default: use the input directory)
+ --crashdir VALUE
+	Directory where crashes are saved to (default: workspace directory)
+ --covdir_all VALUE
+	** DEPRECATED ** use --output
+ --covdir_new VALUE
+	New coverage (beyond the dry-run fuzzing phase) is written to this separate directory
  --dict|-w VALUE
 	Dictionary file. Format:http://llvm.org/docs/LibFuzzer.html#dictionaries
  --stackhash_bl|-B VALUE
@@ -93,20 +103,24 @@ Options:
 	External command producing fuzz files (instead of internal mutators)
  --pprocess_cmd VALUE
 	External command postprocessing files produced by internal mutators
+ --ffmutate_cmd VALUE
+	External command mutating files which have effective coverage feedback
  --run_time VALUE
-	Number of seconds this fuzzing session will last (default: '0' [no limit])
+	Number of seconds this fuzzing session will last (default: 0 [no limit])
  --iterations|-N VALUE
-	Number of fuzzing iterations (default: '0' [no limit])
+	Number of fuzzing iterations (default: 0 [no limit])
  --rlimit_as VALUE
-	Per process RLIMIT_AS in MiB (default: '0' [no limit])
+	Per process RLIMIT_AS in MiB (default: 0 [no limit])
  --rlimit_rss VALUE
-	Per process RLIMIT_RSS in MiB (default: '0' [no limit])
+	Per process RLIMIT_RSS in MiB (default: 0 [no limit]). It will also set *SAN's soft_rss_limit_mb if used
  --rlimit_data VALUE
-	Per process RLIMIT_DATA in MiB (default: '0' [no limit])
+	Per process RLIMIT_DATA in MiB (default: 0 [no limit])
+ --rlimit_core VALUE
+	Per process RLIMIT_CORE in MiB (default: 0 [no cores are produced])
  --report|-R VALUE
-	Write report to this file (default: 'HONGGFUZZ.REPORT.TXT')
+	Write report to this file (default: '<workdir>/HONGGFUZZ.REPORT.TXT')
  --max_file_size|-F VALUE
-	Maximal size of files processed by the fuzzer in bytes (default: '1048576')
+	Maximal size of files processed by the fuzzer in bytes (default: 134217728 = 128MB)
  --clear_env 
 	Clear all environment variables before executing the binary
  --env|-E VALUE
@@ -118,21 +132,23 @@ Options:
  --sanitizers|-S 
 	Enable sanitizers settings (default: false)
  --monitor_sigabrt VALUE
-	Monitor SIGABRT (default: 'false for Android - 'true for other platforms)
+	Monitor SIGABRT (default: false for Android, true for other platforms)
  --no_fb_timeout VALUE
-	Skip feedback if the process has timeouted (default: 'false')
+	Skip feedback if the process has timeouted (default: false)
  --exit_upon_crash 
-	Exit upon seeing the first crash (default: 'false')
+	Exit upon seeing the first crash (default: false)
+ --socket_fuzzer 
+	Instrument external fuzzer via socket
+ --netdriver 
+	Use netdriver (libhfnetdriver/). In most cases it will be autodetected through a binary signature
+ --only_printable 
+	Only generate printable inputs
  --linux_symbols_bl VALUE
 	Symbols blacklist filter file (one entry per line)
  --linux_symbols_wl VALUE
 	Symbols whitelist filter file (one entry per line)
- --linux_pid|-p VALUE
-	Attach to a pid (and its thread group)
- --linux_file_pid VALUE
-	Attach to pid (and its thread group) read from file
  --linux_addr_low_limit VALUE
-	Address limit (from si.si_addr) below which crashes are not reported, (default: '0')
+	Address limit (from si.si_addr) below which crashes are not reported, (default: 0)
  --linux_keep_aslr 
 	Don't disable ASLR randomization, might be useful with MSAN
  --linux_perf_ignore_above VALUE
@@ -153,28 +169,18 @@ Options:
 	Use Linux PID namespace isolation
  --linux_ns_ipc 
 	Use Linux IPC namespace isolation
- --netbsd_symbols_bl VALUE
-	Symbols blacklist filter file (one entry per line)
- --netbsd_symbols_wl VALUE
-	Symbols whitelist filter file (one entry per line)
- --netbsd_pid|-p VALUE
-	Attach to a pid (and its thread group)
- --netbsd_file_pid VALUE
-	Attach to pid (and its thread group) read from file
- --netbsd_addr_low_limit VALUE
-	Address limit (from si.si_addr) below which crashes are not reported, (default: '0')
 
 Examples:
- Run the binary over a mutated file chosen from the directory. Disable fuzzing feedback (dry/static mode)
-  honggfuzz -f input_dir -x -- /usr/bin/djpeg ___FILE___
+ Run the binary over a mutated file chosen from the directory. Disable fuzzing feedback (static mode):
+  honggfuzz -i input_dir -x -- /usr/bin/djpeg ___FILE___
  As above, provide input over STDIN:
-  honggfuzz -f input_dir -x -s -- /usr/bin/djpeg
- Use compile-time instrumentation (libhfuzz/instrument.c):
-  honggfuzz -f input_dir -- /usr/bin/djpeg ___FILE___
- Use persistent mode (libhfuzz/persistent.c) w/o instrumentation:
-  honggfuzz -f input_dir -P -x -- /usr/bin/djpeg_persistent_mode
- Use persistent mode (libhfuzz/persistent.c) and compile-time instrumentation:
-  honggfuzz -f input_dir -P -- /usr/bin/djpeg_persistent_mode
+  honggfuzz -i input_dir -x -s -- /usr/bin/djpeg
+ Use compile-time instrumentation (-fsanitize-coverage=trace-pc-guard,...):
+  honggfuzz -i input_dir -- /usr/bin/djpeg ___FILE___
+ Use persistent mode w/o instrumentation:
+  honggfuzz -i input_dir -P -x -- /usr/bin/djpeg_persistent_mode
+ Use persistent mode and compile-time (-fsanitize-coverage=trace-pc-guard,...) instrumentation:
+  honggfuzz -i input_dir -P -- /usr/bin/djpeg_persistent_mode
  Run the binary with dynamically generate inputs, maximize total no. of instructions:
   honggfuzz --linux_perf_instr -- /usr/bin/djpeg ___FILE___
  As above, maximize total no. of branches:

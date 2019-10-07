@@ -29,5 +29,5 @@ $ ~/src/honggfuzz/hfuzz-cc/hfuzz-gcc -Wl,-z,muldefs -nodefaultlibs -I ~/src/hong
 **Fuzz it**
 
 ```shell
-$ ~/src/honggfuzz/honggfuzz -f IN/ -P -- ./resolver
+$ ~/src/honggfuzz/honggfuzz -i IN/ -P -- ./resolver
 ```

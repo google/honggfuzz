@@ -29,9 +29,7 @@ $ ./compile_and_install.asan.sh
 
 5. Copy custom configuration files (```httpd.conf.h1``` and ```httpd.conf.h2```) to ```/home/$USER/fuzz/apache/apache2/conf/``` (i.e. to your apache dist directory)
 
- ```
-$ cp httpd.conf.h1 httpd.conf.h2 /home/$USER/fuzz/apache/apache2/conf/
- ```
+ ```$ cp httpd.conf.h1 httpd.conf.h2 /home/$USER/fuzz/apache/apache2/conf/```
 
 6. Edit ```httpd.conf.h1``` and ```httpd.conf.h2```, so they contain valid configuration paths
 
@@ -39,12 +37,8 @@ $ cp httpd.conf.h1 httpd.conf.h2 /home/$USER/fuzz/apache/apache2/conf/
 
   * HTTP/1
 
- ```
-$ honggfuzz/honggfuzz -f corpus_http1 -w ./httpd.wordlist -- ./apache2/bin/httpd -DFOREGROUND -f  /home/$USER/fuzz/apache/apache2/conf/httpd.conf.h1
- ```
+ ```$ honggfuzz/honggfuzz -i corpus_http1 -w ./httpd.wordlist -- ./apache2/bin/httpd -DFOREGROUND -f  /home/$USER/fuzz/apache/apache2/conf/httpd.conf.h1```
 
   * HTTP/2
 
-```
-$ honggfuzz/honggfuzz -f corpus_http2 -w ./httpd.wordlist -- ./apache2/bin/httpd -DFOREGROUND -f /home/$USER/fuzz/apache/apache2/conf/httpd.conf.h2
-```
+```$ honggfuzz/honggfuzz -i corpus_http2 -w ./httpd.wordlist -- ./apache2/bin/httpd -DFOREGROUND -f /home/$USER/fuzz/apache/apache2/conf/httpd.conf.h2```

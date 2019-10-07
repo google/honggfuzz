@@ -46,8 +46,8 @@ $ /home/jagger/src/honggfuzz/examples/openssl/make.sh openssl-master address
 **Fuzzing**
 
 ```shell
-$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_server/ -P -- ./openssl-master.address.server
-$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_client/ -P -- ./openssl-master.address.client
-$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_x509/ -P -- ./openssl-master.address.x509
-$ /home/jagger/src/honggfuzz/honggfuzz -f corpus_privkey/ -P -- ./openssl-master.address.privkey
+$ /home/jagger/src/honggfuzz/honggfuzz -i corpus_server/ -P -- ./openssl-master.address.server
+$ /home/jagger/src/honggfuzz/honggfuzz -i corpus_client/ -P -- ./openssl-master.address.client
+$ /home/jagger/src/honggfuzz/honggfuzz -i corpus_x509/ -P -- ./openssl-master.address.x509
+$ /home/jagger/src/honggfuzz/honggfuzz -i corpus_privkey/ -P -- ./openssl-master.address.privkey
 ```

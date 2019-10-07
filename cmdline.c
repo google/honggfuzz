@@ -107,16 +107,16 @@ static void cmdlineHelp(const char* pname, struct custom_option* opts) {
     LOG_HELP(
         " Run the binary over a mutated file chosen from the directory. Disable fuzzing feedback "
         "(static mode):");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -x -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
+    LOG_HELP_BOLD("  " PROG_NAME " -i input_dir -x -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" As above, provide input over STDIN:");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -x -s -- /usr/bin/djpeg");
+    LOG_HELP_BOLD("  " PROG_NAME " -i input_dir -x -s -- /usr/bin/djpeg");
     LOG_HELP(" Use compile-time instrumentation (-fsanitize-coverage=trace-pc-guard,...):");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
+    LOG_HELP_BOLD("  " PROG_NAME " -i input_dir -- /usr/bin/djpeg " _HF_FILE_PLACEHOLDER);
     LOG_HELP(" Use persistent mode w/o instrumentation:");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -x -- /usr/bin/djpeg_persistent_mode");
+    LOG_HELP_BOLD("  " PROG_NAME " -i input_dir -P -x -- /usr/bin/djpeg_persistent_mode");
     LOG_HELP(" Use persistent mode and compile-time (-fsanitize-coverage=trace-pc-guard,...) "
              "instrumentation:");
-    LOG_HELP_BOLD("  " PROG_NAME " -f input_dir -P -- /usr/bin/djpeg_persistent_mode");
+    LOG_HELP_BOLD("  " PROG_NAME " -i input_dir -P -- /usr/bin/djpeg_persistent_mode");
 #if defined(_HF_ARCH_LINUX)
     LOG_HELP(
         " Run the binary with dynamically generate inputs, maximize total no. of instructions:");
@@ -397,7 +397,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     // clang-format off
     struct custom_option custom_opts[] = {
         { { "help", no_argument, NULL, 'h' }, "Help plz.." },
-        { { "input", required_argument, NULL, 'f' }, "Path to a directory containing initial file corpus" },
+        { { "input", required_argument, NULL, 'i' }, "Path to a directory containing initial file corpus" },
         { { "output", required_argument, NULL, 0x601 }, "Output data (new dynamic coverage corpus, or the minimized coverage corpus) is written to this directory (default: input directory is used)" },
         { { "persistent", no_argument, NULL, 'P' }, "Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code). This will be auto-detected!!!" },
         { { "instrument", no_argument, NULL, 'z' }, "*DEFAULT-MODE-BY-DEFAULT* Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)" },
@@ -486,8 +486,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             case '?':
                 cmdlineUsage(argv[0], custom_opts);
                 break;
-            case 'f':
-            case 'i': /* Synonym for -f, stands for -i(input) */
+            case 'i':
+            case 'f': /* Synonym for -i, stands for -f(iles) */
                 hfuzz->io.inputDir = optarg;
                 break;
             case 'x':

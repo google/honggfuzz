@@ -36,5 +36,5 @@ $ cp honggfuzz/examples/bind/test.zone /home/jagger/fuzz/bind/dist/etc/
 6. **Go**
 
 ```
-$ honggfuzz/honggfuzz -f IN.req-response/ -z -P -- ./dist/sbin/named -c /home/jagger/fuzz/bind/dist/etc/named.conf -g
+$ honggfuzz/honggfuzz -i input_corpus -z -P -- ./dist/sbin/named -c /home/jagger/fuzz/bind/dist/etc/named.conf -g
  ```
