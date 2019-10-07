@@ -542,26 +542,23 @@ void input_sortDynamicInput(honggfuzz_t* hfuzz) {
             if (itemnext == NULL) {
                 continue;
             }
-            if (itemnext->cov[0] < item->cov[0]) {
-                continue;
-            }
-            if (itemnext->cov[0] == item->cov[0] && itemnext->cov[1] < item->cov[1]) {
-                continue;
-            }
-            if (itemnext->cov[0] == item->cov[0] && itemnext->cov[1] == item->cov[1] &&
-                itemnext->cov[2] < item->cov[2]) {
-                continue;
-            }
-            if (itemnext->cov[0] == item->cov[0] && itemnext->cov[1] == item->cov[1] &&
-                itemnext->cov[2] == item->cov[2] && itemnext->cov[3] < item->cov[3]) {
-                continue;
-            }
 
-            TAILQ_REMOVE(&hfuzz->io.dynfileq, itemnext, pointers);
-            TAILQ_INSERT_BEFORE(item, itemnext, pointers);
-
-            /* We've swapped items, so rewind item to the itemnext */
-            item = itemnext;
+            bool swap = false;
+            for (size_t j = 0; j < ARRAYSIZE(item->cov); j++) {
+                if (itemnext->cov[j] > item->cov[j]) {
+                    swap = true;
+                    break;
+                }
+                if (itemnext->cov[j] < item->cov[j]) {
+                    break;
+                }
+            }
+            if (swap) {
+                TAILQ_REMOVE(&hfuzz->io.dynfileq, itemnext, pointers);
+                TAILQ_INSERT_BEFORE(item, itemnext, pointers);
+                /* We've swapped items, so rewind item to the itemnext */
+                item = itemnext;
+            }
         }
     }
 }
