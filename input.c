@@ -239,10 +239,11 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
 
         LOG_D("Parsing word: '%s'", bufv);
 
-        char* s = util_StrDup(bufv);
-        struct strings_t* str = (struct strings_t*)util_Malloc(sizeof(struct strings_t));
-        str->len = util_decodeCString(s);
-        str->s = s;
+        len = util_decodeCString(bufv);
+        struct strings_t* str = (struct strings_t*)util_Malloc(sizeof(struct strings_t) + len + 1);
+        str->len = len;
+        memcpy(str->s, bufv, str->len);
+        str->s[len] = '\0';
         hfuzz->mutate.dictionaryCnt += 1;
         TAILQ_INSERT_TAIL(&hfuzz->mutate.dictq, str, pointers);
 

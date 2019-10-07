@@ -164,9 +164,9 @@ struct dynfile_t {
 };
 
 struct strings_t {
-    char* s;
     size_t len;
     TAILQ_ENTRY(strings_t) pointers;
+    char s[];
 };
 
 typedef struct {
