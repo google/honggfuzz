@@ -247,8 +247,7 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
         struct strings_t* str = (struct strings_t*)util_Malloc(sizeof(struct strings_t) + len + 1);
         memcpy(str->s, bufv, len);
         str->len = len;
-        str->s[len] = '\0';
-        hfuzz->mutate.dictionaryCnt += 1;
+        hfuzz->mutate.dictionaryCnt++;
         TAILQ_INSERT_TAIL(&hfuzz->mutate.dictq, str, pointers);
 
         LOG_D("Dictionary: loaded word: '%s' (len=%zu)", str->s, str->len);
@@ -528,6 +527,21 @@ bool input_prepareDynamicFileForMinimization(run_t* run) {
     return true;
 }
 
+/* true if item1 is bigger than item2 */
+static bool input_cmpCov(struct dynfile_t* item1, struct dynfile_t* item2) {
+    for (size_t j = 0; j < ARRAYSIZE(item1->cov); j++) {
+        if (item1->cov[j] > item2->cov[j]) {
+            return true;
+        }
+        if (item1->cov[j] < item2->cov[j]) {
+            return false;
+        }
+    }
+
+    /* Both are equal */
+    return false;
+}
+
 #define TAILQ_FOREACH_HF(var, head, field) \
     for ((var) = TAILQ_FIRST((head)); (var); (var) = TAILQ_NEXT((var), field))
 
@@ -543,17 +557,7 @@ void input_sortDynamicInput(honggfuzz_t* hfuzz) {
                 continue;
             }
 
-            bool swap = false;
-            for (size_t j = 0; j < ARRAYSIZE(item->cov); j++) {
-                if (itemnext->cov[j] > item->cov[j]) {
-                    swap = true;
-                    break;
-                }
-                if (itemnext->cov[j] < item->cov[j]) {
-                    break;
-                }
-            }
-            if (swap) {
+            if (input_cmpCov(itemnext, item)) {
                 TAILQ_REMOVE(&hfuzz->io.dynfileq, itemnext, pointers);
                 TAILQ_INSERT_BEFORE(item, itemnext, pointers);
                 /* We've swapped items, so rewind item to the itemnext */
