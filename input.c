@@ -513,11 +513,6 @@ bool input_prepareDynamicFileForMinimization(run_t* run) {
         return false;
     }
 
-    LOG_I("Testing '%s', coverage: %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
-        run->global->io.dynfileqCurrent->path, run->global->io.dynfileqCurrent->cov[0],
-        run->global->io.dynfileqCurrent->cov[1], run->global->io.dynfileqCurrent->cov[2],
-        run->global->io.dynfileqCurrent->cov[3]);
-
     input_setSize(run, run->global->io.dynfileqCurrent->size);
     memcpy(run->dynamicFile, run->global->io.dynfileqCurrent->data,
         run->global->io.dynfileqCurrent->size);

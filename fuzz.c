@@ -219,12 +219,13 @@ static void fuzz_perfFeedback(run_t* run) {
 
         if (run->global->cfg.minimize) {
             if (run->global->io.outputDir) {
-                LOG_I("Saving interesting input '%s' to the '%s' directory", run->origFileName,
-                    run->global->io.outputDir);
+                LOG_I("Keeping '%s' in '%s'", run->origFileName, run->global->io.outputDir);
                 if (!input_writeCovFile(
                         run->global->io.outputDir, run->dynamicFile, run->dynamicFileSz)) {
                     LOG_E("Couldn't save the coverage data to '%s'", run->global->io.outputDir);
                 }
+            } else {
+                LOG_I("Keeping '%s' in '%s'", run->origFileName, run->global->io.inputDir);
             }
         } else {
             LOG_I("Size:%zu (i,b,hw,ed,ip,cmp): %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
@@ -246,8 +247,7 @@ static void fuzz_perfFeedback(run_t* run) {
         }
     } else if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MINIMIZE) {
         if (run->global->io.outputDir == NULL) {
-            LOG_I("Removing uninteresting file '%s' from '%s'", run->origFileName,
-                run->global->io.inputDir);
+            LOG_I("Removing '%s' from '%s'", run->origFileName, run->global->io.inputDir);
             input_removeStaticFile(run->global->io.inputDir, run->origFileName);
         }
     }
