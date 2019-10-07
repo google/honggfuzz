@@ -338,8 +338,10 @@ void input_addDynamicInput(
     ATOMIC_SET(hfuzz->timing.lastCovUpdate, time(NULL));
 
     struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t) + len);
+    for (size_t i = 0; i < ARRAYSIZE(dynfile->cov); i++) {
+        dynfile->cov[i] = cov[i];
+    }
     dynfile->size = len;
-    memcpy(dynfile->cov, cov, sizeof(dynfile->cov));
     memcpy(dynfile->data, data, len);
     snprintf(dynfile->path, sizeof(dynfile->path), "%s", path);
 

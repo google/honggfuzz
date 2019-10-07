@@ -237,7 +237,7 @@ static void fuzz_perfFeedback(run_t* run) {
                 run->global->linux.hwCnts.softCntPc, run->global->linux.hwCnts.softCntCmp);
 
             input_addDynamicInput(run->global, run->dynamicFile, run->dynamicFileSz,
-                (uint64_t[3]){0, 0, 0}, "[DYNAMIC]");
+                (uint64_t[4]){0, 0, 0, 0}, "[DYNAMIC]");
         }
 
         if (run->global->socketFuzzer.enabled) {
