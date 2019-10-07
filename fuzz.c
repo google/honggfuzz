@@ -246,8 +246,9 @@ static void fuzz_perfFeedback(run_t* run) {
         }
     } else if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MINIMIZE) {
         if (run->global->io.outputDir == NULL) {
-            LOG_I("Removing uninteresting file '%s' from the input corpus", run->origFileName);
-            input_removeStaticFile(run->origFileName);
+            LOG_I("Removing uninteresting file '%s' from '%s'", run->origFileName,
+                run->global->io.inputDir);
+            input_removeStaticFile(run->global->io.inputDir, run->origFileName);
         }
     }
 }

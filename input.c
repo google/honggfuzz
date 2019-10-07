@@ -80,22 +80,23 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
             break;
         }
 
-        char fname[PATH_MAX];
-        snprintf(fname, sizeof(fname), "%s/%s", hfuzz->io.inputDir, entry->d_name);
-        LOG_D("Analyzing file '%s'", fname);
+        char path[PATH_MAX];
+        snprintf(path, sizeof(path), "%s/%s", hfuzz->io.inputDir, entry->d_name);
+
+        LOG_D("Analyzing file '%s'", path);
 
         struct stat st;
-        if (stat(fname, &st) == -1) {
-            LOG_W("Couldn't stat() the '%s' file", fname);
+        if (stat(path, &st) == -1) {
+            LOG_W("Couldn't stat() the '%s' file", path);
             continue;
         }
         if (!S_ISREG(st.st_mode)) {
-            LOG_D("'%s' is not a regular file, skipping", fname);
+            LOG_D("'%s' is not a regular file, skipping", path);
             continue;
         }
         if (hfuzz->mutate.maxFileSz != 0UL && st.st_size > (off_t)hfuzz->mutate.maxFileSz) {
             LOG_D("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %" PRId64,
-                fname, (int64_t)st.st_size, (int64_t)hfuzz->mutate.maxFileSz);
+                path, (int64_t)st.st_size, (int64_t)hfuzz->mutate.maxFileSz);
         }
         if ((size_t)st.st_size > maxSize) {
             maxSize = st.st_size;
@@ -126,7 +127,7 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
     return true;
 }
 
-bool input_getNext(run_t* run, char* fname, bool rewind) {
+bool input_getNext(run_t* run, char fname[PATH_MAX], bool rewind) {
     static pthread_mutex_t input_mutex = PTHREAD_MUTEX_INITIALIZER;
     MX_SCOPED_LOCK(&input_mutex);
 
@@ -155,17 +156,19 @@ bool input_getNext(run_t* run, char* fname, bool rewind) {
             }
             continue;
         }
-
-        snprintf(fname, PATH_MAX, "%s/%s", run->global->io.inputDir, entry->d_name);
+        char path[PATH_MAX];
+        snprintf(path, PATH_MAX, "%s/%s", run->global->io.inputDir, entry->d_name);
         struct stat st;
-        if (stat(fname, &st) == -1) {
-            LOG_W("Couldn't stat() the '%s' file", fname);
+        if (stat(path, &st) == -1) {
+            LOG_W("Couldn't stat() the '%s' file", path);
             continue;
         }
         if (!S_ISREG(st.st_mode)) {
-            LOG_D("'%s' is not a regular file, skipping", fname);
+            LOG_D("'%s' is not a regular file, skipping", path);
             continue;
         }
+
+        snprintf(fname, PATH_MAX, "%s", entry->d_name);
         return true;
     }
 }
@@ -398,16 +401,17 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
 }
 
 bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
-    char fname[PATH_MAX];
-    if (!input_getNext(run, fname, /* rewind= */ rewind)) {
+    if (!input_getNext(run, run->origFileName, /* rewind= */ rewind)) {
         return false;
     }
-    snprintf(run->origFileName, sizeof(run->origFileName), "%s", fname);
-
     input_setSize(run, run->global->mutate.maxFileSz);
-    ssize_t fileSz = files_readFileToBufMax(fname, run->dynamicFile, run->global->mutate.maxFileSz);
+
+    char path[PATH_MAX];
+    snprintf(path, sizeof(path), "%s/%s", run->global->io.inputDir, run->origFileName);
+
+    ssize_t fileSz = files_readFileToBufMax(path, run->dynamicFile, run->global->mutate.maxFileSz);
     if (fileSz < 0) {
-        LOG_E("Couldn't read contents of '%s'", fname);
+        LOG_E("Couldn't read contents of '%s'", path);
         return false;
     }
 
@@ -419,7 +423,9 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
     return true;
 }
 
-void input_removeStaticFile(const char* path) {
+void input_removeStaticFile(const char* dir, const char* name) {
+    char path[PATH_MAX];
+    snprintf(path, sizeof(path), "%s/%s", dir, name);
     if (unlink(path) == -1) {
         PLOG_E("unlink('%s') failed", path);
     }
@@ -506,7 +512,7 @@ bool input_prepareDynamicFileForMinimization(run_t* run) {
         return false;
     }
 
-    LOG_I("Testing file '%s', coverage: %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
+    LOG_I("Testing '%s', coverage: %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
         run->global->io.dynfileqCurrent->path, run->global->io.dynfileqCurrent->cov[0],
         run->global->io.dynfileqCurrent->cov[1], run->global->io.dynfileqCurrent->cov[2],
         run->global->io.dynfileqCurrent->cov[3]);
