@@ -442,8 +442,9 @@ bool input_prepareDynamicFileForMinimization(run_t* run) {
 
     if (run->global->io.dynfileqCurrent == NULL) {
         run->global->io.dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
+    } else {
+        run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
     }
-    run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
     if (run->global->io.dynfileqCurrent == NULL) {
         return false;
     }
@@ -493,13 +494,16 @@ bool input_feedbackMutateFile(run_t* run) {
     return true;
 }
 
+#define TAILQ_FOREACH_SAFE(var, head, field) \
+    for ((var) = TAILQ_FIRST((head)); (var); (var) = TAILQ_NEXT((var), field))
+
 /* Yes, the bubblesort :) */
 void input_sortDynamicInput(honggfuzz_t* hfuzz) {
     LOG_I("Sorting %zu dynamic entries by coverage", hfuzz->io.dynfileqCnt);
 
     for (size_t i = 0; i < hfuzz->io.dynfileqCnt; i++) {
-        struct dynfile_t* item = NULL;
-        TAILQ_FOREACH(item, &hfuzz->io.dynfileq, pointers) {
+        for (struct dynfile_t* item = TAILQ_FIRST(&hfuzz->io.dynfileq); item;
+             item = TAILQ_NEXT(item, pointers)) {
             struct dynfile_t* itemnext = TAILQ_NEXT(item, pointers);
             if (itemnext == NULL) {
                 continue;
@@ -517,6 +521,9 @@ void input_sortDynamicInput(honggfuzz_t* hfuzz) {
 
             TAILQ_REMOVE(&hfuzz->io.dynfileq, itemnext, pointers);
             TAILQ_INSERT_BEFORE(item, itemnext, pointers);
+
+            /* We've swapped items, so rewind item to the itemnext */
+            item = itemnext;
         }
     }
 }
