@@ -466,7 +466,7 @@ static void fuzz_fuzzLoop(run_t* run) {
     if (!fuzz_fetchInput(run)) {
         if (run->global->cfg.minimize && fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MINIMIZE) {
             fuzz_setTerminating();
-            LOG_I("Minimization done!");
+            LOG_I("Corpus minimization done!");
             return;
         }
         LOG_F("Cound't prepare input for fuzzing");
