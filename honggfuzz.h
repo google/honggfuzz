@@ -155,9 +155,7 @@ typedef enum {
 
 struct dynfile_t {
     size_t size;
-    uint64_t cov1l;
-    uint64_t cov2l;
-    uint64_t cov3l;
+    uint64_t cov[3];
     char path[PATH_MAX];
     TAILQ_ENTRY(dynfile_t) pointers;
     uint8_t data[];

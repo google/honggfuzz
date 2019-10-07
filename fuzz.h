@@ -32,5 +32,6 @@ extern void fuzz_threadsStart(honggfuzz_t* fuzz);
 extern bool fuzz_isTerminating(void);
 extern void fuzz_setTerminating(void);
 extern bool fuzz_shouldTerminate(void);
+extern fuzzState_t fuzz_getState(honggfuzz_t* hfuzz);
 
 #endif

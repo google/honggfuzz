@@ -37,6 +37,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "fuzz.h"
 #include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
@@ -306,6 +307,71 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz) {
     return true;
 }
 
+bool input_writeCovFile(const char* dir, const uint8_t* data, size_t len) {
+    char fname[PATH_MAX];
+
+    uint64_t crc64f = util_CRC64(data, len);
+    uint64_t crc64r = util_CRC64Rev(data, len);
+    snprintf(fname, sizeof(fname), "%s/%016" PRIx64 "%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov",
+        dir, crc64f, crc64r, (uint32_t)len);
+
+    if (files_exists(fname)) {
+        LOG_D("File '%s' already exists in the output corpus directory '%s'", fname, dir);
+        return true;
+    }
+
+    LOG_D("Adding file '%s' to the corpus directory '%s'", fname, dir);
+
+    if (!files_writeBufToFile(fname, data, len, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC)) {
+        LOG_W("Couldn't write buffer to file '%s'", fname);
+        return false;
+    }
+
+    return true;
+}
+
+void input_addDynamicInput(
+    honggfuzz_t* hfuzz, const uint8_t* data, size_t len, uint64_t cov[3], const char* path) {
+    ATOMIC_SET(hfuzz->timing.lastCovUpdate, time(NULL));
+
+    struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t) + len);
+    dynfile->size = len;
+    dynfile->cov[0] = cov[0];
+    dynfile->cov[1] = cov[1];
+    dynfile->cov[2] = cov[2];
+    snprintf(dynfile->path, sizeof(dynfile->path), "%s", path);
+    memcpy(dynfile->data, data, len);
+
+    MX_SCOPED_RWLOCK_WRITE(&hfuzz->io.dynfileq_mutex);
+    TAILQ_INSERT_TAIL(&hfuzz->io.dynfileq, dynfile, pointers);
+    hfuzz->io.dynfileqCnt++;
+
+    if (hfuzz->socketFuzzer.enabled) {
+        /* Don't add coverage data to files in socketFuzzer mode */
+        return;
+    }
+    if (hfuzz->cfg.minimize) {
+        /* When minimizing we should only delete files */
+        return;
+    }
+
+    const char* outDir = hfuzz->io.outputDir ? hfuzz->io.outputDir : hfuzz->io.inputDir;
+    if (!input_writeCovFile(outDir, data, len)) {
+        LOG_E("Couldn't save the coverage data to '%s'", hfuzz->io.outputDir);
+    }
+
+    /* No need to add files to the new coverage dir, if it's not the main phase */
+    if (fuzz_getState(hfuzz) != _HF_STATE_DYNAMIC_MAIN) {
+        return;
+    }
+
+    hfuzz->io.newUnitsAdded++;
+
+    if (hfuzz->io.covDirNew && !input_writeCovFile(hfuzz->io.covDirNew, data, len)) {
+        LOG_E("Couldn't save the new coverage data to '%s'", hfuzz->io.covDirNew);
+    }
+}
+
 bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     struct dynfile_t* current = NULL;
 
@@ -443,8 +509,8 @@ bool input_prepareDynamicFileForMinimization(run_t* run) {
     }
 
     LOG_I("Testing file '%s', coverage: %" PRIu64 "/%" PRIu64 "/%" PRIu64,
-        run->global->io.dynfileqCurrent->path, run->global->io.dynfileqCurrent->cov1l,
-        run->global->io.dynfileqCurrent->cov2l, run->global->io.dynfileqCurrent->cov3l);
+        run->global->io.dynfileqCurrent->path, run->global->io.dynfileqCurrent->cov[0],
+        run->global->io.dynfileqCurrent->cov[1], run->global->io.dynfileqCurrent->cov[2]);
 
     input_setSize(run, run->global->io.dynfileqCurrent->size);
     memcpy(run->dynamicFile, run->global->io.dynfileqCurrent->data,
@@ -501,14 +567,14 @@ void input_sortDynamicInput(honggfuzz_t* hfuzz) {
             if (itemnext == NULL) {
                 continue;
             }
-            if (itemnext->cov1l < item->cov1l) {
+            if (itemnext->cov[0] < item->cov[0]) {
                 continue;
             }
-            if (itemnext->cov1l == item->cov1l && itemnext->cov2l < item->cov2l) {
+            if (itemnext->cov[0] == item->cov[0] && itemnext->cov[1] < item->cov[1]) {
                 continue;
             }
-            if (itemnext->cov1l == item->cov1l && itemnext->cov2l == item->cov2l &&
-                itemnext->cov3l < item->cov3l) {
+            if (itemnext->cov[0] == item->cov[0] && itemnext->cov[1] == item->cov[1] &&
+                itemnext->cov[2] < item->cov[2]) {
                 continue;
             }
 
