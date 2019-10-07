@@ -153,7 +153,8 @@ static void fuzz_perfFeedbackForMinimization(run_t* run) {
 
     uint64_t cov[4] = {
         [0] = softCntEdge + softCntPc,
-        [1] = 64U - (uint64_t)log2l(run->dynamicFileSz), /* The smaller input size, the better */
+        [1] = run->dynamicFileSz ? (64 - (uint64_t)log2l(run->dynamicFileSz))
+                                 : 64, /* The smaller input size, the better */
         [2] = cpuInstr + cpuBranch,
         [3] = softCntCmp,
     };
