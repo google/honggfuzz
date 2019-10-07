@@ -39,18 +39,10 @@
 
 #include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
-#include "mangle.h"
-#include "subproc.h"
-
-#if defined(_HF_ARCH_LINUX)
-#include <sys/syscall.h>
-#if defined(__NR_memfd_create)
-#include <linux/memfd.h>
-#endif /* defined(__NR_memfd_create) */
-#endif /* defined(_HF_ARCH_LINUX) */
-
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
+#include "mangle.h"
+#include "subproc.h"
 
 void input_setSize(run_t* run, size_t sz) {
     if (run->dynamicFileSz == sz) {
@@ -449,7 +441,7 @@ bool input_prepareDynamicFileForMinimization(run_t* run) {
         return false;
     }
 
-    LOG_I("Testing file '%s' with coverage goodness of %" PRIu64 "/%" PRIu64 "/%" PRIu64,
+    LOG_I("Testing file '%s', coverage: %" PRIu64 "/%" PRIu64 "/%" PRIu64,
         run->global->io.dynfileqCurrent->path, run->global->io.dynfileqCurrent->cov1l,
         run->global->io.dynfileqCurrent->cov2l, run->global->io.dynfileqCurrent->cov3l);
 
