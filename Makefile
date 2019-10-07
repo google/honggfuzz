@@ -132,7 +132,7 @@ else ifeq ($(OS),NetBSD)
                    -Wextra -Wno-override-init \
                    -funroll-loops -D_KERNTYPES
     ARCH_LDFLAGS := -L/usr/local/lib -L/usr/pkg/lib \
-                    -pthread -lcapstone -lrt \
+                    -pthread -lcapstone -lrt -lm \
                     -Wl,--rpath=/usr/pkg/lib
 
     # OS NetBSD
