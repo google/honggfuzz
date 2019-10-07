@@ -312,7 +312,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
         MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 
         if (run->global->io.dynfileqCnt == 0) {
-            LOG_E("The dynamic file corpus is empty. This shouldn't happen");
+            LOG_F("The dynamic file corpus is empty. This shouldn't happen");
         }
 
         if (run->global->io.dynfileqCurrent == NULL) {
@@ -429,7 +429,7 @@ bool input_prepareDynamicFileForMinimization(run_t* run) {
     MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 
     if (run->global->io.dynfileqCnt == 0) {
-        LOG_F("The dynamic file corpus is empty (fro minimization). This shouldn't happen");
+        LOG_F("The dynamic file corpus is empty (for minimization). This shouldn't happen");
     }
 
     if (run->global->io.dynfileqCurrent == NULL) {
