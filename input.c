@@ -494,7 +494,7 @@ bool input_feedbackMutateFile(run_t* run) {
     return true;
 }
 
-#define TAILQ_FOREACH_SAFE(var, head, field) \
+#define TAILQ_FOREACH_HF(var, head, field) \
     for ((var) = TAILQ_FIRST((head)); (var); (var) = TAILQ_NEXT((var), field))
 
 /* Yes, the bubblesort :) */
@@ -502,8 +502,8 @@ void input_sortDynamicInput(honggfuzz_t* hfuzz) {
     LOG_I("Sorting %zu dynamic entries by coverage", hfuzz->io.dynfileqCnt);
 
     for (size_t i = 0; i < hfuzz->io.dynfileqCnt; i++) {
-        for (struct dynfile_t* item = TAILQ_FIRST(&hfuzz->io.dynfileq); item;
-             item = TAILQ_NEXT(item, pointers)) {
+        struct dynfile_t* item = NULL;
+        TAILQ_FOREACH_HF(item, &hfuzz->io.dynfileq, pointers) {
             struct dynfile_t* itemnext = TAILQ_NEXT(item, pointers);
             if (itemnext == NULL) {
                 continue;
