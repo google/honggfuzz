@@ -231,8 +231,8 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
         }
         char bufn[1025] = {};
         char bufv[1025] = {};
-        if (sscanf(lineptr, "\"%1024s", bufv) != 1 &&
-            sscanf(lineptr, "%1024[^=]=\"%1024s", bufn, bufv) != 2) {
+        if (sscanf(lineptr, "\"%1024[^\"]", bufv) != 1 &&
+            sscanf(lineptr, "%1024[^=]=\"%1024[^\"]", bufn, bufv) != 2) {
             LOG_W("Incorrect dictionary entry: '%s'. Skipping", lineptr);
             continue;
         }
@@ -241,8 +241,8 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
 
         len = util_decodeCString(bufv);
         struct strings_t* str = (struct strings_t*)util_Malloc(sizeof(struct strings_t) + len + 1);
+        memcpy(str->s, bufv, len);
         str->len = len;
-        memcpy(str->s, bufv, str->len);
         str->s[len] = '\0';
         hfuzz->mutate.dictionaryCnt += 1;
         TAILQ_INSERT_TAIL(&hfuzz->mutate.dictq, str, pointers);
