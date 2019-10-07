@@ -401,7 +401,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "output", required_argument, NULL, 0x601 }, "Output data (dynamic coverage corpus, or the minimized coverage corpus) is written to this directory (default: input directory is used)" },
         { { "persistent", no_argument, NULL, 'P' }, "Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code). This will be auto-detected!!!" },
         { { "instrument", no_argument, NULL, 'z' }, "*DEFAULT-MODE-BY-DEFAULT* Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)" },
-        { { "minimize", no_argument, NULL, 'M' }, "Minimize the input corpus. It will most likely delete some input corpus files if no --output is used!" },
+        { { "minimize", no_argument, NULL, 'M' }, "Minimize the input corpus. It will most likely delete some corpus files (from the input directory) if no --output is used!" },
         { { "noinst", no_argument, NULL, 'x' }, "Static mode only, disable any instrumentation (hw/sw) feedback" },
         { { "keep_output", no_argument, NULL, 'Q' }, "Don't close children's stdin, stdout, stderr; can be noisy" },
         { { "timeout", required_argument, NULL, 't' }, "Timeout in seconds (default: 10)" },
