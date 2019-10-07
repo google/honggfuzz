@@ -218,14 +218,11 @@ static void fuzz_perfFeedback(run_t* run) {
         run->global->linux.hwCnts.softCntCmp += softCntCmp;
 
         if (run->global->cfg.minimize) {
-            if (run->global->io.outputDir) {
-                LOG_I("Keeping '%s' in '%s'", run->origFileName, run->global->io.outputDir);
-                if (!input_writeCovFile(
-                        run->global->io.outputDir, run->dynamicFile, run->dynamicFileSz)) {
-                    LOG_E("Couldn't save the coverage data to '%s'", run->global->io.outputDir);
-                }
-            } else {
-                LOG_I("Keeping '%s' in '%s'", run->origFileName, run->global->io.inputDir);
+            LOG_I("Keeping '%s' in '%s'", run->origFileName,
+                run->global->io.outputDir ? run->global->io.outputDir : run->global->io.inputDir);
+            if (run->global->io.outputDir && !input_writeCovFile(run->global->io.outputDir,
+                                                 run->dynamicFile, run->dynamicFileSz)) {
+                LOG_E("Couldn't save the coverage data to '%s'", run->global->io.outputDir);
             }
         } else {
             LOG_I("Size:%zu (i,b,hw,ed,ip,cmp): %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
