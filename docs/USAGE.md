@@ -74,7 +74,7 @@ but also a couple of instrumentation mechanisms used together
 honggfuzz -i input_dir --linux_perf_bts_edge --linux_perf_instr -P -- jpeg_persistent_mode
 ```
 
-## Corpus Minimization (```-M```/```--minimize```) ##
+## Corpus Minimization (```-M```) ##
 
 ### Minimize corpus directly inside the input (```-i```/```--input```) directory ###
 
