@@ -82,7 +82,7 @@ honggfuzz -i input_dir -P -M -- jpeg_persistent_mode
 honggfuzz -i input_dir --output output_dir -P -M -- jpeg_persistent_mode
 ```
 
-## ```--help```
+# CMDLINE ```--help``` #
 
 ```shell
 Usage: ./honggfuzz [options] -- path_to_command [args]
