@@ -313,6 +313,12 @@ int main(int argc, char** argv) {
     if (cmdlineParse(argc, myargs, &hfuzz) == false) {
         LOG_F("Parsing of the cmd-line arguments failed");
     }
+    if (hfuzz.io.inputDir && access(hfuzz.io.inputDir, R_OK) == -1) {
+        PLOG_F("Input directory '%s' is not readable", hfuzz.io.inputDir);
+    }
+    if (hfuzz.io.outputDir && access(hfuzz.io.outputDir, W_OK) == -1) {
+        PLOG_F("Output directory '%s' is not writeable", hfuzz.io.outputDir);
+    }
     if (hfuzz.cfg.minimize) {
         LOG_I("Minimization mode enabled. Setting number of threads to 1");
         hfuzz.threads.threadsMax = 1;
