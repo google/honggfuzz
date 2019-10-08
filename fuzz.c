@@ -152,7 +152,7 @@ static void fuzz_perfFeedbackForMinimization(run_t* run) {
         [2] = cpuInstr + cpuBranch,
         [3] = softCntCmp,
     };
-    LOG_I("Corpus Minimization, len:%zu: %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
+    LOG_I("Corpus Minimization: len:%zu, %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
         run->dynamicFileSz, cov[0], cov[1], cov[2], cov[3]);
 
     input_addDynamicInput(
