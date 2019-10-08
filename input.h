@@ -42,6 +42,5 @@ extern void input_removeStaticFile(const char* dir, const char* name);
 extern bool input_prepareExternalFile(run_t* run);
 extern bool input_postProcessFile(run_t* run, const char* cmd);
 extern bool input_prepareDynamicFileForMinimization(run_t* run);
-extern void input_sortDynamicInput(honggfuzz_t* hfuzz);
 
 #endif /* ifndef _HF_INPUT_H_ */

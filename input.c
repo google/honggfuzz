@@ -332,6 +332,23 @@ bool input_writeCovFile(const char* dir, const uint8_t* data, size_t len) {
     return true;
 }
 
+/* true if item1 is bigger than item2 */
+static bool input_cmpCov(struct dynfile_t* item1, struct dynfile_t* item2) {
+    for (size_t j = 0; j < ARRAYSIZE(item1->cov); j++) {
+        if (item1->cov[j] > item2->cov[j]) {
+            return true;
+        }
+        if (item1->cov[j] < item2->cov[j]) {
+            return false;
+        }
+    }
+    /* Both are equal */
+    return false;
+}
+
+#define TAILQ_FOREACH_HF(var, head, field) \
+    for ((var) = TAILQ_FIRST((head)); (var); (var) = TAILQ_NEXT((var), field))
+
 void input_addDynamicInput(
     honggfuzz_t* hfuzz, const uint8_t* data, size_t len, uint64_t cov[4], const char* path) {
     ATOMIC_SET(hfuzz->timing.lastCovUpdate, time(NULL));
@@ -345,7 +362,18 @@ void input_addDynamicInput(
     snprintf(dynfile->path, sizeof(dynfile->path), "%s", path);
 
     MX_SCOPED_RWLOCK_WRITE(&hfuzz->io.dynfileq_mutex);
-    TAILQ_INSERT_TAIL(&hfuzz->io.dynfileq, dynfile, pointers);
+
+    /* Sort it by coverage - put better coverage in front of the list */
+    struct dynfile_t* iter = NULL;
+    TAILQ_FOREACH_HF(iter, &hfuzz->io.dynfileq, pointers) {
+        if (input_cmpCov(dynfile, iter)) {
+            TAILQ_INSERT_BEFORE(iter, dynfile, pointers);
+            break;
+        }
+    }
+    if (iter == NULL) {
+        TAILQ_INSERT_TAIL(&hfuzz->io.dynfileq, dynfile, pointers);
+    }
     hfuzz->io.dynfileqCnt++;
 
     if (hfuzz->socketFuzzer.enabled) {
@@ -519,43 +547,9 @@ bool input_prepareDynamicFileForMinimization(run_t* run) {
     snprintf(
         run->origFileName, sizeof(run->origFileName), "%s", run->global->io.dynfileqCurrent->path);
 
+    LOG_D("Cov: %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
+        run->global->io.dynfileqCurrent->cov[0], run->global->io.dynfileqCurrent->cov[1],
+        run->global->io.dynfileqCurrent->cov[2], run->global->io.dynfileqCurrent->cov[3]);
+
     return true;
-}
-
-/* true if item1 is bigger than item2 */
-static bool input_cmpCov(struct dynfile_t* item1, struct dynfile_t* item2) {
-    for (size_t j = 0; j < ARRAYSIZE(item1->cov); j++) {
-        if (item1->cov[j] > item2->cov[j]) {
-            return true;
-        }
-        if (item1->cov[j] < item2->cov[j]) {
-            return false;
-        }
-    }
-    /* Both are equal */
-    return false;
-}
-
-#define TAILQ_FOREACH_HF(var, head, field) \
-    for ((var) = TAILQ_FIRST((head)); (var); (var) = TAILQ_NEXT((var), field))
-
-/* Yes, the bubblesort :) */
-void input_sortDynamicInput(honggfuzz_t* hfuzz) {
-    LOG_I("Sorting %zu dynamic entries by coverage", hfuzz->io.dynfileqCnt);
-    for (size_t i = 0; i < hfuzz->io.dynfileqCnt; i++) {
-        struct dynfile_t* item = NULL;
-        TAILQ_FOREACH_HF(item, &hfuzz->io.dynfileq, pointers) {
-            struct dynfile_t* itemnext = TAILQ_NEXT(item, pointers);
-            if (itemnext == NULL) {
-                continue;
-            }
-
-            if (input_cmpCov(itemnext, item)) {
-                TAILQ_REMOVE(&hfuzz->io.dynfileq, itemnext, pointers);
-                TAILQ_INSERT_BEFORE(item, itemnext, pointers);
-                /* We've swapped items, so rewind item to the itemnext */
-                item = itemnext;
-            }
-        }
-    }
 }

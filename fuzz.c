@@ -117,7 +117,6 @@ static void fuzz_setDynamicMainState(run_t* run) {
     ATOMIC_SET(run->global->cfg.switchingToFDM, false);
 
     if (run->global->cfg.minimize) {
-        input_sortDynamicInput(run->global);
         LOG_I("Entering phase 3/3: Corpus Minimization");
         ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_MINIMIZE);
         return;
