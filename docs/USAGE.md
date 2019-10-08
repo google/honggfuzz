@@ -40,7 +40,7 @@ honggfuzz -i input_dir -x -s -- /usr/bin/djpeg
 
 ## Non-persistent fuzzing with instrumentation ##
 
-### Compile-time instrumentation (```-z``` _enabled by default_) ###
+### Compile-time instrumentation (```-z```). _Note: enabled by default_ ###
 ```shell
   honggfuzz -i input_dir -z -- instrumented.djpeg ___FILE___
 ```
@@ -58,7 +58,7 @@ honggfuzz -i input_dir -- <honggfuzz_dir>/qemu_mode/honggfuzz-qemu/x86_64-linux-
   honggfuzz -i input_dir --linux_perf_branch -- /usr/bin/djpeg ___FILE___
 ```
 
-## Persistent-mode (```-P``` _it will be auto-detected_) ##
+## Persistent-mode (```-P```). _Note: it will be auto-detected_ ##
 
 ```shell
   honggfuzz -i input_dir -P -- jpeg_persistent_mode
