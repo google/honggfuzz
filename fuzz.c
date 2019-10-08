@@ -145,11 +145,6 @@ static void fuzz_perfFeedbackForMinimization(run_t* run) {
     uint64_t cpuInstr = run->linux.hwCnts.cpuInstrCnt;
     uint64_t cpuBranch = run->linux.hwCnts.cpuBranchCnt;
 
-    LOG_I("Corpus Minimization, len:%zu (i,b,hw,ed,ip,cmp): %" PRIu64 "/%" PRIu64 "/%" PRIu64
-          "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
-        run->dynamicFileSz, cpuInstr, cpuBranch, run->linux.hwCnts.newBBCnt, softCntEdge, softCntPc,
-        softCntCmp);
-
     uint64_t cov[4] = {
         [0] = softCntEdge + softCntPc,
         [1] = run->dynamicFileSz ? (64 - (uint64_t)log2(run->dynamicFileSz))
@@ -157,6 +152,9 @@ static void fuzz_perfFeedbackForMinimization(run_t* run) {
         [2] = cpuInstr + cpuBranch,
         [3] = softCntCmp,
     };
+    LOG_I("Corpus Minimization, len:%zu: %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
+        run->dynamicFileSz, cov[0], cov[1], cov[2], cov[3]);
+
     input_addDynamicInput(
         run->global, run->dynamicFile, run->dynamicFileSz, cov, run->origFileName);
 
