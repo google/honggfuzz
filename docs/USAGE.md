@@ -70,8 +70,16 @@ honggfuzz -i input_dir --linux_perf_bts_edge --linux_perf_instr -P -- jpeg_persi
 
 ## Corpus Minimization (```-M```) ##
 
+### Minimize files directly in the input (```--input```) directory (it will remove unneeded files) ###
+
 ```shell
 honggfuzz -i input_dir -P -M -- jpeg_persistent_mode
+```
+
+### Compile and copy minimized corpus to the output (```--output```) directory (the input directory will be left untouched) ###
+
+```shell
+honggfuzz -i input_dir --output output_dir -P -M -- jpeg_persistent_mode
 ```
 
 ## ```--help```
