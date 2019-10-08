@@ -69,7 +69,7 @@ ssize_t files_readFileToBufMax(const char* fileName, uint8_t* buf, size_t fileMa
 bool files_writeBufToFile(const char* fileName, const uint8_t* buf, size_t fileSz, int flags) {
     int fd = TEMP_FAILURE_RETRY(open(fileName, flags, 0644));
     if (fd == -1) {
-        PLOG_W("Couldn't open '%s' for R/W", fileName);
+        PLOG_W("Couldn't create/open '%s' for R/W", fileName);
         return false;
     }
 
