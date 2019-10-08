@@ -1,14 +1,14 @@
-#include <inttypes.h>
-#include <openssl/err.h>
-#include <openssl/evp.h>
-#include <openssl/ssl.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <hf_ssl_lib.h>
 #include <libhfuzz/libhfuzz.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <inttypes.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/ssl.h>
 
 int LLVMFuzzerInitialize(int* argc, char*** argv) {
     HFInit();
@@ -18,7 +18,11 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
-    EVP_PKEY_free(d2i_AutoPrivateKey(NULL, &buf, len));
+    EVP_PKEY* key = d2i_AutoPrivateKey(NULL, &buf, len);
+    if (key == NULL) {
+        fprintf(stderr, "%s", ERR_error_string(ERR_get_error(), NULL));
+    }
+    EVP_PKEY_free(key);
     return 0;
 }
 

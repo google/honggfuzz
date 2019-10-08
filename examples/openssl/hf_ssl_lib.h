@@ -1,9 +1,8 @@
+#include <libhfuzz/libhfuzz.h>
 #include <openssl/err.h>
 #include <openssl/opensslv.h>
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
-
-#include <libhfuzz/libhfuzz.h>
 
 #ifdef __cplusplus
 extern "C" {

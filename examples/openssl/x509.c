@@ -4,15 +4,15 @@
 extern "C" {
 #endif
 
+#include <hf_ssl_lib.h>
+#include <libhfuzz/libhfuzz.h>
+
 #include <openssl/asn1.h>
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <stdint.h>
 #include <stdio.h>
-
-#include <hf_ssl_lib.h>
-#include <libhfuzz/libhfuzz.h>
 
 int LLVMFuzzerInitialize(int* argc, char*** argv) {
     HFInit();
@@ -33,6 +33,8 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
 
         X509_free(x);
         BIO_free(o);
+    } else {
+        fprintf(stderr, "%s", ERR_error_string(ERR_get_error(), NULL));
     }
 
     return 0;

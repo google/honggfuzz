@@ -4,6 +4,9 @@
 extern "C" {
 #endif
 
+#include <hf_ssl_lib.h>
+#include <libhfuzz/libhfuzz.h>
+
 #include <assert.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
@@ -11,9 +14,6 @@ extern "C" {
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
-
-#include <hf_ssl_lib.h>
-#include <libhfuzz/libhfuzz.h>
 
 static const uint8_t kRSACertificateDER[] = {0x30, 0x82, 0x06, 0x3d, 0x30, 0x82, 0x04, 0x25, 0xa0,
     0x03, 0x02, 0x01, 0x02, 0x02, 0x14, 0x0f, 0x2d, 0x4d, 0xdd, 0x2f, 0xa5, 0xc0, 0x5f, 0x5a, 0xd3,
