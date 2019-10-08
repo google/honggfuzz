@@ -90,7 +90,7 @@ but also
 honggfuzz -i input_dir --linux_perf_bts_edge --linux_perf_instr -P -- jpeg_persistent_mode
 ```
 
-## Corpus Miminization (```-M```) ##
+## Corpus Minimization (```-M```) ##
 
 ```shell
 honggfuzz -i input_dir -P -M -- jpeg_persistent_mode
