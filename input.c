@@ -532,7 +532,6 @@ static bool input_cmpCov(struct dynfile_t* item1, struct dynfile_t* item2) {
             return false;
         }
     }
-
     /* Both are equal */
     return false;
 }
@@ -543,7 +542,6 @@ static bool input_cmpCov(struct dynfile_t* item1, struct dynfile_t* item2) {
 /* Yes, the bubblesort :) */
 void input_sortDynamicInput(honggfuzz_t* hfuzz) {
     LOG_I("Sorting %zu dynamic entries by coverage", hfuzz->io.dynfileqCnt);
-
     for (size_t i = 0; i < hfuzz->io.dynfileqCnt; i++) {
         struct dynfile_t* item = NULL;
         TAILQ_FOREACH_HF(item, &hfuzz->io.dynfileq, pointers) {
