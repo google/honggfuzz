@@ -6,7 +6,7 @@
     * Image formats: Tavis Ormandy's [Image Testuite](http://code.google.com/p/imagetestsuite/) has been effective at finding vulnerabilities in various graphics libraries.
     * PDF: Adobe provides some [test PDF files](http://acroeng.adobe.com/).
 
-_**Note**: With the feedback-driven coverage-based modes, you can start your fuzzing with even a single 1-byte file._
+_**Note**: With the feedback-driven coverage-based modes, you can start your fuzzing without any input corpus._
 
 ## Compatibility list ##
 
