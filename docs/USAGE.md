@@ -6,7 +6,7 @@
     * Image formats: Tavis Ormandy's [Image Testuite](http://code.google.com/p/imagetestsuite/) has been effective at finding vulnerabilities in various graphics libraries.
     * PDF: Adobe provides some [test PDF files](http://acroeng.adobe.com/).
 
-_**Note**: With the feedback-driven coverage-based modes, you can start your fuzzing with even a single 1-byte file._
+_**Note**: With the feedback-driven coverage-based modes, you can start your fuzzing without any input corpus._
 
 ## Compatibility list ##
 
@@ -33,36 +33,42 @@ It should work under the following operating systems:
 honggfuzz -i input_dir -x -- /usr/bin/djpeg ___FILE___
 ```
 
-### Input on FD=0/STDIN (```-s````) ####
+### Input on FD=0/STDIN (```-s```/```--stdin_input```) ####
 ```shell
 honggfuzz -i input_dir -x -s -- /usr/bin/djpeg
 ```
 
 ## Non-persistent fuzzing with instrumentation ##
 
-### Compile-time instrumentation (enabled by default) ###
+### Compile-time instrumentation (```-z```/```--instrument```). _Note: it is enabled by default_ ###
 ```shell
-  honggfuzz -i input_dir -- /usr/bin/djpeg ___FILE___
+  honggfuzz -i input_dir -z -- instrumented.djpeg ___FILE___
 ```
 
-### Various hardware-based counters ###
+### QEMU-mode (black-box instrumentation) ###
 ```shell
-  honggfuzz --linux_perf_branch -- /usr/bin/djpeg ___FILE___
-  honggfuzz --linux_perf_bts_edge -- /usr/bin/djpeg ___FILE___
-  honggfuzz --linux_perf_ipt_block -- /usr/bin/djpeg ___FILE___
+honggfuzz -i input_dir -- <honggfuzz_dir>/qemu_mode/honggfuzz-qemu/x86_64-linux-user/qemu-x86_64 /usr/bin/djpeg ___FILE___
 ```
 
-## Persistent-mode (```-P``` - it will be auto-detected) ##
-
+### Various hardware-based mechanisms/counters ###
 ```shell
-  honggfuzz -i input_dir -P -- jpeg_persistent_mode
-  honggfuzz --linux_perf_bts_edge -- jpeg_persistent_mode
-  honggfuzz --linux_perf_ipt_block -- jpeg_persistent_mode
-  honggfuzz --linux_perf_branch -- jpeg_persistent_mode
-  honggfuzz --linux_perf_instr -- jpeg_persistent_mode
+  honggfuzz -i input_dir --linux_perf_bts_edge -- /usr/bin/djpeg ___FILE___
+  honggfuzz -i input_dir --linux_perf_ipt_block -- /usr/bin/djpeg ___FILE___
+  honggfuzz -i input_dir --linux_perf_instr -- /usr/bin/djpeg ___FILE___
+  honggfuzz -i input_dir --linux_perf_branch -- /usr/bin/djpeg ___FILE___
 ```
 
-but also
+## Persistent-mode (```-P```). _Note: it will be auto-detected_ ##
+
+```shell
+  honggfuzz -i input_dir -z -P -- jpeg_persistent_mode
+  honggfuzz -i input_dir --linux_perf_bts_edge -P -- jpeg_persistent_mode
+  honggfuzz -i input_dir --linux_perf_ipt_block -P -- jpeg_persistent_mode
+  honggfuzz -i input_dir --linux_perf_branch -P -- jpeg_persistent_mode
+  honggfuzz -i input_dir --linux_perf_instr -P -- jpeg_persistent_mode
+```
+
+but also a couple of instrumentation mechanisms used together
 
 ```shell
 honggfuzz -i input_dir --linux_perf_bts_edge --linux_perf_instr -P -- jpeg_persistent_mode
@@ -70,16 +76,28 @@ honggfuzz -i input_dir --linux_perf_bts_edge --linux_perf_instr -P -- jpeg_persi
 
 ## Corpus Minimization (```-M```) ##
 
-### Minimize files directly inside the input (```--input```) directory ###
+### Minimize corpus directly inside the input (```-i```/```--input```) directory ###
 
 ```shell
 honggfuzz -i input_dir -P -M -- jpeg_persistent_mode
 ```
 
-### Compile and save minimized corpus in the output directory (```--output```) ###
+or
+
+```shell
+honggfuzz -i input_dir -M -- instrumented.djpeg ___FILE___
+```
+
+### Save minimized corpus to the output (```--output```) directory  ###
 
 ```shell
 honggfuzz -i input_dir --output output_dir -P -M -- jpeg_persistent_mode
+```
+
+or
+
+```shell
+honggfuzz -i input_dir --output output_dir -M -- instrumented.djpeg ___FILE___
 ```
 
 # CMDLINE ```--help``` #
