@@ -48,6 +48,56 @@ It should work under the following operating systems:
 
 # USAGE #
 
+## Non-persistent fuzzing w/o instrumentation (```-x```) ##
+
+### Input as a file (```___FILE___```) ###
+```shell
+honggfuzz -i input_dir -x -- /usr/bin/djpeg ___FILE___
+```
+
+### Input on FD=0/STDIN (```-s````) ####
+```shell
+honggfuzz -i input_dir -x -s -- /usr/bin/djpeg
+```
+
+## Non-persistent fuzzing with instrumentation ##
+
+### Compile-time instrumentation (enabled by default) ###
+```shell
+  honggfuzz -i input_dir -- /usr/bin/djpeg ___FILE___
+```
+
+### Various hardware-based counters ###
+```shell
+  honggfuzz --linux_perf_branch -- /usr/bin/djpeg ___FILE___
+  honggfuzz --linux_perf_bts_edge -- /usr/bin/djpeg ___FILE___
+  honggfuzz --linux_perf_ipt_block -- /usr/bin/djpeg ___FILE___
+```
+
+## Persistent-mode (```-P``` - it will be auto-detected) ##
+
+```shell
+  honggfuzz -i input_dir -P -- jpeg_persistent_mode
+  honggfuzz --linux_perf_bts_edge -- jpeg_persistent_mode
+  honggfuzz --linux_perf_ipt_block -- jpeg_persistent_mode
+  honggfuzz --linux_perf_branch -- jpeg_persistent_mode
+  honggfuzz --linux_perf_instr -- jpeg_persistent_mode
+```
+
+but also
+
+```shell
+honggfuzz -i input_dir --linux_perf_bts_edge --linux_perf_instr -P -- jpeg_persistent_mode
+```
+
+## Corpus Miminization (```-M```) ##
+
+```shell
+honggfuzz -i input_dir -P -M -- jpeg_persistent_mode
+```
+
+## ```--help```
+
 ```shell
 Usage: ./honggfuzz [options] -- path_to_command [args]
 Options:
