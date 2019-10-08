@@ -33,14 +33,14 @@ It should work under the following operating systems:
 honggfuzz -i input_dir -x -- /usr/bin/djpeg ___FILE___
 ```
 
-### Input on FD=0/STDIN (```-s````) ####
+### Input on FD=0/STDIN (```-s```/```--stdin_input```) ####
 ```shell
 honggfuzz -i input_dir -x -s -- /usr/bin/djpeg
 ```
 
 ## Non-persistent fuzzing with instrumentation ##
 
-### Compile-time instrumentation (```-z```). _Note: enabled by default_ ###
+### Compile-time instrumentation (```-z```/```--instrument```). _Note: it is enabled by default_ ###
 ```shell
   honggfuzz -i input_dir -z -- instrumented.djpeg ___FILE___
 ```
@@ -61,10 +61,10 @@ honggfuzz -i input_dir -- <honggfuzz_dir>/qemu_mode/honggfuzz-qemu/x86_64-linux-
 ## Persistent-mode (```-P```). _Note: it will be auto-detected_ ##
 
 ```shell
-  honggfuzz -i input_dir -P -- jpeg_persistent_mode
-  honggfuzz --i input_dir -linux_perf_bts_edge -P -- jpeg_persistent_mode
+  honggfuzz -i input_dir -z -P -- jpeg_persistent_mode
+  honggfuzz -i input_dir --linux_perf_bts_edge -P -- jpeg_persistent_mode
   honggfuzz -i input_dir --linux_perf_ipt_block -P -- jpeg_persistent_mode
-  honggfuzz -i input_dir--linux_perf_branch -P -- jpeg_persistent_mode
+  honggfuzz -i input_dir --linux_perf_branch -P -- jpeg_persistent_mode
   honggfuzz -i input_dir --linux_perf_instr -P -- jpeg_persistent_mode
 ```
 
@@ -74,9 +74,9 @@ but also a couple of instrumentation mechanisms used together
 honggfuzz -i input_dir --linux_perf_bts_edge --linux_perf_instr -P -- jpeg_persistent_mode
 ```
 
-## Corpus Minimization (```-M```) ##
+## Corpus Minimization (```-M```/```--minimize```) ##
 
-### Minimize corpus directly inside the input (```-i```) directory ###
+### Minimize corpus directly inside the input (```-i```/```--input```) directory ###
 
 ```shell
 honggfuzz -i input_dir -P -M -- jpeg_persistent_mode
