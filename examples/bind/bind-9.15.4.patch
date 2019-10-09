@@ -1,6 +1,18 @@
+diff -Nur ORIG.bind-9.15.4/bin/named/fuzz.c bind-9.15.4/bin/named/fuzz.c
+--- ORIG.bind-9.15.4/bin/named/fuzz.c	2019-09-09 16:52:45.000000000 +0200
++++ bind-9.15.4/bin/named/fuzz.c	2019-10-09 14:52:41.025018879 +0200
+@@ -736,7 +736,7 @@
+  */
+ void
+ named_fuzz_notify(void) {
+-#ifdef ENABLE_AFL
++#if 0
+ 	if (getenv("AFL_CMIN")) {
+ 		named_server_flushonshutdown(named_g_server, false);
+ 		isc_app_shutdown();
 diff -Nur ORIG.bind-9.15.4/bin/named/main.c bind-9.15.4/bin/named/main.c
 --- ORIG.bind-9.15.4/bin/named/main.c	2019-09-09 16:52:45.000000000 +0200
-+++ bind-9.15.4/bin/named/main.c	2019-10-09 14:38:44.369350853 +0200
++++ bind-9.15.4/bin/named/main.c	2019-10-09 14:52:21.993025966 +0200
 @@ -1385,11 +1385,285 @@
  }
  #endif /* HAVE_LIBSCF */
@@ -292,7 +304,7 @@ diff -Nur ORIG.bind-9.15.4/bin/named/main.c bind-9.15.4/bin/named/main.c
  #endif
 diff -Nur ORIG.bind-9.15.4/compile.sh bind-9.15.4/compile.sh
 --- ORIG.bind-9.15.4/compile.sh	1970-01-01 01:00:00.000000000 +0100
-+++ bind-9.15.4/compile.sh	2019-10-09 14:38:44.369350853 +0200
++++ bind-9.15.4/compile.sh	2019-10-09 14:52:21.993025966 +0200
 @@ -0,0 +1,20 @@
 +#!/bin/sh
 +
@@ -316,7 +328,7 @@ diff -Nur ORIG.bind-9.15.4/compile.sh bind-9.15.4/compile.sh
 +make -j$(nproc)
 diff -Nur ORIG.bind-9.15.4/lib/dns/request.c bind-9.15.4/lib/dns/request.c
 --- ORIG.bind-9.15.4/lib/dns/request.c	2019-09-09 16:52:45.000000000 +0200
-+++ bind-9.15.4/lib/dns/request.c	2019-10-09 14:38:44.369350853 +0200
++++ bind-9.15.4/lib/dns/request.c	2019-10-09 14:52:21.997025964 +0200
 @@ -747,7 +747,7 @@
  		goto cleanup;
  	}
@@ -337,7 +349,7 @@ diff -Nur ORIG.bind-9.15.4/lib/dns/request.c bind-9.15.4/lib/dns/request.c
  	req_log(ISC_LOG_DEBUG(3), "request_render");
 diff -Nur ORIG.bind-9.15.4/lib/dns/resolver.c bind-9.15.4/lib/dns/resolver.c
 --- ORIG.bind-9.15.4/lib/dns/resolver.c	2019-09-09 16:52:45.000000000 +0200
-+++ bind-9.15.4/lib/dns/resolver.c	2019-10-09 14:38:44.377350850 +0200
++++ bind-9.15.4/lib/dns/resolver.c	2019-10-09 14:52:22.001025962 +0200
 @@ -1946,7 +1946,7 @@
  
  	query = isc_mem_get(fctx->mctx, sizeof(*query));
@@ -349,7 +361,7 @@ diff -Nur ORIG.bind-9.15.4/lib/dns/resolver.c bind-9.15.4/lib/dns/resolver.c
  	query->connects = 0;
 diff -Nur ORIG.bind-9.15.4/lib/isc/random.c bind-9.15.4/lib/isc/random.c
 --- ORIG.bind-9.15.4/lib/isc/random.c	2019-09-09 16:52:45.000000000 +0200
-+++ bind-9.15.4/lib/isc/random.c	2019-10-09 14:38:44.377350850 +0200
++++ bind-9.15.4/lib/isc/random.c	2019-10-09 14:52:22.001025962 +0200
 @@ -94,6 +94,7 @@
  isc_random8(void) {
  	RUNTIME_CHECK(isc_once_do(&isc_random_once,
