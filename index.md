@@ -1,19 +1,19 @@
-# honggfuzz
-
-## Description
+# Description
 
 A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See [USAGE](https://github.com/google/honggfuzz/blob/master/docs/USAGE.md) for the description of command-line options.
 
-  * It's __multi-process__ and __multi-threaded__: no need to run multiple copies of your fuzzer, as honggfuzz can unlock potential of all your available CPU cores with a single supervising process. The file corpus is automatically shared and improved between the fuzzing threads and fuzzed processes.
-  * It's blazingly fast when in the [persistent fuzzing mode](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)). A simple/empty _LLVMFuzzerTestOneInput_ function can be tested with __up to 1mo iterations per second__ on a relatively modern CPU (e.g. i7-6700K)
-  * Has a [solid track record](#trophies) of uncovered security bugs: the __only__ (to the date) __vulnerability in OpenSSL with the [critical](https://www.openssl.org/news/secadv/20160926.txt) score mark__ was discovered by honggfuzz. See the [Trophies](#trophies) paragraph for the summary of findings to the date
-  * Uses low-level interfaces to monitor processes (e.g. _ptrace_ under Linux and NetBSD). As opposed to other fuzzers, it __will discover and report hijacked/ignored signals from crashes__ (intercepted and potentially hidden by a fuzzed program)
-  * Easy-to-use, feed it a simple corpus directory (can even be empty) and it will work its way up expanding it utilizing feedback-based coverage metrics
-  * Supports several (more than any other coverage-based feedback-driven fuzzer) hardware-based (CPU: branch/instruction counting, __Intel BTS__, __Intel PT__) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) methods known from other fuzzers (libfuzzer, afl). See also the new __[qemu mode](https://github.com/google/honggfuzz/tree/master/qemu_mode)__ blackbox instrumentation.
-  * Works (at least) under GNU/Linux, FreeBSD, NetBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md)
-  * Supports the __persistent fuzzing mode__ (long-lived process calling a fuzzed API repeatedly) with libhfuzz/libhfuzz.a. More on that can be found [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)
-  * It comes with the __[examples](https://github.com/google/honggfuzz/tree/master/examples) directory__, consisting of real world fuzz setups for widely-used software (e.g. Apache and OpenSSL)
-  * Provides the __[corpus minimization](https://github.com/google/honggfuzz/blob/master/docs/USAGE.md#corpus-minimization--m)__ functionality
+# Features
+
+  * It's __multi-process__ and __multi-threaded__: there's no need to run multiple copies of your fuzzer, as honggfuzz can unlock potential of all your available CPU cores with a single running instance. The file corpus is automatically shared and improved between all fuzzed processes.
+  * It's blazingly fast when the [persistent fuzzing mode](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)) is used. A simple/empty _LLVMFuzzerTestOneInput_ function can be tested with __up to 1mo iterations per second__ on a relatively modern CPU (e.g. i7-6700K).
+  * Has a [solid track record](#trophies) of uncovered security bugs: the __only__ (to the date) __vulnerability in OpenSSL with the [critical](https://www.openssl.org/news/secadv/20160926.txt) score mark__ was discovered by honggfuzz. See the [Trophies](#trophies) paragraph for the summary of findings to the date.
+  * Uses low-level interfaces to monitor processes (e.g. _ptrace_ under Linux and NetBSD). As opposed to other fuzzers, it __will discover and report hijacked/ignored signals from crashes__ (intercepted and potentially hidden by a fuzzed program).
+  * Easy-to-use, feed it a simple corpus directory (can even be empty for [feedback-driven fuzzing]) and it will work its way up, expanding it by utilizing feedback-based coverage metrics.
+  * Supports several (more than any other coverage-based feedback-driven fuzzer) hardware-based (CPU: branch/instruction counting, __Intel BTS__, __Intel PT__) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) modes. Also, see the new __[qemu mode](https://github.com/google/honggfuzz/tree/master/qemu_mode)__ for blackbox binary fuzzing.
+  * Works (at least) under GNU/Linux, FreeBSD, NetBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md).
+  * Supports the __persistent fuzzing mode__ (long-lived process calling a fuzzed API repeatedly). More on that can be found [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md).
+  * It comes with the __[examples](https://github.com/google/honggfuzz/tree/master/examples) directory__, consisting of real world fuzz setups for widely-used software (e.g. Apache HTTPS, OpenSSL, libjpeg etc.).
+  * Provides __[corpus minimization](https://github.com/google/honggfuzz/blob/master/docs/USAGE.md#corpus-minimization--m)__ modes.
 
 ---
 
@@ -23,12 +23,12 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
 ---
 
-## Code
+# Code
 
   * Latest stable version: [1.9](https://github.com/google/honggfuzz/releases)
   * [Changelog](https://github.com/google/honggfuzz/blob/master/CHANGELOG)
 
-## Requirements
+# Requirements
 
   * **Linux** - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev), clang-4.0 or higher for software-based coverage modes
   * **FreeBSD** - gmake, clang-3.6 or newer (clang-devel/4.0 suggested)
@@ -39,7 +39,7 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
   * if **Clang/LLVM** is used to compile honggfuzz - link it with the BlocksRuntime Library (libblocksruntime-dev)
 
 
-## Trophies
+# Trophies
 
 Honggfuzz has been used to find a few interesting security problems in major software packages; An incomplete list:
 
@@ -101,7 +101,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * crashes in rust-bitcoin/rust-lightning [#1](https://github.com/rust-bitcoin/rust-lightning/commit/a9aa3c37fe182dd266e0faebc788e0c9ee724783)
   * ... and more
 
-## Projects utilizing Honggfuzz
+# Projects utilizing Honggfuzz
 
   * [__QuickFuzz__ by CIFASIS](http://quickfuzz.org)
   * [__OSS-Fuzz__](https://github.com/google/oss-fuzz)
@@ -128,7 +128,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__DeepState__: by Trail-of-Bits](https://github.com/trailofbits/deepstate)
   * [__Quiche-HTTP/3__: by Cloudflare](https://github.com/cloudflare/quiche/pull/179)
 
-## Examples
+# Fuzzing examples
 
 The [examples](https://github.com/google/honggfuzz/tree/master/examples/)
 directory contains code demonstrating (among others) how to use honggfuzz to find bugs in the
@@ -136,7 +136,7 @@ directory contains code demonstrating (among others) how to use honggfuzz to fin
 library and in the [Apache](https://github.com/google/honggfuzz/tree/master/examples/apache-httpd)
 HTTPD web server.
 
-## Other
+# Contact
 
   * User mailing list: [honggfuzz@googlegroups.com](mailto:honggfuzz@googlegroups.com), sign up with [this link](https://groups.google.com/forum/#!forum/honggfuzz).
 
