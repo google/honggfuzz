@@ -17,7 +17,7 @@ build an upstream git fork is executed
 
 | **Dependency** | **Last Tested Version** |
 |:-------|:-----------|
-| **Android NDK** | r16 with Android API 24 (Nougat 7.0) |
+| **Android NDK** | r20 |
 | **libunwind** | upstream master commit [bc8698f] |
 | **capstone** | 3.0.4 stable version |
 
