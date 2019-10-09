@@ -115,8 +115,6 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__FFW - Fuzzing For Worms__](https://github.com/dobin/ffw)
   * [__honggfuzz-rs__: fuzzing Rust with Honggfuzz](https://github.com/rust-fuzz/honggfuzz-rs)
   * [__roughenough-fuzz__](https://github.com/int08h/roughenough-fuzz)
-  * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
-    * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
   * [__Monkey__: a HTTP server](https://github.com/monkey/monkey/blob/master/FUZZ.md)
   * [__Killerbeez API__](https://github.com/grimm-co/killerbeez-mutators)
   * [__FuzzM__: a gray box model-based fuzzing framework](https://github.com/collins-research/FuzzM)
@@ -127,6 +125,8 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__DeepState__: by Trail-of-Bits](https://github.com/trailofbits/deepstate)
   * [__DeepState__: by Trail-of-Bits](https://github.com/trailofbits/deepstate)
   * [__Quiche-HTTP/3__: by Cloudflare](https://github.com/cloudflare/quiche/pull/179)
+    * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
+    * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
 
 # Fuzzing examples
 
