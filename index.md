@@ -1,6 +1,11 @@
 # Description
 
-A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See [USAGE](https://github.com/google/honggfuzz/blob/master/docs/USAGE.md) for the description of command-line options.
+A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with interesting analysis options. See the [Usage document](https://github.com/google/honggfuzz/blob/master/docs/USAGE.md) for a primer on Honggfuzz use.
+
+# Code
+
+  * Latest stable version: [1.9](https://github.com/google/honggfuzz/releases)
+  * [Changelog](https://github.com/google/honggfuzz/blob/master/CHANGELOG)
 
 # Features
 
@@ -22,11 +27,6 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 </p>
 
 ---
-
-# Code
-
-  * Latest stable version: [1.9](https://github.com/google/honggfuzz/releases)
-  * [Changelog](https://github.com/google/honggfuzz/blob/master/CHANGELOG)
 
 # Requirements
 
