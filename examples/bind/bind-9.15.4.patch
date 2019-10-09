@@ -1,7 +1,7 @@
-diff -Nur ORIG.bind-9.14.1/bin/named/main.c bind-9.14.1/bin/named/main.c
---- ORIG.bind-9.14.1/bin/named/main.c	2019-04-06 22:09:59.000000000 +0200
-+++ bind-9.14.1/bin/named/main.c	2019-05-09 16:26:27.615239219 +0200
-@@ -1347,11 +1347,285 @@
+diff -Nur ORIG.bind-9.15.4/bin/named/main.c bind-9.15.4/bin/named/main.c
+--- ORIG.bind-9.15.4/bin/named/main.c	2019-09-09 16:52:45.000000000 +0200
++++ bind-9.15.4/bin/named/main.c	2019-10-09 14:38:44.369350853 +0200
+@@ -1385,11 +1385,285 @@
  }
  #endif /* HAVE_LIBSCF */
  
@@ -290,9 +290,9 @@ diff -Nur ORIG.bind-9.14.1/bin/named/main.c bind-9.14.1/bin/named/main.c
  #ifdef HAVE_LIBSCF
  	char *instance = NULL;
  #endif
-diff -Nur ORIG.bind-9.14.1/compile.sh bind-9.14.1/compile.sh
---- ORIG.bind-9.14.1/compile.sh	1970-01-01 01:00:00.000000000 +0100
-+++ bind-9.14.1/compile.sh	2019-05-09 16:27:15.139211816 +0200
+diff -Nur ORIG.bind-9.15.4/compile.sh bind-9.15.4/compile.sh
+--- ORIG.bind-9.15.4/compile.sh	1970-01-01 01:00:00.000000000 +0100
++++ bind-9.15.4/compile.sh	2019-10-09 14:38:44.369350853 +0200
 @@ -0,0 +1,20 @@
 +#!/bin/sh
 +
@@ -314,10 +314,10 @@ diff -Nur ORIG.bind-9.14.1/compile.sh bind-9.14.1/compile.sh
 +
 +make clean
 +make -j$(nproc)
-diff -Nur ORIG.bind-9.14.1/lib/dns/request.c bind-9.14.1/lib/dns/request.c
---- ORIG.bind-9.14.1/lib/dns/request.c	2019-04-06 22:09:59.000000000 +0200
-+++ bind-9.14.1/lib/dns/request.c	2019-05-09 16:26:27.615239219 +0200
-@@ -760,7 +760,7 @@
+diff -Nur ORIG.bind-9.15.4/lib/dns/request.c bind-9.15.4/lib/dns/request.c
+--- ORIG.bind-9.15.4/lib/dns/request.c	2019-09-09 16:52:45.000000000 +0200
++++ bind-9.15.4/lib/dns/request.c	2019-10-09 14:38:44.369350853 +0200
+@@ -747,7 +747,7 @@
  		goto cleanup;
  	}
  
@@ -326,7 +326,7 @@ diff -Nur ORIG.bind-9.14.1/lib/dns/request.c bind-9.14.1/lib/dns/request.c
  		tcp = true;
  	share = (options & DNS_REQUESTOPT_SHARE);
  
-@@ -1050,6 +1050,8 @@
+@@ -1033,6 +1033,8 @@
  	dns_compress_t cctx;
  	bool cleanup_cctx = false;
  
@@ -335,22 +335,22 @@ diff -Nur ORIG.bind-9.14.1/lib/dns/request.c bind-9.14.1/lib/dns/request.c
  	REQUIRE(bufferp != NULL && *bufferp == NULL);
  
  	req_log(ISC_LOG_DEBUG(3), "request_render");
-diff -Nur ORIG.bind-9.14.1/lib/dns/resolver.c bind-9.14.1/lib/dns/resolver.c
---- ORIG.bind-9.14.1/lib/dns/resolver.c	2019-04-06 22:09:59.000000000 +0200
-+++ bind-9.14.1/lib/dns/resolver.c	2019-05-09 16:26:27.619239217 +0200
-@@ -1951,7 +1951,7 @@
- 		goto stop_idle_timer;
- 	}
+diff -Nur ORIG.bind-9.15.4/lib/dns/resolver.c bind-9.15.4/lib/dns/resolver.c
+--- ORIG.bind-9.15.4/lib/dns/resolver.c	2019-09-09 16:52:45.000000000 +0200
++++ bind-9.15.4/lib/dns/resolver.c	2019-10-09 14:38:44.377350850 +0200
+@@ -1946,7 +1946,7 @@
+ 
+ 	query = isc_mem_get(fctx->mctx, sizeof(*query));
  	query->mctx = fctx->mctx;
 -	query->options = options;
 +	query->options = options | DNS_FETCHOPT_TCP;
  	query->attributes = 0;
  	query->sends = 0;
  	query->connects = 0;
-diff -Nur ORIG.bind-9.14.1/lib/isc/random.c bind-9.14.1/lib/isc/random.c
---- ORIG.bind-9.14.1/lib/isc/random.c	2019-04-06 22:09:59.000000000 +0200
-+++ bind-9.14.1/lib/isc/random.c	2019-05-09 16:26:27.619239217 +0200
-@@ -96,6 +96,7 @@
+diff -Nur ORIG.bind-9.15.4/lib/isc/random.c bind-9.15.4/lib/isc/random.c
+--- ORIG.bind-9.15.4/lib/isc/random.c	2019-09-09 16:52:45.000000000 +0200
++++ bind-9.15.4/lib/isc/random.c	2019-10-09 14:38:44.377350850 +0200
+@@ -94,6 +94,7 @@
  isc_random8(void) {
  	RUNTIME_CHECK(isc_once_do(&isc_random_once,
  				  isc_random_initialize) == ISC_R_SUCCESS);
@@ -358,7 +358,7 @@ diff -Nur ORIG.bind-9.14.1/lib/isc/random.c bind-9.14.1/lib/isc/random.c
  	return (next() & 0xff);
  }
  
-@@ -103,6 +104,7 @@
+@@ -101,6 +102,7 @@
  isc_random16(void) {
  	RUNTIME_CHECK(isc_once_do(&isc_random_once,
  				  isc_random_initialize) == ISC_R_SUCCESS);
@@ -366,7 +366,7 @@ diff -Nur ORIG.bind-9.14.1/lib/isc/random.c bind-9.14.1/lib/isc/random.c
  	return (next() & 0xffff);
  }
  
-@@ -110,6 +112,7 @@
+@@ -108,6 +110,7 @@
  isc_random32(void) {
  	RUNTIME_CHECK(isc_once_do(&isc_random_once,
  				  isc_random_initialize) == ISC_R_SUCCESS);
@@ -374,7 +374,7 @@ diff -Nur ORIG.bind-9.14.1/lib/isc/random.c bind-9.14.1/lib/isc/random.c
  	return (next());
  }
  
-@@ -124,6 +127,13 @@
+@@ -122,6 +125,13 @@
  	RUNTIME_CHECK(isc_once_do(&isc_random_once,
  				  isc_random_initialize) == ISC_R_SUCCESS);
  
