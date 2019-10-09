@@ -1,12 +1,11 @@
 # REQUIREMENTS #
 
-  * A POSIX compliant operating system, [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md) or Windows (CygWin)
-  * GNU/Linux with modern kernel (>= v4.2) for hardware-based code coverage guided fuzzing
-  * A corpus of input files. Honggfuzz expects a set of files to use and modify as input to the application you're fuzzing. How you get or create these files is up to you, but you might be interested in the following sources:
+  * A POSIX compliant operating system, MacOSX, [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md) or Windows (CygWin)
+  * GNU/Linux with modern kernel (>= v4.2) for hardware-based code coverage guided fuzzing (intel PT, Intel BTS, instruction/branch counting)
+  * An input corpus: You might be interested in the following for some common file formats:
     * Image formats: Tavis Ormandy's [Image Testuite](http://code.google.com/p/imagetestsuite/) has been effective at finding vulnerabilities in various graphics libraries.
     * PDF: Adobe provides some [test PDF files](http://acroeng.adobe.com/).
-
-_**Note**: With the feedback-driven coverage-based modes, you can start your fuzzing without any input corpus._
+    * _**Note**: With the feedback-driven coverage-based modes, you can start your fuzzing without the input corpus._
 
 ## Compatibility list ##
 
@@ -16,13 +15,12 @@ It should work under the following operating systems:
 |:-------|:-----------|:----------|
 | **GNU/Linux** | Works | ptrace() API (x86, x86-64 disassembly support)|
 | **FreeBSD** | Works | POSIX signal interface |
+| **OpenBSD** | Works | POSIX signal interface |
 | **NetBSD** | Works | ptrace() API (x86, x86-64 disassembly support)|
 | **Mac OS X** | Works | POSIX signal interface/Mac OS X crash reports (x86-64/x86 disassembly support) |
 | **Android** | Works | ptrace() API (x86, x86-64 disassembly support) |
 | **MS Windows** | Works | POSIX signal interface via CygWin |
-| **Other Unices** | Depends`*` | POSIX signal interface |
-
- _`*`) It might work provided that a given operating system implements **wait4()** call_
+| **Other Unices** | Maybe | POSIX signal interface |
 
 # USAGE #
 
