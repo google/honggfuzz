@@ -8,7 +8,7 @@
 
 **Preparation**
 
-*** 1. Compile honggfuzz
+1. Compile honggfuzz
 2. Download bind-9.15.4.tgz from https://downloads.isc.org/isc/bind9/
 3. Decompress/unpack and patch it
 
