@@ -405,12 +405,12 @@ void input_addDynamicInput(
 bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     struct dynfile_t* current = NULL;
 
+    if (ATOMIC_GET(run->global->io.dynfileqCnt) == 0) {
+        LOG_F("The dynamic file corpus is empty. This shouldn't happen");
+    }
+
     {
         MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
-
-        if (run->global->io.dynfileqCnt == 0) {
-            LOG_F("The dynamic file corpus is empty. This shouldn't happen");
-        }
 
         if (run->global->io.dynfileqCurrent == NULL) {
             run->global->io.dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
