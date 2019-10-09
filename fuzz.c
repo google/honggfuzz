@@ -123,12 +123,11 @@ static void fuzz_setDynamicMainState(run_t* run) {
     }
 
     /*
-     * If the initial fuzzing yielded no useful coverage, just add a single 1-byte file to the
+     * If the initial fuzzing yielded no useful coverage, just add a single empty file to the
      * dynamic corpus, so the dynamic phase doesn't fail because of lack of useful inputs
      */
     if (run->global->io.dynfileqCnt == 0) {
-        const char* single_byte = run->global->cfg.only_printable ? " " : "\0";
-        input_addDynamicInput(run->global, (const uint8_t*)single_byte, /* size= */ 1U,
+        input_addDynamicInput(run->global, (const uint8_t*)"", /* size= */ 0U,
             /* cov */ (uint64_t[4]){0, 0, 0, 0}, /* path= */ "[DYNAMIC]");
     }
     snprintf(run->origFileName, sizeof(run->origFileName), "[DYNAMIC]");
