@@ -3,45 +3,50 @@
 Honggfuzz is capable of fuzzing APIs, which is to say; to test new data within the same process. This speeds-up the process of fuzzing APIs greatly
 
 # Requirements for hardware-based counter-based fuzzing #
-  * GNU/Linux or POSIX interface (e.g. FreeBSD, Windows/CygWin)
+  * GNU/Linux
 
 # HowTo #
 
-One can prepare a binary in the two following ways:
+Prepare a binary in the two following ways:
 
-## ASAN-style ##
+## ASAN-style (_LLVMFuzzerTestOneInput_) ##
 
-Two functions must be prepared
+Two functions must be provided
 
-```int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)```
+```c
+int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)```
+````
 
-and (optional)
+and optionally
 
-```int LLVMFuzzerInitialize(int *argc, char ***argv)```
-
-Example (test.c):
+```c
+int LLVMFuzzerInitialize(int *argc, char ***argv)```
 ```
-int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len) {
+
+### Example (test.c):
+```c
+int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
 	TestAPI(buf, len);
 	return 0;
 }
 ```
 
-Compilation:
-```
-$ hfuzz_cc/hfuzz_clang test.c -o test
+### Compilation
+```shell
+$ hfuzz_cc/hfuzz-clang test.c -o test
 ```
 
-Execution:
-```
+### Fuzzing
+```shell
 $ honggfuzz -P -- ./test
 ```
 
 ## HF_ITER style ##
 
-A complete program needs to be prepared, using ```HF_ITER``` symbol to obtain new inputs
+A complete program needs to be prepared, using ```HF_ITER``` symbol to fetch new inputs from honggfuzz
 
-Example (test.c):
+### Example (test.c):
+
 ```c
 #include <inttypes.h>
 
@@ -54,32 +59,19 @@ int main(void) {
 
 		HF_ITER(&buf, &len);
 
-		TestAPI(buf, len);
+		ApiToBeFuzzed(buf, len);
 	}
 }
 ```
 
-Compilation:
-```
-$ hfuzz_cc/hfuzz_clang test.c -o test ~/honggfuzz/libfuzz/libfuzz.a
+### Compilation
+
+```shell
+$ hfuzz_cc/hfuzz-clang test.c -o test ~/honggfuzz/libfuzz/libfuzz.a
 ```
 
-Execution:
+## Fuzzing
+
 ```
 $ honggfuzz -P -- ./test
-```
-
-# Feedback-driven modes #
-
-The persistent fuzzing can be easily used together with feedback-driven fuzzing. In order to achieve that, one needs to compile binary with compile-time instrumentation, or use hardware-based instrumentation (BTS, Intel PT). More can be found in this [document](FeedbackDrivenFuzzing.md)
-
-Example (compile-time)
-```
-$ honggfuzz -P -z -- ./test
-```
-
-Example (hardware-based)
-```
-$ honggfuzz -P --linux_perf_bts_edge -- ./test
-$ honggfuzz -P --linux_perf_ipt_block -- ./test
 ```
