@@ -46,5 +46,5 @@ $ vim <fuzzing_directory>/bind/dist/etc/named.conf # [edit the *directory* direc
 7. **Fuzz it!**
 
 ```shell
-$ <honggfuzz_dir>/honggfuzz -i input_corpus -- ./dist/sbin/named -c /home/jagger/fuzz/bind/dist/etc/named.conf -g
+$ <honggfuzz_dir>/honggfuzz -i input_corpus -- ./dist/sbin/named -c <fuzzing_directory>/bind/dist/etc/named.conf -g
  ```
