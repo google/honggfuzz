@@ -612,10 +612,8 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
     SSL_CTX_set_alpn_select_cb(ctx, alpn_callback, NULL);
     SSL_CTX_set_next_protos_advertised_cb(ctx, npn_callback, NULL);
     SSL_CTX_set_ecdh_auto(ctx, 1);
-#if defined(TLS1_3_VERSION)
     SSL_CTX_set_min_proto_version(ctx, SSL3_VERSION);
     SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION);
-#endif /* defined(TLS1_3_VERSION) */
     SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_BOTH);
     SSL_CTX_set_timeout(ctx, 3);
 

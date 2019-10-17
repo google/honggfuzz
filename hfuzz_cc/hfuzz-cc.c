@@ -313,7 +313,7 @@ static void commonOpts(int* j, char** args) {
         args[(*j)++] = "-Wno-unused-command-line-argument";
         args[(*j)++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,trace-div,indirect-calls";
         args[(*j)++] = "-mllvm";
-        args[(*j)++] = "-sanitizer-coverage-level=3";
+        args[(*j)++] = "-sanitizer-coverage-prune-blocks=1";
     }
 
     /*
