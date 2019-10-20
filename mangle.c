@@ -561,7 +561,7 @@ static void mangle_Shrink(run_t* run, bool printable HF_ATTR_UNUSED) {
 
 static void mangle_Resize(run_t* run, bool printable) {
     size_t oldsz = run->dynamicFileSz;
-    uint64_t v = util_rndGet(0, 16);
+    uint64_t v = util_rndGet(0, 32);
     ssize_t newsz = 0;
 
     switch (v) {
@@ -573,6 +573,9 @@ static void mangle_Resize(run_t* run, bool printable) {
             break;
         case 9 ... 16:
             newsz = oldsz + 8 - v;
+            break;
+        case 17 ... 32:
+            newsz = run->dynamicFileSz;
             break;
         default:
             LOG_F("Illegal value from util_rndGet: %" PRIu64, v);
@@ -621,7 +624,6 @@ void mangle_mangleContent(run_t* run) {
         mangle_Expand,
         mangle_Shrink,
         mangle_ASCIIVal,
-        mangle_Resize,
     };
 
     if (run->mutationsPerRun == 0U) {
