@@ -575,7 +575,7 @@ static void mangle_Resize(run_t* run, bool printable) {
             newsz = oldsz + 8 - v;
             break;
         case 17 ... 32:
-            newsz = run->dynamicFileSz;
+            newsz = oldsz;
             break;
         default:
             LOG_F("Illegal value from util_rndGet: %" PRIu64, v);
