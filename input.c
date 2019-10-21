@@ -256,6 +256,15 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
     return true;
 }
 
+void input_freeDictionary(honggfuzz_t* hfuzz) {
+    while (!TAILQ_EMPTY(&hfuzz->mutate.dictq)) {
+        struct strings_t* str = TAILQ_FIRST(&hfuzz->mutate.dictq);
+        TAILQ_REMOVE(&hfuzz->mutate.dictq, str, pointers);
+        free(str);
+        hfuzz->mutate.dictionaryCnt--;
+    }
+}
+
 bool input_parseBlacklist(honggfuzz_t* hfuzz) {
     FILE* fBl = fopen(hfuzz->feedback.blacklistFile, "rb");
     if (fBl == NULL) {

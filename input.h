@@ -32,6 +32,7 @@ extern void input_setSize(run_t* run, size_t sz);
 extern bool input_getNext(run_t* run, char fname[PATH_MAX], bool rewind);
 extern bool input_init(honggfuzz_t* hfuzz);
 extern bool input_parseDictionary(honggfuzz_t* hfuzz);
+extern void input_freeDictionary(honggfuzz_t* hfuzz);
 extern bool input_parseBlacklist(honggfuzz_t* hfuzz);
 extern bool input_writeCovFile(const char* dir, const uint8_t* data, size_t len);
 extern void input_addDynamicInput(
