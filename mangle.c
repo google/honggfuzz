@@ -561,20 +561,20 @@ static void mangle_Shrink(run_t* run, bool printable HF_ATTR_UNUSED) {
 
 static void mangle_Resize(run_t* run, bool printable) {
     size_t oldsz = run->dynamicFileSz;
-    uint64_t v = util_rndGet(0, 32);
+    uint64_t v = util_rndGet(0, 512);
     ssize_t newsz = 0;
 
     switch (v) {
         case 0:
             newsz = (ssize_t)util_rndGet(1, run->global->mutate.maxFileSz);
             break;
-        case 1 ... 8:
+        case 1 ... 128:
             newsz = oldsz + v;
             break;
-        case 9 ... 16:
-            newsz = oldsz + 8 - v;
+        case 129 ... 256:
+            newsz = oldsz + 128 - v;
             break;
-        case 17 ... 32:
+        case 257 ... 512:
             newsz = oldsz;
             break;
         default:
