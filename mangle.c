@@ -560,25 +560,31 @@ static void mangle_Shrink(run_t* run, bool printable HF_ATTR_UNUSED) {
 }
 
 static void mangle_Resize(run_t* run, bool printable) {
-    size_t oldsz = run->dynamicFileSz;
-    uint64_t v = util_rndGet(0, 512);
+    ssize_t oldsz = run->dynamicFileSz;
     ssize_t newsz = 0;
 
-    switch (v) {
-        case 0:
-            newsz = (ssize_t)util_rndGet(1, run->global->mutate.maxFileSz);
-            break;
-        case 1 ... 128:
-            newsz = oldsz + v;
-            break;
-        case 129 ... 256:
-            newsz = oldsz + 128 - v;
-            break;
-        case 257 ... 512:
+    uint64_t choice = util_rndGet(0, 12);
+    switch (choice) {
+        case 0 ... 7: /* Do nothing */
             newsz = oldsz;
             break;
+        case 8: /* Set new size arbitrarily */
+            newsz = (ssize_t)util_rndGet(1, run->global->mutate.maxFileSz);
+            break;
+        case 9: /* Increase size by a small value */
+            newsz = oldsz + (ssize_t)util_rndGet(1, 8);
+            break;
+        case 10: /* Increase size by a larger value */
+            newsz = oldsz + (ssize_t)util_rndGet(9, 128);
+            break;
+        case 11: /* Decrease size by a small value */
+            newsz = oldsz - (ssize_t)util_rndGet(1, 8);
+            break;
+        case 12: /* Decrease size by a larger value */
+            newsz = oldsz - (ssize_t)util_rndGet(9, 128);
+            break;
         default:
-            LOG_F("Illegal value from util_rndGet: %" PRIu64, v);
+            LOG_F("Illegal value from util_rndGet: %" PRIu64, choice);
             break;
     }
     if (newsz < 1) {
@@ -589,7 +595,7 @@ static void mangle_Resize(run_t* run, bool printable) {
     }
 
     input_setSize(run, (size_t)newsz);
-    if (newsz > (ssize_t)oldsz) {
+    if (newsz > oldsz) {
         if (printable) {
             util_rndBufPrintable(&run->dynamicFile[oldsz], newsz - oldsz);
         } else {
