@@ -71,8 +71,6 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
         goto out;
     }
 
-	abort();
-
     cinfo.mem->max_memory_to_use = (1024ULL * 1024ULL * 1024ULL);
     cinfo.mem->max_alloc_chunk = (1024ULL * 1024ULL * 1024ULL);
 
