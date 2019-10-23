@@ -35,7 +35,7 @@ static const char* const cdjpeg_message_table[] = {
 #include "cderror.h"
     NULL};
 
-static uint64_t max_total_pixels = 1000000000ULL; /* 1G */
+static uint64_t max_hv_size = 10000;
 int LLVMFuzzerInitialize(int* argc, char*** argv) {
     null_fd = open("/dev/null", O_WRONLY);
 
@@ -50,7 +50,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
 
     /* If there are any arguments provided, limit width*height to this value */
     if (*argc > 1) {
-        max_total_pixels = strtoull((*argv)[1], NULL, 0);
+        max_hv_size = strtoull((*argv)[1], NULL, 0);
     }
     return 0;
 }
@@ -65,7 +65,10 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
 
     /* Limit total number of pixels to decode to 50M */
     uint64_t total_pix = (uint64_t)cinfo.output_height * (uint64_t)cinfo.output_width;
-    if (total_pix > max_total_pixels) {
+    if ((uint64_t)cinfo.output_height > max_hv_size) {
+        goto out;
+    }
+    if ((uint64_t)cinfo.output_width > max_hv_size) {
         goto out;
     }
 
