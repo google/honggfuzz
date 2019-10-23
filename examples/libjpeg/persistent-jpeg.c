@@ -63,14 +63,15 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
     jpeg_mem_src(&cinfo, buf, len);
     jpeg_read_header(&cinfo, TRUE);
 
-    /* Limit total number of pixels to decode to 50M */
-    uint64_t total_pix = (uint64_t)cinfo.output_height * (uint64_t)cinfo.output_width;
+	/* Make sure the picture's resultion is reasonable */
     if ((uint64_t)cinfo.output_height > max_hv_size) {
         goto out;
     }
     if ((uint64_t)cinfo.output_width > max_hv_size) {
         goto out;
     }
+
+	abort();
 
     cinfo.mem->max_memory_to_use = (1024ULL * 1024ULL * 1024ULL);
     cinfo.mem->max_alloc_chunk = (1024ULL * 1024ULL * 1024ULL);
