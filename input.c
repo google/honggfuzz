@@ -244,7 +244,7 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
         LOG_D("Parsing word: '%s'", bufv);
 
         len = util_decodeCString(bufv);
-        struct strings_t* str = (struct strings_t*)util_Malloc(sizeof(struct strings_t) + len + 1);
+        struct strings_t* str = (struct strings_t*)util_Calloc(sizeof(struct strings_t) + len + 1);
         memcpy(str->s, bufv, len);
         str->len = len;
         hfuzz->mutate.dictionaryCnt++;
