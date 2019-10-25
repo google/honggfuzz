@@ -14,13 +14,13 @@ Prepare a binary in the two following ways:
 Two functions must be provided
 
 ```c
-int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)```
+int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 ````
 
 and optionally
 
 ```c
-int LLVMFuzzerInitialize(int *argc, char ***argv)```
+int LLVMFuzzerInitialize(int *argc, char ***argv)
 ```
 
 ### Example (test.c):
