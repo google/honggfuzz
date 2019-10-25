@@ -67,7 +67,7 @@ int main(void) {
 ### Compilation
 
 ```shell
-$ hfuzz_cc/hfuzz-clang test.c -o test ~/honggfuzz/libfuzz/libfuzz.a
+$ hfuzz_cc/hfuzz-clang test.c -o test
 ```
 
 ## Fuzzing
