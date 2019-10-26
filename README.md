@@ -126,6 +126,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__DeepState__: by Trail-of-Bits](https://github.com/trailofbits/deepstate)
   * [__Quiche-HTTP/3__: by Cloudflare](https://github.com/cloudflare/quiche/pull/179)
   * [__Bolero__: fuzz and property testing framework](https://github.com/camshaft/bolero)
+  * [__pwnmachine__](https://github.com/kapaw/pwnmachine/commit/9cbfc6f1f9547ed2d2a5d296f6d6cd8fac0bb7e1)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
 
