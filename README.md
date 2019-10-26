@@ -92,6 +92,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Heap buffer-overflow in __picoc__](https://gitlab.com/zsaleeba/picoc/issues/44)
   * Crashes in __OpenCOBOL__: [#1](https://sourceforge.net/p/open-cobol/bugs/586/), [#2](https://sourceforge.net/p/open-cobol/bugs/587/)
   * DoS in __ProFTPD__: [#1](https://twitter.com/SecReLabs/status/1186548245553483783), [#2](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-18217)
+  * [Crash](https://github.com/Perl/perl5/issues/16468) in Perl5
   * __Rust__:
     * panic() in regex [#1](https://github.com/rust-lang/regex/issues/464), [#2](https://github.com/rust-lang/regex/issues/465), [#3](https://github.com/rust-lang/regex/issues/465#issuecomment-381412816)
     * panic() in h2 [#1](https://github.com/carllerche/h2/pull/260), [#2](https://github.com/carllerche/h2/pull/261), [#3](https://github.com/carllerche/h2/pull/262)
