@@ -304,10 +304,10 @@ static void commonOpts(int* j, char** args) {
     if (isGCC) {
         if (useBelowGCC8()) {
             /* trace-pc is the best that gcc-6/7 currently offers */
-            args[(*j)++] = "-fsanitize-coverage=trace-pc,trace-cmp";
+            args[(*j)++] = "-fsanitize-coverage=trace-pc";
         } else {
             /* gcc-8+ offers trace-cmp as well, but it's not that widely used yet */
-            args[(*j)++] = "-fsanitize-coverage=trace-pc";
+            args[(*j)++] = "-fsanitize-coverage=trace-pc,trace-cmp";
         }
     } else {
         args[(*j)++] = "-Wno-unused-command-line-argument";
