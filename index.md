@@ -124,7 +124,6 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__QDBI__: by Quarkslab](https://project.inria.fr/FranceJapanICST/files/2019/04/19-Kyoto-Fuzzing_Binaries_using_Dynamic_Instrumentation.pdf)
   * [__fuzzer-test-suite__: by Google](https://github.com/google/fuzzer-test-suite)
   * [__DeepState__: by Trail-of-Bits](https://github.com/trailofbits/deepstate)
-  * [__DeepState__: by Trail-of-Bits](https://github.com/trailofbits/deepstate)
   * [__Quiche-HTTP/3__: by Cloudflare](https://github.com/cloudflare/quiche/pull/179)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
