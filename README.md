@@ -82,7 +82,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * [CVE-2010-2519](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2519)
     * [CVE-2010-2520](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2520)
     * [CVE-2010-2527](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2527)
-  * [Stack corruption in the Windows OpenType parser](https://github.com/xinali/AfdkoFuzz/blob/master/CVE-2019-1117/README.md)
+  * Stack corruption in the Windows OpenType parser: [#1](https://github.com/xinali/AfdkoFuzz/blob/master/CVE-2019-1117/README.md), [#2](https://github.com/xinali/AfdkoFuzz/tree/f6d6562dd19403cc5a1f8cef603ee69425b68b20/CVE-2019-1118)
   * [Infinite loop in __NGINX Unit__](https://github.com/nginx/unit/commit/477e8177b70acb694759e62d830b8a311a736324)
   * A couple of problems in the [__MATLAB MAT File I/O Library__](https://sourceforge.net/projects/matio): [#1](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [#2](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [#3](https://github.com/tbeu/matio/commit/a55b9c2c01582b712d5a643699a13b5c41687db1), [#4](https://github.com/tbeu/matio/commit/3e6283f37652e29e457ab9467f7738a562594b6b), [#5](https://github.com/tbeu/matio/commit/783ee496a6914df68e77e6019054ad91e8ed6420)
   * [Samba's tdbdump + tdbtool](http://seclists.org/oss-sec/2018/q2/206)
