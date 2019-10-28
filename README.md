@@ -142,6 +142,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__orion__: a monorepo for building and publishing multiple Docker containers as microservices by Mozilla Security](https://github.com/MozillaSecurity/orion/search?q=honggfuzz&unscoped_q=honggfuzz)
   * [__Canokey Core__: core implementations of an open-source secure key](https://github.com/canokeys/canokey-core/search?q=honggfuzz&unscoped_q=honggfuzz)
   * [__uberfuzz2__: a cooperative fuzzing framework](https://github.com/acidghost/uberfuzz2)
+  * [__TiKV__: a distributed transactional key-value database](https://github.com/tikv/tikv/tree/99a922564face31bdb59b5b38962339f79e0015c/fuzz)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
 
