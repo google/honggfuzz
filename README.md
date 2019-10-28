@@ -133,6 +133,10 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__arbitrary-model-tests__: a procedural macro for testing stateful models](https://github.com/jakubadamw/arbitrary-model-tests)
   * [__Clusterfuzz__: the fuzzing engine behind OSS-fuzz/Chrome-fuzzing](https://github.com/google/clusterfuzz/issues/1128)
   * [__Apache HTTP Server__](https://github.com/apache/httpd/commit/d7328a07d7d293deb5ce62a60c2ce6029104ebad)
+  * [__centos-fuzz__](https://github.com/truelq/centos-fuzz)
+  * [__FLUFFI__: Fully Localized Utility For Fuzzing Instantaneously by Siemens](https://github.com/siemens/fluffi)
+  * [__Fluent Bit__: a fast log processor and forwarder for Linux](https://github.com/fluent/fluent-bit/search?q=honggfuzz&unscoped_q=honggfuzz)
+  * [__Samba__: a SMB server](https://github.com/samba-team/samba/blob/2a90202052558c945e02675d1331e65aeb15f9fa/lib/fuzzing/README.md)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
 
