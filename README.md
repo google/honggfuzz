@@ -102,7 +102,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * crashes in rust-bitcoin/rust-lightning [#1](https://github.com/rust-bitcoin/rust-lightning/commit/a9aa3c37fe182dd266e0faebc788e0c9ee724783)
   * ... and more
 
-# Projects utilizing Honggfuzz
+# Projects which make use of Honggfuzz
 
   * [__QuickFuzz__ by CIFASIS](http://quickfuzz.org)
   * [__OSS-Fuzz__](https://github.com/google/oss-fuzz)
@@ -130,6 +130,8 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__Quick700__](https://github.com/Quick700/Quick700)
   * [__python-fuzz__](https://github.com/thebabush/python-hfuzz)
   * [__Magma__: A Ground-Truth Fuzzing Benchmark](https://github.com/HexHive/magma)
+  * [__arbitrary-model-tests__: a procedural macro for testing stateful models](https://github.com/jakubadamw/arbitrary-model-tests)
+  * [__Clusterfuzz__: the fuzzing engine behind OSS-fuzz/Chrome-fuzzing](https://github.com/google/clusterfuzz/issues/1128)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
 
