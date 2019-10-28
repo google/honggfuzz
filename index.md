@@ -70,7 +70,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * [__PHP/Python/Ruby__](https://github.com/dyjakan/interpreter-bugs)
     * [PHP WDDX](https://bugs.php.net/bug.php?id=74145)
     * [PHP](https://bugs.php.net/bug.php?id=74194)
-    * [Perl](https://www.nntp.perl.org/group/perl.perl5.porters/2018/03/msg250072.html)
+    * Perl: [#1](https://www.nntp.perl.org/group/perl.perl5.porters/2018/03/msg250072.html), [#2](https://github.com/Perl/perl5/issues/16468), [#3](https://github.com/Perl/perl5/issues/16015)
   * [Double-free in __LibXMP__](https://github.com/cmatsuoka/libxmp/commit/bd1eb5cfcd802820073504c234c3f735e96c3355)
   * [Heap buffer overflow in SAPCAR • CVE-2017-8852](https://www.coresecurity.com/blog/sapcar-heap-buffer-overflow-crash-exploit)
   * [Crashes in __libbass__](http://seclists.org/oss-sec/2017/q4/185)
@@ -92,7 +92,6 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Heap buffer-overflow in __picoc__](https://gitlab.com/zsaleeba/picoc/issues/44)
   * Crashes in __OpenCOBOL__: [#1](https://sourceforge.net/p/open-cobol/bugs/586/), [#2](https://sourceforge.net/p/open-cobol/bugs/587/)
   * DoS in __ProFTPD__: [#1](https://twitter.com/SecReLabs/status/1186548245553483783), [#2](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-18217)
-  * [Crash](https://github.com/Perl/perl5/issues/16468) in Perl5
   * __Rust__:
     * panic() in regex [#1](https://github.com/rust-lang/regex/issues/464), [#2](https://github.com/rust-lang/regex/issues/465), [#3](https://github.com/rust-lang/regex/issues/465#issuecomment-381412816)
     * panic() in h2 [#1](https://github.com/carllerche/h2/pull/260), [#2](https://github.com/carllerche/h2/pull/261), [#3](https://github.com/carllerche/h2/pull/262)
@@ -103,7 +102,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * crashes in rust-bitcoin/rust-lightning [#1](https://github.com/rust-bitcoin/rust-lightning/commit/a9aa3c37fe182dd266e0faebc788e0c9ee724783)
   * ... and more
 
-# Projects utilizing Honggfuzz
+# Projects which make use of Honggfuzz
 
   * [__QuickFuzz__ by CIFASIS](http://quickfuzz.org)
   * [__OSS-Fuzz__](https://github.com/google/oss-fuzz)
@@ -127,6 +126,12 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__DeepState__: by Trail-of-Bits](https://github.com/trailofbits/deepstate)
   * [__Quiche-HTTP/3__: by Cloudflare](https://github.com/cloudflare/quiche/pull/179)
   * [__Bolero__: fuzz and property testing framework](https://github.com/camshaft/bolero)
+  * [__pwnmachine__](https://github.com/kapaw/pwnmachine/commit/9cbfc6f1f9547ed2d2a5d296f6d6cd8fac0bb7e1)
+  * [__Quick700__](https://github.com/Quick700/Quick700)
+  * [__python-fuzz__](https://github.com/thebabush/python-hfuzz)
+  * [__Magma__: A Ground-Truth Fuzzing Benchmark](https://github.com/HexHive/magma)
+  * [__arbitrary-model-tests__: a procedural macro for testing stateful models](https://github.com/jakubadamw/arbitrary-model-tests)
+  * [__Clusterfuzz__: the fuzzing engine behind OSS-fuzz/Chrome-fuzzing](https://github.com/google/clusterfuzz/issues/1128)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
 
