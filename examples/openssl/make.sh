@@ -48,7 +48,9 @@ for x in x509 privkey client server; do
 done
 
 # We only need the part above, the rest is for debugging
-exit 0
+if [ -z "$DEBUG" ]; then
+	exit 0
+fi
 
 echo "Building fuzzers which accept input from stdin - for special purposes only"
 for x in x509 privkey client server; do
