@@ -82,7 +82,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * [CVE-2010-2519](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2519)
     * [CVE-2010-2520](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2520)
     * [CVE-2010-2527](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2527)
-  * Stack corruption in the Windows OpenType parser: [#1](https://github.com/xinali/AfdkoFuzz/blob/master/CVE-2019-1117/README.md), [#2](https://github.com/xinali/AfdkoFuzz/tree/f6d6562dd19403cc5a1f8cef603ee69425b68b20/CVE-2019-1118)
+  * Stack corruption issues in the Windows OpenType parser: [#1](https://github.com/xinali/AfdkoFuzz/blob/4eadcb19eacb2fb73e4b0f0b34f382a9331bb3b4/CrashesAnalysis/CrashesAnalysis_3/README.md), [#2](https://github.com/xinali/AfdkoFuzz/blob/master/CVE-2019-1117/README.md), [#3](https://github.com/xinali/AfdkoFuzz/tree/f6d6562dd19403cc5a1f8cef603ee69425b68b20/CVE-2019-1118)
   * [Infinite loop in __NGINX Unit__](https://github.com/nginx/unit/commit/477e8177b70acb694759e62d830b8a311a736324)
   * A couple of problems in the [__MATLAB MAT File I/O Library__](https://sourceforge.net/projects/matio): [#1](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [#2](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [#3](https://github.com/tbeu/matio/commit/a55b9c2c01582b712d5a643699a13b5c41687db1), [#4](https://github.com/tbeu/matio/commit/3e6283f37652e29e457ab9467f7738a562594b6b), [#5](https://github.com/tbeu/matio/commit/783ee496a6914df68e77e6019054ad91e8ed6420)
   * [Samba's tdbdump + tdbtool](http://seclists.org/oss-sec/2018/q2/206)
@@ -103,7 +103,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
     * crashes in rust-bitcoin/rust-lightning [#1](https://github.com/rust-bitcoin/rust-lightning/commit/a9aa3c37fe182dd266e0faebc788e0c9ee724783)
   * ... and more
 
-# Projects which make use of Honggfuzz
+# Projects utilizing or inspired-by Honggfuzz
 
   * [__QuickFuzz__ by CIFASIS](http://quickfuzz.org)
   * [__OSS-Fuzz__](https://github.com/google/oss-fuzz)
@@ -118,7 +118,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__honggfuzz-rs__: fuzzing Rust with Honggfuzz](https://docs.rs/honggfuzz/)
   * [__roughenough-fuzz__](https://github.com/int08h/roughenough-fuzz)
   * [__Monkey__: a HTTP server](https://github.com/monkey/monkey/blob/master/FUZZ.md)
-  * [__Killerbeez API__](https://github.com/grimm-co/killerbeez-mutators)
+  * [__Killerbeez API__: a modular fuzzing framework bringing tools together into a standard format](https://github.com/grimm-co/killerbeez)
   * [__FuzzM__: a gray box model-based fuzzing framework](https://github.com/collins-research/FuzzM)
   * [__FuzzOS__: by Mozilla Security](https://github.com/MozillaSecurity/fuzzos)
   * [__Android__: by OHA](https://android.googlesource.com/platform/external/honggfuzz)
@@ -127,9 +127,9 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__DeepState__: by Trail-of-Bits](https://github.com/trailofbits/deepstate)
   * [__Quiche-HTTP/3__: by Cloudflare](https://github.com/cloudflare/quiche/pull/179)
   * [__Bolero__: fuzz and property testing framework](https://github.com/camshaft/bolero)
-  * [__pwnmachine__](https://github.com/kapaw/pwnmachine/commit/9cbfc6f1f9547ed2d2a5d296f6d6cd8fac0bb7e1)
-  * [__Quick700__](https://github.com/Quick700/Quick700)
-  * [__python-fuzz__](https://github.com/thebabush/python-hfuzz)
+  * [__pwnmachine__: a vagrantfile for exploit development on Linux](https://github.com/kapaw/pwnmachine/commit/9cbfc6f1f9547ed2d2a5d296f6d6cd8fac0bb7e1)
+  * [__Quick700__: analyzing effectiveness of fuzzers on web browsers and web servers](https://github.com/Quick700/Quick700)
+  * [__python-fuzz__: gluing honggfuzz and python3](https://github.com/thebabush/python-hfuzz)
   * [__Magma__: a ground-truth fuzzing benchmark](https://github.com/HexHive/magma)
   * [__arbitrary-model-tests__: a procedural macro for testing stateful models](https://github.com/jakubadamw/arbitrary-model-tests)
   * [__Clusterfuzz__: the fuzzing engine behind OSS-fuzz/Chrome-fuzzing](https://github.com/google/clusterfuzz/issues/1128)
@@ -143,6 +143,8 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__Canokey Core__: core implementations of an open-source secure key](https://github.com/canokeys/canokey-core/search?q=honggfuzz&unscoped_q=honggfuzz)
   * [__uberfuzz2__: a cooperative fuzzing framework](https://github.com/acidghost/uberfuzz2)
   * [__TiKV__: a distributed transactional key-value database](https://github.com/tikv/tikv/tree/99a922564face31bdb59b5b38962339f79e0015c/fuzz)
+  * [__fuzz-monitor__](https://github.com/acidghost/fuzz-monitor/search?q=honggfuzz&unscoped_q=honggfuzz)
+  * [__libmutator__: a C library intended to generate random test cases by mutating legitimate test cases](https://github.com/denandz/libmutator)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
 
