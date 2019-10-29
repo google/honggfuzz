@@ -13,12 +13,12 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
   * It's blazingly fast when the [persistent fuzzing mode](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)) is used. A simple/empty _LLVMFuzzerTestOneInput_ function can be tested with __up to 1mo iterations per second__ on a relatively modern CPU (e.g. i7-6700K).
   * Has a [solid track record](#trophies) of uncovered security bugs: the __only__ (to the date) __vulnerability in OpenSSL with the [critical](https://www.openssl.org/news/secadv/20160926.txt) score mark__ was discovered by honggfuzz. See the [Trophies](#trophies) paragraph for the summary of findings to the date.
   * Uses low-level interfaces to monitor processes (e.g. _ptrace_ under Linux and NetBSD). As opposed to other fuzzers, it __will discover and report hijacked/ignored signals from crashes__ (intercepted and potentially hidden by a fuzzed program).
-  * Easy-to-use, feed it a simple corpus directory (can even be empty for the [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md)), and it will work its way up, expanding it by utilizing feedback-based coverage metrics.
+  * Easy-to-use, feed it a simple corpus directory (can even be empty for [feedback-driven fuzzing]) and it will work its way up, expanding it by utilizing feedback-based coverage metrics.
   * Supports several (more than any other coverage-based feedback-driven fuzzer) hardware-based (CPU: branch/instruction counting, __Intel BTS__, __Intel PT__) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) modes. Also, see the new __[qemu mode](https://github.com/google/honggfuzz/tree/master/qemu_mode)__ for blackbox binary fuzzing.
   * Works (at least) under GNU/Linux, FreeBSD, NetBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md).
   * Supports the __persistent fuzzing mode__ (long-lived process calling a fuzzed API repeatedly). More on that can be found [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md).
   * It comes with the __[examples](https://github.com/google/honggfuzz/tree/master/examples) directory__, consisting of real world fuzz setups for widely-used software (e.g. Apache HTTPS, OpenSSL, libjpeg etc.).
-  * Provides a __[corpus minimization](https://github.com/google/honggfuzz/blob/master/docs/USAGE.md#corpus-minimization--m)__ mode.
+  * Provides __[corpus minimization](https://github.com/google/honggfuzz/blob/master/docs/USAGE.md#corpus-minimization--m)__ modes.
 
 ---
 
@@ -30,18 +30,18 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
 # Requirements
 
-  * **Linux** - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev), clang-4.0 or higher for software-based coverage modes
-  * **FreeBSD** - gmake, clang-3.6 or newer (clang-devel/4.0 suggested)
+  * **Linux** - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev), clang-5.0 or higher for software-based coverage modes
+  * **FreeBSD** - gmake, clang-5.0 or newer
   * **NetBSD** - gmake, clang, capstone, libBlocksRuntime
   * **Android** - Android SDK/NDK. Also see [this detailed doc](https://github.com/google/honggfuzz/blob/master/docs/Android.md) on how to build and run it
   * **Windows** - CygWin
   * **Darwin/OS X** - Xcode 10.8+
   * if **Clang/LLVM** is used to compile honggfuzz - link it with the BlocksRuntime Library (libblocksruntime-dev)
 
-
 # Trophies
 
 Honggfuzz has been used to find a few interesting security problems in major software packages; An incomplete list:
+
 
   * [Pre-auth remote crash in __OpenSSH__](https://anongit.mindrot.org/openssh.git/commit/?id=28652bca29046f62c7045e933e6b931de1d16737)
   * __Apache HTTPD__
@@ -147,14 +147,6 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__libmutator__: a C library intended to generate random test cases by mutating legitimate test cases](https://github.com/denandz/libmutator)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
-
-# Fuzzing examples
-
-The [examples](https://github.com/google/honggfuzz/tree/master/examples/)
-directory contains code demonstrating (among others) how to use honggfuzz to find bugs in the
-[OpenSSL](https://github.com/google/honggfuzz/tree/master/examples/openssl)
-library and in the [Apache](https://github.com/google/honggfuzz/tree/master/examples/apache-httpd)
-HTTPD web server.
 
 # Contact
 
