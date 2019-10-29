@@ -46,8 +46,8 @@ $ <honggfuzz_dir>/examples/openssl/make.sh openssl-master address
 **Fuzzing**
 
 ```shell
-$ <honggfuzz_dir>/examples/openssl/honggfuzz --input corpus_server/ -- ./openssl-master.address.server
-$ <honggfuzz_dir>/examples/openssl/honggfuzz --input corpus_client/ -- ./openssl-master.address.client
-$ <honggfuzz_dir>/examples/openssl/honggfuzz --input corpus_x509/ -- ./openssl-master.address.x509
-$ <honggfuzz_dir>/examples/openssl/honggfuzz --input corpus_privkey/ -- ./openssl-master.address.privkey
+$ <honggfuzz_dir>/honggfuzz --input corpus_server/ -- ./openssl-master.address.server
+$ <honggfuzz_dir>/honggfuzz --input corpus_client/ -- ./openssl-master.address.client
+$ <honggfuzz_dir>/honggfuzz --input corpus_x509/ -- ./openssl-master.address.x509
+$ <honggfuzz_dir>/honggfuzz --input corpus_privkey/ -- ./openssl-master.address.privkey
 ```
