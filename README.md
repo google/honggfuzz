@@ -30,18 +30,18 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
 # Requirements
 
-  * **Linux** - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev), clang-4.0 or higher for software-based coverage modes
-  * **FreeBSD** - gmake, clang-3.6 or newer (clang-devel/4.0 suggested)
+  * **Linux** - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev), clang-5.0 or higher for software-based coverage modes
+  * **FreeBSD** - gmake, clang-5.0 or newer
   * **NetBSD** - gmake, clang, capstone, libBlocksRuntime
   * **Android** - Android SDK/NDK. Also see [this detailed doc](https://github.com/google/honggfuzz/blob/master/docs/Android.md) on how to build and run it
   * **Windows** - CygWin
   * **Darwin/OS X** - Xcode 10.8+
   * if **Clang/LLVM** is used to compile honggfuzz - link it with the BlocksRuntime Library (libblocksruntime-dev)
 
-
 # Trophies
 
 Honggfuzz has been used to find a few interesting security problems in major software packages; An incomplete list:
+
 
   * [Pre-auth remote crash in __OpenSSH__](https://anongit.mindrot.org/openssh.git/commit/?id=28652bca29046f62c7045e933e6b931de1d16737)
   * __Apache HTTPD__
@@ -145,14 +145,6 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__TiKV__: a distributed transactional key-value database](https://github.com/tikv/tikv/tree/99a922564face31bdb59b5b38962339f79e0015c/fuzz)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
-
-# Fuzzing examples
-
-The [examples](https://github.com/google/honggfuzz/tree/master/examples/)
-directory contains code demonstrating (among others) how to use honggfuzz to find bugs in the
-[OpenSSL](https://github.com/google/honggfuzz/tree/master/examples/openssl)
-library and in the [Apache](https://github.com/google/honggfuzz/tree/master/examples/apache-httpd)
-HTTPD web server.
 
 # Contact
 
