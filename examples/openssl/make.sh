@@ -42,14 +42,20 @@ if [ -n "$SAN" ]; then
 	SAN=".$SAN"
 fi
 
+echo "Building honggfuzz fuzzers"
 for x in x509 privkey client server; do
 	$CC $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "$TYPE$SAN.$x$SUFFIX" "$LIBSSL" "$LIBCRYPTO" $COMMON_LDFLAGS $SAN_COMPILE
 done
 
+# We only need the part above, the rest is for debugging
+exit 0
+
+echo "Building fuzzers which accept input from stdin - for special purposes only"
 for x in x509 privkey client server; do
 	$CC $COMMON_FLAGS -DHF_SSL_FROM_STDIN -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "stdin.$TYPE$SAN.$x" "$LIBSSL" "$LIBCRYPTO" $COMMON_LDFLAGS $SAN_COMPILE
 done
 
+echo "Building libFuzzer fuzzers"
 for x in x509 privkey client server; do
 	clang++ $COMMON_FLAGS -g "$HFUZZ_SRC/examples/openssl/$x.c" -o "libfuzzer.$TYPE$SAN.$x$SUFFIX" "$LIBSSL" "$LIBCRYPTO" $COMMON_LDFLAGS $SAN_COMPILE -lFuzzer
 done
