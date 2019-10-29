@@ -15,24 +15,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-#set -x # debug
+set -x # debug
 
 readonly JOBS=$(getconf _NPROCESSORS_ONLN)
 
 abort() {
-  # Revert patches if not debugging
-  if [[ "$-" == *x* ]]; then
-    echo "[!] git patches are not reverted since running under debug mode"
-  else
-    # Extra care to ensure we're under expected project
-    if [[ $# -eq 1 && "$(basename $(git rev-parse --show-toplevel))" == "libunwind" ]]; then
-      echo "[*] Resetting locally applied patches"
-      git reset --hard &>/dev/null || {
-        echo "[-] git reset failed"
-      }
-    fi
-  fi
-
   cd - &>/dev/null
   exit "$1"
 }
@@ -147,6 +134,8 @@ esac
 # TODO: Automate global patching when all archs have been tested
 
 # Ptrace patches due to Android incompatibilities
+git reset --hard
+
 git apply --check ../patches/libunwind.patch
 if [ $? -eq 0 ]; then
   git apply ../patches/libunwind.patch
@@ -165,20 +154,20 @@ HOST_ARCH=$(uname -m)
 
 
 SYSROOT="$NDK/platforms/$ANDROID_API/arch-$ARCH"
-export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc"
-export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++"
+export CC=`ls "$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_CLANG_PREFIX"-linux-*-clang | sort -n | tail -n1`
+export CXX=`ls "$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_CLANG_PREFIX"-linux-*-clang++ | sort -n | tail -n1`
 export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
 
 if [ ! -x "$CC" ]; then
-  echo "[-] gcc doesn't exist: $CC"
+  echo "[-] clang doesn't exist: $CC"
   abort 1
 elif [ ! -x "$CXX" ]; then
-  echo "[-] g++ doesn't exist: $CXX"
+  echo "[-] clang++ doesn't exist: $CXX"
   abort 1
 fi
 
-export CC="$CC --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/ -D__ANDROID_API__=$ANDROID_API_V"
-export CXX="$CXX --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/ -D__ANDROID_API__=$ANDROID_API_V"
+export CC
+export CXX
 
 if [ ! -f configure ]; then
   NOCONFIGURE=true ./autogen.sh
@@ -196,13 +185,6 @@ fi
 if [ $? -ne 0 ]; then
   echo "[-] configure failed"
   abort 1
-fi
-
-# Fix stuff that configure failed to detect
-# TODO: Investigate for more elegant patches
-if [ "$ARCH" == "arm64" ]; then
-  sed -i -e 's/#define HAVE_DECL_PTRACE_POKEUSER 1/#define HAVE_DECL_PTRACE_POKEUSER 0/g' include/config.h
-  echo "#define HAVE_DECL_PT_GETREGSET 1" >> include/config.h
 fi
 
 make -j"$JOBS" CFLAGS="$LC_CFLAGS" LDFLAGS="$LC_LDFLAGS"

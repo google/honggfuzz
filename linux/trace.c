@@ -582,8 +582,8 @@ static void arch_traceGenerateReport(
         util_ssnprintf(
             run->report, sizeof(run->report), " <" REG_PD REG_PM "> ", (REG_TYPE)(long)funcs[i].pc);
         if (funcs[i].func[0] != '\0')
-            util_ssnprintf(run->report, sizeof(run->report), "[%s() + 0x%x at %s]\n", funcs[i].func,
-                funcs[i].line, funcs[i].mapName);
+            util_ssnprintf(run->report, sizeof(run->report), "[%s() + 0x%tx at %s]\n",
+                funcs[i].func, funcs[i].line, funcs[i].mapName);
         else
             util_ssnprintf(run->report, sizeof(run->report), "[]\n");
 #else
