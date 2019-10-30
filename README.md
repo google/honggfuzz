@@ -146,6 +146,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__fuzz-monitor__](https://github.com/acidghost/fuzz-monitor/search?q=honggfuzz&unscoped_q=honggfuzz)
   * [__libmutator__: a C library intended to generate random test cases by mutating legitimate test cases](https://github.com/denandz/libmutator)
   * [__StatZone__: a DNS zone file analyzer](https://github.com/fcambus/statzone)
+  * [__shub-fuzz/honggfuzz__: singularity image for honggfuzz](https://github.com/shub-fuzz/honggfuzz)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
 
