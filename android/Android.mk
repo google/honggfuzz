@@ -161,6 +161,15 @@ LOCAL_CFLAGS := -D_HF_ARCH_${ARCH} $(COMMON_CFLAGS) \
 LOCAL_STATIC_LIBRARIES := $(COMMON_STATIC_LIBS)
 include $(BUILD_STATIC_LIBRARY)
 
+# libhfnetdriver module
+include $(CLEAR_VARS)
+LOCAL_MODULE := hfnetdriver
+LOCAL_SRC_FILES := $(wildcard libhfnetdriver/*.c)
+LOCAL_CFLAGS := -D_HF_ARCH_${ARCH} $(COMMON_CFLAGS) \
+  -fPIC -fno-builtin
+LOCAL_STATIC_LIBRARIES := $(COMMON_STATIC_LIBS)
+include $(BUILD_STATIC_LIBRARY)
+
 # Main honggfuzz module
 include $(CLEAR_VARS)
 LOCAL_MODULE := honggfuzz
