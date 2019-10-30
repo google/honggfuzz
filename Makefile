@@ -194,7 +194,7 @@ ifeq ($(DEBUG),true)
 endif
 
 # Control Android builds
-ANDROID_API           ?= android-26
+ANDROID_API           ?= android-26 # Minimal working version is android-23
 ANDROID_DEBUG_ENABLED ?= false
 ANDROID_APP_ABI       ?= armeabi-v7a
 ANDROID_SKIP_CLEAN    ?= false
