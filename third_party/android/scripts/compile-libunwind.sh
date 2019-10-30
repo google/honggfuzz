@@ -124,8 +124,8 @@ HOST_ARCH=$(uname -m)
 
 
 SYSROOT="$NDK/platforms/$ANDROID_API/arch-$ARCH"
-export CC=`ls "$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_CLANG_PREFIX"-linux-*-clang | sort -n | tail -n1`
-export CXX=`ls "$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_CLANG_PREFIX"-linux-*-clang++ | sort -n | tail -n1`
+export CC=`ls "$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_CLANG_PREFIX"-linux-android*"$ANDROID_API_V"-clang`
+export CXX=`ls "$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_CLANG_PREFIX"-linux-android*"$ANDROID_API_V"-clang++`
 export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
 
 if [ ! -x "$CC" ]; then
