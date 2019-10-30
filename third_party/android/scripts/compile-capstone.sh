@@ -71,26 +71,18 @@ case "$ARCH" in
   arm)
     CS_ARCH="arm"
     CS_BUILD_BIN="make"
-    TOOLCHAIN=arm-linux-androideabi
-    TOOLCHAIN_S=arm-linux-androideabi-4.9
     ;;
   arm64)
     CS_ARCH="arm aarch64"
     CS_BUILD_BIN="make"
-    TOOLCHAIN=aarch64-linux-android
-    TOOLCHAIN_S=aarch64-linux-android-4.9
     ;;
   x86)
     CS_ARCH="x86"
     CS_BUILD_BIN="make"
-    TOOLCHAIN=i686-linux-android
-    TOOLCHAIN_S=x86-4.9
     ;;
   x86_64)
     CS_ARCH="x86"
     CS_BUILD_BIN="make"
-    TOOLCHAIN=x86_64-linux-android
-    TOOLCHAIN_S=x86_64-4.9
     ;;
 esac
 
@@ -119,10 +111,8 @@ ANDROID_API_V=$(echo "$ANDROID_API" | grep -oE '[0-9]{1,2}$')
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH=$(uname -m)
 
-SYSROOT="$NDK/platforms/$ANDROID_API/arch-$ARCH"
-export CC=`ls "$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_CLANG_PREFIX"-linux-android*"$ANDROID_API_V"-clang`
-export CXX=`ls "$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_CLANG_PREFIX"-linux-android*"$ANDROID_API_V"-clang++`
-export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
+export CC="$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_NDK_COMPILER_PREFIX""$ANDROID_API_V"-clang
+export CXX="$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_NDK_COMPILER_PREFIX""$ANDROID_API_V"-clang++
 
 # Build it
 make clean

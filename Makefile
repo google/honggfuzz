@@ -216,23 +216,24 @@ ANDROID_NDK_TOOLCHAIN_VER := clang
 # clang works only against APIs >= 23
 ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),armeabi-v7a))
   ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-clang
+  ANDROID_NDK_COMPILER_PREFIX := armv7a-linux-androideabi
   ANDROID_ARCH_CPU := arm
-  ANDROID_CLANG_PREFIX := armv7a
 else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86))
   ANDROID_NDK_TOOLCHAIN ?= x86-clang
+  ANDROID_NDK_COMPILER_PREFIX := i686-linux-android
   ANDROID_ARCH_CPU := x86
-  ANDROID_CLANG_PREFIX := i686
 else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),arm64-v8a))
   ANDROID_NDK_TOOLCHAIN ?= aarch64-linux-android-clang
+  ANDROID_NDK_COMPILER_PREFIX := aarch64-linux-android
   ANDROID_ARCH_CPU := arm64
-  ANDROID_CLANG_PREFIX := aarch64
 else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86_64))
   ANDROID_NDK_TOOLCHAIN ?= x86_64-clang
+  ANDROID_NDK_COMPILER_PREFIX := x86_64-linux-android
   ANDROID_ARCH_CPU := x86_64
-  ANDROID_CLANG_PREFIX := x86_64
 else
    $(error Unsuported / Unknown APP_API '$(ANDROID_APP_ABI)')
 endif
+
 
 SUBDIR_ROOTS := linux mac netbsd posix libhfuzz libhfcommon libhfnetdriver
 DIRS := . $(shell find $(SUBDIR_ROOTS) -type d)
@@ -300,13 +301,13 @@ android:
 	$(info ***************************************************************)
 	$(info *                 Use Android NDK 20 or newer                 *)
 	$(info ***************************************************************)
-	@ANDROID_API=$(ANDROID_API) ANDROID_CLANG_PREFIX=$(ANDROID_CLANG_PREFIX) third_party/android/scripts/compile-libunwind.sh \
+	@ANDROID_API=$(ANDROID_API) ANDROID_NDK_COMPILER_PREFIX=$(ANDROID_NDK_COMPILER_PREFIX) third_party/android/scripts/compile-libunwind.sh \
 	third_party/android/libunwind $(ANDROID_ARCH_CPU)
 
-	@ANDROID_API=$(ANDROID_API) ANDROID_CLANG_PREFIX=$(ANDROID_CLANG_PREFIX) third_party/android/scripts/compile-capstone.sh \
+	@ANDROID_API=$(ANDROID_API) ANDROID_NDK_COMPILER_PREFIX=$(ANDROID_NDK_COMPILER_PREFIX) third_party/android/scripts/compile-capstone.sh \
 	third_party/android/capstone $(ANDROID_ARCH_CPU)
 
-	@ANDROID_API=$(ANDROID_API) ANDROID_CLANG_PREFIX=$(ANDROID_CLANG_PREFIX) third_party/android/scripts/compile-libBlocksRuntime.sh \
+	@ANDROID_API=$(ANDROID_API) ANDROID_NDK_COMPILER_PREFIX=$(ANDROID_NDK_COMPILER_PREFIX) third_party/android/scripts/compile-libBlocksRuntime.sh \
 	third_party/android/libBlocksRuntime $(ANDROID_ARCH_CPU)
 
 	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
@@ -322,7 +323,7 @@ android-all:
 	@echo ""
 
 	for abi in armeabi-v7a arm64-v8a x86 x86_64; do \
-	  ANDROID_APP_ABI=$$abi ANDROID_SKIP_CLEAN=true ANDROID_CLANG_PREFIX=$(ANDROID_CLANG_PREFIX) \
+	  ANDROID_APP_ABI=$$abi ANDROID_SKIP_CLEAN=true \
 	  ANDROID_API=$(ANDROID_API) ANDROID_DEBUG_ENABLED=$(ANDROID_DEBUG_ENABLED) \
 	  $(MAKE) android || { \
 	    echo "Recursive make failed"; exit 1; }; \
