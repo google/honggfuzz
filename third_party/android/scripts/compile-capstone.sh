@@ -48,10 +48,6 @@ if [ ! -f "$hooksDir/post-checkout" ]; then
   cat > "$hooksDir/post-checkout" <<'endmsg'
 #!/usr/bin/env bash
 
-rm -f arm/*.a
-rm -f arm64/*.a
-rm -f x86/*.a
-rm -f x86_64/*.a
 endmsg
   chmod +x "$hooksDir/post-checkout"
 fi
@@ -69,28 +65,7 @@ if [ -z "$NDK" ]; then
   fi
 fi
 
-case "$2" in
-  arm|arm64|x86|x86_64)
-    readonly ARCH=$2
-    if [ ! -d $ARCH ] ; then mkdir -p $ARCH; fi
-    ;;
-  *)
-    echo "[-] Invalid CPU architecture"
-    abort 1
-    ;;
-esac
-
-# Check if previous build exists and matches selected ANDROID_API level
-# If API cache file not there always rebuild
-if [ -f "$ARCH/libcapstone.a" ]; then
-  if [ -f "$ARCH/android_api.txt" ]; then
-    old_api=$(cat "$ARCH/android_api.txt")
-    if [[ "$old_api" == "$ANDROID_API" ]]; then
-      # No need to recompile
-      abort 0
-    fi
-  fi
-fi
+ARCH="$2"
 
 case "$ARCH" in
   arm)
@@ -149,9 +124,6 @@ export CC=`ls "$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_CLANG_P
 export CXX=`ls "$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_CLANG_PREFIX"-linux-*-clang++ | sort -n | tail -n1`
 export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
 
-# We need to construct a cross variable that capstone Makefile can pick ar, strip & ranlib from
-export CROSS="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-" CFLAGS="--sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/" LDFLAGS="--sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/"
-
 # Build it
 make clean
 
@@ -164,8 +136,5 @@ if [ $? -ne 0 ]; then
 else
     echo "[*] '$ARCH' libcapstone available at '$CAPSTONE_DIR/$ARCH'"
 fi
-
-cp libcapstone.a "$ARCH/"
-echo "$ANDROID_API" > "$ARCH/android_api.txt"
 
 abort 0

@@ -50,10 +50,6 @@ if [ ! -f "$hooksDir/post-checkout" ]; then
   cat > "$hooksDir/post-checkout" <<'endmsg'
 #!/usr/bin/env bash
 
-rm -f arm/*.a
-rm -f arm64/*.a
-rm -f x86/*.a
-rm -f x86_64/*.a
 endmsg
   chmod +x "$hooksDir/post-checkout"
 fi
@@ -80,35 +76,9 @@ if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
 fi
 ANDROID_API_V=$(echo "$ANDROID_API" | grep -oE '[0-9]{1,2}$')
 
-case "$2" in
-  arm|arm64|x86|x86_64)
-    readonly ARCH="$2"
-    if [ ! -d "$ARCH" ] ; then mkdir -p "$ARCH"; fi
-    ;;
-  *)
-    echo "[-] Invalid architecture"
-    abort 1
-    ;;
-esac
-
-# Check if previous build exists and matches selected ANDROID_API level
-# If API cache file not there always rebuild
-if [ -f "$ARCH/libunwind-$ARCH.a" ]; then
-  if [ -f "$ARCH/android_api.txt" ]; then
-    old_api=$(cat "$ARCH/android_api.txt")
-    if [[ "$old_api" == "$ANDROID_API" ]]; then
-      # No need to recompile
-      abort 0 true
-    fi
-  fi
-fi
-
 LC_LDFLAGS="-static"
 
-# For debugging
-# Remember to export UNW_DEBUG_LEVEL=<level>
-# where 1 < level < 16 (usually values up to 5 are enough)
-#LC_CFLAGS="$LC_FLAGS -DDEBUG"
+ARCH="$2"
 
 # Prepare toolchain
 case "$ARCH" in

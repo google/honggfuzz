@@ -300,13 +300,13 @@ android:
 	$(info ***************************************************************)
 	$(info *                 Use Android NDK 20 or newer                 *)
 	$(info ***************************************************************)
-	@ANDROID_API=$(ANDROID_API) third_party/android/scripts/compile-libunwind.sh \
+	@ANDROID_API=$(ANDROID_API) ANDROID_CLANG_PREFIX=$(ANDROID_CLANG_PREFIX) third_party/android/scripts/compile-libunwind.sh \
 	third_party/android/libunwind $(ANDROID_ARCH_CPU)
 
-	@ANDROID_API=$(ANDROID_API) third_party/android/scripts/compile-capstone.sh \
+	@ANDROID_API=$(ANDROID_API) ANDROID_CLANG_PREFIX=$(ANDROID_CLANG_PREFIX) third_party/android/scripts/compile-capstone.sh \
 	third_party/android/capstone $(ANDROID_ARCH_CPU)
 
-	@ANDROID_API=$(ANDROID_API) third_party/android/scripts/compile-libBlocksRuntime.sh \
+	@ANDROID_API=$(ANDROID_API) ANDROID_CLANG_PREFIX=$(ANDROID_CLANG_PREFIX) third_party/android/scripts/compile-libBlocksRuntime.sh \
 	third_party/android/libBlocksRuntime $(ANDROID_ARCH_CPU)
 
 	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
