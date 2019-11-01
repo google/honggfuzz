@@ -22,7 +22,7 @@ extern "C" {
 
 magic_t ms = NULL;
 int LLVMFuzzerInitialize(int* argc, char*** argv) {
-    ms = magic_open(MAGIC_CONTINUE | MAGIC_CHECK);
+    ms = magic_open(MAGIC_CONTINUE | MAGIC_CHECK | MAGIC_COMPRESS);
     if (ms == NULL) {
         fprintf(stderr, "magic_open() failed\n");
         abort();
