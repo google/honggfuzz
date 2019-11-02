@@ -158,10 +158,6 @@ if [ $? -ne 0 ]; then
     abort 1
 fi
 
-echo "[*] '$ARCH' libunwind available at '$LIBUNWIND_DIR/$ARCH'"
-cp src/.libs/*.a "$ARCH"
-echo "$ANDROID_API" > "$ARCH/android_api.txt"
-
 # Naming conventions for arm64
 if [[ "$ARCH" == "arm64" ]]; then
   cd "$ARCH"

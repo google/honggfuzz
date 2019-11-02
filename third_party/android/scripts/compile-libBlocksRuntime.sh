@@ -93,8 +93,5 @@ fi
 # Change workdir to simplify args
 cd $BRT_DIR
 
-cp obj/local/$BRT_ARCH/libblocksruntime.a "$ARCH/"
-echo "$ANDROID_API" > "$ARCH/android_api.txt"
-
 # Revert workdir to caller
 cd - &>/dev/null
