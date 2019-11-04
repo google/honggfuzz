@@ -311,8 +311,17 @@ int files_getTmpMapFlags(int flag, bool nocore) {
     return flag;
 }
 
-void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore) {
+void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore, bool export) {
     *fd = -1;
+
+    if (export) {
+        char path[PATH_MAX];
+        snprintf(path, sizeof(path), "./%s", name);
+        if ((*fd = open(path, O_RDWR | O_CREAT | O_TRUNC | O_CLOEXEC, 0644)) == -1) {
+            PLOG_W("open('%s')", path);
+            return NULL;
+        }
+    }
 
 #if defined(_HF_ARCH_LINUX)
 
@@ -327,7 +336,9 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore) {
 #endif /* !defined(__NR_memfd_create) */
 
 #if defined(__NR_memfd_create)
-    *fd = syscall(__NR_memfd_create, name, (uintptr_t)MFD_CLOEXEC);
+    if (*fd == -1) {
+        *fd = syscall(__NR_memfd_create, name, (uintptr_t)MFD_CLOEXEC);
+    }
 #endif /* defined__NR_memfd_create) */
 
 #endif /* defined(_HF_ARCH_LINUX) */

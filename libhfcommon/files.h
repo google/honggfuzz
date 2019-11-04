@@ -60,7 +60,7 @@ extern uint8_t* files_mapFile(const char* fileName, off_t* fileSz, int* fd, bool
 
 extern int files_getTmpMapFlags(int flag, bool nocore);
 
-extern void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore);
+extern void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore, bool export);
 
 extern size_t files_parseSymbolFilter(const char* inFIle, char*** filterList);
 
