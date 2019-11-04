@@ -264,7 +264,7 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     }
 
     display_put("\n---------------------------------- [ " ESC_BOLD "LOGS" ESC_RESET
-                " ] ------------------/ " ESC_BOLD "%s %s " ESC_RESET "/-",
+                " ] ----------------/ " ESC_BOLD "%s %s " ESC_RESET "/-",
         PROG_NAME, PROG_VERSION);
     display_put(ESC_SCROLL_REGION(13, ) ESC_NAV_HORIZ(1) ESC_NAV_DOWN(500));
 }
