@@ -359,8 +359,8 @@ int main(int argc, char** argv) {
         LOG_F("Couldn't parse symbols whitelist file ('%s')", hfuzzl.symsWlFile);
     }
 
-    if (!(hfuzz.feedback.feedbackMap = files_mapSharedMem(
-              sizeof(feedback_t), &hfuzz.feedback.bbFd, "hfuzz-feedback", /* nocore= */ true, /* export= */ hfuzz.io.exportFeedback))) {
+    if (!(hfuzz.feedback.feedbackMap = files_mapSharedMem(sizeof(feedback_t), &hfuzz.feedback.bbFd,
+              "hfuzz-feedback", /* nocore= */ true, /* export= */ hfuzz.io.exportFeedback))) {
         LOG_F("files_mapSharedMem(sz=%zu, dir='%s') failed", sizeof(feedback_t), hfuzz.io.workDir);
     }
 
