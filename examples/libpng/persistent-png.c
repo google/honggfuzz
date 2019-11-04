@@ -4,6 +4,7 @@ extern "C" {
 
 #include <fcntl.h>
 #include <inttypes.h>
+#include <libhfuzz/libhfuzz.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,8 +12,6 @@ extern "C" {
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#include <libhfuzz/libhfuzz.h>
 
 #include "png.h"
 #include "pngpriv.h"
@@ -41,6 +40,7 @@ typedef struct {
 
 size_t total_alloc = 0ULL;
 int null_fd = -1;
+size_t max_hv_size = 1000000000UL;
 
 void png_user_read_data(png_structp png_ptr, png_bytep data, png_size_t length) {
 #if defined(__clang__)
@@ -62,6 +62,11 @@ void png_user_read_data(png_structp png_ptr, png_bytep data, png_size_t length) 
 
 int LLVMFuzzerInitialize(int* argc, char*** argv) {
     null_fd = open("/dev/null", O_WRONLY);
+    /* If there are any arguments provided, limit width and height to this value */
+    if (*argc > 1) {
+        max_hv_size = strtoull((*argv)[1], NULL, 0);
+    }
+
     return 0;
 }
 
@@ -119,6 +124,12 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
     png_timep mod_time;
     png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type, &interlace_method,
         &compression_method, &filter_method);
+
+    if (width > max_hv_size || height > max_hv_size) {
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        return 0;
+    }
+
     ret = png_get_gAMA(png_ptr, info_ptr, &file_gamma);
     ret = png_get_hIST(png_ptr, info_ptr, &hist);
     ret = png_get_pHYs(png_ptr, info_ptr, &res_x, &res_y, &unit_type);

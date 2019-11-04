@@ -194,9 +194,8 @@ ifeq ($(DEBUG),true)
 endif
 
 # Control Android builds
-ANDROID_API           ?= android-26
+ANDROID_API           ?= android-26 # Minimal working version is android-23
 ANDROID_DEBUG_ENABLED ?= false
-ANDROID_CLANG         ?= true
 ANDROID_APP_ABI       ?= armeabi-v7a
 ANDROID_SKIP_CLEAN    ?= false
 NDK_BUILD_ARGS :=
@@ -213,42 +212,28 @@ ifeq ($(ANDROID_SKIP_CLEAN),true)
   NDK_BUILD_ARGS += NDK_APP.local.cleaned_binaries=true
 endif
 
-ifeq ($(ANDROID_CLANG),true)
-  ANDROID_NDK_TOOLCHAIN_VER := clang
-  # clang works only against APIs >= 23
-  ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),armeabi armeabi-v7a))
-    ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-clang
-    ANDROID_ARCH_CPU := arm
-  else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86))
-    ANDROID_NDK_TOOLCHAIN ?= x86-clang
-    ANDROID_ARCH_CPU := x86
-  else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),arm64-v8a))
-    ANDROID_NDK_TOOLCHAIN ?= aarch64-linux-android-clang
-    ANDROID_ARCH_CPU := arm64
-  else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86_64))
-    ANDROID_NDK_TOOLCHAIN ?= x86_64-clang
-    ANDROID_ARCH_CPU := x86_64
-  else
-    $(error Unsuported / Unknown APP_API '$(ANDROID_APP_ABI)')
-  endif
+ANDROID_NDK_TOOLCHAIN_VER := clang
+# clang works only against APIs >= 23
+ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),armeabi-v7a))
+  ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-clang
+  ANDROID_NDK_COMPILER_PREFIX := armv7a-linux-androideabi
+  ANDROID_ARCH_CPU := arm
+else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86))
+  ANDROID_NDK_TOOLCHAIN ?= x86-clang
+  ANDROID_NDK_COMPILER_PREFIX := i686-linux-android
+  ANDROID_ARCH_CPU := x86
+else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),arm64-v8a))
+  ANDROID_NDK_TOOLCHAIN ?= aarch64-linux-android-clang
+  ANDROID_NDK_COMPILER_PREFIX := aarch64-linux-android
+  ANDROID_ARCH_CPU := arm64
+else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86_64))
+  ANDROID_NDK_TOOLCHAIN ?= x86_64-clang
+  ANDROID_NDK_COMPILER_PREFIX := x86_64-linux-android
+  ANDROID_ARCH_CPU := x86_64
 else
-  ANDROID_NDK_TOOLCHAIN_VER := 4.9
-  ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),armeabi armeabi-v7a))
-    ANDROID_NDK_TOOLCHAIN ?= arm-linux-androideabi-4.9
-    ANDROID_ARCH_CPU := arm
-  else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86))
-    ANDROID_NDK_TOOLCHAIN ?= x86-4.9
-    ANDROID_ARCH_CPU := x86
-  else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),arm64-v8a))
-    ANDROID_NDK_TOOLCHAIN ?= aarch64-linux-android-4.9
-    ANDROID_ARCH_CPU := arm64
-  else ifeq ($(ANDROID_APP_ABI),$(filter $(ANDROID_APP_ABI),x86_64))
-    ANDROID_NDK_TOOLCHAIN ?= x86_64-4.9
-    ANDROID_ARCH_CPU := x86_64
-  else
-    $(error Unsuported / Unknown APP_API '$(ANDROID_APP_ABI)')
-  endif
+   $(error Unsuported / Unknown APP_API '$(ANDROID_APP_ABI)')
 endif
+
 
 SUBDIR_ROOTS := linux mac netbsd posix libhfuzz libhfcommon libhfnetdriver
 DIRS := . $(shell find $(SUBDIR_ROOTS) -type d)
@@ -314,23 +299,21 @@ depend: all
 .PHONY: android
 android:
 	$(info ***************************************************************)
-	$(info *                 Use Android NDK 15 or newer                 *)
+	$(info *                 Use Android NDK 20 or newer                 *)
 	$(info ***************************************************************)
-	@ANDROID_API=$(ANDROID_API) third_party/android/scripts/compile-libunwind.sh \
+	@ANDROID_API=$(ANDROID_API) ANDROID_NDK_COMPILER_PREFIX=$(ANDROID_NDK_COMPILER_PREFIX) third_party/android/scripts/compile-libunwind.sh \
 	third_party/android/libunwind $(ANDROID_ARCH_CPU)
 
-	@ANDROID_API=$(ANDROID_API) third_party/android/scripts/compile-capstone.sh \
+	@ANDROID_API=$(ANDROID_API) ANDROID_NDK_COMPILER_PREFIX=$(ANDROID_NDK_COMPILER_PREFIX) third_party/android/scripts/compile-capstone.sh \
 	third_party/android/capstone $(ANDROID_ARCH_CPU)
 
-  ifeq ($(ANDROID_CLANG),true)
-		@ANDROID_API=$(ANDROID_API) third_party/android/scripts/compile-libBlocksRuntime.sh \
-		third_party/android/libBlocksRuntime $(ANDROID_ARCH_CPU)
-  endif
+	@ANDROID_API=$(ANDROID_API) ANDROID_NDK_COMPILER_PREFIX=$(ANDROID_NDK_COMPILER_PREFIX) third_party/android/scripts/compile-libBlocksRuntime.sh \
+	third_party/android/libBlocksRuntime $(ANDROID_ARCH_CPU)
 
 	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
     APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) \
     NDK_TOOLCHAIN=$(ANDROID_NDK_TOOLCHAIN) NDK_TOOLCHAIN_VERSION=$(ANDROID_NDK_TOOLCHAIN_VER) \
-    $(NDK_BUILD_ARGS) APP_MODULES='honggfuzz hfuzz'
+    $(NDK_BUILD_ARGS) APP_MODULES='honggfuzz hfuzz hfnetdriver'
 
 # Loop all ABIs and pass-through flags since visibility is lost due to sub-process
 .PHONY: android-all
@@ -339,8 +322,8 @@ android-all:
 	$(MAKE) clean
 	@echo ""
 
-	@for abi in armeabi armeabi-v7a arm64-v8a x86 x86_64; do \
-	  ANDROID_APP_ABI=$$abi ANDROID_SKIP_CLEAN=true ANDROID_CLANG=$(ANDROID_CLANG) \
+	for abi in armeabi-v7a arm64-v8a x86 x86_64; do \
+	  ANDROID_APP_ABI=$$abi ANDROID_SKIP_CLEAN=true \
 	  ANDROID_API=$(ANDROID_API) ANDROID_DEBUG_ENABLED=$(ANDROID_DEBUG_ENABLED) \
 	  $(MAKE) android || { \
 	    echo "Recursive make failed"; exit 1; }; \

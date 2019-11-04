@@ -48,10 +48,6 @@ if [ ! -f "$hooksDir/post-checkout" ]; then
   cat > "$hooksDir/post-checkout" <<'endmsg'
 #!/usr/bin/env bash
 
-rm -f arm/*.a
-rm -f arm64/*.a
-rm -f x86/*.a
-rm -f x86_64/*.a
 endmsg
   chmod +x "$hooksDir/post-checkout"
 fi
@@ -69,53 +65,24 @@ if [ -z "$NDK" ]; then
   fi
 fi
 
-case "$2" in
-  arm|arm64|x86|x86_64)
-    readonly ARCH=$2
-    if [ ! -d $ARCH ] ; then mkdir -p $ARCH; fi
-    ;;
-  *)
-    echo "[-] Invalid CPU architecture"
-    abort 1
-    ;;
-esac
-
-# Check if previous build exists and matches selected ANDROID_API level
-# If API cache file not there always rebuild
-if [ -f "$ARCH/libcapstone.a" ]; then
-  if [ -f "$ARCH/android_api.txt" ]; then
-    old_api=$(cat "$ARCH/android_api.txt")
-    if [[ "$old_api" == "$ANDROID_API" ]]; then
-      # No need to recompile
-      abort 0
-    fi
-  fi
-fi
+ARCH="$2"
 
 case "$ARCH" in
   arm)
     CS_ARCH="arm"
     CS_BUILD_BIN="make"
-    TOOLCHAIN=arm-linux-androideabi
-    TOOLCHAIN_S=arm-linux-androideabi-4.9
     ;;
   arm64)
     CS_ARCH="arm aarch64"
     CS_BUILD_BIN="make"
-    TOOLCHAIN=aarch64-linux-android
-    TOOLCHAIN_S=aarch64-linux-android-4.9
     ;;
   x86)
     CS_ARCH="x86"
     CS_BUILD_BIN="make"
-    TOOLCHAIN=i686-linux-android
-    TOOLCHAIN_S=x86-4.9
     ;;
   x86_64)
     CS_ARCH="x86"
     CS_BUILD_BIN="make"
-    TOOLCHAIN=x86_64-linux-android
-    TOOLCHAIN_S=x86_64-4.9
     ;;
 esac
 
@@ -144,13 +111,8 @@ ANDROID_API_V=$(echo "$ANDROID_API" | grep -oE '[0-9]{1,2}$')
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH=$(uname -m)
 
-SYSROOT="$NDK/platforms/$ANDROID_API/arch-$ARCH"
-export CC="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-gcc --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/ -D__ANDROID_API__=$ANDROID_API_V"
-export CXX="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-g++ --sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/ -D__ANDROID_API__=$ANDROID_API_V"
-export PATH="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin":$PATH
-
-# We need to construct a cross variable that capstone Makefile can pick ar, strip & ranlib from
-export CROSS="$NDK/toolchains/$TOOLCHAIN_S/prebuilt/$HOST_OS-$HOST_ARCH/bin/$TOOLCHAIN-" CFLAGS="--sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/" LDFLAGS="--sysroot=$SYSROOT -isystem $NDK/sysroot/usr/include/$TOOLCHAIN -isystem $NDK/sysroot/usr/include/"
+export CC="$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_NDK_COMPILER_PREFIX""$ANDROID_API_V"-clang
+export CXX="$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_NDK_COMPILER_PREFIX""$ANDROID_API_V"-clang++
 
 # Build it
 make clean
@@ -164,8 +126,5 @@ if [ $? -ne 0 ]; then
 else
     echo "[*] '$ARCH' libcapstone available at '$CAPSTONE_DIR/$ARCH'"
 fi
-
-cp libcapstone.a "$ARCH/"
-echo "$ANDROID_API" > "$ARCH/android_api.txt"
 
 abort 0

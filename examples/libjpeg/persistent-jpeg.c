@@ -48,7 +48,7 @@ int LLVMFuzzerInitialize(int* argc, char*** argv) {
 
     jpeg_create_decompress(&cinfo);
 
-    /* If there are any arguments provided, limit width*height to this value */
+    /* If there are any arguments provided, limit width and height to this value */
     if (*argc > 1) {
         max_hv_size = strtoull((*argv)[1], NULL, 0);
     }

@@ -30,18 +30,18 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
 # Requirements
 
-  * **Linux** - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev), clang-4.0 or higher for software-based coverage modes
-  * **FreeBSD** - gmake, clang-3.6 or newer (clang-devel/4.0 suggested)
+  * **Linux** - The BFD library (libbfd-dev) and libunwind (libunwind-dev/libunwind8-dev), clang-5.0 or higher for software-based coverage modes
+  * **FreeBSD** - gmake, clang-5.0 or newer
   * **NetBSD** - gmake, clang, capstone, libBlocksRuntime
   * **Android** - Android SDK/NDK. Also see [this detailed doc](https://github.com/google/honggfuzz/blob/master/docs/Android.md) on how to build and run it
   * **Windows** - CygWin
   * **Darwin/OS X** - Xcode 10.8+
   * if **Clang/LLVM** is used to compile honggfuzz - link it with the BlocksRuntime Library (libblocksruntime-dev)
 
-
 # Trophies
 
 Honggfuzz has been used to find a few interesting security problems in major software packages; An incomplete list:
+
 
   * [Pre-auth remote crash in __OpenSSH__](https://anongit.mindrot.org/openssh.git/commit/?id=28652bca29046f62c7045e933e6b931de1d16737)
   * __Apache HTTPD__
@@ -89,7 +89,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Crash in __djvulibre__](https://github.com/barak/djvulibre/commit/89d71b01d606e57ecec2c2930c145bb20ba5bbe3)
   * [Multiple crashes in __VLC__](https://www.pentestpartners.com/security-blog/double-free-rce-in-vlc-a-honggfuzz-how-to/)
   * [Buffer overflow in __ClassiCube__](https://github.com/UnknownShadow200/ClassiCube/issues/591)
-  * [Crash in __MPV__](https://github.com/mpv-player/mpv/issues/6808)
+  * [Heap buffer-overflow (or UAF) in __MPV__](https://github.com/mpv-player/mpv/issues/6808)
   * [Heap buffer-overflow in __picoc__](https://gitlab.com/zsaleeba/picoc/issues/44)
   * Crashes in __OpenCOBOL__: [#1](https://sourceforge.net/p/open-cobol/bugs/586/), [#2](https://sourceforge.net/p/open-cobol/bugs/587/)
   * DoS in __ProFTPD__: [#1](https://twitter.com/SecReLabs/status/1186548245553483783), [#2](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-18217)
@@ -144,16 +144,10 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__TiKV__: a distributed transactional key-value database](https://github.com/tikv/tikv/tree/99a922564face31bdb59b5b38962339f79e0015c/fuzz)
   * [__fuzz-monitor__](https://github.com/acidghost/fuzz-monitor/search?q=honggfuzz&unscoped_q=honggfuzz)
   * [__libmutator__: a C library intended to generate random test cases by mutating legitimate test cases](https://github.com/denandz/libmutator)
+  * [__StatZone__: a DNS zone file analyzer](https://github.com/fcambus/statzone)
+  * [__shub-fuzz/honggfuzz__: singularity image for honggfuzz](https://github.com/shub-fuzz/honggfuzz)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
-
-# Fuzzing examples
-
-The [examples](https://github.com/google/honggfuzz/tree/master/examples/)
-directory contains code demonstrating (among others) how to use honggfuzz to find bugs in the
-[OpenSSL](https://github.com/google/honggfuzz/tree/master/examples/openssl)
-library and in the [Apache](https://github.com/google/honggfuzz/tree/master/examples/apache-httpd)
-HTTPD web server.
 
 # Contact
 

@@ -261,6 +261,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .dynfileqCnt = 0U,
                 .dynfileq_mutex = PTHREAD_RWLOCK_INITIALIZER,
                 .dynfileqCurrent = NULL,
+                .exportFeedback = false,
             },
         .exe =
             {
@@ -442,6 +443,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "socket_fuzzer", no_argument, NULL, 0x10B }, "Instrument external fuzzer via socket" },
         { { "netdriver", no_argument, NULL, 0x10C }, "Use netdriver (libhfnetdriver/). In most cases it will be autodetected through a binary signature" },
         { { "only_printable", no_argument, NULL, 0x10D }, "Only generate printable inputs" },
+        { { "export_feedback", no_argument, NULL, 0x10E }, "Export the coverage feedback structure as ./hfuzz-feedback" },
 
 #if defined(_HF_ARCH_LINUX)
         { { "linux_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blacklist filter file (one entry per line)" },
@@ -550,6 +552,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 0x10D:
                 hfuzz->cfg.only_printable = true;
+                break;
+            case 0x10E:
+                hfuzz->io.exportFeedback = true;
                 break;
             case 'z':
                 hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_SOFT;

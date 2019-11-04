@@ -45,7 +45,7 @@ ifeq ($(APP_ABI),$(filter $(APP_ABI),armeabi armeabi-v7a))
 else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86))
   ARCH_ABI := x86
 else ifeq ($(APP_ABI),$(filter $(APP_ABI),arm64-v8a))
-  ARCH_ABI := arm64
+  ARCH_ABI := aarch64
 else ifeq ($(APP_ABI),$(filter $(APP_ABI),x86_64))
   ARCH_ABI := x86_64
 else
@@ -64,7 +64,7 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
   endif
 
   # Upstream libunwind compiled from sources with Android NDK toolchain
-  LIBUNWIND_A := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(ARCH_ABI).a
+  LIBUNWIND_A := third_party/android/libunwind/src/.libs/libunwind-$(ARCH_ABI).a
   ifeq ("$(wildcard $(LIBUNWIND_A))","")
     $(error libunwind-$(ARCH_ABI) is missing - to build execute \
             'third_party/android/scripts/compile-libunwind.sh third_party/android/libunwind $(ARCH_ABI)')
@@ -72,29 +72,29 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
 
   include $(CLEAR_VARS)
   LOCAL_MODULE := libunwind
-  LOCAL_SRC_FILES := third_party/android/libunwind/$(ARCH_ABI)/libunwind.a
+  LOCAL_SRC_FILES := third_party/android/libunwind/src/.libs/libunwind.a
   LOCAL_EXPORT_C_INCLUDES := third_party/android/libunwind/include
   include $(PREBUILT_STATIC_LIBRARY)
 
   include $(CLEAR_VARS)
   LOCAL_MODULE := libunwind-arch
-  LOCAL_SRC_FILES := third_party/android/libunwind/$(ARCH_ABI)/libunwind-$(ARCH_ABI).a
+  LOCAL_SRC_FILES := third_party/android/libunwind/src/.libs/libunwind-$(ARCH_ABI).a
   LOCAL_EXPORT_C_INCLUDES := third_party/android/libunwind/include
   include $(PREBUILT_STATIC_LIBRARY)
 
   include $(CLEAR_VARS)
   LOCAL_MODULE := libunwind-ptrace
-  LOCAL_SRC_FILES := third_party/android/libunwind/$(ARCH_ABI)/libunwind-ptrace.a
+  LOCAL_SRC_FILES := third_party/android/libunwind/src/.libs/libunwind-ptrace.a
   LOCAL_EXPORT_C_INCLUDES := third_party/android/libunwind/include
   include $(PREBUILT_STATIC_LIBRARY)
 
   LOCAL_MODULE := libunwind-dwarf-generic
-  LOCAL_SRC_FILES := third_party/android/libunwind/$(ARCH_ABI)/libunwind-dwarf-generic.a
+  LOCAL_SRC_FILES := third_party/android/libunwind/src/.libs/libunwind-dwarf-generic.a
   LOCAL_EXPORT_C_INCLUDES := third_party/android/libunwind/include
   include $(PREBUILT_STATIC_LIBRARY)
 
   # Upstream capstone compiled from sources with Android NDK toolchain
-  LIBCAPSTONE_A := third_party/android/capstone/$(ARCH_ABI)/libcapstone.a
+  LIBCAPSTONE_A := third_party/android/capstone/libcapstone.a
   ifeq ("$(wildcard $(LIBCAPSTONE_A))","")
     $(error libcapstone is missing - to build execute \
             'third_party/android/scripts/compile-capstone.sh third_party/android/capstone $(ARCH_ABI)')
@@ -107,7 +107,7 @@ ifeq ($(ANDROID_WITH_PTRACE),true)
 endif
 
 ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
-  LIBBRT_A := third_party/android/libBlocksRuntime/$(ARCH_ABI)/libblocksruntime.a
+  LIBBRT_A := third_party/android/libBlocksRuntime/obj/local/$(APP_ABI)/libblocksruntime.a
   ifeq ("$(wildcard $(LIBBRT_A))","")
     $(error libBlocksRuntime is missing - to build execute \
             'third_party/android/scripts/compile-libBlocksRuntime.sh third_party/android/libBlocksRuntime $(ARCH_ABI)')
@@ -135,8 +135,9 @@ endif
 COMMON_CFLAGS := -std=c11 \
   -D_GNU_SOURCE \
   -Wall -Wextra -Wno-initializer-overrides -Wno-override-init \
-  -Wno-unknown-warning-option -Werror -funroll-loops -O2 \
-  -Wframe-larger-than=60000 -Wno-format-truncation
+  -Wno-atomic-alignment -Wno-unknown-warning-option \
+  -Werror -funroll-loops -O2 \
+  -Wframe-larger-than=60000 -Wno-format-truncation \
 
 ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
   COMMON_CFLAGS += -fblocks -fno-sanitize=address,undefined,memory,thread -fsanitize-coverage=0
@@ -157,6 +158,15 @@ LOCAL_MODULE := hfuzz
 LOCAL_SRC_FILES := $(wildcard libhfuzz/*.c)
 LOCAL_CFLAGS := -D_HF_ARCH_${ARCH} $(COMMON_CFLAGS) \
   -fPIC -fno-builtin -fno-stack-protector
+LOCAL_STATIC_LIBRARIES := $(COMMON_STATIC_LIBS)
+include $(BUILD_STATIC_LIBRARY)
+
+# libhfnetdriver module
+include $(CLEAR_VARS)
+LOCAL_MODULE := hfnetdriver
+LOCAL_SRC_FILES := $(wildcard libhfnetdriver/*.c)
+LOCAL_CFLAGS := -D_HF_ARCH_${ARCH} $(COMMON_CFLAGS) \
+  -fPIC -fno-builtin
 LOCAL_STATIC_LIBRARIES := $(COMMON_STATIC_LIBS)
 include $(BUILD_STATIC_LIBRARY)
 
