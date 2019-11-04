@@ -130,9 +130,6 @@ elif [ ! -x "$CXX" ]; then
   abort 1
 fi
 
-export CC
-export CXX
-
 if [ ! -f configure ]; then
   NOCONFIGURE=true ./autogen.sh
   if [ $? -ne 0 ]; then

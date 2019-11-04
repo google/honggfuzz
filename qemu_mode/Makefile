@@ -1,7 +1,7 @@
 
 .PHONY: clean qemu_bin
 
-TARGETS ?= x86_64-linux-user
+TARGETS ?= i386-linux-user x86_64-linux-user
 
 qemu_bin: honggfuzz-qemu/config.status
 	@echo "\nRun \"cd honggfuzz-qemu/ && make\"."
