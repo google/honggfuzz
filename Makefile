@@ -49,10 +49,12 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
     ARCH_SRCS := $(sort $(wildcard linux/*.c))
     LIBS_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
     ifeq ($(BUILD_OSSFUZZ_STATIC),true)
-        ARCH_LDFLAGS := -L/usr/local/include \
-            -pthread -static \
-            `pkg-config --libs libunwind-ptrace libunwind-generic` \
-            -lopcodes -lbfd -liberty -llzma -lz -lrt -ldl -lm
+        ARCH_LDFLAGS := -L/usr/local/include -pthread \
+            -Wl,-Bstatic \
+            `pkg-config --libs --static libunwind-ptrace libunwind-generic` \
+            -lopcodes -lbfd -liberty -lz \
+            -Wl,-Bdynamic \
+            -lrt -ldl -lm
     else
         ARCH_LDFLAGS := -L/usr/local/include \
                         -pthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt -ldl -lm
