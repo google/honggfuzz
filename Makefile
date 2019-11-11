@@ -33,6 +33,7 @@ CFLAGS ?= -O3 -mtune=native
 LDFLAGS ?=
 LIBS_CFLAGS ?= -fPIC -fno-stack-protector
 GREP_COLOR ?=
+BUILD_OSSFUZZ_STATIC ?= false # for https://github.com/google/oss-fuzz
 
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
@@ -45,20 +46,27 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
                    -Wextra -Wno-override-init \
                    -funroll-loops \
                    -D_FILE_OFFSET_BITS=64
-    ARCH_LDFLAGS := -L/usr/local/include \
-                    -pthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt -ldl -lm
     ARCH_SRCS := $(sort $(wildcard linux/*.c))
     LIBS_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
+    ifeq ($(BUILD_OSSFUZZ_STATIC),true)
+        ARCH_LDFLAGS := -L/usr/local/include \
+            -pthread -static \
+            `pkg-config --libs libunwind-ptrace libunwind-generic` \
+            -lopcodes -lbfd -liberty -llzma -lz -lrt -ldl -lm
+    else
+        ARCH_LDFLAGS := -L/usr/local/include \
+                        -pthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt -ldl -lm
+        ifeq ("$(wildcard /usr/local/include/intel-pt.h)","/usr/local/include/intel-pt.h")
+            ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
+            ARCH_CFLAGS += -I/usr/local/include
+            ARCH_LDFLAGS += -L/usr/local/lib -lipt -Wl,--rpath=/usr/local/lib
+        endif
+        ifeq ("$(wildcard /usr/include/intel-pt.h)","/usr/include/intel-pt.h")
+            ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
+            ARCH_LDFLAGS += -lipt
+        endif
+    endif
 
-    ifeq ("$(wildcard /usr/local/include/intel-pt.h)","/usr/local/include/intel-pt.h")
-        ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
-        ARCH_CFLAGS += -I/usr/local/include
-        ARCH_LDFLAGS += -L/usr/local/lib -lipt -Wl,--rpath=/usr/local/lib
-    endif
-    ifeq ("$(wildcard /usr/include/intel-pt.h)","/usr/include/intel-pt.h")
-        ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
-        ARCH_LDFLAGS += -lipt
-    endif
     # OS Linux
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
