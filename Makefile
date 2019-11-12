@@ -30,10 +30,12 @@ COMMON_CFLAGS := -std=c11 -I/usr/local/include -D_GNU_SOURCE -Wall -Werror -Wno-
 COMMON_LDFLAGS := -pthread libhfcommon/libhfcommon.a -lm
 COMMON_SRCS := $(sort $(wildcard *.c))
 ARCH_CFLAGS ?=
+ARCH_LDFLAGS ?=
 CFLAGS ?= -O3 -mtune=native
 LDFLAGS ?=
 LIBS_CFLAGS ?= -fPIC -fno-stack-protector
 GREP_COLOR ?=
+BUILD_OSSFUZZ_STATIC ?= false
 
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
@@ -47,12 +49,18 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
                    -D_FILE_OFFSET_BITS=64
     ARCH_SRCS := $(sort $(wildcard linux/*.c))
     LIBS_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
-    ARCH_LDFLAGS := -L/usr/local/include \
-            -Wl,-Bstatic \
-            `pkg-config --libs --static libunwind-ptrace libunwind-generic` \
-            -lopcodes -lbfd -liberty -lz \
-            -Wl,-Bdynamic \
-            -lrt -ldl -lm
+    ARCH_LDFLAGS += -L/usr/local/include
+    ifeq ($(BUILD_OSSFUZZ_STATIC),true)
+            ARCH_LDFLAGS += -Wl,-Bstatic \
+                            `pkg-config --libs --static libunwind-ptrace libunwind-generic` \
+                            -lopcodes -lbfd -liberty -lz \
+                            -Wl,-Bdynamic
+    else
+            ARCH_LDFLAGS += `pkg-config --libs libunwind-ptrace libunwind-generic` \
+                            -lopcodes -lbfd
+    endif
+    ARCH_LDFLAGS += -lrt -ldl -lm
+
     ifeq ("$(wildcard /usr/local/include/intel-pt.h)","/usr/local/include/intel-pt.h")
         ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
         ARCH_CFLAGS += -I/usr/local/include
@@ -107,7 +115,7 @@ else ifeq ($(OS),Darwin)
                    -Wreturn-type -Wpointer-arith -Wno-gnu-case-range -Wno-gnu-designator \
                    -Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-attributes \
                    -Wno-embedded-directive
-    ARCH_LDFLAGS := -F/System/Library/PrivateFrameworks -framework CoreSymbolication -framework IOKit \
+    ARCH_LDFLAGS += -F/System/Library/PrivateFrameworks -framework CoreSymbolication -framework IOKit \
                     -F$(SDK_V)/System/Library/Frameworks -F$(SDK_V)/System/Library/PrivateFrameworks \
                     -F$(SDK)/System/Library/Frameworks \
                     -framework Foundation -framework ApplicationServices -framework Symbolication \
@@ -125,7 +133,7 @@ else ifeq ($(OS),NetBSD)
     ARCH_CFLAGS += -I/usr/pkg/include \
                    -Wextra -Wno-override-init \
                    -funroll-loops -D_KERNTYPES
-    ARCH_LDFLAGS := -L/usr/local/lib -L/usr/pkg/lib \
+    ARCH_LDFLAGS += -L/usr/local/lib -L/usr/pkg/lib \
                     -lcapstone -lrt -lm \
                     -Wl,--rpath=/usr/pkg/lib
 
@@ -137,7 +145,7 @@ else
     ARCH_CFLAGS += -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
                    -funroll-loops
-    ARCH_LDFLAGS := -L/usr/local/lib -lm
+    ARCH_LDFLAGS += -L/usr/local/lib -lm
     ifneq ($(OS),OpenBSD)
         ARCH_LDFLAGS += -lrt
     endif
