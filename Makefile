@@ -116,11 +116,6 @@ else ifeq ($(OS),Darwin)
 
     XCODE_VER := $(shell xcodebuild -version | grep $(GREP_COLOR) "^Xcode" | cut -d " " -f2)
 
-    MIG_RET := $(shell mig -header mac/mach_exc.h -user mac/mach_excUser.c -sheader mac/mach_excServer.h \
-                 -server mac/mach_excServer.c $(SDK)/usr/include/mach/mach_exc.defs &>/dev/null; echo $$?)
-    ifeq ($(MIG_RET),1)
-        $(error mig failed to generate RPC code)
-    endif
     ARCH_SRCS := $(sort $(wildcard mac/*.c))
     # OS Darwin
 else ifeq ($(OS),NetBSD)
@@ -258,7 +253,7 @@ all: $(BIN) $(HFUZZ_CC_BIN) $(LHFUZZ_ARCH) $(LCOMMON_ARCH) $(LNETDRIVER_ARCH)
 %.dylib: %.c
 	$(CC) -fPIC -shared $(CFLAGS) -o $@ $<
 
-$(BIN): $(OBJS) $(LCOMMON_ARCH)
+$(BIN): macmigheader $(OBJS) $(LCOMMON_ARCH)
 	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
 
 $(HFUZZ_CC_BIN): $(LCOMMON_ARCH) $(LHFUZZ_ARCH) $(LNETDRIVER_ARCH) $(HFUZZ_CC_SRCS)
@@ -289,6 +284,17 @@ clean:
 .PHONY: indent
 indent:
 	clang-format -style="{BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 100, AlignAfterOpenBracket: DontAlign, AllowShortFunctionsOnASingleLine: false, AlwaysBreakBeforeMultilineStrings: false}" -i -sort-includes  *.c *.h */*.c */*.h
+
+.PHONY: macmigheader
+macmigheader:
+ifeq ($(OS),Darwin)
+	MIG_RET := $(shell mig -header mac/mach_exc.h -user mac/mach_excUser.c -sheader mac/mach_excServer.h \
+		-server mac/mach_excServer.c $(SDK)/usr/include/mach/mach_exc.defs &>/dev/null; echo $$?)
+	ifeq ($(MIG_RET),1)
+		 $(error mig failed to generate RPC code)
+	endif
+else
+endif
 
 .PHONY: depend
 depend: all

@@ -172,8 +172,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t 
     hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
-HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_cmp4(
-    uintptr_t pc, uint32_t Arg1, uint32_t Arg2) {
+HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_cmp4(uintptr_t pc, uint32_t Arg1, uint32_t Arg2) {
     hfuzz_trace_cmp4_internal(pc, Arg1, Arg2);
 }
 
@@ -192,8 +191,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t 
     hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
-HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_cmp8(
-    uintptr_t pc, uint64_t Arg1, uint64_t Arg2) {
+HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_cmp8(uintptr_t pc, uint64_t Arg1, uint64_t Arg2) {
     hfuzz_trace_cmp8_internal(pc, Arg1, Arg2);
 }
 
@@ -223,8 +221,7 @@ void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2)
  * Cases[0] is number of comparison entries
  * Cases[1] is length of Val in bits
  */
-HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_switch(
-    uint64_t Val, uint64_t* Cases) {
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t* Cases) {
     for (uint64_t i = 0; i < Cases[0]; i++) {
         uintptr_t pos = ((uintptr_t)__builtin_return_address(0) + i) % _HF_PERF_BITMAP_SIZE_16M;
         uint8_t v = (uint8_t)Cases[1] - __builtin_popcountll(Val ^ Cases[i + 2]);
@@ -326,8 +323,7 @@ __attribute__((weak)) HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_indir_call16(
  * -fsanitize-coverage=trace-pc-guard
  */
 static bool guards_initialized = false;
-HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard_init(
-    uint32_t* start, uint32_t* stop) {
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard_init(uint32_t* start, uint32_t* stop) {
     guards_initialized = true;
     static uint32_t n = 1U;
 
