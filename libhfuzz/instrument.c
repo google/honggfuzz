@@ -28,9 +28,9 @@ const char* const LIBHFUZZ_module_instrument = "LIBHFUZZ_module_instrument";
  * emulation of gcc/clang
  */
 #if defined(__x86_64__) || defined(__i386__)
-#define ATTRIBUTE_X86_REQUIRE_SSE42 __attribute__((__target__("sse4.2")))
+#define HF_REQUIRE_SSE42_POPCNT __attribute__((__target__("sse4.2,popcnt")))
 #else
-#define ATTRIBUTE_X86_REQUIRE_SSE42
+#define HF_REQUIRE_SSE42_POPCNT
 #endif /* defined(__x86_64__) || defined(__i386__) */
 
 /*
@@ -101,7 +101,7 @@ void instrumentClearNewCov() {
 /*
  * -finstrument-functions
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __cyg_profile_func_enter(void* func, void* caller) {
+HF_REQUIRE_SSE42_POPCNT void __cyg_profile_func_enter(void* func, void* caller) {
     register size_t pos =
         (((uintptr_t)func << 12) | ((uintptr_t)caller & 0xFFF)) & _HF_PERF_BITMAP_BITSZ_MASK;
     register uint8_t prev = ATOMIC_BTS(feedback->bbMapPc, pos);
@@ -110,7 +110,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __cyg_profile_func_enter(void* func, void* call
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void __cyg_profile_func_exit(
+HF_REQUIRE_SSE42_POPCNT void __cyg_profile_func_exit(
     void* func HF_ATTR_UNUSED, void* caller HF_ATTR_UNUSED) {
     return;
 }
@@ -118,7 +118,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __cyg_profile_func_exit(
 /*
  * -fsanitize-coverage=trace-pc
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 static inline void hfuzz_trace_pc_internal(uintptr_t pc) {
+HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_pc_internal(uintptr_t pc) {
     register uintptr_t ret = pc & _HF_PERF_BITMAP_BITSZ_MASK;
     register uint8_t prev = ATOMIC_BTS(feedback->bbMapPc, ret);
     if (!prev) {
@@ -126,18 +126,18 @@ ATTRIBUTE_X86_REQUIRE_SSE42 static inline void hfuzz_trace_pc_internal(uintptr_t
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc(void) {
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc(void) {
     hfuzz_trace_pc_internal((uintptr_t)__builtin_return_address(0));
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void hfuzz_trace_pc(uintptr_t pc) {
+HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_pc(uintptr_t pc) {
     hfuzz_trace_pc_internal(pc);
 }
 
 /*
  * -fsanitize-coverage=trace-cmp
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Arg2) {
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Arg2) {
     uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
     uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
@@ -147,7 +147,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2) {
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2) {
     uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
     uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
@@ -157,7 +157,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint1
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 static inline void hfuzz_trace_cmp4_internal(
+HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp4_internal(
     uintptr_t pc, uint32_t Arg1, uint32_t Arg2) {
     uintptr_t pos = pc % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
@@ -168,15 +168,16 @@ ATTRIBUTE_X86_REQUIRE_SSE42 static inline void hfuzz_trace_cmp4_internal(
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
     hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void hfuzz_trace_cmp4(uintptr_t pc, uint32_t Arg1, uint32_t Arg2) {
+HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_cmp4(
+    uintptr_t pc, uint32_t Arg1, uint32_t Arg2) {
     hfuzz_trace_cmp4_internal(pc, Arg1, Arg2);
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 static inline void hfuzz_trace_cmp8_internal(
+HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp8_internal(
     uintptr_t pc, uint64_t Arg1, uint64_t Arg2) {
     uintptr_t pos = pc % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcountll(Arg1 ^ Arg2));
@@ -187,11 +188,12 @@ ATTRIBUTE_X86_REQUIRE_SSE42 static inline void hfuzz_trace_cmp8_internal(
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
     hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void hfuzz_trace_cmp8(uintptr_t pc, uint64_t Arg1, uint64_t Arg2) {
+HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_cmp8(
+    uintptr_t pc, uint64_t Arg1, uint64_t Arg2) {
     hfuzz_trace_cmp8_internal(pc, Arg1, Arg2);
 }
 
@@ -221,7 +223,8 @@ void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2)
  * Cases[0] is number of comparison entries
  * Cases[1] is length of Val in bits
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t* Cases) {
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_switch(
+    uint64_t Val, uint64_t* Cases) {
     for (uint64_t i = 0; i < Cases[0]; i++) {
         uintptr_t pos = ((uintptr_t)__builtin_return_address(0) + i) % _HF_PERF_BITMAP_SIZE_16M;
         uint8_t v = (uint8_t)Cases[1] - __builtin_popcountll(Val ^ Cases[i + 2]);
@@ -236,7 +239,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_switch(uint64_t Val, uint
 /*
  * Old version of __sanitizer_cov_trace_cmp[n]. Remove it at some point
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp(
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp(
     uint64_t SizeAndType, uint64_t Arg1, uint64_t Arg2) {
     uint64_t CmpSize = (SizeAndType >> 32) / 8;
     switch (CmpSize) {
@@ -259,10 +262,10 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmp(
  * gcc-8 -fsanitize-coverage=trace-cmp trace hooks
  * TODO: evaluate, whether it makes sense to implement them
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmpf(
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmpf(
     float Arg1 HF_ATTR_UNUSED, float Arg2 HF_ATTR_UNUSED) {
 }
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_cmpd(
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmpd(
     double Arg1 HF_ATTR_UNUSED, double Arg2 HF_ATTR_UNUSED) {
 }
 
@@ -292,7 +295,7 @@ void __sanitizer_cov_trace_div4(uint32_t Val) {
 /*
  * -fsanitize-coverage=indirect-calls
  */
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(uintptr_t callee) {
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_indir(uintptr_t callee) {
     register size_t pos1 = (uintptr_t)__builtin_return_address(0) << 12;
     register size_t pos2 = callee & 0xFFF;
     register size_t pos = (pos1 | pos2) & _HF_PERF_BITMAP_BITSZ_MASK;
@@ -307,7 +310,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_indir(uintptr_t callee
  * In LLVM-4.0 it's marked (probably mistakenly) as non-weak symbol, so we need to mark it as weak
  * here
  */
-__attribute__((weak)) ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_indir_call16(
+__attribute__((weak)) HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_indir_call16(
     void* callee, void* callee_cache16[] HF_ATTR_UNUSED) {
     register size_t pos1 = (uintptr_t)__builtin_return_address(0) << 12;
     register size_t pos2 = (uintptr_t)callee & 0xFFF;
@@ -323,7 +326,7 @@ __attribute__((weak)) ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_indir_cal
  * -fsanitize-coverage=trace-pc-guard
  */
 static bool guards_initialized = false;
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard_init(
     uint32_t* start, uint32_t* stop) {
     guards_initialized = true;
     static uint32_t n = 1U;
@@ -352,7 +355,7 @@ ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard_init(
     }
 }
 
-ATTRIBUTE_X86_REQUIRE_SSE42 void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
 #if defined(__ANDROID__)
     // ANDROID: Bionic invokes routines that Honggfuzz wraps, before either
     //          *SAN or Honggfuzz have initialized.  Check to see if Honggfuzz
