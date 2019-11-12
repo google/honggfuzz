@@ -26,15 +26,14 @@ LD = $(CC)
 BIN := honggfuzz
 HFUZZ_CC_BIN := hfuzz_cc/hfuzz-cc
 HFUZZ_CC_SRCS := hfuzz_cc/hfuzz-cc.c
-COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wno-format-truncation -I.
-COMMON_LDFLAGS := -lm libhfcommon/libhfcommon.a
+COMMON_CFLAGS := -std=c11 -I/usr/local/include -D_GNU_SOURCE -Wall -Werror -Wno-format-truncation -I.
+COMMON_LDFLAGS := -pthread libhfcommon/libhfcommon.a -lm
 COMMON_SRCS := $(sort $(wildcard *.c))
-ARCH_CFLAGS := -std=c11 -I/usr/local/include
+ARCH_CFLAGS ?=
 CFLAGS ?= -O3 -mtune=native
 LDFLAGS ?=
 LIBS_CFLAGS ?= -fPIC -fno-stack-protector
 GREP_COLOR ?=
-BUILD_OSSFUZZ_STATIC ?= false # for https://github.com/google/oss-fuzz
 
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
@@ -48,26 +47,20 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
                    -D_FILE_OFFSET_BITS=64
     ARCH_SRCS := $(sort $(wildcard linux/*.c))
     LIBS_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
-    ifeq ($(BUILD_OSSFUZZ_STATIC),true)
-        ARCH_LDFLAGS := -L/usr/local/include -pthread \
+    ARCH_LDFLAGS := -L/usr/local/include \
             -Wl,-Bstatic \
             `pkg-config --libs --static libunwind-ptrace libunwind-generic` \
             -lopcodes -lbfd -liberty -lz \
             -Wl,-Bdynamic \
             -lrt -ldl -lm
-    else
-        ARCH_LDFLAGS := -L/usr/local/include -pthread \
-                        `pkg-config --libs libunwind-ptrace libunwind-generic` \
-                        -lbfd -lopcodes -lrt -ldl -lm
-        ifeq ("$(wildcard /usr/local/include/intel-pt.h)","/usr/local/include/intel-pt.h")
-            ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
-            ARCH_CFLAGS += -I/usr/local/include
-            ARCH_LDFLAGS += -L/usr/local/lib -lipt -Wl,--rpath=/usr/local/lib
-        endif
-        ifeq ("$(wildcard /usr/include/intel-pt.h)","/usr/include/intel-pt.h")
-            ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
-            ARCH_LDFLAGS += -lipt
-        endif
+    ifeq ("$(wildcard /usr/local/include/intel-pt.h)","/usr/local/include/intel-pt.h")
+        ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
+        ARCH_CFLAGS += -I/usr/local/include
+        ARCH_LDFLAGS += -L/usr/local/lib -lipt -Wl,--rpath=/usr/local/lib
+    endif
+    ifeq ("$(wildcard /usr/include/intel-pt.h)","/usr/include/intel-pt.h")
+        ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
+        ARCH_LDFLAGS += -lipt
     endif
 
     # OS Linux
@@ -138,7 +131,7 @@ else ifeq ($(OS),NetBSD)
                    -Wextra -Wno-override-init \
                    -funroll-loops -D_KERNTYPES
     ARCH_LDFLAGS := -L/usr/local/lib -L/usr/pkg/lib \
-                    -pthread -lcapstone -lrt -lm \
+                    -lcapstone -lrt -lm \
                     -Wl,--rpath=/usr/pkg/lib
 
     # OS NetBSD
@@ -150,9 +143,9 @@ else
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
                    -funroll-loops
 ifeq ($(OS),OpenBSD)
-    ARCH_LDFLAGS := -L/usr/local/lib -pthread -lm
+    ARCH_LDFLAGS := -L/usr/local/lib -lm
 else
-    ARCH_LDFLAGS := -L/usr/local/lib -pthread -lrt -lm
+    ARCH_LDFLAGS := -L/usr/local/lib -lrt -lm
     # OS OpenBSD
 endif
     # OS Posix
@@ -169,11 +162,7 @@ ifeq ($(COMPILER),clang)
   CFLAGS_BLOCKS = -fblocks
 
   ifneq ($(OS),Darwin)
-    ifeq ($(BUILD_OSSFUZZ_STATIC),true)
-        ARCH_LDFLAGS += -Wl,-Bstatic -lBlocksRuntime -Wl,-Bdynamic
-    else
-        ARCH_LDFLAGS += -lBlocksRuntime
-    endif
+    ARCH_LDFLAGS += -Wl,-Bstatic -lBlocksRuntime -Wl,-Bdynamic
   endif
 endif
 
