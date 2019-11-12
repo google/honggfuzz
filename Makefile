@@ -358,7 +358,8 @@ android-clean-deps:
 	done
 
 PREFIX		?= /usr/local
-BIN_PATH	=$(PREFIX)/bin
+BIN_PATH	= $(PREFIX)/bin
+INC_PATH	= $(PREFIX)/include
 
 install: all
 	mkdir -p -m 755 $${DESTDIR}$(BIN_PATH)
@@ -368,6 +369,9 @@ install: all
 	install -m 755 hfuzz_cc/hfuzz-clang++ $${DESTDIR}$(BIN_PATH)
 	install -m 755 hfuzz_cc/hfuzz-gcc $${DESTDIR}$(BIN_PATH)
 	install -m 755 hfuzz_cc/hfuzz-g++ $${DESTDIR}$(BIN_PATH)
+	install -m 755 -t $${DESTDIR}$(INC_PATH)/libhfcommon -D includes/libhfcommon/*.h
+	install -m 755 -t $${DESTDIR}$(INC_PATH)/libhfuzz -D includes/libhfuzz/*.h
+	install -m 755 -t $${DESTDIR}$(INC_PATH)/libhnetdriver -D includes/libhfnetdriver/*.h
 
 # DO NOT DELETE
 
