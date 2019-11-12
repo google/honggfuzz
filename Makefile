@@ -247,13 +247,18 @@ all: $(BIN) $(HFUZZ_CC_BIN) $(LHFUZZ_ARCH) $(LCOMMON_ARCH) $(LNETDRIVER_ARCH)
 %.o: %.c
 	$(CC) -c $(CFLAGS) $(CFLAGS_BLOCKS) -o $@ $<
 
+mac/arch.o: mac/arch.c
+	mig -header mac/mach_exc.h -user mac/mach_excUser.c -sheader mac/mach_excServer.h \
+		-server mac/mach_excServer.c $(SDK)/usr/include/mach/mach_exc.defs
+	$(CC) -c $(CFLAGS) $(CFLAGS_BLOCKS) -o $@ $<
+
 %.so: %.c
 	$(CC) -fPIC -shared $(CFLAGS) -o $@ $<
 
 %.dylib: %.c
 	$(CC) -fPIC -shared $(CFLAGS) -o $@ $<
 
-$(BIN): macmigheader $(OBJS) $(LCOMMON_ARCH)
+$(BIN): $(OBJS) $(LCOMMON_ARCH)
 	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
 
 $(HFUZZ_CC_BIN): $(LCOMMON_ARCH) $(LHFUZZ_ARCH) $(LNETDRIVER_ARCH) $(HFUZZ_CC_SRCS)
@@ -284,12 +289,6 @@ clean:
 .PHONY: indent
 indent:
 	clang-format -style="{BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 100, AlignAfterOpenBracket: DontAlign, AllowShortFunctionsOnASingleLine: false, AlwaysBreakBeforeMultilineStrings: false}" -i -sort-includes  *.c *.h */*.c */*.h
-
-.PHONY: macmigheader
-ifeq ($(OS),Darwin)
-	mig -header mac/mach_exc.h -user mac/mach_excUser.c -sheader mac/mach_excServer.h \
-		-server mac/mach_excServer.c $(SDK)/usr/include/mach/mach_exc.defs
-endif
 
 .PHONY: depend
 depend: all
