@@ -26,12 +26,12 @@ LD = $(CC)
 BIN := honggfuzz
 HFUZZ_CC_BIN := hfuzz_cc/hfuzz-cc
 HFUZZ_CC_SRCS := hfuzz_cc/hfuzz-cc.c
-COMMON_CFLAGS := -std=c11 -I/usr/local/include -D_GNU_SOURCE -Wall -Werror -Wno-format-truncation -I.
+COMMON_CFLAGS := -std=c11 -I/usr/local/include -D_GNU_SOURCE -Wall -Wextra -Werror -Wno-format-truncation -Wno-override-init -I.
 COMMON_LDFLAGS := -pthread libhfcommon/libhfcommon.a -lm
 COMMON_SRCS := $(sort $(wildcard *.c))
 ARCH_CFLAGS ?=
 ARCH_LDFLAGS ?=
-CFLAGS ?= -O3 -mtune=native
+CFLAGS ?= -O3 -mtune=native -funroll-loops
 LDFLAGS ?=
 LIBS_CFLAGS ?= -fPIC -fno-stack-protector
 GREP_COLOR ?=
@@ -44,9 +44,7 @@ KERNEL ?= $(shell uname -r)
 ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes WSL (Windows Subsystem for Linux)
     ARCH := LINUX
 
-    ARCH_CFLAGS += -Wextra -Wno-override-init \
-                   -funroll-loops \
-                   -D_FILE_OFFSET_BITS=64
+    ARCH_CFLAGS += -D_FILE_OFFSET_BITS=64
     ARCH_SRCS := $(sort $(wildcard linux/*.c))
     LIBS_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
     ARCH_LDFLAGS += -L/usr/local/include
@@ -111,6 +109,7 @@ else ifeq ($(OS),Darwin)
     LD := $(shell xcrun --sdk $(SDK_NAME) --find cc)
     ARCH_CFLAGS += -isysroot $(SDK) \
                    -x objective-c -pedantic -fblocks \
+                   -Wno-unused-parameter \
                    -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
                    -Wreturn-type -Wpointer-arith -Wno-gnu-case-range -Wno-gnu-designator \
                    -Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-attributes \
@@ -131,8 +130,7 @@ else ifeq ($(OS),NetBSD)
 
     ARCH_SRCS := $(sort $(wildcard netbsd/*.c))
     ARCH_CFLAGS += -I/usr/pkg/include \
-                   -Wextra -Wno-override-init \
-                   -funroll-loops -D_KERNTYPES
+                   -D_KERNTYPES
     ARCH_LDFLAGS += -L/usr/local/lib -L/usr/pkg/lib \
                     -lcapstone -lrt -lm \
                     -Wl,--rpath=/usr/pkg/lib
@@ -142,9 +140,8 @@ else
     ARCH := POSIX
 
     ARCH_SRCS := $(sort $(wildcard posix/*.c))
-    ARCH_CFLAGS += -Wextra -Wno-initializer-overrides -Wno-override-init \
-                   -Wno-unknown-warning-option -Wno-unknown-pragmas \
-                   -funroll-loops
+    ARCH_CFLAGS += -Wno-initializer-overrides \
+                   -Wno-unknown-warning-option -Wno-unknown-pragmas
     ARCH_LDFLAGS += -L/usr/local/lib -lm
     ifneq ($(OS),OpenBSD)
         ARCH_LDFLAGS += -lrt
