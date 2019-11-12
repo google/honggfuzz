@@ -174,7 +174,11 @@ ifeq ($(COMPILER),clang)
   CFLAGS_BLOCKS = -fblocks
 
   ifneq ($(OS),Darwin)
-    ARCH_LDFLAGS += -lBlocksRuntime
+    ifeq ($(BUILD_OSSFUZZ_STATIC),true)
+        ARCH_LDFLAGS += -Wl,-Bstatic -lBlocksRuntime -Wl,-Bdynamic
+    else
+        ARCH_LDFLAGS += -lBlocksRuntime
+    endif
   endif
 endif
 
