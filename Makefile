@@ -108,7 +108,7 @@ else ifeq ($(OS),Darwin)
 
     CC := $(shell xcrun --sdk $(SDK_NAME) --find cc)
     LD := $(shell xcrun --sdk $(SDK_NAME) --find cc)
-    ARCH_CFLAGS += -arch x86_64 -isysroot $(SDK) \
+    ARCH_CFLAGS += -isysroot $(SDK) \
                    -x objective-c -pedantic -fblocks \
                    -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
                    -Wreturn-type -Wpointer-arith -Wno-gnu-case-range -Wno-gnu-designator \
@@ -122,11 +122,6 @@ else ifeq ($(OS),Darwin)
                     -framework CommerceKit $(CRASH_REPORT)
 
     XCODE_VER := $(shell xcodebuild -version | grep $(GREP_COLOR) "^Xcode" | cut -d " " -f2)
-    ifeq "8.3" "$(word 1, $(sort 8.3 $(XCODE_VER)))"
-      ARCH_LDFLAGS += -F/Applications/Xcode.app/Contents/SharedFrameworks \
-                      -framework CoreSymbolicationDT \
-                      -Wl,-rpath,/Applications/Xcode.app/Contents/SharedFrameworks
-    endif
 
     MIG_RET := $(shell mig -header mac/mach_exc.h -user mac/mach_excUser.c -sheader mac/mach_excServer.h \
                  -server mac/mach_excServer.c $(SDK)/usr/include/mach/mach_exc.defs &>/dev/null; echo $$?)
