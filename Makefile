@@ -63,7 +63,7 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
         ARCH_LDFLAGS += -lipt
     endif
 
-    # OS Linux
+# OS Linux
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
 
@@ -117,7 +117,7 @@ else ifeq ($(OS),Darwin)
     XCODE_VER := $(shell xcodebuild -version | grep $(GREP_COLOR) "^Xcode" | cut -d " " -f2)
 
     ARCH_SRCS := $(sort $(wildcard mac/*.c))
-    # OS Darwin
+# OS Darwin
 else ifeq ($(OS),NetBSD)
     ARCH := NETBSD
 
@@ -129,7 +129,7 @@ else ifeq ($(OS),NetBSD)
                     -lcapstone -lrt -lm \
                     -Wl,--rpath=/usr/pkg/lib
 
-    # OS NetBSD
+# OS NetBSD
 else
     ARCH := POSIX
 
@@ -137,13 +137,11 @@ else
     ARCH_CFLAGS += -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
                    -funroll-loops
-ifeq ($(OS),OpenBSD)
     ARCH_LDFLAGS := -L/usr/local/lib -lm
-else
-    ARCH_LDFLAGS := -L/usr/local/lib -lrt -lm
-    # OS OpenBSD
-endif
-    # OS Posix
+    ifneq ($(OS),OpenBSD)
+        ARCH_LDFLAGS += -lrt
+    endif
+# OS Posix
 endif
 
 CFLAGS_BLOCKS =
