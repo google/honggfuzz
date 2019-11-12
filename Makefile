@@ -286,14 +286,9 @@ indent:
 	clang-format -style="{BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 100, AlignAfterOpenBracket: DontAlign, AllowShortFunctionsOnASingleLine: false, AlwaysBreakBeforeMultilineStrings: false}" -i -sort-includes  *.c *.h */*.c */*.h
 
 .PHONY: macmigheader
-macmigheader:
 ifeq ($(OS),Darwin)
-	MIG_RET := $(shell mig -header mac/mach_exc.h -user mac/mach_excUser.c -sheader mac/mach_excServer.h \
-		-server mac/mach_excServer.c $(SDK)/usr/include/mach/mach_exc.defs &>/dev/null; echo $$?)
-	ifeq ($(MIG_RET),1)
-		 $(error mig failed to generate RPC code)
-	endif
-else
+	mig -header mac/mach_exc.h -user mac/mach_excUser.c -sheader mac/mach_excServer.h \
+		-server mac/mach_excServer.c $(SDK)/usr/include/mach/mach_exc.defs
 endif
 
 .PHONY: depend
