@@ -29,8 +29,6 @@ HFUZZ_CC_SRCS := hfuzz_cc/hfuzz-cc.c
 COMMON_CFLAGS := -std=c11 -I/usr/local/include -D_GNU_SOURCE -Wall -Wextra -Werror -Wno-format-truncation -Wno-override-init -I.
 COMMON_LDFLAGS := -pthread libhfcommon/libhfcommon.a -lm
 COMMON_SRCS := $(sort $(wildcard *.c))
-ARCH_CFLAGS ?=
-ARCH_LDFLAGS ?=
 CFLAGS ?= -O3 -mtune=native -funroll-loops
 LDFLAGS ?=
 LIBS_CFLAGS ?= -fPIC -fno-stack-protector
@@ -44,10 +42,10 @@ KERNEL ?= $(shell uname -r)
 ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes WSL (Windows Subsystem for Linux)
     ARCH := LINUX
 
-    ARCH_CFLAGS += -D_FILE_OFFSET_BITS=64
+    ARCH_CFLAGS := -D_FILE_OFFSET_BITS=64
     ARCH_SRCS := $(sort $(wildcard linux/*.c))
     LIBS_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
-    ARCH_LDFLAGS += -L/usr/local/include
+    ARCH_LDFLAGS := -L/usr/local/include
     ifeq ($(BUILD_OSSFUZZ_STATIC),true)
             ARCH_LDFLAGS += -Wl,-Bstatic \
                             `pkg-config --libs --static libunwind-ptrace libunwind-generic` \
@@ -107,14 +105,14 @@ else ifeq ($(OS),Darwin)
 
     CC := $(shell xcrun --sdk $(SDK_NAME) --find cc)
     LD := $(shell xcrun --sdk $(SDK_NAME) --find cc)
-    ARCH_CFLAGS += -isysroot $(SDK) \
+    ARCH_CFLAGS := -isysroot $(SDK) \
                    -x objective-c -pedantic -fblocks \
                    -Wno-unused-parameter \
                    -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
                    -Wreturn-type -Wpointer-arith -Wno-gnu-case-range -Wno-gnu-designator \
                    -Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-attributes \
                    -Wno-embedded-directive
-    ARCH_LDFLAGS += -F/System/Library/PrivateFrameworks -framework CoreSymbolication -framework IOKit \
+    ARCH_LDFLAGS := -F/System/Library/PrivateFrameworks -framework CoreSymbolication -framework IOKit \
                     -F$(SDK_V)/System/Library/Frameworks -F$(SDK_V)/System/Library/PrivateFrameworks \
                     -F$(SDK)/System/Library/Frameworks \
                     -framework Foundation -framework ApplicationServices -framework Symbolication \
@@ -129,9 +127,9 @@ else ifeq ($(OS),NetBSD)
     ARCH := NETBSD
 
     ARCH_SRCS := $(sort $(wildcard netbsd/*.c))
-    ARCH_CFLAGS += -I/usr/pkg/include \
+    ARCH_CFLAGS := -I/usr/pkg/include \
                    -D_KERNTYPES
-    ARCH_LDFLAGS += -L/usr/local/lib -L/usr/pkg/lib \
+    ARCH_LDFLAGS := -L/usr/local/lib -L/usr/pkg/lib \
                     -lcapstone -lrt -lm \
                     -Wl,--rpath=/usr/pkg/lib
 
@@ -140,9 +138,9 @@ else
     ARCH := POSIX
 
     ARCH_SRCS := $(sort $(wildcard posix/*.c))
-    ARCH_CFLAGS += -Wno-initializer-overrides \
+    ARCH_CFLAGS := -Wno-initializer-overrides \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas
-    ARCH_LDFLAGS += -L/usr/local/lib -lm
+    ARCH_LDFLAGS := -L/usr/local/lib -lm
     ifneq ($(OS),OpenBSD)
         ARCH_LDFLAGS += -lrt
     endif
