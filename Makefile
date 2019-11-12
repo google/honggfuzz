@@ -56,8 +56,9 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
             -Wl,-Bdynamic \
             -lrt -ldl -lm
     else
-        ARCH_LDFLAGS := -L/usr/local/include \
-                        -pthread -lunwind-ptrace -lunwind-generic -lbfd -lopcodes -lrt -ldl -lm
+        ARCH_LDFLAGS := -L/usr/local/include -pthread \
+                        `pkg-config --libs libunwind-ptrace libunwind-generic` \
+                        -lbfd -lopcodes -lrt -ldl -lm
         ifeq ("$(wildcard /usr/local/include/intel-pt.h)","/usr/local/include/intel-pt.h")
             ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
             ARCH_CFLAGS += -I/usr/local/include
