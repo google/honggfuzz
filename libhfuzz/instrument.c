@@ -272,7 +272,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmpd(
 /*
  * -fsanitize-coverage=trace-div
  */
-void __sanitizer_cov_trace_div8(uint64_t Val) {
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_div8(uint64_t Val) {
     uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     uint8_t v = ((sizeof(Val) * 8) - __builtin_popcountll(Val));
     uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
@@ -282,7 +282,7 @@ void __sanitizer_cov_trace_div8(uint64_t Val) {
     }
 }
 
-void __sanitizer_cov_trace_div4(uint32_t Val) {
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_div4(uint32_t Val) {
     uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     uint8_t v = ((sizeof(Val) * 8) - __builtin_popcount(Val));
     uint8_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
