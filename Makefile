@@ -29,6 +29,7 @@ HFUZZ_CC_SRCS := hfuzz_cc/hfuzz-cc.c
 COMMON_CFLAGS := -D_GNU_SOURCE -Wall -Werror -Wno-format-truncation -I.
 COMMON_LDFLAGS := -lm libhfcommon/libhfcommon.a
 COMMON_SRCS := $(sort $(wildcard *.c))
+ARCH_CFLAGS := -std=c11 -I/usr/local/include
 CFLAGS ?= -O3 -mtune=native
 LDFLAGS ?=
 LIBS_CFLAGS ?= -fPIC -fno-stack-protector
@@ -42,8 +43,7 @@ KERNEL ?= $(shell uname -r)
 ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes WSL (Windows Subsystem for Linux)
     ARCH := LINUX
 
-    ARCH_CFLAGS := -std=c11 -I/usr/local/include \
-                   -Wextra -Wno-override-init \
+    ARCH_CFLAGS += -Wextra -Wno-override-init \
                    -funroll-loops \
                    -D_FILE_OFFSET_BITS=64
     ARCH_SRCS := $(sort $(wildcard linux/*.c))
@@ -108,7 +108,7 @@ else ifeq ($(OS),Darwin)
 
     CC := $(shell xcrun --sdk $(SDK_NAME) --find cc)
     LD := $(shell xcrun --sdk $(SDK_NAME) --find cc)
-    ARCH_CFLAGS := -arch x86_64 -std=c99 -isysroot $(SDK) \
+    ARCH_CFLAGS += -arch x86_64 -isysroot $(SDK) \
                    -x objective-c -pedantic -fblocks \
                    -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
                    -Wreturn-type -Wpointer-arith -Wno-gnu-case-range -Wno-gnu-designator \
@@ -139,7 +139,7 @@ else ifeq ($(OS),NetBSD)
     ARCH := NETBSD
 
     ARCH_SRCS := $(sort $(wildcard netbsd/*.c))
-    ARCH_CFLAGS := -std=c11 -I/usr/local/include -I/usr/pkg/include \
+    ARCH_CFLAGS += -I/usr/pkg/include \
                    -Wextra -Wno-override-init \
                    -funroll-loops -D_KERNTYPES
     ARCH_LDFLAGS := -L/usr/local/lib -L/usr/pkg/lib \
@@ -151,8 +151,7 @@ else
     ARCH := POSIX
 
     ARCH_SRCS := $(sort $(wildcard posix/*.c))
-    ARCH_CFLAGS := -std=c11 -I/usr/local/include \
-                   -Wextra -Wno-initializer-overrides -Wno-override-init \
+    ARCH_CFLAGS += -Wextra -Wno-initializer-overrides -Wno-override-init \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas \
                    -funroll-loops
 ifeq ($(OS),OpenBSD)
