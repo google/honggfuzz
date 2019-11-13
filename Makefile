@@ -31,7 +31,7 @@ COMMON_LDFLAGS := -pthread libhfcommon/libhfcommon.a -lm
 COMMON_SRCS := $(sort $(wildcard *.c))
 CFLAGS ?= -O3 -mtune=native -funroll-loops
 LDFLAGS ?=
-LIBS_CFLAGS ?= -fPIC -fno-stack-protector
+LIBS_CFLAGS ?= -fPIC -fno-stack-protector -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0  # fortify-source intercepts some functions, so we disable it for libraries
 GREP_COLOR ?=
 BUILD_OSSFUZZ_STATIC ?= false
 
@@ -44,7 +44,6 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
 
     ARCH_CFLAGS := -D_FILE_OFFSET_BITS=64
     ARCH_SRCS := $(sort $(wildcard linux/*.c))
-    LIBS_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
     ARCH_LDFLAGS := -L/usr/local/include
     ifeq ($(BUILD_OSSFUZZ_STATIC),true)
             ARCH_LDFLAGS += -Wl,-Bstatic \
@@ -52,7 +51,7 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
                             -lopcodes -lbfd -liberty -lz \
                             -Wl,-Bdynamic
     else
-            ARCH_LDFLAGS += `pkg-config --libs libunwind-ptrace libunwind-generic` \
+            ARCH_LDFLAGS += -lunwind-ptrace -lunwind-generic -lunwind \
                             -lopcodes -lbfd
     endif
     ARCH_LDFLAGS += -lrt -ldl -lm
