@@ -146,7 +146,7 @@ else
 # OS Posix
 endif
 
-CFLAGS_BLOCKS =
+CFLAGS_BLOCKS :=
 COMPILER = $(shell $(CC) -v 2>&1 | \
   grep $(GREP_COLOR) -oE '((gcc|clang) version|LLVM version.*clang)' | \
   grep $(GREP_COLOR) -oE '(clang|gcc)' | head -n1)
