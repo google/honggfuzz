@@ -63,7 +63,7 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
     jpeg_mem_src(&cinfo, buf, len);
     jpeg_read_header(&cinfo, TRUE);
 
-	/* Make sure the picture's resultion is reasonable */
+    /* Make sure the picture's resultion is reasonable */
     if ((uint64_t)cinfo.output_height > max_hv_size) {
         goto out;
     }
