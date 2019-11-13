@@ -70,6 +70,8 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
 
+    ARCH_SRCS := $(sort $(wildcard mac/*.c))
+
     # MacOS-X grep seem to use colors unconditionally
     GREP_COLOR = --color=never
 
@@ -119,8 +121,6 @@ else ifeq ($(OS),Darwin)
                     -framework CommerceKit $(CRASH_REPORT)
 
     XCODE_VER := $(shell xcodebuild -version | grep $(GREP_COLOR) "^Xcode" | cut -d " " -f2)
-
-    ARCH_SRCS := $(sort $(wildcard mac/*.c))
 # OS Darwin
 else ifeq ($(OS),NetBSD)
     ARCH := NETBSD
