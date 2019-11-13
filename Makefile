@@ -181,9 +181,9 @@ LNETDRIVER_ARCH := libhfnetdriver/libhfnetdriver.a
 CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH}
 LDFLAGS += $(COMMON_LDFLAGS) $(ARCH_LDFLAGS)
 
-ifeq ($(DEBUG),true)
-    CFLAGS += -g -ggdb
-    LDFLAGS += -g -ggdb
+ifdef DEBUG
+    CFLAGS += -g -ggdb -g3
+    LDFLAGS += -g -ggdb -g3
 endif
 
 # Control Android builds
