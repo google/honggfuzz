@@ -25,13 +25,12 @@ void decompressToYUV(
 
 void decompressToRGB(
     tjhandle tjh, unsigned char* buf, size_t len, int width, int height, int jpegSubsamp) {
-    int pitch = width * tjPixelSize[TJPF_RGB];
-
-    unsigned char* dstBuf = tjAlloc(pitch * height);
+    int dstBufSz = width * tjPixelSize[TJPF_RGB] * height;
+    unsigned char* dstBuf = tjAlloc(dstBufSz);
     if (!dstBuf) {
         return;
     }
-    tjDecompress2(tjh, buf, len, dstBuf, width, pitch, height, TJPF_RGB, 0);
+    tjDecompress2(tjh, buf, len, dstBuf, width, 0, height, TJPF_RGB, 0);
     tjFree(dstBuf);
 }
 
