@@ -19,7 +19,7 @@ void decompressToYUV(
     if (!dstBuf) {
         return;
     }
-    tjDecompressToYUV2(tjh, buf, len, dstBuf, width, 4, height, 0);
+    tjDecompressToYUV2(tjh, buf, len, dstBuf, width, 4, height, TJFLAG_NOREALLOC);
     tjFree(dstBuf);
 }
 
@@ -31,7 +31,7 @@ void decompressToRGB(
     if (!dstBuf) {
         return;
     }
-    tjDecompress2(tjh, buf, len, dstBuf, width, pitch, height, TJPF_RGB, 0);
+    tjDecompress2(tjh, buf, len, dstBuf, width, pitch, height, TJPF_RGB, TJFLAG_NOREALLOC);
     tjFree(dstBuf);
 }
 
