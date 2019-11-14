@@ -13,6 +13,28 @@ extern "C" {
 
 #include "turbojpeg.h"
 
+void decompressToYUV(
+    tjhandle tjh, unsigned char* buf, size_t len, int width, int height, int jpegSubsamp) {
+    unsigned char* dstBuf = tjAlloc(tjBufSizeYUV2(width, 4, height, jpegSubsamp));
+    if (!dstBuf) {
+        return;
+    }
+    tjDecompressToYUV2(tjh, buf, len, dstBuf, width, 4, height, 0);
+    tjFree(dstBuf);
+}
+
+void decompressToRGB(
+    tjhandle tjh, unsigned char* buf, size_t len, int width, int height, int jpegSubsamp) {
+    int pitch = width * tjPixelSize[TJPF_RGB];
+
+    unsigned char* dstBuf = tjAlloc(pitch * height + 1);
+    if (!dstBuf) {
+        return;
+    }
+    tjDecompress2(tjh, buf, len, dstBuf, width, pitch, height, TJPF_RGB, 0);
+    tjFree(dstBuf);
+}
+
 int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
     tjhandle tjh = tjInitDecompress();
 
@@ -21,13 +43,10 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
         tjDestroy(tjh);
         return 0;
     }
-    unsigned char* dstBuf = tjAlloc(tjBufSizeYUV2(width, 4, height, jpegSubsamp));
-    if (!dstBuf) {
-        tjDestroy(tjh);
-        return 0;
-    }
-    tjDecompressToYUV2(tjh, buf, len, dstBuf, width, 4, height, 0);
-    tjFree(dstBuf);
+
+    decompressToYUV(tjh, (unsigned char*)buf, len, width, height, jpegSubsamp);
+    decompressToRGB(tjh, (unsigned char*)buf, len, width, height, jpegSubsamp);
+
     tjDestroy(tjh);
 
     return 0;
