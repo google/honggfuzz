@@ -19,7 +19,7 @@ void decompressToYUV(
     if (!dstBuf) {
         return;
     }
-    tjDecompressToYUV2(tjh, buf, len, dstBuf, width, 4, height, TJFLAG_NOREALLOC);
+    tjDecompressToYUV2(tjh, buf, len, dstBuf, width, 4, height, 0);
     tjFree(dstBuf);
 }
 
@@ -27,11 +27,11 @@ void decompressToRGB(
     tjhandle tjh, unsigned char* buf, size_t len, int width, int height, int jpegSubsamp) {
     int pitch = width * tjPixelSize[TJPF_RGB];
 
-    unsigned char* dstBuf = tjAlloc(pitch * height + 1);
+    unsigned char* dstBuf = tjAlloc(pitch * height);
     if (!dstBuf) {
         return;
     }
-    tjDecompress2(tjh, buf, len, dstBuf, width, pitch, height, TJPF_RGB, TJFLAG_NOREALLOC);
+    tjDecompress2(tjh, buf, len, dstBuf, width, pitch, height, TJPF_RGB, 0);
     tjFree(dstBuf);
 }
 
@@ -44,8 +44,8 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
         return 0;
     }
 
-    decompressToYUV(tjh, (unsigned char*)buf, len, width, height, jpegSubsamp);
     decompressToRGB(tjh, (unsigned char*)buf, len, width, height, jpegSubsamp);
+    decompressToYUV(tjh, (unsigned char*)buf, len, width, height, jpegSubsamp);
 
     tjDestroy(tjh);
 
