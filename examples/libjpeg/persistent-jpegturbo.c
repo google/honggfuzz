@@ -43,8 +43,10 @@ int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
         return 0;
     }
 
-    decompressToRGB(tjh, (unsigned char*)buf, len, width, height, jpegSubsamp);
-    decompressToYUV(tjh, (unsigned char*)buf, len, width, height, jpegSubsamp);
+    if (((uint64_t)width * (uint64_t)height) <= (1024ULL * 1024ULL)) {
+        decompressToRGB(tjh, (unsigned char*)buf, len, width, height, jpegSubsamp);
+        decompressToYUV(tjh, (unsigned char*)buf, len, width, height, jpegSubsamp);
+    }
 
     tjDestroy(tjh);
 
