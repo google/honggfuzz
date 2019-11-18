@@ -15,23 +15,23 @@ extern "C" {
 
 void decompressToYUV(
     tjhandle tjh, unsigned char* buf, size_t len, int width, int height, int jpegSubsamp) {
-    unsigned char* dstBuf = tjAlloc(tjBufSizeYUV2(width, 4, height, jpegSubsamp));
+    unsigned char* dstBuf = malloc(tjBufSizeYUV2(width, 4, height, jpegSubsamp));
     if (!dstBuf) {
         return;
     }
     tjDecompressToYUV2(tjh, buf, len, dstBuf, width, 4, height, 0);
-    tjFree(dstBuf);
+    free(dstBuf);
 }
 
 void decompressToRGB(
     tjhandle tjh, unsigned char* buf, size_t len, int width, int height, int jpegSubsamp) {
-    int dstBufSz = width * tjPixelSize[TJPF_RGB] * height;
-    unsigned char* dstBuf = tjAlloc(dstBufSz);
+    size_t dstBufSz = (size_t)width * tjPixelSize[TJPF_RGB] * height;
+    unsigned char* dstBuf = malloc(dstBufSz);
     if (!dstBuf) {
         return;
     }
     tjDecompress2(tjh, buf, len, dstBuf, width, 0, height, TJPF_RGB, 0);
-    tjFree(dstBuf);
+    free(dstBuf);
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t* buf, size_t len) {
