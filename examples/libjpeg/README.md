@@ -24,7 +24,7 @@ make -j$(nproc)
 $ <your_hfuzz_dir>/hfuzz_cc/hfuzz-clang -I ./jpeg-9c/ <your_hfuzz_dir>/examples/libjpeg/persistent-jpeg.c -o persistent.jpeg9.address jpeg-9c/.libs/libjpeg.a  -fsanitize=address
 ```
 
-or 
+or
 
 ```shell
 $ <your_hfuzz_dir>/hfuzz_cc/hfuzz-clang -I ./libjpeg-turbo-2.0.3/ -I ./libjpeg-turbo-2.0.3/out/ <your_hfuzz_dir>/examples/libjpeg/persistent-jpeg.c -o persistent.jpeg-turbo.address libjpeg-turbo-2.0.3/out/libjpeg.a -fsanitize=address
