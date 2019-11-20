@@ -13,12 +13,12 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
   * It's blazingly fast when the [persistent fuzzing mode](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md)) is used. A simple/empty _LLVMFuzzerTestOneInput_ function can be tested with __up to 1mo iterations per second__ on a relatively modern CPU (e.g. i7-6700K).
   * Has a [solid track record](#trophies) of uncovered security bugs: the __only__ (to the date) __vulnerability in OpenSSL with the [critical](https://www.openssl.org/news/secadv/20160926.txt) score mark__ was discovered by honggfuzz. See the [Trophies](#trophies) paragraph for the summary of findings to the date.
   * Uses low-level interfaces to monitor processes (e.g. _ptrace_ under Linux and NetBSD). As opposed to other fuzzers, it __will discover and report hijacked/ignored signals from crashes__ (intercepted and potentially hidden by a fuzzed program).
-  * Easy-to-use, feed it a simple corpus directory (can even be empty for [feedback-driven fuzzing]) and it will work its way up, expanding it by utilizing feedback-based coverage metrics.
+  * Easy-to-use, feed it a simple corpus directory (can even be empty for the [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md)), and it will work its way up, expanding it by utilizing feedback-based coverage metrics.
   * Supports several (more than any other coverage-based feedback-driven fuzzer) hardware-based (CPU: branch/instruction counting, __Intel BTS__, __Intel PT__) and software-based [feedback-driven fuzzing](https://github.com/google/honggfuzz/blob/master/docs/FeedbackDrivenFuzzing.md) modes. Also, see the new __[qemu mode](https://github.com/google/honggfuzz/tree/master/qemu_mode)__ for blackbox binary fuzzing.
   * Works (at least) under GNU/Linux, FreeBSD, NetBSD, Mac OS X, Windows/CygWin and [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md).
   * Supports the __persistent fuzzing mode__ (long-lived process calling a fuzzed API repeatedly). More on that can be found [here](https://github.com/google/honggfuzz/blob/master/docs/PersistentFuzzing.md).
   * It comes with the __[examples](https://github.com/google/honggfuzz/tree/master/examples) directory__, consisting of real world fuzz setups for widely-used software (e.g. Apache HTTPS, OpenSSL, libjpeg etc.).
-  * Provides __[corpus minimization](https://github.com/google/honggfuzz/blob/master/docs/USAGE.md#corpus-minimization--m)__ modes.
+  * Provides a __[corpus minimization](https://github.com/google/honggfuzz/blob/master/docs/USAGE.md#corpus-minimization--m)__ mode.
 
 ---
 
@@ -85,11 +85,11 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * Stack corruption issues in the Windows OpenType parser: [#1](https://github.com/xinali/AfdkoFuzz/blob/4eadcb19eacb2fb73e4b0f0b34f382a9331bb3b4/CrashesAnalysis/CrashesAnalysis_3/README.md), [#2](https://github.com/xinali/AfdkoFuzz/blob/master/CVE-2019-1117/README.md), [#3](https://github.com/xinali/AfdkoFuzz/tree/f6d6562dd19403cc5a1f8cef603ee69425b68b20/CVE-2019-1118)
   * [Infinite loop in __NGINX Unit__](https://github.com/nginx/unit/commit/477e8177b70acb694759e62d830b8a311a736324)
   * A couple of problems in the [__MATLAB MAT File I/O Library__](https://sourceforge.net/projects/matio): [#1](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [#2](https://github.com/tbeu/matio/commit/406438f497931f45fb3edf6de17d3a59a922c257), [#3](https://github.com/tbeu/matio/commit/a55b9c2c01582b712d5a643699a13b5c41687db1), [#4](https://github.com/tbeu/matio/commit/3e6283f37652e29e457ab9467f7738a562594b6b), [#5](https://github.com/tbeu/matio/commit/783ee496a6914df68e77e6019054ad91e8ed6420)
-  * [Samba's tdbdump + tdbtool](http://seclists.org/oss-sec/2018/q2/206)
+  * __Samba__ [tdbdump + tdbtool](http://seclists.org/oss-sec/2018/q2/206), [#2](https://github.com/samba-team/samba/commit/183da1f9fda6f58cdff5cefad133a86462d5942a), [#3](https://github.com/samba-team/samba/commit/33e9021cbee4c17ee2f11d02b99902a742d77293), [#4](https://github.com/samba-team/samba/commit/ac1be895d2501dc79dcff2c1e03549fe5b5a930c), [#5](https://github.com/samba-team/samba/commit/b1eda993b658590ebb0a8225e448ce399946ed83)
   * [Crash in __djvulibre__](https://github.com/barak/djvulibre/commit/89d71b01d606e57ecec2c2930c145bb20ba5bbe3)
   * [Multiple crashes in __VLC__](https://www.pentestpartners.com/security-blog/double-free-rce-in-vlc-a-honggfuzz-how-to/)
   * [Buffer overflow in __ClassiCube__](https://github.com/UnknownShadow200/ClassiCube/issues/591)
-  * [Crash in __MPV__](https://github.com/mpv-player/mpv/issues/6808)
+  * [Heap buffer-overflow (or UAF) in __MPV__](https://github.com/mpv-player/mpv/issues/6808)
   * [Heap buffer-overflow in __picoc__](https://gitlab.com/zsaleeba/picoc/issues/44)
   * Crashes in __OpenCOBOL__: [#1](https://sourceforge.net/p/open-cobol/bugs/586/), [#2](https://sourceforge.net/p/open-cobol/bugs/587/)
   * DoS in __ProFTPD__: [#1](https://twitter.com/SecReLabs/status/1186548245553483783), [#2](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-18217)
@@ -118,7 +118,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__honggfuzz-rs__: fuzzing Rust with Honggfuzz](https://docs.rs/honggfuzz/)
   * [__roughenough-fuzz__](https://github.com/int08h/roughenough-fuzz)
   * [__Monkey__: a HTTP server](https://github.com/monkey/monkey/blob/master/FUZZ.md)
-  * [__Killerbeez API__: a modular fuzzing framework bringing tools together into a standard format](https://github.com/grimm-co/killerbeez)
+  * [__Killerbeez API__: a modular fuzzing framework](https://github.com/grimm-co/killerbeez)
   * [__FuzzM__: a gray box model-based fuzzing framework](https://github.com/collins-research/FuzzM)
   * [__FuzzOS__: by Mozilla Security](https://github.com/MozillaSecurity/fuzzos)
   * [__Android__: by OHA](https://android.googlesource.com/platform/external/honggfuzz)
@@ -139,12 +139,13 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__Fluent Bit__: a fast log processor and forwarder for Linux](https://github.com/fluent/fluent-bit/search?q=honggfuzz&unscoped_q=honggfuzz)
   * [__Samba__: a SMB server](https://github.com/samba-team/samba/blob/2a90202052558c945e02675d1331e65aeb15f9fa/lib/fuzzing/README.md)
   * [__universal-fuzzing-docker__: by nnamon](https://github.com/nnamon/universal-fuzzing-docker)
-  * [__orion__: a monorepo for building and publishing multiple Docker containers as microservices by Mozilla Security](https://github.com/MozillaSecurity/orion/search?q=honggfuzz&unscoped_q=honggfuzz)
   * [__Canokey Core__: core implementations of an open-source secure key](https://github.com/canokeys/canokey-core/search?q=honggfuzz&unscoped_q=honggfuzz)
   * [__uberfuzz2__: a cooperative fuzzing framework](https://github.com/acidghost/uberfuzz2)
   * [__TiKV__: a distributed transactional key-value database](https://github.com/tikv/tikv/tree/99a922564face31bdb59b5b38962339f79e0015c/fuzz)
   * [__fuzz-monitor__](https://github.com/acidghost/fuzz-monitor/search?q=honggfuzz&unscoped_q=honggfuzz)
   * [__libmutator__: a C library intended to generate random test cases by mutating legitimate test cases](https://github.com/denandz/libmutator)
+  * [__StatZone__: a DNS zone file analyzer](https://github.com/fcambus/statzone)
+  * [__shub-fuzz/honggfuzz__: singularity image for honggfuzz](https://github.com/shub-fuzz/honggfuzz)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
 
