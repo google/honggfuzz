@@ -60,9 +60,10 @@ bool linuxIfaceUp(const char* ifacename);
 /*
  * Mount tmpfs over a mount point
  *
- * dst: mount point for tmfs
+ * dst: mount point for tmfps
+ * opts: options, as per tmpfs(5), can be NULL
  */
-bool linuxMountTmpfs(const char* dst);
+bool linuxMountTmpfs(const char* dst, const char* opts);
 
 #endif /* defined(__linux__) */
 

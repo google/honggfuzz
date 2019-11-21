@@ -14,8 +14,8 @@ bool linuxIfaceUp(const char* ifacename) {
     return nsIfaceUp(ifacename);
 }
 
-bool linuxMountTmpfs(const char* dst) {
-    return nsMountTmpfs(dst);
+bool linuxMountTmpfs(const char* dst, const char* opts) {
+    return nsMountTmpfs(dst, opts);
 }
 
 #endif /* defined(_HF_ARCH_LINUX) */

@@ -86,10 +86,10 @@ static void netDriver_initNsIfNeeded(void) {
     if (mkdir(HFND_TMP_DIR, 0755) == -1 && errno != EEXIST) {
         PLOG_F("mkdir('%s', 0755)", HFND_TMP_DIR);
     }
-    if (!nsMountTmpfs(HFND_TMP_DIR_OLD)) {
+    if (!nsMountTmpfs(HFND_TMP_DIR_OLD, NULL)) {
         LOG_F("nsMountTmpfs('%s') failed", HFND_TMP_DIR_OLD);
     }
-    if (!nsMountTmpfs(HFND_TMP_DIR)) {
+    if (!nsMountTmpfs(HFND_TMP_DIR, NULL)) {
         LOG_F("nsMountTmpfs('%s') failed", HFND_TMP_DIR);
     }
     return;

@@ -121,8 +121,8 @@ bool nsIfaceUp(const char* ifacename) {
     return true;
 }
 
-bool nsMountTmpfs(const char* dst) {
-    if (mount(NULL, dst, "tmpfs", 0, NULL) == -1) {
+bool nsMountTmpfs(const char* dst, const char* opts) {
+    if (mount(NULL, dst, "tmpfs", 0, opts) == -1) {
         PLOG_E("mount(dst='%s', tmpfs)", dst);
         return false;
     }

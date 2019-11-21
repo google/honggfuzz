@@ -31,7 +31,7 @@
 
 bool nsEnter(uintptr_t cloneFlags);
 bool nsIfaceUp(const char* ifacename);
-bool nsMountTmpfs(const char* dst);
+bool nsMountTmpfs(const char* dst, const char* opts);
 
 #endif /* defined(_HF_ARCH_LINUX) */
 
