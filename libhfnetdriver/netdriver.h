@@ -3,6 +3,7 @@
 
 #include <inttypes.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,6 +21,10 @@ int HonggfuzzNetDriverArgsForServer(int argc, char** argv, int* server_argc, cha
  * TCP port that the fuzzed data inputs will be sent to
  */
 uint16_t HonggfuzzNetDriverPort(int argc, char** argv);
+/*
+ * Mount point for temporary filesystem
+ */
+int HonggfuzzNetDriverTempdir(char *str, size_t size);
 
 #ifdef __cplusplus
 }

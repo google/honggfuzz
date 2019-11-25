@@ -66,6 +66,15 @@ static void netDriver_startOriginalProgramInThread(void) {
     }
 }
 
+static void netDriver_mountTmpfs(const char *path) {
+    if (mkdir(path, 0755) == -1 && errno != EEXIST) {
+        PLOG_F("mkdir('%s', 0755)", path);
+    }
+    if (!nsMountTmpfs(path, NULL)) {
+        LOG_F("nsMountTmpfs('%s') failed", path);
+    }
+}
+
 static void netDriver_initNsIfNeeded(void) {
     static bool initialized = false;
     if (initialized) {
@@ -80,18 +89,22 @@ static void netDriver_initNsIfNeeded(void) {
     if (!nsIfaceUp("lo")) {
         LOG_F("nsIfaceUp('lo') failed");
     }
-    if (mkdir(HFND_TMP_DIR_OLD, 0755) == -1 && errno != EEXIST) {
-        PLOG_F("mkdir('%s', 0755)", HFND_TMP_DIR_OLD);
+
+    char tmpdir[PATH_MAX];
+    int ret;
+
+    ret = HonggfuzzNetDriverTempdir(tmpdir, sizeof(tmpdir));
+    if (ret < 0) {
+        LOG_F("HonggfuzzNetDriverTempdir failed");
     }
-    if (mkdir(HFND_TMP_DIR, 0755) == -1 && errno != EEXIST) {
-        PLOG_F("mkdir('%s', 0755)", HFND_TMP_DIR);
+
+    if (strlen(tmpdir) > 0) {
+        netDriver_mountTmpfs(tmpdir);
     }
-    if (!nsMountTmpfs(HFND_TMP_DIR_OLD, NULL)) {
-        LOG_F("nsMountTmpfs('%s') failed", HFND_TMP_DIR_OLD);
-    }
-    if (!nsMountTmpfs(HFND_TMP_DIR, NULL)) {
-        LOG_F("nsMountTmpfs('%s') failed", HFND_TMP_DIR);
-    }
+
+    /* Legacy path */
+    netDriver_mountTmpfs(HFND_TMP_DIR_OLD);
+
     return;
 #endif /* defined(_HF_ARCH_LINUX) */
     LOG_W("Honggfuzz Net Driver (pid=%d): Namespaces not enabled for this OS platform",
@@ -232,6 +245,15 @@ __attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
     *server_argc = 1;
     *server_argv = &argv[0];
     return argc;
+}
+
+/*
+ * Retrieve path where to mount temporary filesystem (tmpfs) for the duration
+ * of a main program. Return empty array (length 0) to not use tmpfs.
+ */
+__attribute__((weak)) int HonggfuzzNetDriverTempdir(char *str, size_t size)
+{
+    return util_ssnprintf(str, size, "%s", HFND_TMP_DIR);
 }
 
 static void netDriver_waitForServerReady(uint16_t portno) {
