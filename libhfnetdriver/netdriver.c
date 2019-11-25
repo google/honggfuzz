@@ -7,6 +7,7 @@
 #include <netinet/tcp.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -251,9 +252,8 @@ __attribute__((weak)) int HonggfuzzNetDriverArgsForServer(
  * Retrieve path where to mount temporary filesystem (tmpfs) for the duration
  * of a main program. Return empty array (length 0) to not use tmpfs.
  */
-__attribute__((weak)) int HonggfuzzNetDriverTempdir(char *str, size_t size)
-{
-    return util_ssnprintf(str, size, "%s", HFND_TMP_DIR);
+__attribute__((weak)) int HonggfuzzNetDriverTempdir(char *str, size_t size) {
+    return snprintf(str, size, "%s", HFND_TMP_DIR);
 }
 
 static void netDriver_waitForServerReady(uint16_t portno) {

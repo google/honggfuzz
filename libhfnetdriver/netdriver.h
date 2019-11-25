@@ -2,8 +2,8 @@
 #define _HF_NETDRIVER_NETDRIVER_H
 
 #include <inttypes.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,7 +24,7 @@ uint16_t HonggfuzzNetDriverPort(int argc, char** argv);
 /*
  * Mount point for temporary filesystem
  */
-int HonggfuzzNetDriverTempdir(char *str, size_t size);
+int HonggfuzzNetDriverTempdir(char* str, size_t size);
 
 #ifdef __cplusplus
 }
