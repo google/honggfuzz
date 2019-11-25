@@ -68,6 +68,7 @@
 #define kASAN_COMMON_OPTS        \
     "allow_user_segv_handler=1:" \
     "handle_segv=0:"             \
+    "detect_odr_violation=0:"    \
     "allocator_may_return_null=1:" kSAN_COMMON ":exitcode=" HF_XSTR(HF_SAN_EXIT_CODE)
 /* Platform specific flags */
 #if defined(__ANDROID__)
