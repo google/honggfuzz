@@ -67,6 +67,7 @@ static void netDriver_startOriginalProgramInThread(void) {
     }
 }
 
+#if defined(_HF_ARCH_LINUX)
 static void netDriver_mountTmpfs(const char *path) {
     if (mkdir(path, 0755) == -1 && errno != EEXIST) {
         PLOG_F("mkdir('%s', 0755)", path);
@@ -75,6 +76,7 @@ static void netDriver_mountTmpfs(const char *path) {
         LOG_F("nsMountTmpfs('%s') failed", path);
     }
 }
+#endif /* defined(_HF_ARCH_LINUX) */
 
 static void netDriver_initNsIfNeeded(void) {
     static bool initialized = false;
