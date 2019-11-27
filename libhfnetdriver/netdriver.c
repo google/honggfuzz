@@ -37,12 +37,13 @@ static struct {
     int argc_server;
     char **argv_server;
     uint16_t tcp_port;
-    sa_family_t sa_family;
+    socklen_t addrlen;
+    struct sockaddr_storage addr;
 } hfnd_globals = {
     .argc_server = 1,
     .argv_server = initial_server_argv,
     .tcp_port = 0,
-    .sa_family = AF_UNSPEC,
+    .addr.ss_family = AF_UNSPEC,
 };
 
 extern int HonggfuzzNetDriver_main(int argc, char **argv);
@@ -145,18 +146,24 @@ static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &val, (socklen_t)sizeof(val)) == -1) {
         PLOG_W("setsockopt(sock=%d, SOL_SOCKET, SO_REUSEADDR, %d)", sock, val);
     }
+
+    switch (addr->sa_family) {
+        case AF_INET:
+        case AF_INET6:
 #if defined(SOL_TCP) && defined(TCP_NODELAY)
-    val = 1;
-    if (setsockopt(sock, SOL_TCP, TCP_NODELAY, &val, (socklen_t)sizeof(val)) == -1) {
-        PLOG_W("setsockopt(sock=%d, SOL_TCP, TCP_NODELAY, %d)", sock, val);
-    }
+            val = 1;
+            if (setsockopt(sock, SOL_TCP, TCP_NODELAY, &val, (socklen_t)sizeof(val)) == -1) {
+                PLOG_W("setsockopt(sock=%d, SOL_TCP, TCP_NODELAY, %d)", sock, val);
+            }
 #endif /* defined(SOL_TCP) && defined(TCP_NODELAY) */
 #if defined(SOL_TCP) && defined(TCP_QUICKACK)
-    val = 1;
-    if (setsockopt(sock, SOL_TCP, TCP_QUICKACK, &val, (socklen_t)sizeof(val)) == -1) {
-        PLOG_D("setsockopt(sock=%d, SOL_TCP, TCP_QUICKACK, %d)", sock, val);
-    }
+            val = 1;
+            if (setsockopt(sock, SOL_TCP, TCP_QUICKACK, &val, (socklen_t)sizeof(val)) == -1) {
+                PLOG_D("setsockopt(sock=%d, SOL_TCP, TCP_QUICKACK, %d)", sock, val);
+            }
 #endif /* defined(SOL_TCP) && defined(TCP_QUICKACK) */
+            break;
+    }
 
     netDriver_bindToRndLoopback(sock, addr->sa_family);
 
@@ -167,37 +174,6 @@ static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen
         return -1;
     }
     return sock;
-}
-
-int netDriver_sockConnLoopback(sa_family_t sa_family, uint16_t portno) {
-    if (portno < 1) {
-        LOG_F("Specified TCP port (%d) cannot be < 1", portno);
-    }
-
-    if (sa_family == AF_INET) {
-        /* IPv4's 127.0.0.1 */
-        const struct sockaddr_in saddr4 = {
-            .sin_family = AF_INET,
-            .sin_port = htons(portno),
-            .sin_addr.s_addr = htonl(INADDR_LOOPBACK),
-        };
-        return netDriver_sockConnAddr((const struct sockaddr *)&saddr4, sizeof(saddr4));
-    }
-
-    if (sa_family == AF_INET6) {
-        /* IPv6's ::1 */
-        const struct sockaddr_in6 saddr6 = {
-            .sin6_family = AF_INET6,
-            .sin6_port = htons(portno),
-            .sin6_flowinfo = 0,
-            .sin6_addr = in6addr_loopback,
-            .sin6_scope_id = 0,
-        };
-        return netDriver_sockConnAddr((const struct sockaddr *)&saddr6, sizeof(saddr6));
-    }
-
-    LOG_E("Unknown SA_FAMILY=%d specified", (int)sa_family);
-    return -1;
 }
 
 /*
@@ -258,26 +234,108 @@ __attribute__((weak)) int HonggfuzzNetDriverTempdir(char *str, size_t size) {
     return snprintf(str, size, "%s", HFND_TMP_DIR);
 }
 
-static void netDriver_waitForServerReady(uint16_t portno) {
+/*
+ * Returns the address to which the socket should connect, in the buffer
+ * pointed to by addr. The buffer is guaranteed to be sizeof(struct
+ * sockaddr_storage) or larger.
+ *
+ * The addrlen argument must be initialized to indicate the amount of space
+ * (in bytes) of the actual socket address size. Set a length of 0 to retain
+ * the default behaviour of probing TCP and TCP6.
+ *
+ * Example:
+ *
+ *   const struct sockaddr_un saddr = {
+ *     .sun_family = AF_UNIX,
+ *     .sun_path = HFND_TMP_DIR "/sock",
+ *   };
+ *
+ *   memcpy(addr, &saddr, sizeof(saddr));
+ *   *addrlen = sizeof(saddr);
+ *
+ */
+__attribute__((weak)) int HonggfuzzNetDriverServerAddress(
+    struct sockaddr *addr HF_ATTR_UNUSED, socklen_t *addrlen HF_ATTR_UNUSED) {
+    *addrlen = 0;
+    return 0;
+}
+
+static void netDriver_waitForServerReady() {
+    /* IPv4's 127.0.0.1 */
+    const struct sockaddr_in saddr4 = {
+        .sin_family = AF_INET,
+        .sin_port = htons(hfnd_globals.tcp_port),
+        .sin_addr.s_addr = htonl(INADDR_LOOPBACK),
+    };
+
+    /* IPv6's ::1 */
+    const struct sockaddr_in6 saddr6 = {
+        .sin6_family = AF_INET6,
+        .sin6_port = htons(hfnd_globals.tcp_port),
+        .sin6_flowinfo = 0,
+        .sin6_addr = in6addr_loopback,
+        .sin6_scope_id = 0,
+    };
+
+    /* Alias to save on explicit casts */
+    struct sockaddr *global_addr = (struct sockaddr *)&hfnd_globals.addr;
+
+    if (HonggfuzzNetDriverServerAddress(global_addr, &hfnd_globals.addrlen) < 0) {
+        LOG_F("HonggfuzzNetDriverServerAddress failed");
+    }
+
+    if (hfnd_globals.addrlen == 0) {
+        /* Address not overridden, use automatic TCP discovery over IPv4 and
+         * IPv6
+         */
+        if (hfnd_globals.tcp_port < 1) {
+            LOG_F("TCP port (%d) cannot be < 1", hfnd_globals.tcp_port);
+        }
+
+        LOG_I("Honggfuzz Net Driver (pid=%d): TCP port %d will be used. You can change the "
+              "server's TCP "
+              "port by setting the %s envvar",
+            (int)getpid(), hfnd_globals.tcp_port, HFND_TCP_PORT_ENV);
+    }
+
     for (;;) {
         int fd = -1;
-        fd = netDriver_sockConnLoopback(AF_INET, portno);
-        if (fd >= 0) {
-            hfnd_globals.sa_family = AF_INET;
-            close(fd);
-            return;
+
+        if (hfnd_globals.addrlen == 0) {
+            fd = netDriver_sockConnAddr((struct sockaddr *)&saddr4, sizeof(saddr4));
+            if (fd >= 0) {
+                hfnd_globals.addrlen = sizeof(saddr4);
+                memcpy(global_addr, &saddr4, sizeof(saddr4));
+                close(fd);
+                return;
+            }
+
+            fd = netDriver_sockConnAddr((struct sockaddr *)&saddr6, sizeof(saddr6));
+            if (fd >= 0) {
+                hfnd_globals.addrlen = sizeof(saddr6);
+                memcpy(global_addr, &saddr6, sizeof(saddr6));
+                close(fd);
+                return;
+            }
+
+            LOG_I("Honggfuzz Net Driver (pid=%d): Waiting for the TCP server process to start "
+                  "accepting "
+                  "connections at TCP4:127.0.0.1:%" PRIu16 " or at TCP6:[::1]:%" PRIu16
+                  ". Sleeping for 0.5 seconds ...",
+                (int)getpid(), hfnd_globals.tcp_port, hfnd_globals.tcp_port);
+        } else {
+            /* Custom address */
+            fd = netDriver_sockConnAddr(global_addr, hfnd_globals.addrlen);
+            if (fd >= 0) {
+                close(fd);
+                return;
+            }
+
+            LOG_I(
+                "Honggfuzz Net Driver (pid=%d): Waiting for the server process to start accepting "
+                "connections at '%s'. Sleeping for 0.5 seconds ...",
+                (int)getpid(), files_sockAddrToStr(global_addr, hfnd_globals.addrlen));
         }
-        fd = netDriver_sockConnLoopback(AF_INET6, portno);
-        if (fd >= 0) {
-            hfnd_globals.sa_family = AF_INET6;
-            close(fd);
-            return;
-        }
-        LOG_I(
-            "Honggfuzz Net Driver (pid=%d): Waiting for the TCP server process to start accepting "
-            "connections at TCP4:127.0.0.1:%" PRIu16 " or at TCP6:[::1]:%" PRIu16
-            ". Sleeping for 0.5 seconds ...",
-            (int)getpid(), portno, portno);
 
         util_sleepForMSec(500);
     }
@@ -320,27 +378,22 @@ int LLVMFuzzerInitialize(int *argc, char ***argv) {
     *argc = HonggfuzzNetDriverArgsForServer(
         *argc, *argv, &hfnd_globals.argc_server, &hfnd_globals.argv_server);
 
-    LOG_I(
-        "Honggfuzz Net Driver (pid=%d): TCP port %d will be used. You can change the server's TCP "
-        "port by setting the %s envvar",
-        (int)getpid(), hfnd_globals.tcp_port, HFND_TCP_PORT_ENV);
-
     netDriver_initNsIfNeeded();
     netDriver_startOriginalProgramInThread();
-    netDriver_waitForServerReady(hfnd_globals.tcp_port);
+    netDriver_waitForServerReady();
 
-    LOG_I("Honggfuzz Net Driver (pid=%d): The TCP server process is ready to accept connections at "
-          "%s:%" PRIu16 ". TCP fuzzing starts now!",
-        (int)getpid(), (hfnd_globals.sa_family == AF_INET ? "TCP4:127.0.0.1" : "TCP6:[::1]"),
-        hfnd_globals.tcp_port);
+    LOG_I("Honggfuzz Net Driver (pid=%d): The server process is ready to accept connections at "
+          "'%s'. Fuzzing starts now!",
+        (int)getpid(),
+        files_sockAddrToStr((struct sockaddr *)&hfnd_globals.addr, hfnd_globals.addrlen));
 
     return 0;
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
-    int sock = netDriver_sockConnLoopback(hfnd_globals.sa_family, hfnd_globals.tcp_port);
+    int sock = netDriver_sockConnAddr((struct sockaddr *)&hfnd_globals.addr, hfnd_globals.addrlen);
     if (sock == -1) {
-        LOG_F("Couldn't connect to the server TCP port");
+        LOG_F("Couldn't connect to server");
     }
     if (!files_sendToSocket(sock, buf, len)) {
         PLOG_W("files_sendToSocket(sock=%d, len=%zu) failed", sock, len);

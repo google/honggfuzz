@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/socket.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +22,10 @@ int HonggfuzzNetDriverArgsForServer(int argc, char** argv, int* server_argc, cha
  * TCP port that the fuzzed data inputs will be sent to
  */
 uint16_t HonggfuzzNetDriverPort(int argc, char** argv);
+/*
+ * Override target address instead of using TCP.
+ */
+int HonggfuzzNetDriverServerAddress(struct sockaddr* addr, socklen_t* addrlen);
 /*
  * Mount point for temporary filesystem
  */
