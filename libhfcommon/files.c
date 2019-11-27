@@ -34,10 +34,12 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/un.h>
 #if defined(_HF_ARCH_LINUX)
 #include <sys/syscall.h>
 #endif /* defined(_HF_ARCH_LINUX) */
@@ -419,7 +421,7 @@ sa_family_t files_sockFamily(int sock) {
     return addr.sa_family;
 }
 
-const char* files_sockAddrToStr(const struct sockaddr* sa) {
+const char* files_sockAddrToStr(const struct sockaddr* sa, const socklen_t len) {
     static __thread char str[4096];
 
     if (sa->sa_family == AF_INET) {
@@ -439,6 +441,39 @@ const char* files_sockAddrToStr(const struct sockaddr* sa) {
             snprintf(str, sizeof(str), "IPv6 addr conversion failed");
         }
         return str;
+    }
+
+    if (sa->sa_family == AF_UNIX) {
+        if (len == sizeof(sa_family_t)) {
+            /* Unnamed socket */
+            snprintf(str, sizeof(str), "unix:(unnamed)");
+            return str;
+        }
+
+        if (len == sizeof(struct sockaddr_un)) {
+            struct sockaddr_un* sun = (struct sockaddr_un*)sa;
+            int pathlen;
+
+            if (sun->sun_path[0] == '\0') {
+                /* Abstract socket
+                 *
+                 * TODO: Handle null bytes in sun->sun_path (they have no
+                 * special significance unlike in C char arrays, see unix(7))
+                 */
+                pathlen = strnlen(&sun->sun_path[1],
+                        len - offsetof(struct sockaddr_un, sun_path) - 1);
+
+                snprintf(str, sizeof(str), "unix:abstract:%-*s",
+                        pathlen, &sun->sun_path[1]);
+                return str;
+            }
+
+            pathlen = strnlen(sun->sun_path,
+                    len - offsetof(struct sockaddr_un, sun_path));
+
+            snprintf(str, sizeof(str), "unix:%-*s", pathlen, sun->sun_path);
+            return str;
+        }
     }
 
     snprintf(str, sizeof(str), "Unsupported sockaddr family=%d", (int)sa->sa_family);

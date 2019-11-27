@@ -66,6 +66,6 @@ extern size_t files_parseSymbolFilter(const char* inFIle, char*** filterList);
 
 extern sa_family_t files_sockFamily(int sock);
 
-extern const char* files_sockAddrToStr(const struct sockaddr* sa);
+extern const char* files_sockAddrToStr(const struct sockaddr* sa, const socklen_t len);
 
 #endif /* ifndef HF_COMMON_FILES */
