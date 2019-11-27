@@ -31,10 +31,10 @@
 #include <limits.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stddef.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
@@ -460,16 +460,14 @@ const char* files_sockAddrToStr(const struct sockaddr* sa, const socklen_t len) 
                  * TODO: Handle null bytes in sun->sun_path (they have no
                  * special significance unlike in C char arrays, see unix(7))
                  */
-                pathlen = strnlen(&sun->sun_path[1],
-                        len - offsetof(struct sockaddr_un, sun_path) - 1);
+                pathlen =
+                    strnlen(&sun->sun_path[1], len - offsetof(struct sockaddr_un, sun_path) - 1);
 
-                snprintf(str, sizeof(str), "unix:abstract:%-*s",
-                        pathlen, &sun->sun_path[1]);
+                snprintf(str, sizeof(str), "unix:abstract:%-*s", pathlen, &sun->sun_path[1]);
                 return str;
             }
 
-            pathlen = strnlen(sun->sun_path,
-                    len - offsetof(struct sockaddr_un, sun_path));
+            pathlen = strnlen(sun->sun_path, len - offsetof(struct sockaddr_un, sun_path));
 
             snprintf(str, sizeof(str), "unix:%-*s", pathlen, sun->sun_path);
             return str;
