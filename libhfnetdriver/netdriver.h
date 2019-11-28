@@ -4,6 +4,8 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,6 +27,10 @@ uint16_t HonggfuzzNetDriverPort(int argc, char** argv);
  * Mount point for temporary filesystem
  */
 int HonggfuzzNetDriverTempdir(char* str, size_t size);
+/*
+ * Provide your own connection address, could be e.g. a AF_UNIX socket.
+ */
+socklen_t HonggfuzzNetDriverServerAddress(struct sockaddr** addr);
 
 #ifdef __cplusplus
 }
