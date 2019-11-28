@@ -266,7 +266,9 @@ const char *netDriver_getSockPath(int argc HF_ATTR_UNUSED, char **argv HF_ATTR_U
 
     static __thread char path[PATH_MAX] = {};
     const char *sock_path = getenv(HFND_SOCK_PATH_ENV);
-    if (sock_path) {
+    if (sock_path && sock_path[0] == '/') {
+        snprintf(path, sizeof(path), "%s", sock_path);
+    } else if (sock_path) {
         snprintf(path, sizeof(path), "%s/%s", tmpdir, sock_path);
     } else {
         snprintf(path, sizeof(path), "%s/%s", tmpdir, "pipe");
