@@ -228,15 +228,19 @@ __attribute__((weak)) int HonggfuzzNetDriverTempdir(char *str, size_t size) {
     return snprintf(str, size, "%s", HFND_TMP_DIR);
 }
 
-/*
- * Put a custom sockaddr here (e.g. based on AF_UNIX)
- */
+/* Put a custom sockaddr here (e.g. based on AF_UNIX) */
 __attribute__((weak)) socklen_t HonggfuzzNetDriverServerAddress(struct sockaddr **addr) {
+    /*
+     * Use a non-stack based struct, e.g. with
+     * static __thread struct something sthig = { .sth_family = PF_SOMETHING, ... };
+     * *addr = &sthig;
+     * return sizeof(sthing);
+     */
     *addr = NULL;
     return 0;
 }
 
-uint16_t netDriver_getTCPPort(int argc, char **argv) {
+static uint16_t netDriver_getTCPPort(int argc, char **argv) {
     const char *port_str = getenv(HFND_TCP_PORT_ENV);
     if (port_str) {
         errno = 0;
@@ -258,7 +262,7 @@ uint16_t netDriver_getTCPPort(int argc, char **argv) {
     return HonggfuzzNetDriverPort(argc, argv);
 }
 
-const char *netDriver_getSockPath(int argc HF_ATTR_UNUSED, char **argv HF_ATTR_UNUSED) {
+static const char *netDriver_getSockPath(int argc HF_ATTR_UNUSED, char **argv HF_ATTR_UNUSED) {
     char tmpdir[PATH_MAX] = {};
     if (HonggfuzzNetDriverTempdir(tmpdir, sizeof(tmpdir)) == -1) {
         snprintf(tmpdir, sizeof(tmpdir), HFND_TMP_DIR);
@@ -266,6 +270,7 @@ const char *netDriver_getSockPath(int argc HF_ATTR_UNUSED, char **argv HF_ATTR_U
 
     static __thread char path[PATH_MAX] = {};
     const char *sock_path = getenv(HFND_SOCK_PATH_ENV);
+    /* If it starts with '/' it's an absolute path */
     if (sock_path && sock_path[0] == '/') {
         snprintf(path, sizeof(path), "%s", sock_path);
     } else if (sock_path) {
