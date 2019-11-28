@@ -260,7 +260,7 @@ uint16_t netDriver_getTCPPort(int argc, char **argv) {
 
 const char *netDriver_getSockPath(int argc HF_ATTR_UNUSED, char **argv HF_ATTR_UNUSED) {
     char tmpdir[PATH_MAX] = {};
-    if (HonggfuzzNetDriverTempdir(tmpdir, sizeof(tmpdir)) >= 0) {
+    if (HonggfuzzNetDriverTempdir(tmpdir, sizeof(tmpdir)) == -1) {
         snprintf(tmpdir, sizeof(tmpdir), HFND_TMP_DIR);
     }
 
