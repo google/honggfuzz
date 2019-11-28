@@ -260,7 +260,7 @@ static void netDriver_waitForServerReady(int argc, char **argv) {
         struct sockaddr *addr;
         socklen_t slen = HonggfuzzNetDriverServerAddress(&addr);
         if (slen > 0) {
-            /* User provided a specific destination address */
+            /* User provided specific destination address */
             int fd = netDriver_sockConnAddr(addr, sizeof(addr));
             if (fd >= 0) {
                 close(fd);
@@ -272,7 +272,7 @@ static void netDriver_waitForServerReady(int argc, char **argv) {
                   "accepting connections at '%s'",
                 (int)getpid(), files_sockAddrToStr(addr, slen));
         } else {
-            /* Try generic TCP connections */
+            /* Try TCP4 and TCP6 connections */
             static __thread struct sockaddr_in addr4 = {
                 .sin_family = PF_INET,
                 .sin_port = 0,
@@ -303,9 +303,9 @@ static void netDriver_waitForServerReady(int argc, char **argv) {
                 hfnd_globals.slen = sizeof(addr6);
                 return;
             }
+            /* Other default protocols (e.g. AF_UNIX) can be added below */
             LOG_I("Honggfuzz Net Driver (pid=%d): Waiting for the TCP server process to start "
-                  "accepting "
-                  "connections at TCP port: %hu",
+                  "accepting connections at TCP port: %hu",
                 (int)getpid(), netDriver_getTCPPort(argc, argv));
         }
         util_sleepForMSec(500);
