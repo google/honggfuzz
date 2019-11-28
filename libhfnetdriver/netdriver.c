@@ -257,68 +257,83 @@ uint16_t netDriver_getTCPPort(int argc, char **argv) {
     return HonggfuzzNetDriverPort(argc, argv);
 }
 
-static void netDriver_waitForServerReady(int argc, char **argv) {
-    for (;;) {
-        struct sockaddr *addr;
-        socklen_t slen = HonggfuzzNetDriverServerAddress(&addr);
-        if (slen > 0) {
-            /* User provided specific destination address */
-            int fd = netDriver_sockConnAddr(addr, sizeof(addr));
-            if (fd >= 0) {
-                close(fd);
-                hfnd_globals.saddr = addr;
-                hfnd_globals.slen = slen;
-                return;
-            }
-            LOG_I("Honggfuzz Net Driver (pid=%d): Waiting for the server process to start "
-                  "accepting connections at '%s'",
-                (int)getpid(), files_sockAddrToStr(addr, slen));
-        } else {
-            /* Try TCP4 and TCP6 connections */
-            static __thread struct sockaddr_in addr4 = {
-                .sin_family = PF_INET,
-                .sin_port = 0,
-                .sin_addr.s_addr = 0,
-            };
-            addr4.sin_port = htons(netDriver_getTCPPort(argc, argv));
-            addr4.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-            int fd = netDriver_sockConnAddr((struct sockaddr *)&addr4, sizeof(addr4));
-            if (fd >= 0) {
-                close(fd);
-                hfnd_globals.saddr = (struct sockaddr *)&addr4;
-                hfnd_globals.slen = sizeof(addr4);
-                return;
-            }
-            static __thread struct sockaddr_in6 addr6 = {
-                .sin6_family = PF_INET6,
-                .sin6_port = 0,
-                .sin6_flowinfo = 0,
-                .sin6_addr = {},
-                .sin6_scope_id = 0,
-            };
-            addr6.sin6_port = htons(netDriver_getTCPPort(argc, argv));
-            addr6.sin6_addr = in6addr_loopback;
-            fd = netDriver_sockConnAddr((struct sockaddr *)&addr6, sizeof(addr6));
-            if (fd >= 0) {
-                close(fd);
-                hfnd_globals.saddr = (struct sockaddr *)&addr6;
-                hfnd_globals.slen = sizeof(addr6);
-                return;
-            }
-            /* Other default protocols (e.g. AF_UNIX) can be added below */
-            LOG_I("Honggfuzz Net Driver (pid=%d): Waiting for the TCP server process to start "
-                  "accepting connections at TCP port: %hu",
-                (int)getpid(), netDriver_getTCPPort(argc, argv));
+static bool netDriver_checkIfServerReady(int argc, char **argv) {
+    struct sockaddr *addr;
+    socklen_t slen = HonggfuzzNetDriverServerAddress(&addr);
+    if (slen > 0) {
+        /* User provided specific destination address */
+        int fd = netDriver_sockConnAddr(addr, sizeof(addr));
+        if (fd >= 0) {
+            close(fd);
+            hfnd_globals.saddr = addr;
+            hfnd_globals.slen = slen;
+            return true;
         }
-        util_sleepForMSec(500);
+
+        LOG_I("Honggfuzz Net Driver (pid=%d): Waiting for the server process to start "
+              "accepting connections at '%s'",
+            (int)getpid(), files_sockAddrToStr(addr, slen));
+        return false;
     }
+
+    /* Try to connect to ${HFND_TMP_DIR}/pipe first via a PF_UNIX socket */
+    static __thread struct sockaddr_un sun = {
+        .sun_family = PF_UNIX,
+        .sun_path = {},
+    };
+    if (HonggfuzzNetDriverTempdir(sun.sun_path, sizeof(sun.sun_path)) < 0) {
+        snprintf(sun.sun_path, sizeof(sun.sun_path), "%s/%s", HFND_TMP_DIR, "pipe");
+    }
+    int fd = netDriver_sockConnAddr((struct sockaddr *)&sun, sizeof(sun));
+    if (fd >= 0) {
+        close(fd);
+        hfnd_globals.saddr = (struct sockaddr *)&sun;
+        hfnd_globals.slen = sizeof(sun);
+        return true;
+    }
+    /* Next, try TCP4 and TCP6 connections to the localhost */
+    static __thread struct sockaddr_in addr4 = {
+        .sin_family = PF_INET,
+        .sin_port = 0,
+        .sin_addr.s_addr = 0,
+    };
+    addr4.sin_port = htons(netDriver_getTCPPort(argc, argv));
+    addr4.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    fd = netDriver_sockConnAddr((struct sockaddr *)&addr4, sizeof(addr4));
+    if (fd >= 0) {
+        close(fd);
+        hfnd_globals.saddr = (struct sockaddr *)&addr4;
+        hfnd_globals.slen = sizeof(addr4);
+        return true;
+    }
+    static __thread struct sockaddr_in6 addr6 = {
+        .sin6_family = PF_INET6,
+        .sin6_port = 0,
+        .sin6_flowinfo = 0,
+        .sin6_addr = {},
+        .sin6_scope_id = 0,
+    };
+    addr6.sin6_port = htons(netDriver_getTCPPort(argc, argv));
+    addr6.sin6_addr = in6addr_loopback;
+    fd = netDriver_sockConnAddr((struct sockaddr *)&addr6, sizeof(addr6));
+    if (fd >= 0) {
+        close(fd);
+        hfnd_globals.saddr = (struct sockaddr *)&addr6;
+        hfnd_globals.slen = sizeof(addr6);
+        return true;
+    }
+
+    LOG_I("Honggfuzz Net Driver (pid=%d): Waiting for the TCP server process to start "
+          "accepting connections at TCP4 and TCP6 port: %hu and at the socket path: '%s'",
+        (int)getpid(), netDriver_getTCPPort(argc, argv), sun.sun_path);
+    return false;
 }
 
 int LLVMFuzzerInitialize(int *argc, char ***argv) {
     if (getenv(HFND_SKIP_FUZZING_ENV)) {
         LOG_I(
             "Honggfuzz Net Driver (pid=%d): '%s' is set, skipping fuzzing, calling main() directly",
-            getpid(), HFND_SKIP_FUZZING_ENV);
+            (int)getpid(), HFND_SKIP_FUZZING_ENV);
         exit(HonggfuzzNetDriver_main(*argc, *argv));
     }
 
@@ -330,7 +345,13 @@ int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
     netDriver_initNsIfNeeded();
     netDriver_startOriginalProgramInThread();
-    netDriver_waitForServerReady(*argc, *argv);
+    for (;;) {
+        if (netDriver_checkIfServerReady(*argc, *argv)) {
+            break;
+        }
+        LOG_I("Honggfuzz Net Driver (pid=%d): Sleeping for 0.5s", (int)getpid());
+        util_sleepForMSec(500);
+    }
 
     LOG_I("Honggfuzz Net Driver (pid=%d): The server process is ready to accept connections at "
           "'%s'. Fuzzing starts now!",

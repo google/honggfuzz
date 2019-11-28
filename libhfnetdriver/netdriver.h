@@ -28,7 +28,10 @@ uint16_t HonggfuzzNetDriverPort(int argc, char** argv);
  */
 int HonggfuzzNetDriverTempdir(char* str, size_t size);
 /*
- * Provide your own connection address, could be e.g. a AF_UNIX socket.
+ * Provide your own connection address, could be e.g. an AF_UNIX socket.
+ *
+ * Return 0 if only the standard connection protocols should be used (i.e. currently TCP4/TCP6 and
+ * PF_UNIX via a set of standardized TCP ports (e.g. 8080) and paths)
  */
 socklen_t HonggfuzzNetDriverServerAddress(struct sockaddr** addr);
 
