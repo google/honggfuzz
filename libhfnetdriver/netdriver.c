@@ -281,7 +281,10 @@ static bool netDriver_checkIfServerReady(int argc, char **argv) {
         .sun_family = PF_UNIX,
         .sun_path = {},
     };
-    if (HonggfuzzNetDriverTempdir(sun.sun_path, sizeof(sun.sun_path)) < 0) {
+    char tmpdir[PATH_MAX] = {};
+    if (HonggfuzzNetDriverTempdir(tmpdir, sizeof(tmpdir)) >= 0) {
+        snprintf(sun.sun_path, sizeof(sun.sun_path), "%s/%s", tmpdir, "pipe");
+    } else {
         snprintf(sun.sun_path, sizeof(sun.sun_path), "%s/%s", HFND_TMP_DIR, "pipe");
     }
     int fd = netDriver_sockConnAddr((struct sockaddr *)&sun, sizeof(sun));
