@@ -93,10 +93,8 @@ static void netDriver_initNsIfNeeded(void) {
         LOG_F("nsIfaceUp('lo') failed");
     }
 
-    char tmpdir[PATH_MAX];
-    int ret;
-
-    ret = HonggfuzzNetDriverTempdir(tmpdir, sizeof(tmpdir));
+    char tmpdir[PATH_MAX] = {};
+    int ret = HonggfuzzNetDriverTempdir(tmpdir, sizeof(tmpdir));
     if (ret < 0) {
         LOG_F("HonggfuzzNetDriverTempdir failed");
     }
