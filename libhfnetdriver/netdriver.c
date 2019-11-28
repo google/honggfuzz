@@ -176,7 +176,7 @@ static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen
  */
 __attribute__((weak)) uint16_t HonggfuzzNetDriverPort(
     int argc HF_ATTR_UNUSED, char **argv HF_ATTR_UNUSED) {
-    return 8080;
+    return HFND_DEFAULT_TCP_PORT;
 }
 
 /*
@@ -271,7 +271,7 @@ const char *netDriver_getSockPath(int argc HF_ATTR_UNUSED, char **argv HF_ATTR_U
     } else if (sock_path) {
         snprintf(path, sizeof(path), "%s/%s", tmpdir, sock_path);
     } else {
-        snprintf(path, sizeof(path), "%s/%s", tmpdir, "pipe");
+        snprintf(path, sizeof(path), "%s/%s", tmpdir, HFND_DEFAULT_SOCK_PATH);
     }
     return path;
 }
@@ -295,7 +295,7 @@ static bool netDriver_checkIfServerReady(int argc, char **argv) {
         return false;
     }
 
-    /* Try to connect to ${HFND_TMP_DIR}/pipe first via a PF_UNIX socket */
+    /* Try to connect to ${HFND_TMP_DIR}/${HFND_DEFAULT_SOCK_PATH} first via a PF_UNIX socket */
     static __thread struct sockaddr_un sun = {
         .sun_family = PF_UNIX,
         .sun_path = {},

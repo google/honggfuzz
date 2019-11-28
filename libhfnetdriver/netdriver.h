@@ -13,6 +13,8 @@ extern "C" {
 
 #define HFND_TMP_DIR_OLD "/tmp/FUZZ"
 #define HFND_TMP_DIR "/tmp/HFND_TMP_DIR"
+#define HFND_DEFAULT_TCP_PORT 8080
+#define HFND_DEFAULT_SOCK_PATH "pipe"
 
 /*
  * Flags which will be passed to the original program running in a separate thread should go into
