@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/un.h>
 #include <unistd.h>
 #if defined(_HF_ARCH_LINUX)
 #include <sched.h>
@@ -135,26 +136,28 @@ static void netDriver_bindToRndLoopback(int sock, sa_family_t sa_family) {
 static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen) {
     int sock = socket(addr->sa_family, SOCK_STREAM, 0);
     if (sock == -1) {
-        PLOG_D("socket(type=%d for dst_addr='%s', SOCK_STREAM, 0)", addr->sa_family,
+        PLOG_W("socket(type=%d for dst_addr='%s', SOCK_STREAM, 0)", addr->sa_family,
             files_sockAddrToStr(addr, socklen));
         return -1;
     }
-    int val = 1;
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &val, (socklen_t)sizeof(val)) == -1) {
-        PLOG_W("setsockopt(sock=%d, SOL_SOCKET, SO_REUSEADDR, %d)", sock, val);
-    }
+    if (addr->sa_family == AF_INET || addr->sa_family == AF_INET6) {
+        int val = 1;
+        if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &val, (socklen_t)sizeof(val)) == -1) {
+            PLOG_W("setsockopt(sock=%d, SOL_SOCKET, SO_REUSEADDR, %d)", sock, val);
+        }
 #if defined(SOL_TCP) && defined(TCP_NODELAY)
-    val = 1;
-    if (setsockopt(sock, SOL_TCP, TCP_NODELAY, &val, (socklen_t)sizeof(val)) == -1) {
-        PLOG_W("setsockopt(sock=%d, SOL_TCP, TCP_NODELAY, %d)", sock, val);
-    }
+        val = 1;
+        if (setsockopt(sock, SOL_TCP, TCP_NODELAY, &val, (socklen_t)sizeof(val)) == -1) {
+            PLOG_W("setsockopt(sock=%d, SOL_TCP, TCP_NODELAY, %d)", sock, val);
+        }
 #endif /* defined(SOL_TCP) && defined(TCP_NODELAY) */
 #if defined(SOL_TCP) && defined(TCP_QUICKACK)
-    val = 1;
-    if (setsockopt(sock, SOL_TCP, TCP_QUICKACK, &val, (socklen_t)sizeof(val)) == -1) {
-        PLOG_D("setsockopt(sock=%d, SOL_TCP, TCP_QUICKACK, %d)", sock, val);
-    }
+        val = 1;
+        if (setsockopt(sock, SOL_TCP, TCP_QUICKACK, &val, (socklen_t)sizeof(val)) == -1) {
+            PLOG_D("setsockopt(sock=%d, SOL_TCP, TCP_QUICKACK, %d)", sock, val);
+        }
 #endif /* defined(SOL_TCP) && defined(TCP_QUICKACK) */
+    }
 
     netDriver_bindToRndLoopback(sock, addr->sa_family);
 
@@ -172,7 +175,6 @@ static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen
  */
 __attribute__((weak)) uint16_t HonggfuzzNetDriverPort(
     int argc HF_ATTR_UNUSED, char **argv HF_ATTR_UNUSED) {
-    /* Return the default port (8080) */
     return 8080;
 }
 
@@ -226,7 +228,7 @@ __attribute__((weak)) int HonggfuzzNetDriverTempdir(char *str, size_t size) {
 }
 
 /*
- * Put a custom sockaddr here (e.g. based on AF_UNIX
+ * Put a custom sockaddr here (e.g. based on AF_UNIX)
  */
 __attribute__((weak)) socklen_t HonggfuzzNetDriverServerAddress(struct sockaddr **addr) {
     *addr = NULL;

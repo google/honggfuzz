@@ -444,34 +444,30 @@ const char* files_sockAddrToStr(const struct sockaddr* sa, const socklen_t len) 
     }
 
     if (sa->sa_family == AF_UNIX) {
-        if (len == sizeof(sa_family_t)) {
-            /* Unnamed socket */
-            snprintf(str, sizeof(str), "unix:(unnamed)");
+        if (len <= offsetof(struct sockaddr_un, sun_path)) {
+            snprintf(str, sizeof(str), "unix:<struct too short at %u bytes>", (unsigned)len);
             return str;
         }
 
-        if (len == sizeof(struct sockaddr_un)) {
-            struct sockaddr_un* sun = (struct sockaddr_un*)sa;
-            int pathlen;
+        struct sockaddr_un* sun = (struct sockaddr_un*)sa;
+        int pathlen;
 
-            if (sun->sun_path[0] == '\0') {
-                /* Abstract socket
-                 *
-                 * TODO: Handle null bytes in sun->sun_path (they have no
-                 * special significance unlike in C char arrays, see unix(7))
-                 */
-                pathlen =
-                    strnlen(&sun->sun_path[1], len - offsetof(struct sockaddr_un, sun_path) - 1);
+        if (sun->sun_path[0] == '\0') {
+            /* Abstract socket
+             *
+             * TODO: Handle null bytes in sun->sun_path (they have no
+             * special significance unlike in C char arrays, see unix(7))
+             */
+            pathlen = strnlen(&sun->sun_path[1], len - offsetof(struct sockaddr_un, sun_path) - 1);
 
-                snprintf(str, sizeof(str), "unix:abstract:%-*s", pathlen, &sun->sun_path[1]);
-                return str;
-            }
-
-            pathlen = strnlen(sun->sun_path, len - offsetof(struct sockaddr_un, sun_path));
-
-            snprintf(str, sizeof(str), "unix:%-*s", pathlen, sun->sun_path);
+            snprintf(str, sizeof(str), "unix:abstract:%-*s", pathlen, &sun->sun_path[1]);
             return str;
         }
+
+        pathlen = strnlen(sun->sun_path, len - offsetof(struct sockaddr_un, sun_path));
+
+        snprintf(str, sizeof(str), "unix:%-*s", pathlen, sun->sun_path);
+        return str;
     }
 
     snprintf(str, sizeof(str), "Unsupported sockaddr family=%d", (int)sa->sa_family);
