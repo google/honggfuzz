@@ -30,6 +30,7 @@ __attribute__((visibility("default"))) __attribute__((used))
 const char *const LIBHFNETDRIVER_module_netdriver = _HF_NETDRIVER_SIG;
 
 #define HFND_TCP_PORT_ENV "HFND_TCP_PORT"
+#define HFND_SOCK_PATH_ENV "HFND_SOCK_PATH"
 #define HFND_SKIP_FUZZING_ENV "HFND_SKIP_FUZZING"
 
 static char *initial_server_argv[] = {"fuzzer", NULL};
@@ -257,6 +258,22 @@ uint16_t netDriver_getTCPPort(int argc, char **argv) {
     return HonggfuzzNetDriverPort(argc, argv);
 }
 
+const char *netDriver_getSockPath(int argc HF_ATTR_UNUSED, char **argv HF_ATTR_UNUSED) {
+    char tmpdir[PATH_MAX] = {};
+    if (HonggfuzzNetDriverTempdir(tmpdir, sizeof(tmpdir)) >= 0) {
+        snprintf(tmpdir, sizeof(tmpdir), HFND_TMP_DIR);
+    }
+
+    static __thread char path[PATH_MAX] = {};
+    const char *sock_path = getenv(HFND_SOCK_PATH_ENV);
+    if (sock_path) {
+        snprintf(path, sizeof(path), "%s/%s", tmpdir, sock_path);
+    } else {
+        snprintf(path, sizeof(path), "%s/%s", tmpdir, "pipe");
+    }
+    return path;
+}
+
 static bool netDriver_checkIfServerReady(int argc, char **argv) {
     struct sockaddr *addr;
     socklen_t slen = HonggfuzzNetDriverServerAddress(&addr);
@@ -281,12 +298,7 @@ static bool netDriver_checkIfServerReady(int argc, char **argv) {
         .sun_family = PF_UNIX,
         .sun_path = {},
     };
-    char tmpdir[PATH_MAX] = {};
-    if (HonggfuzzNetDriverTempdir(tmpdir, sizeof(tmpdir)) >= 0) {
-        snprintf(sun.sun_path, sizeof(sun.sun_path), "%s/%s", tmpdir, "pipe");
-    } else {
-        snprintf(sun.sun_path, sizeof(sun.sun_path), "%s/%s", HFND_TMP_DIR, "pipe");
-    }
+    snprintf(sun.sun_path, sizeof(sun.sun_path), "%s", netDriver_getSockPath(argc, argv));
     int fd = netDriver_sockConnAddr((struct sockaddr *)&sun, sizeof(sun));
     if (fd >= 0) {
         close(fd);
