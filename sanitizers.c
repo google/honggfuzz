@@ -58,64 +58,49 @@
  *
  * symbolize: Disable symbolication since it changes logs (which are parsed) format
  */
-#define kSAN_COMMON "symbolize=0"
+#define kSAN_COMMON                \
+    "symbolize=1:"                 \
+    "detect_odr_violation=0:"      \
+    "detect_leaks=0:"              \
+    "allocator_may_return_null=1:" \
+    "allow_user_segv_handler=0:"   \
+    "exitcode=" HF_XSTR(HF_SAN_EXIT_CODE)
 
 /* --{ ASan }-- */
 /*
- *Sanitizer specific flags (notice that if enabled 'abort_on_error' has priority
+ * Sanitizer specific flags (notice that if enabled 'abort_on_error' has priority
  * over exitcode')
  */
-#define kASAN_COMMON_OPTS        \
-    "allow_user_segv_handler=1:" \
-    "handle_segv=0:"             \
-    "allocator_may_return_null=1:" kSAN_COMMON ":exitcode=" HF_XSTR(HF_SAN_EXIT_CODE)
-/* Platform specific flags */
-#if defined(__ANDROID__)
-/*
- * start_deactivated: Enable on Android to reduce memory usage (useful when not all
- *                    target's DSOs are compiled with sanitizer enabled
- */
-#define kASAN_OPTS kASAN_COMMON_OPTS ":start_deactivated=1"
-#else
-#define kASAN_OPTS kASAN_COMMON_OPTS
-#endif
+#define kASAN_OPTS kSAN_COMMON
 
 /* --{ UBSan }-- */
-#define kUBSAN_OPTS kSAN_COMMON ":exitcode=" STR(HF_SAN_EXIT_CODE)
+#define kUBSAN_OPTS kSAN_COMMON
 
 /* --{ MSan }-- */
-#define kMSAN_OPTS                                      \
-    kSAN_COMMON ":exit_code=" STR(HF_SAN_EXIT_CODE) ":" \
-                                                    "wrap_signals=0:print_stats=1"
+#define kMSAN_OPTS kSAN_COMMON ":wrap_signals=0:print_stats=1"
+
+/* --{ LSan }-- */
+#define kLSAN_OPTS kSAN_COMMON
 
 /* If no sanitzer support was requested, simply make it use abort() on errors */
 #define kSAN_REGULAR                                                 \
     "abort_on_error=1:handle_segv=0:handle_sigbus=0:handle_abort=0:" \
     "handle_sigill=0:handle_sigfpe=0:allocator_may_return_null=1:"   \
-    "symbolize=1:detect_leaks=0:disable_coredump=0:"                 \
+    "symbolize=0:detect_leaks=0:disable_coredump=0:"                 \
     "detect_odr_violation=0"
 
-/*
- * If the program ends with a signal that ASan does not handle (or can not
- * handle at all, like SIGKILL), coverage data will be lost. This is a big
- * problem on Android, where SIGKILL is a normal way of evicting applications
- * from memory. With 'coverage_direct=1' coverage data is written to a
- * memory-mapped file as soon as it collected. Non-Android targets can disable
- * coverage direct when more coverage data collection methods are implemented.
- */
-#define kSAN_COV_OPTS "coverage=1:coverage_direct=1"
-
-static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, char* buf, size_t buflen) {
+static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, const char* val) {
     const char* abortFlag = hfuzz->cfg.monitorSIGABRT ? kABORT_ENABLED : kABORT_DISABLED;
     if (getenv(env)) {
         LOG_W("The '%s' envar is already set. Not overriding it!", env);
         return;
     }
 
+    char buf[4096] = {};
     if (!hfuzz->sanitizer.enable) {
-        snprintf(buf, buflen, "%s=%s", env, kSAN_REGULAR);
+        snprintf(buf, sizeof(buf), "%s=%s", env, kSAN_REGULAR);
     } else {
-        snprintf(buf, buflen, "%s=%s:%s:%s%s/%s", env, kASAN_OPTS, abortFlag, kSANLOGDIR,
+        snprintf(buf, sizeof(buf), "%s=%s:%s:%s%s/%s", env, val, abortFlag, kSANLOGDIR,
             hfuzz->io.workDir, kLOGPREFIX);
     }
     /*
@@ -124,22 +109,18 @@ static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, char* buf, s
      * be used in multi-threaded contexts
      */
     if (!hfuzz->exe.netDriver && hfuzz->exe.rssLimit) {
-        util_ssnprintf(buf, buflen, ":soft_rss_limit_mb=%" PRId64, hfuzz->exe.rssLimit);
+        util_ssnprintf(buf, sizeof(buf), ":soft_rss_limit_mb=%" PRId64, hfuzz->exe.rssLimit);
     }
 
     cmdlineAddEnv(hfuzz, buf);
-    LOG_D("%s", env);
+    LOG_D("%s", buf);
 }
 
 bool sanitizers_Init(honggfuzz_t* hfuzz) {
-    static char asanOpts[4096];
-    sanitizers_AddFlag(hfuzz, "ASAN_OPTIONS", asanOpts, sizeof(asanOpts));
-    static char ubsanOpts[4096];
-    sanitizers_AddFlag(hfuzz, "UBSAN_OPTIONS", ubsanOpts, sizeof(ubsanOpts));
-    static char msanOpts[4096];
-    sanitizers_AddFlag(hfuzz, "MSAN_OPTIONS", msanOpts, sizeof(msanOpts));
-    static char lsanOpts[4096];
-    sanitizers_AddFlag(hfuzz, "LSAN_OPTIONS", lsanOpts, sizeof(lsanOpts));
+    sanitizers_AddFlag(hfuzz, "ASAN_OPTIONS", kASAN_OPTS);
+    sanitizers_AddFlag(hfuzz, "UBSAN_OPTIONS", kUBSAN_OPTS);
+    sanitizers_AddFlag(hfuzz, "MSAN_OPTIONS", kMSAN_OPTS);
+    sanitizers_AddFlag(hfuzz, "LSAN_OPTIONS", kLSAN_OPTS);
 
     return true;
 }

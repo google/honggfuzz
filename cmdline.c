@@ -143,19 +143,21 @@ bool cmdlineAddEnv(honggfuzz_t* hfuzz, char* env) {
         enveqlen = (uintptr_t)eqpos - (uintptr_t)env + 1;
     }
 
-    for (size_t i = 0; i < ARRAYSIZE(hfuzz->exe.envs); i++) {
-        if (hfuzz->exe.envs[i] == NULL) {
-            LOG_D("Adding envar '%s'", env);
-            hfuzz->exe.envs[i] = env;
+    for (size_t i = 0; i < ARRAYSIZE(hfuzz->exe.env_ptrs); i++) {
+        if (hfuzz->exe.env_ptrs[i] == NULL) {
+            LOG_D("Adding envar '%s' at pos: %zu", env, i);
+            hfuzz->exe.env_ptrs[i] = hfuzz->exe.env_vals[i];
+            snprintf(hfuzz->exe.env_vals[i], sizeof(hfuzz->exe.env_vals[i]), "%s", env);
             return true;
         }
-        if (strncmp(hfuzz->exe.envs[i], env, enveqlen) == 0) {
-            LOG_W("Replacing envar '%s' with '%s'", hfuzz->exe.envs[i], env);
-            hfuzz->exe.envs[i] = env;
+        if (strncmp(hfuzz->exe.env_vals[i], env, enveqlen) == 0) {
+            LOG_W("Replacing envar '%s' with '%s'", hfuzz->exe.env_vals[i], env);
+            snprintf(hfuzz->exe.env_vals[i], sizeof(hfuzz->exe.env_vals[i]), "%s", env);
+            hfuzz->exe.env_ptrs[i] = hfuzz->exe.env_vals[i];
             return true;
         }
     }
-    LOG_E("No more space for new envars (max.%zu)", ARRAYSIZE(hfuzz->exe.envs));
+    LOG_E("No more space for new envars (max.%zu)", ARRAYSIZE(hfuzz->exe.env_ptrs));
     return false;
 }
 
@@ -278,7 +280,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .rssLimit = 0U,
                 .dataLimit = 0U,
                 .clearEnv = false,
-                .envs = {},
+                .env_ptrs = {},
+                .env_vals = {},
             },
         .timing =
             {

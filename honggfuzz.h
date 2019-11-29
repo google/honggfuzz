@@ -219,7 +219,8 @@ typedef struct {
         uint64_t dataLimit;
         uint64_t coreLimit;
         bool clearEnv;
-        char* envs[128];
+        char* env_ptrs[128];
+        char env_vals[128][4096];
         sigset_t waitSigSet;
     } exe;
     struct {
