@@ -1381,4 +1381,14 @@ void arch_traceSignalsInit(honggfuzz_t* hfuzz) {
 
     /* Default is false */
     arch_sigs[SIGVTALRM].important = hfuzz->timing.tmoutVTALRM;
+
+    /* Let *SAN handle it, if it's enabled */
+    if (hfuzz->sanitizer.enable) {
+        LOG_I("Sanitizer support enabled. SIGSEGV/SIGBUS/SIGILL/SIGFPE should be handled by *SAN "
+              "code");
+        arch_sigs[SIGSEGV].important = false;
+        arch_sigs[SIGBUS].important = false;
+        arch_sigs[SIGILL].important = false;
+        arch_sigs[SIGFPE].important = false;
+    }
 }
