@@ -1384,8 +1384,8 @@ void arch_traceSignalsInit(honggfuzz_t* hfuzz) {
 
     /* Let *SAN handle it, if it's enabled */
     if (hfuzz->sanitizer.enable) {
-        LOG_I("Sanitizer support enabled. SIGSEGV/SIGBUS/SIGILL/SIGFPE should be handled by *SAN "
-              "code");
+        LOG_I("Sanitizer support enabled. SIGSEGV/SIGBUS/SIGILL/SIGFPE will not be reported, and "
+              "should be handled by *SAN code internally");
         arch_sigs[SIGSEGV].important = false;
         arch_sigs[SIGBUS].important = false;
         arch_sigs[SIGILL].important = false;
