@@ -64,6 +64,10 @@
     "detect_leaks=0:"              \
     "allocator_may_return_null=1:" \
     "allow_user_segv_handler=0:"   \
+    "handle_segv=2:"               \
+    "handle_sigbus=2:"             \
+    "handle_sigill=2:"             \
+    "handle_sigfpe=2:"             \
     "exitcode=" HF_XSTR(HF_SAN_EXIT_CODE)
 
 /* --{ ASan }-- */
