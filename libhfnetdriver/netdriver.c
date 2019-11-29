@@ -164,8 +164,10 @@ static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen
 
     LOG_D("Connecting to '%s'", files_sockAddrToStr(addr, socklen));
     if (TEMP_FAILURE_RETRY(connect(sock, addr, socklen)) == -1) {
-        PLOG_W("connect(addr='%s')", files_sockAddrToStr(addr, socklen));
+        int saved_errno = errno;
+        PLOG_D("connect(addr='%s')", files_sockAddrToStr(addr, socklen));
         close(sock);
+        errno = saved_errno;
         return -1;
     }
     return sock;
@@ -385,7 +387,8 @@ int LLVMFuzzerInitialize(int *argc, char ***argv) {
 int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
     int sock = netDriver_sockConnAddr(hfnd_globals.saddr, hfnd_globals.slen);
     if (sock == -1) {
-        LOG_F("Couldn't connect to the server socket at '%s'",
+        /* netDriver_sockConnAddr() preserves errno */
+        PLOG_F("Couldn't connect to the server socket at '%s'",
             files_sockAddrToStr(hfnd_globals.saddr, hfnd_globals.slen));
     }
     if (!files_sendToSocket(sock, buf, len)) {
