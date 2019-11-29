@@ -288,7 +288,7 @@ static bool netDriver_checkIfServerReady(int argc, char **argv) {
     socklen_t slen = HonggfuzzNetDriverServerAddress(&addr);
     if (slen > 0) {
         /* User provided specific destination address */
-        int fd = netDriver_sockConnAddr(addr, sizeof(addr));
+        int fd = netDriver_sockConnAddr(addr, slen);
         if (fd >= 0) {
             close(fd);
             hfnd_globals.saddr = addr;
