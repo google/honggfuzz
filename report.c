@@ -38,7 +38,7 @@ static int reportFD = -1;
 
 #if defined(_HF_ARCH_LINUX)
 static void report_printdynFileMethod(run_t* run) {
-    dprintf(reportFD, " dynFileMethod: ");
+    dprintf(reportFD, " dynFileMethod   : ");
     if (run->global->feedback.dynFileMethod == 0)
         dprintf(reportFD, "NONE\n");
     else {
@@ -57,7 +57,7 @@ static void report_printdynFileMethod(run_t* run) {
 #endif
 
 static void report_printTargetCmd(run_t* run) {
-    dprintf(reportFD, " fuzzTarget   : ");
+    dprintf(reportFD, " fuzzTarget      : ");
     for (int x = 0; run->global->exe.cmdline[x]; x++) {
         dprintf(reportFD, "%s ", run->global->exe.cmdline[x]);
     }

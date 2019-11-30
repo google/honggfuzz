@@ -565,7 +565,7 @@ static void arch_hashCallstack(run_t* run, funcs_t* funcs, size_t funcCnt, bool 
 
 static void arch_traceGenerateReport(
     pid_t pid, run_t* run, funcs_t* funcs, size_t funcCnt, siginfo_t* si, const char* instr) {
-    run->report[0] = '\0';
+    util_ssnprintf(run->report, sizeof(run->report), "CRASH:\n");
     util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->origFileName);
     util_ssnprintf(run->report, sizeof(run->report), "FUZZ_FNAME: %s\n", run->crashFileName);
     util_ssnprintf(run->report, sizeof(run->report), "PID: %d\n", pid);
@@ -1082,7 +1082,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     }
 
     /* Generate report */
-    run->report[0] = '\0';
+    util_ssnprintf(run->report, sizeof(run->report), "CRASH:\n");
     util_ssnprintf(run->report, sizeof(run->report), "EXIT_CODE: %d\n", HF_SAN_EXIT_CODE);
     util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->origFileName);
     util_ssnprintf(run->report, sizeof(run->report), "FUZZ_FNAME: %s\n", run->crashFileName);
