@@ -893,6 +893,8 @@ static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, void** cr
                 "==%d==ERROR: AddressSanitizer: %" HF_XSTR(
                     PATH_MAX) "[^ ] on address 0x%p at pc 0x%p",
                 &reportpid, description, pc, crashAddr);
+            sscanf(lineptr, "==%d==ERROR: AddressSanitizer: %" HF_XSTR(PATH_MAX) "[^\n]",
+                &reportpid, description);
         } else {
             char* pLineLC = lineptr;
             /* Trim leading spaces */
