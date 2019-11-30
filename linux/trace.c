@@ -1023,6 +1023,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
         }
     }
 
+    uintptr_t savedBacktrace = run->backtrace;
     int fd = TEMP_FAILURE_RETRY(open(run->crashFileName, O_WRONLY | O_EXCL | O_CREAT, 0600));
     if (fd == -1 && errno == EEXIST) {
         LOG_I("It seems that '%s' already exists, skipping", run->crashFileName);
@@ -1061,7 +1062,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     util_ssnprintf(run->report, sizeof(run->report), "DESCRIPTION: %s\n", description);
     if (funcCnt > 0) {
         util_ssnprintf(
-            run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", run->backtrace);
+            run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", savedBacktrace);
         util_ssnprintf(run->report, sizeof(run->report), "STACK:\n");
         for (int i = 0; i < funcCnt; i++) {
             util_ssnprintf(run->report, sizeof(run->report), " <" REG_PD REG_PM "> ",
