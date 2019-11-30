@@ -844,8 +844,8 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
 }
 
 /* TODO: Add report parsing support for other sanitizers too */
-static int arch_parseAsanReport(
-    run_t* run, pid_t pid, funcs_t* funcs, void** crashAddr, char** op) {
+static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, void** crashAddr, void** pc,
+    char** op, char* description) {
     char crashReport[PATH_MAX] = {0};
     const char* const crashReportCpy = crashReport;
     snprintf(
@@ -863,14 +863,8 @@ static int arch_parseAsanReport(
         unlink(crashReportCpy);
     };
 
-    char header[35] = {0};
-    snprintf(header, sizeof(header), "==%d==ERROR: AddressSanitizer:", pid);
-    size_t headerSz = strlen(header);
     bool headerFound = false;
-
-    uint8_t frameIdx = 0;
-    char framePrefix[5] = {0};
-    snprintf(framePrefix, sizeof(framePrefix), "#%" PRIu8, frameIdx);
+    unsigned int frameIdx = 0;
 
     char *lineptr = NULL, *cAddr = NULL;
     size_t n = 0;
@@ -884,21 +878,21 @@ static int arch_parseAsanReport(
 
         /* First step is to identify header */
         if (!headerFound) {
-            if ((strlen(lineptr) > headerSz) && (strncmp(header, lineptr, headerSz) == 0)) {
-                headerFound = true;
-
-                /* Parse crash address */
-                cAddr = strstr(lineptr, "address 0x");
-                if (cAddr) {
-                    cAddr = cAddr + strlen("address ");
-                    char* endOff = strchr(cAddr, ' ');
-                    cAddr[endOff - cAddr] = '\0';
-                    *crashAddr = (void*)((size_t)strtoull(cAddr, NULL, 16));
-                } else {
-                    *crashAddr = 0x0;
-                }
+            int reportpid = 0;
+            if (sscanf(lineptr, "==%d==ERROR: AddressSanitizer:", &reportpid) != 1) {
+                continue;
             }
-            continue;
+            if (reportpid != pid) {
+                LOG_W(
+                    "SAN report found in '%s', but its PID:%d is different from the needed PID:%d",
+                    crashReport, reportpid, pid);
+                break;
+            }
+            headerFound = true;
+            sscanf(lineptr,
+                "==%d==ERROR: AddressSanitizer: %" HF_XSTR(
+                    PATH_MAX) "[^ ] on address 0x%p at pc 0x%p",
+                &reportpid, description, pc, crashAddr);
         } else {
             char* pLineLC = lineptr;
             /* Trim leading spaces */
@@ -911,11 +905,6 @@ static int arch_parseAsanReport(
                 break;
             }
 
-            /* Basic length checks */
-            if (strlen(pLineLC) < 10) {
-                continue;
-            }
-
             /* If available parse the type of error (READ/WRITE) */
             if (cAddr && strstr(pLineLC, cAddr)) {
                 if (strncmp(pLineLC, "READ", 4) == 0) {
@@ -926,41 +915,23 @@ static int arch_parseAsanReport(
                 cAddr = NULL;
             }
 
-            /* Check for crash thread frames */
-            if (strncmp(pLineLC, framePrefix, strlen(framePrefix)) == 0) {
-                /* Abort if max depth */
-                if (frameIdx >= _HF_MAX_FUNCS) {
-                    break;
-                }
+            /*
+             * Frames have following format:
+             #0 0x1e94738 in smb2_signing_decrypt_pdu /home/test/libcli/smb/smb2_signing.c:617:3
+             */
 
-                /*
-                 * Frames have following format:
-                 #0 0xaa860177  (/system/lib/libc.so+0x196177)
-                 */
-                char* savePtr = NULL;
-                strtok_r(pLineLC, " ", &savePtr);
-                funcs[frameIdx].pc =
-                    (void*)((size_t)strtoull(strtok_r(NULL, " ", &savePtr), NULL, 16));
-
-                /* DSO & code offset parsing */
-                char* targetStr = strtok_r(NULL, " ", &savePtr);
-                char* startOff = strchr(targetStr, '(') + 1;
-                char* plusOff = strchr(targetStr, '+');
-                char* endOff = strrchr(targetStr, ')');
-                targetStr[endOff - startOff] = '\0';
-                if ((startOff == NULL) || (endOff == NULL) || (plusOff == NULL)) {
-                    LOG_D("Invalid ASan report entry (%s)", lineptr);
-                } else {
-                    size_t dsoSz =
-                        MIN(sizeof(funcs[frameIdx].mapName), (size_t)(plusOff - startOff));
-                    memcpy(funcs[frameIdx].mapName, startOff, dsoSz);
-                    char* codeOff = targetStr + (plusOff - startOff) + 1;
-                    funcs[frameIdx].line = strtoull(codeOff, NULL, 16);
-                }
-
-                frameIdx++;
-                snprintf(framePrefix, sizeof(framePrefix), "#%" PRIu8, frameIdx);
+            if (sscanf(pLineLC, "#%u", &frameIdx) != 1) {
+                continue;
             }
+            if (frameIdx >= _HF_MAX_FUNCS) {
+                frameIdx = _HF_MAX_FUNCS - 1;
+                break;
+            }
+            unsigned int frameIdxCpy;
+            sscanf(pLineLC,
+                "#%u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ) "[^ ] %" HF_XSTR(PATH_MAX) "[^:\n]:%zu",
+                &frameIdxCpy, &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].mapName,
+                &funcs[frameIdx].line);
         }
     }
 
@@ -973,7 +944,7 @@ static int arch_parseAsanReport(
  * the same format for compatibility with post campaign tools.
  */
 static void arch_traceExitSaveData(run_t* run, pid_t pid) {
-    REG_TYPE pc = 0;
+    void* pc = NULL;
     void* crashAddr = 0;
     char* op = "UNKNOWN";
 
@@ -994,11 +965,8 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
-    /* Sanitizers save reports against parent PID */
-    if (run->pid != pid) {
-        return;
-    }
-    funcCnt = arch_parseAsanReport(run, pid, funcs, &crashAddr, &op);
+    char description[PATH_MAX] = {};
+    funcCnt = arch_parseAsanReport(run, pid, funcs, &pc, &crashAddr, &op, description);
 
     /*
      * -1 error indicates a file not found for report. This is expected to happen often since
@@ -1019,7 +987,6 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
 
     /* If frames successfully recovered, calculate stack hash & populate crash PC */
     arch_hashCallstack(run, funcs, funcCnt, false);
-    pc = (uintptr_t)funcs[0].pc;
 
     /*
      * Check if stackhash is blacklisted
@@ -1040,17 +1007,17 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
         /* Keep the crashes file name format identical */
         if (run->backtrace != 0ULL && run->global->io.saveUnique) {
             snprintf(run->crashFileName, sizeof(run->crashFileName),
-                "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s",
-                run->global->io.crashDir, "SAN", pc, run->backtrace, op, crashAddr, "[UNKNOWN]",
-                run->global->io.fileExtn);
+                "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s",
+                run->global->io.crashDir, "SAN", (uint64_t)pc, run->backtrace, op, crashAddr,
+                "[UNKNOWN]", run->global->io.fileExtn);
         } else {
             /* If no stack hash available, all crashes treated as unique */
             char localtmstr[PATH_MAX];
             util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
             snprintf(run->crashFileName, sizeof(run->crashFileName),
-                "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s.%s",
-                run->global->io.crashDir, "SAN", pc, run->backtrace, op, crashAddr, "[UNKNOWN]",
-                localtmstr, run->global->io.fileExtn);
+                "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s.%s",
+                run->global->io.crashDir, "SAN", (uint64_t)pc, run->backtrace, op, crashAddr,
+                "[UNKNOWN]", localtmstr, run->global->io.fileExtn);
         }
     }
 
@@ -1089,6 +1056,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     util_ssnprintf(run->report, sizeof(run->report), "PID: %d\n", pid);
     util_ssnprintf(run->report, sizeof(run->report), "OPERATION: %s\n", op);
     util_ssnprintf(run->report, sizeof(run->report), "FAULT ADDRESS: %p\n", crashAddr);
+    util_ssnprintf(run->report, sizeof(run->report), "DESCRIPTION: %s\n", description);
     if (funcCnt > 0) {
         util_ssnprintf(
             run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", run->backtrace);
@@ -1097,7 +1065,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
             util_ssnprintf(run->report, sizeof(run->report), " <" REG_PD REG_PM "> ",
                 (REG_TYPE)(long)funcs[i].pc);
             if (funcs[i].mapName[0] != '\0') {
-                util_ssnprintf(run->report, sizeof(run->report), "[%s + 0x%zx]\n", funcs[i].mapName,
+                util_ssnprintf(run->report, sizeof(run->report), "[%s:%zu]\n", funcs[i].mapName,
                     funcs[i].line);
             } else {
                 util_ssnprintf(run->report, sizeof(run->report), "[]\n");
@@ -1116,7 +1084,9 @@ static void arch_traceExitAnalyzeData(run_t* run, pid_t pid) {
     };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
-    funcCnt = arch_parseAsanReport(run, pid, funcs, &crashAddr, &op);
+    char description[PATH_MAX] = {};
+    void* pc = NULL;
+    funcCnt = arch_parseAsanReport(run, pid, funcs, &pc, &crashAddr, &op, description);
 
     /*
      * -1 error indicates a file not found for report. This is expected to happen often since
