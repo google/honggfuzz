@@ -35,7 +35,7 @@ int HonggfuzzNetDriverTempdir(char* str, size_t size);
  * Return 0 if only the standard connection protocols should be used (i.e. currently TCP4/TCP6 and
  * PF_UNIX via a set of standardized TCP ports (e.g. 8080) and paths)
  */
-socklen_t HonggfuzzNetDriverServerAddress(struct sockaddr** addr);
+socklen_t HonggfuzzNetDriverServerAddress(struct sockaddr_storage* addr, int* type, int* protocol);
 
 #ifdef __cplusplus
 }

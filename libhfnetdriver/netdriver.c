@@ -38,13 +38,19 @@ static char *initial_server_argv[] = {"fuzzer", NULL};
 static struct {
     int argc_server;
     char **argv_server;
-    struct sockaddr *saddr;
-    socklen_t slen;
+    struct {
+        struct sockaddr_storage addr;
+        socklen_t slen;
+        int type;     /* as per man 2 socket */
+        int protocol; /* as per man 2 socket */
+    } dest_addr;
 } hfnd_globals = {
     .argc_server = 1,
     .argv_server = initial_server_argv,
-    .saddr = NULL,
-    .slen = 0,
+    .dest_addr =
+        {
+            .addr.ss_family = AF_UNSPEC,
+        },
 };
 
 extern int HonggfuzzNetDriver_main(int argc, char **argv);
@@ -134,11 +140,12 @@ static void netDriver_bindToRndLoopback(int sock, sa_family_t sa_family) {
     }
 }
 
-static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen) {
-    int sock = socket(addr->sa_family, SOCK_STREAM, 0);
+static int netDriver_sockConnAddr(
+    const struct sockaddr *addr, socklen_t socklen, int type, int protocol) {
+    int sock = socket(addr->sa_family, type, protocol);
     if (sock == -1) {
-        PLOG_W("socket(type=%d for dst_addr='%s', SOCK_STREAM, 0)", addr->sa_family,
-            files_sockAddrToStr(addr, socklen));
+        PLOG_W("socket(family=%d for dst_addr='%s', type=%d, protocol=%d)", addr->sa_family,
+            files_sockAddrToStr(addr, socklen), type, protocol);
         return -1;
     }
     if (addr->sa_family == AF_INET || addr->sa_family == AF_INET6) {
@@ -165,7 +172,8 @@ static int netDriver_sockConnAddr(const struct sockaddr *addr, socklen_t socklen
     LOG_D("Connecting to '%s'", files_sockAddrToStr(addr, socklen));
     if (TEMP_FAILURE_RETRY(connect(sock, addr, socklen)) == -1) {
         int saved_errno = errno;
-        PLOG_D("connect(addr='%s')", files_sockAddrToStr(addr, socklen));
+        PLOG_D("connect(addr='%s', type=%d protocol=%d)", files_sockAddrToStr(addr, socklen), type,
+            protocol);
         close(sock);
         errno = saved_errno;
         return -1;
@@ -230,15 +238,11 @@ __attribute__((weak)) int HonggfuzzNetDriverTempdir(char *str, size_t size) {
     return snprintf(str, size, "%s", HFND_TMP_DIR);
 }
 
-/* Put a custom sockaddr here (e.g. based on AF_UNIX) */
-__attribute__((weak)) socklen_t HonggfuzzNetDriverServerAddress(struct sockaddr **addr) {
-    /*
-     * Use a non-stack based struct, e.g. with
-     * static __thread struct something sthig = { .sth_family = PF_SOMETHING, ... };
-     * *addr = &sthig;
-     * return sizeof(sthing);
-     */
-    *addr = NULL;
+/* Put a custom sockaddr here (e.g. based on AF_UNIX), sety *type and *protocol as per man 2 socket
+ */
+__attribute__((weak)) socklen_t HonggfuzzNetDriverServerAddress(
+    struct sockaddr_storage *addr HF_ATTR_UNUSED, int *type HF_ATTR_UNUSED,
+    int *protocol HF_ATTR_UNUSED) {
     return 0;
 }
 
@@ -283,72 +287,80 @@ static const char *netDriver_getSockPath(int argc HF_ATTR_UNUSED, char **argv HF
     return path;
 }
 
+static bool netDriver_connAndAssign(
+    const struct sockaddr *addr, socklen_t slen, int type, int protocol) {
+    if (slen > sizeof(hfnd_globals.dest_addr.addr)) {
+        LOG_F("Provided address '%s' is bigger than sizeof(struct sockaddr_storage): %zu > %zu",
+            files_sockAddrToStr(addr, slen), (size_t)slen, sizeof(hfnd_globals.dest_addr.addr));
+    }
+    int fd = netDriver_sockConnAddr(addr, slen, type, protocol);
+    if (fd >= 0) {
+        close(fd);
+        memcpy(&hfnd_globals.dest_addr.addr, addr, slen);
+        hfnd_globals.dest_addr.slen = slen;
+        hfnd_globals.dest_addr.type = type;
+        hfnd_globals.dest_addr.protocol = protocol;
+        return true;
+    }
+    return false;
+}
+
 static bool netDriver_checkIfServerReady(int argc, char **argv) {
-    struct sockaddr *addr;
-    socklen_t slen = HonggfuzzNetDriverServerAddress(&addr);
+    struct sockaddr_storage addr = {.ss_family = AF_UNSPEC};
+    int type = SOCK_STREAM;
+    int protocol = 0;
+    socklen_t slen = HonggfuzzNetDriverServerAddress(&addr, &type, &protocol);
+    /* User provided specific destination address */
     if (slen > 0) {
-        /* User provided specific destination address */
-        int fd = netDriver_sockConnAddr(addr, slen);
-        if (fd >= 0) {
-            close(fd);
-            hfnd_globals.saddr = addr;
-            hfnd_globals.slen = slen;
+        if (netDriver_connAndAssign((struct sockaddr *)&addr, slen, type, protocol)) {
             return true;
         }
 
         LOG_I("Honggfuzz Net Driver (pid=%d): Waiting for the server process to start "
               "accepting connections at '%s'",
-            (int)getpid(), files_sockAddrToStr(addr, slen));
+            (int)getpid(), files_sockAddrToStr((struct sockaddr *)&addr, slen));
         return false;
     }
 
     /* Try to connect to ${HFND_TMP_DIR}/${HFND_DEFAULT_SOCK_PATH} first via a PF_UNIX socket */
-    static __thread struct sockaddr_un sun = {
+    struct sockaddr_un sun = {
         .sun_family = PF_UNIX,
         .sun_path = {},
     };
     snprintf(sun.sun_path, sizeof(sun.sun_path), "%s", netDriver_getSockPath(argc, argv));
-    int fd = netDriver_sockConnAddr((struct sockaddr *)&sun, sizeof(sun));
-    if (fd >= 0) {
-        close(fd);
-        hfnd_globals.saddr = (struct sockaddr *)&sun;
-        hfnd_globals.slen = sizeof(sun);
+    if (netDriver_connAndAssign((const struct sockaddr *)&sun, sizeof(sun), SOCK_STREAM, 0)) {
         return true;
     }
+    if (netDriver_connAndAssign((const struct sockaddr *)&sun, sizeof(sun), SOCK_DGRAM, 0)) {
+        return true;
+    }
+#if defined(SOCK_SEQPACKET)
+    if (netDriver_connAndAssign((const struct sockaddr *)&sun, sizeof(sun), SOCK_SEQPACKET, 0)) {
+        return true;
+    }
+#endif /* defined(SOCK_SEQPACKET) */
     /* Next, try TCP4 and TCP6 connections to the localhost */
-    static __thread struct sockaddr_in addr4 = {
+    const struct sockaddr_in addr4 = {
         .sin_family = PF_INET,
-        .sin_port = 0,
-        .sin_addr.s_addr = 0,
+        .sin_port = htons(netDriver_getTCPPort(argc, argv)),
+        .sin_addr.s_addr = htonl(INADDR_LOOPBACK),
     };
-    addr4.sin_port = htons(netDriver_getTCPPort(argc, argv));
-    addr4.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    fd = netDriver_sockConnAddr((struct sockaddr *)&addr4, sizeof(addr4));
-    if (fd >= 0) {
-        close(fd);
-        hfnd_globals.saddr = (struct sockaddr *)&addr4;
-        hfnd_globals.slen = sizeof(addr4);
+    if (netDriver_connAndAssign((const struct sockaddr *)&addr4, sizeof(addr4), SOCK_STREAM, 0)) {
         return true;
     }
-    static __thread struct sockaddr_in6 addr6 = {
+    const struct sockaddr_in6 addr6 = {
         .sin6_family = PF_INET6,
-        .sin6_port = 0,
+        .sin6_port = htons(netDriver_getTCPPort(argc, argv)),
         .sin6_flowinfo = 0,
-        .sin6_addr = {},
+        .sin6_addr = in6addr_loopback,
         .sin6_scope_id = 0,
     };
-    addr6.sin6_port = htons(netDriver_getTCPPort(argc, argv));
-    addr6.sin6_addr = in6addr_loopback;
-    fd = netDriver_sockConnAddr((struct sockaddr *)&addr6, sizeof(addr6));
-    if (fd >= 0) {
-        close(fd);
-        hfnd_globals.saddr = (struct sockaddr *)&addr6;
-        hfnd_globals.slen = sizeof(addr6);
+    if (netDriver_connAndAssign((const struct sockaddr *)&addr6, sizeof(addr6), SOCK_STREAM, 0)) {
         return true;
     }
 
     LOG_I("Honggfuzz Net Driver (pid=%d): Waiting for the TCP server process to start "
-          "accepting connections at TCP4/TCP6 port: %hu or at the socket path: '%s'",
+          "accepting connections at TCP4/TCP6 port: %hu or at the socket path: '%.108s'",
         (int)getpid(), netDriver_getTCPPort(argc, argv), sun.sun_path);
     return false;
 }
@@ -379,21 +391,27 @@ int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
     LOG_I("Honggfuzz Net Driver (pid=%d): The server process is ready to accept connections at "
           "'%s'. Fuzzing starts now!",
-        (int)getpid(), files_sockAddrToStr(hfnd_globals.saddr, hfnd_globals.slen));
+        (int)getpid(),
+        files_sockAddrToStr(
+            (const struct sockaddr *)&hfnd_globals.dest_addr.addr, hfnd_globals.dest_addr.slen));
 
     return 0;
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
-    int sock = netDriver_sockConnAddr(hfnd_globals.saddr, hfnd_globals.slen);
+    int sock = netDriver_sockConnAddr((const struct sockaddr *)&hfnd_globals.dest_addr.addr,
+        hfnd_globals.dest_addr.slen, hfnd_globals.dest_addr.type, hfnd_globals.dest_addr.protocol);
     if (sock == -1) {
         /* netDriver_sockConnAddr() preserves errno */
         PLOG_F("Couldn't connect to the server socket at '%s'",
-            files_sockAddrToStr(hfnd_globals.saddr, hfnd_globals.slen));
+            files_sockAddrToStr((const struct sockaddr *)&hfnd_globals.dest_addr.addr,
+                hfnd_globals.dest_addr.slen));
     }
     if (!files_sendToSocket(sock, buf, len)) {
         PLOG_W("files_sendToSocket(addr='%s', sock=%d, len=%zu) failed",
-            files_sockAddrToStr(hfnd_globals.saddr, hfnd_globals.slen), sock, len);
+            files_sockAddrToStr(
+                (const struct sockaddr *)&hfnd_globals.dest_addr.addr, hfnd_globals.dest_addr.slen),
+            sock, len);
         close(sock);
         return 0;
     }
