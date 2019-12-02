@@ -150,7 +150,8 @@ static int netDriver_sockConnAddr(
     }
     if (addr->sa_family == AF_INET || addr->sa_family == AF_INET6) {
         int val = 1;
-        if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &val, (socklen_t)sizeof(val)) == -1) {
+        if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &val, (socklen_t)sizeof(val)) == -1 &&
+            errno == ENOPROTOOPT) {
             PLOG_W("setsockopt(sock=%d, SOL_SOCKET, SO_REUSEADDR, %d)", sock, val);
         }
 #if defined(SOL_TCP) && defined(TCP_NODELAY)
@@ -339,10 +340,11 @@ static bool netDriver_checkIfServerReady(int argc, char **argv) {
         return true;
     }
 #endif /* defined(SOCK_SEQPACKET) */
-    /* Next, try TCP4 and TCP6 connections to the localhost */
+       /* Next, try TCP4 and TCP6 connections to the localhost */
+    const uint16_t tcp_port = netDriver_getTCPPort(argc, argv);
     const struct sockaddr_in addr4 = {
         .sin_family = PF_INET,
-        .sin_port = htons(netDriver_getTCPPort(argc, argv)),
+        .sin_port = htons(tcp_port),
         .sin_addr.s_addr = htonl(INADDR_LOOPBACK),
     };
     if (netDriver_connAndAssign((const struct sockaddr *)&addr4, sizeof(addr4), SOCK_STREAM, 0)) {
@@ -350,7 +352,7 @@ static bool netDriver_checkIfServerReady(int argc, char **argv) {
     }
     const struct sockaddr_in6 addr6 = {
         .sin6_family = PF_INET6,
-        .sin6_port = htons(netDriver_getTCPPort(argc, argv)),
+        .sin6_port = htons(tcp_port),
         .sin6_flowinfo = 0,
         .sin6_addr = in6addr_loopback,
         .sin6_scope_id = 0,
@@ -360,8 +362,9 @@ static bool netDriver_checkIfServerReady(int argc, char **argv) {
     }
 
     LOG_I("Honggfuzz Net Driver (pid=%d): Waiting for the TCP server process to start "
-          "accepting connections at TCP4/TCP6 port: %hu or at the socket path: '%.108s'",
-        (int)getpid(), netDriver_getTCPPort(argc, argv), sun.sun_path);
+          "accepting connections at TCP4/TCP6 port: %hu or at the socket path: '%*s'",
+        (int)getpid(), tcp_port,
+        (int)strnlen(sun.sun_path, slen - offsetof(struct sockaddr_un, sun_path)), sun.sun_path);
     return false;
 }
 
