@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <error.h>
 #include <fcntl.h>
+#include <libhfuzz/libhfuzz.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -12,8 +13,6 @@
 #include <stdlib.h>
 #include <sys/uio.h>
 #include <unistd.h>
-
-#include <libhfuzz/libhfuzz.h>
 
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*x))
 

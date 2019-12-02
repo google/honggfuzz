@@ -17,6 +17,24 @@ int close(int fd) {
     return syscall(__NR_close, fd);
 }
 
+int fcntl64(int __fd, int __cmd, ...) {
+    va_list ap;
+    va_start(ap, __cmd);
+    int a1 = va_arg(ap, int);
+    int a2 = va_arg(ap, int);
+    int a3 = va_arg(ap, int);
+    int a4 = va_arg(ap, int);
+    va_end(ap);
+
+    if (__fd == 1021 || __fd == 1022 || __fd == 1023) {
+        if (__cmd == F_SETFD) {
+            a1 &= ~(FD_CLOEXEC);
+        }
+    }
+
+    return syscall(__NR_fcntl, __fd, __cmd, a1, a2, a3, a4);
+}
+
 int fcntl(int __fd, int __cmd, ...) {
     va_list ap;
     va_start(ap, __cmd);
