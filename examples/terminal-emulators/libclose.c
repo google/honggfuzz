@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 int close(int fd) {
-    if (fd == 1022 || fd == 1023) {
+    if (fd == 1021 || fd == 1022 || fd == 1023) {
         return 0;
     }
     return syscall(__NR_close, fd);
@@ -26,7 +26,7 @@ int fcntl(int __fd, int __cmd, ...) {
     int a4 = va_arg(ap, int);
     va_end(ap);
 
-    if (__fd == 1022 || __fd == 1023) {
+    if (__fd == 1021 || __fd == 1022 || __fd == 1023) {
         if (__cmd == F_SETFD) {
             a1 &= ~(FD_CLOEXEC);
         }
