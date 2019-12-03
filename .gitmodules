@@ -1,7 +1,7 @@
 [submodule "third_party/android/capstone"]
 	path = third_party/android/capstone
 	url = https://github.com/aquynh/capstone
-	branch = 3.0.4
+	branch = 4.0.1
 [submodule "third_party/android/libunwind"]
 	path = third_party/android/libunwind
 	url = git://git.sv.gnu.org/libunwind.git
