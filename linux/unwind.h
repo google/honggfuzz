@@ -35,13 +35,13 @@ typedef struct {
     void* pc;
 
     /* If ASan custom parsing, function not available without symbolication */
-    char func[_HF_FUNC_NAME_SZ];
+    char func[_HF_FUNC_NAME_SZ + 1];
 
     /*
      * If libuwind proc maps is used to retrieve map name
      * If ASan custom parsing it's retrieved from generated report file
      */
-    char mapName[PATH_MAX];
+    char mapName[PATH_MAX + 1];
 
     /*
      * If libunwind + bfd symbolizer, line is actual symbol file line
