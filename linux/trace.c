@@ -837,10 +837,10 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
 }
 
 /* TODO: Add report parsing support for other sanitizers too */
-static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* crashAddr, uint64_t* pc,
-    const char** op, char description[HF_STR_LEN]) {
+static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* crashAddr,
+    uint64_t* pc, const char** op, char description[HF_STR_LEN]) {
     char crashReport[PATH_MAX];
-	const char *crashReportCpy = crashReport;
+    const char* crashReportCpy = crashReport;
     snprintf(
         crashReport, sizeof(crashReport), "%s/%s.%d", run->global->io.workDir, kLOGPREFIX, pid);
 
@@ -880,7 +880,9 @@ static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t*
                 break;
             }
             headerFound = true;
-            sscanf(lineptr, "==%*d==ERROR: AddressSanitizer: %*[^ ] on address 0x%" PRIx64 " at pc 0x%" PRIx64, pc, crashAddr);
+            sscanf(lineptr,
+                "==%*d==ERROR: AddressSanitizer: %*[^ ] on address 0x%" PRIx64 " at pc 0x%" PRIx64,
+                pc, crashAddr);
             sscanf(lineptr, "==%*d==ERROR: AddressSanitizer: %" HF_XSTR(HF_STR_LEN_MINUS_1) "[^\n]",
                 description);
         } else {
@@ -917,7 +919,9 @@ static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t*
                 frameIdx = _HF_MAX_FUNCS - 1;
                 break;
             }
-            sscanf(pLineLC, "#%*u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ_MINUS_1) "[^ ] %" HF_XSTR(HF_STR_LEN_MINUS_1) "[^:\n]:%zu",
+            sscanf(pLineLC,
+                "#%*u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ_MINUS_1) "[^ ] %" HF_XSTR(
+                    HF_STR_LEN_MINUS_1) "[^:\n]:%zu",
                 &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].mapName,
                 &funcs[frameIdx].line);
         }
@@ -968,8 +972,8 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
 
     /* Since crash address is available, apply ignoreAddr filters */
     if (crashAddr < (uintptr_t)run->global->linux.ignoreAddr) {
-        LOG_I("Input is interesting, but the crash addr is %" PRIx64 " (below %p), skipping", crashAddr,
-            run->global->linux.ignoreAddr);
+        LOG_I("Input is interesting, but the crash addr is %" PRIx64 " (below %p), skipping",
+            crashAddr, run->global->linux.ignoreAddr);
         return;
     }
 
@@ -996,16 +1000,16 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
         if (run->backtrace != 0ULL && run->global->io.saveUnique) {
             snprintf(run->crashFileName, sizeof(run->crashFileName),
                 "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%s.ADDR.%" PRIx64 ".INSTR.%s.%s",
-                run->global->io.crashDir, "SAN", pc, run->backtrace, op, crashAddr,
-                "[UNKNOWN]", run->global->io.fileExtn);
+                run->global->io.crashDir, "SAN", pc, run->backtrace, op, crashAddr, "[UNKNOWN]",
+                run->global->io.fileExtn);
         } else {
             /* If no stack hash available, all crashes treated as unique */
             char localtmstr[HF_STR_LEN];
             util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
             snprintf(run->crashFileName, sizeof(run->crashFileName),
                 "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%s.ADDR.%" PRIx64 ".INSTR.%s.%s.%s",
-                run->global->io.crashDir, "SAN", pc, run->backtrace, op, crashAddr,
-                "[UNKNOWN]", localtmstr, run->global->io.fileExtn);
+                run->global->io.crashDir, "SAN", pc, run->backtrace, op, crashAddr, "[UNKNOWN]",
+                localtmstr, run->global->io.fileExtn);
         }
     }
 
