@@ -444,7 +444,7 @@ const char* files_sockAddrToStr(const struct sockaddr* sa, const socklen_t len) 
     }
 
     if (sa->sa_family == AF_UNIX) {
-        if (len <= offsetof(struct sockaddr_un, sun_path)) {
+        if ((size_t)len <= offsetof(struct sockaddr_un, sun_path)) {
             snprintf(str, sizeof(str), "unix:<struct too short at %u bytes>", (unsigned)len);
             return str;
         }

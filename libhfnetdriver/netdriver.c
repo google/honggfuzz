@@ -290,7 +290,7 @@ static const char *netDriver_getSockPath(int argc HF_ATTR_UNUSED, char **argv HF
 
 static bool netDriver_connAndAssign(
     const struct sockaddr *addr, socklen_t slen, int type, int protocol) {
-    if (slen > sizeof(hfnd_globals.dest_addr.addr)) {
+    if ((size_t)slen > sizeof(hfnd_globals.dest_addr.addr)) {
         LOG_F("Provided address '%s' is bigger than sizeof(struct sockaddr_storage): %zu > %zu",
             files_sockAddrToStr(addr, slen), (size_t)slen, sizeof(hfnd_globals.dest_addr.addr));
     }

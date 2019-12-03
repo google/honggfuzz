@@ -137,7 +137,7 @@ COMMON_CFLAGS := -std=c11 \
   -Wall -Wextra -Wno-initializer-overrides -Wno-override-init \
   -Wno-atomic-alignment -Wno-unknown-warning-option \
   -Werror -funroll-loops -O2 \
-  -Wframe-larger-than=60000 -Wno-format-truncation \
+  -Wframe-larger-than=1048576 -Wno-format-truncation \
 
 ifneq (,$(findstring clang,$(NDK_TOOLCHAIN)))
   COMMON_CFLAGS += -fblocks -fno-sanitize=address,undefined,memory,thread -fsanitize-coverage=0

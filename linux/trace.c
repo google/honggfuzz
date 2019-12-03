@@ -1062,7 +1062,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     util_ssnprintf(run->report, sizeof(run->report), "DESCRIPTION: %s\n", description);
     if (funcCnt > 0) {
         util_ssnprintf(
-            run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", savedBacktrace);
+            run->report, sizeof(run->report), "STACK HASH: %016zu\n", savedBacktrace);
         util_ssnprintf(run->report, sizeof(run->report), "STACK:\n");
         for (int i = 0; i < funcCnt; i++) {
             util_ssnprintf(run->report, sizeof(run->report), " <" REG_PD REG_PM "> ",
