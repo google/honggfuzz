@@ -217,7 +217,7 @@ static void printSummary(honggfuzz_t* hfuzz) {
 
 static void pingThreads(honggfuzz_t* hfuzz) {
     for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
-        if (pthread_kill(hfuzz->threads.threads[i], SIGCHLD) != 0 && errno != EINTR) {
+        if (pthread_kill(hfuzz->threads.threads[i], SIGCHLD) != 0 && errno != EINTR && errno != 0) {
             PLOG_W("pthread_kill(thread=%zu, SIGCHLD)", i);
         }
     }
