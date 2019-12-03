@@ -62,22 +62,11 @@
 #include "capstone/capstone.h"
 #endif
 
-#if defined(__i386__) || defined(__arm__) || defined(__powerpc__)
-#define REG_TYPE uint32_t
-#define REG_PM PRIx32
-#define REG_PD "0x%08"
-#elif defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__) || \
-    defined(__mips__) || defined(__mips64__)
-#define REG_TYPE uint64_t
-#define REG_PM PRIx64
-#define REG_PD "0x%016"
-#endif
-
 /*
  * Size in characters required to store a string representation of a
  * register value (0xdeadbeef style))
  */
-#define REGSIZEINCHAR (2 * sizeof(REG_TYPE) + 3)
+#define REGSIZEINCHAR (2 * sizeof(uint64_t) + 3)
 
 #if defined(__i386__) || defined(__x86_64__)
 #define MAX_INSTR_SZ 16
@@ -308,7 +297,7 @@ static const char* arch_sigName(int signo) {
 #endif /* __ANDROID__ */
 }
 
-static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, REG_TYPE pc) {
+static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, uint64_t pc) {
     /*
      * Let's try process_vm_readv first
      */
@@ -348,7 +337,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, REG_TYPE pc) 
     return memsz;
 }
 
-static size_t arch_getPC(pid_t pid, REG_TYPE* pc, REG_TYPE* status_reg HF_ATTR_UNUSED) {
+static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_UNUSED) {
 /*
  * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
  * the correct register values if struct size is bigger than expected. As such the
@@ -465,14 +454,14 @@ static size_t arch_getPC(pid_t pid, REG_TYPE* pc, REG_TYPE* status_reg HF_ATTR_U
     return 0;
 }
 
-static void arch_getInstrStr(pid_t pid, REG_TYPE* pc, char* instr) {
+static void arch_getInstrStr(pid_t pid, uint64_t* pc, char* instr) {
     /*
      * We need a value aligned to 8
      * which is sizeof(long) on 64bit CPU archs (on most of them, I hope;)
      */
     uint8_t buf[MAX_INSTR_SZ];
     size_t memsz;
-    REG_TYPE status_reg = 0;
+    uint64_t status_reg = 0;
 
     snprintf(instr, _HF_INSTR_SZ, "%s", "[UNKNOWN]");
 
@@ -543,7 +532,7 @@ static void arch_hashCallstack(run_t* run, funcs_t* funcs, size_t funcCnt, bool 
          * Convert PC to char array to be compatible with hash function
          */
         char pcStr[REGSIZEINCHAR] = {0};
-        snprintf(pcStr, REGSIZEINCHAR, REG_PD REG_PM, (REG_TYPE)(long)funcs[i].pc);
+        snprintf(pcStr, REGSIZEINCHAR, "0x%016" PRIx64, (uint64_t)(long)funcs[i].pc);
 
         /*
          * Hash the last three nibbles
@@ -579,16 +568,20 @@ static void arch_traceGenerateReport(
     util_ssnprintf(run->report, sizeof(run->report), "STACK:\n");
     for (size_t i = 0; i < funcCnt; i++) {
 #ifdef __HF_USE_CAPSTONE__
-        util_ssnprintf(
-            run->report, sizeof(run->report), " <" REG_PD REG_PM "> ", (REG_TYPE)(long)funcs[i].pc);
+        util_ssnprintf(run->report, sizeof(run->report),
+            " <"
+            "0x%016" PRIx64 "> ",
+            (uint64_t)(long)funcs[i].pc);
         if (funcs[i].func[0] != '\0')
             util_ssnprintf(run->report, sizeof(run->report), "[%s() + 0x%tx at %s]\n",
                 funcs[i].func, funcs[i].line, funcs[i].mapName);
         else
             util_ssnprintf(run->report, sizeof(run->report), "[]\n");
 #else
-        util_ssnprintf(run->report, sizeof(run->report), " <" REG_PD REG_PM "> [%s():%zu at %s]\n",
-            (REG_TYPE)(long)funcs[i].pc, funcs[i].func, funcs[i].line, funcs[i].mapName);
+        util_ssnprintf(run->report, sizeof(run->report),
+            " <"
+            "0x%016" PRIx64 "> [%s():%zu at %s]\n",
+            (uint64_t)(long)funcs[i].pc, funcs[i].func, funcs[i].line, funcs[i].mapName);
 #endif
     }
 
@@ -605,7 +598,7 @@ static void arch_traceGenerateReport(
 }
 
 static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
-    REG_TYPE pc = 0, status_reg = 0;
+    uint64_t pc = 0, status_reg = 0;
     size_t pcRegSz = arch_getPC(pid, &pc, &status_reg);
     if (!pcRegSz) {
         LOG_W("ptrace arch_getPC failed");
@@ -649,7 +642,7 @@ static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
 }
 
 static void arch_traceSaveData(run_t* run, pid_t pid) {
-    REG_TYPE pc = 0;
+    uint64_t pc = 0;
 
     /* Local copy since flag is overridden for some crashes */
     bool saveUnique = run->global->io.saveUnique;
@@ -664,7 +657,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
 
     arch_getInstrStr(pid, &pc, instr);
 
-    LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %" REG_PM ", instr: '%s'", pid,
+    LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %" PRIx64 ", instr: '%s'", pid,
         si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
 
     if (!SI_FROMUSER(&si) && pc && si.si_addr < run->global->linux.ignoreAddr) {
@@ -799,14 +792,14 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
             run->origFileName);
     } else if (saveUnique) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
-            "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
+            "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
             run->global->io.crashDir, arch_sigName(si.si_signo), pc, run->backtrace, si.si_code,
             sig_addr, instr, run->global->io.fileExtn);
     } else {
         char localtmstr[HF_STR_LEN];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(run->crashFileName, sizeof(run->crashFileName),
-            "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
+            "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
             run->global->io.crashDir, arch_sigName(si.si_signo), pc, run->backtrace, si.si_code,
             sig_addr, instr, localtmstr, pid, run->global->io.fileExtn);
     }
@@ -1062,8 +1055,10 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
         util_ssnprintf(run->report, sizeof(run->report), "STACK HASH: %016zu\n", savedBacktrace);
         util_ssnprintf(run->report, sizeof(run->report), "STACK:\n");
         for (int i = 0; i < funcCnt; i++) {
-            util_ssnprintf(run->report, sizeof(run->report), " <" REG_PD REG_PM "> ",
-                (REG_TYPE)(long)funcs[i].pc);
+            util_ssnprintf(run->report, sizeof(run->report),
+                " <"
+                "0x%016" PRIx64 "> ",
+                (uint64_t)(long)funcs[i].pc);
             if (funcs[i].mapName[0] != '\0') {
                 util_ssnprintf(run->report, sizeof(run->report), "[%s:%zu]\n", funcs[i].mapName,
                     funcs[i].line);
