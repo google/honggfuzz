@@ -87,7 +87,7 @@ void report_Report(run_t* run) {
         }
     }
 
-    char localtmstr[PATH_MAX];
+    char localtmstr[HF_STR_LEN];
     util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
 
     dprintf(reportFD,

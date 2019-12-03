@@ -27,21 +27,24 @@
 #include <linux/limits.h>
 #include <sys/types.h>
 
+#include "libhfcommon/util.h"
+
 /* String buffer size for function names in stack traces produced from libunwind */
-#define _HF_FUNC_NAME_SZ 256  // Should be alright for mangled C++ procs too
+#define _HF_FUNC_NAME_SZ 256          // Should be alright for mangled C++ procs too
+#define _HF_FUNC_NAME_SZ_MINUS_1 255  // For scanf()
 
 #define _HF_MAX_FUNCS 80
 typedef struct {
     void* pc;
 
     /* If ASan custom parsing, function not available without symbolication */
-    char func[_HF_FUNC_NAME_SZ + 1];
+    char func[_HF_FUNC_NAME_SZ];
 
     /*
      * If libuwind proc maps is used to retrieve map name
      * If ASan custom parsing it's retrieved from generated report file
      */
-    char mapName[PATH_MAX + 1];
+    char mapName[HF_STR_LEN];
 
     /*
      * If libunwind + bfd symbolizer, line is actual symbol file line

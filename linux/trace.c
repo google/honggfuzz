@@ -803,7 +803,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
             run->global->io.crashDir, arch_sigName(si.si_signo), pc, run->backtrace, si.si_code,
             sig_addr, instr, run->global->io.fileExtn);
     } else {
-        char localtmstr[PATH_MAX];
+        char localtmstr[HF_STR_LEN];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.PC.%" REG_PM ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
@@ -889,12 +889,10 @@ static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, void** cr
                 break;
             }
             headerFound = true;
-            sscanf(lineptr,
-                "==%d==ERROR: AddressSanitizer: %" HF_XSTR(
-                    PATH_MAX) "[^ ] on address 0x%p at pc 0x%p",
-                &reportpid, description, pc, crashAddr);
-            sscanf(lineptr, "==%d==ERROR: AddressSanitizer: %" HF_XSTR(PATH_MAX) "[^\n]",
-                &reportpid, description);
+            sscanf(lineptr, "==%*d==ERROR: AddressSanitizer: %*[^ ] on address 0x%p at pc 0x%p", pc,
+                crashAddr);
+            sscanf(lineptr, "==%*d==ERROR: AddressSanitizer: %" HF_XSTR(HF_STR_LEN_MINUS_1) "[^\n]",
+                description);
         } else {
             char* pLineLC = lineptr;
             /* Trim leading spaces */
@@ -929,10 +927,10 @@ static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, void** cr
                 frameIdx = _HF_MAX_FUNCS - 1;
                 break;
             }
-            unsigned int frameIdxCpy;
             sscanf(pLineLC,
-                "#%u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ) "[^ ] %" HF_XSTR(PATH_MAX) "[^:\n]:%zu",
-                &frameIdxCpy, &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].mapName,
+                "#%*u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ_MINUS_1) "[^ ] %" HF_XSTR(
+                    HF_STR_LEN_MINUS_1) "[^:\n]:%zu",
+                &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].mapName,
                 &funcs[frameIdx].line);
         }
     }
@@ -967,7 +965,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
-    char description[PATH_MAX + 1] = {};
+    char description[HF_STR_LEN] = {};
     funcCnt = arch_parseAsanReport(run, pid, funcs, &pc, &crashAddr, &op, description);
 
     /*
@@ -1014,7 +1012,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
                 "[UNKNOWN]", run->global->io.fileExtn);
         } else {
             /* If no stack hash available, all crashes treated as unique */
-            char localtmstr[PATH_MAX];
+            char localtmstr[HF_STR_LEN];
             util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
             snprintf(run->crashFileName, sizeof(run->crashFileName),
                 "%s/%s.PC.%tx.STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s.%s",
@@ -1086,7 +1084,7 @@ static void arch_traceExitAnalyzeData(run_t* run, pid_t pid) {
     };
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
-    char description[PATH_MAX] = {};
+    char description[HF_STR_LEN] = {};
     void* pc = NULL;
     funcCnt = arch_parseAsanReport(run, pid, funcs, &pc, &crashAddr, &op, description);
 

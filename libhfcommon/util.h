@@ -33,6 +33,9 @@
 #include <stdint.h>
 #include <time.h>
 
+#define HF_STR_LEN 8192
+#define HF_STR_LEN_MINUS_1 8191
+
 #define MX_LOCK(m) util_mutexLock(m, __func__, __LINE__)
 #define MX_UNLOCK(m) util_mutexUnlock(m, __func__, __LINE__)
 #define MX_RWLOCK_READ(m) util_mutexRWLockRead(m, __func__, __LINE__)
