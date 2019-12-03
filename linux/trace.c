@@ -1009,16 +1009,16 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
         /* Keep the crashes file name format identical */
         if (run->backtrace != 0ULL && run->global->io.saveUnique) {
             snprintf(run->crashFileName, sizeof(run->crashFileName),
-                "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s",
-                run->global->io.crashDir, "SAN", (uint64_t)pc, run->backtrace, op, crashAddr,
+                "%s/%s.PC.%tx.STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s",
+                run->global->io.crashDir, "SAN", (uintptr_t)pc, run->backtrace, op, crashAddr,
                 "[UNKNOWN]", run->global->io.fileExtn);
         } else {
             /* If no stack hash available, all crashes treated as unique */
             char localtmstr[PATH_MAX];
             util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
             snprintf(run->crashFileName, sizeof(run->crashFileName),
-                "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s.%s",
-                run->global->io.crashDir, "SAN", (uint64_t)pc, run->backtrace, op, crashAddr,
+                "%s/%s.PC.%tx.STACK.%" PRIx64 ".CODE.%s.ADDR.%p.INSTR.%s.%s.%s",
+                run->global->io.crashDir, "SAN", (uintptr_t)pc, run->backtrace, op, crashAddr,
                 "[UNKNOWN]", localtmstr, run->global->io.fileExtn);
         }
     }
