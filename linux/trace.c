@@ -59,7 +59,7 @@
 #include "subproc.h"
 
 #if defined(__ANDROID__)
-#include "capstone.h"
+#include "capstone/capstone.h"
 #endif
 
 #if defined(__i386__) || defined(__arm__) || defined(__powerpc__)
