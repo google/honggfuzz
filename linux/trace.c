@@ -448,7 +448,7 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
 }
 
 static void arch_getInstrStr(
-    pid_t pid, uint64_t pc, uint64_t status_reg HF_ATTR_UNUSED, char* instr) {
+    pid_t pid, uint64_t pc, uint64_t status_reg HF_ATTR_UNUSED, size_t pcRegSz HF_ATTR_UNUSED, char* instr) {
     /*
      * We need a value aligned to 8
      * which is sizeof(long) on 64bit CPU archs (on most of them, I hope;)
@@ -617,7 +617,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         LOG_W("ptrace arch_getPC failed");
         return;
     }
-    arch_getInstrStr(pid, pc, status_reg, instr);
+    arch_getInstrStr(pid, pc, status_reg, pcRegSz, instr);
 
     LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %" PRIx64 ", instr: '%s'", pid,
         si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
