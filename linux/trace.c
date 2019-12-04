@@ -919,11 +919,19 @@ static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t*
                 frameIdx = _HF_MAX_FUNCS - 1;
                 break;
             }
-            sscanf(pLineLC,
-                "#%*u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ_MINUS_1) "[^ ] %" HF_XSTR(
-                    HF_STR_LEN_MINUS_1) "[^:\n]:%zu",
-                &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].mapName,
-                &funcs[frameIdx].line);
+            if (sscanf(pLineLC,
+                    "#%*u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ_MINUS_1) "[^ ] %" HF_XSTR(
+                        HF_STR_LEN_MINUS_1) "[^:\n]:%zu",
+                    &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].mapName,
+                    &funcs[frameIdx].line) > 2) {
+                continue;
+            }
+            /*
+             * Android version:
+             *     #2 0x565584f4  (/mnt/z/test+0x34f4)
+             */
+            sscanf(pLineLC, "#%*u 0x%p%*[^(](%" HF_XSTR(HF_STR_LEN_MINUS_1) "[^)\n]",
+                &funcs[frameIdx].pc, funcs[frameIdx].mapName);
         }
     }
 
