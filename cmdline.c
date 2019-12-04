@@ -325,6 +325,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .sanitizer =
             {
                 .enable = false,
+                .del_report = false,
             },
         .feedback =
             {
@@ -440,6 +441,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "save_all", no_argument, NULL, 'u' }, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames" },
         { { "tmout_sigvtalrm", no_argument, NULL, 'T' }, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)" },
         { { "sanitizers", no_argument, NULL, 'S' }, "** DEPRECATED ** Enable sanitizers settings (default: false)" },
+        { { "sanitizer_del_report", required_argument, NULL, 0x10F }, "Delete sanitizer report after use (default: false)" },
         { { "monitor_sigabrt", required_argument, NULL, 0x105 }, "Monitor SIGABRT (default: false for Android, true for other platforms)" },
         { { "no_fb_timeout", required_argument, NULL, 0x106 }, "Skip feedback if the process has timeouted (default: false)" },
         { { "exit_upon_crash", no_argument, NULL, 0x107 }, "Exit upon seeing the first crash (default: false)" },
@@ -545,6 +547,13 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 'S':
                 hfuzz->sanitizer.enable = true;
+                break;
+            case 0x10F:
+                if ((strcasecmp(optarg, "0") == 0) || (strcasecmp(optarg, "false") == 0)) {
+                    hfuzz->sanitizer.del_report = false;
+                } else {
+                    hfuzz->sanitizer.del_report = true;
+                }
                 break;
             case 0x10B:
                 hfuzz->socketFuzzer.enabled = true;

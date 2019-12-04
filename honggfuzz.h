@@ -257,6 +257,7 @@ typedef struct {
     } cfg;
     struct {
         bool enable;
+        bool del_report;
     } sanitizer;
     struct {
         fuzzState_t state;

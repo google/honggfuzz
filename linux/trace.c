@@ -836,121 +836,6 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     arch_traceGenerateReport(pid, run, funcs, funcCnt, &si, instr);
 }
 
-/* TODO: Add report parsing support for other sanitizers too */
-static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* crashAddr,
-    uint64_t* pc, const char** op, char description[HF_STR_LEN]) {
-    char crashReport[PATH_MAX];
-    const char* crashReportCpy = crashReport;
-    snprintf(
-        crashReport, sizeof(crashReport), "%s/%s.%d", run->global->io.workDir, kLOGPREFIX, pid);
-
-    FILE* fReport = fopen(crashReport, "rb");
-    if (fReport == NULL) {
-        PLOG_D("Couldn't open '%s' - R/O mode", crashReport);
-        return -1;
-    }
-    defer {
-        fclose(fReport);
-        unlink(crashReportCpy);
-    };
-
-    bool headerFound = false;
-    unsigned int frameIdx = 0;
-
-    char *lineptr = NULL, *cAddr = NULL;
-    size_t n = 0;
-    defer {
-        free(lineptr);
-    };
-    for (;;) {
-        if (getline(&lineptr, &n, fReport) == -1) {
-            break;
-        }
-
-        /* First step is to identify header */
-        if (!headerFound) {
-            int reportpid = 0;
-            if (sscanf(lineptr, "==%d==ERROR: AddressSanitizer:", &reportpid) != 1) {
-                continue;
-            }
-            if (reportpid != pid) {
-                LOG_W(
-                    "SAN report found in '%s', but its PID:%d is different from the needed PID:%d",
-                    crashReport, reportpid, pid);
-                break;
-            }
-            headerFound = true;
-            sscanf(lineptr,
-                "==%*d==ERROR: AddressSanitizer: %*[^ ] on address 0x%" PRIx64 " at pc 0x%" PRIx64,
-                pc, crashAddr);
-            sscanf(lineptr, "==%*d==ERROR: AddressSanitizer: %" HF_XSTR(HF_STR_LEN_MINUS_1) "[^\n]",
-                description);
-        } else {
-            char* pLineLC = lineptr;
-            /* Trim leading spaces */
-            while (*pLineLC != '\0' && isspace(*pLineLC)) {
-                ++pLineLC;
-            }
-
-            /* End separator for crash thread stack trace is an empty line */
-            if ((*pLineLC == '\0') && (frameIdx != 0)) {
-                break;
-            }
-
-            /* If available parse the type of error (READ/WRITE) */
-            if (cAddr && strstr(pLineLC, cAddr)) {
-                if (strncmp(pLineLC, "READ", 4) == 0) {
-                    *op = "READ";
-                } else if (strncmp(pLineLC, "WRITE", 5) == 0) {
-                    *op = "WRITE";
-                }
-                cAddr = NULL;
-            }
-
-            if (sscanf(pLineLC, "#%u", &frameIdx) != 1) {
-                continue;
-            }
-            if (frameIdx >= _HF_MAX_FUNCS) {
-                frameIdx = _HF_MAX_FUNCS - 1;
-                break;
-            }
-
-            /*
-             * Frames with symbols but w/o debug info
-             *     #33 0x7ffff59a3668 in start_thread (/lib/x86_64-linux-gnu/libpthread.so.0+0x9668)
-             */
-            if (sscanf(pLineLC,
-                    "#%*u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ_MINUS_1) "s%*[^(](%" HF_XSTR(
-                        HF_STR_LEN_MINUS_1) "s",
-                    &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].mapName) == 3) {
-                continue;
-            }
-            /*
-             * Frames with symbols and with debug info
-             *     #0 0x1e94738 in smb2_signing_decrypt_pdu
-             * /home/test/libcli/smb/smb2_signing.c:617:3
-             */
-            if (sscanf(pLineLC,
-                    "#%*u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ_MINUS_1) "[^ ] %" HF_XSTR(
-                        HF_STR_LEN_MINUS_1) "[^:\n]:%zu",
-                    &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].mapName,
-                    &funcs[frameIdx].line) == 4) {
-                continue;
-            }
-            /*
-             * Frames w/o symbols
-             *     #2 0x565584f4  (/mnt/z/test+0x34f4)
-             */
-            if (sscanf(pLineLC, "#%*u 0x%p%*[^(](%" HF_XSTR(HF_STR_LEN_MINUS_1) "[^)\n]",
-                    &funcs[frameIdx].pc, funcs[frameIdx].mapName) == 2) {
-                continue;
-            }
-        }
-    }
-
-    return frameIdx;
-}
-
 /*
  * Special book keeping for cases where crashes are detected based on exitcode and not
  * a raised signal. Such case is the ASan fuzzing for Android. Crash file name maintains
@@ -979,7 +864,7 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
     memset(funcs, 0, _HF_MAX_FUNCS * sizeof(funcs_t));
 
     char description[HF_STR_LEN] = {};
-    funcCnt = arch_parseAsanReport(run, pid, funcs, &pc, &crashAddr, &op, description);
+    funcCnt = sanitizers_parseReport(run, pid, funcs, &pc, &crashAddr, &op, description);
 
     /*
      * -1 error indicates a file not found for report. This is expected to happen often since
@@ -1101,7 +986,7 @@ static void arch_traceExitAnalyzeData(run_t* run, pid_t pid) {
     uint64_t crashAddr = 0;
     const char* op = "UNKNOWN";
     char description[HF_STR_LEN] = {};
-    funcCnt = arch_parseAsanReport(run, pid, funcs, &pc, &crashAddr, &op, description);
+    funcCnt = sanitizers_parseReport(run, pid, funcs, &pc, &crashAddr, &op, description);
 
     /*
      * -1 error indicates a file not found for report. This is expected to happen often since

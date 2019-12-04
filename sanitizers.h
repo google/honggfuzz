@@ -28,6 +28,33 @@
 /* Prefix for sanitizer report files */
 #define kLOGPREFIX "HF.sanitizer.log"
 
+/* String buffer size for function names in stack traces produced from libunwind */
+#define _HF_FUNC_NAME_SZ 256          // Should be alright for mangled C++ procs too
+#define _HF_FUNC_NAME_SZ_MINUS_1 255  // For scanf()
+#define _HF_MAX_FUNCS 80
+
+typedef struct {
+    void* pc;
+
+    /* If ASan custom parsing, function not available without symbolication */
+    char func[_HF_FUNC_NAME_SZ];
+
+    /*
+     * If libuwind proc maps is used to retrieve map name
+     * If ASan custom parsing it's retrieved from generated report file
+     */
+    char mapName[HF_STR_LEN];
+
+    /*
+     * If libunwind + bfd symbolizer, line is actual symbol file line
+     * If libunwind + custom (e.g. Android), line is offset from function symbol
+     * If ASan custom parsing, line is offset from matching map load base address
+     */
+    size_t line;
+} funcs_t;
+
 extern bool sanitizers_Init(honggfuzz_t* hfuzz);
+extern int sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* crashAddr,
+    uint64_t* pc, const char** op, char description[HF_STR_LEN]);
 
 #endif /* _HF_SANITIZERS_H_ */
