@@ -42,8 +42,8 @@
 
 typedef struct {
     bfd* bfdh;
-    asection* section;
     asymbol** syms;
+    asymbol** dsyms;
 } bfd_t;
 
 /*
@@ -74,14 +74,16 @@ static bool arch_bfdInit(pid_t pid, bfd_t* bfdParams) {
         LOG_E("bfd_get_symtab_upper_bound() returned '%d'", storage_needed);
         return false;
     }
-
-    bfdParams->syms = (asymbol**)util_Malloc(storage_needed);
+    bfdParams->syms = (asymbol**)util_Calloc(storage_needed);
     bfd_canonicalize_symtab(bfdParams->bfdh, bfdParams->syms);
 
-    if ((bfdParams->section = bfd_get_section_by_name(bfdParams->bfdh, ".text")) == NULL) {
-        LOG_E("bfd_get_section_by_name('.text') failed");
+    storage_needed = bfd_get_dynamic_symtab_upper_bound(bfdParams->bfdh);
+    if (storage_needed <= 0) {
+        LOG_E("bfd_get_dynamic_symtab_upper_bound() returned '%d'", storage_needed);
         return false;
     }
+    bfdParams->dsyms = (asymbol**)util_Calloc(storage_needed);
+    bfd_canonicalize_dynamic_symtab(bfdParams->bfdh, bfdParams->dsyms);
 
     return true;
 }
@@ -89,10 +91,27 @@ static bool arch_bfdInit(pid_t pid, bfd_t* bfdParams) {
 static void arch_bfdDestroy(bfd_t* bfdParams) {
     if (bfdParams->syms) {
         free(bfdParams->syms);
+        bfdParams->syms = NULL;
+    }
+    if (bfdParams->dsyms) {
+        free(bfdParams->dsyms);
+        bfdParams->dsyms = NULL;
     }
     if (bfdParams->bfdh) {
         bfd_close(bfdParams->bfdh);
+        bfdParams->bfdh = NULL;
     }
+}
+
+static struct bfd_section* arch_getSectionForPc(bfd* bfdh, uint64_t pc) {
+    for (struct bfd_section* section = bfdh->sections; section; section = section->next) {
+        uintptr_t vma = (uintptr_t)bfd_get_section_vma(bfdh, section);
+        uintptr_t sz = (uintptr_t)bfd_get_section_size(section);
+        if ((pc > vma) && (pc < (vma + sz))) {
+            return section;
+        }
+    }
+    return NULL;
 }
 
 void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num) {
@@ -103,8 +122,8 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num) {
 
     __block bfd_t bfdParams = {
         .bfdh = NULL,
-        .section = NULL,
         .syms = NULL,
+        .dsyms = NULL,
     };
 
     if (arch_bfdInit(pid, &bfdParams) == false) {
@@ -115,16 +134,24 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num) {
     const char* file;
     unsigned int line;
     for (unsigned int i = 0; i < num; i++) {
-        snprintf(funcs[i].func, sizeof(funcs->func), "[UNKNOWN]");
+        snprintf(funcs[i].func, sizeof(funcs->func), "UNKNOWN");
         if (funcs[i].pc == NULL) {
             continue;
         }
-        long offset = (long)funcs[i].pc - bfdParams.section->vma;
-        if ((offset < 0 || (unsigned long)offset > bfdParams.section->size)) {
+        struct bfd_section* section = arch_getSectionForPc(bfdParams.bfdh, (uintptr_t)funcs[i].pc);
+        if (section == NULL) {
             continue;
         }
+
+        long sec_offset = (long)funcs[i].pc - bfd_get_section_vma(bfdParams.bfdh, section);
+
         if (bfd_find_nearest_line(
-                bfdParams.bfdh, bfdParams.section, bfdParams.syms, offset, &file, &func, &line)) {
+                bfdParams.bfdh, section, bfdParams.syms, sec_offset, &file, &func, &line) == TRUE) {
+            snprintf(funcs[i].func, sizeof(funcs->func), "%s", func);
+            funcs[i].line = line;
+        }
+        if (bfd_find_nearest_line(
+                bfdParams.bfdh, section, bfdParams.syms, sec_offset, &file, &func, &line) == TRUE) {
             snprintf(funcs[i].func, sizeof(funcs->func), "%s", func);
             funcs[i].line = line;
         }
