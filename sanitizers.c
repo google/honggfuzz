@@ -177,13 +177,13 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
             }
             headerFound = true;
             sscanf(lineptr,
-                "==%*d==ERROR: AddressSanitizer: %*[^ ] on address 0x%" PRIx64 " at pc 0x%" PRIx64,
+                "==%*d==ERROR: %*[^:]: %*[^ ] on address 0x%" PRIx64 " at pc 0x%" PRIx64,
                 pc, crashAddr);
             sscanf(lineptr,
-                "==%*d==ERROR: AddressSanitizer: %*[^ ] on %*s address 0x%" PRIx64
+                "==%*d==ERROR: %*[^:]: %*[^ ] on %*s address 0x%" PRIx64
                 " (pc 0x%" PRIx64,
                 crashAddr, pc);
-            sscanf(lineptr, "==%*d==ERROR: AddressSanitizer: %" HF_XSTR(HF_STR_LEN_MINUS_1) "[^\n]",
+            sscanf(lineptr, "==%*d==ERROR: %" HF_XSTR(HF_STR_LEN_MINUS_1) "[^\n]",
                 description);
         } else {
             char* pLineLC = lineptr;
