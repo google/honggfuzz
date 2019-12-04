@@ -161,6 +161,26 @@ bool cmdlineAddEnv(honggfuzz_t* hfuzz, char* env) {
     return false;
 }
 
+bool cmdlineParseTrueFalse(const char* optname, const char* optarg) {
+    if (!optarg) {
+        LOG_F("Option '--%s' needs an argument (true|false)", optname);
+    }
+    /* Probably '-' belong to the next option */
+    if (optarg[0] == '-') {
+        LOG_F("Option '--%s' needs an argument (true|false)", optname);
+    }
+    if ((strcasecmp(optarg, "0") == 0) || (strcasecmp(optarg, "false") == 0) ||
+        (strcasecmp(optarg, "n") == 0) || (strcasecmp(optarg, "no") == 0)) {
+        return false;
+    }
+    if ((strcasecmp(optarg, "1") == 0) || (strcasecmp(optarg, "true") == 0) ||
+        (strcasecmp(optarg, "y") == 0) || (strcasecmp(optarg, "yes") == 0)) {
+        return true;
+    }
+    LOG_F("Unknown value for option --%s=%s. Use true or false", optname, optarg);
+    return false;
+}
+
 rlim_t cmdlineParseRLimit(int res, const char* optarg, unsigned long mul) {
     struct rlimit cur;
     if (getrlimit(res, &cur) == -1) {
@@ -396,7 +416,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     struct custom_option custom_opts[] = {
         { { "help", no_argument, NULL, 'h' }, "Help plz.." },
         { { "input", required_argument, NULL, 'i' }, "Path to a directory containing initial file corpus" },
-        { { "output", required_argument, NULL, 0x601 }, "Output data (new dynamic coverage corpus, or the minimized coverage corpus) is written to this directory (default: input directory is used)" },
+        { { "output", required_argument, NULL, 'o' }, "Output data (new dynamic coverage corpus, or the minimized coverage corpus) is written to this directory (default: input directory is re-used)" },
         { { "persistent", no_argument, NULL, 'P' }, "Enable persistent fuzzing (use hfuzz_cc/hfuzz-clang to compile code). This will be auto-detected!!!" },
         { { "instrument", no_argument, NULL, 'z' }, "*DEFAULT-MODE-BY-DEFAULT* Enable compile-time instrumentation (use hfuzz_cc/hfuzz-clang to compile code)" },
         { { "minimize", no_argument, NULL, 'M' }, "Minimize the input corpus. It will most likely delete some corpus files (from the --input directory) if no --output is used!" },
@@ -404,7 +424,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "keep_output", no_argument, NULL, 'Q' }, "Don't close children's stdin, stdout, stderr; can be noisy" },
         { { "timeout", required_argument, NULL, 't' }, "Timeout in seconds (default: 10)" },
         { { "threads", required_argument, NULL, 'n' }, "Number of concurrent fuzzing threads (default: number of CPUs / 2)" },
-        { { "stdin_input", no_argument, NULL, 's' }, "Provide fuzzing input on STDIN, instead of ___FILE___" },
+        { { "stdin_input", no_argument, NULL, 's' }, "Provide fuzzing input on STDIN, instead of " _HF_FILE_PLACEHOLDER },
         { { "mutations_per_run", required_argument, NULL, 'r' }, "Maximal number of mutations per one run (default: 6)" },
         { { "logfile", required_argument, NULL, 'l' }, "Log file" },
         { { "verbose", no_argument, NULL, 'v' }, "Disable ANSI console; use simple log output" },
@@ -414,7 +434,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "extension", required_argument, NULL, 'e' }, "Input file extension (e.g. 'swf'), (default: 'fuzz')" },
         { { "workspace", required_argument, NULL, 'W' }, "Workspace directory to save crashes & runtime files (default: '.')" },
         { { "crashdir", required_argument, NULL, 0x600 }, "Directory where crashes are saved to (default: workspace directory)" },
-        { { "covdir_all", required_argument, NULL, 0x601 }, "** DEPRECATED ** use --output" },
+        { { "covdir_all", required_argument, NULL, 'o' }, "** DEPRECATED ** use --output" },
         { { "covdir_new", required_argument, NULL, 0x602 }, "New coverage (beyond the dry-run fuzzing phase) is written to this separate directory" },
         { { "dict", required_argument, NULL, 'w' }, "Dictionary file. Format:http://llvm.org/docs/LibFuzzer.html#dictionaries" },
         { { "stackhash_bl", required_argument, NULL, 'B' }, "Stackhashes blacklist file (one entry per line)" },
@@ -435,7 +455,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "tmout_sigvtalrm", no_argument, NULL, 'T' }, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)" },
         { { "sanitizers", no_argument, NULL, 'S' }, "** DEPRECATED ** Enable sanitizers settings (default: false)" },
         { { "sanitizer_del_report", required_argument, NULL, 0x10F }, "Delete sanitizer report after use (default: false)" },
-        { { "monitor_sigabrt", required_argument, NULL, 0x105 }, "*DEPRECATED* SIGABRT is always monitored" },
+        { { "monitor_sigabrt", required_argument, NULL, 0x105 }, "** DEPRECATED ** SIGABRT is always monitored" },
         { { "no_fb_timeout", required_argument, NULL, 0x106 }, "Skip feedback if the process has timeouted (default: false)" },
         { { "exit_upon_crash", no_argument, NULL, 0x107 }, "Exit upon seeing the first crash (default: false)" },
         { { "socket_fuzzer", no_argument, NULL, 0x10B }, "Instrument external fuzzer via socket" },
@@ -526,7 +546,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             case 0x600:
                 hfuzz->io.crashDir = optarg;
                 break;
-            case 0x601:
+            case 'o':
                 hfuzz->io.outputDir = optarg;
                 break;
             case 0x602:
@@ -542,11 +562,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->sanitizer.enable = true;
                 break;
             case 0x10F:
-                if ((strcasecmp(optarg, "0") == 0) || (strcasecmp(optarg, "false") == 0)) {
-                    hfuzz->sanitizer.del_report = false;
-                } else {
-                    hfuzz->sanitizer.del_report = true;
-                }
+                hfuzz->sanitizer.del_report = cmdlineParseTrueFalse(opts[opt_index].name, optarg);
                 break;
             case 0x10B:
                 hfuzz->socketFuzzer.enabled = true;

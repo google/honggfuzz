@@ -447,8 +447,8 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
     return 0;
 }
 
-static void arch_getInstrStr(
-    pid_t pid, uint64_t pc, uint64_t status_reg HF_ATTR_UNUSED, size_t pcRegSz HF_ATTR_UNUSED, char* instr) {
+static void arch_getInstrStr(pid_t pid, uint64_t pc, uint64_t status_reg HF_ATTR_UNUSED,
+    size_t pcRegSz HF_ATTR_UNUSED, char* instr) {
     /*
      * We need a value aligned to 8
      * which is sizeof(long) on 64bit CPU archs (on most of them, I hope;)
