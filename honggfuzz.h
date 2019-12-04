@@ -289,7 +289,6 @@ typedef struct {
         uint64_t dynamicCutOffAddr;
         bool disableRandomization;
         void* ignoreAddr;
-        size_t numMajorFrames;
         const char* symsBlFile;
         char** symsBl;
         size_t symsBlCnt;
@@ -303,7 +302,6 @@ typedef struct {
     /* For the NetBSD code */
     struct {
         void* ignoreAddr;
-        size_t numMajorFrames;
         const char* symsBlFile;
         char** symsBl;
         size_t symsBlCnt;

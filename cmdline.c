@@ -366,7 +366,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .dynamicCutOffAddr = ~(0ULL),
                 .disableRandomization = true,
                 .ignoreAddr = NULL,
-                .numMajorFrames = 7,
                 .symsBlFile = NULL,
                 .symsBlCnt = 0,
                 .symsBl = NULL,
@@ -381,7 +380,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .netbsd =
             {
                 .ignoreAddr = NULL,
-                .numMajorFrames = 7,
                 .symsBlFile = NULL,
                 .symsBlCnt = 0,
                 .symsBl = NULL,

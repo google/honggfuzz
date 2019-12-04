@@ -62,12 +62,6 @@
 #include "capstone/capstone.h"
 #endif
 
-/*
- * Size in characters required to store a string representation of a
- * register value (0xdeadbeef style))
- */
-#define REGSIZEINCHAR (2 * sizeof(uint64_t) + 3)
-
 #if defined(__i386__) || defined(__x86_64__)
 #define MAX_INSTR_SZ 16
 #elif defined(__arm__) || defined(__powerpc__) || defined(__powerpc64__)
@@ -518,33 +512,6 @@ static void arch_getInstrStr(
     return;
 }
 
-static void arch_hashCallstack(run_t* run, funcs_t* funcs, size_t funcCnt, bool enableMasking) {
-    uint64_t hash = 0;
-    for (size_t i = 0; i < funcCnt && i < run->global->linux.numMajorFrames; i++) {
-        /*
-         * Convert PC to char array to be compatible with hash function
-         */
-        char pcStr[REGSIZEINCHAR] = {0};
-        snprintf(pcStr, REGSIZEINCHAR, "0x%016" PRIx64, (uint64_t)(long)funcs[i].pc);
-
-        /*
-         * Hash the last three nibbles
-         */
-        hash ^= util_hash(&pcStr[strlen(pcStr) - 3], 3);
-    }
-
-    /*
-     * If only one frame, hash is not safe to be used for uniqueness. We mask it
-     * here with a constant prefix, so analyzers can pick it up and create filenames
-     * accordingly. 'enableMasking' is controlling masking for cases where it should
-     * not be enabled (e.g. fuzzer worker is from verifier).
-     */
-    if (enableMasking && funcCnt == 1) {
-        hash |= _HF_SINGLE_FRAME_MASK;
-    }
-    run->backtrace = hash;
-}
-
 static void arch_traceGenerateReport(pid_t pid, run_t* run, funcs_t* funcs, size_t funcCnt,
     siginfo_t* si, const char* instr, const char description[HF_STR_LEN]) {
     util_ssnprintf(run->report, sizeof(run->report), "CRASH:\n");
@@ -629,7 +596,7 @@ static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
     /*
      * Calculate backtrace callstack hash signature
      */
-    arch_hashCallstack(run, funcs, funcCnt, false);
+    run->backtrace = sanitizers_hashCallstack(run, funcs, funcCnt, false);
 }
 
 static void arch_traceSaveData(run_t* run, pid_t pid) {
@@ -701,7 +668,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     /*
      * Calculate backtrace callstack hash signature
      */
-    arch_hashCallstack(run, funcs, funcCnt, saveUnique);
+    run->backtrace = sanitizers_hashCallstack(run, funcs, funcCnt, saveUnique);
 
     /*
      * If unique flag is set and single frame crash, disable uniqueness for this crash

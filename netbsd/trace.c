@@ -56,6 +56,7 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 #include "netbsd/unwind.h"
+#include "sanitizers.h"
 #include "subproc.h"
 
 #include <capstone/capstone.h>
@@ -234,34 +235,6 @@ static void arch_getInstrStr(pid_t pid, lwpid_t lwp, register_t* pc, char* instr
     return;
 }
 
-static void arch_hashCallstack(
-    run_t* run, funcs_t* funcs HF_ATTR_UNUSED, size_t funcCnt, bool enableMasking) {
-    uint64_t hash = 0;
-    for (size_t i = 0; i < funcCnt && i < run->global->netbsd.numMajorFrames; i++) {
-        /*
-         * Convert PC to char array to be compatible with hash function
-         */
-        char pcStr[REGSIZEINCHAR] = {0};
-        snprintf(pcStr, REGSIZEINCHAR, "%" PRIxREGISTER, (register_t)(long)funcs[i].pc);
-
-        /*
-         * Hash the last three nibbles
-         */
-        hash ^= util_hash(&pcStr[strlen(pcStr) - 3], 3);
-    }
-
-    /*
-     * If only one frame, hash is not safe to be used for uniqueness. We mask it
-     * here with a constant prefix, so analyzers can pick it up and create filenames
-     * accordingly. 'enableMasking' is controlling masking for cases where it should
-     * not be enabled (e.g. fuzzer worker is from verifier).
-     */
-    if (enableMasking && funcCnt == 1) {
-        hash |= _HF_SINGLE_FRAME_MASK;
-    }
-    run->backtrace = hash;
-}
-
 static void arch_traceGenerateReport(
     pid_t pid, run_t* run, funcs_t* funcs, size_t funcCnt, siginfo_t* si, const char* instr) {
     run->report[0] = '\0';
@@ -324,7 +297,7 @@ static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
     /*
      * Calculate backtrace callstack hash signature
      */
-    arch_hashCallstack(run, funcs, funcCnt, false);
+    run->backtrace = sanitizers_hashCallstack(run, funcs, funcCnt, false);
 }
 
 static void arch_traceSaveData(run_t* run, pid_t pid) {
@@ -388,7 +361,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     /*
      * Calculate backtrace callstack hash signature
      */
-    arch_hashCallstack(run, funcs, funcCnt, saveUnique);
+    run->backtrace = sanitizers_hashCallstack(run, funcs, funcCnt, saveUnique);
 
     /*
      * If unique flag is set and single frame crash, disable uniqueness for this crash

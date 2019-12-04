@@ -83,7 +83,7 @@
 
 /* If no sanitzer support was requested, simply abort() on errors */
 #define kSAN_REGULAR               \
-    "symbolize=0:"                 \
+    "symbolize=1:"                 \
     "detect_leaks=0:"              \
     "disable_coredump=0:"          \
     "detect_odr_violation=0:"      \
@@ -248,5 +248,48 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
         }
     }
 
-    return frameIdx;
+    return (frameIdx + 1);
+}
+
+/*
+ * Size in characters required to store a string representation of a
+ * register value (0xdeadbeef style))
+ */
+#define REGSIZEINCHAR (2 * sizeof(uint64_t) + 3)
+
+uint64_t sanitizers_hashCallstack(run_t* run, funcs_t* funcs, size_t funcCnt, bool enableMasking) {
+    size_t numFrames = 7;
+    /*
+     * If sanitizer fuzzing enabled increase number of major frames, since top 7-9 frames will be
+     * occupied with sanitizer runtime library & libc symbols
+     */
+    if (run->global->sanitizer.enable) {
+        numFrames = 14;
+    }
+
+    uint64_t hash = 0;
+    for (size_t i = 0; i < funcCnt && i < numFrames; i++) {
+        /*
+         * Convert PC to char array to be compatible with hash function
+         */
+        char pcStr[REGSIZEINCHAR] = {0};
+        snprintf(pcStr, REGSIZEINCHAR, "0x%016" PRIx64, (uint64_t)(long)funcs[i].pc);
+
+        /*
+         * Hash the last three nibbles
+         */
+        hash ^= util_hash(&pcStr[strlen(pcStr) - 3], 3);
+    }
+
+    /*
+     * If only one frame, hash is not safe to be used for uniqueness. We mask it
+     * here with a constant prefix, so analyzers can pick it up and create filenames
+     * accordingly. 'enableMasking' is controlling masking for cases where it should
+     * not be enabled (e.g. fuzzer worker is from verifier).
+     */
+    if (enableMasking && funcCnt == 1) {
+        hash |= _HF_SINGLE_FRAME_MASK;
+    }
+
+    return hash;
 }

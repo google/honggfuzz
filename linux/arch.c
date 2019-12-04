@@ -392,14 +392,6 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
     /* Updates the important signal array based on input args */
     arch_traceSignalsInit(hfuzz);
 
-    /*
-     * If sanitizer fuzzing enabled increase number of major frames, since top 7-9 frames will be
-     * occupied with sanitizer runtime library & libc symbols
-     */
-    if (hfuzz->sanitizer.enable) {
-        hfuzz->linux.numMajorFrames = 14;
-    }
-
     if (hfuzz->linux.cloneFlags && unshare(hfuzz->linux.cloneFlags) == -1) {
         LOG_E("unshare(%tx)", hfuzz->linux.cloneFlags);
         return false;

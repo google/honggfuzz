@@ -30,6 +30,9 @@
 #define _HF_FUNC_NAME_SZ_MINUS_1 255  // For scanf()
 #define _HF_MAX_FUNCS 80
 
+/* Constant prefix used for single frame crashes stackhash masking */
+#define _HF_SINGLE_FRAME_MASK 0xBADBAD0000000000
+
 typedef struct {
     void* pc;
 
@@ -53,5 +56,7 @@ typedef struct {
 extern bool sanitizers_Init(honggfuzz_t* hfuzz);
 extern size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* pc,
     uint64_t* crashAddr, const char** op, char description[HF_STR_LEN]);
+extern uint64_t sanitizers_hashCallstack(
+    run_t* run, funcs_t* funcs, size_t funcCnt, bool enableMasking);
 
 #endif /* _HF_SANITIZERS_H_ */
