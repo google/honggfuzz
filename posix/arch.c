@@ -67,8 +67,7 @@ struct {
     [SIGBUS].important = true,
     [SIGBUS].descr = "SIGBUS",
 
-    /* Is affected from monitorSIGABRT flag */
-    [SIGABRT].important = false,
+    [SIGABRT].important = true,
     [SIGABRT].descr = "SIGABRT",
 
     /* Is affected from tmout_vtalrm flag */
@@ -249,12 +248,7 @@ void arch_reapChild(run_t* run) {
     }
 }
 
-bool arch_archInit(honggfuzz_t* hfuzz) {
-    /* Default is true for all platforms except Android */
-    arch_sigs[SIGABRT].important = hfuzz->cfg.monitorSIGABRT;
-    /* Default is false */
-    arch_sigs[SIGVTALRM].important = hfuzz->timing.tmoutVTALRM;
-
+bool arch_archInit(honggfuzz_t* hfuzz HF_ATTR_UNUSED) {
     /* Make %'d work */
     setlocale(LC_NUMERIC, "en_US.UTF-8");
 

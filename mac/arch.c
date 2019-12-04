@@ -117,8 +117,6 @@ __attribute__((constructor)) void arch_initSigs(void) {
     arch_sigs[SIGSEGV].descr = "SIGSEGV";
     arch_sigs[SIGBUS].important = true;
     arch_sigs[SIGBUS].descr = "SIGBUS";
-
-    /* Is affected from monitorSIGABRT flag */
     arch_sigs[SIGABRT].important = true;
     arch_sigs[SIGABRT].descr = "SIGABRT";
 
@@ -489,9 +487,6 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
         LOG_F("Parent: could not detach thread to wait for child's exception");
         return false;
     }
-
-    /* Default is true for all platforms except Android */
-    arch_sigs[SIGABRT].important = hfuzz->cfg.monitorSIGABRT;
 
     /* Default is false */
     arch_sigs[SIGVTALRM].important = hfuzz->timing.tmoutVTALRM;

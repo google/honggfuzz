@@ -313,11 +313,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .report_mutex = PTHREAD_MUTEX_INITIALIZER,
                 .reportFile = NULL,
                 .dynFileIterExpire = 0,
-#if defined(__ANDROID__)
-                .monitorSIGABRT = false,
-#else
-                .monitorSIGABRT = true,
-#endif
                 .only_printable = false,
                 .minimize = false,
                 .switchingToFDM = false,
@@ -442,7 +437,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "tmout_sigvtalrm", no_argument, NULL, 'T' }, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)" },
         { { "sanitizers", no_argument, NULL, 'S' }, "** DEPRECATED ** Enable sanitizers settings (default: false)" },
         { { "sanitizer_del_report", required_argument, NULL, 0x10F }, "Delete sanitizer report after use (default: false)" },
-        { { "monitor_sigabrt", required_argument, NULL, 0x105 }, "Monitor SIGABRT (default: false for Android, true for other platforms)" },
+        { { "monitor_sigabrt", required_argument, NULL, 0x105 }, "*DEPRECATED* SIGABRT is always monitored" },
         { { "no_fb_timeout", required_argument, NULL, 0x106 }, "Skip feedback if the process has timeouted (default: false)" },
         { { "exit_upon_crash", no_argument, NULL, 0x107 }, "Exit upon seeing the first crash (default: false)" },
         { { "socket_fuzzer", no_argument, NULL, 0x10B }, "Instrument external fuzzer via socket" },
@@ -617,13 +612,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 0x110:
                 hfuzz->exe.feedbackMutateCommand = optarg;
-                break;
-            case 0x105:
-                if ((strcasecmp(optarg, "0") == 0) || (strcasecmp(optarg, "false") == 0)) {
-                    hfuzz->cfg.monitorSIGABRT = false;
-                } else {
-                    hfuzz->cfg.monitorSIGABRT = true;
-                }
                 break;
             case 0x106:
                 hfuzz->feedback.skipFeedbackOnTimeout = true;

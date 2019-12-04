@@ -285,21 +285,6 @@ void arch_reapChild(run_t* run) {
             break;
         }
     }
-    if (run->global->sanitizer.enable) {
-        char crashReport[PATH_MAX];
-        snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", run->global->io.workDir, kLOGPREFIX,
-            run->pid);
-        if (files_exists(crashReport)) {
-            if (run->backtrace) {
-                unlink(crashReport);
-            } else {
-                LOG_W("Un-handled ASan report due to compiler-rt internal error - retry with '%s'",
-                    crashReport);
-                /* Try to parse report file */
-                arch_traceExitAnalyze(run, run->pid);
-            }
-        }
-    }
 
     arch_perfAnalyze(run);
 }
@@ -408,11 +393,10 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
     arch_traceSignalsInit(hfuzz);
 
     /*
-     * If sanitizer fuzzing enabled and SIGABRT is monitored (abort_on_error=1),
-     * increase number of major frames, since top 7-9 frames will be occupied
-     * with sanitizer runtime library & libc symbols
+     * If sanitizer fuzzing enabled increase number of major frames, since top 7-9 frames will be
+     * occupied with sanitizer runtime library & libc symbols
      */
-    if (hfuzz->sanitizer.enable && hfuzz->cfg.monitorSIGABRT) {
+    if (hfuzz->sanitizer.enable) {
         hfuzz->linux.numMajorFrames = 14;
     }
 

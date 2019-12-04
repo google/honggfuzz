@@ -22,9 +22,6 @@
 
 #include "honggfuzz.h"
 
-/* Exit code is common for all sanitizers */
-#define HF_SAN_EXIT_CODE 103
-
 /* Prefix for sanitizer report files */
 #define kLOGPREFIX "HF.sanitizer.log"
 
@@ -54,7 +51,7 @@ typedef struct {
 } funcs_t;
 
 extern bool sanitizers_Init(honggfuzz_t* hfuzz);
-extern int sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* crashAddr,
-    uint64_t* pc, const char** op, char description[HF_STR_LEN]);
+extern size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* pc,
+    uint64_t* crashAddr, const char** op, char description[HF_STR_LEN]);
 
 #endif /* _HF_SANITIZERS_H_ */

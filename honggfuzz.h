@@ -249,7 +249,6 @@ typedef struct {
         bool exitUponCrash;
         const char* reportFile;
         pthread_mutex_t report_mutex;
-        bool monitorSIGABRT;
         size_t dynFileIterExpire;
         bool only_printable;
         bool minimize;

@@ -100,8 +100,7 @@ static struct {
     [SIGBUS].important = true,
     [SIGBUS].descr = "SIGBUS",
 
-    /* Is affected from monitorSIGABRT flag */
-    [SIGABRT].important = false,
+    [SIGABRT].important = true,
     [SIGABRT].descr = "SIGABRT",
 
     /* Is affected from tmoutVTALRM flag */
@@ -698,9 +697,6 @@ void arch_traceDetach(pid_t pid) {
 }
 
 void arch_traceSignalsInit(honggfuzz_t* hfuzz) {
-    /* Default is true for all platforms except Android */
-    arch_sigs[SIGABRT].important = hfuzz->cfg.monitorSIGABRT;
-
     /* Default is false */
     arch_sigs[SIGVTALRM].important = hfuzz->timing.tmoutVTALRM;
 }

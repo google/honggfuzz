@@ -46,13 +46,6 @@
  * will get caught from ptrace API, handling the discovered ASan internal crash.
  */
 
-/* 'log_path' output directory for sanitizer reports */
-#define kSANLOGDIR "log_path="
-
-/* Raise SIGABRT on error or continue with exitcode logic */
-#define kABORT_ENABLED "abort_on_error=1"
-#define kABORT_DISABLED "abort_on_error=0:exitcode=" HF_XSTR(HF_SAN_EXIT_CODE)
-
 /*
  * Common sanitizer flags
  *
@@ -69,7 +62,8 @@
     "handle_sigbus=2:"             \
     "handle_abort=2:"              \
     "handle_sigill=2:"             \
-    "handle_sigfpe=2"
+    "handle_sigfpe=2:"             \
+    "abort_on_error=1"
 
 /* --{ ASan }-- */
 /*
@@ -103,18 +97,17 @@
     "abort_on_error=1"
 
 static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, const char* val) {
-    const char* abortFlag = hfuzz->cfg.monitorSIGABRT ? kABORT_ENABLED : kABORT_DISABLED;
     if (getenv(env)) {
         LOG_W("The '%s' envar is already set. Not overriding it!", env);
         return;
     }
 
     char buf[4096] = {};
-    if (!hfuzz->sanitizer.enable) {
-        snprintf(buf, sizeof(buf), "%s=%s", env, kSAN_REGULAR);
+    if (hfuzz->sanitizer.enable) {
+        snprintf(buf, sizeof(buf), "%s=%s:log_path=%s/%s", env, val, hfuzz->io.workDir, kLOGPREFIX);
     } else {
-        snprintf(buf, sizeof(buf), "%s=%s:%s:%s%s/%s", env, val, abortFlag, kSANLOGDIR,
-            hfuzz->io.workDir, kLOGPREFIX);
+        snprintf(buf, sizeof(buf), "%s=%s:log_path=%s/%s", env, kSAN_REGULAR, hfuzz->io.workDir,
+            kLOGPREFIX);
     }
     /*
      * It will make ASAN to start background thread to check RSS mem use, which
@@ -138,8 +131,8 @@ bool sanitizers_Init(honggfuzz_t* hfuzz) {
     return true;
 }
 
-int sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* pc, uint64_t* crashAddr,
-    const char** op, char description[HF_STR_LEN]) {
+size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* pc,
+    uint64_t* crashAddr, const char** op, char description[HF_STR_LEN]) {
     char crashReport[PATH_MAX];
     const char* crashReportCpy = crashReport;
     snprintf(
@@ -148,7 +141,7 @@ int sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* pc, 
     FILE* fReport = fopen(crashReport, "rb");
     if (fReport == NULL) {
         PLOG_D("Couldn't open '%s' - R/O mode", crashReport);
-        return -1;
+        return 0;
     }
     defer {
         fclose(fReport);
