@@ -166,7 +166,7 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
         /* First step is to identify header */
         if (!headerFound) {
             int reportpid = 0;
-            if (sscanf(lineptr, "==%d==ERROR: AddressSanitizer:", &reportpid) != 1) {
+            if (sscanf(lineptr, "==%d==ERROR: ", &reportpid) != 1) {
                 continue;
             }
             if (reportpid != pid) {
