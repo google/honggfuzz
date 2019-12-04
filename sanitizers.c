@@ -138,7 +138,7 @@ bool sanitizers_Init(honggfuzz_t* hfuzz) {
     return true;
 }
 
-int sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* crashAddr, uint64_t* pc,
+int sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* pc, uint64_t* crashAddr,
     const char** op, char description[HF_STR_LEN]) {
     char crashReport[PATH_MAX];
     const char* crashReportCpy = crashReport;
@@ -186,6 +186,10 @@ int sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* cras
             sscanf(lineptr,
                 "==%*d==ERROR: AddressSanitizer: %*[^ ] on address 0x%" PRIx64 " at pc 0x%" PRIx64,
                 pc, crashAddr);
+            sscanf(lineptr,
+                "==%*d==ERROR: AddressSanitizer: %*[^ ] on %*s address 0x%" PRIx64
+                " (pc 0x%" PRIx64,
+                crashAddr, pc);
             sscanf(lineptr, "==%*d==ERROR: AddressSanitizer: %" HF_XSTR(HF_STR_LEN_MINUS_1) "[^\n]",
                 description);
         } else {
