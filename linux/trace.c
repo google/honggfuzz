@@ -907,11 +907,6 @@ static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t*
                 cAddr = NULL;
             }
 
-            /*
-             * Frames have following format:
-             #0 0x1e94738 in smb2_signing_decrypt_pdu /home/test/libcli/smb/smb2_signing.c:617:3
-             */
-
             if (sscanf(pLineLC, "#%u", &frameIdx) != 1) {
                 continue;
             }
@@ -919,19 +914,37 @@ static int arch_parseAsanReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t*
                 frameIdx = _HF_MAX_FUNCS - 1;
                 break;
             }
+
+            /*
+             * Frames with symbols but w/o debug info
+             *     #33 0x7ffff59a3668 in start_thread (/lib/x86_64-linux-gnu/libpthread.so.0+0x9668)
+             */
+            if (sscanf(pLineLC,
+                    "#%*u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ_MINUS_1) "s%*[^(](%" HF_XSTR(
+                        HF_STR_LEN_MINUS_1) "s",
+                    &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].mapName) == 3) {
+                continue;
+            }
+            /*
+             * Frames with symbols and with debug info
+             *     #0 0x1e94738 in smb2_signing_decrypt_pdu
+             * /home/test/libcli/smb/smb2_signing.c:617:3
+             */
             if (sscanf(pLineLC,
                     "#%*u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ_MINUS_1) "[^ ] %" HF_XSTR(
                         HF_STR_LEN_MINUS_1) "[^:\n]:%zu",
                     &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].mapName,
-                    &funcs[frameIdx].line) > 2) {
+                    &funcs[frameIdx].line) == 4) {
                 continue;
             }
             /*
-             * Android version:
+             * Frames w/o symbols
              *     #2 0x565584f4  (/mnt/z/test+0x34f4)
              */
-            sscanf(pLineLC, "#%*u 0x%p%*[^(](%" HF_XSTR(HF_STR_LEN_MINUS_1) "[^)\n]",
-                &funcs[frameIdx].pc, funcs[frameIdx].mapName);
+            if (sscanf(pLineLC, "#%*u 0x%p%*[^(](%" HF_XSTR(HF_STR_LEN_MINUS_1) "[^)\n]",
+                    &funcs[frameIdx].pc, funcs[frameIdx].mapName) == 2) {
+                continue;
+            }
         }
     }
 
@@ -1067,10 +1080,10 @@ static void arch_traceExitSaveData(run_t* run, pid_t pid) {
                 "0x%016" PRIx64 "> ",
                 (uint64_t)(long)funcs[i].pc);
             if (funcs[i].mapName[0] != '\0') {
-                util_ssnprintf(run->report, sizeof(run->report), "[%s:%zu]\n", funcs[i].mapName,
-                    funcs[i].line);
+                util_ssnprintf(run->report, sizeof(run->report), "%s [%s:%zu]\n", funcs[i].func,
+                    funcs[i].mapName, funcs[i].line);
             } else {
-                util_ssnprintf(run->report, sizeof(run->report), "[]\n");
+                util_ssnprintf(run->report, sizeof(run->report), "%s []\n", funcs[i].func);
             }
         }
     }
