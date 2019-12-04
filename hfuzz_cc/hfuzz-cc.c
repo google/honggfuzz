@@ -439,6 +439,9 @@ static int ldMode(int argc, char** argv) {
 #if !defined(_HF_ARCH_DARWIN) && !defined(__OpenBSD__)
     args[j++] = "-lrt";
 #endif /* !defined(_HF_ARCH_DARWIN) && !defined(__OpenBSD__) */
+#if defined(__ANDROID__)
+    args[j++] = "-latomic";
+#endif
 
     /* Disable -fsanitize=fuzzer */
     if (isFSanitizeFuzzer(argc, argv)) {
