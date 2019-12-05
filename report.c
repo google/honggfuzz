@@ -131,14 +131,14 @@ void report_saveReport(run_t* run) {
 }
 
 void report_appendReport(pid_t pid, run_t* run, funcs_t* funcs, size_t funcCnt, uint64_t pc,
-    uint64_t crashAddr, siginfo_t* si, const char* instr, const char description[HF_STR_LEN]) {
+    uint64_t crashAddr, int signo, const char* instr, const char description[HF_STR_LEN]) {
     util_ssnprintf(run->report, sizeof(run->report), "CRASH:\n");
     util_ssnprintf(run->report, sizeof(run->report), "DESCRIPTION: %s\n", description);
     util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->origFileName);
     util_ssnprintf(run->report, sizeof(run->report), "FUZZ_FNAME: %s\n", run->crashFileName);
     util_ssnprintf(run->report, sizeof(run->report), "PID: %d\n", pid);
-    util_ssnprintf(run->report, sizeof(run->report), "SIGNAL: %s (%d)\n",
-        util_sigName(si->si_signo), si->si_signo);
+    util_ssnprintf(
+        run->report, sizeof(run->report), "SIGNAL: %s (%d)\n", util_sigName(signo), signo);
     util_ssnprintf(run->report, sizeof(run->report), "PC: 0x%" PRIx64 "\n", pc);
     util_ssnprintf(run->report, sizeof(run->report), "FAULT ADDRESS: 0x%" PRIx64 "\n", crashAddr);
     util_ssnprintf(run->report, sizeof(run->report), "INSTRUCTION: %s\n", instr);

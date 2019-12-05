@@ -46,6 +46,7 @@
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
+#include "report.h"
 #include "sanitizers.h"
 #include "subproc.h"
 
@@ -170,6 +171,8 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
             O_CREAT | O_EXCL | O_WRONLY) == false) {
         LOG_E("Couldn't save crash to '%s'", run->crashFileName);
     }
+
+    report_appendReport(pid, run, funcs, funcCnt, pc, crashAddr, termsig, "", description);
 }
 
 pid_t arch_fork(run_t* fuzzer HF_ATTR_UNUSED) {
