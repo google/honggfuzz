@@ -454,7 +454,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "save_all", no_argument, NULL, 'u' }, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames" },
         { { "tmout_sigvtalrm", no_argument, NULL, 'T' }, "Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)" },
         { { "sanitizers", no_argument, NULL, 'S' }, "** DEPRECATED ** Enable sanitizers settings (default: false)" },
-        { { "sanitizer_del_report", required_argument, NULL, 0x10F }, "Delete sanitizer report after use (default: false)" },
+        { { "sanitizers_del_report", required_argument, NULL, 0x10F }, "Delete sanitizer report after use (default: false)" },
         { { "monitor_sigabrt", required_argument, NULL, 0x105 }, "** DEPRECATED ** SIGABRT is always monitored" },
         { { "no_fb_timeout", required_argument, NULL, 0x106 }, "Skip feedback if the process has timeouted (default: false)" },
         { { "exit_upon_crash", no_argument, NULL, 0x107 }, "Exit upon seeing the first crash (default: false)" },
