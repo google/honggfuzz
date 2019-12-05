@@ -705,7 +705,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     /* If unique crash found, reset dynFile counter */
     ATOMIC_CLEAR(run->global->cfg.dynFileIterExpire);
 
-    report_appendReport(pid, run, funcs, funcCnt, pc, si.si_signo, crashAddr, instr, description);
+    report_appendReport(pid, run, funcs, funcCnt, pc, crashAddr, si.si_signo, instr, description);
 }
 
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)
