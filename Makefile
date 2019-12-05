@@ -27,7 +27,7 @@ BIN := honggfuzz
 HFUZZ_CC_BIN := hfuzz_cc/hfuzz-cc
 HFUZZ_CC_SRCS := hfuzz_cc/hfuzz-cc.c
 COMMON_CFLAGS := -std=c11 -I/usr/local/include -D_GNU_SOURCE -Wall -Wextra -Werror -Wno-format-truncation -Wno-override-init -I.
-COMMON_LDFLAGS := -pthread libhfcommon/libhfcommon.a -lm
+COMMON_LDFLAGS := -pthread -lm
 COMMON_SRCS := $(sort $(wildcard *.c))
 CFLAGS ?= -O3 -mtune=native -funroll-loops
 LDFLAGS ?=
@@ -260,10 +260,10 @@ mac/arch.o: mac/arch.c
 	$(CC) -fPIC -shared $(CFLAGS) -o $@ $<
 
 $(BIN): $(OBJS) $(LCOMMON_ARCH)
-	$(LD) -o $(BIN) $(OBJS) $(LDFLAGS)
+	$(LD) -o $(BIN) $(OBJS) $(LCOMMON_ARCH) $(LDFLAGS)
 
 $(HFUZZ_CC_BIN): $(LCOMMON_ARCH) $(LHFUZZ_ARCH) $(LNETDRIVER_ARCH) $(HFUZZ_CC_SRCS)
-	$(LD) -o $@ $(HFUZZ_CC_SRCS) $(LDFLAGS) $(CFLAGS) $(CFLAGS_BLOCKS) -D_HFUZZ_INC_PATH=$(HFUZZ_INC)
+	$(LD) -o $@ $(HFUZZ_CC_SRCS) $(LCOMMON_ARCH) $(LDFLAGS) $(CFLAGS) $(CFLAGS_BLOCKS) -D_HFUZZ_INC_PATH=$(HFUZZ_INC)
 
 $(LCOMMON_OBJS): $(LCOMMON_SRCS)
 	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) -o $@ $(@:.o=.c)
