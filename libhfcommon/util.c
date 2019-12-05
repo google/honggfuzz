@@ -769,6 +769,12 @@ static const struct {
 #if defined(SIGSYS)
     {SIGSYS, "SIGSYS"},
 #endif
+#if defined(SIGTHR)
+    {SIGTHR, "SIGTHR"},
+#endif
+#if defined(SIGEMT)
+    {SIGEMT, "SIGEMT"},
+#endif
 };
 
 const char* util_sigName(int signo) {
@@ -778,10 +784,12 @@ const char* util_sigName(int signo) {
             return sigNames[i].signame;
         }
     }
+#if defined(SIGRTMIN) && defined(SIGRTMAX)
     if (signo >= SIGRTMIN && signo <= SIGRTMAX) {
         snprintf(signame, sizeof(signame), "SIG%d-RTMIN+%d", signo, signo - SIGRTMIN);
         return signame;
     }
+#endif /* defined(SIGRTMIN) && defined(SIGRTMAX) */
     snprintf(signame, sizeof(signame), "UNKNOWN-%d", signo);
     return signame;
 }
