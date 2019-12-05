@@ -119,6 +119,7 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
     };
 
     bool headerFound = false;
+    bool frameFound = false;
     unsigned int frameIdx = 0;
 
     char* lineptr = NULL;
@@ -171,6 +172,7 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
                 break;
             }
 
+            frameFound = true;
             snprintf(funcs[frameIdx].func, sizeof(funcs[frameIdx].func), "UNKNOWN");
 
             /*
@@ -213,7 +215,7 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
         }
     }
 
-    return (frameIdx + 1);
+    return (frameFound == false) ? 0 : (frameIdx + 1);
 }
 
 /*
