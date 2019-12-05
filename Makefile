@@ -167,6 +167,7 @@ OBJS := $(SRCS:.c=.o)
 LHFUZZ_SRCS := $(sort $(wildcard libhfuzz/*.c))
 LHFUZZ_OBJS := $(LHFUZZ_SRCS:.c=.o)
 LHFUZZ_ARCH := libhfuzz/libhfuzz.a
+LHFUZZ_SHARED := libhfuzz/libhfuzz.so
 HFUZZ_INC ?= $(shell pwd)
 
 LCOMMON_SRCS := $(sort $(wildcard libhfcommon/*.c))
@@ -237,12 +238,12 @@ ANDROID_GARBAGE := obj libs
 
 CLEAN_TARGETS := core Makefile.bak \
   $(OBJS) $(BIN) $(HFUZZ_CC_BIN) \
-  $(LHFUZZ_ARCH) $(LHFUZZ_OBJS) \
+  $(LHFUZZ_ARCH) $(LHFUZZ_SHARED) $(LHFUZZ_OBJS) \
   $(LCOMMON_ARCH) $(LCOMMON_OBJS) \
   $(LNETDRIVER_ARCH) $(LNETDRIVER_OBJS) \
   $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
 
-all: $(BIN) $(HFUZZ_CC_BIN) $(LHFUZZ_ARCH) $(LCOMMON_ARCH) $(LNETDRIVER_ARCH)
+all: $(BIN) $(HFUZZ_CC_BIN) $(LHFUZZ_ARCH) $(LHFUZZ_SHARED) $(LCOMMON_ARCH) $(LNETDRIVER_ARCH)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) $(CFLAGS_BLOCKS) -o $@ $<
@@ -275,6 +276,9 @@ $(LHFUZZ_OBJS): $(LHFUZZ_SRCS)
 
 $(LHFUZZ_ARCH): $(LHFUZZ_OBJS)
 	$(AR) rcs $(LHFUZZ_ARCH) $(LHFUZZ_OBJS)
+
+$(LHFUZZ_SHARED): $(LHFUZZ_OBJS) $(LCOMMON_OBJS)
+	$(LD) -shared $(LDFLAGS) $(LHFUZZ_OBJS) $(LCOMMON_OBJS) -o $@
 
 $(LNETDRIVER_OBJS): $(LNETDRIVER_SRCS)
 	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) -o $@ $(@:.o=.c)

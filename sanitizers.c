@@ -121,7 +121,7 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
     bool headerFound = false;
     unsigned int frameIdx = 0;
 
-    char *lineptr = NULL;
+    char* lineptr = NULL;
     size_t n = 0;
     defer {
         free(lineptr);
