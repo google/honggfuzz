@@ -267,30 +267,6 @@ static struct {
 #define SI_FROMUSER(siptr) ((siptr)->si_code <= 0)
 #endif /* SI_FROMUSER */
 
-extern const char* sys_sigabbrev[];
-
-static __thread char arch_signame[32];
-static const char* arch_sigName(int signo) {
-    if (signo < 0 || signo > _NSIG) {
-        snprintf(arch_signame, sizeof(arch_signame), "UNKNOWN-%d", signo);
-        return arch_signame;
-    }
-    if (signo > __SIGRTMIN) {
-        snprintf(arch_signame, sizeof(arch_signame), "SIG%d-RTMIN+%d", signo, signo - __SIGRTMIN);
-        return arch_signame;
-    }
-#ifdef __ANDROID__
-    return arch_sigs[signo].descr;
-#else
-    if (sys_sigabbrev[signo] == NULL) {
-        snprintf(arch_signame, sizeof(arch_signame), "SIG%d", signo);
-    } else {
-        snprintf(arch_signame, sizeof(arch_signame), "SIG%s", sys_sigabbrev[signo]);
-    }
-    return arch_signame;
-#endif /* __ANDROID__ */
-}
-
 static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, uint64_t pc) {
     /*
      * Let's try process_vm_readv first
@@ -598,7 +574,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
 
     if (!SI_FROMUSER(&si) && pc && crashAddr < (uint64_t)run->global->linux.ignoreAddr) {
         LOG_I("Input is interesting (%s), but the si.si_addr is %p (below %p), skipping",
-            arch_sigName(si.si_signo), si.si_addr, run->global->linux.ignoreAddr);
+            util_sigName(si.si_signo), si.si_addr, run->global->linux.ignoreAddr);
         return;
     }
 
@@ -703,14 +679,14 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     } else if (saveUnique) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%d.ADDR.%" PRIx64 ".INSTR.%s.%s",
-            run->global->io.crashDir, arch_sigName(si.si_signo), pc, run->backtrace, si.si_code,
+            run->global->io.crashDir, util_sigName(si.si_signo), pc, run->backtrace, si.si_code,
             crashAddr, instr, run->global->io.fileExtn);
     } else {
         char localtmstr[HF_STR_LEN];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%d.ADDR.%" PRIx64 ".INSTR.%s.%s.%d.%s",
-            run->global->io.crashDir, arch_sigName(si.si_signo), pc, run->backtrace, si.si_code,
+            run->global->io.crashDir, util_sigName(si.si_signo), pc, run->backtrace, si.si_code,
             crashAddr, instr, localtmstr, pid, run->global->io.fileExtn);
     }
 
