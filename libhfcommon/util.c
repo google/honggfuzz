@@ -29,6 +29,7 @@
 #include <inttypes.h>
 #include <math.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -660,4 +661,127 @@ uint64_t util_CRC64Rev(const uint8_t* buf, size_t len) {
     }
 
     return res;
+}
+
+static const struct {
+    const int signo;
+    const char* const signame;
+} sigNames[] = {
+#if defined(SIGHUP)
+    {SIGHUP, "SIGHUP"},
+#endif
+#if defined(SIGINT)
+    {SIGINT, "SIGINT"},
+#endif
+#if defined(SIGQUIT)
+    {SIGQUIT, "SIGQUIT"},
+#endif
+#if defined(SIGILL)
+    {SIGILL, "SIGILL"},
+#endif
+#if defined(SIGTRAP)
+    {SIGTRAP, "SIGTRAP"},
+#endif
+#if defined(SIGABRT)
+    {SIGABRT, "SIGABRT"},
+#endif
+#if defined(SIGIOT)
+    {SIGIOT, "SIGIOT"},
+#endif
+#if defined(SIGBUS)
+    {SIGBUS, "SIGBUS"},
+#endif
+#if defined(SIGFPE)
+    {SIGFPE, "SIGFPE"},
+#endif
+#if defined(SIGKILL)
+    {SIGKILL, "SIGKILL"},
+#endif
+#if defined(SIGUSR1)
+    {SIGUSR1, "SIGUSR1"},
+#endif
+#if defined(SIGSEGV)
+    {SIGSEGV, "SIGSEGV"},
+#endif
+#if defined(SIGUSR2)
+    {SIGUSR2, "SIGUSR2"},
+#endif
+#if defined(SIGPIPE)
+    {SIGPIPE, "SIGPIPE"},
+#endif
+#if defined(SIGALRM)
+    {SIGALRM, "SIGALRM"},
+#endif
+#if defined(SIGTERM)
+    {SIGTERM, "SIGTERM"},
+#endif
+#if defined(SIGSTKFLT)
+    {SIGSTKFLT, "SIGSTKFLT"},
+#endif
+#if defined(SIGCHLD)
+    {SIGCHLD, "SIGCHLD"},
+#endif
+#if defined(SIGCONT)
+    {SIGCONT, "SIGCONT"},
+#endif
+#if defined(SIGSTOP)
+    {SIGSTOP, "SIGSTOP"},
+#endif
+#if defined(SIGTSTP)
+    {SIGTSTP, "SIGTSTP"},
+#endif
+#if defined(SIGTTIN)
+    {SIGTTIN, "SIGTTIN"},
+#endif
+#if defined(SIGTTOU)
+    {SIGTTOU, "SIGTTOU"},
+#endif
+#if defined(SIGURG)
+    {SIGURG, "SIGURG"},
+#endif
+#if defined(SIGXCPU)
+    {SIGXCPU, "SIGXCPU"},
+#endif
+#if defined(SIGXFSZ)
+    {SIGXFSZ, "SIGXFSZ"},
+#endif
+#if defined(SIGVTALRM)
+    {SIGVTALRM, "SIGVTALRM"},
+#endif
+#if defined(SIGPROF)
+    {SIGPROF, "SIGPROF"},
+#endif
+#if defined(SIGWINCH)
+    {SIGWINCH, "SIGWINCH"},
+#endif
+#if defined(SIGIO)
+    {SIGIO, "SIGIO"},
+#endif
+#if defined(SIGPOLL)
+    {SIGPOLL, "SIGPOLL"},
+#endif
+#if defined(SIGLOST)
+    {SIGLOST, "SIGLOST"},
+#endif
+#if defined(SIGPWR)
+    {SIGPWR, "SIGPWR"},
+#endif
+#if defined(SIGSYS)
+    {SIGSYS, "SIGSYS"},
+#endif
+};
+
+const char* util_sigName(int signo) {
+    static __thread char signame[32];
+    for (size_t i = 0; i < ARRAYSIZE(sigNames); i++) {
+        if (signo == sigNames[i].signo) {
+            return sigNames[i].signame;
+        }
+    }
+    if (signo >= SIGRTMIN && signo <= SIGRTMAX) {
+        snprintf(signame, sizeof(signame), "SIG%d-RTMIN+%d", signo, signo - __SIGRTMIN);
+        return signame;
+    }
+    snprintf(signame, sizeof(signame), "UNKNOWN-%d", signo);
+    return signame;
 }

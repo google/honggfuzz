@@ -120,10 +120,10 @@ typedef struct {
 
 /* Memory map struct */
 typedef struct __attribute__((packed)) {
-    uint64_t start;          // region start addr
-    uint64_t end;            // region end addr
-    uint64_t base;           // region base addr
-    char mapName[NAME_MAX];  // bin/DSO name
+    uint64_t start;         // region start addr
+    uint64_t end;           // region end addr
+    uint64_t base;          // region base addr
+    char module[NAME_MAX];  // bin/DSO name
     uint64_t bbCnt;
     uint64_t newBBCnt;
 } memMap_t;

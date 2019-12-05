@@ -379,8 +379,8 @@ input.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h mangle.h
 input.o: subproc.h
 mangle.o: mangle.h honggfuzz.h libhfcommon/util.h input.h
 mangle.o: libhfcommon/common.h libhfcommon/log.h
-report.o: report.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
-report.o: libhfcommon/log.h
+report.o: report.h honggfuzz.h libhfcommon/util.h sanitizers.h
+report.o: libhfcommon/common.h libhfcommon/log.h
 sanitizers.o: sanitizers.h honggfuzz.h libhfcommon/util.h cmdline.h
 sanitizers.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 sanitizers.o: libhfcommon/log.h
@@ -435,7 +435,7 @@ linux/pt.o: libhfcommon/log.h
 linux/trace.o: linux/trace.h honggfuzz.h libhfcommon/util.h
 linux/trace.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 linux/trace.o: libhfcommon/log.h linux/bfd.h linux/unwind.h sanitizers.h
-linux/trace.o: socketfuzzer.h subproc.h
+linux/trace.o: report.h socketfuzzer.h subproc.h
 linux/unwind.o: linux/unwind.h sanitizers.h honggfuzz.h libhfcommon/util.h
 linux/unwind.o: libhfcommon/common.h libhfcommon/log.h
 mac/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h libhfcommon/common.h

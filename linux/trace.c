@@ -54,6 +54,7 @@
 #include "libhfcommon/util.h"
 #include "linux/bfd.h"
 #include "linux/unwind.h"
+#include "report.h"
 #include "sanitizers.h"
 #include "socketfuzzer.h"
 #include "subproc.h"
@@ -512,64 +513,28 @@ static void arch_getInstrStr(pid_t pid, uint64_t pc, uint64_t status_reg HF_ATTR
     return;
 }
 
-static void arch_traceGenerateReport(pid_t pid, run_t* run, funcs_t* funcs, size_t funcCnt,
-    siginfo_t* si, const char* instr, const char description[HF_STR_LEN]) {
-    util_ssnprintf(run->report, sizeof(run->report), "CRASH:\n");
-    util_ssnprintf(run->report, sizeof(run->report), "DESCRIPTION: %s\n", description);
-    util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->origFileName);
-    util_ssnprintf(run->report, sizeof(run->report), "FUZZ_FNAME: %s\n", run->crashFileName);
-    util_ssnprintf(run->report, sizeof(run->report), "PID: %d\n", pid);
-    util_ssnprintf(run->report, sizeof(run->report), "SIGNAL: %s (%d)\n",
-        arch_sigName(si->si_signo), si->si_signo);
-    util_ssnprintf(run->report, sizeof(run->report), "FAULT ADDRESS: %p\n",
-        SI_FROMUSER(si) ? NULL : si->si_addr);
-    util_ssnprintf(run->report, sizeof(run->report), "INSTRUCTION: %s\n", instr);
-    util_ssnprintf(
-        run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", run->backtrace);
-    util_ssnprintf(run->report, sizeof(run->report), "STACK:\n");
-    for (size_t i = 0; i < funcCnt; i++) {
-        util_ssnprintf(run->report, sizeof(run->report),
-            " <"
-            "0x%016" PRIx64 "> ",
-            (uint64_t)funcs[i].pc);
-        util_ssnprintf(run->report, sizeof(run->report), "[%s():%zu module:%s file:%s]\n",
-            funcs[i].func, funcs[i].line, funcs[i].mapName, funcs[i].file);
-    }
-
-// libunwind is not working for 32bit targets in 64bit systems
-#if defined(__aarch64__)
-    if (funcCnt == 0) {
-        util_ssnprintf(run->report, sizeof(run->report),
-            " !ERROR: If 32bit fuzz target"
-            " in aarch64 system, try ARM 32bit build\n");
-    }
-#endif
-
-    return;
-}
-
 static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
     funcs_t* funcs = util_Calloc(_HF_MAX_FUNCS * sizeof(funcs_t));
     defer {
         free(funcs);
     };
 
-    uint64_t pc = 0, crashAddr = 0;
+    uint64_t pc = 0;
+    uint64_t status_reg = 0;
+    size_t pcRegSz = arch_getPC(pid, &pc, &status_reg);
+    if (!pcRegSz) {
+        LOG_W("ptrace arch_getPC failed");
+        return;
+    }
+
+    uint64_t crashAddr = 0;
     char description[HF_STR_LEN] = {};
     size_t funcCnt = sanitizers_parseReport(run, pid, funcs, &pc, &crashAddr, description);
-
     if (funcCnt <= 0) {
         funcCnt = arch_unwindStack(pid, funcs);
 #if !defined(__ANDROID__)
         arch_bfdResolveSyms(pid, funcs, funcCnt);
 #endif /* !defined(__ANDROID__) */
-
-        uint64_t status_reg = 0;
-        size_t pcRegSz = arch_getPC(pid, &pc, &status_reg);
-        if (!pcRegSz) {
-            LOG_W("ptrace arch_getPC failed");
-            return;
-        }
     }
 
     /*
@@ -601,19 +566,10 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
 
     uint64_t pc = 0;
     uint64_t status_reg = 0;
+    uint64_t crashAddr = (uint64_t)si.si_addr;
     size_t pcRegSz = arch_getPC(pid, &pc, &status_reg);
     if (!pcRegSz) {
         LOG_W("ptrace arch_getPC failed");
-        return;
-    }
-    arch_getInstrStr(pid, pc, status_reg, pcRegSz, instr);
-
-    LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %" PRIx64 ", instr: '%s'", pid,
-        si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, instr);
-
-    if (!SI_FROMUSER(&si) && pc && si.si_addr < run->global->linux.ignoreAddr) {
-        LOG_I("Input is interesting (%s), but the si.si_addr is %p (below %p), skipping",
-            arch_sigName(si.si_signo), si.si_addr, run->global->linux.ignoreAddr);
         return;
     }
 
@@ -625,15 +581,25 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         free(funcs);
     };
 
-    uint64_t crashAddr = 0;
     char description[HF_STR_LEN] = {};
     size_t funcCnt = sanitizers_parseReport(run, pid, funcs, &pc, &crashAddr, description);
-
-    if (funcCnt <= 0) {
+    if (funcCnt == 0) {
         funcCnt = arch_unwindStack(pid, funcs);
 #if !defined(__ANDROID__)
         arch_bfdResolveSyms(pid, funcs, funcCnt);
 #endif /* !defined(__ANDROID__) */
+    }
+
+    arch_getInstrStr(pid, pc, status_reg, pcRegSz, instr);
+
+    LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %" PRIx64 ", crashAddr: %" PRIx64
+          " instr: '%s'",
+        pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, crashAddr, instr);
+
+    if (!SI_FROMUSER(&si) && pc && crashAddr < (uint64_t)run->global->linux.ignoreAddr) {
+        LOG_I("Input is interesting (%s), but the si.si_addr is %p (below %p), skipping",
+            arch_sigName(si.si_signo), si.si_addr, run->global->linux.ignoreAddr);
+        return;
     }
 
     /*
@@ -725,15 +691,9 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     /* If non-blacklisted crash detected, zero set two MSB */
     ATOMIC_POST_ADD(run->global->cfg.dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
-    void* sig_addr = si.si_addr;
     if (!run->global->linux.disableRandomization) {
         pc = 0UL;
-        sig_addr = NULL;
-    }
-
-    /* User-induced signals don't set si.si_addr */
-    if (SI_FROMUSER(&si)) {
-        sig_addr = NULL;
+        crashAddr = 0UL;
     }
 
     /* If dry run mode, copy file with same name into workspace */
@@ -742,16 +702,16 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
             run->origFileName);
     } else if (saveUnique) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
-            "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
+            "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%d.ADDR.%" PRIx64 ".INSTR.%s.%s",
             run->global->io.crashDir, arch_sigName(si.si_signo), pc, run->backtrace, si.si_code,
-            sig_addr, instr, run->global->io.fileExtn);
+            crashAddr, instr, run->global->io.fileExtn);
     } else {
         char localtmstr[HF_STR_LEN];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(run->crashFileName, sizeof(run->crashFileName),
-            "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
+            "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%d.ADDR.%" PRIx64 ".INSTR.%s.%s.%d.%s",
             run->global->io.crashDir, arch_sigName(si.si_signo), pc, run->backtrace, si.si_code,
-            sig_addr, instr, localtmstr, pid, run->global->io.fileExtn);
+            crashAddr, instr, localtmstr, pid, run->global->io.fileExtn);
     }
 
     /* Target crashed (no duplicate detection yet) */
@@ -761,7 +721,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
 
     if (files_exists(run->crashFileName)) {
         LOG_I("Crash (dup): '%s' already exists, skipping", run->crashFileName);
-        // Clear filename so that verifier can understand we hit a duplicate
+        /* Clear filename so that verifier can understand we hit a duplicate */
         memset(run->crashFileName, 0, sizeof(run->crashFileName));
         return;
     }
@@ -783,7 +743,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     /* If unique crash found, reset dynFile counter */
     ATOMIC_CLEAR(run->global->cfg.dynFileIterExpire);
 
-    arch_traceGenerateReport(pid, run, funcs, funcCnt, &si, instr, description);
+    report_appendReport(pid, run, funcs, funcCnt, pc, crashAddr, &si, instr, description);
 }
 
 #define __WEVENT(status) ((status & 0xFF0000) >> 16)

@@ -43,7 +43,7 @@ typedef struct {
      * If libuwind proc maps is used to retrieve map name
      * If ASan custom parsing it's retrieved from generated report file
      */
-    char mapName[HF_STR_LEN];
+    char module[HF_STR_LEN];
 
     /*
      * Original source file

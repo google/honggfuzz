@@ -154,7 +154,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
 
     for (num_frames = 0; unw_step(&c) > 0 && num_frames < _HF_MAX_FUNCS; num_frames++) {
         unw_word_t ip;
-        char* mapName = NULL;
+        char* module = NULL;
         ret = unw_get_reg(&c, UNW_REG_IP, &ip);
         if (ret < 0) {
             LOG_E("[pid='%d'] [%zd] failed to read IP (%s)", pid, num_frames, UNW_ER[-ret]);
@@ -162,10 +162,10 @@ size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
         } else {
             funcs[num_frames].pc = (void*)(uintptr_t)ip;
         }
-        if (mapsCnt > 0 && (mapName = arch_searchMaps(ip, mapsCnt, mapsList)) != NULL) {
-            memcpy(funcs[num_frames].mapName, mapName, sizeof(funcs[num_frames].mapName));
+        if (mapsCnt > 0 && (module = arch_searchMaps(ip, mapsCnt, mapsList)) != NULL) {
+            memcpy(funcs[num_frames].module, module, sizeof(funcs[num_frames].module));
         } else {
-            strncpy(funcs[num_frames].mapName, "UNKNOWN", sizeof(funcs[num_frames].mapName));
+            strncpy(funcs[num_frames].module, "UNKNOWN", sizeof(funcs[num_frames].module));
         }
     }
 
@@ -206,7 +206,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
     }
 
     do {
-        char* mapName = NULL;
+        char* module = NULL;
         unw_word_t pc = 0, offset = 0;
         char buf[_HF_FUNC_NAME_SZ] = {0};
 
@@ -239,10 +239,10 @@ size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
         funcs[num_frames].line = offset;
         funcs[num_frames].pc = (void*)pc;
         memcpy(funcs[num_frames].func, buf, sizeof(funcs[num_frames].func));
-        if (mapsCnt > 0 && (mapName = arch_searchMaps(pc, mapsCnt, mapsList)) != NULL) {
-            memcpy(funcs[num_frames].mapName, mapName, sizeof(funcs[num_frames].mapName));
+        if (mapsCnt > 0 && (module = arch_searchMaps(pc, mapsCnt, mapsList)) != NULL) {
+            memcpy(funcs[num_frames].module, module, sizeof(funcs[num_frames].module));
         } else {
-            strncpy(funcs[num_frames].mapName, "UNKNOWN", sizeof(funcs[num_frames].mapName));
+            strncpy(funcs[num_frames].module, "UNKNOWN", sizeof(funcs[num_frames].module));
         }
 
         num_frames++;

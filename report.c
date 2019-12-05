@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <signal.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -64,7 +65,7 @@ static void report_printTargetCmd(run_t* run) {
     dprintf(reportFD, "\n");
 }
 
-void report_Report(run_t* run) {
+void report_saveReport(run_t* run) {
     if (run->report[0] == '\0') {
         return;
     }
@@ -127,4 +128,40 @@ void report_Report(run_t* run) {
         "%s"
         "=====================================================================\n",
         run->report);
+}
+
+void report_appendReport(pid_t pid, run_t* run, funcs_t* funcs, size_t funcCnt, uint64_t pc,
+    uint64_t crashAddr, siginfo_t* si, const char* instr, const char description[HF_STR_LEN]) {
+    util_ssnprintf(run->report, sizeof(run->report), "CRASH:\n");
+    util_ssnprintf(run->report, sizeof(run->report), "DESCRIPTION: %s\n", description);
+    util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->origFileName);
+    util_ssnprintf(run->report, sizeof(run->report), "FUZZ_FNAME: %s\n", run->crashFileName);
+    util_ssnprintf(run->report, sizeof(run->report), "PID: %d\n", pid);
+    util_ssnprintf(run->report, sizeof(run->report), "SIGNAL: %s (%d)\n",
+        util_sigName(si->si_signo), si->si_signo);
+    util_ssnprintf(run->report, sizeof(run->report), "PC: 0x%" PRIx64 "\n", pc);
+    util_ssnprintf(run->report, sizeof(run->report), "FAULT ADDRESS: 0x%" PRIx64 "\n", crashAddr);
+    util_ssnprintf(run->report, sizeof(run->report), "INSTRUCTION: %s\n", instr);
+    util_ssnprintf(
+        run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", run->backtrace);
+    util_ssnprintf(run->report, sizeof(run->report), "STACK:\n");
+    for (size_t i = 0; i < funcCnt; i++) {
+        util_ssnprintf(run->report, sizeof(run->report),
+            " <"
+            "0x%016" PRIx64 "> ",
+            (uint64_t)funcs[i].pc);
+        util_ssnprintf(run->report, sizeof(run->report), "[func:%s file:%s line:%zu module:%s]\n",
+            funcs[i].func, funcs[i].file, funcs[i].line, funcs[i].module);
+    }
+
+// libunwind is not working for 32bit targets in 64bit systems
+#if defined(__aarch64__)
+    if (funcCnt == 0) {
+        util_ssnprintf(run->report, sizeof(run->report),
+            " !ERROR: If 32bit fuzz target"
+            " in aarch64 system, try ARM 32bit build\n");
+    }
+#endif
+
+    return;
 }

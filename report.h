@@ -25,7 +25,10 @@
 #define _HF_REPORT_H_
 
 #include "honggfuzz.h"
+#include "sanitizers.h"
 
-extern void report_Report(run_t* run);
+extern void report_saveReport(run_t* run);
+extern void report_appendReport(pid_t pid, run_t* run, funcs_t* funcs, size_t funcCnt, uint64_t pc,
+    uint64_t crashAddr, siginfo_t* si, const char* instr, const char description[HF_STR_LEN]);
 
 #endif

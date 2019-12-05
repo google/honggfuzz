@@ -117,12 +117,6 @@ static struct {
 #define SI_FROMUSER(siptr) ((siptr)->si_code == SI_USER)
 #endif /* SI_FROMUSER */
 
-static __thread char arch_signame[32];
-static const char* arch_sigName(int signo) {
-    snprintf(arch_signame, sizeof(arch_signame), "SIG%s", signalname(signo));
-    return arch_signame;
-}
-
 static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, register_t pc) {
     struct ptrace_io_desc io;
     size_t bytes_read;
@@ -242,7 +236,7 @@ static void arch_traceGenerateReport(
     util_ssnprintf(run->report, sizeof(run->report), "FUZZ_FNAME: %s\n", run->crashFileName);
     util_ssnprintf(run->report, sizeof(run->report), "PID: %d\n", pid);
     util_ssnprintf(run->report, sizeof(run->report), "SIGNAL: %s (%d)\n",
-        arch_sigName(si->si_signo), si->si_signo);
+        util_sigName(si->si_signo), si->si_signo);
     util_ssnprintf(run->report, sizeof(run->report), "FAULT ADDRESS: %p\n",
         SI_FROMUSER(si) ? NULL : si->si_addr);
     util_ssnprintf(run->report, sizeof(run->report), "INSTRUCTION: %s\n", instr);
@@ -251,7 +245,7 @@ static void arch_traceGenerateReport(
     util_ssnprintf(run->report, sizeof(run->report), "STACK:\n");
     for (size_t i = 0; i < funcCnt; i++) {
         util_ssnprintf(run->report, sizeof(run->report), " <%" PRIxREGISTER "> [%s():%zu at %s]\n",
-            (register_t)(long)funcs[i].pc, funcs[i].func, funcs[i].line, funcs[i].mapName);
+            (register_t)(long)funcs[i].pc, funcs[i].func, funcs[i].line, funcs[i].module);
     }
 
     return;
@@ -323,7 +317,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     if (!SI_FROMUSER(&info.psi_siginfo) && pc &&
         info.psi_siginfo.si_addr < run->global->netbsd.ignoreAddr) {
         LOG_I("Input is interesting (%s), but the si.si_addr is %p (below %p), skipping",
-            arch_sigName(info.psi_siginfo.si_signo), info.psi_siginfo.si_addr,
+            util_sigName(info.psi_siginfo.si_signo), info.psi_siginfo.si_addr,
             run->global->netbsd.ignoreAddr);
         return;
     }
@@ -446,14 +440,14 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     } else if (saveUnique) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.PC.%" PRIxREGISTER ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s",
-            run->global->io.crashDir, arch_sigName(info.psi_siginfo.si_signo), pc, run->backtrace,
+            run->global->io.crashDir, util_sigName(info.psi_siginfo.si_signo), pc, run->backtrace,
             info.psi_siginfo.si_code, sig_addr, instr, run->global->io.fileExtn);
     } else {
         char localtmstr[PATH_MAX];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.PC.%" PRIxREGISTER ".STACK.%" PRIx64 ".CODE.%d.ADDR.%p.INSTR.%s.%s.%d.%s",
-            run->global->io.crashDir, arch_sigName(info.psi_siginfo.si_signo), pc, run->backtrace,
+            run->global->io.crashDir, util_sigName(info.psi_siginfo.si_signo), pc, run->backtrace,
             info.psi_siginfo.si_code, sig_addr, instr, localtmstr, pid, run->global->io.fileExtn);
     }
 

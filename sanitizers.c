@@ -182,7 +182,7 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
             if (sscanf(pLineLC,
                     "#%*u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ_MINUS_1) "s%*[^(](%" HF_XSTR(
                         HF_STR_LEN_MINUS_1) "[^)]",
-                    &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].mapName) == 3) {
+                    &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].module) == 3) {
                 continue;
             }
             /*
@@ -201,7 +201,7 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
              *     #0 0x565584f4  (/mnt/z/test+0x34f4)
              */
             if (sscanf(pLineLC, "#%*u 0x%p%*[^(](%" HF_XSTR(HF_STR_LEN_MINUS_1) "[^)\n]",
-                    &funcs[frameIdx].pc, funcs[frameIdx].mapName) == 2) {
+                    &funcs[frameIdx].pc, funcs[frameIdx].module) == 2) {
                 continue;
             }
             /*

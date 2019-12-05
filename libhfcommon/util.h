@@ -133,4 +133,6 @@ extern size_t util_decodeCString(char* s);
 extern uint64_t util_CRC64(const uint8_t* buf, size_t len);
 extern uint64_t util_CRC64Rev(const uint8_t* buf, size_t len);
 
+extern const char* util_sigName(int signo);
+
 #endif /* ifndef _HF_COMMON_UTIL_H_ */

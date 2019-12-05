@@ -416,7 +416,7 @@ static void fuzz_fuzzLoop(run_t* run) {
     if (run->global->cfg.useVerifier && !fuzz_runVerifier(run)) {
         return;
     }
-    report_Report(run);
+    report_saveReport(run);
 }
 
 static void fuzz_fuzzLoopSocket(run_t* run) {
@@ -470,7 +470,7 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
         return;
     }
 
-    report_Report(run);
+    report_saveReport(run);
 }
 
 static void* fuzz_threadNew(void* arg) {

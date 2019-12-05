@@ -255,10 +255,6 @@ bool arch_archInit(honggfuzz_t* hfuzz HF_ATTR_UNUSED) {
     return true;
 }
 
-void arch_sigFunc(int sig HF_ATTR_UNUSED) {
-    return;
-}
-
 bool arch_archThreadInit(run_t* fuzzer HF_ATTR_UNUSED) {
     return true;
 }
