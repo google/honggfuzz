@@ -528,22 +528,12 @@ static void arch_traceGenerateReport(pid_t pid, run_t* run, funcs_t* funcs, size
         run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", run->backtrace);
     util_ssnprintf(run->report, sizeof(run->report), "STACK:\n");
     for (size_t i = 0; i < funcCnt; i++) {
-#ifdef __HF_USE_CAPSTONE__
         util_ssnprintf(run->report, sizeof(run->report),
             " <"
             "0x%016" PRIx64 "> ",
-            (uint64_t)(long)funcs[i].pc);
-        if (funcs[i].func[0] != '\0')
-            util_ssnprintf(run->report, sizeof(run->report), "[%s() + 0x%tx at %s]\n",
-                funcs[i].func, funcs[i].line, funcs[i].mapName);
-        else
-            util_ssnprintf(run->report, sizeof(run->report), "[]\n");
-#else
-        util_ssnprintf(run->report, sizeof(run->report),
-            " <"
-            "0x%016" PRIx64 "> [%s():%zu at %s]\n",
-            (uint64_t)(long)funcs[i].pc, funcs[i].func, funcs[i].line, funcs[i].mapName);
-#endif
+            (uint64_t)funcs[i].pc);
+        util_ssnprintf(run->report, sizeof(run->report), "[%s():%zu module:%s file:%s]\n",
+            funcs[i].func, funcs[i].line, funcs[i].mapName, funcs[i].file);
     }
 
 // libunwind is not working for 32bit targets in 64bit systems

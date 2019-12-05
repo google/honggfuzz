@@ -213,34 +213,43 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
                 break;
             }
 
+            snprintf(funcs[frameIdx].func, sizeof(funcs[frameIdx].func), "UNKNOWN");
+
             /*
              * Frames with symbols but w/o debug info
-             *     #33 0x7ffff59a3668 in start_thread (/lib/x86_64-linux-gnu/libpthread.so.0+0x9668)
+             *     #0 0x7ffff59a3668 in start_thread (/lib/x86_64-linux-gnu/libpthread.so.0+0x9668)
              */
             if (sscanf(pLineLC,
                     "#%*u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ_MINUS_1) "s%*[^(](%" HF_XSTR(
-                        HF_STR_LEN_MINUS_1) "s",
+                        HF_STR_LEN_MINUS_1) "[^)]",
                     &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].mapName) == 3) {
                 continue;
             }
             /*
              * Frames with symbols and with debug info
-             *     #0 0x1e94738 in smb2_signing_decrypt_pdu
-             * /home/test/libcli/smb/smb2_signing.c:617:3
+             *     #0 0x1e94738 in smb2_signing_decrypt_pdu /home/test/signing.c:617:3
              */
             if (sscanf(pLineLC,
                     "#%*u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ_MINUS_1) "[^ ] %" HF_XSTR(
                         HF_STR_LEN_MINUS_1) "[^:\n]:%zu",
-                    &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].mapName,
+                    &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].file,
                     &funcs[frameIdx].line) == 4) {
                 continue;
             }
             /*
              * Frames w/o symbols
-             *     #2 0x565584f4  (/mnt/z/test+0x34f4)
+             *     #0 0x565584f4  (/mnt/z/test+0x34f4)
              */
             if (sscanf(pLineLC, "#%*u 0x%p%*[^(](%" HF_XSTR(HF_STR_LEN_MINUS_1) "[^)\n]",
                     &funcs[frameIdx].pc, funcs[frameIdx].mapName) == 2) {
+                continue;
+            }
+            /*
+             * Frames w/o symbols, but with debug info
+             *     #0 0x7ffff57cf08f * /build/glibc-bBRi4l/.../erms.S:199
+             */
+            if (sscanf(pLineLC, "#%*u 0x%p  %" HF_XSTR(HF_STR_LEN_MINUS_1) "[^:]:%zu",
+                    &funcs[frameIdx].pc, funcs[frameIdx].file, &funcs[frameIdx].line) == 3) {
                 continue;
             }
         }

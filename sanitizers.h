@@ -46,6 +46,11 @@ typedef struct {
     char mapName[HF_STR_LEN];
 
     /*
+     * Original source file
+     */
+    char file[HF_STR_LEN];
+
+    /*
      * If libunwind + bfd symbolizer, line is actual symbol file line
      * If libunwind + custom (e.g. Android), line is offset from function symbol
      * If ASan custom parsing, line is offset from matching map load base address
