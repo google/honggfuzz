@@ -121,9 +121,10 @@ void arch_bfdDemangle(pid_t pid, funcs_t* funcs, size_t funcCnt) {
 
     for (size_t i = 0; i < funcCnt; i++) {
         if (funcs[i].func && strncmp(funcs[i].func, "_Z", 2) == 0) {
-            const char* new_name = bfd_demangle(bfdParams.bfdh, funcs[i].func, 0);
+            char* new_name = bfd_demangle(bfdParams.bfdh, funcs[i].func, 0);
             if (new_name) {
                 snprintf(funcs[i].func, sizeof(funcs[i].func), "%s", new_name);
+                free(new_name);
             }
         }
     }
