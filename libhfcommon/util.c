@@ -779,7 +779,7 @@ const char* util_sigName(int signo) {
         }
     }
     if (signo >= SIGRTMIN && signo <= SIGRTMAX) {
-        snprintf(signame, sizeof(signame), "SIG%d-RTMIN+%d", signo, signo - __SIGRTMIN);
+        snprintf(signame, sizeof(signame), "SIG%d-RTMIN+%d", signo, signo - SIGRTMIN);
         return signame;
     }
     snprintf(signame, sizeof(signame), "UNKNOWN-%d", signo);
