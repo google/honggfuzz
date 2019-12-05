@@ -555,9 +555,8 @@ static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
     };
 
     uint64_t pc = 0, crashAddr = 0;
-    const char* op = "UNKNOWN";
     char description[HF_STR_LEN] = {};
-    size_t funcCnt = sanitizers_parseReport(run, pid, funcs, &pc, &crashAddr, &op, description);
+    size_t funcCnt = sanitizers_parseReport(run, pid, funcs, &pc, &crashAddr, description);
 
     if (funcCnt <= 0) {
         funcCnt = arch_unwindStack(pid, funcs);
@@ -627,9 +626,8 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     };
 
     uint64_t crashAddr = 0;
-    const char* op = "UNKNOWN";
     char description[HF_STR_LEN] = {};
-    size_t funcCnt = sanitizers_parseReport(run, pid, funcs, &pc, &crashAddr, &op, description);
+    size_t funcCnt = sanitizers_parseReport(run, pid, funcs, &pc, &crashAddr, description);
 
     if (funcCnt <= 0) {
         funcCnt = arch_unwindStack(pid, funcs);

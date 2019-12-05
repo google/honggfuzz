@@ -17,39 +17,7 @@
 #include "libhfcommon/util.h"
 
 /*
- * All clang sanitizers, except ASan, can be activated for target binaries
- * with or without the matching runtime library (libcompiler_rt). If runtime
- * libraries are included in target fuzzing environment, we can benefit from the
- * various Die() callbacks and abort/exit logic manipulation. However, some
- * setups (e.g. Android production ARM/ARM64 devices) enable sanitizers, such as
- * UBSan, without the runtime libraries. As such, their default ftrap is activated
- * which is for most cases a SIGABRT. For these cases end-user needs to enable
- * SIGABRT monitoring flag, otherwise these crashes will be missed.
- *
- * Normally SIGABRT is not a wanted signal to monitor for Android, since it produces
- * lots of useless crashes due to way Android process termination hacks work. As
- * a result the sanitizer's 'abort_on_error' flag cannot be utilized since it
- * invokes abort() internally. In order to not lose crashes a custom exitcode can
- * be registered and monitored. Since exitcode is a global flag, it's assumed
- * that target is compiled with only one sanitizer type enabled at a time.
- *
- * For cases where clang runtime library linking is not an option, SIGABRT should
- * be monitored even for noisy targets, such as the Android OS, since no viable
- * alternative exists.
- *
- * There might be cases where ASan instrumented targets crash while generating
- * reports for detected errors (inside __asan_report_error() proc). Under such
- * scenarios target fails to exit or SIGABRT (AsanDie() proc) as defined in
- * ASAN_OPTIONS flags, leaving garbage logs. An attempt is made to parse such
- * logs for cases where enough data are written to identify potentially missed
- * crashes. If ASan internal error results into a SIGSEGV being raised, it
- * will get caught from ptrace API, handling the discovered ASan internal crash.
- */
-
-/*
- * Common sanitizer flags
- *
- * symbolize: Disable symbolication since it changes logs (which are parsed) format
+ * Common sanitizer flags if --sanitizers is enabled
  */
 #define kSAN_COMMON                \
     "symbolize=1:"                 \
@@ -132,7 +100,7 @@ bool sanitizers_Init(honggfuzz_t* hfuzz) {
 }
 
 size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* pc,
-    uint64_t* crashAddr, const char** op, char description[HF_STR_LEN]) {
+    uint64_t* crashAddr, char description[HF_STR_LEN]) {
     char crashReport[PATH_MAX];
     const char* crashReportCpy = crashReport;
     snprintf(
@@ -153,7 +121,7 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
     bool headerFound = false;
     unsigned int frameIdx = 0;
 
-    char *lineptr = NULL, *cAddr = NULL;
+    char *lineptr = NULL;
     size_t n = 0;
     defer {
         free(lineptr);
@@ -193,16 +161,6 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
             /* End separator for crash thread stack trace is an empty line */
             if ((*pLineLC == '\0') && (frameIdx != 0)) {
                 break;
-            }
-
-            /* If available parse the type of error (READ/WRITE) */
-            if (cAddr && strstr(pLineLC, cAddr)) {
-                if (strncmp(pLineLC, "READ", 4) == 0) {
-                    *op = "READ";
-                } else if (strncmp(pLineLC, "WRITE", 5) == 0) {
-                    *op = "WRITE";
-                }
-                cAddr = NULL;
             }
 
             if (sscanf(pLineLC, "#%u", &frameIdx) != 1) {
