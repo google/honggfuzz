@@ -120,15 +120,6 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
     uint64_t crashAddr = 0;
     char description[HF_STR_LEN] = {};
     size_t funcCnt = sanitizers_parseReport(run, pid, funcs, &pc, &crashAddr, description);
-    /*
-     * If unwinder failed (zero frames), use PC from ptrace GETREGS if not zero.
-     * If PC reg zero return and callers should handle zero hash case.
-     */
-    if (funcCnt <= 0) {
-        /* Manually update major frame PC & frames counter */
-        funcs[0].pc = (void*)(uintptr_t)pc;
-        funcCnt = 1;
-    }
 
     /*
      * Calculate backtrace callstack hash signature
@@ -140,7 +131,7 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
      * to always save (timestamp will be added to the filename)
      */
     bool saveUnique = run->global->io.saveUnique;
-    if (saveUnique && (funcCnt == 1)) {
+    if (saveUnique && (funcCnt == 0)) {
         saveUnique = false;
     }
 

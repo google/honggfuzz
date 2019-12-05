@@ -514,16 +514,6 @@ static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
     }
 
     /*
-     * If unwinder failed (zero frames), use PC from ptrace GETREGS if not zero.
-     * If PC reg zero return and callers should handle zero hash case.
-     */
-    if (funcCnt <= 0) {
-        /* Manually update major frame PC & frames counter */
-        funcs[0].pc = (void*)(uintptr_t)pc;
-        funcCnt = 1;
-    }
-
-    /*
      * Calculate backtrace callstack hash signature
      */
     run->backtrace = sanitizers_hashCallstack(run, funcs, funcCnt, false);
@@ -579,17 +569,6 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     }
 
     /*
-     * If unwinder failed (zero frames), use PC from ptrace GETREGS if not zero.
-     * If PC reg zero, temporarily disable uniqueness flag since callstack
-     * hash will be also zero, thus not safe for unique decisions.
-     */
-    if (funcCnt <= 0) {
-        /* Manually update major frame PC & frames counter */
-        funcs[0].pc = (void*)(uintptr_t)pc;
-        funcCnt = 1;
-    }
-
-    /*
      * Temp local copy of previous backtrace value in case worker hit crashes into multiple
      * tids for same target master thread. Will be 0 for first crash against target.
      */
@@ -604,7 +583,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
      * If unique flag is set and single frame crash, disable uniqueness for this crash
      * to always save (timestamp will be added to the filename)
      */
-    if (saveUnique && (funcCnt == 1)) {
+    if (saveUnique && (funcCnt == 0)) {
         saveUnique = false;
     }
 
