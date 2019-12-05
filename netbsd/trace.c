@@ -56,6 +56,7 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 #include "netbsd/unwind.h"
+#include "report.h"
 #include "sanitizers.h"
 #include "subproc.h"
 
@@ -224,28 +225,6 @@ static void arch_getInstrStr(pid_t pid, lwpid_t lwp, register_t* pc, char* instr
             !isprint((unsigned char)instr[x])) {
             instr[x] = '_';
         }
-    }
-
-    return;
-}
-
-static void arch_traceGenerateReport(
-    pid_t pid, run_t* run, funcs_t* funcs, size_t funcCnt, siginfo_t* si, const char* instr) {
-    run->report[0] = '\0';
-    util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->origFileName);
-    util_ssnprintf(run->report, sizeof(run->report), "FUZZ_FNAME: %s\n", run->crashFileName);
-    util_ssnprintf(run->report, sizeof(run->report), "PID: %d\n", pid);
-    util_ssnprintf(run->report, sizeof(run->report), "SIGNAL: %s (%d)\n",
-        util_sigName(si->si_signo), si->si_signo);
-    util_ssnprintf(run->report, sizeof(run->report), "FAULT ADDRESS: %p\n",
-        SI_FROMUSER(si) ? NULL : si->si_addr);
-    util_ssnprintf(run->report, sizeof(run->report), "INSTRUCTION: %s\n", instr);
-    util_ssnprintf(
-        run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", run->backtrace);
-    util_ssnprintf(run->report, sizeof(run->report), "STACK:\n");
-    for (size_t i = 0; i < funcCnt; i++) {
-        util_ssnprintf(run->report, sizeof(run->report), " <%" PRIxREGISTER "> [%s():%zu at %s]\n",
-            (register_t)(long)funcs[i].pc, funcs[i].func, funcs[i].line, funcs[i].module);
     }
 
     return;
@@ -470,7 +449,8 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     /* If unique crash found, reset dynFile counter */
     ATOMIC_CLEAR(run->global->cfg.dynFileIterExpire);
 
-    arch_traceGenerateReport(pid, run, funcs, funcCnt, &info.psi_siginfo, instr);
+    report_appendReport(pid, run, funcs, funcCnt, pc, (uint64_t)info.psi_siginfo.si_addr,
+        info.psi_siginfo.si_signo, instr, "");
 }
 
 static void arch_traceEvent(run_t* run HF_ATTR_UNUSED, pid_t pid) {
