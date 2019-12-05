@@ -778,6 +778,9 @@ static const struct {
 #if defined(SIGINFO)
     {SIGINFO, "SIGINFO"},
 #endif
+#if defined(SIGLIBRT)
+    {SIGLIBRT, "SIGLIBRT"},
+#endif
 };
 
 const char* util_sigName(int signo) {
