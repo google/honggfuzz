@@ -62,7 +62,7 @@
 #define _HF_VERIFIER_ITER 5
 
 /* Size (in bytes) for report data to be stored in stack before written to file */
-#define _HF_REPORT_SIZE 8192
+#define _HF_REPORT_SIZE 32768
 
 /* Perf bitmap size */
 #define _HF_PERF_BITMAP_SIZE_16M (1024U * 1024U * 16U)
