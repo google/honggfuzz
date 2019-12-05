@@ -513,6 +513,10 @@ static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
 #endif /* !defined(__ANDROID__) */
     }
 
+#if !defined(__ANDROID__)
+    arch_bfdDemangle(pid, funcs, funcCnt);
+#endif /* !defined(__ANDROID__) */
+
     /*
      * Calculate backtrace callstack hash signature
      */
@@ -520,9 +524,6 @@ static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
 }
 
 static void arch_traceSaveData(run_t* run, pid_t pid) {
-    /* Local copy since flag is overridden for some crashes */
-    bool saveUnique = run->global->io.saveUnique;
-
     char instr[_HF_INSTR_SZ] = "\x00";
     siginfo_t si = {};
 
@@ -556,6 +557,9 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
 #endif /* !defined(__ANDROID__) */
     }
 
+#if !defined(__ANDROID__)
+    arch_bfdDemangle(pid, funcs, funcCnt);
+#endif /* !defined(__ANDROID__) */
     arch_getInstrStr(pid, pc, status_reg, pcRegSz, instr);
 
     LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %" PRIx64 ", crashAddr: %" PRIx64
@@ -573,6 +577,9 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
      * tids for same target master thread. Will be 0 for first crash against target.
      */
     uint64_t oldBacktrace = run->backtrace;
+
+    /* Local copy since flag is overridden for some crashes */
+    bool saveUnique = run->global->io.saveUnique;
 
     /*
      * Calculate backtrace callstack hash signature

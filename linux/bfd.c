@@ -103,6 +103,34 @@ static void arch_bfdDestroy(bfd_t* bfdParams) {
     }
 }
 
+void arch_bfdDemangle(pid_t pid, funcs_t* funcs, size_t funcCnt) {
+    /* Guess what? libbfd is not multi-threading safe */
+    MX_SCOPED_LOCK(&arch_bfd_mutex);
+
+    bfd_init();
+
+    __block bfd_t bfdParams = {
+        .bfdh = NULL,
+        .syms = NULL,
+        .dsyms = NULL,
+    };
+
+    if (arch_bfdInit(pid, &bfdParams) == false) {
+        return;
+    }
+
+    for (size_t i = 0; i < funcCnt; i++) {
+        if (funcs[i].func && strncmp(funcs[i].func, "_Z", 2) == 0) {
+            const char* new_name = bfd_demangle(bfdParams.bfdh, funcs[i].func, 0);
+            if (new_name) {
+                snprintf(funcs[i].func, sizeof(funcs[i].func), "%s", new_name);
+            }
+        }
+    }
+
+    arch_bfdDestroy(&bfdParams);
+}
+
 static struct bfd_section* arch_getSectionForPc(bfd* bfdh, uint64_t pc) {
     for (struct bfd_section* section = bfdh->sections; section; section = section->next) {
         uintptr_t vma = (uintptr_t)bfd_get_section_vma(bfdh, section);
