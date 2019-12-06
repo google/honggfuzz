@@ -176,6 +176,17 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
             snprintf(funcs[frameIdx].func, sizeof(funcs[frameIdx].func), "UNKNOWN");
 
             /*
+             * Frames with demangled symbols but w/o debug info
+             *     #0 0x59d74e in printf_common(void*, char const*, __va_list_tag*)
+             * (/home/smbd/smbd+0x59d74e)
+             */
+            if (sscanf(pLineLC, "#%*u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ_MINUS_1) "[^)]) (%[^)])",
+                    &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].module) == 3) {
+                util_ssnprintf(funcs[frameIdx].func, sizeof(funcs[frameIdx].func), ")");
+                continue;
+            }
+
+            /*
              * Frames with symbols but w/o debug info
              *     #0 0x7ffff59a3668 in start_thread (/lib/x86_64-linux-gnu/libpthread.so.0+0x9668)
              */

@@ -658,9 +658,13 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     /* If non-blacklisted crash detected, zero set two MSB */
     ATOMIC_POST_ADD(run->global->cfg.dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
-    /* Those addresses will be random, depend on stack-traces for uniqueness */
+    /* Those addresses will be random, so depend on stack-traces for uniqueness */
     if (!run->global->linux.disableRandomization) {
         pc = 0UL;
+        crashAddr = 0UL;
+    }
+    /* crashAddr (si.si_addr) never makes sense for SIGABRT */
+    if (si.si_signo == SIGABRT) {
         crashAddr = 0UL;
     }
 
