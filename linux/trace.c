@@ -539,7 +539,6 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
 
     uint64_t pc = 0;
     uint64_t status_reg = 0;
-    /* If dry run mode, copy file with same name into workspace */
     size_t pcRegSz = arch_getPC(pid, &pc, &status_reg);
     if (!pcRegSz) {
         LOG_W("ptrace arch_getPC failed");
@@ -659,10 +658,13 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     /* If non-blacklisted crash detected, zero set two MSB */
     ATOMIC_POST_ADD(run->global->cfg.dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
+    /* Those addresses will be random, depend on stack-traces for uniqueness */
     if (!run->global->linux.disableRandomization) {
         pc = 0UL;
         crashAddr = 0UL;
     }
+
+    /* If dry run mode, copy file with same name into workspace */
     if (run->global->mutate.mutationsPerRun == 0U && run->global->cfg.useVerifier) {
         snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.crashDir,
             run->origFileName);
