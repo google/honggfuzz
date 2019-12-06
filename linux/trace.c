@@ -514,7 +514,7 @@ static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
     }
 
 #if !defined(__ANDROID__)
-    arch_bfdDemangle(pid, funcs, funcCnt);
+    arch_bfdDemangle(funcs, funcCnt);
 #endif /* !defined(__ANDROID__) */
 
     /*
@@ -558,7 +558,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     }
 
 #if !defined(__ANDROID__)
-    arch_bfdDemangle(pid, funcs, funcCnt);
+    arch_bfdDemangle(funcs, funcCnt);
 #endif /* !defined(__ANDROID__) */
     arch_getInstrStr(pid, pc, status_reg, pcRegSz, instr);
 
