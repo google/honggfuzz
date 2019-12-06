@@ -104,10 +104,10 @@ static void arch_bfdDestroy(bfd_t* bfdParams) {
 }
 
 void arch_bfdDemangle(funcs_t* funcs, size_t funcCnt) {
-	/* From -liberty, should be depended on by (included with) libbfd */
-	__attribute__((weak)) char * cplus_demangle (const char *mangled, int options);
-	if (!cplus_demangle) {
-		return;
+    /* From -liberty, should be depended on by (included with) libbfd */
+    __attribute__((weak)) char* cplus_demangle(const char* mangled, int options);
+    if (!cplus_demangle) {
+        return;
     }
     for (size_t i = 0; i < funcCnt; i++) {
         if (strncmp(funcs[i].func, "_Z", 2) == 0) {

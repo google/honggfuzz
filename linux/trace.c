@@ -531,9 +531,15 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         PLOG_W("Couldn't get siginfo for pid %d", pid);
     }
 
+    uint64_t crashAddr = (uint64_t)si.si_addr;
+    /* User-induced signals don't set si.si_addr */
+    if (SI_FROMUSER(&si)) {
+        crashAddr = 0UL;
+    }
+
     uint64_t pc = 0;
     uint64_t status_reg = 0;
-    uint64_t crashAddr = (uint64_t)si.si_addr;
+    /* If dry run mode, copy file with same name into workspace */
     size_t pcRegSz = arch_getPC(pid, &pc, &status_reg);
     if (!pcRegSz) {
         LOG_W("ptrace arch_getPC failed");
@@ -657,8 +663,6 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         pc = 0UL;
         crashAddr = 0UL;
     }
-
-    /* If dry run mode, copy file with same name into workspace */
     if (run->global->mutate.mutationsPerRun == 0U && run->global->cfg.useVerifier) {
         snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.crashDir,
             run->origFileName);
