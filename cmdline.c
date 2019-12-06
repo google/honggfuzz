@@ -226,8 +226,11 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
         return false;
     }
 
-    if (hfuzz->io.workDir == NULL) {
-        hfuzz->io.workDir = ".";
+    if (strlen(hfuzz->io.workDir) == 0) {
+        if (getcwd(hfuzz->io.workDir, sizeof(hfuzz->io.workDir)) == NULL) {
+            PLOG_W("getcwd() failed. Using '.'");
+            snprintf(hfuzz->io.workDir, sizeof(hfuzz->io.workDir), ".");
+        }
     }
     if (mkdir(hfuzz->io.workDir, 0700) == -1 && errno != EEXIST) {
         PLOG_E("Couldn't create the workspace directory '%s'", hfuzz->io.workDir);
@@ -276,7 +279,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .fileCntDone = false,
                 .newUnitsAdded = 0,
                 .fileExtn = "fuzz",
-                .workDir = NULL,
+                .workDir = {},
                 .crashDir = NULL,
                 .covDirNew = NULL,
                 .saveUnique = true,
@@ -541,7 +544,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->io.fileExtn = optarg;
                 break;
             case 'W':
-                hfuzz->io.workDir = optarg;
+                snprintf(hfuzz->io.workDir, sizeof(hfuzz->io.workDir), "%s", optarg);
                 break;
             case 0x600:
                 hfuzz->io.crashDir = optarg;

@@ -194,7 +194,7 @@ typedef struct {
         const char* fileExtn;
         bool fileCntDone;
         size_t newUnitsAdded;
-        const char* workDir;
+        char workDir[PATH_MAX];
         const char* crashDir;
         const char* covDirNew;
         bool saveUnique;
