@@ -176,6 +176,21 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
             snprintf(funcs[frameIdx].func, sizeof(funcs[frameIdx].func), "UNKNOWN");
 
             /*
+             * Frames with demangled symbols and with debug info
+             *     A::A(std::vector<std::__cxx11::basic_string<char, std::char_traits<char>,
+             * std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char,
+             * std::char_traits<char>, std::allocator<char> > > >) /home/fuzz/test/fork.cc:12:51
+             */
+            if (sscanf(pLineLC,
+                    "#%*u 0x%p in %" HF_XSTR(_HF_FUNC_NAME_SZ_MINUS_1) "[^)]) %" HF_XSTR(
+                        _HF_FUNC_NAME_SZ_MINUS_1) "[^:]:%zu",
+                    &funcs[frameIdx].pc, funcs[frameIdx].func, funcs[frameIdx].file,
+                    &funcs[frameIdx].line) == 4) {
+                util_ssnprintf(funcs[frameIdx].func, sizeof(funcs[frameIdx].func), ")");
+                continue;
+            }
+
+            /*
              * Frames with demangled symbols but w/o debug info
              *     #0 0x59d74e in printf_common(void*, char const*, __va_list_tag*)
              * (/home/smbd/smbd+0x59d74e)
@@ -185,7 +200,6 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
                 util_ssnprintf(funcs[frameIdx].func, sizeof(funcs[frameIdx].func), ")");
                 continue;
             }
-
             /*
              * Frames with symbols but w/o debug info
              *     #0 0x7ffff59a3668 in start_thread (/lib/x86_64-linux-gnu/libpthread.so.0+0x9668)
@@ -217,7 +231,7 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
             }
             /*
              * Frames w/o symbols, but with debug info
-             *     #0 0x7ffff57cf08f * /build/glibc-bBRi4l/.../erms.S:199
+             *     #0 0x7ffff57cf08f  /build/glibc-bBRi4l/.../erms.S:199
              */
             if (sscanf(pLineLC, "#%*u 0x%p  %" HF_XSTR(HF_STR_LEN_MINUS_1) "[^:]:%zu",
                     &funcs[frameIdx].pc, funcs[frameIdx].file, &funcs[frameIdx].line) == 3) {
