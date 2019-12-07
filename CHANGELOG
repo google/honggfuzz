@@ -1,3 +1,12 @@
+2019-12-07 - Version 2.0
+        - Coverage-based corpus minimizer with '-M'
+        - QEmu mode: coverage feedback for Linux binaries
+        - *SAN sanitizer stack-parsing improved for Linux and for POSIX
+        - Move signal functionality to libhfcommon/
+        - Fixed Android builds with newer unwind and capstone
+        - NetDriver: more functionality - e.g. specifying custom addresses and custom tmpfs mount points
+        - Examples: for /usr/bin/file, newer ISC Bind patch, improved OpenSSL code
+
 2019-05-22 - Version 1.9
         - Don't include netdriver if not needed
         - Updated examples (bind/openssl)
