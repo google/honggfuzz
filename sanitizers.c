@@ -108,7 +108,7 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
 
     FILE* fReport = fopen(crashReport, "rb");
     if (fReport == NULL) {
-        PLOG_D("Couldn't open '%s' - R/O mode", crashReport);
+        PLOG_D("fopen('%s', 'rb')", crashReport);
         return 0;
     }
     defer {
