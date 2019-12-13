@@ -95,6 +95,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * DoS in __ProFTPD__: [#1](https://twitter.com/SecReLabs/status/1186548245553483783), [#2](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-18217)
   * [Memory corruption in __htmldoc__](https://github.com/michaelrsweet/htmldoc/issues/370)
   * [Memory corruption in __OpenDetex__](https://github.com/pkubowicz/opendetex/issues/60)
+  * [Memory corruption in __Yabasic__](https://github.com/marcIhm/yabasic/issues/36)
   * __Rust__:
     * panic() in regex [#1](https://github.com/rust-lang/regex/issues/464), [#2](https://github.com/rust-lang/regex/issues/465), [#3](https://github.com/rust-lang/regex/issues/465#issuecomment-381412816)
     * panic() in h2 [#1](https://github.com/carllerche/h2/pull/260), [#2](https://github.com/carllerche/h2/pull/261), [#3](https://github.com/carllerche/h2/pull/262)
