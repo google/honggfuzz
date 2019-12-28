@@ -504,7 +504,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     for (;;) {
         int c = getopt_long(
             argc, argv, "-?hQvVsuPxf:i:dqe:W:r:c:F:t:R:n:N:l:p:g:E:w:B:zMTS", opts, &opt_index);
-        if (c < 0) break;
+        if (c < 0) {
+            break;
+        }
 
         switch (c) {
             case 'h':
