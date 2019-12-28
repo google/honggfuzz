@@ -54,7 +54,9 @@ struct custom_option {
 
 static bool checkFor_FILE_PLACEHOLDER(const char* const* args) {
     for (int x = 0; args[x]; x++) {
-        if (strstr(args[x], _HF_FILE_PLACEHOLDER)) return true;
+        if (strstr(args[x], _HF_FILE_PLACEHOLDER)) {
+            return true;
+        }
     }
     return false;
 }
@@ -492,7 +494,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     // clang-format on
 
     struct option opts[ARRAYSIZE(custom_opts)];
-    for (unsigned i = 0; i < ARRAYSIZE(custom_opts); i++) {
+    for (size_t i = 0; i < ARRAYSIZE(custom_opts); i++) {
         opts[i] = custom_opts[i].opt;
     }
 
@@ -735,11 +737,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     display_createTargetStr(hfuzz);
 
     LOG_I("cmdline:'%s', bin:'%s' inputDir:'%s', fuzzStdin:%s, mutationsPerRun:%u, "
-          "externalCommand:'%s', timeout:%ld, mutationsMax:%zu, threadsMax:%zu",
+          "timeout:%ld, mutationsMax:%zu, threadsMax:%zu",
         hfuzz->display.cmdline_txt, hfuzz->exe.cmdline[0], hfuzz->io.inputDir,
         cmdlineYesNo(hfuzz->exe.fuzzStdin), hfuzz->mutate.mutationsPerRun,
-        !hfuzz->exe.externalCommand ? "" : hfuzz->exe.externalCommand, (long)hfuzz->timing.tmOut,
-        hfuzz->mutate.mutationsMax, hfuzz->threads.threadsMax);
+        (long)hfuzz->timing.tmOut, hfuzz->mutate.mutationsMax, hfuzz->threads.threadsMax);
 
     return true;
 }
