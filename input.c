@@ -119,7 +119,7 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
         LOG_W("No usable files in the input directory '%s'", hfuzz->io.inputDir);
     }
 
-    LOG_D("Re-read the '%s', maxFileSz:%zu, number of usable files:%zu", hfuzz->io.inputDir,
+    LOG_D("Analyzed '%s' directory: maxFileSz:%zu, number of usable files:%zu", hfuzz->io.inputDir,
         hfuzz->mutate.maxFileSz, hfuzz->io.fileCnt);
 
     rewinddir(hfuzz->io.inputDirPtr);
@@ -201,6 +201,8 @@ bool input_init(honggfuzz_t* hfuzz) {
 }
 
 bool input_parseDictionary(honggfuzz_t* hfuzz) {
+    LOG_I("Parsing dictionary file '%s'", hfuzz->mutate.dictionaryFile);
+
     FILE* fDict = fopen(hfuzz->mutate.dictionaryFile, "rb");
     if (fDict == NULL) {
         PLOG_W("Couldn't open '%s' - R/O mode", hfuzz->mutate.dictionaryFile);
@@ -233,15 +235,14 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
         if (lineptr[0] == '\0') {
             continue;
         }
-        char bufn[1025] = {};
         char bufv[1025] = {};
         if (sscanf(lineptr, "\"%1024[^\"]", bufv) != 1 &&
-            sscanf(lineptr, "%1024[^=]=\"%1024[^\"]", bufn, bufv) != 2) {
+            sscanf(lineptr, "%*1024[^=]=\"%1024[^\"]", bufv) != 1) {
             LOG_W("Incorrect dictionary entry: '%s'. Skipping", lineptr);
             continue;
         }
 
-        LOG_D("Parsing word: '%s'", bufv);
+        LOG_D("Parsing dictionary word: '%s'", bufv);
 
         len = util_decodeCString(bufv);
         struct strings_t* str = (struct strings_t*)util_Calloc(sizeof(struct strings_t) + len + 1);
@@ -252,7 +253,8 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
 
         LOG_D("Dictionary: loaded word: '%s' (len=%zu)", str->s, str->len);
     }
-    LOG_I("Loaded %zu words from the dictionary", hfuzz->mutate.dictionaryCnt);
+    LOG_I("Loaded %zu words from the dictionary '%s'", hfuzz->mutate.dictionaryCnt,
+        hfuzz->mutate.dictionaryFile);
     return true;
 }
 
