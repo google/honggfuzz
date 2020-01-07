@@ -222,6 +222,10 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
             hfuzz->threads.threadsMax, _HF_THREAD_MAX);
         return false;
     }
+    if (hfuzz->threads.threadsMax == 0) {
+        LOG_E("Too few fuzzing threads specified: %zu)", hfuzz->threads.threadsMax);
+        return false;
+    }
 
     if (strchr(hfuzz->io.fileExtn, '/')) {
         LOG_E("The file extension contains the '/' character: '%s'", hfuzz->io.fileExtn);
@@ -604,6 +608,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                     long ncpus = sysconf(_SC_NPROCESSORS_ONLN);
                     hfuzz->threads.threadsMax = (ncpus < 1 ? 1 : ncpus);
                 } else {
+                    if (!util_isANumber(optarg)) {
+                        LOG_E("'-n %s' is not a number", optarg);
+                        return false;
+                    }
                     hfuzz->threads.threadsMax = atol(optarg);
                 }
                 break;
