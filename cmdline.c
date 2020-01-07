@@ -612,7 +612,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                         LOG_E("'-n %s' is not a number", optarg);
                         return false;
                     }
-                    hfuzz->threads.threadsMax = atol(optarg);
+                    hfuzz->threads.threadsMax = strtoul(optarg, NULL, 0);
                 }
                 break;
             case 0x109: {
