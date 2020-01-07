@@ -223,7 +223,7 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
         return false;
     }
     if (hfuzz->threads.threadsMax == 0) {
-        LOG_E("Too few fuzzing threads specified: %zu)", hfuzz->threads.threadsMax);
+        LOG_E("Too few fuzzing threads specified: %zu", hfuzz->threads.threadsMax);
         return false;
     }
 
