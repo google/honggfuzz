@@ -122,8 +122,13 @@ void arch_bfdDemangle(funcs_t* funcs, size_t funcCnt) {
 
 static struct bfd_section* arch_getSectionForPc(bfd* bfdh, uint64_t pc) {
     for (struct bfd_section* section = bfdh->sections; section; section = section->next) {
+#if defined(bfd_get_section_vma)
         uintptr_t vma = (uintptr_t)bfd_get_section_vma(bfdh, section);
         uintptr_t sz = (uintptr_t)bfd_get_section_size(section);
+#else  /* defined(bfd_get_section_vma) */
+        uintptr_t vma = (uintptr_t)bfd_section_vma(section);
+        uintptr_t sz = (uintptr_t)bfd_section_size(section);
+#endif /* defined(bfd_get_section_vma) */
         if ((pc > vma) && (pc < (vma + sz))) {
             return section;
         }
@@ -160,7 +165,11 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num) {
             continue;
         }
 
+#if defined(bfd_get_section_vma)
         long sec_offset = (long)funcs[i].pc - bfd_get_section_vma(bfdParams.bfdh, section);
+#else  /* defined(bfd_get_section_vma) */
+        long sec_offset = (long)funcs[i].pc - bfd_section_vma(section);
+#endif /* defined(bfd_get_section_vma) */
 
         if (bfd_find_nearest_line(
                 bfdParams.bfdh, section, bfdParams.syms, sec_offset, &file, &func, &line) == TRUE) {
