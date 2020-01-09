@@ -78,7 +78,9 @@ else ifeq ($(OS),Darwin)
     # Figure out which crash reporter to use.
     CRASHWRANGLER := third_party/mac
     OS_VERSION := $(shell sw_vers -productVersion)
-    ifneq (,$(findstring 10.14,$(OS_VERSION)))
+    ifneq (,$(findstring 10.15,$(OS_VERSION)))
+        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
+    else ifneq (,$(findstring 10.14,$(OS_VERSION)))
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
     else ifneq (,$(findstring 10.13,$(OS_VERSION)))
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
