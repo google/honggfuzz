@@ -25,8 +25,10 @@
 #define _HF_LIBHFUZZ_INSTRUMENT_H_
 
 #include <inttypes.h>
+#include <stdbool.h>
 
-void instrumentUpdateCmpMap(uintptr_t addr, uint32_t v);
+/* Returns true if the new value is better */
+bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v);
 void instrumentClearNewCov();
 
 #endif /* ifdef _HF_LIBHFUZZ_INSTRUMENT_H_ */

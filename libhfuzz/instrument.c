@@ -388,11 +388,13 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
     }
 }
 
-void instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
+bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
     uintptr_t pos = addr % _HF_PERF_BITMAP_SIZE_16M;
     uint32_t prev = ATOMIC_GET(feedback->bbMapCmp[pos]);
     if (prev < v) {
         ATOMIC_SET(feedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(feedback->pidFeedbackCmp[my_thread_no], v - prev);
+        return true;
     }
+    return false;
 }
