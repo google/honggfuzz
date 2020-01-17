@@ -24,6 +24,9 @@ void handleData1(char *data, int len) {
 /* Third message is heap overflow */
 void handleData2(char *data, int len) {
     char *buff = malloc(8);
+    if (!buff) {
+        abort();
+    }
     bzero(buff, 8);
     memcpy(buff, data, len);
     printf("# vulnserver_cov: Handledata2: %s\n", buff);
