@@ -299,9 +299,6 @@ int files_getTmpMapFlags(int flag, bool nocore) {
 #if defined(MAP_PREFAULT_READ)
     flag |= MAP_PREFAULT_READ;
 #endif /* defined(MAP_PREFAULT_READ) */
-#if defined(MAP_POPULATE)
-    flag |= MAP_POPULATE;
-#endif /* defined(MAP_POPULATE) */
     if (nocore) {
 #if defined(MAP_CONCEAL)
         flag |= MAP_CONCEAL;
