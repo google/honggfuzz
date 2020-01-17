@@ -295,10 +295,6 @@ int files_getTmpMapFlags(int flag, bool nocore) {
     /* Our shared/mmap'd pages can have mutexes in them */
     flag |= MAP_HASSEMAPHORE;
 #endif /* defined(MAP_HASSEMAPHORE) */
-       /* Avoid mapping the memory lazily */
-#if defined(MAP_PREFAULT_READ)
-    flag |= MAP_PREFAULT_READ;
-#endif /* defined(MAP_PREFAULT_READ) */
     if (nocore) {
 #if defined(MAP_CONCEAL)
         flag |= MAP_CONCEAL;
