@@ -139,29 +139,8 @@ bool arch_launchChild(run_t* run) {
         PLOG_D("personality(ADDR_NO_RANDOMIZE) failed");
     }
 
-#define ARGS_MAX 512
-    const char* args[ARGS_MAX + 2];
-    char argData[PATH_MAX];
-    const char inputFile[] = "/dev/fd/" HF_XSTR(_HF_INPUT_FD);
-
-    int x = 0;
-    for (x = 0; x < ARGS_MAX && x < run->global->exe.argc; x++) {
-        const char* ph_str = strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER);
-        if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
-            args[x] = inputFile;
-        } else if (ph_str) {
-            snprintf(argData, sizeof(argData), "%.*s%s",
-                (int)(ph_str - run->global->exe.cmdline[x]), run->global->exe.cmdline[x],
-                inputFile);
-            args[x] = argData;
-        } else {
-            args[x] = run->global->exe.cmdline[x];
-        }
-    }
-    args[x++] = NULL;
-
-    LOG_D("Launching '%s' on file '%s'", args[0],
-        run->global->exe.persistent ? "PERSISTENT_MODE" : inputFile);
+    LOG_D("Launching '%s' on file '%s'", run->args[0],
+        run->global->exe.persistent ? "PERSISTENT_MODE" : _HF_INPUT_FILE_PATH);
 
     /* alarms persist across execve(), so disable it here */
     alarm(0);
@@ -171,13 +150,13 @@ bool arch_launchChild(run_t* run) {
         LOG_F("Couldn't stop itself");
     }
 #if defined(__NR_execveat)
-    syscall(__NR_execveat, run->global->linux.exeFd, "", args, environ, AT_EMPTY_PATH);
+    syscall(__NR_execveat, run->global->linux.exeFd, "", run->args, environ, AT_EMPTY_PATH);
 #endif /* defined__NR_execveat) */
-    execve(args[0], (char* const*)args, environ);
+    execve(run->args[0], (char* const*)run->args, environ);
     int errno_cpy = errno;
     alarm(1);
 
-    LOG_E("execve('%s', fd=%d): %s", args[0], run->global->linux.exeFd, strerror(errno_cpy));
+    LOG_E("execve('%s', fd=%d): %s", run->args[0], run->global->linux.exeFd, strerror(errno_cpy));
 
     return false;
 }

@@ -82,6 +82,12 @@
 /* FD used to pass data to a persistent process */
 #define _HF_PERSISTENT_FD 1023
 
+/* Input file as a string */
+#define _HF_INPUT_FILE_PATH "/dev/fd/" HF_XSTR(_HF_INPUT_FD)
+
+/* Maximum number of supported execve() args */
+#define _HF_ARGS_MAX 512
+
 /* Message indicating that the fuzzed process is ready for new data */
 static const uint8_t HFReadyTag = 'R';
 
@@ -339,6 +345,7 @@ typedef struct {
     bool waitingForReady;
     runState_t runState;
     bool tmOutSignaled;
+    char* args[_HF_ARGS_MAX + 1];
 #if !defined(_HF_ARCH_DARWIN)
     timer_t timerId;
 #endif  // !defined(_HF_ARCH_DARWIN)

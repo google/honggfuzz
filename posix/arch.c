@@ -180,32 +180,12 @@ pid_t arch_fork(run_t* fuzzer HF_ATTR_UNUSED) {
 }
 
 bool arch_launchChild(run_t* run) {
-#define ARGS_MAX 512
-    const char* args[ARGS_MAX + 2];
-    char argData[PATH_MAX];
-    const char inputFile[] = "/dev/fd/" HF_XSTR(_HF_INPUT_FD);
-
-    int x;
-    for (x = 0; x < ARGS_MAX && x < run->global->exe.argc; x++) {
-        const char* ph_str = strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER);
-        if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
-            args[x] = inputFile;
-        } else if (ph_str) {
-            snprintf(argData, sizeof(argData), "%.*s%s",
-                (int)(ph_str - run->global->exe.cmdline[x]), run->global->exe.cmdline[x],
-                inputFile);
-            args[x] = argData;
-        } else {
-            args[x] = run->global->exe.cmdline[x];
-        }
-    }
-    args[x++] = NULL;
-
-    LOG_D("Launching '%s' on file '%s'", args[0], inputFile);
+    LOG_D("Launching '%s' on file '%s'", run->args[0],
+        run->global->exe.persistent ? "PERSISTENT_MODE" : _HF_INPUT_FILE_PATH);
 
     /* alarm persists across forks, so disable it here */
     alarm(0);
-    execvp(args[0], (char* const*)args);
+    execvp(run->args[0], (char* const*)run->args);
     alarm(1);
 
     return false;
