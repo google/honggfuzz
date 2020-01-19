@@ -187,12 +187,13 @@ bool arch_launchChild(run_t* run) {
 
     int x;
     for (x = 0; x < ARGS_MAX && x < run->global->exe.argc; x++) {
+        const char* ph_str = strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER);
         if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
             args[x] = inputFile;
-        } else if (strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
-            const char* off = strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER);
-            snprintf(argData, sizeof(argData), "%.*s%s", (int)(off - run->global->exe.cmdline[x]),
-                run->global->exe.cmdline[x], inputFile);
+        } else if (ph_str) {
+            snprintf(argData, sizeof(argData), "%.*s%s",
+                (int)(ph_str - run->global->exe.cmdline[x]), run->global->exe.cmdline[x],
+                inputFile);
             args[x] = argData;
         } else {
             args[x] = run->global->exe.cmdline[x];
