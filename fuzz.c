@@ -335,16 +335,16 @@ static bool fuzz_fetchInput(run_t* run) {
     if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MAIN) {
         if (run->global->exe.externalCommand) {
             if (!input_prepareExternalFile(run)) {
-                LOG_E("input_prepareFileExternally() failed");
+                LOG_E("input_prepareExternalFile() failed");
                 return false;
             }
         } else if (run->global->exe.feedbackMutateCommand) {
             if (!input_prepareDynamicInput(run, false)) {
-                LOG_E("input_prepareFileDynamically() failed");
+                LOG_E("input_prepareDynamicInput(() failed");
                 return false;
             }
         } else if (!input_prepareDynamicInput(run, true)) {
-            LOG_E("input_prepareFileDynamically() failed");
+            LOG_E("input_prepareDynamicInput() failed");
             return false;
         }
     }
@@ -352,16 +352,16 @@ static bool fuzz_fetchInput(run_t* run) {
     if (fuzz_getState(run->global) == _HF_STATE_STATIC) {
         if (run->global->exe.externalCommand) {
             if (!input_prepareExternalFile(run)) {
-                LOG_E("input_prepareFileExternally() failed");
+                LOG_E("input_prepareExternalFile() failed");
                 return false;
             }
         } else if (run->global->exe.feedbackMutateCommand) {
             if (!input_prepareStaticFile(run, true, false)) {
-                LOG_E("input_prepareFileDynamically() failed");
+                LOG_E("input_prepareStaticFile() failed");
                 return false;
             }
         } else if (!input_prepareStaticFile(run, true /* rewind */, true)) {
-            LOG_E("input_prepareFile() failed");
+            LOG_E("input_prepareStaticFile() failed");
             return false;
         }
     }
