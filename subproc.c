@@ -183,6 +183,26 @@ bool subproc_persistentModeStateMachine(run_t* run) {
     }
 }
 
+static void subproc_prepareExecvArgs(run_t* run) {
+    size_t x = 0;
+    for (x = 0; x < _HF_ARGS_MAX && x < (size_t)run->global->exe.argc; x++) {
+        const char* ph_str = strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER);
+        if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
+            run->args[x] = _HF_INPUT_FILE_PATH;
+        } else if (ph_str) {
+            static __thread char argData[PATH_MAX];
+            snprintf(argData, sizeof(argData), "%.*s%s",
+                (int)(ph_str - run->global->exe.cmdline[x]), run->global->exe.cmdline[x],
+                _HF_INPUT_FILE_PATH);
+            run->args[x] = argData;
+        } else {
+            run->args[x] = (char*)run->global->exe.cmdline[x];
+        }
+    }
+    run->args[x] = NULL;
+}
+
+
 static bool subproc_PrepareExecv(run_t* run) {
     /*
      * The address space limit. If big enough - roughly the size of RAM used
@@ -290,23 +310,7 @@ static bool subproc_PrepareExecv(run_t* run) {
         return false;
     }
 
-    static __thread char argData[PATH_MAX];
-    int x = 0;
-    for (x = 0; x < _HF_ARGS_MAX && x < run->global->exe.argc; x++) {
-        const char* ph_str = strstr(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER);
-        if (!strcmp(run->global->exe.cmdline[x], _HF_FILE_PLACEHOLDER)) {
-            run->args[x] = _HF_INPUT_FILE_PATH;
-        } else if (ph_str) {
-            snprintf(argData, sizeof(argData), "%.*s%s",
-                (int)(ph_str - run->global->exe.cmdline[x]), run->global->exe.cmdline[x],
-                _HF_INPUT_FILE_PATH);
-            run->args[x] = argData;
-        } else {
-            run->args[x] = (char*)run->global->exe.cmdline[x];
-        }
-    }
-    run->args[x++] = NULL;
-
+    subproc_prepareExecvArgs(run);
     return true;
 }
 

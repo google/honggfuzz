@@ -248,10 +248,10 @@ void arch_reapChild(run_t* run) {
 
         const struct timespec ts = {
             .tv_sec = 0ULL,
-            .tv_nsec = (1000ULL * 1000ULL * 250ULL),
+            .tv_nsec = (1000ULL * 1000ULL * 100ULL),
         };
         /* Return with SIGIO, SIGCHLD */
-        int sig = sigtimedwait(&run->global->exe.waitSigSet, NULL, &ts /* 0.25s */);
+        int sig = sigtimedwait(&run->global->exe.waitSigSet, NULL, &ts /* 0.1s */);
         if (sig == -1 && (errno != EAGAIN && errno != EINTR)) {
             PLOG_F("sigwaitinfo(SIGIO|SIGCHLD)");
         }
