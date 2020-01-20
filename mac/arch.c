@@ -289,8 +289,9 @@ pid_t arch_fork(run_t* run HF_ATTR_UNUSED) {
 }
 
 bool arch_launchChild(run_t* run) {
-    LOG_D("Launching '%s' on file '%s'", run->args[0],
-        run->global->exe.persistent ? "PERSISTENT_MODE" : _HF_INPUT_FILE_PATH);
+    LOG_D("Launching '%s' on file '%s' (%s mode)", run->args[0],
+        run->global->exe.persistent ? "PERSISTENT_MODE" : _HF_INPUT_FILE_PATH,
+        run->global->exe.fuzzStdin ? "stdin" : "file");
 
     /*
      * Get child's bootstrap port.
