@@ -202,7 +202,6 @@ static void subproc_prepareExecvArgs(run_t* run) {
     run->args[x] = NULL;
 }
 
-
 static bool subproc_PrepareExecv(run_t* run) {
     /*
      * The address space limit. If big enough - roughly the size of RAM used
@@ -372,6 +371,11 @@ static bool subproc_New(run_t* run) {
             LOG_E("subproc_PrepareExecv() failed");
             exit(EXIT_FAILURE);
         }
+
+        LOG_D("Launching '%s' on file '%s' (%s mode)", run->args[0],
+            run->global->exe.persistent ? "PERSISTENT_MODE" : _HF_INPUT_FILE_PATH,
+            run->global->exe.fuzzStdin ? "stdin" : "file");
+
         if (!arch_launchChild(run)) {
             LOG_E("Error launching child process");
             kill(run->global->threads.mainPid, SIGTERM);

@@ -139,9 +139,6 @@ bool arch_launchChild(run_t* run) {
         PLOG_D("personality(ADDR_NO_RANDOMIZE) failed");
     }
 
-    LOG_D("Launching '%s' on file '%s'", run->args[0],
-        run->global->exe.persistent ? "PERSISTENT_MODE" : _HF_INPUT_FILE_PATH);
-
     /* alarms persist across execve(), so disable it here */
     alarm(0);
 
