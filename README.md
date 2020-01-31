@@ -151,6 +151,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__StatZone__: a DNS zone file analyzer](https://github.com/fcambus/statzone)
   * [__shub-fuzz/honggfuzz__: singularity image for honggfuzz](https://github.com/shub-fuzz/honggfuzz)
   * [__Code Intelligence__: fuzzing-as-a-service](https://www.code-intelligence.com/technology.html)
+  * [__SpecFuzz__: fuzzing for Spectre vulnerabilities](https://github.com/OleksiiOleksenko/SpecFuzz)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
 
