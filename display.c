@@ -25,6 +25,7 @@
 
 #include "display.h"
 
+#include <errno.h>
 #include <inttypes.h>
 #include <math.h>
 #include <stdarg.h>
@@ -61,7 +62,7 @@ static void display_start(void) {
 }
 
 static void display_stop(void) {
-    write(logFd(), displayBuf, strlen(displayBuf));
+    TEMP_FAILURE_RETRY(write(logFd(), displayBuf, strlen(displayBuf)));
 }
 
 __attribute__((format(printf, 1, 2))) static void display_put(const char* fmt, ...) {
