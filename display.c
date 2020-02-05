@@ -55,10 +55,19 @@
 /* printf() nonmonetary separator. According to MacOSX's man it's supported there as well */
 #define _HF_NONMON_SEP "'"
 
+static char displayBuf[1024 * 1024];
+static void display_start(void) {
+    memset(displayBuf, '\0', sizeof(displayBuf));
+}
+
+static void display_stop(void) {
+    write(logFd(), displayBuf, strlen(displayBuf));
+}
+
 __attribute__((format(printf, 1, 2))) static void display_put(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    vdprintf(logFd(), fmt, args);
+    util_vssnprintf(displayBuf, sizeof(displayBuf), fmt, args);
     va_end(args);
 }
 
@@ -127,7 +136,34 @@ static void getDuration(time_t elapsed_second, char* buf, size_t bufSz) {
     snprintf(buf, bufSz, "%u days %02u hrs %02u mins %02u secs", day, hour, min, second);
 }
 
-static void display_displayLocked(honggfuzz_t* hfuzz) {
+void display_createTargetStr(honggfuzz_t* hfuzz) {
+    if (!hfuzz->exe.cmdline[0]) {
+        LOG_W("Your fuzzed binary is not specified");
+        snprintf(hfuzz->display.cmdline_txt, sizeof(hfuzz->display.cmdline_txt), "[EMPTY]");
+        return;
+    }
+
+    static char tmpstr[1024 * 128] = {0};
+    snprintf(tmpstr, sizeof(tmpstr), "%s", hfuzz->exe.cmdline[0]);
+    for (int i = 1; i < hfuzz->exe.argc; i++) {
+        util_ssnprintf(tmpstr, sizeof(tmpstr), " %s", hfuzz->exe.cmdline[i]);
+    }
+
+    size_t len = strlen(tmpstr);
+    if (len <= (sizeof(hfuzz->display.cmdline_txt) - 1)) {
+        snprintf(hfuzz->display.cmdline_txt, sizeof(hfuzz->display.cmdline_txt), "%s", tmpstr);
+        return;
+    }
+
+    snprintf(hfuzz->display.cmdline_txt, sizeof(hfuzz->display.cmdline_txt), "%.32s.....%s", tmpstr,
+        &tmpstr[len - 27]);
+}
+
+void display_display(honggfuzz_t* hfuzz) {
+    if (logIsTTY() == false) {
+        return;
+    }
+
     const time_t curr_sec = time(NULL);
     const time_t elapsed_sec = curr_sec - hfuzz->timing.timeStart;
     const int64_t curr_time_millis = util_timeNowMillis();
@@ -162,6 +198,8 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
     size_t exec_per_millis =
         elapsed_millis ? ((curr_exec_cnt - prev_exec_cnt) * 1000) / elapsed_millis : 0;
     prev_exec_cnt = curr_exec_cnt;
+
+    display_start();
 
     display_put(ESC_NAV(13, 1) ESC_CLEAR_ABOVE ESC_NAV(1, 1));
     display_put("------------------------[" ESC_BOLD "%31s " ESC_RESET "]----------------------\n",
@@ -267,37 +305,9 @@ static void display_displayLocked(honggfuzz_t* hfuzz) {
                 " ] ------------------/ " ESC_BOLD "%s %s " ESC_RESET "/-",
         PROG_NAME, PROG_VERSION);
     display_put(ESC_SCROLL_REGION(13, ) ESC_NAV_HORIZ(1) ESC_NAV_DOWN(500));
-}
 
-void display_createTargetStr(honggfuzz_t* hfuzz) {
-    if (!hfuzz->exe.cmdline[0]) {
-        LOG_W("Your fuzzed binary is not specified");
-        snprintf(hfuzz->display.cmdline_txt, sizeof(hfuzz->display.cmdline_txt), "[EMPTY]");
-        return;
-    }
-
-    static char tmpstr[1024 * 128] = {0};
-    snprintf(tmpstr, sizeof(tmpstr), "%s", hfuzz->exe.cmdline[0]);
-    for (int i = 1; i < hfuzz->exe.argc; i++) {
-        util_ssnprintf(tmpstr, sizeof(tmpstr), " %s", hfuzz->exe.cmdline[i]);
-    }
-
-    size_t len = strlen(tmpstr);
-    if (len <= (sizeof(hfuzz->display.cmdline_txt) - 1)) {
-        snprintf(hfuzz->display.cmdline_txt, sizeof(hfuzz->display.cmdline_txt), "%s", tmpstr);
-        return;
-    }
-
-    snprintf(hfuzz->display.cmdline_txt, sizeof(hfuzz->display.cmdline_txt), "%.32s.....%s", tmpstr,
-        &tmpstr[len - 27]);
-}
-
-void display_display(honggfuzz_t* hfuzz) {
-    if (logIsTTY() == false) {
-        return;
-    }
     MX_SCOPED_LOCK(logMutexGet());
-    display_displayLocked(hfuzz);
+    display_stop();
 }
 
 void display_fini(void) {
