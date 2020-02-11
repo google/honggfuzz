@@ -98,6 +98,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Memory corruption in __Yabasic__](https://github.com/marcIhm/yabasic/issues/36)
   * [Memory corruption in __Xfig__](https://sourceforge.net/p/mcj/tickets/67/)
   * [Memory corruption in __LibreOffice__](https://github.com/LibreOffice/core/commit/0754e581b0d8569dd08cf26f88678754f249face)
+  * [Memory corruption in __ATasm__](https://sourceforge.net/p/atasm/bugs/8/)
   * __Rust__:
     * panic() in regex [#1](https://github.com/rust-lang/regex/issues/464), [#2](https://github.com/rust-lang/regex/issues/465), [#3](https://github.com/rust-lang/regex/issues/465#issuecomment-381412816)
     * panic() in h2 [#1](https://github.com/carllerche/h2/pull/260), [#2](https://github.com/carllerche/h2/pull/261), [#3](https://github.com/carllerche/h2/pull/262)
