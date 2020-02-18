@@ -156,6 +156,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__SpecFuzz__: fuzzing for Spectre vulnerabilities](https://github.com/OleksiiOleksenko/SpecFuzz)
   * [__rcc__: a Rust C compiler](https://github.com/jyn514/rcc#testing)
   * [__EIP1962Fuzzing__: Fuzzy testing of various EIP1962 implementations](https://github.com/matter-labs/eip1962_fuzzing)
+  * [__wasm-fuzz__: Fuzzing of wasmer](https://github.com/wasmerio/wasm-fuzz/blob/master/honggfuzz.md), [blog post](https://medium.com/wasmer/fuzz-testing-in-webassembly-vms-3a301f982e5a)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
 
