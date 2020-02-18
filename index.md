@@ -98,6 +98,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Memory corruption in __Yabasic__](https://github.com/marcIhm/yabasic/issues/36)
   * [Memory corruption in __Xfig__](https://sourceforge.net/p/mcj/tickets/67/)
   * [Memory corruption in __LibreOffice__](https://github.com/LibreOffice/core/commit/0754e581b0d8569dd08cf26f88678754f249face)
+  * [Memory corruption in __ATasm__](https://sourceforge.net/p/atasm/bugs/8/)
   * __Rust__:
     * panic() in regex [#1](https://github.com/rust-lang/regex/issues/464), [#2](https://github.com/rust-lang/regex/issues/465), [#3](https://github.com/rust-lang/regex/issues/465#issuecomment-381412816)
     * panic() in h2 [#1](https://github.com/carllerche/h2/pull/260), [#2](https://github.com/carllerche/h2/pull/261), [#3](https://github.com/carllerche/h2/pull/262)
@@ -153,7 +154,9 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__shub-fuzz/honggfuzz__: singularity image for honggfuzz](https://github.com/shub-fuzz/honggfuzz)
   * [__Code Intelligence__: fuzzing-as-a-service](https://www.code-intelligence.com/technology.html)
   * [__SpecFuzz__: fuzzing for Spectre vulnerabilities](https://github.com/OleksiiOleksenko/SpecFuzz)
+  * [__rcc__: a Rust C compiler](https://github.com/jyn514/rcc#testing)
   * [__EIP1962Fuzzing__: Fuzzy testing of various EIP1962 implementations](https://github.com/matter-labs/eip1962_fuzzing)
+  * [__wasm-fuzz__: Fuzzing of wasmer](https://github.com/wasmerio/wasm-fuzz/blob/master/honggfuzz.md), [blog post](https://medium.com/wasmer/fuzz-testing-in-webassembly-vms-3a301f982e5a)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
 
