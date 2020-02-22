@@ -145,33 +145,73 @@ static inline char* HF_strcpy(char* dest, const char* src, uintptr_t addr) {
 HF_WEAK_WRAP(int, strcmp, const char* s1, const char* s2) {
     return HF_strcmp(s1, s2, RET_CALL_CHAIN);
 }
+void __sanitizer_weak_hook_strcmp(
+    uintptr_t pc, const char* s1, const char* s2, int result HF_ATTR_UNUSED) {
+    HF_strcmp(s1, s2, pc);
+}
 HF_WEAK_WRAP(int, strcasecmp, const char* s1, const char* s2) {
     return HF_strcasecmp(s1, s2, RET_CALL_CHAIN);
+}
+void __sanitizer_weak_hook_strcasecmp(
+    uintptr_t pc, const char* s1, const char* s2, int result HF_ATTR_UNUSED) {
+    HF_strcasecmp(s1, s2, pc);
 }
 HF_WEAK_WRAP(int, strncmp, const char* s1, const char* s2, size_t n) {
     return HF_strncmp(s1, s2, n, RET_CALL_CHAIN);
 }
+void __sanitizer_weak_hook_strncmp(
+    uintptr_t pc, const char* s1, const char* s2, size_t n, int result HF_ATTR_UNUSED) {
+    HF_strncmp(s1, s2, n, pc);
+}
 HF_WEAK_WRAP(int, strncasecmp, const char* s1, const char* s2, size_t n) {
     return HF_strncasecmp(s1, s2, n, RET_CALL_CHAIN);
+}
+void __sanitizer_weak_hook_strncasecmp(
+    uintptr_t pc, const char* s1, const char* s2, size_t n, int result HF_ATTR_UNUSED) {
+    HF_strncasecmp(s1, s2, n, pc);
 }
 HF_WEAK_WRAP(char*, strstr, const char* haystack, const char* needle) {
     return HF_strstr(haystack, needle, RET_CALL_CHAIN);
 }
+void __sanitizer_weak_hook_strstr(
+    uintptr_t pc, const char* haystack, const char* needle, char* result HF_ATTR_UNUSED) {
+    HF_strstr(haystack, needle, pc);
+}
 HF_WEAK_WRAP(char*, strcasestr, const char* haystack, const char* needle) {
     return HF_strcasestr(haystack, needle, RET_CALL_CHAIN);
+}
+void __sanitizer_weak_hook_strcasestr(
+    uintptr_t pc, const char* haystack, const char* needle, char* result HF_ATTR_UNUSED) {
+    HF_strcasestr(haystack, needle, pc);
 }
 HF_WEAK_WRAP(int, memcmp, const void* m1, const void* m2, size_t n) {
     return HF_memcmp(m1, m2, n, RET_CALL_CHAIN);
 }
+void __sanitizer_weak_hook_memcmp(
+    uintptr_t pc, const void* m1, const void* m2, size_t n, int result HF_ATTR_UNUSED) {
+    HF_memcmp(m1, m2, n, pc);
+}
 HF_WEAK_WRAP(int, bcmp, const void* m1, const void* m2, size_t n) {
     return HF_memcmp(m1, m2, n, RET_CALL_CHAIN);
+}
+void __sanitizer_weak_hook_bcmp(
+    uintptr_t pc, const void* m1, const void* m2, size_t n, int result HF_ATTR_UNUSED) {
+    HF_memcmp(m1, m2, n, pc);
 }
 HF_WEAK_WRAP(
     void*, memmem, const void* haystack, size_t haystacklen, const void* needle, size_t needlelen) {
     return HF_memmem(haystack, haystacklen, needle, needlelen, RET_CALL_CHAIN);
 }
+void __sanitizer_weak_hook_memmem(uintptr_t pc, const void* haystack, size_t haystacklen,
+    const void* needle, size_t needlelen, void* result HF_ATTR_UNUSED) {
+    HF_memmem(haystack, haystacklen, needle, needlelen, pc);
+}
 HF_WEAK_WRAP(char*, strcpy, char* dest, const char* src) {
     return HF_strcpy(dest, src, RET_CALL_CHAIN);
+}
+void __sanitizer_weak_hook_strcpy(
+    uintptr_t pc, char* dest, const char* src, char* result HF_ATTR_UNUSED) {
+    HF_strcpy(dest, src, pc);
 }
 
 /*
