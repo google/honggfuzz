@@ -72,6 +72,10 @@ __attribute__((format(printf, 1, 2))) static void display_put(const char* fmt, .
     va_end(args);
 }
 
+static void display_imm(const char* str) {
+    TEMP_FAILURE_RETRY(write(logFd(), str, strlen(str)));
+}
+
 static void display_printKMG(uint64_t val) {
     if (val >= 1000000000000ULL) {
         display_put(" [%.02LfT]", (long double)val / 1000000000.0L);
@@ -312,12 +316,13 @@ void display_display(honggfuzz_t* hfuzz) {
 }
 
 void display_fini(void) {
-    display_put(ESC_SCROLL_RESET ESC_NAV_DOWN(500));
+    display_imm(ESC_SCROLL_RESET ESC_NAV_DOWN(500));
+    abort();
 }
 
 void display_clear(void) {
-    display_put(ESC_CLEAR_ALL);
-    display_put(ESC_NAV_DOWN(500));
+    display_imm(ESC_CLEAR_ALL);
+    display_imm(ESC_NAV_DOWN(500));
 }
 
 void display_init(void) {
