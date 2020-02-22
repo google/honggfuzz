@@ -306,8 +306,7 @@ static bool subproc_PrepareExecv(run_t* run) {
         PLOG_W("sigprocmask(empty_set)");
     }
 
-    if (!run->global->socketFuzzer.enabled &&
-        run->global->exe.fuzzStdin &&
+    if (!run->global->socketFuzzer.enabled && run->global->exe.fuzzStdin &&
         TEMP_FAILURE_RETRY(dup2(run->dynamicFileFd, STDIN_FILENO)) == -1) {
         PLOG_E("dup2(_HF_INPUT_FD=%d, STDIN_FILENO=%d)", run->dynamicFileFd, STDIN_FILENO);
         return false;
