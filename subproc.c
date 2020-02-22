@@ -276,14 +276,17 @@ static bool subproc_PrepareExecv(run_t* run) {
         return false;
     }
 
-    /* The input file to _HF_INPUT_FD */
-    if (TEMP_FAILURE_RETRY(dup2(run->dynamicFileFd, _HF_INPUT_FD)) == -1) {
-        PLOG_E("dup2('%d', _HF_INPUT_FD='%d')", run->dynamicFileFd, _HF_INPUT_FD);
-        return false;
-    }
-    if (lseek(_HF_INPUT_FD, 0, SEEK_SET) == (off_t)-1) {
-        PLOG_E("lseek(_HF_INPUT_FD=%d, 0, SEEK_SET)", _HF_INPUT_FD);
-        return false;
+    /* Do not try to handle input files with socketfuzzer */
+    if (!run->global->socketFuzzer.enabled) {
+        /* The input file to _HF_INPUT_FD */
+        if (TEMP_FAILURE_RETRY(dup2(run->dynamicFileFd, _HF_INPUT_FD)) == -1) {
+            PLOG_E("dup2('%d', _HF_INPUT_FD='%d')", run->dynamicFileFd, _HF_INPUT_FD);
+            return false;
+        }
+        if (lseek(_HF_INPUT_FD, 0, SEEK_SET) == (off_t)-1) {
+            PLOG_E("lseek(_HF_INPUT_FD=%d, 0, SEEK_SET)", _HF_INPUT_FD);
+            return false;
+        }
     }
 
     /* The log FD */
@@ -303,7 +306,8 @@ static bool subproc_PrepareExecv(run_t* run) {
         PLOG_W("sigprocmask(empty_set)");
     }
 
-    if (run->global->exe.fuzzStdin &&
+    if (!run->global->socketFuzzer.enabled &&
+        run->global->exe.fuzzStdin &&
         TEMP_FAILURE_RETRY(dup2(run->dynamicFileFd, STDIN_FILENO)) == -1) {
         PLOG_E("dup2(_HF_INPUT_FD=%d, STDIN_FILENO=%d)", run->dynamicFileFd, STDIN_FILENO);
         return false;
