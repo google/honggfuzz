@@ -298,6 +298,11 @@ static bool subproc_PrepareExecv(run_t* run) {
             PLOG_E("lseek(_HF_INPUT_FD=%d, 0, SEEK_SET)", _HF_INPUT_FD);
             return false;
         }
+        if (run->global->exe.fuzzStdin &&
+            TEMP_FAILURE_RETRY(dup2(run->dynamicFileFd, STDIN_FILENO)) == -1) {
+            PLOG_E("dup2(_HF_INPUT_FD=%d, STDIN_FILENO=%d)", run->dynamicFileFd, STDIN_FILENO);
+            return false;
+        }
     }
 
     /* The log FD */
@@ -315,12 +320,6 @@ static bool subproc_PrepareExecv(run_t* run) {
     sigemptyset(&sset);
     if (sigprocmask(SIG_SETMASK, &sset, NULL) == -1) {
         PLOG_W("sigprocmask(empty_set)");
-    }
-
-    if (!run->global->socketFuzzer.enabled && run->global->exe.fuzzStdin &&
-        TEMP_FAILURE_RETRY(dup2(run->dynamicFileFd, STDIN_FILENO)) == -1) {
-        PLOG_E("dup2(_HF_INPUT_FD=%d, STDIN_FILENO=%d)", run->dynamicFileFd, STDIN_FILENO);
-        return false;
     }
 
     subproc_prepareExecvArgs(run);

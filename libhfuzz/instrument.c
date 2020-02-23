@@ -69,8 +69,8 @@ static void initializeInstrument(void) {
     }
     if (st.st_size != sizeof(feedback_t)) {
         LOG_F(
-            "size of the feedback structure mismatch: st.size != sizeof(feedback_t) (%zu != %zu). "
-            "Link your fuzzed binaries with the newest honggfuzz sources via hfuzz-clang(++)",
+            "Size of the feedback structure mismatch: st.size != sizeof(feedback_t) (%zu != %zu). "
+            "Link your fuzzed binaries with the newest honggfuzz and hfuzz-clang(++)",
             (size_t)st.st_size, sizeof(feedback_t));
     }
     int mflags = files_getTmpMapFlags(MAP_SHARED, /* nocore= */ true);
