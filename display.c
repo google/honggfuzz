@@ -317,7 +317,6 @@ void display_display(honggfuzz_t* hfuzz) {
 
 void display_fini(void) {
     display_imm(ESC_SCROLL_RESET ESC_NAV_DOWN(500));
-    abort();
 }
 
 void display_clear(void) {
