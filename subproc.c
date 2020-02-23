@@ -248,6 +248,17 @@ static bool subproc_PrepareExecv(run_t* run) {
         PLOG_W("Couldn't enforce the RLIMIT_CORE resource limit, ignoring");
     }
 #endif /* ifdef RLIMIT_CORE */
+#ifdef RLIMIT_STACK
+    if (run->global->exe.stackLimit) {
+        const struct rlimit rl = {
+            .rlim_cur = run->global->exe.stackLimit * 1024ULL * 1024ULL,
+            .rlim_max = run->global->exe.stackLimit * 1024ULL * 1024ULL,
+        };
+        if (setrlimit(RLIMIT_STACK, &rl) == -1) {
+            PLOG_W("Couldn't enforce the RLIMIT_STACK resource limit, ignoring");
+        }
+    }
+#endif /* ifdef RLIMIT_STACK */
 
     if (run->global->exe.clearEnv) {
         environ = NULL;
