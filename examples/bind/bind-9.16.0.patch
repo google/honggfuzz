@@ -1,0 +1,342 @@
+diff -Nur ORIG.bind-9.16.0/bin/named/fuzz.c bind-9.16.0/bin/named/fuzz.c
+--- ORIG.bind-9.16.0/bin/named/fuzz.c	2020-02-12 21:03:44.000000000 +0100
++++ bind-9.16.0/bin/named/fuzz.c	2020-02-23 01:30:24.786425215 +0100
+@@ -724,7 +724,7 @@
+ void
+ named_fuzz_notify(void)
+ {
+-#ifdef ENABLE_AFL
++#if 0
+ 	if (getenv("AFL_CMIN")) {
+ 		named_server_flushonshutdown(named_g_server, false);
+ 		isc_app_shutdown();
+@@ -745,7 +745,7 @@
+ void
+ named_fuzz_setup(void)
+ {
+-#ifdef ENABLE_AFL
++#if 0
+ 	if (getenv("__AFL_PERSISTENT") || getenv("AFL_CMIN")) {
+ 		pthread_t thread;
+ 		void *(fn) = NULL;
+diff -Nur ORIG.bind-9.16.0/bin/named/main.c bind-9.16.0/bin/named/main.c
+--- ORIG.bind-9.16.0/bin/named/main.c	2020-02-12 21:03:44.000000000 +0100
++++ bind-9.16.0/bin/named/main.c	2020-02-23 01:30:20.720359839 +0100
+@@ -1431,9 +1431,258 @@
+ 
+ /* main entry point, possibly hooked */
+ 
+-int
+-main(int argc, char *argv[])
+-{
++#include <arpa/inet.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <libhfcommon/util.h>
++#include <libhfuzz/libhfuzz.h>
++#include <named/globals.h>
++#include <net/if.h>
++#include <net/route.h>
++#include <netinet/ip6.h>
++#include <netinet/tcp.h>
++#include <pthread.h>
++#include <sched.h>
++#include <sys/ioctl.h>
++#include <sys/resource.h>
++#include <sys/socket.h>
++#include <sys/stat.h>
++#include <sys/time.h>
++#include <sys/types.h>
++#include <sys/uio.h>
++#include <sys/wait.h>
++#include <unistd.h>
++
++static void enter_namespaces(void) {
++	if (linuxEnterNs(CLONE_NEWUSER | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWIPC) == false) {
++		exit(1);
++	}
++	if (linuxIfaceUp("lo") == false) {
++		exit(1);
++	}
++	if (linuxMountTmpfs("/tmp", "size=10000000") == false) {
++		exit(1);
++	}
++}
++
++static size_t rlen = 0;
++static const uint8_t *rbuf = NULL;
++
++__attribute__((no_sanitize("memory"))) __attribute__((no_sanitize("address"))) static void *
++bind_thr(void *unused __attribute__((unused))) {
++	while (!named_g_run_done) {
++		usleep(300000);
++	}
++
++	if (named_g_fuzz_type != isc_fuzz_resolver) {
++		for (;;) {
++			pause();
++		}
++	}
++
++	int myfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
++	if (myfd == -1) {
++		perror("socket");
++		exit(1);
++	}
++	int val = 1;
++	if (setsockopt(myfd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) == -1) {
++		perror("setsockopt(SO_REUSEADDR)");
++	}
++
++	const struct sockaddr_in saddr = {
++	    .sin_family = AF_INET,
++	    .sin_port = htons(5353),
++	    .sin_addr.s_addr = inet_addr("127.0.0.2"),
++	};
++	if (bind(myfd, &saddr, sizeof(saddr)) == -1) {
++		perror("bind");
++		exit(1);
++	}
++
++	if (listen(myfd, SOMAXCONN) == -1) {
++		perror("listen");
++		exit(1);
++	}
++
++	for (;;) {
++		struct sockaddr_in cli;
++		socklen_t cli_len = sizeof(cli);
++
++		int nfd = TEMP_FAILURE_RETRY(accept(myfd, &cli, &cli_len));
++		if (nfd == -1) {
++			perror("accept");
++			exit(1);
++		}
++
++		static char b[1024 * 1024];
++		ssize_t sz = TEMP_FAILURE_RETRY(recv(nfd, b, sizeof(b), 0));
++		if (sz == -1) {
++			perror("recv");
++			_exit(1);
++		}
++		if (sz < 4) {
++			close(nfd);
++			continue;
++		}
++
++		HF_ITER(&rbuf, &rlen);
++
++		uint16_t t_l = htons(rlen + 2);
++		const struct iovec iov[] = {
++		    {
++			.iov_base = &t_l,
++			.iov_len = sizeof(t_l),
++		    },
++		    {
++			.iov_base = &b[2],
++			.iov_len = 2,
++		    },
++		    {
++			.iov_base = rbuf,
++			.iov_len = rlen,
++		    },
++		};
++
++		if (TEMP_FAILURE_RETRY(writev(nfd, iov, 3)) == -1) {
++			perror("writev() failed 1");
++		}
++
++		close(nfd);
++	}
++
++	return NULL;
++}
++
++static void rndloop(int sock) {
++	const struct sockaddr_in bsaddr = {
++	    .sin_family = AF_INET,
++	    .sin_port = htons(0),
++	    .sin_addr.s_addr = htonl((((uint32_t)util_rnd64()) & 0x00FFFFFF) | 0x7F000000),
++	};
++	if (TEMP_FAILURE_RETRY(bind(sock, (const struct sockaddr *)&bsaddr, sizeof(bsaddr))) ==
++	    -1) {
++		perror("bind");
++	}
++}
++
++__attribute__((no_sanitize("memory"))) __attribute__((no_sanitize("address"))) static void *
++connect_thr(void *unused __attribute__((unused))) {
++	while (!named_g_run_done) {
++		usleep(300000);
++	}
++
++	for (;;) {
++		int myfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
++		if (myfd == -1) {
++			perror("socket");
++			exit(1);
++		}
++		int val = 1;
++		if (setsockopt(myfd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) == -1) {
++			perror("setsockopt(SO_REUSEADDR)");
++		}
++
++		rndloop(myfd);
++
++		const struct sockaddr_in saddr = {
++		    .sin_family = AF_INET,
++		    .sin_port = htons(53),
++		    .sin_addr.s_addr = htonl(INADDR_LOOPBACK),
++		};
++		if (TEMP_FAILURE_RETRY(connect(myfd, &saddr, sizeof(saddr))) == -1) {
++			close(myfd);
++			continue;
++		}
++
++		const uint8_t *buf;
++		size_t len;
++
++		if (named_g_fuzz_type == isc_fuzz_client) {
++			HF_ITER(&buf, &len);
++		} else {
++			static uint8_t qbuf[] = {0x88, 0x0c, 0x01, 0x20, 0x00, 0x01, 0x00, 0x00,
++			    0x00, 0x00, 0x00, 0x01, 0x0a, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61,
++			    0x61, 0x61, 0x61, 0x07, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x00,
++			    0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x29, 0x10, 0x00, 0x00, 0x00, 0x80,
++			    0x00, 0x00, 0x00};
++
++			/* Randomize the query */
++			uint64_t rnd;
++			getrandom(&rnd, sizeof(rnd), 0);
++			char tstr[32];
++			snprintf(tstr, sizeof(tstr), "%09llx", rnd);
++			memcpy(&qbuf[14], tstr, 9);
++
++			buf = qbuf;
++			len = sizeof(qbuf);
++		}
++
++		uint16_t t_l = htons(len);
++		const struct iovec iov[] = {
++		    {
++			.iov_base = &t_l,
++			.iov_len = sizeof(t_l),
++		    },
++		    {
++			.iov_base = (void *)buf,
++			.iov_len = len,
++		    },
++		};
++
++		if (TEMP_FAILURE_RETRY(writev(myfd, iov, 2)) == -1) {
++			perror("write");
++			close(myfd);
++			continue;
++		}
++
++		if (shutdown(myfd, SHUT_WR) == -1) {
++			if (errno == ENOTCONN) {
++				close(myfd);
++				continue;
++			}
++			perror("shutdown");
++			_exit(1);
++		}
++
++		uint8_t b[1024 * 512];
++		while (TEMP_FAILURE_RETRY(recv(myfd, b, sizeof(b), 0)) > 0)
++			;
++		close(myfd);
++	}
++}
++
++static void launch_thr(void) {
++	pthread_attr_t attr;
++	pthread_attr_init(&attr);
++	pthread_attr_setstacksize(&attr, 1024 * 1024 * 4);
++	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
++
++	pthread_t t;
++	if (pthread_create(&t, &attr, bind_thr, NULL) < 0) {
++		perror("pthread_create(bind_thr)");
++		exit(1);
++	}
++
++	pthread_attr_init(&attr);
++	pthread_attr_setstacksize(&attr, 1024 * 1024 * 4);
++	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
++	if (pthread_create(&t, &attr, connect_thr, NULL) < 0) {
++		perror("pthread_create(connect_thr)");
++		exit(1);
++	}
++}
++
++/* main entry point, possibly hooked */
++
++int main(int argc, char *argv[]) {
++	if (!getenv("NO_FUZZ")) {
++		named_g_fuzz_addr = "127.0.0.1:53";
++		named_g_fuzz_type = isc_fuzz_client;
++		enter_namespaces();
++		launch_thr();
++	}
++
+ 	isc_result_t result;
+ #ifdef HAVE_LIBSCF
+ 	char *instance = NULL;
+diff -Nur ORIG.bind-9.16.0/compile.sh bind-9.16.0/compile.sh
+--- ORIG.bind-9.16.0/compile.sh	1970-01-01 01:00:00.000000000 +0100
++++ bind-9.16.0/compile.sh	2020-02-23 01:30:08.528163810 +0100
+@@ -0,0 +1,19 @@
++#!/bin/sh
++
++set -ex
++
++export CC="$HOME"/src/honggfuzz/hfuzz_cc/hfuzz-clang
++export CXX="$HOME"/src/honggfuzz/hfuzz_cc/hfuzz-clang++
++export CFLAGS="-fsanitize=address -Wno-shift-negative-value -Wno-logical-not-parentheses -g -ggdb -O3 -D__AFL_COMPILER"
++./configure \
++		--prefix="$HOME"/fuzz/bind/dist/ \
++		--without-gssapi \
++		--disable-chroot \
++		--disable-linux-caps \
++		--without-libtool \
++		--enable-fuzzing=afl \
++		--disable-backtrace \
++		--with-openssl=yes
++
++make clean
++make -j$(nproc)
+diff -Nur ORIG.bind-9.16.0/lib/dns/request.c bind-9.16.0/lib/dns/request.c
+--- ORIG.bind-9.16.0/lib/dns/request.c	2020-02-12 21:03:44.000000000 +0100
++++ bind-9.16.0/lib/dns/request.c	2020-02-23 01:30:47.162785069 +0100
+@@ -751,7 +751,7 @@
+ 		goto cleanup;
+ 	}
+ 
+-	if ((options & DNS_REQUESTOPT_TCP) != 0 || r.length > 512)
++	if ((options & DNS_REQUESTOPT_TCP) != 0 || r.length >= 0)
+ 		tcp = true;
+ 	share = (options & DNS_REQUESTOPT_SHARE);
+ 
+@@ -1025,6 +1025,8 @@
+ 	dns_compress_t cctx;
+ 	bool	       cleanup_cctx = false;
+ 
++	options |= DNS_REQUESTOPT_TCP;
++
+ 	REQUIRE(bufferp != NULL && *bufferp == NULL);
+ 
+ 	req_log(ISC_LOG_DEBUG(3), "request_render");
+diff -Nur ORIG.bind-9.16.0/lib/dns/resolver.c bind-9.16.0/lib/dns/resolver.c
+--- ORIG.bind-9.16.0/lib/dns/resolver.c	2020-02-12 21:03:44.000000000 +0100
++++ bind-9.16.0/lib/dns/resolver.c	2020-02-23 01:30:54.164897676 +0100
+@@ -1979,7 +1979,7 @@
+ 
+ 	query = isc_mem_get(fctx->mctx, sizeof(*query));
+ 	query->mctx = fctx->mctx;
+-	query->options = options;
++	query->options = options | DNS_FETCHOPT_TCP;
+ 	query->attributes = 0;
+ 	query->sends = 0;
+ 	query->connects = 0;
