@@ -99,10 +99,40 @@ bool sanitizers_Init(honggfuzz_t* hfuzz) {
     return true;
 }
 
+/* Get numeric value of the /proc/<pid>/status "Tgid: <PID>" field */
+static pid_t sanitizers_PidForTid(pid_t pid) {
+    char status_path[PATH_MAX];
+    snprintf(status_path, sizeof(status_path), "/proc/%d/status", (int)pid);
+    FILE* f = fopen(status_path, "rb");
+    if (!f) {
+        return pid;
+    }
+    defer {
+        fclose(f);
+    };
+    char* lineptr = NULL;
+    size_t n = 0;
+    defer {
+        free(lineptr);
+    };
+
+    while (getline(&lineptr, &n, f) > 0) {
+        int retpid;
+        if (sscanf(lineptr, "Tgid:%d", &retpid) == 1) {
+            LOG_D("Tid %d has Pid %d", (int)pid, retpid);
+            return (pid_t)retpid;
+        }
+    }
+    return pid;
+}
+
 size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* pc,
     uint64_t* crashAddr, char description[HF_STR_LEN]) {
     char crashReport[PATH_MAX];
     const char* crashReportCpy = crashReport;
+
+    /* Under Linux the crash is seen in TID, but the sanitizer report is created for PID */
+    pid = sanitizers_PidForTid(pid);
     snprintf(
         crashReport, sizeof(crashReport), "%s/%s.%d", run->global->io.workDir, kLOGPREFIX, pid);
 
