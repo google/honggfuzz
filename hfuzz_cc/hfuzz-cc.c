@@ -23,7 +23,7 @@
 static bool isCXX = false;
 static bool isGCC = false;
 
-/* Embed libhfuzz.a inside this binary */
+/* Embed libhf/.a inside this binary */
 __asm__("\n"
         "   .global lhfuzz_start\n"
         "   .global lhfuzz_end\n"
@@ -158,7 +158,7 @@ static int execCC(int argc, char** argv) {
         }
     } else {
         if (isCXX) {
-            /* Try the default one, then newest ones (hopefully) first */
+            /* Try the default one, then the newest ones (hopefully) in order */
             hf_execvp("clang++", argv);
             hf_execvp("clang++-devel", argv);
             hf_execvp("clang++-10.0", argv);
@@ -175,7 +175,7 @@ static int execCC(int argc, char** argv) {
             hf_execvp("clang++-5", argv);
             hf_execvp("clang", argv);
         } else {
-            /* Try the default one, then newest ones (hopefully) first */
+            /* Try the default one, then the newest ones (hopefully) in order */
             hf_execvp("clang", argv);
             hf_execvp("clang-devel", argv);
             hf_execvp("clang-10.0", argv);
