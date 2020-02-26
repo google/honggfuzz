@@ -27,7 +27,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#if !defined(_HF_ARCH_DARWIN)
 #include <link.h>
+#endif
 #include <math.h>
 #include <pthread.h>
 #include <signal.h>
@@ -801,6 +803,7 @@ const char* util_sigName(int signo) {
     return signame;
 }
 
+#if !defined(_HF_ARCH_DARWIN)
 static int addrRO_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
     for (size_t i = 0; i < info->dlpi_phnum; i++) {
         uintptr_t addr_start = info->dlpi_addr + info->dlpi_phdr[i].p_vaddr;
@@ -820,3 +823,8 @@ static int addrRO_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void
 bool util_isAddrRO(const void* addr) {
     return (dl_iterate_phdr(addrRO_cb, (void*)addr) == 1);
 }
+#else  /* !defined(_HF_ARCH_DARWIN) */
+bool util_isAddrRO(const void* addr) {
+    return false;
+}
+#endif /* !defined(_HF_ARCH_DARWIN) */
