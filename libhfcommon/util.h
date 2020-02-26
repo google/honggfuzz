@@ -135,4 +135,6 @@ extern uint64_t util_CRC64Rev(const uint8_t* buf, size_t len);
 
 extern const char* util_sigName(int signo);
 
+extern bool util_isAddrRO(const void* addr);
+
 #endif /* ifndef _HF_COMMON_UTIL_H_ */

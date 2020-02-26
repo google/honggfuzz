@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <link.h>
 #include <math.h>
 #include <pthread.h>
 #include <signal.h>
@@ -798,4 +799,24 @@ const char* util_sigName(int signo) {
 #endif /* defined(SIGRTMIN) && defined(SIGRTMAX) */
     snprintf(signame, sizeof(signame), "UNKNOWN-%d", signo);
     return signame;
+}
+
+static int addrRO_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
+    for (size_t i = 0; i < info->dlpi_phnum; i++) {
+        uintptr_t addr_start = info->dlpi_addr + info->dlpi_phdr[i].p_vaddr;
+        uintptr_t addr_end =
+            info->dlpi_addr + info->dlpi_phdr[i].p_vaddr + info->dlpi_phdr[i].p_memsz;
+        if (((uintptr_t)data >= addr_start) && ((uintptr_t)data < addr_end)) {
+            if ((info->dlpi_phdr[i].p_flags & PF_W) == 0) {
+                return 1;
+            } else {
+                return 2;
+            }
+        }
+    }
+    return 0;
+}
+
+bool util_isAddrRO(const void* addr) {
+    return (dl_iterate_phdr(addrRO_cb, (void*)addr) == 1);
 }

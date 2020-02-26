@@ -132,29 +132,36 @@ void instrumentClearNewCov() {
     covFeedback->pidFeedbackCmp[my_thread_no] = 0U;
 }
 
-void instrument_addConstIntToMap(void* v, size_t len) {
+void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
     if (!cmpFeedback) {
         return;
     }
-
-    uint32_t curroff = ATOMIC_GET(cmpFeedback->intCnt);
-    if (curroff >= ARRAYSIZE(cmpFeedback->intArr)) {
+    if (len > sizeof(cmpFeedback->valArr[0].val)) {
+        len = sizeof(cmpFeedback->valArr[0].val);
+    }
+    uint32_t curroff = ATOMIC_GET(cmpFeedback->cnt);
+    if (curroff >= ARRAYSIZE(cmpFeedback->valArr)) {
         return;
     }
+    if (check_if_ro && !util_isAddrRO(mem)) {
+        return;
+    }
+
     for (uint32_t i = 0; i < curroff; i++) {
-        if (memcmp(cmpFeedback->intArr[i].val, v, len) == 0) {
+        if ((len == cmpFeedback->valArr[i].len) &&
+            memcmp(cmpFeedback->valArr[i].val, mem, len) == 0) {
             return;
         }
     }
 
-    uint32_t newoff = ATOMIC_POST_INC(cmpFeedback->intCnt);
-    if (newoff >= ARRAYSIZE(cmpFeedback->intArr)) {
-        ATOMIC_SET(cmpFeedback->intCnt, ARRAYSIZE(cmpFeedback->intArr));
+    uint32_t newoff = ATOMIC_POST_INC(cmpFeedback->cnt);
+    if (newoff >= ARRAYSIZE(cmpFeedback->valArr)) {
+        ATOMIC_SET(cmpFeedback->cnt, ARRAYSIZE(cmpFeedback->valArr));
         return;
     }
 
-    memcpy(cmpFeedback->intArr[newoff].val, v, len);
-    cmpFeedback->intArr[newoff].len = len;
+    memcpy(cmpFeedback->valArr[newoff].val, mem, len);
+    ATOMIC_SET(cmpFeedback->valArr[newoff].len, len);
 }
 
 /*
@@ -236,7 +243,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t 
 }
 
 HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_const_cmp2(uint16_t Arg1, uint16_t Arg2) {
-    instrument_addConstIntToMap(&Arg1, sizeof(Arg1));
+    instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
     hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
@@ -260,7 +267,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t 
 }
 
 HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_const_cmp4(uint32_t Arg1, uint32_t Arg2) {
-    instrument_addConstIntToMap(&Arg1, sizeof(Arg1));
+    instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
     hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
@@ -284,7 +291,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t 
 }
 
 HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2) {
-    instrument_addConstIntToMap(&Arg1, sizeof(Arg1));
+    instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
     hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 

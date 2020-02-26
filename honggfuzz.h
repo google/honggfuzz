@@ -187,18 +187,11 @@ typedef struct {
 } feedback_t;
 
 typedef struct {
-    uint32_t strCnt;
+    uint32_t cnt;
     struct {
-        char val[32];
+        uint8_t val[16];
         uint32_t len;
-    } strArr[4096];
-    uint32_t intCnt;
-    struct {
-        union {
-            uint8_t val[sizeof(uint64_t)];
-        };
-        uint32_t len;
-    } intArr[4096];
+    } valArr[4096];
 } cmpfeedback_t;
 
 typedef struct {

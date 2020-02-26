@@ -419,7 +419,8 @@ libhfuzz/instrument.o: libhfcommon/common.h libhfcommon/log.h
 libhfuzz/linux.o: libhfcommon/common.h libhfcommon/files.h
 libhfuzz/linux.o: libhfcommon/common.h libhfcommon/log.h libhfcommon/ns.h
 libhfuzz/linux.o: libhfuzz/libhfuzz.h
-libhfuzz/memorycmp.o: libhfcommon/common.h libhfuzz/instrument.h
+libhfuzz/memorycmp.o: libhfcommon/common.h libhfcommon/util.h
+libhfuzz/memorycmp.o: libhfuzz/instrument.h
 libhfuzz/persistent.o: honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 libhfuzz/persistent.o: libhfcommon/files.h libhfcommon/common.h
 libhfuzz/persistent.o: libhfcommon/log.h libhfuzz/fetch.h
