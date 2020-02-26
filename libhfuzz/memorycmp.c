@@ -12,8 +12,8 @@
 __attribute__((visibility("default"))) __attribute__((used))
 const char* const LIBHFUZZ_module_memorycmp = "LIBHFUZZ_module_memorycmp";
 
-extern size_t __builtin_strlen(const char *s);
-extern size_t __builtin_strnlen(const char *s, size_t maxlen);
+extern size_t strlen(const char *s);
+extern size_t strnlen(const char *s, size_t maxlen);
 
 static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
     size_t i;
@@ -23,8 +23,8 @@ static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
         }
     }
     instrumentUpdateCmpMap(addr, i);
-    instrumentAddConstMem(s1, __builtin_strlen(s1), /* check_if_ro= */ true);
-    instrumentAddConstMem(s2, __builtin_strlen(s2), /* check_if_ro= */ true);
+    instrumentAddConstMem(s1, strlen(s1), /* check_if_ro= */ true);
+    instrumentAddConstMem(s2, strlen(s2), /* check_if_ro= */ true);
     return ((unsigned char)s1[i] - (unsigned char)s2[i]);
 }
 
@@ -36,8 +36,8 @@ static inline int HF_strcasecmp(const char* s1, const char* s2, uintptr_t addr) 
         }
     }
     instrumentUpdateCmpMap(addr, i);
-    instrumentAddConstMem(s1, __builtin_strlen(s1), /* check_if_ro= */ true);
-    instrumentAddConstMem(s2, __builtin_strlen(s2), /* check_if_ro= */ true);
+    instrumentAddConstMem(s1, strlen(s1), /* check_if_ro= */ true);
+    instrumentAddConstMem(s2, strlen(s2), /* check_if_ro= */ true);
     return (tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]));
 }
 
@@ -50,8 +50,8 @@ static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t
     }
 
     instrumentUpdateCmpMap(addr, i);
-    instrumentAddConstMem(s1, __builtin_strnlen(s1, n), /* check_if_ro= */ true);
-    instrumentAddConstMem(s2, __builtin_strnlen(s2, n), /* check_if_ro= */ true);
+    instrumentAddConstMem(s1, strnlen(s1, n), /* check_if_ro= */ true);
+    instrumentAddConstMem(s2, strnlen(s2, n), /* check_if_ro= */ true);
     if (i == n) {
         return 0;
     }
@@ -68,8 +68,8 @@ static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, uintp
     }
 
     instrumentUpdateCmpMap(addr, i);
-    instrumentAddConstMem(s1, __builtin_strnlen(s1, n), /* check_if_ro= */ true);
-    instrumentAddConstMem(s2, __builtin_strnlen(s2, n), /* check_if_ro= */ true);
+    instrumentAddConstMem(s1, strnlen(s1, n), /* check_if_ro= */ true);
+    instrumentAddConstMem(s2, strnlen(s2, n), /* check_if_ro= */ true);
 
     if (i == n) {
         return 0;
@@ -78,7 +78,7 @@ static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, uintp
 }
 
 static inline char* HF_strstr(const char* haystack, const char* needle, uintptr_t addr) {
-    size_t needle_len = __builtin_strlen(needle);
+    size_t needle_len = strlen(needle);
     if (needle_len == 0) {
         return (char*)haystack;
     }
@@ -93,7 +93,7 @@ static inline char* HF_strstr(const char* haystack, const char* needle, uintptr_
 }
 
 static inline char* HF_strcasestr(const char* haystack, const char* needle, uintptr_t addr) {
-    size_t needle_len = __builtin_strlen(needle);
+    size_t needle_len = strlen(needle);
     for (size_t i = 0; haystack[i]; i++) {
         if (HF_strncasecmp(&haystack[i], needle, needle_len, addr) == 0) {
             return (char*)(&haystack[i]);
@@ -144,7 +144,7 @@ static inline void* HF_memmem(const void* haystack, size_t haystacklen, const vo
 }
 
 static inline char* HF_strcpy(char* dest, const char* src, uintptr_t addr) {
-    size_t len = __builtin_strlen(src);
+    size_t len = strlen(src);
     if (len > 0) {
         uint32_t level = (sizeof(len) * 8) - __builtin_clzl(len);
         instrumentUpdateCmpMap(addr, level);
