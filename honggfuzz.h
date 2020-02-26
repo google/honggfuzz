@@ -189,7 +189,7 @@ typedef struct {
 typedef struct {
     uint32_t cnt;
     struct {
-        uint8_t val[16];
+        uint8_t val[32];
         uint32_t len;
     } valArr[4096];
 } cmpfeedback_t;
