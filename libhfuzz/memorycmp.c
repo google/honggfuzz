@@ -12,6 +12,9 @@
 __attribute__((visibility("default"))) __attribute__((used))
 const char* const LIBHFUZZ_module_memorycmp = "LIBHFUZZ_module_memorycmp";
 
+extern size_t __builtin_strlen(const char *s);
+extern size_t __builtin_strnlen(const char *s, size_t maxlen);
+
 static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
     size_t i;
     for (i = 0; s1[i] == s2[i]; i++) {
