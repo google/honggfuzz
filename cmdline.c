@@ -359,6 +359,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .covFeedback_mutex = PTHREAD_MUTEX_INITIALIZER,
                 .cmpFeedbackMap = NULL,
                 .cmpFeedbackFd = -1,
+                .cmpFeedback = false,
                 .blacklistFile = NULL,
                 .blacklist = NULL,
                 .blacklistCnt = 0,
@@ -475,6 +476,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "netdriver", no_argument, NULL, 0x10C }, "Use netdriver (libhfnetdriver/). In most cases it will be autodetected through a binary signature" },
         { { "only_printable", no_argument, NULL, 0x10D }, "Only generate printable inputs" },
         { { "export_feedback", no_argument, NULL, 0x10E }, "Export the coverage feedback structure as ./hfuzz-feedback" },
+        { { "experimental_const_feedback", no_argument, NULL, 0x112 }, "*** EXPERIMENTAL *** Use constant integer/string values from fuzzed programs to mangle input files" },
 
 #if defined(_HF_ARCH_LINUX)
         { { "linux_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blacklist filter file (one entry per line)" },
@@ -591,6 +593,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 0x10E:
                 hfuzz->io.exportFeedback = true;
+                break;
+            case 0x112:
+                hfuzz->feedback.cmpFeedback = true;
                 break;
             case 'z':
                 hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_SOFT;

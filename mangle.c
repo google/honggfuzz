@@ -405,6 +405,33 @@ static void mangle_Magic(run_t* run, bool printable) {
     }
 }
 
+static void mangle_CmpFeedback(run_t* run, bool printable) {
+    if (!run->global->feedback.cmpFeedback) {
+        return mangle_Magic(run, printable);
+    }
+    uint32_t len = ATOMIC_GET(run->global->feedback.cmpFeedbackMap->intCnt);
+    if (len == 0) {
+        return mangle_Magic(run, printable);
+    }
+    if (len > ARRAYSIZE(run->global->feedback.cmpFeedbackMap->intArr)) {
+        len = ARRAYSIZE(run->global->feedback.cmpFeedbackMap->intArr);
+    }
+
+    size_t off = util_rndGet(0, run->dynamicFileSz - 1);
+    uint32_t choice = util_rndGet(0, len - 1);
+    if (run->global->feedback.cmpFeedbackMap->intArr[choice].len == 0) {
+        return mangle_Magic(run, printable);
+    }
+
+    mangle_Overwrite(run, run->global->feedback.cmpFeedbackMap->intArr[choice].val, off,
+        run->global->feedback.cmpFeedbackMap->intArr[choice].len);
+
+    if (printable) {
+        util_turnToPrintable(
+            &run->dynamicFile[off], run->global->feedback.cmpFeedbackMap->intArr[choice].len);
+    }
+}
+
 static void mangle_MemSetWithVal(run_t* run, int val) {
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
     size_t sz = util_rndGet(1, run->dynamicFileSz - off);
@@ -617,6 +644,7 @@ void mangle_mangleContent(run_t* run) {
         mangle_Bit,
         mangle_Bytes,
         mangle_Magic,
+        mangle_CmpFeedback,
         mangle_IncByte,
         mangle_DecByte,
         mangle_NegByte,

@@ -287,8 +287,9 @@ static bool subproc_PrepareExecv(run_t* run) {
             _HF_COV_BITMAP_FD);
         return false;
     }
-    /* The coverage bitmap/feedback structure */
-    if (TEMP_FAILURE_RETRY(dup2(run->global->feedback.cmpFeedbackFd, _HF_CMP_BITMAP_FD)) == -1) {
+    /* The const comparison bitmap/feedback structure */
+    if (run->global->feedback.cmpFeedback &&
+        TEMP_FAILURE_RETRY(dup2(run->global->feedback.cmpFeedbackFd, _HF_CMP_BITMAP_FD)) == -1) {
         PLOG_E("dup2(%d, _HF_CMP_BITMAP_FD=%d)", run->global->feedback.cmpFeedbackFd,
             _HF_CMP_BITMAP_FD);
         return false;

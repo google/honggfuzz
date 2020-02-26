@@ -51,9 +51,7 @@ static void initializeCmpFeedback(void) {
     }
     if (st.st_size != sizeof(cmpfeedback_t)) {
         LOG_W("Size of the cmpFeedback structure mismatch: st.size != sizeof(cmpfeedback_t) (%zu "
-              "!= %zu). "
-              "Link your fuzzed binaries with the newest honggfuzz and hfuzz-clang(++). Ignoring "
-              "for now.",
+              "!= %zu). Link your fuzzed binaries with the newest honggfuzz and hfuzz-clang(++)",
             (size_t)st.st_size, sizeof(cmpfeedback_t));
         return;
     }
@@ -67,23 +65,25 @@ static void initializeCmpFeedback(void) {
     }
 }
 
-static void initializeCovFeedback(void) {
+static bool initializeCovFeedback(void) {
     struct stat st;
     if (fstat(_HF_COV_BITMAP_FD, &st) == -1) {
-        return;
+        return false;
     }
     if (st.st_size != sizeof(feedback_t)) {
-        LOG_F(
-            "Size of the feedback structure mismatch: st.size != sizeof(feedback_t) (%zu != %zu). "
-            "Link your fuzzed binaries with the newest honggfuzz and hfuzz-clang(++)",
+        LOG_W("Size of the feedback structure mismatch: st.size != sizeof(feedback_t) (%zu != "
+              "%zu). Link your fuzzed binaries with the newest honggfuzz and hfuzz-clang(++)",
             (size_t)st.st_size, sizeof(feedback_t));
+        return false;
     }
     int mflags = files_getTmpMapFlags(MAP_SHARED, /* nocore= */ true);
     if ((covFeedback = mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, mflags,
              _HF_COV_BITMAP_FD, 0)) == MAP_FAILED) {
-        PLOG_F("mmap(_HF_COV_BITMAP_FD=%d, size=%zu) of the feedback structure failed",
+        PLOG_W("mmap(_HF_COV_BITMAP_FD=%d, size=%zu) of the feedback structure failed",
             _HF_COV_BITMAP_FD, sizeof(feedback_t));
+        return false;
     }
+    return true;
 }
 
 static void initializeInstrument(void) {
@@ -108,7 +108,10 @@ static void initializeInstrument(void) {
             my_thread_no, _HF_THREAD_MAX);
     }
 
-    initializeCovFeedback();
+    if (!initializeCovFeedback()) {
+        covFeedback = &bbMapFb;
+        LOG_F("Could not intialize the coverage feedback map");
+    }
     initializeCmpFeedback();
 
     /* Reset coverage counters to their initial state */
@@ -127,6 +130,31 @@ void instrumentClearNewCov() {
     covFeedback->pidFeedbackPc[my_thread_no] = 0U;
     covFeedback->pidFeedbackEdge[my_thread_no] = 0U;
     covFeedback->pidFeedbackCmp[my_thread_no] = 0U;
+}
+
+void instrument_addConstIntToMap(void* v, size_t len) {
+    if (!cmpFeedback) {
+        return;
+    }
+
+    uint32_t curroff = ATOMIC_GET(cmpFeedback->intCnt);
+    if (curroff >= ARRAYSIZE(cmpFeedback->intArr)) {
+        return;
+    }
+    for (uint32_t i = 0; i < curroff; i++) {
+        if (memcmp(cmpFeedback->intArr[i].val, v, len) == 0) {
+            return;
+        }
+    }
+
+    uint32_t newoff = ATOMIC_POST_INC(cmpFeedback->intCnt);
+    if (newoff >= ARRAYSIZE(cmpFeedback->intArr)) {
+        ATOMIC_SET(cmpFeedback->intCnt, ARRAYSIZE(cmpFeedback->intArr));
+        return;
+    }
+
+    memcpy(cmpFeedback->intArr[newoff].val, v, len);
+    cmpFeedback->intArr[newoff].len = len;
 }
 
 /*
@@ -168,8 +196,33 @@ HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_pc(uintptr_t pc) {
 /*
  * -fsanitize-coverage=trace-cmp
  */
+HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp1_internal(
+    uintptr_t pc, uint8_t Arg1, uint8_t Arg2) {
+    uintptr_t pos = pc % _HF_PERF_BITMAP_SIZE_16M;
+    register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
+    uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
+    if (prev < v) {
+        ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
+        ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+    }
+}
+
 HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Arg2) {
-    uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
+    hfuzz_trace_cmp1_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+}
+
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_const_cmp1(uint8_t Arg1, uint8_t Arg2) {
+    /* No need to report back 1 byte comparisons */
+    hfuzz_trace_cmp1_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+}
+
+HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_cmp1(uintptr_t pc, uint8_t Arg1, uint8_t Arg2) {
+    hfuzz_trace_cmp1_internal(pc, Arg1, Arg2);
+}
+
+HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp2_internal(
+    uintptr_t pc, uint16_t Arg1, uint16_t Arg2) {
+    uintptr_t pos = pc % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
     uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
     if (prev < v) {
@@ -179,13 +232,16 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Ar
 }
 
 HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2) {
-    uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
-    register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
-    uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
-    if (prev < v) {
-        ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
-    }
+    hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+}
+
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_const_cmp2(uint16_t Arg1, uint16_t Arg2) {
+    instrument_addConstIntToMap(&Arg1, sizeof(Arg1));
+    hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+}
+
+HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_cmp2(uintptr_t pc, uint16_t Arg1, uint16_t Arg2) {
+    hfuzz_trace_cmp2_internal(pc, Arg1, Arg2);
 }
 
 HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp4_internal(
@@ -200,6 +256,11 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp4_internal(
 }
 
 HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
+    hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+}
+
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_const_cmp4(uint32_t Arg1, uint32_t Arg2) {
+    instrument_addConstIntToMap(&Arg1, sizeof(Arg1));
     hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
@@ -222,31 +283,14 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t 
     hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2) {
+    instrument_addConstIntToMap(&Arg1, sizeof(Arg1));
+    hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+}
+
 HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_cmp8(uintptr_t pc, uint64_t Arg1, uint64_t Arg2) {
     hfuzz_trace_cmp8_internal(pc, Arg1, Arg2);
 }
-
-/*
- * Const versions of trace_cmp, we don't use any special handling for these
- *
- * For MacOS, these're weak aliases, as Darwin supports only them
- */
-
-#if defined(_HF_ARCH_DARWIN)
-#pragma weak __sanitizer_cov_trace_const_cmp1 = __sanitizer_cov_trace_cmp1
-#pragma weak __sanitizer_cov_trace_const_cmp2 = __sanitizer_cov_trace_cmp2
-#pragma weak __sanitizer_cov_trace_const_cmp4 = __sanitizer_cov_trace_cmp4
-#pragma weak __sanitizer_cov_trace_const_cmp8 = __sanitizer_cov_trace_cmp8
-#else
-void __sanitizer_cov_trace_const_cmp1(uint8_t Arg1, uint8_t Arg2)
-    __attribute__((alias("__sanitizer_cov_trace_cmp1")));
-void __sanitizer_cov_trace_const_cmp2(uint16_t Arg1, uint16_t Arg2)
-    __attribute__((alias("__sanitizer_cov_trace_cmp2")));
-void __sanitizer_cov_trace_const_cmp4(uint32_t Arg1, uint32_t Arg2)
-    __attribute__((alias("__sanitizer_cov_trace_cmp4")));
-void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2)
-    __attribute__((alias("__sanitizer_cov_trace_cmp8")));
-#endif /* defined(_HF_ARCH_DARWIN) */
 
 /*
  * Cases[0] is number of comparison entries

@@ -189,15 +189,13 @@ typedef struct {
 typedef struct {
     uint32_t strCnt;
     struct {
-        char str[128];
+        char val[32];
+        uint32_t len;
     } strArr[4096];
     uint32_t intCnt;
     struct {
         union {
-            uint8_t int1;
-            uint16_t int2;
-            uint32_t int4;
-            uint64_t int8;
+            uint8_t val[sizeof(uint64_t)];
         };
         uint32_t len;
     } intArr[4096];
@@ -292,6 +290,7 @@ typedef struct {
         pthread_mutex_t covFeedback_mutex;
         cmpfeedback_t* cmpFeedbackMap;
         int cmpFeedbackFd;
+        bool cmpFeedback;
         const char* blacklistFile;
         uint64_t* blacklist;
         size_t blacklistCnt;
