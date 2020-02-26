@@ -281,9 +281,16 @@ static bool subproc_PrepareExecv(run_t* run) {
         /* close_stdout= */ run->global->exe.nullifyStdio,
         /* close_stderr= */ run->global->exe.nullifyStdio);
 
-    /* The bitmap/feedback structure */
-    if (TEMP_FAILURE_RETRY(dup2(run->global->feedback.bbFd, _HF_BITMAP_FD)) == -1) {
-        PLOG_E("dup2(%d, _HF_BITMAP_FD=%d)", run->global->feedback.bbFd, _HF_BITMAP_FD);
+    /* The coverage bitmap/feedback structure */
+    if (TEMP_FAILURE_RETRY(dup2(run->global->feedback.covFeedbackFd, _HF_COV_BITMAP_FD)) == -1) {
+        PLOG_E("dup2(%d, _HF_COV_BITMAP_FD=%d)", run->global->feedback.covFeedbackFd,
+            _HF_COV_BITMAP_FD);
+        return false;
+    }
+    /* The coverage bitmap/feedback structure */
+    if (TEMP_FAILURE_RETRY(dup2(run->global->feedback.cmpFeedbackFd, _HF_CMP_BITMAP_FD)) == -1) {
+        PLOG_E("dup2(%d, _HF_CMP_BITMAP_FD=%d)", run->global->feedback.cmpFeedbackFd,
+            _HF_CMP_BITMAP_FD);
         return false;
     }
 

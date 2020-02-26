@@ -73,12 +73,15 @@
 /* Maximum size of the input file in bytes (128 MiB) */
 #define _HF_INPUT_MAX_SIZE (1024ULL * 1024ULL * 128ULL)
 
+/* FD used to report back used int/str constants from the fuzzed process */
+#define _HF_CMP_BITMAP_FD 1019
 /* FD used to log inside the child process */
 #define _HF_LOG_FD 1020
 /* FD used to represent the input file */
 #define _HF_INPUT_FD 1021
-/* FD used to pass feedback bitmap a process */
-#define _HF_BITMAP_FD 1022
+/* FD used to pass coverage feedback from the fuzzed process */
+#define _HF_COV_BITMAP_FD 1022
+#define _HF_BITMAP_FD _HF_COV_BITMAP_FD /* Old name for _HF_COV_BITMAP_FD */
 /* FD used to pass data to a persistent process */
 #define _HF_PERSISTENT_FD 1023
 
@@ -184,6 +187,23 @@ typedef struct {
 } feedback_t;
 
 typedef struct {
+    uint32_t strCnt;
+    struct {
+        char str[128];
+    } strArr[4096];
+    uint32_t intCnt;
+    struct {
+        union {
+            uint8_t int1;
+            uint16_t int2;
+            uint32_t int4;
+            uint64_t int8;
+        };
+        uint32_t len;
+    } intArr[4096];
+} cmpfeedback_t;
+
+typedef struct {
     struct {
         size_t threadsMax;
         size_t threadsFinished;
@@ -267,9 +287,11 @@ typedef struct {
     } sanitizer;
     struct {
         fuzzState_t state;
-        feedback_t* feedbackMap;
-        int bbFd;
-        pthread_mutex_t feedback_mutex;
+        feedback_t* covFeedbackMap;
+        int covFeedbackFd;
+        pthread_mutex_t covFeedback_mutex;
+        cmpfeedback_t* cmpFeedbackMap;
+        int cmpFeedbackFd;
         const char* blacklistFile;
         uint64_t* blacklist;
         size_t blacklistCnt;

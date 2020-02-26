@@ -192,7 +192,7 @@ static void printSummary(honggfuzz_t* hfuzz) {
     if (elapsed_sec) {
         exec_per_sec = hfuzz->cnts.mutationsCnt / elapsed_sec;
     }
-    uint64_t guardNb = ATOMIC_GET(hfuzz->feedback.feedbackMap->guardNb);
+    uint64_t guardNb = ATOMIC_GET(hfuzz->feedback.covFeedbackMap->guardNb);
     uint64_t branch_percent_cov =
         guardNb ? ((100 * ATOMIC_GET(hfuzz->linux.hwCnts.softCntEdge)) / guardNb) : 0;
     struct rusage usage;
@@ -211,7 +211,7 @@ static void printSummary(honggfuzz_t* hfuzz) {
           "peak_rss_mb:%lu",
         hfuzz->cnts.mutationsCnt, elapsed_sec, exec_per_sec, hfuzz->cnts.crashesCnt,
         hfuzz->cnts.timeoutedCnt, hfuzz->io.newUnitsAdded,
-        hfuzz->timing.timeOfLongestUnitInMilliseconds, hfuzz->feedback.feedbackMap->guardNb,
+        hfuzz->timing.timeOfLongestUnitInMilliseconds, hfuzz->feedback.covFeedbackMap->guardNb,
         branch_percent_cov, usage.ru_maxrss);
 }
 
@@ -359,9 +359,17 @@ int main(int argc, char** argv) {
         LOG_F("Couldn't parse symbols whitelist file ('%s')", hfuzzl.symsWlFile);
     }
 
-    if (!(hfuzz.feedback.feedbackMap = files_mapSharedMem(sizeof(feedback_t), &hfuzz.feedback.bbFd,
-              "hfuzz-feedback", /* nocore= */ true, /* export= */ hfuzz.io.exportFeedback))) {
-        LOG_F("files_mapSharedMem(sz=%zu, dir='%s') failed", sizeof(feedback_t), hfuzz.io.workDir);
+    if (!(hfuzz.feedback.covFeedbackMap =
+                files_mapSharedMem(sizeof(feedback_t), &hfuzz.feedback.covFeedbackFd,
+                    "hf-covfeedback", /* nocore= */ true, /* export= */ hfuzz.io.exportFeedback))) {
+        LOG_F("files_mapSharedMem(name='hf-covfeddback', sz=%zu, dir='%s') failed",
+            sizeof(feedback_t), hfuzz.io.workDir);
+    }
+    if (!(hfuzz.feedback.cmpFeedbackMap =
+                files_mapSharedMem(sizeof(cmpfeedback_t), &hfuzz.feedback.cmpFeedbackFd,
+                    "hf-cmpfeedback", /* nocore= */ true, /* export= */ hfuzz.io.exportFeedback))) {
+        LOG_F("files_mapSharedMem(name='hf-cmpfeedback', sz=%zu, dir='%s') failed",
+            sizeof(cmpfeedback_t), hfuzz.io.workDir);
     }
 
     setupRLimits();

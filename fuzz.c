@@ -136,11 +136,12 @@ static void fuzz_setDynamicMainState(run_t* run) {
 }
 
 static void fuzz_perfFeedbackForMinimization(run_t* run) {
-    uint64_t softCntPc = ATOMIC_GET(run->global->feedback.feedbackMap->pidFeedbackPc[run->fuzzNo]);
+    uint64_t softCntPc =
+        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidFeedbackPc[run->fuzzNo]);
     uint64_t softCntEdge =
-        ATOMIC_GET(run->global->feedback.feedbackMap->pidFeedbackEdge[run->fuzzNo]);
+        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidFeedbackEdge[run->fuzzNo]);
     uint64_t softCntCmp =
-        ATOMIC_GET(run->global->feedback.feedbackMap->pidFeedbackCmp[run->fuzzNo]);
+        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidFeedbackCmp[run->fuzzNo]);
     uint64_t cpuInstr = run->linux.hwCnts.cpuInstrCnt;
     uint64_t cpuBranch = run->linux.hwCnts.cpuBranchCnt;
 
@@ -157,17 +158,17 @@ static void fuzz_perfFeedbackForMinimization(run_t* run) {
     input_addDynamicInput(
         run->global, run->dynamicFile, run->dynamicFileSz, cov, run->origFileName);
 
-    ATOMIC_SET(run->global->feedback.feedbackMap->pidFeedbackPc[run->fuzzNo], 0);
-    memset(run->global->feedback.feedbackMap->bbMapPc, '\0',
-        sizeof(run->global->feedback.feedbackMap->bbMapPc));
+    ATOMIC_SET(run->global->feedback.covFeedbackMap->pidFeedbackPc[run->fuzzNo], 0);
+    memset(run->global->feedback.covFeedbackMap->bbMapPc, '\0',
+        sizeof(run->global->feedback.covFeedbackMap->bbMapPc));
 
-    ATOMIC_SET(run->global->feedback.feedbackMap->pidFeedbackEdge[run->fuzzNo], 0);
-    memset(run->global->feedback.feedbackMap->pcGuardMap, '\0',
-        sizeof(run->global->feedback.feedbackMap->pcGuardMap));
+    ATOMIC_SET(run->global->feedback.covFeedbackMap->pidFeedbackEdge[run->fuzzNo], 0);
+    memset(run->global->feedback.covFeedbackMap->pcGuardMap, '\0',
+        sizeof(run->global->feedback.covFeedbackMap->pcGuardMap));
 
-    ATOMIC_SET(run->global->feedback.feedbackMap->pidFeedbackCmp[run->fuzzNo], 0);
-    memset(run->global->feedback.feedbackMap->bbMapCmp, '\0',
-        sizeof(run->global->feedback.feedbackMap->bbMapCmp));
+    ATOMIC_SET(run->global->feedback.covFeedbackMap->pidFeedbackCmp[run->fuzzNo], 0);
+    memset(run->global->feedback.covFeedbackMap->bbMapCmp, '\0',
+        sizeof(run->global->feedback.covFeedbackMap->bbMapCmp));
 
     memset(&run->global->linux.hwCnts, '\0', sizeof(run->global->linux.hwCnts));
 }
@@ -177,7 +178,7 @@ static void fuzz_perfFeedback(run_t* run) {
         return;
     }
 
-    MX_SCOPED_LOCK(&run->global->feedback.feedback_mutex);
+    MX_SCOPED_LOCK(&run->global->feedback.covFeedback_mutex);
     defer {
         wmb();
     };
@@ -187,14 +188,15 @@ static void fuzz_perfFeedback(run_t* run) {
         return;
     }
 
-    uint64_t softCntPc = ATOMIC_GET(run->global->feedback.feedbackMap->pidFeedbackPc[run->fuzzNo]);
-    ATOMIC_CLEAR(run->global->feedback.feedbackMap->pidFeedbackPc[run->fuzzNo]);
+    uint64_t softCntPc =
+        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidFeedbackPc[run->fuzzNo]);
+    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidFeedbackPc[run->fuzzNo]);
     uint64_t softCntEdge =
-        ATOMIC_GET(run->global->feedback.feedbackMap->pidFeedbackEdge[run->fuzzNo]);
-    ATOMIC_CLEAR(run->global->feedback.feedbackMap->pidFeedbackEdge[run->fuzzNo]);
+        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidFeedbackEdge[run->fuzzNo]);
+    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidFeedbackEdge[run->fuzzNo]);
     uint64_t softCntCmp =
-        ATOMIC_GET(run->global->feedback.feedbackMap->pidFeedbackCmp[run->fuzzNo]);
-    ATOMIC_CLEAR(run->global->feedback.feedbackMap->pidFeedbackCmp[run->fuzzNo]);
+        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidFeedbackCmp[run->fuzzNo]);
+    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidFeedbackCmp[run->fuzzNo]);
 
     int64_t diff0 = run->global->linux.hwCnts.cpuInstrCnt - run->linux.hwCnts.cpuInstrCnt;
     int64_t diff1 = run->global->linux.hwCnts.cpuBranchCnt - run->linux.hwCnts.cpuBranchCnt;

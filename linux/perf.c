@@ -81,7 +81,7 @@ __attribute__((hot)) static inline void arch_perfBtsCount(run_t* run) {
 
         register size_t pos = ((br->from << 12) ^ (br->to & 0xFFF));
         pos &= _HF_PERF_BITMAP_BITSZ_MASK;
-        register uint8_t prev = ATOMIC_BTS(run->global->feedback.feedbackMap->bbMapPc, pos);
+        register uint8_t prev = ATOMIC_BTS(run->global->feedback.covFeedbackMap->bbMapPc, pos);
         if (!prev) {
             run->linux.hwCnts.newBBCnt++;
         }

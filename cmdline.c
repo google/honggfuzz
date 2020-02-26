@@ -354,9 +354,11 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             },
         .feedback =
             {
-                .feedbackMap = NULL,
-                .feedback_mutex = PTHREAD_MUTEX_INITIALIZER,
-                .bbFd = -1,
+                .covFeedbackMap = NULL,
+                .covFeedbackFd = -1,
+                .covFeedback_mutex = PTHREAD_MUTEX_INITIALIZER,
+                .cmpFeedbackMap = NULL,
+                .cmpFeedbackFd = -1,
                 .blacklistFile = NULL,
                 .blacklist = NULL,
                 .blacklistCnt = 0,
