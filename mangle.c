@@ -405,7 +405,7 @@ static void mangle_Magic(run_t* run, bool printable) {
     }
 }
 
-static void mangle_CmpFeedback(run_t* run, bool printable) {
+static void mangle_ConstCmpFeedback(run_t* run, bool printable) {
     if (!run->global->feedback.cmpFeedback) {
         return mangle_Magic(run, printable);
     }
@@ -644,7 +644,7 @@ void mangle_mangleContent(run_t* run) {
         mangle_Bit,
         mangle_Bytes,
         mangle_Magic,
-        mangle_CmpFeedback,
+        mangle_ConstCmpFeedback,
         mangle_IncByte,
         mangle_DecByte,
         mangle_NegByte,
