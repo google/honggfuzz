@@ -112,10 +112,8 @@ static inline int HF_memcmp(const void* m1, const void* m2, size_t n, uintptr_t 
     }
 
     instrumentUpdateCmpMap(addr, i);
-#if 0 /* Enabling this would create a recursion, as instrumentAddConstMem uses memcmp() */
     instrumentAddConstMem(m1, n, /* check_if_ro= */ true);
-    instrumentAddConstMem(m2, n, /* check_if_ro= */ true);A
-#endif
+    instrumentAddConstMem(m2, n, /* check_if_ro= */ true);
 
     if (i == n) {
         return 0;

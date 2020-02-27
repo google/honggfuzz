@@ -132,6 +132,15 @@ void instrumentClearNewCov() {
     covFeedback->pidFeedbackCmp[my_thread_no] = 0U;
 }
 
+static int _memcmp(const uint8_t* m1, const uint8_t* m2, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        if (m1[i] != m2[i]) {
+            return (m1[i] - m2[i]);
+        }
+    }
+    return 0;
+}
+
 void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
     if (!cmpFeedback) {
         return;
@@ -149,7 +158,7 @@ void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
 
     for (uint32_t i = 0; i < curroff; i++) {
         if ((len == cmpFeedback->valArr[i].len) &&
-            memcmp(cmpFeedback->valArr[i].val, mem, len) == 0) {
+            _memcmp(cmpFeedback->valArr[i].val, mem, len) == 0) {
             return;
         }
     }
