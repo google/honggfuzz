@@ -406,12 +406,12 @@ static void mangle_Magic(run_t* run, bool printable) {
 }
 
 static void mangle_ConstCmpFeedback(run_t* run, bool printable) {
-    cmpfeedback_t* cmpf = run->global->feedback.cmpFeedbackMap;
-    if (!cmpf) {
+    if (!run->global->feedback.cmpFeedback) {
         mangle_Magic(run, printable);
         return;
     }
 
+    cmpfeedback_t* cmpf = run->global->feedback.cmpFeedbackMap;
     uint32_t cnt = ATOMIC_GET(cmpf->cnt);
     if (cnt == 0) {
         mangle_Magic(run, printable);
@@ -423,15 +423,16 @@ static void mangle_ConstCmpFeedback(run_t* run, bool printable) {
 
     size_t off = util_rndGet(0, run->dynamicFileSz - 1);
     uint32_t choice = util_rndGet(0, cnt - 1);
-    if (cmpf->valArr[choice].len == 0) {
+    uint32_t len = ATOMIC_GET(cmpf->valArr[choice].len);
+    if (len == 0) {
         mangle_Magic(run, printable);
         return;
     }
 
-    mangle_Overwrite(run, cmpf->valArr[choice].val, off, cmpf->valArr[choice].len);
+    mangle_Overwrite(run, cmpf->valArr[choice].val, off, len);
 
     if (printable) {
-        util_turnToPrintable(&run->dynamicFile[off], cmpf->valArr[choice].len);
+        util_turnToPrintable(&run->dynamicFile[off], len);
     }
 }
 
