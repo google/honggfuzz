@@ -125,13 +125,6 @@ __attribute__((constructor)) void hfuzzInstrumentInit(void) {
     pthread_once(&localInitOnce, initializeInstrument);
 }
 
-/* Reset the counters of newly discovered edges/pcs/features */
-void instrumentClearNewCov() {
-    covFeedback->pidFeedbackPc[my_thread_no] = 0U;
-    covFeedback->pidFeedbackEdge[my_thread_no] = 0U;
-    covFeedback->pidFeedbackCmp[my_thread_no] = 0U;
-}
-
 static int _memcmp(const uint8_t* m1, const uint8_t* m2, size_t n) {
     for (size_t i = 0; i < n; i++) {
         if (m1[i] != m2[i]) {
@@ -140,39 +133,6 @@ static int _memcmp(const uint8_t* m1, const uint8_t* m2, size_t n) {
     }
     return 0;
 }
-
-void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
-    if (!cmpFeedback) {
-        return;
-    }
-    if (len > sizeof(cmpFeedback->valArr[0].val)) {
-        len = sizeof(cmpFeedback->valArr[0].val);
-    }
-    uint32_t curroff = ATOMIC_GET(cmpFeedback->cnt);
-    if (curroff >= ARRAYSIZE(cmpFeedback->valArr)) {
-        return;
-    }
-    if (check_if_ro && !util_isAddrRO(mem)) {
-        return;
-    }
-
-    for (uint32_t i = 0; i < curroff; i++) {
-        if ((len == cmpFeedback->valArr[i].len) &&
-            _memcmp(cmpFeedback->valArr[i].val, mem, len) == 0) {
-            return;
-        }
-    }
-
-    uint32_t newoff = ATOMIC_POST_INC(cmpFeedback->cnt);
-    if (newoff >= ARRAYSIZE(cmpFeedback->valArr)) {
-        ATOMIC_SET(cmpFeedback->cnt, ARRAYSIZE(cmpFeedback->valArr));
-        return;
-    }
-
-    memcpy(cmpFeedback->valArr[newoff].val, mem, len);
-    ATOMIC_SET(cmpFeedback->valArr[newoff].len, len);
-}
-
 /*
  * -finstrument-functions
  */
@@ -223,19 +183,6 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp1_internal(
     }
 }
 
-HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Arg2) {
-    hfuzz_trace_cmp1_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
-}
-
-HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_const_cmp1(uint8_t Arg1, uint8_t Arg2) {
-    /* No need to report back 1 byte comparisons */
-    hfuzz_trace_cmp1_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
-}
-
-HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_cmp1(uintptr_t pc, uint8_t Arg1, uint8_t Arg2) {
-    hfuzz_trace_cmp1_internal(pc, Arg1, Arg2);
-}
-
 HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp2_internal(
     uintptr_t pc, uint16_t Arg1, uint16_t Arg2) {
     uintptr_t pos = pc % _HF_PERF_BITMAP_SIZE_16M;
@@ -245,19 +192,6 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp2_internal(
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
     }
-}
-
-HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2) {
-    hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
-}
-
-HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_const_cmp2(uint16_t Arg1, uint16_t Arg2) {
-    instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
-    hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
-}
-
-HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_cmp2(uintptr_t pc, uint16_t Arg1, uint16_t Arg2) {
-    hfuzz_trace_cmp2_internal(pc, Arg1, Arg2);
 }
 
 HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp4_internal(
@@ -271,19 +205,6 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp4_internal(
     }
 }
 
-HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
-    hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
-}
-
-HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_const_cmp4(uint32_t Arg1, uint32_t Arg2) {
-    instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
-    hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
-}
-
-HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_cmp4(uintptr_t pc, uint32_t Arg1, uint32_t Arg2) {
-    hfuzz_trace_cmp4_internal(pc, Arg1, Arg2);
-}
-
 HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp8_internal(
     uintptr_t pc, uint64_t Arg1, uint64_t Arg2) {
     uintptr_t pos = pc % _HF_PERF_BITMAP_SIZE_16M;
@@ -295,17 +216,81 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp8_internal(
     }
 }
 
-HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
+/* Standard __sanitizer_cov_trace_cmp wrappers */
+void __sanitizer_cov_trace_cmp1(uint8_t Arg1, uint8_t Arg2) {
+    hfuzz_trace_cmp1_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+}
+
+void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2) {
+    hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+}
+
+void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
+    hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+}
+
+void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
     hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
-HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2) {
+/* Standard __sanitizer_cov_trace_const_cmp wrappers */
+void __sanitizer_cov_trace_const_cmp1(uint8_t Arg1, uint8_t Arg2) {
+    /* No need to report back 1 byte comparisons */
+    hfuzz_trace_cmp1_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+}
+
+void __sanitizer_cov_trace_const_cmp2(uint16_t Arg1, uint16_t Arg2) {
+    instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
+    hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+}
+
+void __sanitizer_cov_trace_const_cmp4(uint32_t Arg1, uint32_t Arg2) {
+    instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
+    hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+}
+
+void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2) {
     instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
     hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
-HF_REQUIRE_SSE42_POPCNT void hfuzz_trace_cmp8(uintptr_t pc, uint64_t Arg1, uint64_t Arg2) {
+/* Custom functions for e.g. the qemu-honggfuzz code */
+void hfuzz_trace_cmp1(uintptr_t pc, uint8_t Arg1, uint8_t Arg2) {
+    hfuzz_trace_cmp1_internal(pc, Arg1, Arg2);
+}
+
+void hfuzz_trace_cmp2(uintptr_t pc, uint16_t Arg1, uint16_t Arg2) {
+    hfuzz_trace_cmp2_internal(pc, Arg1, Arg2);
+}
+
+void hfuzz_trace_cmp4(uintptr_t pc, uint32_t Arg1, uint32_t Arg2) {
+    hfuzz_trace_cmp4_internal(pc, Arg1, Arg2);
+}
+
+void hfuzz_trace_cmp8(uintptr_t pc, uint64_t Arg1, uint64_t Arg2) {
     hfuzz_trace_cmp8_internal(pc, Arg1, Arg2);
+}
+
+/*
+ * Old version of __sanitizer_cov_trace_cmp[n]. Remove it at some point
+ */
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp(
+    uint64_t SizeAndType, uint64_t Arg1, uint64_t Arg2) {
+    uint64_t CmpSize = (SizeAndType >> 32) / 8;
+    switch (CmpSize) {
+        case (sizeof(uint8_t)):
+            hfuzz_trace_cmp1_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+            return;
+        case (sizeof(uint16_t)):
+            hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+            return;
+        case (sizeof(uint32_t)):
+            hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+            return;
+        case (sizeof(uint64_t)):
+            hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+            return;
+    }
 }
 
 /*
@@ -321,28 +306,6 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t
             ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
             ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
         }
-    }
-}
-
-/*
- * Old version of __sanitizer_cov_trace_cmp[n]. Remove it at some point
- */
-HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp(
-    uint64_t SizeAndType, uint64_t Arg1, uint64_t Arg2) {
-    uint64_t CmpSize = (SizeAndType >> 32) / 8;
-    switch (CmpSize) {
-        case (sizeof(uint8_t)):
-            __sanitizer_cov_trace_cmp1(Arg1, Arg2);
-            return;
-        case (sizeof(uint16_t)):
-            __sanitizer_cov_trace_cmp2(Arg1, Arg2);
-            return;
-        case (sizeof(uint32_t)):
-            __sanitizer_cov_trace_cmp4(Arg1, Arg2);
-            return;
-        case (sizeof(uint64_t)):
-            __sanitizer_cov_trace_cmp8(Arg1, Arg2);
-            return;
     }
 }
 
@@ -488,4 +451,43 @@ bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
         return true;
     }
     return false;
+}
+
+/* Reset the counters of newly discovered edges/pcs/features */
+void instrumentClearNewCov() {
+    covFeedback->pidFeedbackPc[my_thread_no] = 0U;
+    covFeedback->pidFeedbackEdge[my_thread_no] = 0U;
+    covFeedback->pidFeedbackCmp[my_thread_no] = 0U;
+}
+
+void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
+    if (!cmpFeedback) {
+        return;
+    }
+    if (len > sizeof(cmpFeedback->valArr[0].val)) {
+        len = sizeof(cmpFeedback->valArr[0].val);
+    }
+    uint32_t curroff = ATOMIC_GET(cmpFeedback->cnt);
+    if (curroff >= ARRAYSIZE(cmpFeedback->valArr)) {
+        return;
+    }
+    if (check_if_ro && !util_isAddrRO(mem)) {
+        return;
+    }
+
+    for (uint32_t i = 0; i < curroff; i++) {
+        if ((len == cmpFeedback->valArr[i].len) &&
+            _memcmp(cmpFeedback->valArr[i].val, mem, len) == 0) {
+            return;
+        }
+    }
+
+    uint32_t newoff = ATOMIC_POST_INC(cmpFeedback->cnt);
+    if (newoff >= ARRAYSIZE(cmpFeedback->valArr)) {
+        ATOMIC_SET(cmpFeedback->cnt, ARRAYSIZE(cmpFeedback->valArr));
+        return;
+    }
+
+    memcpy(cmpFeedback->valArr[newoff].val, mem, len);
+    ATOMIC_SET(cmpFeedback->valArr[newoff].len, len);
 }
