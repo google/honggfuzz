@@ -128,7 +128,7 @@ __attribute__((constructor)) void hfuzzInstrumentInit(void) {
 static int _memcmp(const uint8_t* m1, const uint8_t* m2, size_t n) {
     for (size_t i = 0; i < n; i++) {
         if (m1[i] != m2[i]) {
-            return (m1[i] - m2[i]);
+            return ((int)m1[i] - (int)m2[i]);
         }
     }
     return 0;
