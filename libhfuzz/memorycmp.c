@@ -20,9 +20,11 @@ static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
             break;
         }
     }
+
     instrumentUpdateCmpMap(addr, i);
     instrumentAddConstMem(s1, strlen(s1), /* check_if_ro= */ true);
     instrumentAddConstMem(s2, strlen(s2), /* check_if_ro= */ true);
+
     return ((unsigned char)s1[i] - (unsigned char)s2[i]);
 }
 
@@ -36,6 +38,7 @@ static inline int HF_strcasecmp(const char* s1, const char* s2, uintptr_t addr) 
     instrumentUpdateCmpMap(addr, i);
     instrumentAddConstMem(s1, strlen(s1), /* check_if_ro= */ true);
     instrumentAddConstMem(s2, strlen(s2), /* check_if_ro= */ true);
+
     return (tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]));
 }
 
@@ -50,6 +53,7 @@ static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t
     instrumentUpdateCmpMap(addr, i);
     instrumentAddConstMem(s1, strnlen(s1, n), /* check_if_ro= */ true);
     instrumentAddConstMem(s2, strnlen(s2, n), /* check_if_ro= */ true);
+
     if (i == n) {
         return 0;
     }
