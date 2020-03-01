@@ -76,7 +76,17 @@ __attribute__((always_inline)) static inline bool ATOMIC_BITMAP_SET(uint8_t* add
     if (ATOMIC_GET(*addr) & mask) {
         return true;
     }
+
+#if defined(__x86_64__) || defined(__i386__)
+    bool old;
+    __asm__ __volatile__("lock bts %2, %0\n\t"
+                         "sbb %1, %1\n\t"
+                         : "+m"(*addr), "=r"(old)
+                         : "Ir"(offset % 8));
+    return old;
+#else  /* defined(__x86_64__) || defined(__i386__) */
     return (ATOMIC_POST_OR_RELAXED(*addr, mask) & mask);
+#endif /* defined(__x86_64__) || defined(__i386__) */
 }
 
 extern void* util_Malloc(size_t sz);
