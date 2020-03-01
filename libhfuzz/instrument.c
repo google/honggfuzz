@@ -139,7 +139,7 @@ static int _memcmp(const uint8_t* m1, const uint8_t* m2, size_t n) {
 HF_REQUIRE_SSE42_POPCNT void __cyg_profile_func_enter(void* func, void* caller) {
     register size_t pos =
         (((uintptr_t)func << 12) | ((uintptr_t)caller & 0xFFF)) & _HF_PERF_BITMAP_BITSZ_MASK;
-    register uint8_t prev = ATOMIC_BTS(covFeedback->bbMapPc, pos);
+    register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
     if (!prev) {
         ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackPc[my_thread_no]);
     }
@@ -155,7 +155,8 @@ HF_REQUIRE_SSE42_POPCNT void __cyg_profile_func_exit(
  */
 HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_pc_internal(uintptr_t pc) {
     register uintptr_t ret = pc & _HF_PERF_BITMAP_BITSZ_MASK;
-    register uint8_t prev = ATOMIC_BTS(covFeedback->bbMapPc, ret);
+
+    register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, ret);
     if (!prev) {
         ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackPc[my_thread_no]);
     }
@@ -346,12 +347,13 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_div4(uint32_t Val) {
 /*
  * -fsanitize-coverage=indirect-calls
  */
+
 HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_indir(uintptr_t callee) {
     register size_t pos1 = (uintptr_t)__builtin_return_address(0) << 12;
     register size_t pos2 = callee & 0xFFF;
     register size_t pos = (pos1 | pos2) & _HF_PERF_BITMAP_BITSZ_MASK;
 
-    register uint8_t prev = ATOMIC_BTS(covFeedback->bbMapPc, pos);
+    register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
     if (!prev) {
         ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackPc[my_thread_no]);
     }
@@ -367,7 +369,7 @@ __attribute__((weak)) HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_indir_call16(
     register size_t pos2 = (uintptr_t)callee & 0xFFF;
     register size_t pos = (pos1 | pos2) & _HF_PERF_BITMAP_BITSZ_MASK;
 
-    register uint8_t prev = ATOMIC_BTS(covFeedback->bbMapPc, pos);
+    register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
     if (!prev) {
         ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackPc[my_thread_no]);
     }
@@ -436,9 +438,11 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
         return;
     }
 #endif /* defined(__ANDROID__) */
-    bool prev = ATOMIC_XCHG(covFeedback->pcGuardMap[*guard], true);
-    if (prev == false) {
-        ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackEdge[my_thread_no]);
+    if (!ATOMIC_GET(covFeedback->pcGuardMap[*guard])) {
+        bool prev = ATOMIC_XCHG(covFeedback->pcGuardMap[*guard], true);
+        if (prev == false) {
+            ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackEdge[my_thread_no]);
+        }
     }
 }
 

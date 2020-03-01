@@ -69,11 +69,14 @@
 #define ATOMIC_PRE_INC_RELAXED(x) __atomic_add_fetch(&(x), 1, __ATOMIC_RELAXED)
 #define ATOMIC_POST_OR_RELAXED(x, y) __atomic_fetch_or(&(x), y, __ATOMIC_RELAXED)
 
-__attribute__((always_inline)) static inline uint8_t ATOMIC_BTS(uint8_t* addr, size_t offset) {
-    uint8_t oldbit;
+__attribute__((always_inline)) static inline bool ATOMIC_BITMAP_SET(uint8_t* addr, size_t offset) {
     addr += (offset / 8);
-    oldbit = ATOMIC_POST_OR_RELAXED(*addr, ((uint8_t)1U << (offset % 8)));
-    return oldbit;
+    uint8_t mask = (1U << (offset % 8));
+
+    if (ATOMIC_GET(*addr) & mask) {
+        return true;
+    }
+    return (ATOMIC_POST_OR_RELAXED(*addr, mask) & mask);
 }
 
 extern void* util_Malloc(size_t sz);
