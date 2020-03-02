@@ -1,3 +1,14 @@
+2020-03-03 - Version 2.1
+        - string/int comparison enabled for targets built with *SAN, but w/o hfuzz-cc
+        - parallel work made faster by using faster ATOMIC constructs (check first, then update)
+        - implement --experimental_const_feedback - const string/integer feedback (used as an additional dictionary)
+        - sanitizer report files are "better"-deleted (i.e. based on PID and not TID)
+        - new patches for fuzzing added (e.g. for bind-9.16.0/9.15.7)
+        - buffered output enabled in display.c
+        - some functions moved from per-arch arch.c to common subproc.c
+        - compilation under MacOS X 10.15 (Catalina) is now supported
+        - added suport for bfd/binutils-2.33
+
 2019-12-07 - Version 2.0
         - Coverage-based corpus minimizer with '-M'
         - QEmu mode: coverage feedback for Linux binaries
