@@ -106,8 +106,7 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
     ATOMIC_SET(hfuzz->io.fileCnt, fileCnt);
     if (hfuzz->io.maxFileSz) {
         hfuzz->mutate.maxInputSz = hfuzz->io.maxFileSz;
-    }
-    if (hfuzz->mutate.maxInputSz < _HF_INPUT_DEFAULT_SIZE) {
+    } else if (hfuzz->mutate.maxInputSz < _HF_INPUT_DEFAULT_SIZE) {
         hfuzz->mutate.maxInputSz = _HF_INPUT_DEFAULT_SIZE;
     } else if (hfuzz->mutate.maxInputSz > _HF_INPUT_MAX_SIZE) {
         hfuzz->mutate.maxInputSz = _HF_INPUT_MAX_SIZE;
