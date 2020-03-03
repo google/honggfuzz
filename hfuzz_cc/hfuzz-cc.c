@@ -426,16 +426,25 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,-u,LIBHFUZZ_module_memorycmp";
 #endif /* _HF_ARCH_DARWIN */
 
+    /* Reference standard honggfuzz libraries first (libhfuzz, libhfcommon and libhfnetdriver) */
+    args[j++] = "-Wl,--push-state,-Bsymbolic";
+    args[j++] = getLibHFNetDriverPath();
+    args[j++] = getLibHFuzzPath();
+    args[j++] = getLibHFCommonPath();
+    args[j++] = "-Wl,--pop-state";
+
     for (int i = 1; i < argc; i++) {
         args[j++] = argv[i];
     }
 
-    /* Reference standard honggfuzz libraries (libhfuzz and libhfnetdriver) */
+    /* Reference standard libs again, in case some symbols are still missing */
+    args[j++] = "-Wl,--push-state,-Bsymbolic";
     args[j++] = getLibHFNetDriverPath();
     args[j++] = getLibHFuzzPath();
     args[j++] = getLibHFCommonPath();
+    args[j++] = "-Wl,--pop-state";
 
-    /* Needed by the libhfcommon */
+    /* Needed by libhfcommon */
     args[j++] = "-pthread";
     args[j++] = "-ldl";
 #if !defined(_HF_ARCH_DARWIN) && !defined(__OpenBSD__)
