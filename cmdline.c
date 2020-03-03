@@ -254,8 +254,8 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
         LOG_I("Verifier enabled with mutationsPerRun == 0, activating the dry run mode");
     }
 
-    if (hfuzz->mutate.maxFileSz > _HF_INPUT_MAX_SIZE) {
-        LOG_E("Maximum file size '%zu' bigger than the maximum size '%zu'", hfuzz->mutate.maxFileSz,
+    if (hfuzz->io.maxFileSz > _HF_INPUT_MAX_SIZE) {
+        LOG_E("Maximum file size '%zu' bigger than the maximum size '%zu'", hfuzz->io.maxFileSz,
             (size_t)_HF_INPUT_MAX_SIZE);
         return false;
     }
@@ -283,12 +283,14 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .inputDirPtr = NULL,
                 .fileCnt = 0,
                 .fileCntDone = false,
+                .maxFileSz = 0,
                 .newUnitsAdded = 0,
                 .fileExtn = "fuzz",
                 .workDir = {},
                 .crashDir = NULL,
                 .covDirNew = NULL,
                 .saveUnique = true,
+                .dynfileqMaxSz = 0U,
                 .dynfileqCnt = 0U,
                 .dynfileq_mutex = PTHREAD_RWLOCK_INITIALIZER,
                 .dynfileqCurrent = NULL,
@@ -328,7 +330,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .dictionaryFile = NULL,
                 .dictionaryCnt = 0,
                 .mutationsPerRun = 6U,
-                .maxFileSz = 0UL,
+                .maxInputSz = 0,
             },
         .display =
             {
@@ -604,7 +606,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->cfg.minimize = true;
                 break;
             case 'F':
-                hfuzz->mutate.maxFileSz = strtoul(optarg, NULL, 0);
+                hfuzz->io.maxFileSz = strtoul(optarg, NULL, 0);
                 break;
             case 't':
                 hfuzz->timing.tmOut = atol(optarg);

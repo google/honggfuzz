@@ -49,8 +49,8 @@ void input_setSize(run_t* run, size_t sz) {
     if (run->dynamicFileSz == sz) {
         return;
     }
-    if (sz > run->global->mutate.maxFileSz) {
-        PLOG_F("Too large size requested: %zu > maxSize: %zu", sz, run->global->mutate.maxFileSz);
+    if (sz > run->global->mutate.maxInputSz) {
+        PLOG_F("Too large size requested: %zu > maxSize: %zu", sz, run->global->mutate.maxInputSz);
     }
     /* ftruncate of a mmaped file fails under CygWin, it's also painfully slow under MacOS X */
 #if !defined(__CYGWIN__) && !defined(_HF_ARCH_DARWIN)
@@ -64,7 +64,6 @@ void input_setSize(run_t* run, size_t sz) {
 static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
     rewinddir(hfuzz->io.inputDirPtr);
 
-    size_t maxSize = 0U;
     size_t fileCnt = 0U;
     for (;;) {
         errno = 0;
@@ -94,33 +93,32 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
             LOG_D("'%s' is not a regular file, skipping", path);
             continue;
         }
-        if (hfuzz->mutate.maxFileSz != 0UL && st.st_size > (off_t)hfuzz->mutate.maxFileSz) {
-            LOG_D("File '%s' is bigger than maximal defined file size (-F): %" PRId64 " > %" PRId64,
-                path, (int64_t)st.st_size, (int64_t)hfuzz->mutate.maxFileSz);
+        if (hfuzz->io.maxFileSz && st.st_size > (off_t)hfuzz->io.maxFileSz) {
+            LOG_D("File '%s' is bigger than maximal defined file size (-F): %" PRIu64 " > %zu",
+                path, (uint64_t)st.st_size, (uint64_t)hfuzz->io.maxFileSz);
         }
-        if ((size_t)st.st_size > maxSize) {
-            maxSize = st.st_size;
+        if ((size_t)st.st_size > hfuzz->mutate.maxInputSz) {
+            hfuzz->mutate.maxInputSz = st.st_size;
         }
         fileCnt++;
     }
 
     ATOMIC_SET(hfuzz->io.fileCnt, fileCnt);
-    if (hfuzz->mutate.maxFileSz == 0U) {
-        if (maxSize < 8192) {
-            hfuzz->mutate.maxFileSz = 8192;
-        } else if (maxSize > _HF_INPUT_MAX_SIZE) {
-            hfuzz->mutate.maxFileSz = _HF_INPUT_MAX_SIZE;
-        } else {
-            hfuzz->mutate.maxFileSz = maxSize;
-        }
+    if (hfuzz->io.maxFileSz) {
+        hfuzz->mutate.maxInputSz = hfuzz->io.maxFileSz;
+    }
+    if (hfuzz->mutate.maxInputSz < _HF_INPUT_DEFAULT_SIZE) {
+        hfuzz->mutate.maxInputSz = _HF_INPUT_DEFAULT_SIZE;
+    } else if (hfuzz->mutate.maxInputSz > _HF_INPUT_MAX_SIZE) {
+        hfuzz->mutate.maxInputSz = _HF_INPUT_MAX_SIZE;
     }
 
     if (hfuzz->io.fileCnt == 0U) {
         LOG_W("No usable files in the input directory '%s'", hfuzz->io.inputDir);
     }
 
-    LOG_D("Analyzed '%s' directory: maxFileSz:%zu, number of usable files:%zu", hfuzz->io.inputDir,
-        hfuzz->mutate.maxFileSz, hfuzz->io.fileCnt);
+    LOG_D("Analyzed '%s' directory: maxInputSz:%zu, number of usable files:%zu", hfuzz->io.inputDir,
+        hfuzz->mutate.maxInputSz, hfuzz->io.fileCnt);
 
     rewinddir(hfuzz->io.inputDirPtr);
 
@@ -386,6 +384,7 @@ void input_addDynamicInput(
         TAILQ_INSERT_TAIL(&hfuzz->io.dynfileq, dynfile, pointers);
     }
     hfuzz->io.dynfileqCnt++;
+    hfuzz->io.dynfileqMaxSz = HF_MAX(hfuzz->io.dynfileqMaxSz, len);
 
     if (hfuzz->socketFuzzer.enabled) {
         /* Don't add coverage data to files in socketFuzzer mode */
@@ -440,22 +439,54 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     return true;
 }
 
-bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
-    if (!input_getNext(run, run->origFileName, /* rewind= */ rewind)) {
-        return false;
+static bool input_readNewFileOrRepeat(run_t* run) {
+    if (fuzz_getState(run->global) != _HF_STATE_DYNAMIC_DRY_RUN || run->global->cfg.minimize) {
+        input_setSize(run, run->global->mutate.maxInputSz);
+        return true;
     }
-    input_setSize(run, run->global->mutate.maxFileSz);
+
+    if (!run->staticFileTryMore) {
+        run->staticFileTryMore = true;
+        input_setSize(run, HF_MIN(1024U, run->global->mutate.maxInputSz));
+        return true;
+    }
+
+    /* Don't read a new file, but increase size of a current file by 2 */
+    size_t newsz = run->dynamicFileSz * 2;
+    if (newsz >= run->global->mutate.maxInputSz) {
+        /* That's the largest size for this file that will be used */
+        newsz = run->global->mutate.maxInputSz;
+        run->staticFileTryMore = false;
+    }
+
+    input_setSize(run, newsz);
+    return false;
+}
+
+bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
+    if (input_readNewFileOrRepeat(run)) {
+        if (!input_getNext(run, run->origFileName, /* rewind= */ rewind)) {
+            return false;
+        }
+    }
 
     char path[PATH_MAX];
     snprintf(path, sizeof(path), "%s/%s", run->global->io.inputDir, run->origFileName);
 
-    ssize_t fileSz = files_readFileToBufMax(path, run->dynamicFile, run->global->mutate.maxFileSz);
+    LOG_D("Will read up to %zu bytes from '%s'", run->dynamicFileSz, path);
+    ssize_t fileSz = files_readFileToBufMax(path, run->dynamicFile, run->dynamicFileSz);
     if (fileSz < 0) {
         LOG_E("Couldn't read contents of '%s'", path);
         return false;
     }
 
+    if ((size_t)fileSz < run->dynamicFileSz) {
+        /* The file is smaller than the requested size, no need to re-read it anymore */
+        run->staticFileTryMore = false;
+    }
+
     input_setSize(run, fileSz);
+
     if (needs_mangle) {
         mangle_mangleContent(run);
     }
@@ -493,8 +524,8 @@ bool input_prepareExternalFile(run_t* run) {
     }
     LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
 
-    input_setSize(run, run->global->mutate.maxFileSz);
-    ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->mutate.maxFileSz, 0);
+    input_setSize(run, run->global->mutate.maxInputSz);
+    ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->mutate.maxInputSz, 0);
     if (sz == -1) {
         LOG_E("Couldn't read file from fd=%d", fd);
         return false;
@@ -525,8 +556,8 @@ bool input_postProcessFile(run_t* run, const char* cmd) {
     }
     LOG_D("Subporcess '%s' finished with success", cmd);
 
-    input_setSize(run, run->global->mutate.maxFileSz);
-    ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->mutate.maxFileSz, 0);
+    input_setSize(run, run->global->mutate.maxInputSz);
+    ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->mutate.maxInputSz, 0);
     if (sz == -1) {
         LOG_E("Couldn't read file from fd=%d", fd);
         return false;

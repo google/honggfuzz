@@ -131,6 +131,16 @@ static void fuzz_setDynamicMainState(run_t* run) {
             /* cov */ (uint64_t[4]){0, 0, 0, 0}, /* path= */ "[DYNAMIC]");
     }
     snprintf(run->origFileName, sizeof(run->origFileName), "[DYNAMIC]");
+
+    if (run->global->io.maxFileSz == 0 && run->global->mutate.maxInputSz > _HF_INPUT_DEFAULT_SIZE) {
+        size_t newsz = (run->global->io.dynfileqMaxSz >= _HF_INPUT_DEFAULT_SIZE)
+                           ? run->global->io.dynfileqMaxSz
+                           : _HF_INPUT_DEFAULT_SIZE;
+        LOG_I("Setting maximum input size to %zu bytes (previously %zu bytes)", newsz,
+            run->global->mutate.maxInputSz);
+        run->global->mutate.maxInputSz = newsz;
+    }
+
     LOG_I("Entering phase 3/3: Dynamic Main (Feedback Driven Mode)");
     ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_MAIN);
 }
@@ -493,9 +503,9 @@ static void* fuzz_threadNew(void* arg) {
 
     /* Do not try to handle input files with socketfuzzer */
     if (!hfuzz->socketFuzzer.enabled) {
-        if (!(run.dynamicFile = files_mapSharedMem(hfuzz->mutate.maxFileSz, &run.dynamicFileFd,
+        if (!(run.dynamicFile = files_mapSharedMem(hfuzz->mutate.maxInputSz, &run.dynamicFileFd,
                   "hf-input", /* nocore= */ true, /* export= */ false))) {
-            LOG_F("Couldn't create an input file of size: %zu", hfuzz->mutate.maxFileSz);
+            LOG_F("Couldn't create an input file of size: %zu", hfuzz->mutate.maxInputSz);
         }
     }
     defer {

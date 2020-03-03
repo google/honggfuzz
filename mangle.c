@@ -40,7 +40,7 @@
 #include "libhfcommon/util.h"
 
 /* Spend at least 2/3 of time on modifying the first 8kB of input */
-static size_t mangle_getOffSet(run_t* run) {
+static inline size_t mangle_getOffSet(run_t* run) {
     switch (util_rnd64() % 3) {
         case 0:
             if (run->dynamicFileSz <= 1024) {
@@ -90,11 +90,11 @@ static inline void mangle_Move(run_t* run, size_t off_from, size_t off_to, size_
 }
 
 static void mangle_Inflate(run_t* run, size_t off, size_t len, bool printable) {
-    if (run->dynamicFileSz >= run->global->mutate.maxFileSz) {
+    if (run->dynamicFileSz >= run->global->mutate.maxInputSz) {
         return;
     }
-    if (len > (run->global->mutate.maxFileSz - run->dynamicFileSz)) {
-        len = run->global->mutate.maxFileSz - run->dynamicFileSz;
+    if (len > (run->global->mutate.maxInputSz - run->dynamicFileSz)) {
+        len = run->global->mutate.maxInputSz - run->dynamicFileSz;
     }
 
     input_setSize(run, run->dynamicFileSz + len);
@@ -618,7 +618,7 @@ static void mangle_Resize(run_t* run, bool printable) {
             newsz = oldsz;
             break;
         case 8: /* Set new size arbitrarily */
-            newsz = (ssize_t)util_rndGet(1, run->global->mutate.maxFileSz);
+            newsz = (ssize_t)util_rndGet(1, run->global->mutate.maxInputSz);
             break;
         case 9: /* Increase size by a small value */
             newsz = oldsz + (ssize_t)util_rndGet(1, 8);
@@ -639,8 +639,8 @@ static void mangle_Resize(run_t* run, bool printable) {
     if (newsz < 1) {
         newsz = 1;
     }
-    if (newsz > (ssize_t)run->global->mutate.maxFileSz) {
-        newsz = run->global->mutate.maxFileSz;
+    if (newsz > (ssize_t)run->global->mutate.maxInputSz) {
+        newsz = run->global->mutate.maxInputSz;
     }
 
     input_setSize(run, (size_t)newsz);

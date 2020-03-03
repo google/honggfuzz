@@ -89,6 +89,9 @@ __attribute__((always_inline)) static inline bool ATOMIC_BITMAP_SET(uint8_t* add
 #endif /* defined(__x86_64__) || defined(__i386__) */
 }
 
+#define HF_MAX(x, y) ((x > y) ? x : y)
+#define HF_MIN(x, y) ((x < y) ? x : y)
+
 extern void* util_Malloc(size_t sz);
 
 extern void* util_Calloc(size_t sz);

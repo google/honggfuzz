@@ -73,6 +73,9 @@
 /* Maximum size of the input file in bytes (128 MiB) */
 #define _HF_INPUT_MAX_SIZE (1024ULL * 1024ULL * 128ULL)
 
+/* Default maximum size of produced inputs */
+#define _HF_INPUT_DEFAULT_SIZE (1024ULL * 8)
+
 /* FD used to report back used int/str constants from the fuzzed process */
 #define _HF_CMP_BITMAP_FD 1019
 /* FD used to log inside the child process */
@@ -210,11 +213,13 @@ typedef struct {
         size_t fileCnt;
         const char* fileExtn;
         bool fileCntDone;
+        size_t maxFileSz;
         size_t newUnitsAdded;
         char workDir[PATH_MAX];
         const char* crashDir;
         const char* covDirNew;
         bool saveUnique;
+        size_t dynfileqMaxSz;
         size_t dynfileqCnt;
         pthread_rwlock_t dynfileq_mutex;
         struct dynfile_t* dynfileqCurrent;
@@ -255,7 +260,7 @@ typedef struct {
         size_t dictionaryCnt;
         size_t mutationsMax;
         unsigned mutationsPerRun;
-        size_t maxFileSz;
+        size_t maxInputSz;
     } mutate;
     struct {
         bool useScreen;
@@ -354,6 +359,7 @@ typedef struct {
     unsigned mutationsPerRun;
     uint8_t* dynamicFile;
     size_t dynamicFileSz;
+    bool staticFileTryMore;
     int dynamicFileFd;
     uint32_t fuzzNo;
     int persistentSock;
