@@ -411,6 +411,8 @@ static int ldMode(int argc, char** argv) {
     /* Some Samba functions */
     args[j++] = "-Wl,--wrap=memcmp_const_time";
     args[j++] = "-Wl,--wrap=strcsequal";
+    /* LittleCMS wrappers */
+    args[j++] = "-Wl,--wrap=cmsstrcasecmp";
 #endif /* _HF_ARCH_DARWIN */
 
     /* Pull modules defining the following symbols (if they exist) */

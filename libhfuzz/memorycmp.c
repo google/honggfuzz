@@ -392,3 +392,10 @@ HF_WEAK_WRAP(bool, strcsequal, const void* s1, const void* s2) {
     }
     return (HF_strcmp(s1, s2, (uintptr_t)__builtin_return_address(0)) == 0);
 }
+
+/*
+ * LittleCMS wrappers
+ */
+HF_WEAK_WRAP(int, cmsstrcasecmp, const void* s1, const void* s2) {
+    return HF_strcasecmp(s1, s2, (uintptr_t)__builtin_return_address(0));
+}
