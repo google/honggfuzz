@@ -446,11 +446,11 @@ static bool input_readNewFileOrRepeat(run_t* run) {
 
     if (!run->staticFileTryMore) {
         run->staticFileTryMore = true;
-        input_setSize(run, HF_MIN(1024U, run->global->mutate.maxInputSz));
+        input_setSize(run, HF_MIN(8192U, run->global->mutate.maxInputSz));
         return true;
     }
 
-    /* Don't read a new file, but increase size of a current file by 2 */
+    /* Increase size of the current file by 2, and try again */
     size_t newsz = run->dynamicFileSz * 2;
     if (newsz >= run->global->mutate.maxInputSz) {
         /* That's the largest size for this file that will be used */
@@ -472,7 +472,6 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
     char path[PATH_MAX];
     snprintf(path, sizeof(path), "%s/%s", run->global->io.inputDir, run->origFileName);
 
-    LOG_D("Will read up to %zu bytes from '%s'", run->dynamicFileSz, path);
     ssize_t fileSz = files_readFileToBufMax(path, run->dynamicFile, run->dynamicFileSz);
     if (fileSz < 0) {
         LOG_E("Couldn't read contents of '%s'", path);

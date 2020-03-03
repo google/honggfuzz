@@ -64,7 +64,7 @@ ssize_t files_readFileToBufMax(const char* fileName, uint8_t* buf, size_t fileMa
     }
     close(fd);
 
-    LOG_D("Read '%zu' bytes from '%s'", readSz, fileName);
+    LOG_D("Read %zu bytes (%zu requested) from '%s'", (size_t)readSz, fileMaxSz, fileName);
     return readSz;
 }
 
