@@ -57,10 +57,11 @@ void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr) {
 }
 
 extern const char* const LIBHFUZZ_module_memorycmp;
+extern const char* const LIBHFUZZ_module_instrument;
 static void HonggfuzzRunOneInput(const uint8_t* buf, size_t len) {
     int ret = LLVMFuzzerTestOneInput(buf, len);
     if (ret != 0) {
-        LOG_D("Dereferenced: %s", LIBHFUZZ_module_memorycmp);
+        LOG_D("Dereferenced: %s, %s", LIBHFUZZ_module_memorycmp, LIBHFUZZ_module_instrument);
         LOG_F("LLVMFuzzerTestOneInput() returned '%d' instead of '0'", ret);
     }
 }
