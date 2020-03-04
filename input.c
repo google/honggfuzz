@@ -438,7 +438,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     return true;
 }
 
-static bool input_readNewFileOrRepeat(run_t* run) {
+static bool input_shouldReadNewFile(run_t* run) {
     if (fuzz_getState(run->global) != _HF_STATE_DYNAMIC_DRY_RUN || run->global->cfg.minimize) {
         input_setSize(run, run->global->mutate.maxInputSz);
         return true;
@@ -446,14 +446,15 @@ static bool input_readNewFileOrRepeat(run_t* run) {
 
     if (!run->staticFileTryMore) {
         run->staticFileTryMore = true;
+        /* Start with a 8kB beginning of a file, increase the size in following iterations */
         input_setSize(run, HF_MIN(8192U, run->global->mutate.maxInputSz));
         return true;
     }
 
-    /* Increase size of the current file by 2, and try again */
+    /* Increase size of the current file by a factor of 2, and return it instead of a new file */
     size_t newsz = run->dynamicFileSz * 2;
     if (newsz >= run->global->mutate.maxInputSz) {
-        /* That's the largest size for this file that will be used */
+        /* That's the largest size for this specific file that will be ever used */
         newsz = run->global->mutate.maxInputSz;
         run->staticFileTryMore = false;
     }
@@ -463,7 +464,7 @@ static bool input_readNewFileOrRepeat(run_t* run) {
 }
 
 bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
-    if (input_readNewFileOrRepeat(run)) {
+    if (input_shouldReadNewFile(run)) {
         if (!input_getNext(run, run->origFileName, /* rewind= */ rewind)) {
             return false;
         }
