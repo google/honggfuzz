@@ -464,18 +464,12 @@ void instrumentClearNewCov() {
     covFeedback->pidFeedbackCmp[my_thread_no] = 0U;
 }
 
-void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
-    if (!cmpFeedback) {
-        return;
-    }
+static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
     if (len > sizeof(cmpFeedback->valArr[0].val)) {
         len = sizeof(cmpFeedback->valArr[0].val);
     }
     uint32_t curroff = ATOMIC_GET(cmpFeedback->cnt);
     if (curroff >= ARRAYSIZE(cmpFeedback->valArr)) {
-        return;
-    }
-    if (check_if_ro && !util_isAddrRO(mem)) {
         return;
     }
 
@@ -494,4 +488,34 @@ void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
 
     memcpy(cmpFeedback->valArr[newoff].val, mem, len);
     ATOMIC_SET(cmpFeedback->valArr[newoff].len, len);
+}
+
+void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
+    if (!cmpFeedback) {
+        return;
+    }
+    if (check_if_ro && !util_isAddrRO(mem)) {
+        return;
+    }
+    instrumentAddConstMemInternal(mem, len);
+}
+
+void instrumentAddConstStr(const char* s) {
+    if (!cmpFeedback) {
+        return;
+    }
+    if (!util_isAddrRO(s)) {
+        return;
+    }
+    instrumentAddConstMemInternal(s, strlen(s));
+}
+
+void instrumentAddConstStrN(const char* s, size_t n) {
+    if (!cmpFeedback) {
+        return;
+    }
+    if (!util_isAddrRO(s)) {
+        return;
+    }
+    instrumentAddConstMemInternal(s, strnlen(s, n));
 }
