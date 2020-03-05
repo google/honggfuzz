@@ -531,7 +531,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         PLOG_W("Couldn't get siginfo for pid %d", pid);
     }
 
-    uint64_t crashAddr = (uint64_t)si.si_addr;
+    uint64_t crashAddr = (uint64_t)(uintptr_t)si.si_addr;
     /* User-induced signals don't set si.si_addr */
     if (SI_FROMUSER(&si)) {
         crashAddr = 0UL;
@@ -571,7 +571,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
           " instr: '%s'",
         pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, crashAddr, instr);
 
-    if (!SI_FROMUSER(&si) && pc && crashAddr < (uint64_t)run->global->linux.ignoreAddr) {
+    if (!SI_FROMUSER(&si) && pc && crashAddr < (uint64_t)(uintptr_t)run->global->linux.ignoreAddr) {
         LOG_I("Input is interesting (%s), but the si.si_addr is %p (below %p), skipping",
             util_sigName(si.si_signo), si.si_addr, run->global->linux.ignoreAddr);
         return;

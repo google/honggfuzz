@@ -146,8 +146,7 @@ void report_appendReport(pid_t pid, run_t* run, funcs_t* funcs, size_t funcCnt, 
         run->report, sizeof(run->report), "STACK HASH: %016" PRIx64 "\n", run->backtrace);
     util_ssnprintf(run->report, sizeof(run->report), "STACK:\n");
     for (size_t i = 0; i < funcCnt; i++) {
-        util_ssnprintf(
-            run->report, sizeof(run->report), " <0x%016" PRIx64 "> ", (uint64_t)funcs[i].pc);
+        util_ssnprintf(run->report, sizeof(run->report), " <0x%016tx> ", (uintptr_t)funcs[i].pc);
         util_ssnprintf(run->report, sizeof(run->report), "[func:%s file:%s line:%zu module:%s]\n",
             funcs[i].func, funcs[i].file, funcs[i].line, funcs[i].module);
     }
