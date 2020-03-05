@@ -56,13 +56,14 @@ static void initializeCmpFeedback(void) {
         return;
     }
     int mflags = files_getTmpMapFlags(MAP_SHARED, /* nocore= */ true);
-    if ((cmpFeedback = mmap(NULL, sizeof(cmpfeedback_t), PROT_READ | PROT_WRITE, mflags,
-             _HF_CMP_BITMAP_FD, 0)) == MAP_FAILED) {
+    void* ret =
+        mmap(NULL, sizeof(cmpfeedback_t), PROT_READ | PROT_WRITE, mflags, _HF_CMP_BITMAP_FD, 0);
+    if (ret == MAP_FAILED) {
         PLOG_W("mmap(_HF_CMP_BITMAP_FD==%d, size=%zu) of the feedback structure failed",
             _HF_CMP_BITMAP_FD, sizeof(cmpfeedback_t));
-        cmpFeedback = NULL;
         return;
     }
+    ATOMIC_SET(cmpFeedback, ret);
 }
 
 static bool initializeCovFeedback(void) {
@@ -524,4 +525,8 @@ void instrumentAddConstStrN(const char* s, size_t n) {
         return;
     }
     instrumentAddConstMemInternal(s, strnlen(s, n));
+}
+
+bool instrumentConstAvail(void) {
+    return (ATOMIC_GET(cmpFeedback) != NULL);
 }

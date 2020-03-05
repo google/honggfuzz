@@ -43,7 +43,8 @@ static inline int HF_strcasecmp(const char* s1, const char* s2, uintptr_t addr) 
     return (tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]));
 }
 
-static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
+static inline int HF_strncmp(
+    const char* s1, const char* s2, size_t n, bool constfb, uintptr_t addr) {
     size_t i;
     for (i = 0; i < n; i++) {
         if ((s1[i] != s2[i]) || s1[i] == '\0' || s2[i] == '\0') {
@@ -52,8 +53,10 @@ static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t
     }
 
     instrumentUpdateCmpMap(addr, i);
-    instrumentAddConstStrN(s1, n);
-    instrumentAddConstStrN(s2, n);
+    if (constfb) {
+        instrumentAddConstStrN(s1, n);
+        instrumentAddConstStrN(s2, n);
+    }
 
     if (i == n) {
         return 0;
@@ -61,7 +64,8 @@ static inline int HF_strncmp(const char* s1, const char* s2, size_t n, uintptr_t
     return ((int)s1[i] - (int)s2[i]);
 }
 
-static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, uintptr_t addr) {
+static inline int HF_strncasecmp(
+    const char* s1, const char* s2, size_t n, bool constfb, uintptr_t addr) {
     size_t i;
     for (i = 0; i < n; i++) {
         if ((tolower((unsigned char)s1[i]) != tolower((unsigned char)s2[i])) || s1[i] == '\0' ||
@@ -71,8 +75,10 @@ static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, uintp
     }
 
     instrumentUpdateCmpMap(addr, i);
-    instrumentAddConstStrN(s1, n);
-    instrumentAddConstStrN(s2, n);
+    if (constfb) {
+        instrumentAddConstStrN(s1, n);
+        instrumentAddConstStrN(s2, n);
+    }
 
     if (i == n) {
         return 0;
@@ -86,9 +92,12 @@ static inline char* HF_strstr(const char* haystack, const char* needle, uintptr_
         return (char*)haystack;
     }
 
+    instrumentAddConstStr(haystack);
+    instrumentAddConstStr(needle);
+
     const char* h = haystack;
     for (; (h = __builtin_strchr(h, needle[0])) != NULL; h++) {
-        if (HF_strncmp(h, needle, needle_len, addr) == 0) {
+        if (HF_strncmp(h, needle, needle_len, /* constfb= */ false, addr) == 0) {
             return (char*)h;
         }
     }
@@ -97,15 +106,23 @@ static inline char* HF_strstr(const char* haystack, const char* needle, uintptr_
 
 static inline char* HF_strcasestr(const char* haystack, const char* needle, uintptr_t addr) {
     size_t needle_len = strlen(needle);
+    if (needle_len == 0) {
+        return (char*)haystack;
+    }
+
+    instrumentAddConstStr(haystack);
+    instrumentAddConstStr(needle);
+
     for (size_t i = 0; haystack[i]; i++) {
-        if (HF_strncasecmp(&haystack[i], needle, needle_len, addr) == 0) {
+        if (HF_strncasecmp(&haystack[i], needle, needle_len, /* constfb= */ false, addr) == 0) {
             return (char*)(&haystack[i]);
         }
     }
     return NULL;
 }
 
-static inline int HF_memcmp(const void* m1, const void* m2, size_t n, uintptr_t addr) {
+static inline int HF_memcmp(
+    const void* m1, const void* m2, size_t n, bool constfb, uintptr_t addr) {
     const unsigned char* s1 = (const unsigned char*)m1;
     const unsigned char* s2 = (const unsigned char*)m2;
 
@@ -117,8 +134,10 @@ static inline int HF_memcmp(const void* m1, const void* m2, size_t n, uintptr_t 
     }
 
     instrumentUpdateCmpMap(addr, i);
-    instrumentAddConstMem(m1, n, /* check_if_ro= */ true);
-    instrumentAddConstMem(m2, n, /* check_if_ro= */ true);
+    if (constfb) {
+        instrumentAddConstMem(m1, n, /* check_if_ro= */ true);
+        instrumentAddConstMem(m2, n, /* check_if_ro= */ true);
+    }
 
     if (i == n) {
         return 0;
@@ -135,9 +154,12 @@ static inline void* HF_memmem(const void* haystack, size_t haystacklen, const vo
         return (void*)haystack;
     }
 
+    instrumentAddConstMem(haystack, haystacklen, /* check_if_ro= */ true);
+    instrumentAddConstMem(needle, needlelen, /* check_if_ro= */ true);
+
     const char* h = haystack;
     for (size_t i = 0; i <= (haystacklen - needlelen); i++) {
-        if (HF_memcmp(&h[i], needle, needlelen, addr) == 0) {
+        if (HF_memcmp(&h[i], needle, needlelen, /* constfb= */ false, addr) == 0) {
             return (void*)(&h[i]);
         }
     }
@@ -175,18 +197,19 @@ void __sanitizer_weak_hook_strcasecmp(
     HF_strcasecmp(s1, s2, pc);
 }
 HF_WEAK_WRAP(int, strncmp, const char* s1, const char* s2, size_t n) {
-    return HF_strncmp(s1, s2, n, (uintptr_t)__builtin_return_address(0));
+    return HF_strncmp(s1, s2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 void __sanitizer_weak_hook_strncmp(
     uintptr_t pc, const char* s1, const char* s2, size_t n, int result HF_ATTR_UNUSED) {
-    HF_strncmp(s1, s2, n, pc);
+    HF_strncmp(s1, s2, n, instrumentConstAvail(), pc);
 }
 HF_WEAK_WRAP(int, strncasecmp, const char* s1, const char* s2, size_t n) {
-    return HF_strncasecmp(s1, s2, n, (uintptr_t)__builtin_return_address(0));
+    return HF_strncasecmp(
+        s1, s2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 void __sanitizer_weak_hook_strncasecmp(
     uintptr_t pc, const char* s1, const char* s2, size_t n, int result HF_ATTR_UNUSED) {
-    HF_strncasecmp(s1, s2, n, pc);
+    HF_strncasecmp(s1, s2, n, instrumentConstAvail(), pc);
 }
 HF_WEAK_WRAP(char*, strstr, const char* haystack, const char* needle) {
     return HF_strstr(haystack, needle, (uintptr_t)__builtin_return_address(0));
@@ -203,18 +226,18 @@ void __sanitizer_weak_hook_strcasestr(
     HF_strcasestr(haystack, needle, pc);
 }
 HF_WEAK_WRAP(int, memcmp, const void* m1, const void* m2, size_t n) {
-    return HF_memcmp(m1, m2, n, (uintptr_t)__builtin_return_address(0));
+    return HF_memcmp(m1, m2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 void __sanitizer_weak_hook_memcmp(
     uintptr_t pc, const void* m1, const void* m2, size_t n, int result HF_ATTR_UNUSED) {
-    HF_memcmp(m1, m2, n, pc);
+    HF_memcmp(m1, m2, n, instrumentConstAvail(), pc);
 }
 HF_WEAK_WRAP(int, bcmp, const void* m1, const void* m2, size_t n) {
-    return HF_memcmp(m1, m2, n, (uintptr_t)__builtin_return_address(0));
+    return HF_memcmp(m1, m2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 void __sanitizer_weak_hook_bcmp(
     uintptr_t pc, const void* m1, const void* m2, size_t n, int result HF_ATTR_UNUSED) {
-    HF_memcmp(m1, m2, n, pc);
+    HF_memcmp(m1, m2, n, instrumentConstAvail(), pc);
 }
 HF_WEAK_WRAP(
     void*, memmem, const void* haystack, size_t haystacklen, const void* needle, size_t needlelen) {
@@ -241,7 +264,8 @@ HF_WEAK_WRAP(int, ap_cstr_casecmp, const char* s1, const char* s2) {
 }
 
 HF_WEAK_WRAP(int, ap_cstr_casecmpn, const char* s1, const char* s2, size_t n) {
-    return HF_strncasecmp(s1, s2, n, (uintptr_t)__builtin_return_address(0));
+    return HF_strncasecmp(
+        s1, s2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(const char*, ap_strcasestr, const char* s1, const char* s2) {
@@ -253,18 +277,19 @@ HF_WEAK_WRAP(int, apr_cstr_casecmp, const char* s1, const char* s2) {
 }
 
 HF_WEAK_WRAP(int, apr_cstr_casecmpn, const char* s1, const char* s2, size_t n) {
-    return HF_strncasecmp(s1, s2, n, (uintptr_t)__builtin_return_address(0));
+    return HF_strncasecmp(
+        s1, s2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 
 /*
  * *SSL wrappers
  */
 HF_WEAK_WRAP(int, CRYPTO_memcmp, const void* m1, const void* m2, size_t len) {
-    return HF_memcmp(m1, m2, len, (uintptr_t)__builtin_return_address(0));
+    return HF_memcmp(m1, m2, len, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(int, OPENSSL_memcmp, const void* m1, const void* m2, size_t len) {
-    return HF_memcmp(m1, m2, len, (uintptr_t)__builtin_return_address(0));
+    return HF_memcmp(m1, m2, len, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(int, OPENSSL_strcasecmp, const char* s1, const char* s2) {
@@ -272,11 +297,12 @@ HF_WEAK_WRAP(int, OPENSSL_strcasecmp, const char* s1, const char* s2) {
 }
 
 HF_WEAK_WRAP(int, OPENSSL_strncasecmp, const char* s1, const char* s2, size_t len) {
-    return HF_strncasecmp(s1, s2, len, (uintptr_t)__builtin_return_address(0));
+    return HF_strncasecmp(
+        s1, s2, len, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(int32_t, memcmpct, const void* s1, const void* s2, size_t len) {
-    return HF_memcmp(s1, s2, len, (uintptr_t)__builtin_return_address(0));
+    return HF_memcmp(s1, s2, len, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 
 /*
@@ -295,7 +321,8 @@ HF_WEAK_WRAP(int, xmlStrncmp, const char* s1, const char* s2, int len) {
     if (s2 == NULL) {
         return 1;
     }
-    return HF_strncmp(s1, s2, (size_t)len, (uintptr_t)__builtin_return_address(0));
+    return HF_strncmp(
+        s1, s2, (size_t)len, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(int, xmlStrcmp, const char* s1, const char* s2) {
@@ -353,7 +380,8 @@ HF_WEAK_WRAP(int, xmlStrncasecmp, const char* s1, const char* s2, int len) {
     if (s2 == NULL) {
         return 1;
     }
-    return HF_strncasecmp(s1, s2, (size_t)len, (uintptr_t)__builtin_return_address(0));
+    return HF_strncasecmp(
+        s1, s2, (size_t)len, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(const char*, xmlStrstr, const char* haystack, const char* needle) {
@@ -380,7 +408,7 @@ HF_WEAK_WRAP(const char*, xmlStrcasestr, const char* haystack, const char* needl
  * Samba wrappers
  */
 HF_WEAK_WRAP(int, memcmp_const_time, const void* s1, const void* s2, size_t n) {
-    return HF_memcmp(s1, s2, n, (uintptr_t)__builtin_return_address(0));
+    return HF_memcmp(s1, s2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(bool, strcsequal, const void* s1, const void* s2) {

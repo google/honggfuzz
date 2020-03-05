@@ -34,5 +34,6 @@ void instrumentClearNewCov();
 void instrumentAddConstMem(const void* m, size_t len, bool check_if_ro);
 void instrumentAddConstStr(const char* s);
 void instrumentAddConstStrN(const char* s, size_t n);
+bool instrumentConstAvail();
 
 #endif /* ifdef _HF_LIBHFUZZ_INSTRUMENT_H_ */
