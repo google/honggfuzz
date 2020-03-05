@@ -465,6 +465,9 @@ void instrumentClearNewCov() {
 }
 
 static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
+    if (len == 0) {
+        return;
+    }
     if (len > sizeof(cmpFeedback->valArr[0].val)) {
         len = sizeof(cmpFeedback->valArr[0].val);
     }
@@ -492,6 +495,9 @@ static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
 
 void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
     if (!cmpFeedback) {
+        return;
+    }
+    if (len == 0) {
         return;
     }
     if (check_if_ro && !util_isAddrRO(mem)) {
