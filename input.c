@@ -479,7 +479,7 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
         return false;
     }
 
-    if ((size_t)fileSz < run->dynamicFileSz) {
+    if (run->staticFileTryMore && ((size_t)fileSz < run->dynamicFileSz)) {
         /* The file is smaller than the requested size, no need to re-read it anymore */
         run->staticFileTryMore = false;
     }
