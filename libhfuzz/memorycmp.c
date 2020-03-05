@@ -32,7 +32,6 @@ static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
     }
 
     int ret = (int)s1[i] - (int)s2[i];
-    ;
     if (ret) {
         instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
         instrumentAddConstStr(s1);
