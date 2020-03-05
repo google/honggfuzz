@@ -95,7 +95,7 @@ static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
         }
         if (hfuzz->io.maxFileSz && st.st_size > (off_t)hfuzz->io.maxFileSz) {
             LOG_D("File '%s' is bigger than maximal defined file size (-F): %" PRIu64 " > %zu",
-                path, (uint64_t)st.st_size, (uint64_t)hfuzz->io.maxFileSz);
+                path, (uint64_t)st.st_size, hfuzz->io.maxFileSz);
         }
         if ((size_t)st.st_size > hfuzz->mutate.maxInputSz) {
             hfuzz->mutate.maxInputSz = st.st_size;
