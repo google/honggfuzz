@@ -115,15 +115,15 @@ static void mangle_MemMove(run_t* run, bool printable HF_ATTR_UNUSED) {
 static void mangle_Bytes(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
 
-    uint64_t buf;
+    uint16_t buf;
     if (printable) {
         util_rndBufPrintable((uint8_t*)&buf, sizeof(buf));
     } else {
         buf = util_rnd64();
     }
 
-    /* Overwrite with random 1-8-byte values */
-    size_t toCopy = util_rndGet(1, 8);
+    /* Overwrite with random 1-2-byte values */
+    size_t toCopy = util_rndGet(1, 2);
     mangle_Overwrite(run, (uint8_t*)&buf, off, toCopy);
 }
 
