@@ -156,11 +156,15 @@ ifeq ($(COMPILER),clang)
   ARCH_CFLAGS += -Wno-initializer-overrides -Wno-unknown-warning-option
   ARCH_CFLAGS += -Wno-gnu-empty-initializer -Wno-format-pedantic
   ARCH_CFLAGS += -Wno-gnu-statement-expression
+  ARCH_CFLAGS += -mllvm -inline-threshold=2000
   CFLAGS_BLOCKS = -fblocks
 
   ifneq ($(OS),Darwin)
     ARCH_LDFLAGS += -Wl,-Bstatic -lBlocksRuntime -Wl,-Bdynamic
   endif
+endif
+ifeq ($(COMPILER),gcc)
+  ARCH_CFLAGS += --param max-inline-insns-single=2000
 endif
 
 SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
