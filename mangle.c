@@ -119,7 +119,7 @@ static void mangle_Bytes(run_t* run, bool printable) {
     if (printable) {
         util_rndBufPrintable((uint8_t*)&buf, sizeof(buf));
     } else {
-        util_rndBuf((uint8_t*)&buf, sizeof(buf));
+        buf = util_rnd64();
     }
 
     /* Overwrite with random 1-8-byte values */
@@ -135,7 +135,7 @@ static void mangle_Bit(run_t* run, bool printable) {
     }
 }
 
-static void mangle_DictionaryInsertNoCheck(run_t* run, bool printable) {
+static void mangle_DictionaryNoCheck(run_t* run, bool printable, bool inflate) {
     uint64_t choice = util_rndGet(0, run->global->mutate.dictionaryCnt - 1);
     struct strings_t* str = TAILQ_FIRST(&run->global->mutate.dictq);
     for (uint64_t i = 0; i < choice; i++) {
@@ -143,7 +143,9 @@ static void mangle_DictionaryInsertNoCheck(run_t* run, bool printable) {
     }
 
     size_t off = mangle_getOffSet(run);
-    mangle_Inflate(run, off, str->len, printable);
+    if (inflate) {
+        mangle_Inflate(run, off, str->len, printable);
+    }
     mangle_Overwrite(run, (uint8_t*)str->s, off, str->len);
 }
 
@@ -152,19 +154,7 @@ static void mangle_DictionaryInsert(run_t* run, bool printable) {
         mangle_Bit(run, printable);
         return;
     }
-    mangle_DictionaryInsertNoCheck(run, printable);
-}
-
-static void mangle_DictionaryNoCheck(run_t* run) {
-    size_t off = mangle_getOffSet(run);
-
-    uint64_t choice = util_rndGet(0, run->global->mutate.dictionaryCnt - 1);
-    struct strings_t* str = TAILQ_FIRST(&run->global->mutate.dictq);
-    for (uint64_t i = 0; i < choice; i++) {
-        str = TAILQ_NEXT(str, pointers);
-    }
-
-    mangle_Overwrite(run, (uint8_t*)str->s, off, str->len);
+    mangle_DictionaryNoCheck(run, printable, /* inflate= */ true);
 }
 
 static void mangle_Dictionary(run_t* run, bool printable) {
@@ -173,7 +163,7 @@ static void mangle_Dictionary(run_t* run, bool printable) {
         return;
     }
 
-    mangle_DictionaryNoCheck(run);
+    mangle_DictionaryNoCheck(run, printable, /* inflate= */ false);
 }
 
 static void mangle_Magic(run_t* run, bool printable) {
@@ -601,11 +591,11 @@ static void mangle_Shrink(run_t* run, bool printable HF_ATTR_UNUSED) {
         return;
     }
 
-    size_t len = mangle_getOffSet(run);
-    size_t off = util_rndGet(0, len);
+    size_t off_start = mangle_getOffSet(run);
+    size_t off_end = util_rndGet(0, off_start);
 
-    input_setSize(run, run->dynamicFileSz - len);
-    mangle_Move(run, off + len, off, run->dynamicFileSz);
+    mangle_Move(run, off_start, off_end, run->dynamicFileSz - off_start);
+    input_setSize(run, run->dynamicFileSz - (off_start - off_end));
 }
 
 static void mangle_Resize(run_t* run, bool printable) {
