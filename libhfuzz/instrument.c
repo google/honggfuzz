@@ -465,6 +465,15 @@ void instrumentClearNewCov() {
     covFeedback->pidFeedbackCmp[my_thread_no] = 0U;
 }
 
+/* Used to limit certain expensive actions, like adding values to dictionaries */
+static inline bool instrumentLimitEvery(uint64_t step) {
+    static uint64_t staticCnt = 0;
+    if ((ATOMIC_POST_INC(staticCnt) % step) == 0) {
+        return true;
+    }
+    return false;
+}
+
 static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
     if (len == 0) {
         return;
@@ -501,6 +510,9 @@ void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
     if (len == 0) {
         return;
     }
+    if (!instrumentLimitEvery(128)) {
+        return;
+    }
     if (check_if_ro && !util_isAddrRO(mem)) {
         return;
     }
@@ -511,6 +523,9 @@ void instrumentAddConstStr(const char* s) {
     if (!cmpFeedback) {
         return;
     }
+    if (!instrumentLimitEvery(128)) {
+        return;
+    }
     if (!util_isAddrRO(s)) {
         return;
     }
@@ -519,6 +534,12 @@ void instrumentAddConstStr(const char* s) {
 
 void instrumentAddConstStrN(const char* s, size_t n) {
     if (!cmpFeedback) {
+        return;
+    }
+    if (n == 0) {
+        return;
+    }
+    if (!instrumentLimitEvery(128)) {
         return;
     }
     if (!util_isAddrRO(s)) {
