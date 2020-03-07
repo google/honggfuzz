@@ -478,7 +478,7 @@ static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
     }
 
     for (uint32_t i = 0; i < curroff; i++) {
-        if ((len == cmpFeedback->valArr[i].len) &&
+        if ((len == ATOMIC_GET(cmpFeedback->valArr[i].len)) &&
             _memcmp(cmpFeedback->valArr[i].val, mem, len) == 0) {
             return;
         }
