@@ -389,9 +389,6 @@ int main(int argc, char** argv) {
     if (hfuzz.feedback.blacklist) {
         free(hfuzz.feedback.blacklist);
     }
-    if (hfuzz.mutate.dictionaryCnt) {
-        input_freeDictionary(&hfuzz);
-    }
 #if defined(_HF_ARCH_LINUX)
     if (hfuzz.linux.symsBl) {
         free(hfuzz.linux.symsBl);

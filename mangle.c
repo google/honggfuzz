@@ -134,38 +134,6 @@ static void mangle_Bit(run_t* run, bool printable) {
         util_turnToPrintable(&(run->dynamicFile[off]), 1);
     }
 }
-
-static void mangle_DictionaryNoCheck(run_t* run, bool printable, bool inflate) {
-    uint64_t choice = util_rndGet(0, run->global->mutate.dictionaryCnt - 1);
-    struct strings_t* str = TAILQ_FIRST(&run->global->mutate.dictq);
-    for (uint64_t i = 0; i < choice; i++) {
-        str = TAILQ_NEXT(str, pointers);
-    }
-
-    size_t off = mangle_getOffSet(run);
-    if (inflate) {
-        mangle_Inflate(run, off, str->len, printable);
-    }
-    mangle_Overwrite(run, (uint8_t*)str->s, off, str->len);
-}
-
-static void mangle_DictionaryInsert(run_t* run, bool printable) {
-    if (run->global->mutate.dictionaryCnt == 0) {
-        mangle_Bit(run, printable);
-        return;
-    }
-    mangle_DictionaryNoCheck(run, printable, /* inflate= */ true);
-}
-
-static void mangle_Dictionary(run_t* run, bool printable) {
-    if (run->global->mutate.dictionaryCnt == 0) {
-        mangle_Bit(run, printable);
-        return;
-    }
-
-    mangle_DictionaryNoCheck(run, printable, /* inflate= */ false);
-}
-
 static void mangle_Magic(run_t* run, bool printable) {
     static const struct {
         const uint8_t val[8];
@@ -413,35 +381,73 @@ static void mangle_Magic(run_t* run, bool printable) {
     }
 }
 
-static void mangle_ConstCmpFeedback(run_t* run, bool printable) {
-    if (!run->global->feedback.cmpFeedback) {
-        mangle_Magic(run, printable);
+static void mangle_DictionaryNoCheck(
+    run_t* run, const uint8_t* val, size_t len, bool printable, bool inflate) {
+    size_t off = mangle_getOffSet(run);
+    if (inflate) {
+        mangle_Inflate(run, off, len, printable);
+    }
+    mangle_Overwrite(run, (const uint8_t*)val, off, len);
+}
+
+static void mangle_DictionaryInsert(run_t* run, bool printable) {
+    if (run->global->mutate.dictionaryCnt == 0) {
+        mangle_Bytes(run, printable);
         return;
     }
+    uint64_t choice = util_rndGet(0, run->global->mutate.dictionaryCnt - 1);
+    mangle_DictionaryNoCheck(run, run->global->mutate.dictionary[choice].val,
+        run->global->mutate.dictionary[choice].len, printable, /* inflate= */ true);
+}
 
+static void mangle_DictionaryOverwrite(run_t* run, bool printable) {
+    if (run->global->mutate.dictionaryCnt == 0) {
+        mangle_Bytes(run, printable);
+        return;
+    }
+    uint64_t choice = util_rndGet(0, run->global->mutate.dictionaryCnt - 1);
+    mangle_DictionaryNoCheck(run, run->global->mutate.dictionary[choice].val,
+        run->global->mutate.dictionary[choice].len, printable, /* inflate= */ false);
+}
+
+static const uint8_t* mangle_FeedbackDict(run_t* run, size_t* len) {
+    if (!run->global->feedback.cmpFeedback) {
+        return NULL;
+    }
     cmpfeedback_t* cmpf = run->global->feedback.cmpFeedbackMap;
     uint32_t cnt = ATOMIC_GET(cmpf->cnt);
     if (cnt == 0) {
-        mangle_Magic(run, printable);
-        return;
+        return NULL;
     }
     if (cnt > ARRAYSIZE(cmpf->valArr)) {
         cnt = ARRAYSIZE(cmpf->valArr);
     }
-
-    size_t off = mangle_getOffSet(run);
     uint32_t choice = util_rndGet(0, cnt - 1);
-    uint32_t len = ATOMIC_GET(cmpf->valArr[choice].len);
-    if (len == 0) {
+    *len = (size_t)ATOMIC_GET(cmpf->valArr[choice].len);
+    if (*len == 0) {
+        return NULL;
+    }
+    return cmpf->valArr[choice].val;
+}
+
+static void mangle_ConstFeedbackInsert(run_t* run, bool printable) {
+    size_t len;
+    const uint8_t* val = mangle_FeedbackDict(run, &len);
+    if (val == NULL) {
         mangle_Magic(run, printable);
         return;
     }
+    mangle_DictionaryNoCheck(run, val, len, printable, /* inflate= */ true);
+}
 
-    mangle_Overwrite(run, cmpf->valArr[choice].val, off, len);
-
-    if (printable) {
-        util_turnToPrintable(&run->dynamicFile[off], len);
+static void mangle_ConstFeedbackOverwrite(run_t* run, bool printable) {
+    size_t len;
+    const uint8_t* val = mangle_FeedbackDict(run, &len);
+    if (val == NULL) {
+        mangle_Magic(run, printable);
+        return;
     }
+    mangle_DictionaryNoCheck(run, val, len, printable, /* inflate= */ false);
 }
 
 static void mangle_MemSetWithVal(run_t* run, int val) {
@@ -654,13 +660,14 @@ void mangle_mangleContent(run_t* run) {
         mangle_Bit,
         mangle_Bytes,
         mangle_Magic,
-        mangle_ConstCmpFeedback,
         mangle_IncByte,
         mangle_DecByte,
         mangle_NegByte,
         mangle_AddSub,
-        mangle_Dictionary,
+        mangle_DictionaryOverwrite,
         mangle_DictionaryInsert,
+        mangle_ConstFeedbackOverwrite,
+        mangle_ConstFeedbackInsert,
         mangle_MemMove,
         mangle_MemSet,
         mangle_Random,

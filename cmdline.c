@@ -327,8 +327,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .mutate =
             {
                 .mutationsMax = 0,
-                .dictionaryFile = NULL,
+                .dictionary = {},
                 .dictionaryCnt = 0,
+                .dictionaryFile = NULL,
                 .mutationsPerRun = 6U,
                 .maxInputSz = 0,
             },
@@ -425,7 +426,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     };
 
     TAILQ_INIT(&hfuzz->io.dynfileq);
-    TAILQ_INIT(&hfuzz->mutate.dictq);
 
     // clang-format off
     struct custom_option custom_opts[] = {

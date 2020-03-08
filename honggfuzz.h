@@ -255,9 +255,12 @@ typedef struct {
         bool tmoutVTALRM;
     } timing;
     struct {
-        const char* dictionaryFile;
-        TAILQ_HEAD(strq_t, strings_t) dictq;
+        struct {
+            uint8_t val[256];
+            size_t len;
+        } dictionary[1024];
         size_t dictionaryCnt;
+        const char* dictionaryFile;
         size_t mutationsMax;
         unsigned mutationsPerRun;
         size_t maxInputSz;

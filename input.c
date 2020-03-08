@@ -219,6 +219,11 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
         if (len == -1) {
             break;
         }
+        if (hfuzz->mutate.dictionaryCnt == ARRAYSIZE(hfuzz->mutate.dictionary)) {
+            LOG_W("Maximum number of dictionary entries '%zu' alread loaded. Skipping the rest",
+                ARRAYSIZE(hfuzz->mutate.dictionary));
+            break;
+        }
         if (len > 1 && lineptr[len - 1] == '\n') {
             lineptr[len - 1] = '\0';
             len--;
@@ -242,26 +247,16 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
         LOG_D("Parsing dictionary word: '%s'", bufv);
 
         len = util_decodeCString(bufv);
-        struct strings_t* str = (struct strings_t*)util_Calloc(sizeof(struct strings_t) + len + 1);
-        memcpy(str->s, bufv, len);
-        str->len = len;
-        hfuzz->mutate.dictionaryCnt++;
-        TAILQ_INSERT_TAIL(&hfuzz->mutate.dictq, str, pointers);
+        size_t dictEntry = ATOMIC_POST_INC(hfuzz->mutate.dictionaryCnt);
+        len = HF_MIN((size_t)len, sizeof(hfuzz->mutate.dictionary[dictEntry].val));
+        memcpy(hfuzz->mutate.dictionary[dictEntry].val, bufv, len);
+        hfuzz->mutate.dictionary[dictEntry].len = len;
 
-        LOG_D("Dictionary: loaded word: '%s' (len=%zu)", str->s, str->len);
+        LOG_D("Dictionary: loaded word: '%s' (len=%zd)", bufv, len);
     }
     LOG_I("Loaded %zu words from the dictionary '%s'", hfuzz->mutate.dictionaryCnt,
         hfuzz->mutate.dictionaryFile);
     return true;
-}
-
-void input_freeDictionary(honggfuzz_t* hfuzz) {
-    while (!TAILQ_EMPTY(&hfuzz->mutate.dictq)) {
-        struct strings_t* str = TAILQ_FIRST(&hfuzz->mutate.dictq);
-        TAILQ_REMOVE(&hfuzz->mutate.dictq, str, pointers);
-        free(str);
-        hfuzz->mutate.dictionaryCnt--;
-    }
 }
 
 bool input_parseBlacklist(honggfuzz_t* hfuzz) {
