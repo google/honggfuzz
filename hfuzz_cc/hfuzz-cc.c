@@ -415,7 +415,8 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=cmsstrcasecmp";
     /* GLib wrappers */
     args[j++] = "-Wl,--wrap=g_strcmp0";
-    args[j++] = "-Wl,--wrap=g_strcasecmp", args[j++] = "-Wl,--wrap=g_strncasecmp",
+    args[j++] = "-Wl,--wrap=g_strcasecmp";
+    args[j++] = "-Wl,--wrap=g_strncasecmp";
 #endif /* _HF_ARCH_DARWIN */
 
     /* Pull modules defining the following symbols (if they exist) */
