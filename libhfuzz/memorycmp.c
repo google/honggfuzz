@@ -40,15 +40,16 @@ static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
     return ret;
 }
 
-static inline int HF_strcasecmp(const char* s1, const char* s2, uintptr_t addr) {
+static inline int HF_strcasecmp(
+    const char* s1, const char* s2, int (*tlower_func)(int), uintptr_t addr) {
     size_t i;
-    for (i = 0; tolower((unsigned char)s1[i]) == tolower((unsigned char)s2[i]); i++) {
+    for (i = 0; tlower_func((unsigned char)s1[i]) == tlower_func((unsigned char)s2[i]); i++) {
         if (s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
     }
 
-    int ret = tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]);
+    int ret = tlower_func((unsigned char)s1[i]) - tlower_func((unsigned char)s2[i]);
     if (ret) {
         instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
         instrumentAddConstStr(s1);
@@ -81,12 +82,12 @@ static inline int HF_strncmp(
     return ret;
 }
 
-static inline int HF_strncasecmp(
-    const char* s1, const char* s2, size_t n, bool constfb, uintptr_t addr) {
+static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, int (*tlower_func)(int),
+    bool constfb, uintptr_t addr) {
     size_t i;
     for (i = 0; i < n; i++) {
-        if ((tolower((unsigned char)s1[i]) != tolower((unsigned char)s2[i])) || s1[i] == '\0' ||
-            s2[i] == '\0') {
+        if ((tlower_func((unsigned char)s1[i]) != tlower_func((unsigned char)s2[i])) ||
+            s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
     }
@@ -95,7 +96,7 @@ static inline int HF_strncasecmp(
         return 0;
     }
 
-    int ret = tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]);
+    int ret = tlower_func((unsigned char)s1[i]) - tlower_func((unsigned char)s2[i]);
     if (ret) {
         instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
         if (constfb) {
@@ -132,7 +133,8 @@ static inline char* HF_strcasestr(const char* haystack, const char* needle, uint
     }
 
     for (size_t i = 0; haystack[i]; i++) {
-        if (HF_strncasecmp(&haystack[i], needle, needle_len, /* constfb= */ false, addr) == 0) {
+        if (HF_strncasecmp(&haystack[i], needle, needle_len, tolower, /* constfb= */ false, addr) ==
+            0) {
             return (char*)(&haystack[i]);
         }
     }
@@ -216,11 +218,11 @@ void __sanitizer_weak_hook_strcmp(
     HF_strcmp(s1, s2, pc);
 }
 HF_WEAK_WRAP(int, strcasecmp, const char* s1, const char* s2) {
-    return HF_strcasecmp(s1, s2, (uintptr_t)__builtin_return_address(0));
+    return HF_strcasecmp(s1, s2, tolower, (uintptr_t)__builtin_return_address(0));
 }
 void __sanitizer_weak_hook_strcasecmp(
     uintptr_t pc, const char* s1, const char* s2, int result HF_ATTR_UNUSED) {
-    HF_strcasecmp(s1, s2, pc);
+    HF_strcasecmp(s1, s2, tolower, pc);
 }
 HF_WEAK_WRAP(int, strncmp, const char* s1, const char* s2, size_t n) {
     return HF_strncmp(s1, s2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
@@ -231,11 +233,11 @@ void __sanitizer_weak_hook_strncmp(
 }
 HF_WEAK_WRAP(int, strncasecmp, const char* s1, const char* s2, size_t n) {
     return HF_strncasecmp(
-        s1, s2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
+        s1, s2, n, tolower, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 void __sanitizer_weak_hook_strncasecmp(
     uintptr_t pc, const char* s1, const char* s2, size_t n, int result HF_ATTR_UNUSED) {
-    HF_strncasecmp(s1, s2, n, instrumentConstAvail(), pc);
+    HF_strncasecmp(s1, s2, n, tolower, instrumentConstAvail(), pc);
 }
 HF_WEAK_WRAP(char*, strstr, const char* haystack, const char* needle) {
     return HF_strstr(haystack, needle, (uintptr_t)__builtin_return_address(0));
@@ -286,12 +288,12 @@ void __sanitizer_weak_hook_strcpy(
  * Apache's httpd wrappers
  */
 HF_WEAK_WRAP(int, ap_cstr_casecmp, const char* s1, const char* s2) {
-    return HF_strcasecmp(s1, s2, (uintptr_t)__builtin_return_address(0));
+    return HF_strcasecmp(s1, s2, tolower, (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(int, ap_cstr_casecmpn, const char* s1, const char* s2, size_t n) {
     return HF_strncasecmp(
-        s1, s2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
+        s1, s2, n, tolower, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(const char*, ap_strcasestr, const char* s1, const char* s2) {
@@ -299,12 +301,12 @@ HF_WEAK_WRAP(const char*, ap_strcasestr, const char* s1, const char* s2) {
 }
 
 HF_WEAK_WRAP(int, apr_cstr_casecmp, const char* s1, const char* s2) {
-    return HF_strcasecmp(s1, s2, (uintptr_t)__builtin_return_address(0));
+    return HF_strcasecmp(s1, s2, tolower, (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(int, apr_cstr_casecmpn, const char* s1, const char* s2, size_t n) {
     return HF_strncasecmp(
-        s1, s2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
+        s1, s2, n, tolower, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 
 /*
@@ -319,12 +321,12 @@ HF_WEAK_WRAP(int, OPENSSL_memcmp, const void* m1, const void* m2, size_t len) {
 }
 
 HF_WEAK_WRAP(int, OPENSSL_strcasecmp, const char* s1, const char* s2) {
-    return HF_strcasecmp(s1, s2, (uintptr_t)__builtin_return_address(0));
+    return HF_strcasecmp(s1, s2, tolower, (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(int, OPENSSL_strncasecmp, const char* s1, const char* s2, size_t len) {
     return HF_strncasecmp(
-        s1, s2, len, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
+        s1, s2, len, tolower, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(int32_t, memcmpct, const void* s1, const void* s2, size_t len) {
@@ -390,7 +392,7 @@ HF_WEAK_WRAP(int, xmlStrcasecmp, const char* s1, const char* s2) {
     if (s2 == NULL) {
         return 1;
     }
-    return HF_strcasecmp(s1, s2, (uintptr_t)__builtin_return_address(0));
+    return HF_strcasecmp(s1, s2, tolower, (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(int, xmlStrncasecmp, const char* s1, const char* s2, int len) {
@@ -406,8 +408,8 @@ HF_WEAK_WRAP(int, xmlStrncasecmp, const char* s1, const char* s2, int len) {
     if (s2 == NULL) {
         return 1;
     }
-    return HF_strncasecmp(
-        s1, s2, (size_t)len, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
+    return HF_strncasecmp(s1, s2, (size_t)len, tolower, instrumentConstAvail(),
+        (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(const char*, xmlStrstr, const char* haystack, const char* needle) {
@@ -451,39 +453,66 @@ HF_WEAK_WRAP(bool, strcsequal, const void* s1, const void* s2) {
  * LittleCMS wrappers
  */
 HF_WEAK_WRAP(int, cmsstrcasecmp, const void* s1, const void* s2) {
-    return HF_strcasecmp(s1, s2, (uintptr_t)__builtin_return_address(0));
+    return HF_strcasecmp(s1, s2, tolower, (uintptr_t)__builtin_return_address(0));
 }
 
 /*
  * GLib wrappers
  */
 HF_WEAK_WRAP(int, g_strcmp0, const char* s1, const char* s2) {
-    if (s1 == s2) {
-        return 0;
+    if (!s1) {
+        return -(s1 != s2);
     }
-    if (!s1 && s2) {
-        return 1;
-    }
-    if (!s2 && s1) {
-        return -1;
+    if (!s2) {
+        return s1 != s2;
     }
     return HF_strcmp(s1, s2, (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(int, g_strcasecmp, const char* s1, const char* s2) {
-    return HF_strcasecmp(s1, s2, (uintptr_t)__builtin_return_address(0));
+    if (!s1 || !s2) {
+        return 0;
+    }
+    return HF_strcasecmp(s1, s2, tolower, (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(int, g_strncasecmp, const char* s1, const char* s2, int n) {
+    if (!s1 || !s2) {
+        return 0;
+    }
     return HF_strncasecmp(
-        s1, s2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
+        s1, s2, n, tolower, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 
-HF_WEAK_WRAP(char*, g_strstr, const char* haystack, const char* needle) {
-    return HF_strstr(haystack, needle, (uintptr_t)__builtin_return_address(0));
+HF_WEAK_WRAP(char*, g_strstr_len, const char* haystack, ssize_t haystack_len, const char* needle) {
+    if (!haystack || !needle) {
+        return NULL;
+    }
+    if (haystack_len < 0) {
+        return HF_strstr(haystack, needle, (uintptr_t)__builtin_return_address(0));
+    }
+    return HF_memmem(haystack, (size_t)haystack_len, needle, __builtin_strlen(needle),
+        (uintptr_t)__builtin_return_address(0));
 }
 
-HF_WEAK_WRAP(char*, g_strstr_len, const char* haystack, size_t haystack_len, const char* needle) {
-    return HF_memmem(haystack, haystack_len, needle, __builtin_strlen(needle),
+static inline int hf_glib_ascii_tolower(int c) {
+    if (c >= 'A' && c <= 'Z') {
+        return c - 'A' + 'a';
+    }
+    return c;
+}
+
+HF_WEAK_WRAP(int, g_ascii_strcasecmp, const char* s1, const char* s2) {
+    if (!s1 || !s2) {
+        return 0;
+    }
+    return HF_strcasecmp(s1, s2, hf_glib_ascii_tolower, (uintptr_t)__builtin_return_address(0));
+}
+
+HF_WEAK_WRAP(int, g_ascii_strncasecmp, const char* s1, const char* s2, size_t n) {
+    if (!s1 || !s2) {
+        return 0;
+    }
+    return HF_strncasecmp(s1, s2, n, hf_glib_ascii_tolower, instrumentConstAvail(),
         (uintptr_t)__builtin_return_address(0));
 }
