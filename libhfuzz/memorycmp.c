@@ -453,3 +453,28 @@ HF_WEAK_WRAP(bool, strcsequal, const void* s1, const void* s2) {
 HF_WEAK_WRAP(int, cmsstrcasecmp, const void* s1, const void* s2) {
     return HF_strcasecmp(s1, s2, (uintptr_t)__builtin_return_address(0));
 }
+
+/*
+ * GLib wrappers
+ */
+HF_WEAK_WRAP(int, g_strcmp0, const char* s1, const char* s2) {
+    if (s1 == s2) {
+        return 0;
+    }
+    if (!s1 && s2) {
+        return 1;
+    }
+    if (!s2 && s1) {
+        return -1;
+    }
+    return HF_strcmp(s1, s2, (uintptr_t)__builtin_return_address(0));
+}
+
+HF_WEAK_WRAP(int, g_strcasecmp, const char* s1, const char* s2) {
+    return HF_strcasecmp(s1, s2, (uintptr_t)__builtin_return_address(0));
+}
+
+HF_WEAK_WRAP(int, g_strncasecmp, const char* s1, const char* s2, int n) {
+    return HF_strncasecmp(
+        s1, s2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
+}
