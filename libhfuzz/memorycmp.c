@@ -41,15 +41,15 @@ static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
 }
 
 static inline int HF_strcasecmp(
-    const char* s1, const char* s2, int (*tlower_func)(int), uintptr_t addr) {
+    const char* s1, const char* s2, int (*tolower_func)(int), uintptr_t addr) {
     size_t i;
-    for (i = 0; tlower_func((unsigned char)s1[i]) == tlower_func((unsigned char)s2[i]); i++) {
+    for (i = 0; tolower_func((unsigned char)s1[i]) == tolower_func((unsigned char)s2[i]); i++) {
         if (s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
     }
 
-    int ret = tlower_func((unsigned char)s1[i]) - tlower_func((unsigned char)s2[i]);
+    int ret = tolower_func((unsigned char)s1[i]) - tolower_func((unsigned char)s2[i]);
     if (ret) {
         instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
         instrumentAddConstStr(s1);
@@ -82,11 +82,11 @@ static inline int HF_strncmp(
     return ret;
 }
 
-static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, int (*tlower_func)(int),
+static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, int (*tolower_func)(int),
     bool constfb, uintptr_t addr) {
     size_t i;
     for (i = 0; i < n; i++) {
-        if ((tlower_func((unsigned char)s1[i]) != tlower_func((unsigned char)s2[i])) ||
+        if ((tolower_func((unsigned char)s1[i]) != tolower_func((unsigned char)s2[i])) ||
             s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
@@ -96,7 +96,7 @@ static inline int HF_strncasecmp(const char* s1, const char* s2, size_t n, int (
         return 0;
     }
 
-    int ret = tlower_func((unsigned char)s1[i]) - tlower_func((unsigned char)s2[i]);
+    int ret = tolower_func((unsigned char)s1[i]) - tolower_func((unsigned char)s2[i]);
     if (ret) {
         instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
         if (constfb) {
