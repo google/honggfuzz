@@ -162,7 +162,7 @@ void util_rndBuf(uint8_t* buf, size_t sz) {
         return;
     }
     for (size_t i = 0; i < sz; i++) {
-        buf[i] = (uint8_t)util_InternalRnd64();
+        buf[i] = (uint8_t)(util_InternalRnd64() >> 40);
     }
 }
 

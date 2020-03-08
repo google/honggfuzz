@@ -93,39 +93,33 @@ __attribute__((always_inline)) static inline bool ATOMIC_BITMAP_SET(uint8_t* add
 #define HF_MIN(x, y) ((x < y) ? x : y)
 
 extern void* util_Malloc(size_t sz);
-
 extern void* util_Calloc(size_t sz);
-
 extern void* util_MMap(size_t sz);
-
 extern void* util_Realloc(void* ptr, size_t sz);
 
-extern char* util_StrDup(const char* s);
-
 extern uint64_t util_rndGet(uint64_t min, uint64_t max);
-
 extern void util_rndBuf(uint8_t* buf, size_t sz);
-
 extern void util_rndBufPrintable(uint8_t* buf, size_t sz);
-
 extern uint64_t util_rnd64(void);
-
 extern uint8_t util_rndPrintable(void);
 
-extern void util_turnToPrintable(uint8_t* buf, size_t sz);
-
+extern char* util_StrDup(const char* s);
 extern int util_ssnprintf(char* str, size_t size, const char* format, ...)
     __attribute__((format(printf, 3, 4)));
-
 extern int util_vssnprintf(char* str, size_t size, const char* format, va_list ap);
-
 extern bool util_strStartsWith(const char* str, const char* tofind);
-
+extern bool util_isANumber(const char* s);
+extern size_t util_decodeCString(char* s);
 extern void util_getLocalTime(const char* fmt, char* buf, size_t len, time_t tm);
+extern const char* util_sigName(int signo);
+extern void util_turnToPrintable(uint8_t* buf, size_t sz);
 
 extern void util_closeStdio(bool close_stdin, bool close_stdout, bool close_stderr);
 
+extern bool util_isAddrRO(const void* addr);
+
 extern uint64_t util_hash(const char* buf, size_t len);
+extern int64_t fastArray64Search(uint64_t* array, size_t arraySz, uint64_t key);
 
 extern int64_t util_timeNowMillis(void);
 extern void util_sleepForMSec(uint64_t msec);
@@ -140,17 +134,7 @@ extern void util_mutexRWLockRead(pthread_rwlock_t* mutex, const char* func, int 
 extern void util_mutexRWLockWrite(pthread_rwlock_t* mutex, const char* func, int line);
 extern void util_mutexRWUnlock(pthread_rwlock_t* mutex, const char* func, int line);
 
-extern int64_t fastArray64Search(uint64_t* array, size_t arraySz, uint64_t key);
-
-extern bool util_isANumber(const char* s);
-
-extern size_t util_decodeCString(char* s);
-
 extern uint64_t util_CRC64(const uint8_t* buf, size_t len);
 extern uint64_t util_CRC64Rev(const uint8_t* buf, size_t len);
-
-extern const char* util_sigName(int signo);
-
-extern bool util_isAddrRO(const void* addr);
 
 #endif /* ifndef _HF_COMMON_UTIL_H_ */
