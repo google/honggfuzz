@@ -516,3 +516,25 @@ HF_WEAK_WRAP(int, g_ascii_strncasecmp, const char* s1, const char* s2, size_t n)
     return HF_strncasecmp(s1, s2, n, hf_glib_ascii_tolower, instrumentConstAvail(),
         (uintptr_t)__builtin_return_address(0));
 }
+
+HF_WEAK_WRAP(bool, g_str_has_prefix, const char* str, const char* prefix) {
+    if (!str || !prefix) {
+        return false;
+    }
+    return (HF_strncmp(str, prefix, __builtin_strlen(prefix), instrumentConstAvail(),
+                (uintptr_t)__builtin_return_address(0)) == 0);
+}
+
+HF_WEAK_WRAP(bool, g_str_has_suffix, const char* str, const char* suffix) {
+    if (!str || !suffix) {
+        return false;
+    }
+    size_t str_len = __builtin_strlen(str);
+    size_t suffix_len = __builtin_strlen(suffix);
+    if (str_len < suffix_len) {
+        return false;
+    }
+
+    return (
+        HF_strcmp(str + str_len - suffix_len, suffix, (uintptr_t)__builtin_return_address(0)) == 0);
+}
