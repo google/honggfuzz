@@ -478,3 +478,12 @@ HF_WEAK_WRAP(int, g_strncasecmp, const char* s1, const char* s2, int n) {
     return HF_strncasecmp(
         s1, s2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
+
+HF_WEAK_WRAP(char*, g_strstr, const char* haystack, const char* needle) {
+    return HF_strstr(haystack, needle, (uintptr_t)__builtin_return_address(0));
+}
+
+HF_WEAK_WRAP(char*, g_strstr_len, const char* haystack, size_t haystack_len, const char* needle) {
+    return HF_memmem(haystack, haystack_len, needle, __builtin_strlen(needle),
+        (uintptr_t)__builtin_return_address(0));
+}
