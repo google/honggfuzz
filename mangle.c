@@ -675,6 +675,7 @@ void mangle_mangleContent(run_t* run) {
         mangle_Expand,
         mangle_Shrink,
         mangle_ASCIIVal,
+        mangle_Resize,
     };
 
     if (run->mutationsPerRun == 0U) {
