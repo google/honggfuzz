@@ -576,15 +576,6 @@ static void mangle_NegByte(run_t* run, bool printable) {
     }
 }
 
-static void mangle_CloneByte(run_t* run, bool printable HF_ATTR_UNUSED) {
-    size_t off1 = mangle_getOffSet(run);
-    size_t off2 = mangle_getOffSet(run);
-
-    uint8_t tmp = run->dynamicFile[off1];
-    run->dynamicFile[off1] = run->dynamicFile[off2];
-    run->dynamicFile[off2] = tmp;
-}
-
 static void mangle_Expand(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
     size_t len = util_rndGet(1, run->dynamicFileSz - off);
@@ -648,11 +639,11 @@ static void mangle_Resize(run_t* run, bool printable) {
 }
 
 static void mangle_ASCIIVal(run_t* run, bool printable HF_ATTR_UNUSED) {
-    char buf[32];
-    snprintf(buf, sizeof(buf), "%" PRId64, (int64_t)util_rnd64());
+    char buf[20];
+    snprintf(buf, sizeof(buf), "%-19" PRId64, (int64_t)util_rnd64());
     size_t off = mangle_getOffSet(run);
 
-    mangle_Overwrite(run, (uint8_t*)buf, off, strlen(buf));
+    mangle_Overwrite(run, (uint8_t*)buf, off, util_rndGet(1, sizeof(buf)) - 1);
 }
 
 void mangle_mangleContent(run_t* run) {
@@ -671,7 +662,6 @@ void mangle_mangleContent(run_t* run) {
         mangle_MemMove,
         mangle_MemSet,
         mangle_Random,
-        mangle_CloneByte,
         mangle_Expand,
         mangle_Shrink,
         mangle_ASCIIVal,
