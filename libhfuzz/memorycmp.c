@@ -31,13 +31,10 @@ static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
         }
     }
 
-    int ret = (int)s1[i] - (int)s2[i];
-    if (ret) {
-        instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
-        instrumentAddConstStr(s1);
-        instrumentAddConstStr(s2);
-    }
-    return ret;
+    instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
+    instrumentAddConstStr(s1);
+    instrumentAddConstStr(s2);
+    return (unsigned char)s1[i] - (unsigned char)s2[i];
 }
 
 static inline int HF_strcasecmp(
@@ -49,13 +46,10 @@ static inline int HF_strcasecmp(
         }
     }
 
-    int ret = cmp_func((unsigned char)s1[i]) - cmp_func((unsigned char)s2[i]);
-    if (ret) {
-        instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
-        instrumentAddConstStr(s1);
-        instrumentAddConstStr(s2);
-    }
-    return ret;
+    instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
+    instrumentAddConstStr(s1);
+    instrumentAddConstStr(s2);
+    return cmp_func((unsigned char)s1[i]) - cmp_func((unsigned char)s2[i]);
 }
 
 static inline int HF_strncmp(
@@ -71,15 +65,12 @@ static inline int HF_strncmp(
         return 0;
     }
 
-    int ret = (int)s1[i] - (int)s2[i];
-    if (ret) {
-        instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
-        if (constfb) {
-            instrumentAddConstStrN(s1, n);
-            instrumentAddConstStrN(s2, n);
-        }
+    instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
+    if (constfb) {
+        instrumentAddConstStrN(s1, n);
+        instrumentAddConstStrN(s2, n);
     }
-    return ret;
+    return (unsigned char)s1[i] - (unsigned char)s2[i];
 }
 
 static inline int HF_strncasecmp(
@@ -96,15 +87,12 @@ static inline int HF_strncasecmp(
         return 0;
     }
 
-    int ret = cmp_func((unsigned char)s1[i]) - cmp_func((unsigned char)s2[i]);
-    if (ret) {
-        instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
-        if (constfb) {
-            instrumentAddConstStrN(s1, n);
-            instrumentAddConstStrN(s2, n);
-        }
+    instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
+    if (constfb) {
+        instrumentAddConstStrN(s1, n);
+        instrumentAddConstStrN(s2, n);
     }
-    return ret;
+    return cmp_func((unsigned char)s1[i]) - cmp_func((unsigned char)s2[i]);
 }
 
 static inline char* HF_strstr(const char* haystack, const char* needle, uintptr_t addr) {
@@ -161,15 +149,12 @@ static inline int HF_memcmp(
         return 0;
     }
 
-    int ret = (int)s1[i] - (int)s2[i];
-    if (ret) {
-        instrumentUpdateCmpMap(HF_cmphash(addr, m1, m2), i);
-        if (constfb) {
-            instrumentAddConstMem(m1, n, /* check_if_ro= */ true);
-            instrumentAddConstMem(m2, n, /* check_if_ro= */ true);
-        }
+    instrumentUpdateCmpMap(HF_cmphash(addr, m1, m2), i);
+    if (constfb) {
+        instrumentAddConstMem(m1, n, /* check_if_ro= */ true);
+        instrumentAddConstMem(m2, n, /* check_if_ro= */ true);
     }
-    return ret;
+    return (unsigned char)s1[i] - (unsigned char)s2[i];
 }
 
 static inline void* HF_memmem(const void* haystack, size_t haystacklen, const void* needle,
