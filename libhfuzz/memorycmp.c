@@ -61,15 +61,16 @@ static inline int HF_strncmp(
         }
     }
 
-    if (i == n) {
-        return 0;
-    }
-
     instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
     if (constfb) {
         instrumentAddConstStrN(s1, n);
         instrumentAddConstStrN(s2, n);
     }
+
+    if (i == n) {
+        return 0;
+    }
+
     return (unsigned char)s1[i] - (unsigned char)s2[i];
 }
 
@@ -83,15 +84,16 @@ static inline int HF_strncasecmp(
         }
     }
 
-    if (i == n) {
-        return 0;
-    }
-
     instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
     if (constfb) {
         instrumentAddConstStrN(s1, n);
         instrumentAddConstStrN(s2, n);
     }
+
+    if (i == n) {
+        return 0;
+    }
+
     return cmp_func((unsigned char)s1[i]) - cmp_func((unsigned char)s2[i]);
 }
 
@@ -101,15 +103,15 @@ static inline char* HF_strstr(const char* haystack, const char* needle, uintptr_
         return (char*)haystack;
     }
 
+    instrumentAddConstStr(haystack);
+    instrumentAddConstStr(needle);
+
     const char* h = haystack;
     for (; (h = __builtin_strchr(h, needle[0])) != NULL; h++) {
         if (HF_strncmp(h, needle, needle_len, /* constfb= */ false, addr) == 0) {
             return (char*)h;
         }
     }
-
-    instrumentAddConstStr(haystack);
-    instrumentAddConstStr(needle);
 
     return NULL;
 }
@@ -120,15 +122,15 @@ static inline char* HF_strcasestr(const char* haystack, const char* needle, uint
         return (char*)haystack;
     }
 
+    instrumentAddConstStr(haystack);
+    instrumentAddConstStr(needle);
+
     for (size_t i = 0; haystack[i]; i++) {
         if (HF_strncasecmp(&haystack[i], needle, needle_len, tolower, /* constfb= */ false, addr) ==
             0) {
             return (char*)(&haystack[i]);
         }
     }
-
-    instrumentAddConstStr(haystack);
-    instrumentAddConstStr(needle);
 
     return NULL;
 }
@@ -145,15 +147,16 @@ static inline int HF_memcmp(
         }
     }
 
-    if (i == n) {
-        return 0;
-    }
-
     instrumentUpdateCmpMap(HF_cmphash(addr, m1, m2), i);
     if (constfb) {
         instrumentAddConstMem(m1, n, /* check_if_ro= */ true);
         instrumentAddConstMem(m2, n, /* check_if_ro= */ true);
     }
+
+    if (i == n) {
+        return 0;
+    }
+
     return (unsigned char)s1[i] - (unsigned char)s2[i];
 }
 
@@ -166,15 +169,15 @@ static inline void* HF_memmem(const void* haystack, size_t haystacklen, const vo
         return (void*)haystack;
     }
 
+    instrumentAddConstMem(haystack, haystacklen, /* check_if_ro= */ true);
+    instrumentAddConstMem(needle, needlelen, /* check_if_ro= */ true);
+
     const char* h = haystack;
     for (size_t i = 0; i <= (haystacklen - needlelen); i++) {
         if (HF_memcmp(&h[i], needle, needlelen, /* constfb= */ false, addr) == 0) {
             return (void*)(&h[i]);
         }
     }
-
-    instrumentAddConstMem(haystack, haystacklen, /* check_if_ro= */ true);
-    instrumentAddConstMem(needle, needlelen, /* check_if_ro= */ true);
 
     return NULL;
 }
