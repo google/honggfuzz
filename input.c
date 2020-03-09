@@ -237,10 +237,22 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
         if (lineptr[0] == '\0') {
             continue;
         }
+
+        const char* start = strchr(lineptr, '"');
+        char* end = strrchr(lineptr, '"');
+        if (!start || !end) {
+            LOG_W("Malformed dictionary line '%s', skipping", lineptr);
+            continue;
+        }
+        if ((uintptr_t)start == (uintptr_t)end) {
+            LOG_W("Malformed dictionary line '%s', skipping", lineptr);
+            continue;
+        }
+        *end = '\0';
+
         char bufv[1025] = {};
-        if (sscanf(lineptr, "\"%1024[^\"]", bufv) != 1 &&
-            sscanf(lineptr, "%*1024[^=]=\"%1024[^\"]", bufv) != 1) {
-            LOG_W("Incorrect dictionary entry: '%s'. Skipping", lineptr);
+        if (sscanf(&start[1], "%1024c", bufv) != 1) {
+            LOG_W("Malformed dictionary line '%s', skipping", lineptr);
             continue;
         }
 
