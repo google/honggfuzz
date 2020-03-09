@@ -237,7 +237,6 @@ void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
 
 /* Standard __sanitizer_cov_trace_const_cmp wrappers */
 void __sanitizer_cov_trace_const_cmp1(uint8_t Arg1, uint8_t Arg2) {
-    /* No need to report back 1 byte comparisons */
     hfuzz_trace_cmp1_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
