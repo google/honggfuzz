@@ -212,6 +212,13 @@ void __sanitizer_weak_hook_strcasecmp(
     uintptr_t pc, const char* s1, const char* s2, int result HF_ATTR_UNUSED) {
     HF_strcasecmp(s1, s2, tolower, pc);
 }
+HF_WEAK_WRAP(int, stricmp, const char* s1, const char* s2) {
+    return HF_strcasecmp(s1, s2, tolower, (uintptr_t)__builtin_return_address(0));
+}
+void __sanitizer_weak_hook_stricmp(
+    uintptr_t pc, const char* s1, const char* s2, int result HF_ATTR_UNUSED) {
+    HF_strcasecmp(s1, s2, tolower, pc);
+}
 HF_WEAK_WRAP(int, strncmp, const char* s1, const char* s2, size_t n) {
     return HF_strncmp(s1, s2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
@@ -224,6 +231,14 @@ HF_WEAK_WRAP(int, strncasecmp, const char* s1, const char* s2, size_t n) {
         s1, s2, n, tolower, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
 void __sanitizer_weak_hook_strncasecmp(
+    uintptr_t pc, const char* s1, const char* s2, size_t n, int result HF_ATTR_UNUSED) {
+    HF_strncasecmp(s1, s2, n, tolower, instrumentConstAvail(), pc);
+}
+HF_WEAK_WRAP(int, strnicmp, const char* s1, const char* s2, size_t n) {
+    return HF_strncasecmp(
+        s1, s2, n, tolower, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
+}
+void __sanitizer_weak_hook_strnicmp(
     uintptr_t pc, const char* s1, const char* s2, size_t n, int result HF_ATTR_UNUSED) {
     HF_strncasecmp(s1, s2, n, tolower, instrumentConstAvail(), pc);
 }
@@ -525,4 +540,31 @@ HF_WEAK_WRAP(bool, g_str_has_suffix, const char* str, const char* suffix) {
 
     return (
         HF_strcmp(str + str_len - suffix_len, suffix, (uintptr_t)__builtin_return_address(0)) == 0);
+}
+
+/* SQLite3 wrappers */
+HF_WEAK_WRAP(int, sqlite3_stricmp, const char* s1, const char* s2) {
+    if (!s1 && !s2) {
+        return 0;
+    }
+    if (!s1) {
+        return 1;
+    }
+    if (!s2) {
+        return -1;
+    }
+    return HF_strcasecmp(s1, s2, tolower, (uintptr_t)__builtin_return_address(0));
+}
+HF_WEAK_WRAP(int, sqlite3_strnicmp, const char* s1, const char* s2, int n) {
+    if (!s1 && !s2) {
+        return 0;
+    }
+    if (!s1) {
+        return 1;
+    }
+    if (!s2) {
+        return -1;
+    }
+    return HF_strncasecmp(
+        s1, s2, n, tolower, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }

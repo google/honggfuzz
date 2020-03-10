@@ -380,8 +380,10 @@ static int ldMode(int argc, char** argv) {
     /* Intercept common *cmp functions */
     args[j++] = "-Wl,--wrap=strcmp";
     args[j++] = "-Wl,--wrap=strcasecmp";
+    args[j++] = "-Wl,--wrap=stricmp";
     args[j++] = "-Wl,--wrap=strncmp";
     args[j++] = "-Wl,--wrap=strncasecmp";
+    args[j++] = "-Wl,--wrap=strnicmp";
     args[j++] = "-Wl,--wrap=strstr";
     args[j++] = "-Wl,--wrap=strcasestr";
     args[j++] = "-Wl,--wrap=memcmp";
@@ -422,6 +424,9 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=g_ascii_strncasecmp";
     args[j++] = "-Wl,--wrap=g_str_has_prefix";
     args[j++] = "-Wl,--wrap=g_str_has_suffix";
+    /* SQLite3 wrappers */
+    args[j++] = "-Wl,--wrap=sqlite3_stricmp";
+    args[j++] = "-Wl,--wrap=sqlite3_strnicmp";
 #endif /* _HF_ARCH_DARWIN */
 
     /* Pull modules defining the following symbols (if they exist) */
