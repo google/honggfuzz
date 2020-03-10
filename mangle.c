@@ -641,9 +641,9 @@ static void mangle_Resize(run_t* run, bool printable) {
 static void mangle_ASCIIVal(run_t* run, bool printable HF_ATTR_UNUSED) {
     char buf[20];
     snprintf(buf, sizeof(buf), "%-19" PRId64, (int64_t)util_rnd64());
-    size_t off = mangle_getOffSet(run);
 
-    mangle_Overwrite(run, (uint8_t*)buf, off, util_rndGet(1, sizeof(buf)) - 1);
+    size_t off = mangle_getOffSet(run);
+    mangle_Overwrite(run, (uint8_t*)buf, off, util_rndGet(2, 8));
 }
 
 void mangle_mangleContent(run_t* run) {
