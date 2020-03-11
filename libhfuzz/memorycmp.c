@@ -541,30 +541,3 @@ HF_WEAK_WRAP(bool, g_str_has_suffix, const char* str, const char* suffix) {
     return (
         HF_strcmp(str + str_len - suffix_len, suffix, (uintptr_t)__builtin_return_address(0)) == 0);
 }
-
-/* SQLite3 wrappers */
-HF_WEAK_WRAP(int, sqlite3_stricmp, const char* s1, const char* s2) {
-    if (!s1 && !s2) {
-        return 0;
-    }
-    if (!s1) {
-        return 1;
-    }
-    if (!s2) {
-        return -1;
-    }
-    return HF_strcasecmp(s1, s2, tolower, (uintptr_t)__builtin_return_address(0));
-}
-HF_WEAK_WRAP(int, sqlite3_strnicmp, const char* s1, const char* s2, int n) {
-    if (!s1 && !s2) {
-        return 0;
-    }
-    if (!s1) {
-        return 1;
-    }
-    if (!s2) {
-        return -1;
-    }
-    return HF_strncasecmp(
-        s1, s2, n, tolower, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
-}

@@ -424,9 +424,6 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=g_ascii_strncasecmp";
     args[j++] = "-Wl,--wrap=g_str_has_prefix";
     args[j++] = "-Wl,--wrap=g_str_has_suffix";
-    /* SQLite3 wrappers */
-    args[j++] = "-Wl,--wrap=sqlite3_stricmp";
-    args[j++] = "-Wl,--wrap=sqlite3_strnicmp";
 #endif /* _HF_ARCH_DARWIN */
 
     /* Pull modules defining the following symbols (if they exist) */
