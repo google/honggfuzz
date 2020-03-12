@@ -824,7 +824,7 @@ lhfc_addr_t util_getProgAddr(const void* addr) {
     return (lhfc_addr_t)dl_iterate_phdr(addrStatic_cb, (void*)addr);
 }
 #else  /* !defined(_HF_ARCH_DARWIN) */
-bool util_getProgAddr(const void* addr HF_ADDR_UNUSED) {
+lhfc_addr_t util_getProgAddr(const void* addr) {
     return LHFC_ADDR_NOTFOUND;
 }
 #endif /* !defined(_HF_ARCH_DARWIN) */
