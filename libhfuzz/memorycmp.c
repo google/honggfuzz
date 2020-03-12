@@ -14,10 +14,10 @@ __attribute__((visibility("default"))) __attribute__((used))
 const char* const LIBHFUZZ_module_memorycmp = "LIBHFUZZ_module_memorycmp";
 
 static inline uintptr_t HF_cmphash(uintptr_t addr, const void* s1, const void* s2) {
-    if (util_isAddrRO(s1)) {
+    if (util_getProgAddr(s1) == LHFC_ADDR_RO) {
         addr ^= ((uintptr_t)s1 << 2);
     }
-    if (util_isAddrRO(s2)) {
+    if (util_getProgAddr(s2) == LHFC_ADDR_RO) {
         addr ^= ((uintptr_t)s2 << 4);
     }
     return addr;

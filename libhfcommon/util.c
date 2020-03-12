@@ -804,27 +804,27 @@ const char* util_sigName(int signo) {
 }
 
 #if !defined(_HF_ARCH_DARWIN)
-static int addrRO_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
+static int addrStatic_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
     for (size_t i = 0; i < info->dlpi_phnum; i++) {
         uintptr_t addr_start = info->dlpi_addr + info->dlpi_phdr[i].p_vaddr;
         uintptr_t addr_end =
             info->dlpi_addr + info->dlpi_phdr[i].p_vaddr + info->dlpi_phdr[i].p_memsz;
         if (((uintptr_t)data >= addr_start) && ((uintptr_t)data < addr_end)) {
             if ((info->dlpi_phdr[i].p_flags & PF_W) == 0) {
-                return 1;
+                return LHFC_ADDR_RO;
             } else {
-                return 2;
+                return LHFC_ADDR_RW;
             }
         }
     }
-    return 0;
+    return LHFC_ADDR_NOTFOUND;
 }
 
-bool util_isAddrRO(const void* addr) {
-    return (dl_iterate_phdr(addrRO_cb, (void*)addr) == 1);
+lhfc_addr_t util_getProgAddr(const void* addr) {
+    return (lhfc_addr_t)dl_iterate_phdr(addrStatic_cb, (void*)addr);
 }
 #else  /* !defined(_HF_ARCH_DARWIN) */
-bool util_isAddrRO(const void* addr) {
-    return false;
+bool util_getProgAddr(const void* addr HF_ADDR_UNUSED) {
+    return LHFC_ADDR_NOTFOUND;
 }
 #endif /* !defined(_HF_ARCH_DARWIN) */

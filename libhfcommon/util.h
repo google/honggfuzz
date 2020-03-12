@@ -92,6 +92,12 @@ __attribute__((always_inline)) static inline bool ATOMIC_BITMAP_SET(uint8_t* add
 #define HF_MAX(x, y) ((x > y) ? x : y)
 #define HF_MIN(x, y) ((x < y) ? x : y)
 
+typedef enum {
+    LHFC_ADDR_NOTFOUND = 0,
+    LHFC_ADDR_RO = 1,
+    LHFC_ADDR_RW = 2,
+} lhfc_addr_t;
+
 extern void* util_Malloc(size_t sz);
 extern void* util_Calloc(size_t sz);
 extern void* util_MMap(size_t sz);
@@ -116,7 +122,7 @@ extern void util_turnToPrintable(uint8_t* buf, size_t sz);
 
 extern void util_closeStdio(bool close_stdin, bool close_stdout, bool close_stderr);
 
-extern bool util_isAddrRO(const void* addr);
+extern lhfc_addr_t util_getProgAddr(const void* addr);
 
 extern uint64_t util_hash(const char* buf, size_t len);
 extern int64_t fastArray64Search(uint64_t* array, size_t arraySz, uint64_t key);
