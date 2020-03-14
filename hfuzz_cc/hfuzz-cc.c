@@ -437,16 +437,11 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,-u,LIBHFUZZ_module_memorycmp";
 #endif /* _HF_ARCH_DARWIN */
 
-    /* Reference standard honggfuzz libraries first (libhfuzz, libhfcommon and libhfnetdriver) */
-    args[j++] = getLibHFNetDriverPath();
-    args[j++] = getLibHFuzzPath();
-    args[j++] = getLibHFCommonPath();
-
     for (int i = 1; i < argc; i++) {
         args[j++] = argv[i];
     }
 
-    /* Reference standard libs again, in case some symbols are still missing */
+    /* Reference standard honggfuzz libraries first (libhfuzz, libhfcommon and libhfnetdriver) */
     args[j++] = getLibHFNetDriverPath();
     args[j++] = getLibHFuzzPath();
     args[j++] = getLibHFCommonPath();

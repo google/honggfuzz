@@ -10,7 +10,7 @@
 #include "libhfcommon/util.h"
 #include "libhfuzz/instrument.h"
 
-__attribute__((visibility("default"))) __attribute__((used))
+__attribute__((visibility("hidden"))) __attribute__((used))
 const char* const LIBHFUZZ_module_memorycmp = "LIBHFUZZ_module_memorycmp";
 
 static inline uintptr_t HF_cmphash(uintptr_t addr, const void* s1, const void* s2) {
