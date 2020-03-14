@@ -126,6 +126,19 @@ __attribute__((constructor)) void hfuzzInstrumentInit(void) {
     pthread_once(&localInitOnce, initializeInstrument);
 }
 
+__attribute__((weak)) size_t instrumentReserveGuard(size_t cnt) {
+    static size_t guardCnt = 1;
+    size_t base = guardCnt;
+    guardCnt += cnt;
+    if (guardCnt >= _HF_PC_GUARD_MAX) {
+        LOG_F("This process requested too many PC-guards:%zu requested:%zu", guardCnt, cnt);
+    }
+    if (ATOMIC_GET(covFeedback->guardNb) < guardCnt) {
+        ATOMIC_SET(covFeedback->guardNb, guardCnt);
+    }
+    return base;
+}
+
 static inline int _memcmp(const uint8_t* m1, const uint8_t* m2, size_t n) {
     for (size_t i = 0; i < n; i++) {
         if (m1[i] != m2[i]) {
@@ -347,7 +360,6 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_div4(uint32_t Val) {
 /*
  * -fsanitize-coverage=indirect-calls
  */
-
 HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_indir(uintptr_t callee) {
     register size_t pos1 = (uintptr_t)__builtin_return_address(0) << 12;
     register size_t pos2 = callee & 0xFFF;
@@ -381,7 +393,6 @@ __attribute__((weak)) HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_indir_call16(
 static bool guards_initialized = false;
 HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard_init(uint32_t* start, uint32_t* stop) {
     guards_initialized = true;
-    static uint32_t n = 1U;
 
     /* Make sure that the feedback struct is already mmap()'d */
     hfuzzInstrumentInit();
@@ -392,20 +403,13 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard_init(uint32_t* start
         return;
     }
 
-    LOG_D("Module initialization: %p-%p at %" PRId32, start, stop, n);
-    for (uint32_t* x = start; x < stop; x++, n++) {
-        if (n >= _HF_PC_GUARD_MAX) {
-            LOG_F("This process has too many PC guards:%" PRIu32
-                  " (current module:%tu start:%p stop:%p)\n",
-                n, ((uintptr_t)stop - (uintptr_t)start) / sizeof(start), start, stop);
-        }
-        /* If the corresponding PC was already hit, map this specific guard as uninteresting (0) */
-        *x = ATOMIC_GET(covFeedback->pcGuardMap[n]) ? 0U : n;
-    }
+    LOG_D("PC-Guard module initialization: %p-%p (count:%zu) at %" PRId64, start, stop,
+        ((uintptr_t)stop - (uintptr_t)start) / sizeof(*start), ATOMIC_GET(covFeedback->guardNb));
 
-    /* Store number of guards for statistical purposes */
-    if (ATOMIC_GET(covFeedback->guardNb) < n - 1) {
-        ATOMIC_SET(covFeedback->guardNb, n - 1);
+    for (uint32_t* x = start; x < stop; x++) {
+        uint32_t guardNo = instrumentReserveGuard(1);
+        /* If the corresponding PC was already hit, map this specific guard as uninteresting (0) */
+        *x = ATOMIC_GET(covFeedback->pcGuardMap[guardNo]) ? 0U : guardNo;
     }
 }
 
@@ -445,6 +449,68 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
         }
     }
 }
+
+/* Support up to 128 DSO modules with separate 8bit counters */
+static struct {
+    uint8_t* start;
+    size_t cnt;
+    size_t guard;
+} hf8bitcounters[128] = {};
+
+void instrument8BitCountersCount(void) {
+    for (size_t i = 0; i < ARRAYSIZE(hf8bitcounters) && hf8bitcounters[i].start; i++) {
+        for (size_t j = 0; j < hf8bitcounters[i].cnt; j++) {
+            uint8_t v = hf8bitcounters[i].start[j];
+            if (!v) {
+                continue;
+            }
+            uint8_t new = 1U << util_Log2((unsigned int)v);
+            size_t guard = hf8bitcounters[i].guard + j;
+
+            if ((ATOMIC_GET(covFeedback->pcGuardMap[guard]) & new) == 0) {
+                uint8_t prev = ATOMIC_POST_OR(covFeedback->pcGuardMap[guard], new);
+                if (!prev) {
+                    ATOMIC_PRE_INC(covFeedback->pidFeedbackEdge[my_thread_no]);
+                } else if ((prev & new) == 0) {
+                    ATOMIC_PRE_INC(covFeedback->pidFeedbackCmp[my_thread_no]);
+                }
+            }
+        }
+        memset(hf8bitcounters[i].start, '\0', hf8bitcounters[i].cnt);
+    }
+}
+
+void instrument8BitCountersClear(void) {
+    for (size_t i = 0; i < ARRAYSIZE(hf8bitcounters) && hf8bitcounters[i].start; i++) {
+        __builtin_memset(hf8bitcounters[i].start, '\0', hf8bitcounters[i].cnt);
+    }
+}
+
+void __sanitizer_cov_8bit_counters_init(char* start, char* end) {
+    /* Make sure that the feedback struct is already mmap()'d */
+    hfuzzInstrumentInit();
+
+    for (size_t i = 0; i < ARRAYSIZE(hf8bitcounters); i++) {
+        if (hf8bitcounters[i].start == NULL) {
+            hf8bitcounters[i].start = (uint8_t*)start;
+            hf8bitcounters[i].cnt = (uintptr_t)end - (uintptr_t)start + 1;
+            hf8bitcounters[i].guard = instrumentReserveGuard(hf8bitcounters[i].cnt);
+
+            LOG_D("8-bit module initialization %p-%p (count:%zu) at guard %zu", start, end,
+                hf8bitcounters[i].cnt, hf8bitcounters[i].guard);
+
+            break;
+        }
+    }
+}
+
+/* Not implemented yet */
+void __sanitizer_cov_pcs_init(
+    const uintptr_t* pcs_beg HF_ATTR_UNUSED, const uintptr_t* pcs_end HF_ATTR_UNUSED) {
+}
+
+/* For some reason -fsanitize=fuzzer-no-link references this symbol */
+__attribute__((weak)) __thread uintptr_t __sancov_lowest_stack = 0;
 
 bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
     uintptr_t pos = addr % _HF_PERF_BITMAP_SIZE_16M;

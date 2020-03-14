@@ -86,6 +86,13 @@ static bool useBelowGCC8() {
     return false;
 }
 
+static bool useClangFuzzerNoLink() {
+    if (getenv("HFUZZ_CLANG_USE_FUZZER_NO_LINK")) {
+        return true;
+    }
+    return false;
+}
+
 static bool isLDMode(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--version") == 0) {
@@ -308,7 +315,12 @@ static void commonOpts(int* j, char** args) {
         }
     } else {
         args[(*j)++] = "-Wno-unused-command-line-argument";
-        args[(*j)++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,trace-div,indirect-calls";
+        if (useClangFuzzerNoLink()) {
+            args[(*j)++] = "-fsanitize=fuzzer-no-link";
+            args[(*j)++] = "-fsanitize-coverage=trace-cmp,trace-div,indirect-calls";
+        } else {
+            args[(*j)++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,trace-div,indirect-calls";
+        }
         args[(*j)++] = "-mllvm";
         args[(*j)++] = "-sanitizer-coverage-prune-blocks=1";
     }

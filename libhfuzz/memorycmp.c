@@ -185,10 +185,8 @@ static inline void* HF_memmem(const void* haystack, size_t haystacklen, const vo
 static inline char* HF_strcpy(char* dest, const char* src, uintptr_t addr) {
     size_t len = __builtin_strlen(src);
     if (len > 0) {
-        uint32_t level = (sizeof(len) * 8) - __builtin_clzl(len);
-        instrumentUpdateCmpMap(addr, level);
+        instrumentUpdateCmpMap(addr, util_Log2(len));
     }
-
     return __builtin_memcpy(dest, src, len + 1);
 }
 

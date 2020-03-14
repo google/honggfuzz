@@ -60,6 +60,7 @@ extern const char* const LIBHFUZZ_module_memorycmp;
 extern const char* const LIBHFUZZ_module_instrument;
 static void HonggfuzzRunOneInput(const uint8_t* buf, size_t len) {
     int ret = LLVMFuzzerTestOneInput(buf, len);
+    instrument8BitCountersCount();
     if (ret != 0) {
         LOG_D("Dereferenced: %s, %s", LIBHFUZZ_module_memorycmp, LIBHFUZZ_module_instrument);
         LOG_F("LLVMFuzzerTestOneInput() returned '%d' instead of '0'", ret);
@@ -67,6 +68,7 @@ static void HonggfuzzRunOneInput(const uint8_t* buf, size_t len) {
 }
 
 static void HonggfuzzPersistentLoop(void) {
+    instrument8BitCountersClear();
     for (;;) {
         size_t len;
         const uint8_t* buf;

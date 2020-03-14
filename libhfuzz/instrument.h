@@ -29,6 +29,8 @@
 #include <stddef.h>
 
 /* Returns true if the new value is better */
+void instrument8BitCountersCount(void);
+void instrument8BitCountersClear(void);
 bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v);
 void instrumentClearNewCov();
 void instrumentAddConstMem(const void* m, size_t len, bool check_if_ro);

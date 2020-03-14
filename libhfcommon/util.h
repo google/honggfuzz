@@ -92,6 +92,8 @@ __attribute__((always_inline)) static inline bool ATOMIC_BITMAP_SET(uint8_t* add
 #define HF_MAX(x, y) ((x > y) ? x : y)
 #define HF_MIN(x, y) ((x < y) ? x : y)
 
+#define util_Log2(v) ((sizeof(unsigned int) * 8) - __builtin_clz((unsigned int)v) - 1)
+
 typedef enum {
     LHFC_ADDR_NOTFOUND = 0,
     LHFC_ADDR_RO = 1,

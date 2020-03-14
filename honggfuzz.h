@@ -180,7 +180,7 @@ struct strings_t {
 };
 
 typedef struct {
-    bool pcGuardMap[_HF_PC_GUARD_MAX];
+    uint8_t pcGuardMap[_HF_PC_GUARD_MAX];
     uint8_t bbMapPc[_HF_PERF_BITMAP_SIZE_16M];
     uint32_t bbMapCmp[_HF_PERF_BITMAP_SIZE_16M];
     uint64_t pidFeedbackPc[_HF_THREAD_MAX];
