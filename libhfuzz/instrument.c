@@ -464,19 +464,20 @@ void instrument8BitCountersCount(void) {
             if (!v) {
                 continue;
             }
+            hf8bitcounters[i].start[j] = 0;
+
             uint8_t new = 1U << util_Log2((unsigned int)v);
             size_t guard = hf8bitcounters[i].guard + j;
 
-            if ((ATOMIC_GET(covFeedback->pcGuardMap[guard]) & new) == 0) {
+            if (ATOMIC_GET(covFeedback->pcGuardMap[guard]) < new) {
                 uint8_t prev = ATOMIC_POST_OR(covFeedback->pcGuardMap[guard], new);
                 if (!prev) {
                     ATOMIC_PRE_INC(covFeedback->pidFeedbackEdge[my_thread_no]);
-                } else if ((prev & new) == 0) {
+                } else if (new > prev) {
                     ATOMIC_PRE_INC(covFeedback->pidFeedbackCmp[my_thread_no]);
                 }
             }
         }
-        memset(hf8bitcounters[i].start, '\0', hf8bitcounters[i].cnt);
     }
 }
 
