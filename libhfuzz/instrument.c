@@ -475,17 +475,28 @@ static struct {
 void instrument8BitCountersCount(void) {
     for (size_t i = 0; i < ARRAYSIZE(hf8bitcounters) && hf8bitcounters[i].start; i++) {
         for (size_t j = 0; j < hf8bitcounters[i].cnt; j++) {
-            uint8_t v = hf8bitcounters[i].start[j];
+            const uint8_t v = hf8bitcounters[i].start[j];
             if (!v) {
                 continue;
             }
             hf8bitcounters[i].start[j] = 0;
 
-            uint8_t new = 1U << util_Log2((unsigned int)v);
-            size_t guard = hf8bitcounters[i].guard + j;
+            /* Bucket number of visits to an edge, and assign a value 1<<x to it */
+            static uint8_t const scaleMap[256] = {
+                [0] = 0,
+                [1] = 1U << 1,
+                [2] = 1U << 2,
+                [3] = 1U << 3,
+                [4] = 1U << 4,
+                [5 ... 6] = 1U << 5,
+                [7 ... 10] = 1U << 6,
+                [11 ... 255] = 1U << 7,
+            };
+            const uint8_t new = scaleMap[v];
+            const size_t guard = hf8bitcounters[i].guard + j;
 
             if (ATOMIC_GET(covFeedback->pcGuardMap[guard]) < new) {
-                uint8_t prev = ATOMIC_POST_OR(covFeedback->pcGuardMap[guard], new);
+                const uint8_t prev = ATOMIC_POST_OR(covFeedback->pcGuardMap[guard], new);
                 if (!prev) {
                     ATOMIC_PRE_INC(covFeedback->pidFeedbackEdge[my_thread_no]);
                 } else if (new > prev) {
