@@ -450,12 +450,12 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
     }
 }
 
-/* Support up to 128 DSO modules with separate 8bit counters */
+/* Support up to 256 DSO modules with separate 8bit counters */
 static struct {
     uint8_t* start;
     size_t cnt;
     size_t guard;
-} hf8bitcounters[128] = {};
+} hf8bitcounters[256] = {};
 
 void instrument8BitCountersCount(void) {
     for (size_t i = 0; i < ARRAYSIZE(hf8bitcounters) && hf8bitcounters[i].start; i++) {
@@ -491,15 +491,17 @@ void __sanitizer_cov_8bit_counters_init(char* start, char* end) {
     /* Make sure that the feedback struct is already mmap()'d */
     hfuzzInstrumentInit();
 
+    if ((uintptr_t)start == (uintptr_t)end) {
+        return;
+    }
+
     for (size_t i = 0; i < ARRAYSIZE(hf8bitcounters); i++) {
         if (hf8bitcounters[i].start == NULL) {
             hf8bitcounters[i].start = (uint8_t*)start;
             hf8bitcounters[i].cnt = (uintptr_t)end - (uintptr_t)start + 1;
             hf8bitcounters[i].guard = instrumentReserveGuard(hf8bitcounters[i].cnt);
-
             LOG_D("8-bit module initialization %p-%p (count:%zu) at guard %zu", start, end,
                 hf8bitcounters[i].cnt, hf8bitcounters[i].guard);
-
             break;
         }
     }
