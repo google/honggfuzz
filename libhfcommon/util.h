@@ -125,6 +125,7 @@ extern void util_turnToPrintable(uint8_t* buf, size_t sz);
 extern void util_closeStdio(bool close_stdin, bool close_stdout, bool close_stderr);
 
 extern lhfc_addr_t util_getProgAddr(const void* addr);
+extern void util_runForROSegments(void (*cb)(const char* name, uint8_t* start, size_t sz));
 
 extern uint64_t util_hash(const char* buf, size_t len);
 extern int64_t fastArray64Search(uint64_t* array, size_t arraySz, uint64_t key);

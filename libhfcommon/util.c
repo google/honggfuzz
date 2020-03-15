@@ -806,6 +806,9 @@ const char* util_sigName(int signo) {
 #if !defined(_HF_ARCH_DARWIN)
 static int addrStatic_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
     for (size_t i = 0; i < info->dlpi_phnum; i++) {
+        if (info->dlpi_phdr[i].p_type != PT_LOAD) {
+            continue;
+        }
         uintptr_t addr_start = info->dlpi_addr + info->dlpi_phdr[i].p_vaddr;
         uintptr_t addr_end =
             info->dlpi_addr + info->dlpi_phdr[i].p_vaddr + info->dlpi_phdr[i].p_memsz;
@@ -820,11 +823,33 @@ static int addrStatic_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, 
     return LHFC_ADDR_NOTFOUND;
 }
 
+static int addrStaticRO_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
+    void (*callback)(const char* name, uint8_t* start, size_t sz) = data;
+    for (size_t i = 0; i < info->dlpi_phnum; i++) {
+        if (info->dlpi_phdr[i].p_type != PT_LOAD) {
+            continue;
+        }
+        if (info->dlpi_phdr[i].p_flags != PF_R) {
+            continue;
+        }
+        callback(info->dlpi_name, (uint8_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr),
+            info->dlpi_phdr[i].p_memsz);
+    }
+    return 0;
+}
+
 lhfc_addr_t util_getProgAddr(const void* addr) {
     return (lhfc_addr_t)dl_iterate_phdr(addrStatic_cb, (void*)addr);
+}
+void util_runForROSegments(void (*cb)(const char* name, uint8_t* start, size_t sz)) {
+    dl_iterate_phdr(addrStaticRO_cb, cb);
+    return;
 }
 #else  /* !defined(_HF_ARCH_DARWIN) */
 lhfc_addr_t util_getProgAddr(const void* addr) {
     return LHFC_ADDR_NOTFOUND;
+}
+void util_runForROSegments(void (*cb)(const char* name, uint8_t* start, size_t sz)) {
+    return;
 }
 #endif /* !defined(_HF_ARCH_DARWIN) */
