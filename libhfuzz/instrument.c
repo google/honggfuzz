@@ -254,17 +254,23 @@ void __sanitizer_cov_trace_const_cmp1(uint8_t Arg1, uint8_t Arg2) {
 }
 
 void __sanitizer_cov_trace_const_cmp2(uint16_t Arg1, uint16_t Arg2) {
-    instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
+    if (Arg1) {
+        instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
+    }
     hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
 void __sanitizer_cov_trace_const_cmp4(uint32_t Arg1, uint32_t Arg2) {
-    instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
+    if (Arg1) {
+        instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
+    }
     hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
 void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2) {
-    instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
+    if (Arg1) {
+        instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
+    }
     hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
