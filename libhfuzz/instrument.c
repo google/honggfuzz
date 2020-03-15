@@ -397,6 +397,9 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard_init(uint32_t* start
     /* Make sure that the feedback struct is already mmap()'d */
     hfuzzInstrumentInit();
 
+    if ((uintptr_t)start == (uintptr_t)stop) {
+        return;
+    }
     /* If this module was already initialized, skip it */
     if (*start > 0) {
         LOG_D("Module %p-%p is already initialized", start, stop);
@@ -498,7 +501,7 @@ void __sanitizer_cov_8bit_counters_init(char* start, char* end) {
     for (size_t i = 0; i < ARRAYSIZE(hf8bitcounters); i++) {
         if (hf8bitcounters[i].start == NULL) {
             hf8bitcounters[i].start = (uint8_t*)start;
-            hf8bitcounters[i].cnt = (uintptr_t)end - (uintptr_t)start + 1;
+            hf8bitcounters[i].cnt = (uintptr_t)end - (uintptr_t)start;
             hf8bitcounters[i].guard = instrumentReserveGuard(hf8bitcounters[i].cnt);
             LOG_D("8-bit module initialization %p-%p (count:%zu) at guard %zu", start, end,
                 hf8bitcounters[i].cnt, hf8bitcounters[i].guard);
