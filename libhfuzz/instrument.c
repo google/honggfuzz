@@ -255,6 +255,8 @@ void __sanitizer_cov_trace_const_cmp1(uint8_t Arg1, uint8_t Arg2) {
 
 void __sanitizer_cov_trace_const_cmp2(uint16_t Arg1, uint16_t Arg2) {
     if (Arg1) {
+        uint16_t bswp = __builtin_bswap16(Arg1);
+        instrumentAddConstMem(&bswp, sizeof(bswp), /* check_if_ro= */ false);
         instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
     }
     hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
@@ -262,6 +264,8 @@ void __sanitizer_cov_trace_const_cmp2(uint16_t Arg1, uint16_t Arg2) {
 
 void __sanitizer_cov_trace_const_cmp4(uint32_t Arg1, uint32_t Arg2) {
     if (Arg1) {
+        uint32_t bswp = __builtin_bswap32(Arg1);
+        instrumentAddConstMem(&bswp, sizeof(bswp), /* check_if_ro= */ false);
         instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
     }
     hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
@@ -269,6 +273,8 @@ void __sanitizer_cov_trace_const_cmp4(uint32_t Arg1, uint32_t Arg2) {
 
 void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2) {
     if (Arg1) {
+        uint64_t bswp = __builtin_bswap64(Arg1);
+        instrumentAddConstMem(&bswp, sizeof(bswp), /* check_if_ro= */ false);
         instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
     }
     hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
@@ -587,7 +593,7 @@ void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
     if (len == 0) {
         return;
     }
-    if (!instrumentLimitEvery(128)) {
+    if (!instrumentLimitEvery(127)) {
         return;
     }
     if (check_if_ro && util_getProgAddr(mem) != LHFC_ADDR_RO) {
@@ -600,7 +606,7 @@ void instrumentAddConstStr(const char* s) {
     if (!cmpFeedback) {
         return;
     }
-    if (!instrumentLimitEvery(128)) {
+    if (!instrumentLimitEvery(127)) {
         return;
     }
     if (util_getProgAddr(s) != LHFC_ADDR_RO) {
@@ -616,7 +622,7 @@ void instrumentAddConstStrN(const char* s, size_t n) {
     if (n == 0) {
         return;
     }
-    if (!instrumentLimitEvery(128)) {
+    if (!instrumentLimitEvery(127)) {
         return;
     }
     if (util_getProgAddr(s) != LHFC_ADDR_RO) {
