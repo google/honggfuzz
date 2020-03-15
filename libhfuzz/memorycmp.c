@@ -103,7 +103,6 @@ static inline char* HF_strstr(const char* haystack, const char* needle, uintptr_
         return (char*)haystack;
     }
 
-    instrumentAddConstStr(haystack);
     instrumentAddConstStr(needle);
 
     const char* h = haystack;
@@ -122,7 +121,6 @@ static inline char* HF_strcasestr(const char* haystack, const char* needle, uint
         return (char*)haystack;
     }
 
-    instrumentAddConstStr(haystack);
     instrumentAddConstStr(needle);
 
     for (size_t i = 0; haystack[i]; i++) {
@@ -169,7 +167,6 @@ static inline void* HF_memmem(const void* haystack, size_t haystacklen, const vo
         return (void*)haystack;
     }
 
-    instrumentAddConstMem(haystack, haystacklen, /* check_if_ro= */ true);
     instrumentAddConstMem(needle, needlelen, /* check_if_ro= */ true);
 
     const char* h = haystack;
