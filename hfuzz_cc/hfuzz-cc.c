@@ -460,7 +460,9 @@ static int ldMode(int argc, char** argv) {
 
     /* Needed by libhfcommon */
     args[j++] = "-pthread";
+#if !defined(__NetBSD__)
     args[j++] = "-ldl";
+#endif /* !defined(__NetBSD__) */
 #if !defined(_HF_ARCH_DARWIN) && !defined(__OpenBSD__)
     args[j++] = "-lrt";
 #endif /* !defined(_HF_ARCH_DARWIN) && !defined(__OpenBSD__) */
