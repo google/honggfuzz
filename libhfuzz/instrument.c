@@ -539,6 +539,7 @@ void __sanitizer_cov_pcs_init(
 }
 
 /* For some reason -fsanitize=fuzzer-no-link references this symbol */
+__attribute__((tls_model("initial-exec")))
 __attribute__((weak)) __thread uintptr_t __sancov_lowest_stack = 0;
 
 bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
