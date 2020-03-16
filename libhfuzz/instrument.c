@@ -484,13 +484,14 @@ void instrument8BitCountersCount(void) {
             /* Bucket number of visits to an edge, and assign a value 1<<x to it */
             static uint8_t const scaleMap[256] = {
                 [0] = 0,
-                [1] = 1U << 1,
-                [2] = 1U << 2,
-                [3] = 1U << 3,
-                [4] = 1U << 4,
-                [5 ... 6] = 1U << 5,
-                [7 ... 10] = 1U << 6,
-                [11 ... 255] = 1U << 7,
+                [1] = 1U << 0,
+                [2] = 1U << 1,
+                [3] = 1U << 2,
+                [4] = 1U << 3,
+                [5 ... 6] = 1U << 4,
+                [7 ... 10] = 1U << 5,
+                [11 ... 20] = 1U << 6,
+                [21 ... 255] = 1U << 7,
             };
             const uint8_t new = scaleMap[v];
             const size_t guard = hf8bitcounters[i].guard + j;
