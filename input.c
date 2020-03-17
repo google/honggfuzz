@@ -475,6 +475,7 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
         if (!input_getNext(run, run->origFileName, /* rewind= */ rewind)) {
             return false;
         }
+        run->global->io.testedFileCnt++;
     }
 
     char path[PATH_MAX];

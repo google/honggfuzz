@@ -211,8 +211,8 @@ typedef struct {
         const char* outputDir;
         DIR* inputDirPtr;
         size_t fileCnt;
+        size_t testedFileCnt;
         const char* fileExtn;
-        bool fileCntDone;
         size_t maxFileSz;
         size_t newUnitsAdded;
         char workDir[PATH_MAX];
