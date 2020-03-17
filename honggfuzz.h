@@ -70,8 +70,8 @@
 /* Maximum number of PC guards (=trace-pc-guard) we support */
 #define _HF_PC_GUARD_MAX (1024ULL * 1024ULL * 64ULL)
 
-/* Maximum size of the input file in bytes (128 MiB) */
-#define _HF_INPUT_MAX_SIZE (1024ULL * 1024ULL * 128ULL)
+/* Maximum size of the input file in bytes (1 MiB) */
+#define _HF_INPUT_MAX_SIZE (1024ULL * 1024ULL)
 
 /* Default maximum size of produced inputs */
 #define _HF_INPUT_DEFAULT_SIZE (1024ULL * 8)
