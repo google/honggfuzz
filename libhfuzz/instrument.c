@@ -96,6 +96,7 @@ static void initializeInstrument(void) {
         }
         logInitLogFile(NULL, _HF_LOG_FD, ll);
     }
+    LOG_D("Initializing pid=%d", (int)getpid());
 
     char* my_thread_no_str = getenv(_HF_THREAD_NO_ENV);
     if (my_thread_no_str == NULL) {
