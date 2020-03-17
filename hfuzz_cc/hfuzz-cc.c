@@ -303,26 +303,11 @@ static char* getLibHFCommonPath() {
     return path;
 }
 
-static void commonOpts(int* j, char** args) {
+static void commonPreOpts(int* j, char** args) {
     args[(*j)++] = getIncPaths();
-    if (isGCC) {
-        if (useBelowGCC8()) {
-            /* trace-pc is the best that gcc-6/7 currently offers */
-            args[(*j)++] = "-fsanitize-coverage=trace-pc";
-        } else {
-            /* gcc-8+ offers trace-cmp as well, but it's not that widely used yet */
-            args[(*j)++] = "-fsanitize-coverage=trace-pc,trace-cmp";
-        }
-    } else {
+
+    if (!isGCC) {
         args[(*j)++] = "-Wno-unused-command-line-argument";
-        if (useClangFuzzerNoLink()) {
-            args[(*j)++] = "-fsanitize=fuzzer-no-link";
-            args[(*j)++] = "-fsanitize-coverage=trace-cmp,trace-div,indirect-calls";
-        } else {
-            args[(*j)++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,trace-div,indirect-calls";
-        }
-        args[(*j)++] = "-mllvm";
-        args[(*j)++] = "-sanitizer-coverage-prune-blocks=1";
     }
 
     /*
@@ -351,6 +336,33 @@ static void commonOpts(int* j, char** args) {
     }
 }
 
+static void commonPostOpts(int* j, char** args, int argc, char** argv) {
+    if (isGCC) {
+        if (useBelowGCC8()) {
+            /* trace-pc is the best that gcc-6/7 currently offers */
+            args[(*j)++] = "-fsanitize-coverage=trace-pc";
+        } else {
+            /* gcc-8+ offers trace-cmp as well, but it's not that widely used yet */
+            args[(*j)++] = "-fsanitize-coverage=trace-pc,trace-cmp";
+        }
+    } else {
+        if (useClangFuzzerNoLink()) {
+            args[(*j)++] = "-fno-sanitize-coverage=trace-pc-guard";
+            args[(*j)++] = "-fno-sanitize=fuzzer";
+            args[(*j)++] = "-fsanitize=fuzzer-no-link";
+            args[(*j)++] = "-fsanitize-coverage=trace-cmp,trace-div,indirect-calls";
+        } else {
+            if (isFSanitizeFuzzer(argc, argv)) {
+                args[(*j)++] = "-fno-sanitize=fuzzer";
+                args[(*j)++] = "-fno-sanitize=fuzzer-no-link";
+            }
+            args[(*j)++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,trace-div,indirect-calls";
+        }
+        args[(*j)++] = "-mllvm";
+        args[(*j)++] = "-sanitizer-coverage-prune-blocks=1";
+    }
+}
+
 static int ccMode(int argc, char** argv) {
     char* args[ARGS_MAX];
 
@@ -361,16 +373,13 @@ static int ccMode(int argc, char** argv) {
         args[j++] = "cc";
     }
 
-    commonOpts(&j, args);
+    commonPreOpts(&j, args);
 
     for (int i = 1; i < argc; i++) {
         args[j++] = argv[i];
     }
 
-    /* Disable -fsanitize=fuzzer */
-    if (isFSanitizeFuzzer(argc, argv)) {
-        args[j++] = "-fno-sanitize=fuzzer";
-    }
+    commonPostOpts(&j, args, argc, argv);
 
     return execCC(j, args);
 }
@@ -385,7 +394,7 @@ static int ldMode(int argc, char** argv) {
         args[j++] = "cc";
     }
 
-    commonOpts(&j, args);
+    commonPreOpts(&j, args);
 
 /* MacOS X linker doesn't like those */
 #ifndef _HF_ARCH_DARWIN
@@ -470,10 +479,7 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-latomic";
 #endif
 
-    /* Disable -fsanitize=fuzzer */
-    if (isFSanitizeFuzzer(argc, argv)) {
-        args[j++] = "-fno-sanitize=fuzzer";
-    }
+    commonPostOpts(&j, args, argc, argv);
 
     return execCC(j, args);
 }
