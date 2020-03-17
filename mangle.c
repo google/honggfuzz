@@ -599,25 +599,25 @@ static void mangle_Resize(run_t* run, bool printable) {
     ssize_t oldsz = run->dynamicFileSz;
     ssize_t newsz = 0;
 
-    uint64_t choice = util_rndGet(0, 27);
+    uint64_t choice = util_rndGet(0, 32);
     switch (choice) {
-        case 0 ... 16: /* Do nothing */
-            newsz = oldsz;
-            break;
-        case 17: /* Set new size arbitrarily */
+        case 0: /* Set new size arbitrarily */
             newsz = (ssize_t)util_rndGet(1, run->global->mutate.maxInputSz);
             break;
-        case 18 ... 21: /* Increase size by a small value */
+        case 1 ... 4: /* Increase size by a small value */
             newsz = oldsz + (ssize_t)util_rndGet(0, 8);
             break;
-        case 22: /* Increase size by a larger value */
+        case 5: /* Increase size by a larger value */
             newsz = oldsz + (ssize_t)util_rndGet(9, 128);
             break;
-        case 23 ... 26: /* Decrease size by a small value */
+        case 6 ... 9: /* Decrease size by a small value */
             newsz = oldsz - (ssize_t)util_rndGet(0, 8);
             break;
-        case 27: /* Decrease size by a larger value */
+        case 10: /* Decrease size by a larger value */
             newsz = oldsz - (ssize_t)util_rndGet(9, 128);
+            break;
+        case 11 ... 32: /* Do nothing */
+            newsz = oldsz;
             break;
         default:
             LOG_F("Illegal value from util_rndGet: %" PRIu64, choice);
