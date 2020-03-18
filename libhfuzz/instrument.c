@@ -132,7 +132,8 @@ __attribute__((weak)) size_t instrumentReserveGuard(size_t cnt) {
     size_t base = guardCnt;
     guardCnt += cnt;
     if (guardCnt >= _HF_PC_GUARD_MAX) {
-        LOG_F("This process requested too many PC-guards:%zu requested:%zu", guardCnt, cnt);
+        LOG_F(
+            "This process requested too many PC-guards, total:%zu, requested:%zu)", guardCnt, cnt);
     }
     if (ATOMIC_GET(covFeedback->guardNb) < guardCnt) {
         ATOMIC_SET(covFeedback->guardNb, guardCnt);
@@ -420,7 +421,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard_init(uint32_t* start
     }
 
     LOG_D("PC-Guard module initialization: %p-%p (count:%zu) at %" PRId64, start, stop,
-        ((uintptr_t)stop - (uintptr_t)start) / sizeof(*start), ATOMIC_GET(covFeedback->guardNb));
+        ((uintptr_t)stop - (uintptr_t)start) / sizeof(*start), instrumentReserveGuard(0));
 
     for (uint32_t* x = start; x < stop; x++) {
         uint32_t guardNo = instrumentReserveGuard(1);
@@ -482,7 +483,7 @@ void instrument8BitCountersCount(void) {
             }
             hf8bitcounters[i].start[j] = 0;
 
-            /* Bucket number of visits to an edge, and assign a value 1<<x to it */
+            /* Map number of visits to an edge into buckets */
             static uint8_t const scaleMap[256] = {
                 [0] = 0,
                 [1] = 1U << 0,
@@ -522,7 +523,6 @@ void __sanitizer_cov_8bit_counters_init(char* start, char* end) {
     if ((uintptr_t)start == (uintptr_t)end) {
         return;
     }
-
     for (size_t i = 0; i < ARRAYSIZE(hf8bitcounters); i++) {
         if (hf8bitcounters[i].start == NULL) {
             hf8bitcounters[i].start = (uint8_t*)start;
