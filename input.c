@@ -366,16 +366,19 @@ static size_t input_numTests(size_t idx, size_t total) {
     if (idx > total) {
         LOG_F("idx (%zu) > total (%zu)", idx, total);
     }
-    size_t percentile = (idx * 100) / total;
-    static size_t const scaleMap[101] = {
-        [0 ... 90] = 1,
-        [91 ... 92] = 2,
-        [93 ... 94] = 3,
-        [95 ... 96] = 4,
-        [97 ... 98] = 5,
-        [99 ... 100] = 10,
+    if (idx == 0 || (total - idx) > 5) {
+        return 1;
+    }
+
+    static size_t const scaleMap[] = {
+        [0] = 128,
+        [1] = 32,
+        [2] = 8,
+        [3] = 4,
+        [4] = 2,
+        [5] = 1,
     };
-    return scaleMap[percentile];
+    return scaleMap[total - idx];
 }
 
 #define TAILQ_FOREACH_HF(var, head, field) \
@@ -390,18 +393,22 @@ void input_addDynamicInput(
         dynfile->cov[i] = cov[i];
     }
     dynfile->size = len;
-    dynfile->idx = hfuzz->io.dynfileqCnt;
     dynfile->tested = 0;
+    dynfile->idx = 0;
     memcpy(dynfile->data, data, len);
     snprintf(dynfile->path, sizeof(dynfile->path), "%s", path);
 
     MX_SCOPED_RWLOCK_WRITE(&hfuzz->io.dynfileq_mutex);
 
+    hfuzz->io.dynfileqCnt++;
+    hfuzz->io.dynfileqMaxSz = HF_MAX(hfuzz->io.dynfileqMaxSz, len);
+
     if (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_MAIN) {
-        /* Add it in front with high idx, so it's tested next */
+        dynfile->idx = hfuzz->io.dynfileqCnt;
+        /* Add it with high idx */
         TAILQ_INSERT_HEAD(&hfuzz->io.dynfileq, dynfile, pointers);
-        hfuzz->io.dynfileqCurrent = TAILQ_FIRST(&hfuzz->io.dynfileq);
     } else {
+        dynfile->idx = 0;
         /* Sort it by coverage - put better coverage earlier in the list */
         struct dynfile_t* iter = NULL;
         TAILQ_FOREACH_HF(iter, &hfuzz->io.dynfileq, pointers) {
@@ -414,8 +421,6 @@ void input_addDynamicInput(
             TAILQ_INSERT_TAIL(&hfuzz->io.dynfileq, dynfile, pointers);
         }
     }
-    hfuzz->io.dynfileqCnt++;
-    hfuzz->io.dynfileqMaxSz = HF_MAX(hfuzz->io.dynfileqMaxSz, len);
 
     if (hfuzz->socketFuzzer.enabled) {
         /* Don't add coverage data to files in socketFuzzer mode */
