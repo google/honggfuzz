@@ -485,15 +485,6 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     return true;
 }
 
-/* Assign idx to each input based on it's coverage: better coverage -> higher idx */
-void input_renumerateInputs(honggfuzz_t* hfuzz) {
-    size_t idx = hfuzz->io.dynfileqCnt;
-    struct dynfile_t* iter = NULL;
-    TAILQ_FOREACH_HF(iter, &hfuzz->io.dynfileq, pointers) {
-        iter->idx = idx--;
-    }
-}
-
 static bool input_shouldReadNewFile(run_t* run) {
     if (fuzz_getState(run->global) != _HF_STATE_DYNAMIC_DRY_RUN || run->global->cfg.minimize) {
         input_setSize(run, run->global->mutate.maxInputSz);

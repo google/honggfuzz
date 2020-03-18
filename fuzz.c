@@ -145,8 +145,6 @@ static void fuzz_setDynamicMainState(run_t* run) {
         run->global->mutate.maxInputSz = newsz;
     }
 
-    input_renumerateInputs(run->global);
-
     LOG_I("Entering phase 3/3: Dynamic Main (Feedback Driven Mode)");
     ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_MAIN);
 }
@@ -248,12 +246,8 @@ static void fuzz_perfFeedback(run_t* run) {
                 run->global->linux.hwCnts.bbCnt, run->global->linux.hwCnts.softCntEdge,
                 run->global->linux.hwCnts.softCntPc, run->global->linux.hwCnts.softCntCmp);
 
-            uint64_t cov0 = softCntPc + softCntEdge;
-            uint64_t cov1 = run->dynamicFileSz ? (64 - util_Log2(run->dynamicFileSz)) : 64;
-            uint64_t cov2 = run->linux.hwCnts.newBBCnt;
-            uint64_t cov3 = softCntCmp;
             input_addDynamicInput(run->global, run->dynamicFile, run->dynamicFileSz,
-                (uint64_t[4]){cov0, cov1, cov2, cov3}, "[DYNAMIC]");
+                (uint64_t[4]){0, 0, 0, 0}, "[DYNAMIC]");
         }
 
         if (run->global->socketFuzzer.enabled) {
