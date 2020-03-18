@@ -361,6 +361,23 @@ static bool input_cmpCov(struct dynfile_t* item1, struct dynfile_t* item2) {
     return false;
 }
 
+/* Number of tests taken, based on belonging to a percentile bucket */
+static size_t input_numTests(size_t idx, size_t total) {
+    if (idx > total) {
+        LOG_F("idx (%zu) > total (%zu)", idx, total);
+    }
+    size_t percentile = (idx * 100) / total;
+    static size_t const scaleMap[101] = {
+        [0 ... 90] = 1,
+        [91 ... 92] = 2,
+        [93 ... 94] = 3,
+        [95 ... 96] = 4,
+        [97 ... 98] = 5,
+        [99 ... 100] = 10,
+    };
+    return scaleMap[percentile];
+}
+
 #define TAILQ_FOREACH_HF(var, head, field) \
     for ((var) = TAILQ_FIRST((head)); (var); (var) = TAILQ_NEXT((var), field))
 
@@ -443,7 +460,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
         current = run->global->io.dynfileqCurrent;
 
         /* Number of tests per input depends on the 'idx' of the input */
-        size_t testCnt = !current->idx ? 1 : (util_Log2(current->idx) + 1);
+        size_t testCnt = input_numTests(current->idx, run->global->io.dynfileqCnt);
         current->tested++;
 
         /*
