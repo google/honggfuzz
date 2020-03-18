@@ -373,21 +373,29 @@ void input_addDynamicInput(
         dynfile->cov[i] = cov[i];
     }
     dynfile->size = len;
+    dynfile->idx = hfuzz->io.dynfileqCnt;
+    dynfile->tested = 0;
     memcpy(dynfile->data, data, len);
     snprintf(dynfile->path, sizeof(dynfile->path), "%s", path);
 
     MX_SCOPED_RWLOCK_WRITE(&hfuzz->io.dynfileq_mutex);
 
-    /* Sort it by coverage - put better coverage in front of the list */
-    struct dynfile_t* iter = NULL;
-    TAILQ_FOREACH_HF(iter, &hfuzz->io.dynfileq, pointers) {
-        if (input_cmpCov(dynfile, iter)) {
-            TAILQ_INSERT_BEFORE(iter, dynfile, pointers);
-            break;
+    if (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_MAIN) {
+        /* Add it in front with high idx, so it's tested next */
+        TAILQ_INSERT_HEAD(&hfuzz->io.dynfileq, dynfile, pointers);
+        hfuzz->io.dynfileqCurrent = TAILQ_FIRST(&hfuzz->io.dynfileq);
+    } else {
+        /* Sort it by coverage - put better coverage earlier in the list */
+        struct dynfile_t* iter = NULL;
+        TAILQ_FOREACH_HF(iter, &hfuzz->io.dynfileq, pointers) {
+            if (input_cmpCov(dynfile, iter)) {
+                TAILQ_INSERT_BEFORE(iter, dynfile, pointers);
+                break;
+            }
         }
-    }
-    if (iter == NULL) {
-        TAILQ_INSERT_TAIL(&hfuzz->io.dynfileq, dynfile, pointers);
+        if (iter == NULL) {
+            TAILQ_INSERT_TAIL(&hfuzz->io.dynfileq, dynfile, pointers);
+        }
     }
     hfuzz->io.dynfileqCnt++;
     hfuzz->io.dynfileqMaxSz = HF_MAX(hfuzz->io.dynfileqMaxSz, len);
@@ -431,8 +439,23 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
         if (run->global->io.dynfileqCurrent == NULL) {
             run->global->io.dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
         }
+
         current = run->global->io.dynfileqCurrent;
-        run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
+
+        /* Number of tests per input depends on the 'idx' of the input */
+        size_t testCnt = !current->idx ? 1 : (util_Log2(current->idx) + 1);
+        current->tested++;
+
+        /*
+         * Testing routine:
+         * LOG_E("IDX: %zu (%zu/%zu)", current->idx, current->tested, testCnt);
+         */
+
+        /* If the current sample has been tested enough, move the pointer to the next sample */
+        if (current->tested >= testCnt) {
+            current->tested = 0;
+            run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
+        }
     }
 
     input_setSize(run, current->size);
@@ -443,6 +466,15 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     }
 
     return true;
+}
+
+/* Assign idx to each input based on it's coverage: better coverage -> higher idx */
+void input_renumerateInputs(honggfuzz_t* hfuzz) {
+    size_t idx = hfuzz->io.dynfileqCnt;
+    struct dynfile_t* iter = NULL;
+    TAILQ_FOREACH_HF(iter, &hfuzz->io.dynfileq, pointers) {
+        iter->idx = idx--;
+    }
 }
 
 static bool input_shouldReadNewFile(run_t* run) {
