@@ -71,9 +71,9 @@ static bool initializeCovFeedback(void) {
     if (fstat(_HF_COV_BITMAP_FD, &st) == -1) {
         return false;
     }
-    if (st.st_size != sizeof(feedback_t)) {
-        LOG_W("Size of the feedback structure mismatch: st.size != sizeof(feedback_t) (%zu != "
-              "%zu). Link your fuzzed binaries with the newest honggfuzz and hfuzz-clang(++)",
+    if ((size_t)st.st_size < sizeof(feedback_t)) {
+        LOG_W("Size of the feedback structure mismatch: st.size < sizeof(feedback_t) (%zu < "
+              "%zu). Build your honggfuzz binary from newer sources",
             (size_t)st.st_size, sizeof(feedback_t));
         return false;
     }
