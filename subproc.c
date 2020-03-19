@@ -421,8 +421,6 @@ static bool subproc_New(run_t* run) {
 }
 
 bool subproc_Run(run_t* run) {
-    run->timeStartedMillis = util_timeNowMillis();
-
     if (!subproc_New(run)) {
         LOG_E("subproc_New()");
         return false;

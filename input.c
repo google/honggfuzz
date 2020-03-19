@@ -361,12 +361,17 @@ static bool input_cmpCov(struct dynfile_t* item1, struct dynfile_t* item2) {
     return false;
 }
 
-/* Number of tests taken, based on belonging to a percentile bucket */
-static size_t input_numTests(size_t idx, size_t total) {
-    if (idx > total) {
-        LOG_F("idx (%zu) > total (%zu)", idx, total);
+/* Number of tests taken, based on how fresh the input is */
+static size_t input_numTests(run_t* run, struct dynfile_t* dynfile) {
+    size_t total = run->global->io.dynfileqCnt;
+    if (dynfile->idx > total) {
+        LOG_F("idx (%zu) > total (%zu)", dynfile->idx, total);
     }
-    if (idx == 0 || (total - idx) > 5) {
+    if (dynfile->idx == 0 || (total - dynfile->idx) > 5) {
+        return 1;
+    }
+    /* If the sample is older than 10 seconds, don't bump its testing ratio */
+    if ((run->timeStartedMillis - dynfile->timeAddedMillis) > (1000 * 10)) {
         return 1;
     }
 
@@ -378,7 +383,7 @@ static size_t input_numTests(size_t idx, size_t total) {
         [4] = 2,
         [5] = 1,
     };
-    return scaleMap[total - idx];
+    return scaleMap[total - dynfile->idx];
 }
 
 #define TAILQ_FOREACH_HF(var, head, field) \
@@ -395,6 +400,7 @@ void input_addDynamicInput(
     dynfile->size = len;
     dynfile->tested = 0;
     dynfile->idx = 0;
+    dynfile->timeAddedMillis = util_timeNowMillis();
     memcpy(dynfile->data, data, len);
     snprintf(dynfile->path, sizeof(dynfile->path), "%s", path);
 
@@ -465,7 +471,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
         current = run->global->io.dynfileqCurrent;
 
         /* Number of tests per input depends on the 'idx' of the input */
-        size_t testCnt = input_numTests(current->idx, run->global->io.dynfileqCnt);
+        size_t testCnt = input_numTests(run, current);
         current->tested++;
 
         /*
