@@ -361,31 +361,6 @@ static bool input_cmpCov(struct dynfile_t* item1, struct dynfile_t* item2) {
     return false;
 }
 
-/* Number of tests taken, based on how fresh the input is */
-static size_t input_numTests(run_t* run, struct dynfile_t* dynfile) {
-    size_t total = run->global->io.dynfileqCnt;
-    if (dynfile->idx > total) {
-        LOG_F("idx (%zu) > total (%zu)", dynfile->idx, total);
-    }
-    if (dynfile->idx == 0 || (total - dynfile->idx) > 5) {
-        return 1;
-    }
-    /* If the sample is older than 10 seconds, don't bump its testing ratio */
-    if ((run->timeStartedMillis - dynfile->timeAddedMillis) > (1000 * 10)) {
-        return 1;
-    }
-
-    static size_t const scaleMap[] = {
-        [0] = 128,
-        [1] = 32,
-        [2] = 8,
-        [3] = 4,
-        [4] = 2,
-        [5] = 1,
-    };
-    return scaleMap[total - dynfile->idx];
-}
-
 #define TAILQ_FOREACH_HF(var, head, field) \
     for ((var) = TAILQ_FIRST((head)); (var); (var) = TAILQ_NEXT((var), field))
 
@@ -452,6 +427,31 @@ void input_addDynamicInput(
     if (hfuzz->io.covDirNew && !input_writeCovFile(hfuzz->io.covDirNew, data, len)) {
         LOG_E("Couldn't save the new coverage data to '%s'", hfuzz->io.covDirNew);
     }
+}
+
+/* Number of tests taken, based on how 'fresh' the input is */
+static size_t input_numTests(run_t* run, struct dynfile_t* dynfile) {
+    size_t total = run->global->io.dynfileqCnt;
+    if (dynfile->idx > total) {
+        LOG_F("idx (%zu) > total (%zu)", dynfile->idx, total);
+    }
+    if (dynfile->idx == 0 || (total - dynfile->idx) > 5) {
+        return 1;
+    }
+    /* If the sample is older than 10 seconds, don't bump its testing ratio */
+    if ((run->timeStartedMillis - dynfile->timeAddedMillis) > (1000 * 10)) {
+        return 1;
+    }
+
+    static size_t const scaleMap[] = {
+        [0] = 128,
+        [1] = 32,
+        [2] = 8,
+        [3] = 4,
+        [4] = 2,
+        [5] = 1,
+    };
+    return scaleMap[total - dynfile->idx];
 }
 
 bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
