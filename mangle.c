@@ -39,15 +39,20 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 
-/* Spend at least 2/3 of time on modifying the first 8kB of input */
+/* Spend at least 3/4 of time on modifying the first 8kB of input */
 static inline size_t mangle_getOffSet(run_t* run) {
-    switch (util_rnd64() % 3) {
+    switch (util_rnd64() % 4) {
         case 0:
+            if (run->dynamicFileSz <= 128) {
+                break;
+            }
+            return util_rndGet(0, 128);
+        case 1:
             if (run->dynamicFileSz <= 1024) {
                 break;
             }
             return util_rndGet(0, 1024);
-        case 1:
+        case 2:
             if (run->dynamicFileSz <= 8192) {
                 break;
             }
