@@ -502,25 +502,21 @@ size_t input_getRandomInputAsBuf(run_t* run, const uint8_t** buf) {
         return 0;
     }
 
-    {
-        MX_SCOPED_RWLOCK_READ(&run->global->io.dynfileq_mutex);
+    MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq2_mutex);
 
-        size_t fileIdx = util_rndGet(0, run->global->io.dynfileqCnt - 1);
-        struct dynfile_t* cur = TAILQ_FIRST(&run->global->io.dynfileq);
-        for (size_t i = 0; i < fileIdx; i++) {
-            cur = TAILQ_NEXT(cur, pointers);
-            if (cur == NULL) {
-                LOG_E("Dynamic file index is NULL when iterating through dynamic corpus, i:%zu, "
-                      "idx:%zu, totalSize:%zu",
-                    i, fileIdx, run->global->io.dynfileqCnt);
-                *buf = NULL;
-                return 0;
-            }
-        }
-
-        *buf = cur->data;
-        return cur->size;
+    if (run->global->io.dynfileq2Current == NULL) {
+        run->global->io.dynfileq2Current = TAILQ_FIRST(&run->global->io.dynfileq);
     }
+
+    struct dynfile_t* current = run->global->io.dynfileq2Current;
+
+    run->global->io.dynfileq2Current = TAILQ_NEXT(run->global->io.dynfileq2Current, pointers);
+    if (run->global->io.dynfileq2Current == NULL) {
+        run->global->io.dynfileq2Current = TAILQ_FIRST(&run->global->io.dynfileq);
+    }
+
+    *buf = current->data;
+    return current->size;
 }
 
 static bool input_shouldReadNewFile(run_t* run) {

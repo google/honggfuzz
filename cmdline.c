@@ -294,6 +294,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .dynfileqCnt = 0U,
                 .dynfileq_mutex = PTHREAD_RWLOCK_INITIALIZER,
                 .dynfileqCurrent = NULL,
+                .dynfileq2_mutex = PTHREAD_RWLOCK_INITIALIZER,
+                .dynfileq2Current = NULL,
                 .exportFeedback = false,
             },
         .exe =
