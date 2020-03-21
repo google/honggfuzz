@@ -496,6 +496,33 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     return true;
 }
 
+size_t input_getRandomInputAsBuf(run_t* run, const uint8_t** buf) {
+    if (ATOMIC_GET(run->global->io.dynfileqCnt) == 0) {
+        *buf = NULL;
+        return 0;
+    }
+
+    {
+        MX_SCOPED_RWLOCK_READ(&run->global->io.dynfileq_mutex);
+
+		size_t fileIdx = util_rndGet(0, run->global->io.dynfileqCnt - 1);
+        struct dynfile_t* cur = TAILQ_FIRST(&run->global->io.dynfileq);
+        for (size_t i = 0; i < fileIdx; i++) {
+            cur = TAILQ_NEXT(cur, pointers);
+            if (cur == NULL) {
+                LOG_E("Dynamic file index is NULL when iterating through dynamic corpus, i:%zu, "
+                      "idx:%zu, totalSize:%zu",
+                    i, fileIdx, run->global->io.dynfileqCnt);
+                *buf = NULL;
+                return 0;
+            }
+        }
+
+        *buf = cur->data;
+        return cur->size;
+    }
+}
+
 static bool input_shouldReadNewFile(run_t* run) {
     if (fuzz_getState(run->global) != _HF_STATE_DYNAMIC_DRY_RUN || run->global->cfg.minimize) {
         input_setSize(run, run->global->mutate.maxInputSz);

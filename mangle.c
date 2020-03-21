@@ -386,7 +386,7 @@ static void mangle_Magic(run_t* run, bool printable) {
     }
 }
 
-static void mangle_DictionaryNoCheck(
+static void mangle_Insert(
     run_t* run, const uint8_t* val, size_t len, bool printable, bool inflate) {
     size_t off = mangle_getOffSet(run);
     if (inflate) {
@@ -401,7 +401,7 @@ static void mangle_DictionaryInsert(run_t* run, bool printable) {
         return;
     }
     uint64_t choice = util_rndGet(0, run->global->mutate.dictionaryCnt - 1);
-    mangle_DictionaryNoCheck(run, run->global->mutate.dictionary[choice].val,
+    mangle_Insert(run, run->global->mutate.dictionary[choice].val,
         run->global->mutate.dictionary[choice].len, printable, /* inflate= */ true);
 }
 
@@ -411,7 +411,7 @@ static void mangle_DictionaryOverwrite(run_t* run, bool printable) {
         return;
     }
     uint64_t choice = util_rndGet(0, run->global->mutate.dictionaryCnt - 1);
-    mangle_DictionaryNoCheck(run, run->global->mutate.dictionary[choice].val,
+    mangle_Insert(run, run->global->mutate.dictionary[choice].val,
         run->global->mutate.dictionary[choice].len, printable, /* inflate= */ false);
 }
 
@@ -442,7 +442,7 @@ static void mangle_ConstFeedbackInsert(run_t* run, bool printable) {
         mangle_Magic(run, printable);
         return;
     }
-    mangle_DictionaryNoCheck(run, val, len, printable, /* inflate= */ true);
+    mangle_Insert(run, val, len, printable, /* inflate= */ true);
 }
 
 static void mangle_ConstFeedbackOverwrite(run_t* run, bool printable) {
@@ -452,7 +452,7 @@ static void mangle_ConstFeedbackOverwrite(run_t* run, bool printable) {
         mangle_Magic(run, printable);
         return;
     }
-    mangle_DictionaryNoCheck(run, val, len, printable, /* inflate= */ false);
+    mangle_Insert(run, val, len, printable, /* inflate= */ false);
 }
 
 static void mangle_MemSetWithVal(run_t* run, int val) {
@@ -651,6 +651,30 @@ static void mangle_ASCIIVal(run_t* run, bool printable HF_ATTR_UNUSED) {
     mangle_Overwrite(run, (uint8_t*)buf, off, util_rndGet(2, 8));
 }
 
+static void mangle_SpliceOverwrite(run_t* run, bool printable) {
+    const uint8_t* buf;
+    size_t sz = input_getRandomInputAsBuf(run, &buf);
+    if (!sz) {
+        return mangle_Bytes(run, printable);
+    }
+
+    size_t remoteOff = util_rndGet(0, sz - 1);
+    size_t remoteLen = util_rndGet(1, sz - remoteOff);
+    mangle_Insert(run, &buf[remoteOff], remoteLen, printable, /* inflate= */ false);
+}
+
+static void mangle_SpliceInsert(run_t* run, bool printable) {
+    const uint8_t* buf;
+    size_t sz = input_getRandomInputAsBuf(run, &buf);
+    if (!sz) {
+        return mangle_Bytes(run, printable);
+    }
+
+    size_t remoteOff = util_rndGet(0, sz - 1);
+    size_t remoteLen = util_rndGet(1, sz - remoteOff);
+    mangle_Insert(run, &buf[remoteOff], remoteLen, printable, /* inflate= */ true);
+}
+
 void mangle_mangleContent(run_t* run) {
     static void (*const mangleFuncs[])(run_t * run, bool printable) = {
         mangle_Bit,
@@ -670,6 +694,8 @@ void mangle_mangleContent(run_t* run) {
         mangle_Expand,
         mangle_Shrink,
         mangle_ASCIIVal,
+        mangle_SpliceOverwrite,
+        mangle_SpliceInsert,
         mangle_Resize,
     };
 
