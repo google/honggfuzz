@@ -505,7 +505,7 @@ size_t input_getRandomInputAsBuf(run_t* run, const uint8_t** buf) {
     {
         MX_SCOPED_RWLOCK_READ(&run->global->io.dynfileq_mutex);
 
-		size_t fileIdx = util_rndGet(0, run->global->io.dynfileqCnt - 1);
+        size_t fileIdx = util_rndGet(0, run->global->io.dynfileqCnt - 1);
         struct dynfile_t* cur = TAILQ_FIRST(&run->global->io.dynfileq);
         for (size_t i = 0; i < fileIdx; i++) {
             cur = TAILQ_NEXT(cur, pointers);
