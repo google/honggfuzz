@@ -362,8 +362,6 @@ static void commonPostOpts(int* j, char** args, int argc, char** argv) {
             }
             args[(*j)++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,trace-div,indirect-calls";
         }
-        args[(*j)++] = "-mllvm";
-        args[(*j)++] = "-sanitizer-coverage-prune-blocks=1";
     }
 }
 
