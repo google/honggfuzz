@@ -226,7 +226,6 @@ typedef struct {
         size_t dynfileqCnt;
         pthread_rwlock_t dynfileq_mutex;
         struct dynfile_t* dynfileqCurrent;
-        pthread_rwlock_t dynfileq2_mutex;
         struct dynfile_t* dynfileq2Current;
         TAILQ_HEAD(dyns_t, dynfile_t) dynfileq;
         bool exportFeedback;

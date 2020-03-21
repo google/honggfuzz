@@ -374,7 +374,6 @@ void input_addDynamicInput(
     }
     dynfile->size = len;
     dynfile->tested = 0;
-    dynfile->idx = 0;
     dynfile->timeAddedMillis = util_timeNowMillis();
     memcpy(dynfile->data, data, len);
     snprintf(dynfile->path, sizeof(dynfile->path), "%s", path);
@@ -382,14 +381,14 @@ void input_addDynamicInput(
     MX_SCOPED_RWLOCK_WRITE(&hfuzz->io.dynfileq_mutex);
 
     hfuzz->io.dynfileqCnt++;
+    dynfile->idx = hfuzz->io.dynfileqCnt;
+
     hfuzz->io.dynfileqMaxSz = HF_MAX(hfuzz->io.dynfileqMaxSz, len);
 
     if (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_MAIN) {
-        dynfile->idx = hfuzz->io.dynfileqCnt;
         /* Add it with high idx */
         TAILQ_INSERT_HEAD(&hfuzz->io.dynfileq, dynfile, pointers);
     } else {
-        dynfile->idx = 0;
         /* Sort it by coverage - put better coverage earlier in the list */
         struct dynfile_t* iter = NULL;
         TAILQ_FOREACH_HF(iter, &hfuzz->io.dynfileq, pointers) {
@@ -498,21 +497,21 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
 
 size_t input_getRandomInputAsBuf(run_t* run, const uint8_t** buf) {
     if (ATOMIC_GET(run->global->io.dynfileqCnt) == 0) {
+        LOG_E("The dynamic input queue shouldn't be empty");
         *buf = NULL;
         return 0;
     }
 
-    MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq2_mutex);
+    struct dynfile_t* current = NULL;
+    {
+        MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 
-    if (run->global->io.dynfileq2Current == NULL) {
-        run->global->io.dynfileq2Current = TAILQ_FIRST(&run->global->io.dynfileq);
-    }
+        if (run->global->io.dynfileq2Current == NULL) {
+            run->global->io.dynfileq2Current = TAILQ_FIRST(&run->global->io.dynfileq);
+        }
 
-    struct dynfile_t* current = run->global->io.dynfileq2Current;
-
-    run->global->io.dynfileq2Current = TAILQ_NEXT(run->global->io.dynfileq2Current, pointers);
-    if (run->global->io.dynfileq2Current == NULL) {
-        run->global->io.dynfileq2Current = TAILQ_FIRST(&run->global->io.dynfileq);
+        current = run->global->io.dynfileq2Current;
+        run->global->io.dynfileq2Current = TAILQ_NEXT(run->global->io.dynfileq2Current, pointers);
     }
 
     *buf = current->data;
