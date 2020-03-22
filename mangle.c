@@ -41,18 +41,28 @@
 
 /* Spend at least 3/4 of time on modifying the first 8kB of input */
 static inline size_t mangle_getOffSet(run_t* run) {
-    switch (util_rnd64() % 4) {
+    switch (util_rnd64() % 10) {
         case 0:
-            if (run->dynamicFileSz <= 128) {
+            if (run->dynamicFileSz <= 16) {
                 break;
             }
-            return util_rndGet(0, 128);
+            return util_rndGet(0, 16);
         case 1:
+            if (run->dynamicFileSz <= 64) {
+                break;
+            }
+            return util_rndGet(0, 64);
+        case 2:
+            if (run->dynamicFileSz <= 256) {
+                break;
+            }
+            return util_rndGet(0, 256);
+        case 3:
             if (run->dynamicFileSz <= 1024) {
                 break;
             }
             return util_rndGet(0, 1024);
-        case 2:
+        case 4:
             if (run->dynamicFileSz <= 8192) {
                 break;
             }
