@@ -679,50 +679,6 @@ static void mangle_Shrink(run_t* run, bool printable HF_ATTR_UNUSED) {
     mangle_Move(run, off_start, off_end, run->dynamicFileSz - off_start);
     input_setSize(run, run->dynamicFileSz - (off_start - off_end));
 }
-
-static void mangle_Resize(run_t* run, bool printable) {
-    ssize_t oldsz = run->dynamicFileSz;
-    ssize_t newsz = 0;
-
-    uint64_t choice = util_rndGet(0, 32);
-    switch (choice) {
-        case 0: /* Set new size arbitrarily */
-            newsz = (ssize_t)util_rndGet(1, run->global->mutate.maxInputSz);
-            break;
-        case 1 ... 4: /* Increase size by a small value */
-            newsz = oldsz + (ssize_t)util_rndGet(0, 8);
-            break;
-        case 5: /* Increase size by a larger value */
-            newsz = oldsz + (ssize_t)util_rndGet(9, 128);
-            break;
-        case 6 ... 9: /* Decrease size by a small value */
-            newsz = oldsz - (ssize_t)util_rndGet(0, 8);
-            break;
-        case 10: /* Decrease size by a larger value */
-            newsz = oldsz - (ssize_t)util_rndGet(9, 128);
-            break;
-        case 11 ... 32: /* Do nothing */
-            newsz = oldsz;
-            break;
-        default:
-            LOG_F("Illegal value from util_rndGet: %" PRIu64, choice);
-            break;
-    }
-    if (newsz < 1) {
-        newsz = 1;
-    }
-    if (newsz > (ssize_t)run->global->mutate.maxInputSz) {
-        newsz = run->global->mutate.maxInputSz;
-    }
-
-    input_setSize(run, (size_t)newsz);
-    if (newsz > oldsz) {
-        if (printable) {
-            memset(&run->dynamicFile[oldsz], 'A', newsz - oldsz);
-        }
-    }
-}
-
 static void mangle_ASCIINumOverwrite(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
     size_t len = util_rndGet(2, 8);
@@ -767,6 +723,49 @@ static void mangle_SpliceInsert(run_t* run, bool printable) {
     size_t remoteLen = util_rndGet(1, sz - remoteOff);
     size_t off = mangle_getOffSet(run);
     mangle_Insert(run, off, &buf[remoteOff], remoteLen, printable);
+}
+
+static void mangle_Resize(run_t* run, bool printable) {
+    ssize_t oldsz = run->dynamicFileSz;
+    ssize_t newsz = 0;
+
+    uint64_t choice = util_rndGet(0, 32);
+    switch (choice) {
+        case 0: /* Set new size arbitrarily */
+            newsz = (ssize_t)util_rndGet(1, run->global->mutate.maxInputSz);
+            break;
+        case 1 ... 4: /* Increase size by a small value */
+            newsz = oldsz + (ssize_t)util_rndGet(0, 8);
+            break;
+        case 5: /* Increase size by a larger value */
+            newsz = oldsz + (ssize_t)util_rndGet(9, 128);
+            break;
+        case 6 ... 9: /* Decrease size by a small value */
+            newsz = oldsz - (ssize_t)util_rndGet(0, 8);
+            break;
+        case 10: /* Decrease size by a larger value */
+            newsz = oldsz - (ssize_t)util_rndGet(9, 128);
+            break;
+        case 11 ... 32: /* Do nothing */
+            newsz = oldsz;
+            break;
+        default:
+            LOG_F("Illegal value from util_rndGet: %" PRIu64, choice);
+            break;
+    }
+    if (newsz < 1) {
+        newsz = 1;
+    }
+    if (newsz > (ssize_t)run->global->mutate.maxInputSz) {
+        newsz = run->global->mutate.maxInputSz;
+    }
+
+    input_setSize(run, (size_t)newsz);
+    if (newsz > oldsz) {
+        if (printable) {
+            memset(&run->dynamicFile[oldsz], 'A', newsz - oldsz);
+        }
+    }
 }
 
 void mangle_mangleContent(run_t* run) {
