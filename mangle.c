@@ -504,9 +504,22 @@ static void mangle_MemSet(run_t* run, bool printable) {
         run, printable ? (int)util_rndPrintable() : (int)util_rndGet(0, UINT8_MAX));
 }
 
-static void mangle_Random(run_t* run, bool printable) {
+static void mangle_RandomOverwrite(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
     size_t len = util_rndGet(1, run->dynamicFileSz - off);
+    if (printable) {
+        util_rndBufPrintable(&run->dynamicFile[off], len);
+    } else {
+        util_rndBuf(&run->dynamicFile[off], len);
+    }
+}
+
+static void mangle_RandomInsert(run_t* run, bool printable) {
+    size_t off = mangle_getOffSet(run);
+    size_t len = util_rndGet(1, run->dynamicFileSz - off);
+
+    mangle_Inflate(run, off, len, printable);
+
     if (printable) {
         util_rndBufPrintable(&run->dynamicFile[off], len);
     } else {
@@ -690,12 +703,25 @@ static void mangle_Resize(run_t* run, bool printable) {
     }
 }
 
-static void mangle_ASCIIVal(run_t* run, bool printable) {
+static void mangle_ASCIIValOverwrite(run_t* run, bool printable) {
+    size_t off = mangle_getOffSet(run);
+    size_t len = util_rndGet(2, 8);
+
     char buf[20];
     snprintf(buf, sizeof(buf), "%-19" PRId64, (int64_t)util_rnd64());
 
+    mangle_Overwrite(run, (uint8_t*)buf, off, len, printable);
+}
+
+static void mangle_ASCIIValInsert(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
-    mangle_Overwrite(run, (uint8_t*)buf, off, util_rndGet(2, 8), printable);
+    size_t len = util_rndGet(2, 8);
+
+    char buf[20];
+    snprintf(buf, sizeof(buf), "%-19" PRId64, (int64_t)util_rnd64());
+
+    mangle_Inflate(run, off, len, printable);
+    mangle_Overwrite(run, (uint8_t*)buf, off, len, printable);
 }
 
 static void mangle_SpliceOverwrite(run_t* run, bool printable) {
@@ -726,27 +752,29 @@ void mangle_mangleContent(run_t* run) {
     static void (*const mangleFuncs[])(run_t * run, bool printable) = {
         mangle_Bit,
         mangle_Bytes,
-        mangle_ByteRepeatOverwrite,
-        mangle_ByteRepeatInsert,
-        mangle_MagicOverwrite,
-        mangle_MagicInsert,
         mangle_IncByte,
         mangle_DecByte,
         mangle_NegByte,
         mangle_AddSub,
+        mangle_MemMove,
+        mangle_MemSet,
+        mangle_Expand,
+        mangle_Shrink,
+        mangle_Resize,
+        mangle_ASCIIValOverwrite,
+        mangle_ASCIIValInsert,
+        mangle_ByteRepeatOverwrite,
+        mangle_ByteRepeatInsert,
+        mangle_MagicOverwrite,
+        mangle_MagicInsert,
         mangle_DictionaryOverwrite,
         mangle_DictionaryInsert,
         mangle_ConstFeedbackOverwrite,
         mangle_ConstFeedbackInsert,
-        mangle_MemMove,
-        mangle_MemSet,
-        mangle_Random,
-        mangle_Expand,
-        mangle_Shrink,
-        mangle_ASCIIVal,
+        mangle_RandomOverwrite,
+        mangle_RandomInsert,
         mangle_SpliceOverwrite,
         mangle_SpliceInsert,
-        mangle_Resize,
     };
 
     if (run->mutationsPerRun == 0U) {
