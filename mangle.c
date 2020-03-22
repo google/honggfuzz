@@ -134,12 +134,20 @@ static inline void mangle_Insert(
     mangle_Overwrite(run, off, val, len, printable);
 }
 
-static void mangle_MemMove(run_t* run, bool printable HF_ATTR_UNUSED) {
+static void mangle_MemCopyOverwrite(run_t* run, bool printable HF_ATTR_UNUSED) {
     size_t off_from = mangle_getOffSet(run);
     size_t off_to = mangle_getOffSet(run);
-    size_t len = mangle_getOffSet(run);
+    size_t len = util_rndGet(1, run->dynamicFileSz - off_from);
 
-    mangle_Move(run, off_from, off_to, len);
+    mangle_Overwrite(run, off_to, &run->dynamicFile[off_from], len, printable);
+}
+
+static void mangle_MemCopyInsert(run_t* run, bool printable) {
+    size_t off_to = mangle_getOffSet(run);
+    size_t off_from = mangle_getOffSet(run);
+    size_t len = util_rndGet(1, run->dynamicFileSz - off_from);
+
+    mangle_Insert(run, off_to, &run->dynamicFile[off_from], len, printable);
 }
 
 static void mangle_BytesOverwrite(run_t* run, bool printable) {
@@ -785,11 +793,12 @@ void mangle_mangleContent(run_t* run) {
         mangle_DecByte,
         mangle_NegByte,
         mangle_AddSub,
-        mangle_MemMove,
         mangle_MemSet,
         mangle_Expand,
         mangle_Shrink,
         mangle_Resize,
+        mangle_MemCopyOverwrite,
+        mangle_MemCopyInsert,
         mangle_BytesOverwrite,
         mangle_BytesInsert,
         mangle_ASCIINumOverwrite,
