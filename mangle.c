@@ -386,13 +386,12 @@ static void mangle_Magic(run_t* run, bool printable) {
     }
 }
 
-static void mangle_Insert(
-    run_t* run, const uint8_t* val, size_t len, bool printable, bool inflate) {
+static void mangle_Insert(run_t* run, const uint8_t* val, size_t len, bool printable, bool inflate) {
     size_t off = mangle_getOffSet(run);
     if (inflate) {
         mangle_Inflate(run, off, len, printable);
     }
-    mangle_Overwrite(run, (const uint8_t*)val, off, len);
+    mangle_Overwrite(run, val, off, len);
 }
 
 static void mangle_DictionaryInsert(run_t* run, bool printable) {
