@@ -477,14 +477,12 @@ static void mangle_Random(run_t* run, bool printable) {
     }
 }
 
-static void mangle_AddSubWithRange(run_t* run, size_t off, uint64_t varLen) {
-    int delta = (int)util_rndGet(0, 8192);
-    delta -= 4096;
+static void mangle_AddSubWithRange(run_t* run, size_t off, uint64_t varLen, uint64_t range) {
+    int64_t delta = (int64_t)util_rndGet(0, range * 2) - (int64_t)range;
 
     switch (varLen) {
         case 1: {
             run->dynamicFile[off] += delta;
-            return;
             break;
         }
         case 2: {
@@ -499,7 +497,6 @@ static void mangle_AddSubWithRange(run_t* run, size_t off, uint64_t varLen) {
                 val = __builtin_bswap16(val);
             }
             mangle_Overwrite(run, (uint8_t*)&val, off, varLen);
-            return;
             break;
         }
         case 4: {
@@ -514,7 +511,6 @@ static void mangle_AddSubWithRange(run_t* run, size_t off, uint64_t varLen) {
                 val = __builtin_bswap32(val);
             }
             mangle_Overwrite(run, (uint8_t*)&val, off, varLen);
-            return;
             break;
         }
         case 8: {
@@ -529,12 +525,10 @@ static void mangle_AddSubWithRange(run_t* run, size_t off, uint64_t varLen) {
                 val = __builtin_bswap64(val);
             }
             mangle_Overwrite(run, (uint8_t*)&val, off, varLen);
-            return;
             break;
         }
         default: {
-            LOG_F("Unknown variable length size: %" PRIu64, varLen);
-            break;
+            LOG_F("Unknown variable length size: %zu", varLen);
         }
     }
 }
@@ -543,12 +537,30 @@ static void mangle_AddSub(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
 
     /* 1,2,4,8 */
-    uint64_t varLen = 1U << util_rndGet(0, 3);
+    size_t varLen = 1U << util_rndGet(0, 3);
     if ((run->dynamicFileSz - off) < varLen) {
         varLen = 1;
     }
 
-    mangle_AddSubWithRange(run, off, varLen);
+    uint64_t range;
+    switch (varLen) {
+        case 1:
+            range = 16;
+            break;
+        case 2:
+            range = 4096;
+            break;
+        case 4:
+            range = 1048576;
+            break;
+        case 8:
+            range = 268435456;
+            break;
+        default:
+            LOG_F("Invalid operand size: %zu", varLen);
+    }
+
+    mangle_AddSubWithRange(run, off, varLen, range);
     if (printable) {
         util_turnToPrintable((uint8_t*)&run->dynamicFile[off], varLen);
     }
