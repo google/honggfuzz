@@ -65,15 +65,18 @@ static inline size_t mangle_getOffSet(run_t* run) {
 }
 
 static inline void mangle_Overwrite(
-    run_t* run, const uint8_t* src, size_t off, size_t sz, bool printable) {
+    run_t* run, size_t off, const uint8_t* src, size_t len, bool printable) {
+    if (len == 0) {
+        return;
+    }
     size_t maxToCopy = run->dynamicFileSz - off;
-    if (sz > maxToCopy) {
-        sz = maxToCopy;
+    if (len > maxToCopy) {
+        len = maxToCopy;
     }
 
-    memmove(&run->dynamicFile[off], src, sz);
+    memmove(&run->dynamicFile[off], src, len);
     if (printable) {
-        util_turnToPrintable(&run->dynamicFile[off], sz);
+        util_turnToPrintable(&run->dynamicFile[off], len);
     }
 }
 
@@ -98,9 +101,9 @@ static inline void mangle_Move(run_t* run, size_t off_from, size_t off_to, size_
     memmove(&run->dynamicFile[off_to], &run->dynamicFile[off_from], len);
 }
 
-static void mangle_Inflate(run_t* run, size_t off, size_t len, bool printable) {
+static inline size_t mangle_Inflate(run_t* run, size_t off, size_t len, bool printable) {
     if (run->dynamicFileSz >= run->global->mutate.maxInputSz) {
-        return;
+        return 0;
     }
     if (len > (run->global->mutate.maxInputSz - run->dynamicFileSz)) {
         len = run->global->mutate.maxInputSz - run->dynamicFileSz;
@@ -109,8 +112,16 @@ static void mangle_Inflate(run_t* run, size_t off, size_t len, bool printable) {
     input_setSize(run, run->dynamicFileSz + len);
     mangle_Move(run, off, off + len, run->dynamicFileSz);
     if (printable) {
-        memset(&run->dynamicFile[off], 'A', len);
+        memset(&run->dynamicFile[off], ' ', len);
     }
+
+    return len;
+}
+
+static inline void mangle_Insert(
+    run_t* run, size_t off, const uint8_t* val, size_t len, bool printable) {
+    len = mangle_Inflate(run, off, len, printable);
+    mangle_Overwrite(run, off, val, len, printable);
 }
 
 static void mangle_MemMove(run_t* run, bool printable HF_ATTR_UNUSED) {
@@ -121,7 +132,7 @@ static void mangle_MemMove(run_t* run, bool printable HF_ATTR_UNUSED) {
     mangle_Move(run, off_from, off_to, len);
 }
 
-static void mangle_Bytes(run_t* run, bool printable) {
+static void mangle_BytesOverwrite(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
 
     uint16_t buf;
@@ -133,7 +144,21 @@ static void mangle_Bytes(run_t* run, bool printable) {
 
     /* Overwrite with random 1-2-byte values */
     size_t toCopy = util_rndGet(1, 2);
-    mangle_Overwrite(run, (uint8_t*)&buf, off, toCopy, printable);
+    mangle_Overwrite(run, off, (uint8_t*)&buf, toCopy, printable);
+}
+
+static void mangle_BytesInsert(run_t* run, bool printable) {
+    uint16_t buf;
+    if (printable) {
+        util_rndBufPrintable((uint8_t*)&buf, sizeof(buf));
+    } else {
+        buf = util_rnd64();
+    }
+
+    size_t off = mangle_getOffSet(run);
+    /* Insert random 1-2-byte values */
+    size_t toCopy = util_rndGet(1, 2);
+    mangle_Insert(run, off, (uint8_t*)&buf, toCopy, printable);
 }
 
 static void mangle_ByteRepeatOverwrite(run_t* run, bool printable) {
@@ -143,7 +168,7 @@ static void mangle_ByteRepeatOverwrite(run_t* run, bool printable) {
 
     /* No space to repeat */
     if (!maxSz) {
-        return mangle_Bytes(run, printable);
+        return mangle_BytesOverwrite(run, printable);
     }
 
     size_t len = util_rndGet(1, maxSz);
@@ -157,11 +182,11 @@ static void mangle_ByteRepeatInsert(run_t* run, bool printable) {
 
     /* No space to repeat */
     if (!maxSz) {
-        return mangle_Bytes(run, printable);
+        return mangle_BytesInsert(run, printable);
     }
 
     size_t len = util_rndGet(1, maxSz);
-    mangle_Inflate(run, destOff, len, printable);
+    len = mangle_Inflate(run, destOff, len, printable);
     memset(&run->dynamicFile[destOff], run->dynamicFile[off], len);
 }
 
@@ -171,15 +196,6 @@ static void mangle_Bit(run_t* run, bool printable) {
     if (printable) {
         util_turnToPrintable(&(run->dynamicFile[off]), 1);
     }
-}
-
-static void mangle_Insert(
-    run_t* run, const uint8_t* val, size_t len, bool printable, bool inflate) {
-    size_t off = mangle_getOffSet(run);
-    if (inflate) {
-        mangle_Inflate(run, off, len, printable);
-    }
-    mangle_Overwrite(run, val, off, len, printable);
 }
 
 static const struct {
@@ -423,33 +439,35 @@ static void mangle_MagicOverwrite(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
     uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleMagicVals) - 1);
     mangle_Overwrite(
-        run, mangleMagicVals[choice].val, off, mangleMagicVals[choice].size, printable);
+        run, off, mangleMagicVals[choice].val, mangleMagicVals[choice].size, printable);
 }
 
 static void mangle_MagicInsert(run_t* run, bool printable) {
     uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleMagicVals) - 1);
-    mangle_Insert(run, mangleMagicVals[choice].val, mangleMagicVals[choice].size, printable,
-        /* inflate= */ true);
-}
-
-static void mangle_DictionaryInsert(run_t* run, bool printable) {
-    if (run->global->mutate.dictionaryCnt == 0) {
-        mangle_Bytes(run, printable);
-        return;
-    }
-    uint64_t choice = util_rndGet(0, run->global->mutate.dictionaryCnt - 1);
-    mangle_Insert(run, run->global->mutate.dictionary[choice].val,
-        run->global->mutate.dictionary[choice].len, printable, /* inflate= */ true);
+    size_t off = mangle_getOffSet(run);
+    mangle_Insert(run, off, mangleMagicVals[choice].val, mangleMagicVals[choice].size, printable);
 }
 
 static void mangle_DictionaryOverwrite(run_t* run, bool printable) {
     if (run->global->mutate.dictionaryCnt == 0) {
-        mangle_Bytes(run, printable);
+        mangle_BytesOverwrite(run, printable);
+        return;
+    }
+    size_t off = mangle_getOffSet(run);
+    uint64_t choice = util_rndGet(0, run->global->mutate.dictionaryCnt - 1);
+    mangle_Overwrite(run, off, run->global->mutate.dictionary[choice].val,
+        run->global->mutate.dictionary[choice].len, printable);
+}
+
+static void mangle_DictionaryInsert(run_t* run, bool printable) {
+    if (run->global->mutate.dictionaryCnt == 0) {
+        mangle_BytesInsert(run, printable);
         return;
     }
     uint64_t choice = util_rndGet(0, run->global->mutate.dictionaryCnt - 1);
-    mangle_Insert(run, run->global->mutate.dictionary[choice].val,
-        run->global->mutate.dictionary[choice].len, printable, /* inflate= */ false);
+    size_t off = mangle_getOffSet(run);
+    mangle_Insert(run, off, run->global->mutate.dictionary[choice].val,
+        run->global->mutate.dictionary[choice].len, printable);
 }
 
 static const uint8_t* mangle_FeedbackDict(run_t* run, size_t* len) {
@@ -476,20 +494,22 @@ static void mangle_ConstFeedbackInsert(run_t* run, bool printable) {
     size_t len;
     const uint8_t* val = mangle_FeedbackDict(run, &len);
     if (val == NULL) {
-        mangle_Bytes(run, printable);
+        mangle_BytesInsert(run, printable);
         return;
     }
-    mangle_Insert(run, val, len, printable, /* inflate= */ true);
+    size_t off = mangle_getOffSet(run);
+    mangle_Insert(run, off, val, len, printable);
 }
 
 static void mangle_ConstFeedbackOverwrite(run_t* run, bool printable) {
     size_t len;
     const uint8_t* val = mangle_FeedbackDict(run, &len);
     if (val == NULL) {
-        mangle_Bytes(run, printable);
+        mangle_BytesOverwrite(run, printable);
         return;
     }
-    mangle_Insert(run, val, len, printable, /* inflate= */ false);
+    size_t off = mangle_getOffSet(run);
+    mangle_Overwrite(run, off, val, len, printable);
 }
 
 static void mangle_MemSetWithVal(run_t* run, int val) {
@@ -518,7 +538,7 @@ static void mangle_RandomInsert(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
     size_t len = util_rndGet(1, run->dynamicFileSz - off);
 
-    mangle_Inflate(run, off, len, printable);
+    len = mangle_Inflate(run, off, len, printable);
 
     if (printable) {
         util_rndBufPrintable(&run->dynamicFile[off], len);
@@ -547,7 +567,7 @@ static void mangle_AddSubWithRange(
                 val += delta;
                 val = __builtin_bswap16(val);
             }
-            mangle_Overwrite(run, (uint8_t*)&val, off, varLen, printable);
+            mangle_Overwrite(run, off, (uint8_t*)&val, varLen, printable);
             break;
         }
         case 4: {
@@ -561,7 +581,7 @@ static void mangle_AddSubWithRange(
                 val += delta;
                 val = __builtin_bswap32(val);
             }
-            mangle_Overwrite(run, (uint8_t*)&val, off, varLen, printable);
+            mangle_Overwrite(run, off, (uint8_t*)&val, varLen, printable);
             break;
         }
         case 8: {
@@ -575,7 +595,7 @@ static void mangle_AddSubWithRange(
                 val += delta;
                 val = __builtin_bswap64(val);
             }
-            mangle_Overwrite(run, (uint8_t*)&val, off, varLen, printable);
+            mangle_Overwrite(run, off, (uint8_t*)&val, varLen, printable);
             break;
         }
         default: {
@@ -703,55 +723,55 @@ static void mangle_Resize(run_t* run, bool printable) {
     }
 }
 
-static void mangle_ASCIIValOverwrite(run_t* run, bool printable) {
+static void mangle_ASCIINumOverwrite(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
     size_t len = util_rndGet(2, 8);
 
     char buf[20];
     snprintf(buf, sizeof(buf), "%-19" PRId64, (int64_t)util_rnd64());
 
-    mangle_Overwrite(run, (uint8_t*)buf, off, len, printable);
+    mangle_Overwrite(run, off, (uint8_t*)buf, len, printable);
 }
 
-static void mangle_ASCIIValInsert(run_t* run, bool printable) {
+static void mangle_ASCIINumInsert(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
     size_t len = util_rndGet(2, 8);
 
     char buf[20];
     snprintf(buf, sizeof(buf), "%-19" PRId64, (int64_t)util_rnd64());
 
-    mangle_Inflate(run, off, len, printable);
-    mangle_Overwrite(run, (uint8_t*)buf, off, len, printable);
+    mangle_Insert(run, off, (uint8_t*)buf, len, printable);
 }
 
 static void mangle_SpliceOverwrite(run_t* run, bool printable) {
     const uint8_t* buf;
     size_t sz = input_getRandomInputAsBuf(run, &buf);
     if (!sz) {
-        return mangle_Bytes(run, printable);
+        return mangle_BytesOverwrite(run, printable);
     }
 
     size_t remoteOff = util_rndGet(0, sz - 1);
     size_t remoteLen = util_rndGet(1, sz - remoteOff);
-    mangle_Insert(run, &buf[remoteOff], remoteLen, printable, /* inflate= */ false);
+    size_t off = mangle_getOffSet(run);
+    mangle_Overwrite(run, off, &buf[remoteOff], remoteLen, printable);
 }
 
 static void mangle_SpliceInsert(run_t* run, bool printable) {
     const uint8_t* buf;
     size_t sz = input_getRandomInputAsBuf(run, &buf);
     if (!sz) {
-        return mangle_Bytes(run, printable);
+        return mangle_BytesInsert(run, printable);
     }
 
     size_t remoteOff = util_rndGet(0, sz - 1);
     size_t remoteLen = util_rndGet(1, sz - remoteOff);
-    mangle_Insert(run, &buf[remoteOff], remoteLen, printable, /* inflate= */ true);
+    size_t off = mangle_getOffSet(run);
+    mangle_Insert(run, off, &buf[remoteOff], remoteLen, printable);
 }
 
 void mangle_mangleContent(run_t* run) {
     static void (*const mangleFuncs[])(run_t * run, bool printable) = {
         mangle_Bit,
-        mangle_Bytes,
         mangle_IncByte,
         mangle_DecByte,
         mangle_NegByte,
@@ -761,8 +781,10 @@ void mangle_mangleContent(run_t* run) {
         mangle_Expand,
         mangle_Shrink,
         mangle_Resize,
-        mangle_ASCIIValOverwrite,
-        mangle_ASCIIValInsert,
+        mangle_BytesOverwrite,
+        mangle_BytesInsert,
+        mangle_ASCIINumOverwrite,
+        mangle_ASCIINumInsert,
         mangle_ByteRepeatOverwrite,
         mangle_ByteRepeatInsert,
         mangle_MagicOverwrite,
