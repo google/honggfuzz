@@ -64,22 +64,6 @@ static inline size_t mangle_getOffSet(run_t* run) {
     return util_rndGet(0, run->dynamicFileSz - 1);
 }
 
-static inline void mangle_Overwrite(
-    run_t* run, size_t off, const uint8_t* src, size_t len, bool printable) {
-    if (len == 0) {
-        return;
-    }
-    size_t maxToCopy = run->dynamicFileSz - off;
-    if (len > maxToCopy) {
-        len = maxToCopy;
-    }
-
-    memmove(&run->dynamicFile[off], src, len);
-    if (printable) {
-        util_turnToPrintable(&run->dynamicFile[off], len);
-    }
-}
-
 static inline void mangle_Move(run_t* run, size_t off_from, size_t off_to, size_t len) {
     if (off_from >= run->dynamicFileSz) {
         return;
@@ -99,6 +83,22 @@ static inline void mangle_Move(run_t* run, size_t off_from, size_t off_to, size_
     }
 
     memmove(&run->dynamicFile[off_to], &run->dynamicFile[off_from], len);
+}
+
+static inline void mangle_Overwrite(
+    run_t* run, size_t off, const uint8_t* src, size_t len, bool printable) {
+    if (len == 0) {
+        return;
+    }
+    size_t maxToCopy = run->dynamicFileSz - off;
+    if (len > maxToCopy) {
+        len = maxToCopy;
+    }
+
+    memmove(&run->dynamicFile[off], src, len);
+    if (printable) {
+        util_turnToPrintable(&run->dynamicFile[off], len);
+    }
 }
 
 static inline size_t mangle_Inflate(run_t* run, size_t off, size_t len, bool printable) {
@@ -730,7 +730,7 @@ static void mangle_ASCIINumOverwrite(run_t* run, bool printable) {
     char buf[20];
     snprintf(buf, sizeof(buf), "%-19" PRId64, (int64_t)util_rnd64());
 
-    mangle_Overwrite(run, off, (uint8_t*)buf, len, printable);
+    mangle_Overwrite(run, off, (const uint8_t*)buf, len, printable);
 }
 
 static void mangle_ASCIINumInsert(run_t* run, bool printable) {
@@ -740,7 +740,7 @@ static void mangle_ASCIINumInsert(run_t* run, bool printable) {
     char buf[20];
     snprintf(buf, sizeof(buf), "%-19" PRId64, (int64_t)util_rnd64());
 
-    mangle_Insert(run, off, (uint8_t*)buf, len, printable);
+    mangle_Insert(run, off, (const uint8_t*)buf, len, printable);
 }
 
 static void mangle_SpliceOverwrite(run_t* run, bool printable) {
