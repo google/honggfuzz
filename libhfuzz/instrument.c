@@ -685,7 +685,7 @@ void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
     if (!instrumentLimitEvery(127)) {
         return;
     }
-    if (check_if_ro && util_getProgAddr(mem) != LHFC_ADDR_RO) {
+    if (check_if_ro && util_getProgAddr(mem) == LHFC_ADDR_NOTFOUND) {
         return;
     }
     instrumentAddConstMemInternal(mem, len);
@@ -698,7 +698,7 @@ void instrumentAddConstStr(const char* s) {
     if (!instrumentLimitEvery(127)) {
         return;
     }
-    if (util_getProgAddr(s) != LHFC_ADDR_RO) {
+    if (util_getProgAddr(s) == LHFC_ADDR_NOTFOUND) {
         return;
     }
     instrumentAddConstMemInternal(s, strlen(s));
@@ -714,7 +714,7 @@ void instrumentAddConstStrN(const char* s, size_t n) {
     if (!instrumentLimitEvery(127)) {
         return;
     }
-    if (util_getProgAddr(s) != LHFC_ADDR_RO) {
+    if (util_getProgAddr(s) == LHFC_ADDR_NOTFOUND) {
         return;
     }
     instrumentAddConstMemInternal(s, strnlen(s, n));
