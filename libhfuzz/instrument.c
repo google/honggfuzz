@@ -173,8 +173,8 @@ __attribute__((weak)) size_t instrumentReserveGuard(size_t cnt) {
 
 /* Used to limit certain expensive actions, like adding values to dictionaries */
 static inline bool instrumentLimitEvery(uint64_t step) {
-    static uint64_t staticCnt = 0;
-    if ((ATOMIC_POST_INC(staticCnt) % step) == 0) {
+    static __thread uint64_t staticCnt = 0;
+    if (((staticCnt++) % step) == 0) {
         return true;
     }
     return false;
