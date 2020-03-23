@@ -186,7 +186,8 @@ static void mangle_ByteRepeatOverwrite(run_t* run, bool printable) {
 
     /* No space to repeat */
     if (!maxSz) {
-        return mangle_BytesOverwrite(run, printable);
+        mangle_BytesOverwrite(run, printable);
+		return;
     }
 
     size_t len = util_rndGet(1, maxSz);
@@ -200,7 +201,8 @@ static void mangle_ByteRepeatInsert(run_t* run, bool printable) {
 
     /* No space to repeat */
     if (!maxSz) {
-        return mangle_BytesInsert(run, printable);
+        mangle_BytesInsert(run, printable);
+		return;
     }
 
     size_t len = util_rndGet(1, maxSz);
@@ -721,7 +723,8 @@ static void mangle_SpliceOverwrite(run_t* run, bool printable) {
     const uint8_t* buf;
     size_t sz = input_getRandomInputAsBuf(run, &buf);
     if (!sz) {
-        return mangle_BytesOverwrite(run, printable);
+        mangle_BytesOverwrite(run, printable);
+		return;
     }
 
     size_t remoteOff = util_rndGet(0, sz - 1);
@@ -734,7 +737,8 @@ static void mangle_SpliceInsert(run_t* run, bool printable) {
     const uint8_t* buf;
     size_t sz = input_getRandomInputAsBuf(run, &buf);
     if (!sz) {
-        return mangle_BytesInsert(run, printable);
+        mangle_BytesInsert(run, printable);
+		return;
     }
 
     size_t remoteOff = util_rndGet(0, sz - 1);
