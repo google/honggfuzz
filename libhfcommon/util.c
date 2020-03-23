@@ -823,33 +823,80 @@ static int addrStatic_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, 
     return LHFC_ADDR_NOTFOUND;
 }
 
-static int addrStaticRO_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
-    void (*callback)(const char* name, uint8_t* start, size_t sz) = data;
+lhfc_addr_t util_getProgAddr(const void* addr) {
+    return (lhfc_addr_t)dl_iterate_phdr(addrStatic_cb, (void*)addr);
+}
+
+static int check32RO_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
+    uint32_t v = *(uint32_t*)data;
+
     for (size_t i = 0; i < info->dlpi_phnum; i++) {
+        /* Look only in the actual binary, and not in libraries */
+        if (info->dlpi_name[0] != '\0') {
+            continue;
+        }
         if (info->dlpi_phdr[i].p_type != PT_LOAD) {
             continue;
         }
         if (info->dlpi_phdr[i].p_flags != PF_R) {
             continue;
         }
-        callback(info->dlpi_name, (uint8_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr),
-            info->dlpi_phdr[i].p_memsz);
+        uint32_t* start = (uint32_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+        uint32_t* end =
+            (uint32_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr + info->dlpi_phdr[i].p_memsz);
+        /* Assume that the 32bit value looked for is also 32bit aligned */
+        for (; start < end; start++) {
+            if (*start == v) {
+                return 1;
+            }
+        }
     }
     return 0;
 }
 
-lhfc_addr_t util_getProgAddr(const void* addr) {
-    return (lhfc_addr_t)dl_iterate_phdr(addrStatic_cb, (void*)addr);
+bool util_32bitValInRO(uint32_t v) {
+    return (dl_iterate_phdr(check32RO_cb, &v) == 1);
 }
-void util_runForROSegments(void (*cb)(const char* name, uint8_t* start, size_t sz)) {
-    dl_iterate_phdr(addrStaticRO_cb, cb);
-    return;
+
+static int check64RO_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
+    uint64_t v = *(uint64_t*)data;
+
+    for (size_t i = 0; i < info->dlpi_phnum; i++) {
+        /* Look only in the actual binary, and not in libraries */
+        if (info->dlpi_name[0] != '\0') {
+            continue;
+        }
+        if (info->dlpi_phdr[i].p_type != PT_LOAD) {
+            continue;
+        }
+        if (info->dlpi_phdr[i].p_flags != PF_R) {
+            continue;
+        }
+        uint64_t* start = (uint64_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+        uint64_t* end =
+            (uint64_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr + info->dlpi_phdr[i].p_memsz);
+        /* Assume that the 64bit value looked for is also 64bit aligned */
+        for (; start < end; start++) {
+            if (*start == v) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+bool util_64bitValInRO(uint32_t v) {
+    return (dl_iterate_phdr(check64RO_cb, &v) == 1);
 }
 #else  /* !defined(_HF_ARCH_DARWIN) */
+/* Darwin doesn't use ELF file format for binaries, so dl_iterate_phdr() cannot be used there */
 lhfc_addr_t util_getProgAddr(const void* addr) {
     return LHFC_ADDR_NOTFOUND;
 }
-void util_runForROSegments(void (*cb)(const char* name, uint8_t* start, size_t sz)) {
-    return;
+bool util_32bitValInRO(uint32_t v) {
+    return false;
+}
+bool util_64bitValInRO(uint32_t v) {
+    return false;
 }
 #endif /* !defined(_HF_ARCH_DARWIN) */

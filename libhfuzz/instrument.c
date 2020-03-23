@@ -141,6 +141,15 @@ __attribute__((weak)) size_t instrumentReserveGuard(size_t cnt) {
     return base;
 }
 
+/* Used to limit certain expensive actions, like adding values to dictionaries */
+static inline bool instrumentLimitEvery(uint64_t step) {
+    static uint64_t staticCnt = 0;
+    if ((ATOMIC_POST_INC(staticCnt) % step) == 0) {
+        return true;
+    }
+    return false;
+}
+
 static inline int _memcmp(const uint8_t* m1, const uint8_t* m2, size_t n) {
     for (size_t i = 0; i < n; i++) {
         if (m1[i] != m2[i]) {
@@ -149,6 +158,36 @@ static inline int _memcmp(const uint8_t* m1, const uint8_t* m2, size_t n) {
     }
     return 0;
 }
+
+static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
+    if (len == 0) {
+        return;
+    }
+    if (len > sizeof(cmpFeedback->valArr[0].val)) {
+        len = sizeof(cmpFeedback->valArr[0].val);
+    }
+    uint32_t curroff = ATOMIC_GET(cmpFeedback->cnt);
+    if (curroff >= ARRAYSIZE(cmpFeedback->valArr)) {
+        return;
+    }
+
+    for (uint32_t i = 0; i < curroff; i++) {
+        if ((len == ATOMIC_GET(cmpFeedback->valArr[i].len)) &&
+            _memcmp(cmpFeedback->valArr[i].val, mem, len) == 0) {
+            return;
+        }
+    }
+
+    uint32_t newoff = ATOMIC_POST_INC(cmpFeedback->cnt);
+    if (newoff >= ARRAYSIZE(cmpFeedback->valArr)) {
+        ATOMIC_SET(cmpFeedback->cnt, ARRAYSIZE(cmpFeedback->valArr));
+        return;
+    }
+
+    memcpy(cmpFeedback->valArr[newoff].val, mem, len);
+    ATOMIC_SET(cmpFeedback->valArr[newoff].len, len);
+}
+
 /*
  * -finstrument-functions
  */
@@ -243,10 +282,60 @@ void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2) {
 }
 
 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
+    if (instrumentLimitEvery(511)) {
+        if (Arg1 > 0xffff && Arg1 < 0xffff0000) {
+            uint32_t bswp = __builtin_bswap32(Arg1);
+            if (util_32bitValInRO(Arg1)) {
+                instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
+                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
+            }
+            if (util_32bitValInRO(bswp)) {
+                instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
+                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
+            }
+        }
+        if (Arg2 > 0xffff && Arg2 < 0xffff0000) {
+            uint32_t bswp = __builtin_bswap32(Arg2);
+            if (util_32bitValInRO(Arg2)) {
+                instrumentAddConstMemInternal(&Arg2, sizeof(Arg2));
+                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
+            }
+            if (util_32bitValInRO(bswp)) {
+                instrumentAddConstMemInternal(&Arg2, sizeof(Arg2));
+                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
+            }
+        }
+    }
+
     hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
+    if (instrumentLimitEvery(511)) {
+        if (Arg1 > 0xffff && Arg1 < 0xffffffffffff0000) {
+            uint64_t bswp = __builtin_bswap64(Arg1);
+            if (util_64bitValInRO(Arg1)) {
+                instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
+                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
+            }
+            if (util_64bitValInRO(bswp)) {
+                instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
+                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
+            }
+        }
+        if (Arg2 > 0xffff && Arg2 < 0xffffffffffff0000) {
+            uint64_t bswp = __builtin_bswap64(Arg2);
+            if (util_64bitValInRO(Arg2)) {
+                instrumentAddConstMemInternal(&Arg2, sizeof(Arg2));
+                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
+            }
+            if (util_64bitValInRO(bswp)) {
+                instrumentAddConstMemInternal(&Arg2, sizeof(Arg2));
+                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
+            }
+        }
+    }
+
     hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
@@ -561,44 +650,6 @@ void instrumentClearNewCov() {
     covFeedback->pidFeedbackPc[my_thread_no] = 0U;
     covFeedback->pidFeedbackEdge[my_thread_no] = 0U;
     covFeedback->pidFeedbackCmp[my_thread_no] = 0U;
-}
-
-/* Used to limit certain expensive actions, like adding values to dictionaries */
-static inline bool instrumentLimitEvery(uint64_t step) {
-    static uint64_t staticCnt = 0;
-    if ((ATOMIC_POST_INC(staticCnt) % step) == 0) {
-        return true;
-    }
-    return false;
-}
-
-static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
-    if (len == 0) {
-        return;
-    }
-    if (len > sizeof(cmpFeedback->valArr[0].val)) {
-        len = sizeof(cmpFeedback->valArr[0].val);
-    }
-    uint32_t curroff = ATOMIC_GET(cmpFeedback->cnt);
-    if (curroff >= ARRAYSIZE(cmpFeedback->valArr)) {
-        return;
-    }
-
-    for (uint32_t i = 0; i < curroff; i++) {
-        if ((len == ATOMIC_GET(cmpFeedback->valArr[i].len)) &&
-            _memcmp(cmpFeedback->valArr[i].val, mem, len) == 0) {
-            return;
-        }
-    }
-
-    uint32_t newoff = ATOMIC_POST_INC(cmpFeedback->cnt);
-    if (newoff >= ARRAYSIZE(cmpFeedback->valArr)) {
-        ATOMIC_SET(cmpFeedback->cnt, ARRAYSIZE(cmpFeedback->valArr));
-        return;
-    }
-
-    memcpy(cmpFeedback->valArr[newoff].val, mem, len);
-    ATOMIC_SET(cmpFeedback->valArr[newoff].len, len);
 }
 
 void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
