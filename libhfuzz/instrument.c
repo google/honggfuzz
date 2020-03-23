@@ -61,7 +61,7 @@ static void* getsym(const char* sym) {
 }
 
 static void initializeLibcFunctions(void) {
-    libc_memcmp = getsym("memcmp");
+    libc_memcmp = (int (*)(const void* s1, const void* s2, size_t n))getsym("memcmp");
     if (!libc_memcmp) {
         LOG_F("dlsym(memcmp) failed: %s", dlerror());
     }
@@ -532,7 +532,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard_init(uint32_t* start
         return;
     }
 
-    LOG_D("PC-Guard module initialization: %p-%p (count:%zu) at %" PRId64, start, stop,
+    LOG_D("PC-Guard module initialization: %p-%p (count:%tu) at %zu", start, stop,
         ((uintptr_t)stop - (uintptr_t)start) / sizeof(*start), instrumentReserveGuard(0));
 
     for (uint32_t* x = start; x < stop; x++) {
