@@ -282,7 +282,7 @@ void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2) {
 }
 
 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
-    if (instrumentLimitEvery(4095)) {
+    if (cmpFeedback && instrumentLimitEvery(4095)) {
         if (Arg1 > 0xffff && Arg1 < 0xffff0000) {
             uint32_t bswp = __builtin_bswap32(Arg1);
             if (util_32bitValInBinary(Arg1)) {
@@ -311,7 +311,7 @@ void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
 }
 
 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
-    if (instrumentLimitEvery(4095)) {
+    if (cmpFeedback && instrumentLimitEvery(4095)) {
         if (Arg1 > 0xffff && Arg1 < 0xffffffffffff0000) {
             uint64_t bswp = __builtin_bswap64(Arg1);
             if (util_64bitValInBinary(Arg1)) {
