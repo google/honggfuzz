@@ -810,7 +810,8 @@ static int addrStatic_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, 
             continue;
         }
         uintptr_t addr_start = info->dlpi_addr + info->dlpi_phdr[i].p_vaddr;
-        uintptr_t addr_end = addr_start + HF_MIN(info->dlpi_phdr[i].p_memsz, info->dlpi_phdr[i].p_filesz);
+        uintptr_t addr_end =
+            addr_start + HF_MIN(info->dlpi_phdr[i].p_memsz, info->dlpi_phdr[i].p_filesz);
         if (((uintptr_t)data >= addr_start) && ((uintptr_t)data < addr_end)) {
             if ((info->dlpi_phdr[i].p_flags & PF_W) == 0) {
                 return LHFC_ADDR_RO;
