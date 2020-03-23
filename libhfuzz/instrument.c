@@ -68,6 +68,7 @@ static void initializeLibcFunctions(void) {
     if (libc_memcmp == __wrap_memcmp) {
         LOG_F("libc_memcmp proxied to __wrap_memcmp");
     }
+    LOG_D("libc_memcmp at %p", libc_memcmp);
 }
 
 static void initializeCmpFeedback(void) {
