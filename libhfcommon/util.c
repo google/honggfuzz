@@ -827,7 +827,7 @@ lhfc_addr_t util_getProgAddr(const void* addr) {
     return (lhfc_addr_t)dl_iterate_phdr(addrStatic_cb, (void*)addr);
 }
 
-static int check32RO_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
+static int check32_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
     uint32_t v = *(uint32_t*)data;
 
     for (size_t i = 0; i < info->dlpi_phnum; i++) {
@@ -838,12 +838,13 @@ static int check32RO_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, v
         if (info->dlpi_phdr[i].p_type != PT_LOAD) {
             continue;
         }
-        if (info->dlpi_phdr[i].p_flags != PF_R) {
+        if (!(info->dlpi_phdr[i].p_flags & PF_R)) {
             continue;
         }
         uint32_t* start = (uint32_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
         uint32_t* end =
-            (uint32_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr + info->dlpi_phdr[i].p_memsz);
+            (uint32_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr +
+                        HF_MIN(info->dlpi_phdr[i].p_memsz, info->dlpi_phdr[i].p_filesz));
         /* Assume that the 32bit value looked for is also 32bit aligned */
         for (; start < end; start++) {
             if (*start == v) {
@@ -854,11 +855,11 @@ static int check32RO_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, v
     return 0;
 }
 
-bool util_32bitValInRO(uint32_t v) {
-    return (dl_iterate_phdr(check32RO_cb, &v) == 1);
+bool util_32bitValInBinary(uint32_t v) {
+    return (dl_iterate_phdr(check32_cb, &v) == 1);
 }
 
-static int check64RO_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
+static int check64_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
     uint64_t v = *(uint64_t*)data;
 
     for (size_t i = 0; i < info->dlpi_phnum; i++) {
@@ -869,12 +870,13 @@ static int check64RO_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, v
         if (info->dlpi_phdr[i].p_type != PT_LOAD) {
             continue;
         }
-        if (info->dlpi_phdr[i].p_flags != PF_R) {
+        if (!(info->dlpi_phdr[i].p_flags & PF_R)) {
             continue;
         }
         uint64_t* start = (uint64_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
         uint64_t* end =
-            (uint64_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr + info->dlpi_phdr[i].p_memsz);
+            (uint64_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr +
+                        HF_MIN(info->dlpi_phdr[i].p_memsz, info->dlpi_phdr[i].p_filesz));
         /* Assume that the 64bit value looked for is also 64bit aligned */
         for (; start < end; start++) {
             if (*start == v) {
@@ -885,8 +887,8 @@ static int check64RO_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, v
     return 0;
 }
 
-bool util_64bitValInRO(uint32_t v) {
-    return (dl_iterate_phdr(check64RO_cb, &v) == 1);
+bool util_64bitValInBinary(uint32_t v) {
+    return (dl_iterate_phdr(check64_cb, &v) == 1);
 }
 #else  /* !defined(_HF_ARCH_DARWIN) */
 /* Darwin doesn't use ELF file format for binaries, so dl_iterate_phdr() cannot be used there */
