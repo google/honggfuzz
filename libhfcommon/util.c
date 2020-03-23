@@ -895,10 +895,10 @@ bool util_64bitValInBinary(uint32_t v) {
 lhfc_addr_t util_getProgAddr(const void* addr) {
     return LHFC_ADDR_NOTFOUND;
 }
-bool util_32bitValInRO(uint32_t v) {
+bool util_32bitValInBinary(uint32_t v) {
     return false;
 }
-bool util_64bitValInRO(uint32_t v) {
+bool util_64bitValInBinary(uint32_t v) {
     return false;
 }
 #endif /* !defined(_HF_ARCH_DARWIN) */
