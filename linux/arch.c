@@ -253,7 +253,7 @@ void arch_reapChild(run_t* run) {
             PLOG_F("sigwaitinfo(SIGIO|SIGCHLD)");
         }
 
-        if (arch_checkWait(run)) {
+        if (sig != SIGIO && arch_checkWait(run)) {
             run->pid = 0;
             break;
         }

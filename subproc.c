@@ -260,6 +260,13 @@ static bool subproc_PrepareExecv(run_t* run) {
     }
 #endif /* ifdef RLIMIT_STACK */
 
+    /* Increase nice-ness by one */
+    errno = 0;
+    int pval = nice(1);
+    if (errno != 0 && pval != 19) {
+        PLOG_W("nice(1) failed, prev:%d", pval);
+    }
+
     if (run->global->exe.clearEnv) {
         environ = NULL;
     }
