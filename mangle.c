@@ -566,7 +566,7 @@ static void mangle_RandomInsert(run_t* run, bool printable) {
 }
 
 static void mangle_AddSubWithRange(
-    run_t* run, size_t off, uint64_t varLen, uint64_t range, bool printable) {
+    run_t* run, size_t off, size_t varLen, uint64_t range, bool printable) {
     int64_t delta = (int64_t)util_rndGet(0, range * 2) - (int64_t)range;
 
     switch (varLen) {
