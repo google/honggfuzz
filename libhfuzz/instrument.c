@@ -1,6 +1,7 @@
 #include "instrument.h"
 
 #include <ctype.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -43,6 +44,31 @@ feedback_t* covFeedback = &bbMapFb;
 cmpfeedback_t* cmpFeedback = NULL;
 
 uint32_t my_thread_no = 0;
+
+extern int __wrap_memcmp(const void* s1, const void* s2, size_t n);
+int (*libc_memcmp)(const void* s1, const void* s2, size_t n) = memcmp;
+
+static void* getsym(const char* sym) {
+#if defined(RTLD_NEXT)
+    return dlsym(RTLD_NEXT, sym);
+#else  /* defined(RTLD_NEXT) */
+    void* dlh = dlopen(NULL, RTLD_LAZY);
+    if (!dlh) {
+        return NULL;
+    }
+    return dlsym(dlh, sym);
+#endif /* defined(RTLD_NEXT) */
+}
+
+static void initializeLibcFunctions(void) {
+    libc_memcmp = getsym("memcmp");
+    if (!libc_memcmp) {
+        LOG_F("dlsym(memcmp) failed: %s", dlerror());
+    }
+    if (libc_memcmp == __wrap_memcmp) {
+        LOG_F("libc_memcmp proxied to __wrap_memcmp");
+    }
+}
 
 static void initializeCmpFeedback(void) {
     struct stat st;
@@ -116,6 +142,9 @@ static void initializeInstrument(void) {
     }
     initializeCmpFeedback();
 
+    /* Initialize native functions found in libc */
+    initializeLibcFunctions();
+
     /* Reset coverage counters to their initial state */
     instrumentClearNewCov();
 }
@@ -150,15 +179,6 @@ static inline bool instrumentLimitEvery(uint64_t step) {
     return false;
 }
 
-static inline int _memcmp(const uint8_t* m1, const uint8_t* m2, size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        if (m1[i] != m2[i]) {
-            return ((int)m1[i] - (int)m2[i]);
-        }
-    }
-    return 0;
-}
-
 static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
     if (len == 0) {
         return;
@@ -173,7 +193,7 @@ static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
 
     for (uint32_t i = 0; i < curroff; i++) {
         if ((len == ATOMIC_GET(cmpFeedback->valArr[i].len)) &&
-            _memcmp(cmpFeedback->valArr[i].val, mem, len) == 0) {
+            libc_memcmp(cmpFeedback->valArr[i].val, mem, len) == 0) {
             return;
         }
     }
