@@ -295,6 +295,10 @@ static void mainThreadLoop(honggfuzz_t* hfuzz) {
     }
 }
 
+static const char* strYesNo(bool yes) {
+    return (yes ? "true" : "false");
+}
+
 int main(int argc, char** argv) {
     /*
      * Work around CygWin/MinGW
@@ -323,6 +327,15 @@ int main(int argc, char** argv) {
         LOG_I("Minimization mode enabled. Setting number of threads to 1");
         hfuzz.threads.threadsMax = 1;
     }
+
+    char tmstr[64];
+    util_getLocalTime("%F.%H.%M.%S", tmstr, sizeof(tmstr), time(NULL));
+    LOG_I("Start time:'%s' bin:'%s', input:'%s', output:'%s', persistent:%s, stdin:%s, "
+          "mutation_rate:%u, timeout:%ld, max_runs:%zu, threads:%zu, minimize:%s",
+        tmstr, hfuzz.exe.cmdline[0], hfuzz.io.inputDir,
+        hfuzz.io.outputDir ? hfuzz.io.outputDir : hfuzz.io.inputDir, strYesNo(hfuzz.exe.persistent),
+        strYesNo(hfuzz.exe.fuzzStdin), hfuzz.mutate.mutationsPerRun, (long)hfuzz.timing.tmOut,
+        hfuzz.mutate.mutationsMax, hfuzz.threads.threadsMax, strYesNo(hfuzz.cfg.minimize));
 
     sigemptyset(&hfuzz.exe.waitSigSet);
     sigaddset(&hfuzz.exe.waitSigSet, SIGIO);   /* Persistent socket data */

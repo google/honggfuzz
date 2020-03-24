@@ -88,10 +88,6 @@ static bool cmdlineCheckBinaryType(honggfuzz_t* hfuzz) {
     return true;
 }
 
-static const char* cmdlineYesNo(bool yes) {
-    return (yes ? "true" : "false");
-}
-
 static void cmdlineHelp(const char* pname, struct custom_option* opts) {
     LOG_HELP_BOLD("Usage: %s [options] -- path_to_command [args]", pname);
     LOG_HELP_BOLD("Options:");
@@ -760,12 +756,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     }
 
     display_createTargetStr(hfuzz);
-
-    LOG_I("cmdline:'%s', bin:'%s' inputDir:'%s', fuzzStdin:%s, mutationsPerRun:%u, "
-          "timeout:%ld, mutationsMax:%zu, threadsMax:%zu",
-        hfuzz->display.cmdline_txt, hfuzz->exe.cmdline[0], hfuzz->io.inputDir,
-        cmdlineYesNo(hfuzz->exe.fuzzStdin), hfuzz->mutate.mutationsPerRun,
-        (long)hfuzz->timing.tmOut, hfuzz->mutate.mutationsMax, hfuzz->threads.threadsMax);
 
     return true;
 }
