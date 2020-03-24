@@ -490,7 +490,7 @@ static void mangle_DictionaryInsert(run_t* run, bool printable) {
         run->global->mutate.dictionary[choice].len, printable);
 }
 
-static const uint8_t* mangle_FeedbackDict(run_t* run, size_t* len) {
+static inline const uint8_t* mangle_FeedbackDict(run_t* run, size_t* len) {
     if (!run->global->feedback.cmpFeedback) {
         return NULL;
     }
@@ -532,7 +532,7 @@ static void mangle_ConstFeedbackOverwrite(run_t* run, bool printable) {
     mangle_Overwrite(run, off, val, len, printable);
 }
 
-static void mangle_MemSetWithVal(run_t* run, int val) {
+static inline void mangle_MemSetWithVal(run_t* run, int val) {
     size_t off = mangle_getOffSet(run);
     size_t sz = util_rndGet(1, run->dynamicFileSz - off);
 
@@ -567,7 +567,7 @@ static void mangle_RandomInsert(run_t* run, bool printable) {
     }
 }
 
-static void mangle_AddSubWithRange(
+static inline void mangle_AddSubWithRange(
     run_t* run, size_t off, size_t varLen, uint64_t range, bool printable) {
     int64_t delta = (int64_t)util_rndGet(0, range * 2) - (int64_t)range;
 
