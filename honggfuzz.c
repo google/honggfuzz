@@ -299,6 +299,36 @@ static const char* strYesNo(bool yes) {
     return (yes ? "true" : "false");
 }
 
+#if defined __has_include && __has_include(".git/refs/heads/master")
+__asm__("\n"
+        "   .global commitid_start\n"
+        "   .global commitid_end\n"
+        "commitid_start:\n"
+        "   .incbin \".git/refs/heads/master\"\n"
+        "commitid_end:\n"
+        "\n");
+#endif /* defined __has_include && __has_include() */
+
+static const char* getGitVersion() {
+#define HF_GIT_COMMIT_ID_LEN 40
+    static char version[HF_GIT_COMMIT_ID_LEN + 1] = "UNKNOWN";
+
+    extern char commitid_start __asm__("commitid_start") __attribute__((weak));
+    extern char commitid_end __asm__("commitid_end") __attribute__((weak));
+
+    if (&commitid_start == NULL || &commitid_end == NULL) {
+        return version;
+    }
+    size_t len = (uintptr_t)&commitid_end - (uintptr_t)&commitid_start;
+    if (len < HF_GIT_COMMIT_ID_LEN || len > (HF_GIT_COMMIT_ID_LEN + 1)) {
+        LOG_W(
+            "Incorrect .git/refs/heads/master size: %zu (expected: %d)", len, HF_GIT_COMMIT_ID_LEN);
+        return version;
+    }
+    strncpy(version, &commitid_start, HF_GIT_COMMIT_ID_LEN);
+    return version;
+}
+
 int main(int argc, char** argv) {
     /*
      * Work around CygWin/MinGW
@@ -331,11 +361,12 @@ int main(int argc, char** argv) {
     char tmstr[64];
     util_getLocalTime("%F.%H.%M.%S", tmstr, sizeof(tmstr), time(NULL));
     LOG_I("Start time:'%s' bin:'%s', input:'%s', output:'%s', persistent:%s, stdin:%s, "
-          "mutation_rate:%u, timeout:%ld, max_runs:%zu, threads:%zu, minimize:%s",
+          "mutation_rate:%u, timeout:%ld, max_runs:%zu, threads:%zu, minimize:%s git_commit:%s",
         tmstr, hfuzz.exe.cmdline[0], hfuzz.io.inputDir,
         hfuzz.io.outputDir ? hfuzz.io.outputDir : hfuzz.io.inputDir, strYesNo(hfuzz.exe.persistent),
         strYesNo(hfuzz.exe.fuzzStdin), hfuzz.mutate.mutationsPerRun, (long)hfuzz.timing.tmOut,
-        hfuzz.mutate.mutationsMax, hfuzz.threads.threadsMax, strYesNo(hfuzz.cfg.minimize));
+        hfuzz.mutate.mutationsMax, hfuzz.threads.threadsMax, strYesNo(hfuzz.cfg.minimize),
+        getGitVersion());
 
     sigemptyset(&hfuzz.exe.waitSigSet);
     sigaddset(&hfuzz.exe.waitSigSet, SIGIO);   /* Persistent socket data */
