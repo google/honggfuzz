@@ -299,34 +299,13 @@ static const char* strYesNo(bool yes) {
     return (yes ? "true" : "false");
 }
 
-#if defined __has_include && __has_include(".git/refs/heads/master")
-__asm__("\n"
-        "   .global commitid_start\n"
-        "   .global commitid_end\n"
-        "commitid_start:\n"
-        "   .incbin \".git/refs/heads/master\"\n"
-        "commitid_end:\n"
-        "\n");
-#endif /* defined __has_include && __has_include() */
-
 static const char* getGitVersion() {
-#define HF_GIT_COMMIT_ID_LEN 40
-    static char version[HF_GIT_COMMIT_ID_LEN + 1] = "UNKNOWN";
-
-    extern char commitid_start __asm__("commitid_start") __attribute__((weak));
-    extern char commitid_end __asm__("commitid_end") __attribute__((weak));
-
-    if (&commitid_start == NULL || &commitid_end == NULL) {
-        return version;
+    static char version[] = "$Id$";
+    if (strlen(version) == 47) {
+        version[45] = '\0';
+        return &version[5];
     }
-    size_t len = (uintptr_t)&commitid_end - (uintptr_t)&commitid_start;
-    if (len < HF_GIT_COMMIT_ID_LEN || len > (HF_GIT_COMMIT_ID_LEN + 1)) {
-        LOG_W(
-            "Incorrect .git/refs/heads/master size: %zu (expected: %d)", len, HF_GIT_COMMIT_ID_LEN);
-        return version;
-    }
-    strncpy(version, &commitid_start, HF_GIT_COMMIT_ID_LEN);
-    return version;
+    return "UNKNOWN";
 }
 
 int main(int argc, char** argv) {
