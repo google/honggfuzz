@@ -825,6 +825,7 @@ void mangle_mangleContent(run_t* run, unsigned slow_factor) {
     if (run->dynamicFileSz == 0U) {
         mangle_Resize(run, /* printable= */ run->global->cfg.only_printable);
     }
+
     uint64_t changesCnt = run->global->mutate.mutationsPerRun;
     /* Give it a good shake-up if it's a slow input */
     switch (slow_factor) {

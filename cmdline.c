@@ -327,7 +327,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .dictionary = {},
                 .dictionaryCnt = 0,
                 .dictionaryFile = NULL,
-                .mutationsPerRun = 6U,
+                .mutationsPerRun = 5,
                 .maxInputSz = 0,
             },
         .display =
