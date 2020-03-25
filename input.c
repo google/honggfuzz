@@ -505,7 +505,7 @@ size_t input_getRandomInputAsBuf(run_t* run, const uint8_t** buf) {
 }
 
 static bool input_shouldReadNewFile(run_t* run) {
-    if (fuzz_getState(run->global) != _HF_STATE_DYNAMIC_DRY_RUN || run->global->cfg.minimize) {
+    if (fuzz_getState(run->global) != _HF_STATE_DYNAMIC_DRY_RUN) {
         input_setSize(run, run->global->mutate.maxInputSz);
         return true;
     }
