@@ -510,8 +510,8 @@ static bool input_shouldReadNewFile(run_t* run) {
 
     if (!run->staticFileTryMore) {
         run->staticFileTryMore = true;
-        /* Start with a 8kB beginning of a file, increase the size in following iterations */
-        input_setSize(run, HF_MIN(1024U, run->global->mutate.maxInputSz));
+        /* Start with 4 bytes, increase the size in following iterations */
+        input_setSize(run, HF_MIN(4U, run->global->mutate.maxInputSz));
         return true;
     }
 
