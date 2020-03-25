@@ -797,7 +797,6 @@ void mangle_mangleContent(run_t* run, unsigned slow_factor) {
         mangle_MemSet,
         mangle_Expand,
         mangle_Shrink,
-        mangle_Resize,
         mangle_MemCopyOverwrite,
         mangle_MemCopyInsert,
         mangle_BytesOverwrite,
