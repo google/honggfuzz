@@ -165,7 +165,7 @@ typedef enum {
     _HF_STATE_DYNAMIC_MINIMIZE,
 } fuzzState_t;
 
-struct dynfile_t {
+struct _dynfile_t {
     size_t size;
     uint64_t cov[4];
     size_t idx;
@@ -174,8 +174,10 @@ struct dynfile_t {
     uint64_t timeExecMillis;
     char path[PATH_MAX];
     uint8_t* data;
-    TAILQ_ENTRY(dynfile_t) pointers;
+    TAILQ_ENTRY(_dynfile_t) pointers;
 };
+
+typedef struct _dynfile_t dynfile_t;
 
 struct strings_t {
     size_t len;
@@ -226,9 +228,9 @@ typedef struct {
         size_t dynfileqMaxSz;
         size_t dynfileqCnt;
         pthread_rwlock_t dynfileq_mutex;
-        struct dynfile_t* dynfileqCurrent;
-        struct dynfile_t* dynfileq2Current;
-        TAILQ_HEAD(dyns_t, dynfile_t) dynfileq;
+        dynfile_t* dynfileqCurrent;
+        dynfile_t* dynfileq2Current;
+        TAILQ_HEAD(dyns_t, _dynfile_t) dynfileq;
         bool exportFeedback;
     } io;
     struct {
@@ -364,7 +366,7 @@ typedef struct {
     char report[_HF_REPORT_SIZE];
     bool mainWorker;
     unsigned mutationsPerRun;
-    struct dynfile_t* dynfile;
+    dynfile_t* dynfile;
     bool staticFileTryMore;
     uint32_t fuzzNo;
     int persistentSock;

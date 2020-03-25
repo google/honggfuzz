@@ -323,8 +323,7 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz) {
     return true;
 }
 
-static void input_generateFileName(
-    struct dynfile_t* dynfile, const char* dir, char fname[PATH_MAX]) {
+static void input_generateFileName(dynfile_t* dynfile, const char* dir, char fname[PATH_MAX]) {
     uint64_t crc64f = util_CRC64(dynfile->data, dynfile->size);
     uint64_t crc64r = util_CRC64Rev(dynfile->data, dynfile->size);
     if (dir) {
@@ -336,9 +335,9 @@ static void input_generateFileName(
     }
 }
 
-bool input_writeCovFile(run_t* run, const char* dir) {
+bool input_writeCovFile(const char* dir, dynfile_t* dynfile) {
     char fname[PATH_MAX];
-    input_generateFileName(run->dynfile, dir, fname);
+    input_generateFileName(dynfile, dir, fname);
 
     if (files_exists(fname)) {
         LOG_D("File '%s' already exists in the output corpus directory '%s'", fname, dir);
@@ -347,9 +346,9 @@ bool input_writeCovFile(run_t* run, const char* dir) {
 
     LOG_D("Adding file '%s' to the corpus directory '%s'", fname, dir);
 
-    if (!files_writeBufToFile(fname, run->dynfile->data, run->dynfile->size,
-            O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC)) {
-        LOG_W("Couldn't write buffer to file '%s' (sz=%zu)", fname, run->dynfile->size);
+    if (!files_writeBufToFile(
+            fname, dynfile->data, dynfile->size, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC)) {
+        LOG_W("Couldn't write buffer to file '%s' (sz=%zu)", fname, dynfile->size);
         return false;
     }
 
@@ -357,7 +356,7 @@ bool input_writeCovFile(run_t* run, const char* dir) {
 }
 
 /* true if item1 is bigger than item2 */
-static bool input_cmpCov(struct dynfile_t* item1, struct dynfile_t* item2) {
+static bool input_cmpCov(dynfile_t* item1, dynfile_t* item2) {
     for (size_t j = 0; j < ARRAYSIZE(item1->cov); j++) {
         if (item1->cov[j] > item2->cov[j]) {
             return true;
@@ -376,7 +375,7 @@ static bool input_cmpCov(struct dynfile_t* item1, struct dynfile_t* item2) {
 void input_addDynamicInput(run_t* run) {
     ATOMIC_SET(run->global->timing.lastCovUpdate, time(NULL));
 
-    struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t));
+    dynfile_t* dynfile = (dynfile_t*)util_Malloc(sizeof(dynfile_t));
     dynfile->size = run->dynfile->size;
     memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
     dynfile->timeAddedMillis = util_timeNowMillis();
@@ -387,26 +386,21 @@ void input_addDynamicInput(run_t* run) {
 
     MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 
-    run->global->io.dynfileqCnt++;
-    dynfile->idx = run->global->io.dynfileqCnt;
+    dynfile->idx = ATOMIC_PRE_INC(run->global->io.dynfileqCnt);
+    dynfile->cov[3] = dynfile->idx;
 
     run->global->io.dynfileqMaxSz = HF_MAX(run->global->io.dynfileqMaxSz, dynfile->size);
 
-    if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MAIN) {
-        /* Add it with high idx */
-        TAILQ_INSERT_HEAD(&run->global->io.dynfileq, dynfile, pointers);
-    } else {
-        /* Sort it by coverage - put better coverage earlier in the list */
-        struct dynfile_t* iter = NULL;
-        TAILQ_FOREACH_HF(iter, &run->global->io.dynfileq, pointers) {
-            if (input_cmpCov(dynfile, iter)) {
-                TAILQ_INSERT_BEFORE(iter, dynfile, pointers);
-                break;
-            }
+    /* Sort it by coverage - put better coverage earlier in the list */
+    dynfile_t* iter = NULL;
+    TAILQ_FOREACH_HF(iter, &run->global->io.dynfileq, pointers) {
+        if (input_cmpCov(dynfile, iter)) {
+            TAILQ_INSERT_BEFORE(iter, dynfile, pointers);
+            break;
         }
-        if (iter == NULL) {
-            TAILQ_INSERT_TAIL(&run->global->io.dynfileq, dynfile, pointers);
-        }
+    }
+    if (iter == NULL) {
+        TAILQ_INSERT_TAIL(&run->global->io.dynfileq, dynfile, pointers);
     }
 
     if (run->global->socketFuzzer.enabled) {
@@ -416,7 +410,7 @@ void input_addDynamicInput(run_t* run) {
 
     const char* outDir =
         run->global->io.outputDir ? run->global->io.outputDir : run->global->io.inputDir;
-    if (!input_writeCovFile(run, outDir)) {
+    if (!input_writeCovFile(outDir, dynfile)) {
         LOG_E("Couldn't save the coverage data to '%s'", run->global->io.outputDir);
     }
 
@@ -425,9 +419,9 @@ void input_addDynamicInput(run_t* run) {
         return;
     }
 
-    run->global->io.newUnitsAdded++;
+    ATOMIC_POST_INC(run->global->io.newUnitsAdded);
 
-    if (run->global->io.covDirNew && !input_writeCovFile(run, run->global->io.covDirNew)) {
+    if (run->global->io.covDirNew && !input_writeCovFile(run->global->io.covDirNew, run->dynfile)) {
         LOG_E("Couldn't save the new coverage data to '%s'", run->global->io.covDirNew);
     }
 }
@@ -435,7 +429,7 @@ void input_addDynamicInput(run_t* run) {
 bool input_inDynamicCorpus(run_t* run, const char* fname) {
     MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 
-    struct dynfile_t* iter = NULL;
+    dynfile_t* iter = NULL;
     TAILQ_FOREACH_HF(iter, &run->global->io.dynfileq, pointers) {
         if (strncmp(iter->path, fname, PATH_MAX) == 0) {
             return true;
@@ -444,7 +438,7 @@ bool input_inDynamicCorpus(run_t* run, const char* fname) {
     return false;
 }
 
-static inline unsigned input_slowFactor(run_t* run, struct dynfile_t* current) {
+static inline unsigned input_slowFactor(run_t* run, dynfile_t* current) {
     uint64_t msec_per_run = ((uint64_t)(time(NULL) - run->global->timing.timeStart) * 1000);
     msec_per_run /= ATOMIC_GET(run->global->cnts.mutationsCnt);
     msec_per_run /= run->global->threads.threadsMax;
@@ -455,7 +449,7 @@ static inline unsigned input_slowFactor(run_t* run, struct dynfile_t* current) {
 }
 
 bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
-    struct dynfile_t* current = NULL;
+    dynfile_t* current = NULL;
 
     if (ATOMIC_GET(run->global->io.dynfileqCnt) == 0) {
         LOG_F("The dynamic file corpus is empty. This shouldn't happen");
@@ -494,7 +488,7 @@ size_t input_getRandomInputAsBuf(run_t* run, const uint8_t** buf) {
         return 0;
     }
 
-    struct dynfile_t* current = NULL;
+    dynfile_t* current = NULL;
     {
         MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 

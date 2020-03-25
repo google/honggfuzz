@@ -127,7 +127,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
      * dynamic corpus, so the dynamic phase doesn't fail because of lack of useful inputs
      */
     if (run->global->io.dynfileqCnt == 0) {
-        struct dynfile_t dynfile = {
+        dynfile_t dynfile = {
             .size = 0,
             .cov = {},
             .idx = 0,
@@ -137,7 +137,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
             .path = "[DYNAMIC-0-SIZE]",
             .data = (uint8_t*)"",
         };
-        struct dynfile_t* tmp_dynfile = run->dynfile;
+        dynfile_t* tmp_dynfile = run->dynfile;
         run->dynfile = &dynfile;
         input_addDynamicInput(run);
         run->dynfile = tmp_dynfile;
@@ -199,8 +199,8 @@ static void fuzz_perfFeedbackForMinimization(run_t* run) {
     run->dynfile->cov[0] = softCntEdge + softCntPc;
     /* The smaller input size, the better */
     run->dynfile->cov[1] = run->dynfile->size ? (64 - util_Log2(run->dynfile->size)) : 64;
-    run->dynfile->cov[2] = cpuInstr + cpuBranch;
-    run->dynfile->cov[3] = softCntCmp;
+    run->dynfile->cov[2] = cpuInstr + cpuBranch + softCntCmp;
+    run->dynfile->cov[3] = 0; /* reserved for idx */
 
     LOG_I("Corpus Minimization: len:%zu, cov:%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
         run->dynfile->size, run->dynfile->cov[0], run->dynfile->cov[1], run->dynfile->cov[2],
@@ -519,7 +519,7 @@ static void* fuzz_threadNew(void* arg) {
     run_t run = {
         .global = hfuzz,
         .pid = 0,
-        .dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t) + hfuzz->io.maxFileSz),
+        .dynfile = (dynfile_t*)util_Malloc(sizeof(dynfile_t) + hfuzz->io.maxFileSz),
         .fuzzNo = fuzzNo,
         .persistentSock = -1,
         .tmOutSignaled = false,
