@@ -244,8 +244,7 @@ static void fuzz_perfFeedback(run_t* run) {
         if (run->global->cfg.minimize) {
             LOG_I("Keeping '%s' in '%s'", run->dynfile->path,
                 run->global->io.outputDir ? run->global->io.outputDir : run->global->io.inputDir);
-            if (run->global->io.outputDir && !input_writeCovFile(run->global->io.outputDir,
-                                                 run->dynfile->data, run->dynfile->size)) {
+            if (run->global->io.outputDir && !input_writeCovFile(run, run->global->io.outputDir)) {
                 LOG_E("Couldn't save the coverage data to '%s'", run->global->io.outputDir);
             }
         } else {

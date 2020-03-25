@@ -323,13 +323,22 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz) {
     return true;
 }
 
-bool input_writeCovFile(const char* dir, const uint8_t* data, size_t len) {
-    char fname[PATH_MAX];
+static void input_generateFileName(
+    struct dynfile_t* dynfile, const char* dir, char fname[PATH_MAX]) {
+    uint64_t crc64f = util_CRC64(dynfile->data, dynfile->size);
+    uint64_t crc64r = util_CRC64Rev(dynfile->data, dynfile->size);
+    if (dir) {
+        snprintf(fname, PATH_MAX, "%s/%016" PRIx64 "%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov",
+            dir, crc64f, crc64r, (uint32_t)dynfile->size);
+    } else {
+        snprintf(fname, PATH_MAX, "%016" PRIx64 "%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov",
+            crc64f, crc64r, (uint32_t)dynfile->size);
+    }
+}
 
-    uint64_t crc64f = util_CRC64(data, len);
-    uint64_t crc64r = util_CRC64Rev(data, len);
-    snprintf(fname, sizeof(fname), "%s/%016" PRIx64 "%016" PRIx64 ".%08" PRIx32 ".honggfuzz.cov",
-        dir, crc64f, crc64r, (uint32_t)len);
+bool input_writeCovFile(run_t* run, const char* dir) {
+    char fname[PATH_MAX];
+    input_generateFileName(run->dynfile, dir, fname);
 
     if (files_exists(fname)) {
         LOG_D("File '%s' already exists in the output corpus directory '%s'", fname, dir);
@@ -338,8 +347,9 @@ bool input_writeCovFile(const char* dir, const uint8_t* data, size_t len) {
 
     LOG_D("Adding file '%s' to the corpus directory '%s'", fname, dir);
 
-    if (!files_writeBufToFile(fname, data, len, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC)) {
-        LOG_W("Couldn't write buffer to file '%s'", fname);
+    if (!files_writeBufToFile(fname, run->dynfile->data, run->dynfile->size,
+            O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC)) {
+        LOG_W("Couldn't write buffer to file '%s' (sz=%zu)", fname, run->dynfile->size);
         return false;
     }
 
@@ -371,7 +381,7 @@ void input_addDynamicInput(run_t* run) {
     memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
     dynfile->timeAddedMillis = util_timeNowMillis();
     dynfile->timeExecMillis = util_timeNowMillis() - run->dynfile->timeAddedMillis;
-    snprintf(dynfile->path, sizeof(dynfile->path), "%s", run->dynfile->path);
+    input_generateFileName(run->dynfile, NULL, run->dynfile->path);
     dynfile->data = (uint8_t*)util_Malloc(run->dynfile->size);
     memcpy(dynfile->data, run->dynfile->data, run->dynfile->size);
 
@@ -410,7 +420,7 @@ void input_addDynamicInput(run_t* run) {
 
     const char* outDir =
         run->global->io.outputDir ? run->global->io.outputDir : run->global->io.inputDir;
-    if (!input_writeCovFile(outDir, dynfile->data, dynfile->size)) {
+    if (!input_writeCovFile(run, outDir)) {
         LOG_E("Couldn't save the coverage data to '%s'", run->global->io.outputDir);
     }
 
@@ -421,8 +431,7 @@ void input_addDynamicInput(run_t* run) {
 
     run->global->io.newUnitsAdded++;
 
-    if (run->global->io.covDirNew &&
-        !input_writeCovFile(run->global->io.covDirNew, dynfile->data, dynfile->size)) {
+    if (run->global->io.covDirNew && !input_writeCovFile(run, run->global->io.covDirNew)) {
         LOG_E("Couldn't save the new coverage data to '%s'", run->global->io.covDirNew);
     }
 }

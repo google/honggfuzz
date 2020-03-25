@@ -34,7 +34,7 @@ extern bool input_init(honggfuzz_t* hfuzz);
 extern bool input_parseDictionary(honggfuzz_t* hfuzz);
 extern void input_freeDictionary(honggfuzz_t* hfuzz);
 extern bool input_parseBlacklist(honggfuzz_t* hfuzz);
-extern bool input_writeCovFile(const char* dir, const uint8_t* data, size_t len);
+extern bool input_writeCovFile(run_t* run, const char* dir);
 extern void input_addDynamicInput(run_t* run);
 extern void input_renumerateInputs(honggfuzz_t* hfuzz);
 extern bool input_prepareDynamicInput(run_t* run, bool needs_mangle);
