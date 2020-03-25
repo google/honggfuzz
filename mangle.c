@@ -822,12 +822,15 @@ void mangle_mangleContent(run_t* run) {
         return;
     }
 
-    mangle_Resize(run, /* printable= */ run->global->cfg.only_printable);
-
+    if (run->dynamicFileSz == 0U) {
+        mangle_Resize(run, /* printable= */ run->global->cfg.only_printable);
+    }
     /* Max number of stacked changes is, by default, 6 */
     uint64_t changesCnt = util_rndGet(1, run->global->mutate.mutationsPerRun);
     for (uint64_t x = 0; x < changesCnt; x++) {
         uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);
         mangleFuncs[choice](run, /* printable= */ run->global->cfg.only_printable);
     }
+
+    wmb();
 }

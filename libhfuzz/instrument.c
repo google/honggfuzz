@@ -167,6 +167,7 @@ __attribute__((weak)) size_t instrumentReserveGuard(size_t cnt) {
     }
     if (ATOMIC_GET(covFeedback->guardNb) < guardCnt) {
         ATOMIC_SET(covFeedback->guardNb, guardCnt);
+        wmb();
     }
     return base;
 }
@@ -207,6 +208,7 @@ static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
 
     memcpy(cmpFeedback->valArr[newoff].val, mem, len);
     ATOMIC_SET(cmpFeedback->valArr[newoff].len, len);
+    wmb();
 }
 
 /*
@@ -218,6 +220,7 @@ HF_REQUIRE_SSE42_POPCNT void __cyg_profile_func_enter(void* func, void* caller) 
     register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
     if (!prev) {
         ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackPc[my_thread_no]);
+        wmb();
     }
 }
 
@@ -235,6 +238,7 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_pc_internal(uintptr_t pc)
     register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, ret);
     if (!prev) {
         ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackPc[my_thread_no]);
+        wmb();
     }
 }
 
@@ -257,6 +261,7 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp1_internal(
     if (prev < v) {
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+        wmb();
     }
 }
 
@@ -268,6 +273,7 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp2_internal(
     if (prev < v) {
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+        wmb();
     }
 }
 
@@ -279,6 +285,7 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp4_internal(
     if (prev < v) {
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+        wmb();
     }
 }
 
@@ -290,6 +297,7 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp8_internal(
     if (prev < v) {
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+        wmb();
     }
 }
 
@@ -430,6 +438,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t
         if (prev < v) {
             ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
             ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+            wmb();
         }
     }
 }
@@ -455,6 +464,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_div8(uint64_t Val) {
     if (prev < v) {
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+        wmb();
     }
 }
 
@@ -465,6 +475,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_div4(uint32_t Val) {
     if (prev < v) {
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+        wmb();
     }
 }
 
@@ -479,6 +490,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_indir(uintptr_t callee) {
     register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
     if (!prev) {
         ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackPc[my_thread_no]);
+        wmb();
     }
 }
 
@@ -495,6 +507,7 @@ __attribute__((weak)) HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_indir_call16(
     register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
     if (!prev) {
         ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackPc[my_thread_no]);
+        wmb();
     }
 }
 
@@ -524,6 +537,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard_init(uint32_t* start
         uint32_t guardNo = instrumentReserveGuard(1);
         /* If the corresponding PC was already hit, map this specific guard as uninteresting (0) */
         *x = ATOMIC_GET(covFeedback->pcGuardMap[guardNo]) ? 0U : guardNo;
+        wmb();
     }
 }
 
@@ -560,6 +574,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
         bool prev = ATOMIC_XCHG(covFeedback->pcGuardMap[*guard], true);
         if (prev == false) {
             ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackEdge[my_thread_no]);
+            wmb();
         }
     }
 }
@@ -572,6 +587,8 @@ static struct {
 } hf8bitcounters[256] = {};
 
 void instrument8BitCountersCount(void) {
+    rmb();
+
     for (size_t i = 0; i < ARRAYSIZE(hf8bitcounters) && hf8bitcounters[i].start; i++) {
         for (size_t j = 0; j < hf8bitcounters[i].cnt; j++) {
             const uint8_t v = hf8bitcounters[i].start[j];
@@ -598,18 +615,20 @@ void instrument8BitCountersCount(void) {
                 const uint8_t prev = ATOMIC_POST_OR(covFeedback->pcGuardMap[guard], new);
                 if (!prev) {
                     ATOMIC_PRE_INC(covFeedback->pidFeedbackEdge[my_thread_no]);
-                } else if (new > prev) {
+                } else if (prev < new) {
                     ATOMIC_PRE_INC(covFeedback->pidFeedbackCmp[my_thread_no]);
                 }
             }
+            wmb();
         }
     }
 }
 
 void instrument8BitCountersClear(void) {
     for (size_t i = 0; i < ARRAYSIZE(hf8bitcounters) && hf8bitcounters[i].start; i++) {
-        __builtin_memset(hf8bitcounters[i].start, '\0', hf8bitcounters[i].cnt);
+        memset(hf8bitcounters[i].start, '\0', hf8bitcounters[i].cnt);
     }
+    wmb();
 }
 
 void __sanitizer_cov_8bit_counters_init(char* start, char* end) {
