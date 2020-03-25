@@ -632,36 +632,3 @@ bool input_postProcessFile(run_t* run, const char* cmd) {
     input_setSize(run, (size_t)sz);
     return true;
 }
-
-bool input_prepareDynamicFileForMinimization(run_t* run) {
-    MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
-
-    if (run->global->io.dynfileqCnt == 0) {
-        LOG_F("The dynamic file corpus is empty (for minimization). This shouldn't happen");
-    }
-
-    if (run->global->io.dynfileqCurrent == NULL) {
-        run->global->io.dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
-    } else {
-        run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
-    }
-    if (run->global->io.dynfileqCurrent == NULL) {
-        return false;
-    }
-
-    input_setSize(run, run->global->io.dynfileqCurrent->size);
-    memcpy(run->dynfile->cov, run->global->io.dynfileqCurrent->cov, sizeof(run->dynfile->cov));
-    run->dynfile->idx = run->global->io.dynfileqCurrent->idx;
-    run->dynfile->timeAddedMillis = util_timeNowMillis();
-    run->dynfile->timeExecMillis = run->global->io.dynfileqCurrent->timeExecMillis;
-    snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s",
-        run->global->io.dynfileqCurrent->path);
-    memcpy(run->dynfile->data, run->global->io.dynfileqCurrent->data,
-        run->global->io.dynfileqCurrent->size);
-
-    LOG_D("Cov: %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
-        run->global->io.dynfileqCurrent->cov[0], run->global->io.dynfileqCurrent->cov[1],
-        run->global->io.dynfileqCurrent->cov[2], run->global->io.dynfileqCurrent->cov[3]);
-
-    return true;
-}

@@ -186,44 +186,6 @@ static void fuzz_minimizeRemoveFiles(run_t* run) {
     LOG_I("Corpus minimization done");
 }
 
-static void fuzz_perfFeedbackForMinimization(run_t* run) {
-    uint64_t softCntPc =
-        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidFeedbackPc[run->fuzzNo]);
-    uint64_t softCntEdge =
-        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidFeedbackEdge[run->fuzzNo]);
-    uint64_t softCntCmp =
-        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidFeedbackCmp[run->fuzzNo]);
-    uint64_t cpuInstr = run->linux.hwCnts.cpuInstrCnt;
-    uint64_t cpuBranch = run->linux.hwCnts.cpuBranchCnt;
-
-    run->dynfile->cov[0] = softCntEdge + softCntPc;
-    /* The smaller input size, the better */
-    run->dynfile->cov[1] = run->dynfile->size ? (64 - util_Log2(run->dynfile->size)) : 64;
-    run->dynfile->cov[2] = cpuInstr + cpuBranch + softCntCmp;
-    run->dynfile->cov[3] = 0; /* reserved for idx */
-
-    LOG_I("Corpus Minimization: len:%zu, cov:%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
-        run->dynfile->size, run->dynfile->cov[0], run->dynfile->cov[1], run->dynfile->cov[2],
-        run->dynfile->cov[3]);
-
-    input_addDynamicInput(run);
-
-    ATOMIC_SET(run->global->feedback.covFeedbackMap->pidFeedbackPc[run->fuzzNo], 0);
-    memset(run->global->feedback.covFeedbackMap->bbMapPc, '\0',
-        sizeof(run->global->feedback.covFeedbackMap->bbMapPc));
-
-    ATOMIC_SET(run->global->feedback.covFeedbackMap->pidFeedbackEdge[run->fuzzNo], 0);
-    memset(run->global->feedback.covFeedbackMap->pcGuardMap, '\0',
-        sizeof(run->global->feedback.covFeedbackMap->pcGuardMap));
-
-    ATOMIC_SET(run->global->feedback.covFeedbackMap->pidFeedbackCmp[run->fuzzNo], 0);
-    memset(run->global->feedback.covFeedbackMap->bbMapCmp, '\0',
-        sizeof(run->global->feedback.covFeedbackMap->bbMapCmp));
-
-    memset(&run->global->linux.hwCnts, '\0', sizeof(run->global->linux.hwCnts));
-    wmb();
-}
-
 static void fuzz_perfFeedback(run_t* run) {
     if (run->global->feedback.skipFeedbackOnTimeout && run->tmOutSignaled) {
         return;
@@ -233,11 +195,6 @@ static void fuzz_perfFeedback(run_t* run) {
     defer {
         wmb();
     };
-
-    if (run->global->cfg.minimize && fuzz_getState(run->global) == _HF_STATE_DYNAMIC_DRY_RUN) {
-        fuzz_perfFeedbackForMinimization(run);
-        return;
-    }
 
     uint64_t softCntPc =
         ATOMIC_GET(run->global->feedback.covFeedbackMap->pidFeedbackPc[run->fuzzNo]);
@@ -367,7 +324,8 @@ static bool fuzz_fetchInput(run_t* run) {
     }
 
     if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MINIMIZE) {
-        return input_prepareDynamicFileForMinimization(run);
+        fuzz_minimizeRemoveFiles(run);
+        return false;
     }
 
     if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MAIN) {
@@ -438,7 +396,6 @@ static void fuzz_fuzzLoop(run_t* run) {
 
     if (!fuzz_fetchInput(run)) {
         if (run->global->cfg.minimize && fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MINIMIZE) {
-            fuzz_minimizeRemoveFiles(run);
             fuzz_setTerminating();
             return;
         }
