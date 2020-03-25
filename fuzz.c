@@ -161,6 +161,31 @@ static void fuzz_setDynamicMainState(run_t* run) {
     ATOMIC_SET(run->global->feedback.state, _HF_STATE_DYNAMIC_MAIN);
 }
 
+static void fuzz_minimizeRemoveFiles(run_t* run) {
+    if (run->global->io.outputDir) {
+        LOG_I("Minimized files were copied to '%s'", run->global->io.outputDir);
+        return;
+    }
+    if (!input_getDirStatsAndRewind(run->global)) {
+        return;
+    }
+    for (;;) {
+        char fname[PATH_MAX];
+        if (!input_getNext(run, fname, /* rewind= */ false)) {
+            break;
+        }
+        if (!input_inDynamicCorpus(run, fname)) {
+            char path[PATH_MAX];
+            snprintf(path, sizeof(path), "%s/%s", run->global->io.inputDir, fname);
+            LOG_I("Removing unnecessary '%s'", path);
+            if (unlink(path) == -1 && errno != EEXIST) {
+                PLOG_E("Couldn't remove file '%s'", path);
+            }
+        }
+    }
+    LOG_I("Corpus minimization done");
+}
+
 static void fuzz_perfFeedbackForMinimization(run_t* run) {
     uint64_t softCntPc =
         ATOMIC_GET(run->global->feedback.covFeedbackMap->pidFeedbackPc[run->fuzzNo]);
@@ -241,33 +266,20 @@ static void fuzz_perfFeedback(run_t* run) {
         run->global->linux.hwCnts.softCntEdge += softCntEdge;
         run->global->linux.hwCnts.softCntCmp += softCntCmp;
 
-        if (run->global->cfg.minimize) {
-            LOG_I("Keeping '%s' in '%s'", run->dynfile->path,
-                run->global->io.outputDir ? run->global->io.outputDir : run->global->io.inputDir);
-            if (run->global->io.outputDir && !input_writeCovFile(run, run->global->io.outputDir)) {
-                LOG_E("Couldn't save the coverage data to '%s'", run->global->io.outputDir);
-            }
-        } else {
-            LOG_I("Size:%zu (i,b,hw,ed,ip,cmp): %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
-                  "/%" PRIu64 "/%" PRIu64 ", Tot:%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
-                  "/%" PRIu64 "/%" PRIu64,
-                run->dynfile->size, run->linux.hwCnts.cpuInstrCnt, run->linux.hwCnts.cpuBranchCnt,
-                run->linux.hwCnts.newBBCnt, softCntEdge, softCntPc, softCntCmp,
-                run->global->linux.hwCnts.cpuInstrCnt, run->global->linux.hwCnts.cpuBranchCnt,
-                run->global->linux.hwCnts.bbCnt, run->global->linux.hwCnts.softCntEdge,
-                run->global->linux.hwCnts.softCntPc, run->global->linux.hwCnts.softCntCmp);
+        LOG_I("Size:%zu (i,b,hw,ed,ip,cmp): %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
+              "/%" PRIu64 "/%" PRIu64 ", Tot:%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64
+              "/%" PRIu64 "/%" PRIu64,
+            run->dynfile->size, run->linux.hwCnts.cpuInstrCnt, run->linux.hwCnts.cpuBranchCnt,
+            run->linux.hwCnts.newBBCnt, softCntEdge, softCntPc, softCntCmp,
+            run->global->linux.hwCnts.cpuInstrCnt, run->global->linux.hwCnts.cpuBranchCnt,
+            run->global->linux.hwCnts.bbCnt, run->global->linux.hwCnts.softCntEdge,
+            run->global->linux.hwCnts.softCntPc, run->global->linux.hwCnts.softCntCmp);
 
-            input_addDynamicInput(run);
-        }
+        input_addDynamicInput(run);
 
         if (run->global->socketFuzzer.enabled) {
             LOG_D("SocketFuzzer: fuzz: new BB (perf)");
             fuzz_notifySocketFuzzerNewCov(run->global);
-        }
-    } else if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MINIMIZE) {
-        if (run->global->io.outputDir == NULL) {
-            LOG_I("Removing '%s' from '%s'", run->dynfile->path, run->global->io.inputDir);
-            input_removeStaticFile(run->global->io.inputDir, run->dynfile->path);
         }
     }
 }
@@ -426,8 +438,8 @@ static void fuzz_fuzzLoop(run_t* run) {
 
     if (!fuzz_fetchInput(run)) {
         if (run->global->cfg.minimize && fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MINIMIZE) {
+            fuzz_minimizeRemoveFiles(run);
             fuzz_setTerminating();
-            LOG_I("Corpus minimization done!");
             return;
         }
         LOG_F("Cound't prepare input for fuzzing");

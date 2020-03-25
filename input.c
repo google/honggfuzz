@@ -60,7 +60,7 @@ void input_setSize(run_t* run, size_t sz) {
     run->dynfile->size = sz;
 }
 
-static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
+bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
     rewinddir(hfuzz->io.inputDirPtr);
 
     size_t fileCnt = 0U;
@@ -381,7 +381,7 @@ void input_addDynamicInput(run_t* run) {
     memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
     dynfile->timeAddedMillis = util_timeNowMillis();
     dynfile->timeExecMillis = util_timeNowMillis() - run->dynfile->timeAddedMillis;
-    input_generateFileName(run->dynfile, NULL, run->dynfile->path);
+    input_generateFileName(run->dynfile, NULL, dynfile->path);
     dynfile->data = (uint8_t*)util_Malloc(run->dynfile->size);
     memcpy(dynfile->data, run->dynfile->data, run->dynfile->size);
 
@@ -413,10 +413,6 @@ void input_addDynamicInput(run_t* run) {
         /* Don't add coverage data to files in socketFuzzer mode */
         return;
     }
-    if (run->global->cfg.minimize) {
-        /* When minimizing we should only delete files */
-        return;
-    }
 
     const char* outDir =
         run->global->io.outputDir ? run->global->io.outputDir : run->global->io.inputDir;
@@ -434,6 +430,18 @@ void input_addDynamicInput(run_t* run) {
     if (run->global->io.covDirNew && !input_writeCovFile(run, run->global->io.covDirNew)) {
         LOG_E("Couldn't save the new coverage data to '%s'", run->global->io.covDirNew);
     }
+}
+
+bool input_inDynamicCorpus(run_t* run, const char* fname) {
+    MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
+
+    struct dynfile_t* iter = NULL;
+    TAILQ_FOREACH_HF(iter, &run->global->io.dynfileq, pointers) {
+        if (strncmp(iter->path, fname, PATH_MAX) == 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 static inline unsigned input_slowFactor(run_t* run, struct dynfile_t* current) {
