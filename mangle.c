@@ -782,21 +782,31 @@ static void mangle_Resize(run_t* run, bool printable) {
     input_setSize(run, (size_t)newsz);
     if (newsz > oldsz) {
         if (printable) {
-            memset(&run->dynfile->data[oldsz], 'A', newsz - oldsz);
+            memset(&run->dynfile->data[oldsz], ' ', newsz - oldsz);
         }
     }
 }
 
 void mangle_mangleContent(run_t* run, unsigned slow_factor) {
     static void (*const mangleFuncs[])(run_t * run, bool printable) = {
+        /* Every *Insert or Expand expands file, so add one Shrink for each */
+        mangle_Shrink,
+        mangle_Shrink,
+        mangle_Shrink,
+        mangle_Shrink,
+        mangle_Shrink,
+        mangle_Shrink,
+        mangle_Shrink,
+        mangle_Shrink,
+        mangle_Shrink,
+        mangle_Shrink,
+        mangle_Expand,
         mangle_Bit,
         mangle_IncByte,
         mangle_DecByte,
         mangle_NegByte,
         mangle_AddSub,
         mangle_MemSet,
-        mangle_Expand,
-        mangle_Shrink,
         mangle_MemCopyOverwrite,
         mangle_MemCopyInsert,
         mangle_BytesOverwrite,
