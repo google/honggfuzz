@@ -578,7 +578,6 @@ void instrument8BitCountersCount(void) {
             if (!v) {
                 continue;
             }
-            hf8bitcounters[i].start[j] = 0;
 
             /* Map number of visits to an edge into buckets */
             static uint8_t const scaleMap[256] = {
