@@ -379,9 +379,9 @@ void input_addDynamicInput(run_t* run) {
     dynfile->size = run->dynfile->size;
     memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
     dynfile->timeExecMillis = util_timeNowMillis() - run->timeStartedMillis;
-    input_generateFileName(run->dynfile, NULL, dynfile->path);
     dynfile->data = (uint8_t*)util_Malloc(run->dynfile->size);
     memcpy(dynfile->data, run->dynfile->data, run->dynfile->size);
+    input_generateFileName(dynfile, NULL, dynfile->path);
 
     MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 
@@ -420,7 +420,7 @@ void input_addDynamicInput(run_t* run) {
 
     ATOMIC_POST_INC(run->global->io.newUnitsAdded);
 
-    if (run->global->io.covDirNew && !input_writeCovFile(run->global->io.covDirNew, run->dynfile)) {
+    if (run->global->io.covDirNew && !input_writeCovFile(run->global->io.covDirNew, dynfile)) {
         LOG_E("Couldn't save the new coverage data to '%s'", run->global->io.covDirNew);
     }
 }
