@@ -834,17 +834,17 @@ void mangle_mangleContent(run_t* run, unsigned slow_factor) {
             break;
         case 3 ... 4:
             changesCnt =
-                (run->global->mutate.mutationsPerRun > 8) ? run->global->mutate.mutationsPerRun : 8;
+                (run->global->mutate.mutationsPerRun > 5) ? run->global->mutate.mutationsPerRun : 5;
             break;
         case 5 ... 10:
-            changesCnt = (run->global->mutate.mutationsPerRun > 16)
+            changesCnt = (run->global->mutate.mutationsPerRun > 10)
                              ? run->global->mutate.mutationsPerRun
-                             : 16;
+                             : 10;
             break;
         default:
-            changesCnt = (run->global->mutate.mutationsPerRun > 32)
+            changesCnt = (run->global->mutate.mutationsPerRun > 20)
                              ? run->global->mutate.mutationsPerRun
-                             : 32;
+                             : 20;
             break;
     }
 
