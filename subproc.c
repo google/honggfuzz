@@ -430,8 +430,13 @@ bool subproc_Run(run_t* run) {
     arch_reapChild(run);
 
     int64_t diffMillis = util_timeNowMillis() - run->timeStartedMillis;
-    if (diffMillis >= run->global->timing.timeOfLongestUnitInMilliseconds) {
-        run->global->timing.timeOfLongestUnitInMilliseconds = diffMillis;
+
+    {
+        static pthread_mutex_t local_mutex = PTHREAD_MUTEX_INITIALIZER;
+        MX_SCOPED_LOCK(&local_mutex)
+        if (diffMillis >= ATOMIC_GET(run->global->timing.timeOfLongestUnitInMilliseconds)) {
+            ATOMIC_SET(run->global->timing.timeOfLongestUnitInMilliseconds, diffMillis);
+        }
     }
 
     return true;
