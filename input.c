@@ -1,11 +1,10 @@
 /*
- *
  * honggfuzz - file operations
  * -----------------------------------------
  *
  * Author: Robert Swiecki <swiecki@google.com>
  *
- * Copyright 2010-2018 by Google Inc. All Rights Reserved.
+ * Copyright 2010-2020 by Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -373,7 +372,6 @@ void input_addDynamicInput(
         dynfile->cov[i] = cov[i];
     }
     dynfile->size = len;
-    dynfile->tested = 0;
     dynfile->timeAddedMillis = util_timeNowMillis();
     memcpy(dynfile->data, data, len);
     snprintf(dynfile->path, sizeof(dynfile->path), "%s", path);
@@ -428,31 +426,6 @@ void input_addDynamicInput(
     }
 }
 
-/* Number of tests taken, based on how 'fresh' the input is */
-static size_t input_numTests(run_t* run, struct dynfile_t* dynfile) {
-    size_t total = run->global->io.dynfileqCnt;
-    if (dynfile->idx > total) {
-        LOG_F("idx (%zu) > total (%zu)", dynfile->idx, total);
-    }
-    if (dynfile->idx == 0 || (total - dynfile->idx) > 5) {
-        return 1;
-    }
-    /* If the sample is older than 10 seconds, don't bump its testing ratio */
-    if ((run->timeStartedMillis - dynfile->timeAddedMillis) > (1000 * 10)) {
-        return 1;
-    }
-
-    static size_t const scaleMap[] = {
-        [0] = 128,
-        [1] = 32,
-        [2] = 8,
-        [3] = 4,
-        [4] = 2,
-        [5] = 1,
-    };
-    return scaleMap[total - dynfile->idx];
-}
-
 bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     struct dynfile_t* current = NULL;
 
@@ -468,21 +441,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
         }
 
         current = run->global->io.dynfileqCurrent;
-
-        /* Number of tests per input depends on the 'idx' of the input */
-        size_t testCnt = input_numTests(run, current);
-        current->tested++;
-
-        /*
-         * Testing routine:
-         * LOG_E("IDX: %zu (%zu/%zu)", current->idx, current->tested, testCnt);
-         */
-
-        /* If the current sample has been tested enough, move the pointer to the next sample */
-        if (current->tested >= testCnt) {
-            current->tested = 0;
-            run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
-        }
+        run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
     }
 
     input_setSize(run, current->size);
