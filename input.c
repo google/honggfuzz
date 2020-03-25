@@ -529,8 +529,14 @@ static bool input_shouldReadNewFile(run_t* run) {
 
 bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
     if (input_shouldReadNewFile(run)) {
-        if (!input_getNext(run, run->dynfile->path, /* rewind= */ rewind)) {
-            return false;
+        for (;;) {
+            if (!input_getNext(run, run->dynfile->path, /* rewind= */ rewind)) {
+                return false;
+            }
+            if (needs_mangle || !input_inDynamicCorpus(run, run->dynfile->path)) {
+                LOG_D("Skipping '%s' as it's already in the dynamic corpus", run->dynfile->path);
+                break;
+            }
         }
         run->global->io.testedFileCnt++;
     }
