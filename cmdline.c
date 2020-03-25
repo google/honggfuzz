@@ -316,7 +316,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             {
                 .timeStart = time(NULL),
                 .runEndTime = 0,
-                .tmOut = 10,
+                .tmOut = 2,
                 .lastCovUpdate = time(NULL),
                 .timeOfLongestUnitInMilliseconds = 0,
                 .tmoutVTALRM = false,
