@@ -363,8 +363,8 @@ static bool input_cmpCov(struct dynfile_t* item1, struct dynfile_t* item2) {
 #define TAILQ_FOREACH_HF(var, head, field) \
     for ((var) = TAILQ_FIRST((head)); (var); (var) = TAILQ_NEXT((var), field))
 
-void input_addDynamicInput(
-    honggfuzz_t* hfuzz, const uint8_t* data, size_t len, uint64_t cov[4], const char* path) {
+void input_addDynamicInput(honggfuzz_t* hfuzz, const uint8_t* data, size_t len, uint64_t cov[4],
+    const char* path, uint64_t timeExecMillis) {
     ATOMIC_SET(hfuzz->timing.lastCovUpdate, time(NULL));
 
     struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t) + len);
@@ -373,6 +373,7 @@ void input_addDynamicInput(
     }
     dynfile->size = len;
     dynfile->timeAddedMillis = util_timeNowMillis();
+    dynfile->timeExecMillis = timeExecMillis;
     memcpy(dynfile->data, data, len);
     snprintf(dynfile->path, sizeof(dynfile->path), "%s", path);
 
@@ -426,6 +427,16 @@ void input_addDynamicInput(
     }
 }
 
+static inline unsigned input_slowFactor(run_t* run, struct dynfile_t* current) {
+    uint64_t msec_per_run = ((uint64_t)(time(NULL) - run->global->timing.timeStart) * 1000);
+    msec_per_run /= ATOMIC_GET(run->global->cnts.mutationsCnt);
+    msec_per_run /= run->global->threads.threadsMax;
+    if (msec_per_run == 0) {
+        msec_per_run = 1;
+    }
+    return (unsigned)(current->timeExecMillis / msec_per_run);
+}
+
 bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     struct dynfile_t* current = NULL;
 
@@ -448,7 +459,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     memcpy(run->dynamicFile, current->data, current->size);
 
     if (needs_mangle) {
-        mangle_mangleContent(run);
+        mangle_mangleContent(run, input_slowFactor(run, current));
     }
 
     return true;
@@ -527,7 +538,7 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
     input_setSize(run, fileSz);
 
     if (needs_mangle) {
-        mangle_mangleContent(run);
+        mangle_mangleContent(run, /* slow_factor= */ 0);
     }
 
     return true;

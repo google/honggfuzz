@@ -787,7 +787,7 @@ static void mangle_Resize(run_t* run, bool printable) {
     }
 }
 
-void mangle_mangleContent(run_t* run) {
+void mangle_mangleContent(run_t* run, unsigned slow_factor) {
     static void (*const mangleFuncs[])(run_t * run, bool printable) = {
         mangle_Bit,
         mangle_IncByte,
@@ -825,8 +825,28 @@ void mangle_mangleContent(run_t* run) {
     if (run->dynamicFileSz == 0U) {
         mangle_Resize(run, /* printable= */ run->global->cfg.only_printable);
     }
-    /* Max number of stacked changes is, by default, 6 */
-    uint64_t changesCnt = util_rndGet(1, run->global->mutate.mutationsPerRun);
+    uint64_t changesCnt = run->global->mutate.mutationsPerRun;
+    /* Give it a good shake-up if it's a slow input */
+    switch (slow_factor) {
+        case 0 ... 2:
+            changesCnt = util_rndGet(1, run->global->mutate.mutationsPerRun);
+            break;
+        case 3 ... 4:
+            changesCnt =
+                (run->global->mutate.mutationsPerRun > 8) ? run->global->mutate.mutationsPerRun : 8;
+            break;
+        case 5 ... 10:
+            changesCnt = (run->global->mutate.mutationsPerRun > 16)
+                             ? run->global->mutate.mutationsPerRun
+                             : 16;
+            break;
+        default:
+            changesCnt = (run->global->mutate.mutationsPerRun > 32)
+                             ? run->global->mutate.mutationsPerRun
+                             : 32;
+            break;
+    }
+
     for (uint64_t x = 0; x < changesCnt; x++) {
         uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);
         mangleFuncs[choice](run, /* printable= */ run->global->cfg.only_printable);

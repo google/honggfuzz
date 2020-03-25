@@ -128,7 +128,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
      */
     if (run->global->io.dynfileqCnt == 0) {
         input_addDynamicInput(run->global, (const uint8_t*)"", /* size= */ 0U,
-            /* cov */ (uint64_t[4]){0, 0, 0, 0}, /* path= */ "[DYNAMIC]");
+            /* cov */ (uint64_t[4]){0, 0, 0, 0}, /* path= */ "[DYNAMIC]", /* timeExecMillis*/ 1);
     }
     snprintf(run->origFileName, sizeof(run->origFileName), "[DYNAMIC]");
 
@@ -169,8 +169,9 @@ static void fuzz_perfFeedbackForMinimization(run_t* run) {
     LOG_I("Corpus Minimization: len:%zu, cov:%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
         run->dynamicFileSz, cov[0], cov[1], cov[2], cov[3]);
 
+    uint64_t timeExecMillis = util_timeNowMillis() - run->timeStartedMillis;
     input_addDynamicInput(
-        run->global, run->dynamicFile, run->dynamicFileSz, cov, run->origFileName);
+        run->global, run->dynamicFile, run->dynamicFileSz, cov, run->origFileName, timeExecMillis);
 
     ATOMIC_SET(run->global->feedback.covFeedbackMap->pidFeedbackPc[run->fuzzNo], 0);
     memset(run->global->feedback.covFeedbackMap->bbMapPc, '\0',
@@ -246,8 +247,9 @@ static void fuzz_perfFeedback(run_t* run) {
                 run->global->linux.hwCnts.bbCnt, run->global->linux.hwCnts.softCntEdge,
                 run->global->linux.hwCnts.softCntPc, run->global->linux.hwCnts.softCntCmp);
 
+            uint64_t timeExecMillis = util_timeNowMillis() - run->timeStartedMillis;
             input_addDynamicInput(run->global, run->dynamicFile, run->dynamicFileSz,
-                (uint64_t[4]){0, 0, 0, 0}, "[DYNAMIC]");
+                (uint64_t[4]){0, 0, 0, 0}, "[DYNAMIC]", timeExecMillis);
         }
 
         if (run->global->socketFuzzer.enabled) {
