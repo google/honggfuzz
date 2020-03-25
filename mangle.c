@@ -725,9 +725,9 @@ static void mangle_SpliceOverwrite(run_t* run, bool printable) {
     }
 
     size_t remoteOff = util_rndGet(0, sz - 1);
-    size_t remoteLen = util_rndGet(1, sz - remoteOff);
-    size_t off = mangle_getOffSet(run);
-    mangle_Overwrite(run, off, &buf[remoteOff], remoteLen, printable);
+    size_t localOff = mangle_getOffSet(run);
+    size_t len = mangle_getLen(HF_MIN(sz - remoteOff, run->dynfile->size - localOff));
+    mangle_Overwrite(run, localOff, &buf[remoteOff], len, printable);
 }
 
 static void mangle_SpliceInsert(run_t* run, bool printable) {
@@ -739,9 +739,9 @@ static void mangle_SpliceInsert(run_t* run, bool printable) {
     }
 
     size_t remoteOff = util_rndGet(0, sz - 1);
-    size_t remoteLen = mangle_getLen(sz - remoteOff);
-    size_t off = mangle_getOffSet(run);
-    mangle_Insert(run, off, &buf[remoteOff], remoteLen, printable);
+    size_t localOff = mangle_getOffSet(run);
+    size_t len = mangle_getLen(HF_MIN(sz - remoteOff, run->dynfile->size - localOff));
+    mangle_Insert(run, localOff, &buf[remoteOff], len, printable);
 }
 
 static void mangle_Resize(run_t* run, bool printable) {
