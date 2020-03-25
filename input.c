@@ -378,8 +378,7 @@ void input_addDynamicInput(run_t* run) {
     dynfile_t* dynfile = (dynfile_t*)util_Malloc(sizeof(dynfile_t));
     dynfile->size = run->dynfile->size;
     memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
-    dynfile->timeAddedMillis = util_timeNowMillis();
-    dynfile->timeExecMillis = util_timeNowMillis() - run->dynfile->timeAddedMillis;
+    dynfile->timeExecMillis = util_timeNowMillis() - run->timeStartedMillis;
     input_generateFileName(run->dynfile, NULL, dynfile->path);
     dynfile->data = (uint8_t*)util_Malloc(run->dynfile->size);
     memcpy(dynfile->data, run->dynfile->data, run->dynfile->size);
@@ -469,7 +468,6 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     input_setSize(run, current->size);
     memcpy(run->dynfile->cov, current->cov, sizeof(run->dynfile->cov));
     run->dynfile->idx = current->idx;
-    run->dynfile->timeAddedMillis = util_timeNowMillis();
     run->dynfile->timeExecMillis = current->timeExecMillis;
     snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s", current->path);
     memcpy(run->dynfile->data, current->data, current->size);
@@ -630,5 +628,8 @@ bool input_postProcessFile(run_t* run, const char* cmd) {
     }
 
     input_setSize(run, (size_t)sz);
+    memset(run->dynfile->cov, '\0', sizeof(run->dynfile->cov));
+    run->dynfile->idx = 0;
+
     return true;
 }

@@ -132,7 +132,6 @@ static void fuzz_setDynamicMainState(run_t* run) {
             .cov = {},
             .idx = 0,
             .fd = -1,
-            .timeAddedMillis = util_timeNowMillis(),
             .timeExecMillis = 1,
             .path = "[DYNAMIC-0-SIZE]",
             .data = (uint8_t*)"",

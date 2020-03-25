@@ -170,7 +170,6 @@ struct _dynfile_t {
     uint64_t cov[4];
     size_t idx;
     int fd;
-    int64_t timeAddedMillis;
     uint64_t timeExecMillis;
     char path[PATH_MAX];
     uint8_t* data;
