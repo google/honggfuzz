@@ -671,7 +671,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     /* If dry run mode, copy file with same name into workspace */
     if (run->global->mutate.mutationsPerRun == 0U && run->global->cfg.useVerifier) {
         snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.crashDir,
-            run->origFileName);
+            run->dynfile->path);
     } else if (saveUnique) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".CODE.%d.ADDR.%" PRIx64 ".INSTR.%s.%s",
@@ -698,7 +698,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         return;
     }
 
-    if (!files_writeBufToFile(run->crashFileName, run->dynamicFile, run->dynamicFileSz,
+    if (!files_writeBufToFile(run->crashFileName, run->dynfile->data, run->dynfile->size,
             O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC)) {
         LOG_E("Couldn't write to '%s'", run->crashFileName);
         return;

@@ -134,7 +134,7 @@ void report_appendReport(pid_t pid, run_t* run, funcs_t* funcs, size_t funcCnt, 
     uint64_t crashAddr, int signo, const char* instr, const char description[HF_STR_LEN]) {
     util_ssnprintf(run->report, sizeof(run->report), "CRASH:\n");
     util_ssnprintf(run->report, sizeof(run->report), "DESCRIPTION: %s\n", description);
-    util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->origFileName);
+    util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->dynfile->path);
     util_ssnprintf(run->report, sizeof(run->report), "FUZZ_FNAME: %s\n", run->crashFileName);
     util_ssnprintf(run->report, sizeof(run->report), "PID: %d\n", pid);
     util_ssnprintf(

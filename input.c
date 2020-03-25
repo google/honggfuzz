@@ -45,7 +45,7 @@
 #include "subproc.h"
 
 void input_setSize(run_t* run, size_t sz) {
-    if (run->dynamicFileSz == sz) {
+    if (run->dynfile->size == sz) {
         return;
     }
     if (sz > run->global->mutate.maxInputSz) {
@@ -53,11 +53,11 @@ void input_setSize(run_t* run, size_t sz) {
     }
     /* ftruncate of a mmaped file fails under CygWin, it's also painfully slow under MacOS X */
 #if !defined(__CYGWIN__) && !defined(_HF_ARCH_DARWIN)
-    if (TEMP_FAILURE_RETRY(ftruncate(run->dynamicFileFd, sz)) == -1) {
-        PLOG_W("ftruncate(run->dynamicFileFd=%d, sz=%zu)", run->dynamicFileFd, sz);
+    if (TEMP_FAILURE_RETRY(ftruncate(run->dynfile->fd, sz)) == -1) {
+        PLOG_W("ftruncate(run->dynfile->fd=%d, sz=%zu)", run->dynfile->fd, sz);
     }
 #endif /* !defined(__CYGWIN__) && !defined(_HF_ARCH_DARWIN) */
-    run->dynamicFileSz = sz;
+    run->dynfile->size = sz;
 }
 
 static bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
@@ -363,67 +363,67 @@ static bool input_cmpCov(struct dynfile_t* item1, struct dynfile_t* item2) {
 #define TAILQ_FOREACH_HF(var, head, field) \
     for ((var) = TAILQ_FIRST((head)); (var); (var) = TAILQ_NEXT((var), field))
 
-void input_addDynamicInput(honggfuzz_t* hfuzz, const uint8_t* data, size_t len, uint64_t cov[4],
-    const char* path, uint64_t timeExecMillis) {
-    ATOMIC_SET(hfuzz->timing.lastCovUpdate, time(NULL));
+void input_addDynamicInput(run_t* run) {
+    ATOMIC_SET(run->global->timing.lastCovUpdate, time(NULL));
 
-    struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t) + len);
-    for (size_t i = 0; i < ARRAYSIZE(dynfile->cov); i++) {
-        dynfile->cov[i] = cov[i];
-    }
-    dynfile->size = len;
+    struct dynfile_t* dynfile = (struct dynfile_t*)util_Malloc(sizeof(struct dynfile_t));
+    dynfile->size = run->dynfile->size;
+    memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
     dynfile->timeAddedMillis = util_timeNowMillis();
-    dynfile->timeExecMillis = timeExecMillis;
-    memcpy(dynfile->data, data, len);
-    snprintf(dynfile->path, sizeof(dynfile->path), "%s", path);
+    dynfile->timeExecMillis = util_timeNowMillis() - run->dynfile->timeAddedMillis;
+    snprintf(dynfile->path, sizeof(dynfile->path), "%s", run->dynfile->path);
+    dynfile->data = (uint8_t*)util_Malloc(run->dynfile->size);
+    memcpy(dynfile->data, run->dynfile->data, run->dynfile->size);
 
-    MX_SCOPED_RWLOCK_WRITE(&hfuzz->io.dynfileq_mutex);
+    MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 
-    hfuzz->io.dynfileqCnt++;
-    dynfile->idx = hfuzz->io.dynfileqCnt;
+    run->global->io.dynfileqCnt++;
+    dynfile->idx = run->global->io.dynfileqCnt;
 
-    hfuzz->io.dynfileqMaxSz = HF_MAX(hfuzz->io.dynfileqMaxSz, len);
+    run->global->io.dynfileqMaxSz = HF_MAX(run->global->io.dynfileqMaxSz, dynfile->size);
 
-    if (fuzz_getState(hfuzz) == _HF_STATE_DYNAMIC_MAIN) {
+    if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MAIN) {
         /* Add it with high idx */
-        TAILQ_INSERT_HEAD(&hfuzz->io.dynfileq, dynfile, pointers);
+        TAILQ_INSERT_HEAD(&run->global->io.dynfileq, dynfile, pointers);
     } else {
         /* Sort it by coverage - put better coverage earlier in the list */
         struct dynfile_t* iter = NULL;
-        TAILQ_FOREACH_HF(iter, &hfuzz->io.dynfileq, pointers) {
+        TAILQ_FOREACH_HF(iter, &run->global->io.dynfileq, pointers) {
             if (input_cmpCov(dynfile, iter)) {
                 TAILQ_INSERT_BEFORE(iter, dynfile, pointers);
                 break;
             }
         }
         if (iter == NULL) {
-            TAILQ_INSERT_TAIL(&hfuzz->io.dynfileq, dynfile, pointers);
+            TAILQ_INSERT_TAIL(&run->global->io.dynfileq, dynfile, pointers);
         }
     }
 
-    if (hfuzz->socketFuzzer.enabled) {
+    if (run->global->socketFuzzer.enabled) {
         /* Don't add coverage data to files in socketFuzzer mode */
         return;
     }
-    if (hfuzz->cfg.minimize) {
+    if (run->global->cfg.minimize) {
         /* When minimizing we should only delete files */
         return;
     }
 
-    const char* outDir = hfuzz->io.outputDir ? hfuzz->io.outputDir : hfuzz->io.inputDir;
-    if (!input_writeCovFile(outDir, data, len)) {
-        LOG_E("Couldn't save the coverage data to '%s'", hfuzz->io.outputDir);
+    const char* outDir =
+        run->global->io.outputDir ? run->global->io.outputDir : run->global->io.inputDir;
+    if (!input_writeCovFile(outDir, dynfile->data, dynfile->size)) {
+        LOG_E("Couldn't save the coverage data to '%s'", run->global->io.outputDir);
     }
 
     /* No need to add files to the new coverage dir, if it's not the main phase */
-    if (fuzz_getState(hfuzz) != _HF_STATE_DYNAMIC_MAIN) {
+    if (fuzz_getState(run->global) != _HF_STATE_DYNAMIC_MAIN) {
         return;
     }
 
-    hfuzz->io.newUnitsAdded++;
+    run->global->io.newUnitsAdded++;
 
-    if (hfuzz->io.covDirNew && !input_writeCovFile(hfuzz->io.covDirNew, data, len)) {
-        LOG_E("Couldn't save the new coverage data to '%s'", hfuzz->io.covDirNew);
+    if (run->global->io.covDirNew &&
+        !input_writeCovFile(run->global->io.covDirNew, dynfile->data, dynfile->size)) {
+        LOG_E("Couldn't save the new coverage data to '%s'", run->global->io.covDirNew);
     }
 }
 
@@ -456,7 +456,12 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     }
 
     input_setSize(run, current->size);
-    memcpy(run->dynamicFile, current->data, current->size);
+    memcpy(run->dynfile->cov, current->cov, sizeof(run->dynfile->cov));
+    run->dynfile->idx = current->idx;
+    run->dynfile->timeAddedMillis = util_timeNowMillis();
+    run->dynfile->timeExecMillis = current->timeExecMillis;
+    snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s", current->path);
+    memcpy(run->dynfile->data, current->data, current->size);
 
     if (needs_mangle) {
         mangle_mangleContent(run, input_slowFactor(run, current));
@@ -502,7 +507,7 @@ static bool input_shouldReadNewFile(run_t* run) {
     }
 
     /* Increase size of the current file by a factor of 2, and return it instead of a new file */
-    size_t newsz = run->dynamicFileSz * 2;
+    size_t newsz = run->dynfile->size * 2;
     if (newsz >= run->global->mutate.maxInputSz) {
         /* That's the largest size for this specific file that will be ever used */
         newsz = run->global->mutate.maxInputSz;
@@ -515,22 +520,22 @@ static bool input_shouldReadNewFile(run_t* run) {
 
 bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
     if (input_shouldReadNewFile(run)) {
-        if (!input_getNext(run, run->origFileName, /* rewind= */ rewind)) {
+        if (!input_getNext(run, run->dynfile->path, /* rewind= */ rewind)) {
             return false;
         }
         run->global->io.testedFileCnt++;
     }
 
     char path[PATH_MAX];
-    snprintf(path, sizeof(path), "%s/%s", run->global->io.inputDir, run->origFileName);
+    snprintf(path, sizeof(path), "%s/%s", run->global->io.inputDir, run->dynfile->path);
 
-    ssize_t fileSz = files_readFileToBufMax(path, run->dynamicFile, run->dynamicFileSz);
+    ssize_t fileSz = files_readFileToBufMax(path, run->dynfile->data, run->dynfile->size);
     if (fileSz < 0) {
         LOG_E("Couldn't read contents of '%s'", path);
         return false;
     }
 
-    if (run->staticFileTryMore && ((size_t)fileSz < run->dynamicFileSz)) {
+    if (run->staticFileTryMore && ((size_t)fileSz < run->dynfile->size)) {
         /* The file is smaller than the requested size, no need to re-read it anymore */
         run->staticFileTryMore = false;
     }
@@ -553,7 +558,7 @@ void input_removeStaticFile(const char* dir, const char* name) {
 }
 
 bool input_prepareExternalFile(run_t* run) {
-    snprintf(run->origFileName, sizeof(run->origFileName), "[EXTERNAL]");
+    snprintf(run->dynfile->path, sizeof(run->dynfile->path), "[EXTERNAL]");
 
     int fd = files_writeBufToTmpFile(run->global->io.workDir, (const uint8_t*)"", 0, 0);
     if (fd == -1) {
@@ -575,7 +580,7 @@ bool input_prepareExternalFile(run_t* run) {
     LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
 
     input_setSize(run, run->global->mutate.maxInputSz);
-    ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->mutate.maxInputSz, 0);
+    ssize_t sz = files_readFromFdSeek(fd, run->dynfile->data, run->global->mutate.maxInputSz, 0);
     if (sz == -1) {
         LOG_E("Couldn't read file from fd=%d", fd);
         return false;
@@ -587,7 +592,7 @@ bool input_prepareExternalFile(run_t* run) {
 
 bool input_postProcessFile(run_t* run, const char* cmd) {
     int fd =
-        files_writeBufToTmpFile(run->global->io.workDir, run->dynamicFile, run->dynamicFileSz, 0);
+        files_writeBufToTmpFile(run->global->io.workDir, run->dynfile->data, run->dynfile->size, 0);
     if (fd == -1) {
         LOG_E("Couldn't write input file to a temporary buffer");
         return false;
@@ -607,7 +612,7 @@ bool input_postProcessFile(run_t* run, const char* cmd) {
     LOG_D("Subporcess '%s' finished with success", cmd);
 
     input_setSize(run, run->global->mutate.maxInputSz);
-    ssize_t sz = files_readFromFdSeek(fd, run->dynamicFile, run->global->mutate.maxInputSz, 0);
+    ssize_t sz = files_readFromFdSeek(fd, run->dynfile->data, run->global->mutate.maxInputSz, 0);
     if (sz == -1) {
         LOG_E("Couldn't read file from fd=%d", fd);
         return false;
@@ -634,10 +639,14 @@ bool input_prepareDynamicFileForMinimization(run_t* run) {
     }
 
     input_setSize(run, run->global->io.dynfileqCurrent->size);
-    memcpy(run->dynamicFile, run->global->io.dynfileqCurrent->data,
+    memcpy(run->dynfile->cov, run->global->io.dynfileqCurrent->cov, sizeof(run->dynfile->cov));
+    run->dynfile->idx = run->global->io.dynfileqCurrent->idx;
+    run->dynfile->timeAddedMillis = util_timeNowMillis();
+    run->dynfile->timeExecMillis = run->global->io.dynfileqCurrent->timeExecMillis;
+    snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s",
+        run->global->io.dynfileqCurrent->path);
+    memcpy(run->dynfile->data, run->global->io.dynfileqCurrent->data,
         run->global->io.dynfileqCurrent->size);
-    snprintf(
-        run->origFileName, sizeof(run->origFileName), "%s", run->global->io.dynfileqCurrent->path);
 
     LOG_D("Cov: %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
         run->global->io.dynfileqCurrent->cov[0], run->global->io.dynfileqCurrent->cov[1],

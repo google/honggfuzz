@@ -139,7 +139,7 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
     /* If dry run mode, copy file with same name into workspace */
     if (run->global->mutate.mutationsPerRun == 0U && run->global->cfg.useVerifier) {
         snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.crashDir,
-            run->origFileName);
+            run->dynfile->path);
     } else if (saveUnique) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".ADDR.%" PRIx64 ".%s", run->global->io.crashDir,
@@ -167,7 +167,7 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
     /* If unique crash found, reset dynFile counter */
     ATOMIC_CLEAR(run->global->cfg.dynFileIterExpire);
 
-    if (files_writeBufToFile(run->crashFileName, run->dynamicFile, run->dynamicFileSz,
+    if (files_writeBufToFile(run->crashFileName, run->dynfile->data, run->dynfile->size,
             O_CREAT | O_EXCL | O_WRONLY) == false) {
         LOG_E("Couldn't save crash to '%s'", run->crashFileName);
     }

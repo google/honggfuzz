@@ -169,11 +169,12 @@ struct dynfile_t {
     size_t size;
     uint64_t cov[4];
     size_t idx;
+    int fd;
     int64_t timeAddedMillis;
     uint64_t timeExecMillis;
     char path[PATH_MAX];
+    uint8_t* data;
     TAILQ_ENTRY(dynfile_t) pointers;
-    uint8_t data[];
 };
 
 struct strings_t {
@@ -355,7 +356,6 @@ typedef struct {
     honggfuzz_t* global;
     pid_t pid;
     int64_t timeStartedMillis;
-    char origFileName[PATH_MAX];
     char crashFileName[PATH_MAX];
     uint64_t pc;
     uint64_t backtrace;
@@ -364,10 +364,8 @@ typedef struct {
     char report[_HF_REPORT_SIZE];
     bool mainWorker;
     unsigned mutationsPerRun;
-    uint8_t* dynamicFile;
-    size_t dynamicFileSz;
+    struct dynfile_t* dynfile;
     bool staticFileTryMore;
-    int dynamicFileFd;
     uint32_t fuzzNo;
     int persistentSock;
     bool waitingForReady;

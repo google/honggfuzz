@@ -153,7 +153,7 @@ const char* exception_to_string(int exception) {
 
 static void arch_generateReport(run_t* run, int termsig) {
     run->report[0] = '\0';
-    util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->origFileName);
+    util_ssnprintf(run->report, sizeof(run->report), "ORIG_FNAME: %s\n", run->dynfile->path);
     util_ssnprintf(run->report, sizeof(run->report), "FUZZ_FNAME: %s\n", run->crashFileName);
     util_ssnprintf(run->report, sizeof(run->report), "PID: %d\n", run->pid);
     util_ssnprintf(
@@ -246,7 +246,7 @@ static void arch_analyzeSignal(run_t* run, int status) {
     /* If dry run mode, copy file with same name into workspace */
     if (run->global->mutate.mutationsPerRun == 0U && run->global->cfg.useVerifier) {
         snprintf(run->crashFileName, sizeof(run->crashFileName), "%s/%s", run->global->io.crashDir,
-            run->origFileName);
+            run->dynfile->path);
     } else if (run->global->io.saveUnique) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.%s.PC.%.16llx.STACK.%.16llx.ADDR.%.16llx.%s", run->global->io.crashDir,
@@ -269,7 +269,7 @@ static void arch_analyzeSignal(run_t* run, int status) {
         return;
     }
 
-    if (!files_writeBufToFile(run->crashFileName, run->dynamicFile, run->dynamicFileSz,
+    if (!files_writeBufToFile(run->crashFileName, run->dynfile->data, run->dynfile->size,
             O_CREAT | O_EXCL | O_WRONLY)) {
         LOG_E("Couldn't save crash as '%s'", run->crashFileName);
         return;

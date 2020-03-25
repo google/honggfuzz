@@ -124,7 +124,7 @@ const char* subproc_StatusToStr(int status, char* str, size_t len) {
 }
 
 static bool subproc_persistentSendFileIndicator(run_t* run) {
-    uint64_t len = (uint64_t)run->dynamicFileSz;
+    uint64_t len = (uint64_t)run->dynfile->size;
     if (!files_sendToSocketNB(run->persistentSock, (uint8_t*)&len, sizeof(len))) {
         PLOG_W("files_sendToSocketNB(len=%zu)", sizeof(len));
         return false;
@@ -298,8 +298,8 @@ static bool subproc_PrepareExecv(run_t* run) {
     /* Do not try to handle input files with socketfuzzer */
     if (!run->global->socketFuzzer.enabled) {
         /* The input file to _HF_INPUT_FD */
-        if (TEMP_FAILURE_RETRY(dup2(run->dynamicFileFd, _HF_INPUT_FD)) == -1) {
-            PLOG_E("dup2('%d', _HF_INPUT_FD='%d')", run->dynamicFileFd, _HF_INPUT_FD);
+        if (TEMP_FAILURE_RETRY(dup2(run->dynfile->fd, _HF_INPUT_FD)) == -1) {
+            PLOG_E("dup2('%d', _HF_INPUT_FD='%d')", run->dynfile->fd, _HF_INPUT_FD);
             return false;
         }
         if (lseek(_HF_INPUT_FD, 0, SEEK_SET) == (off_t)-1) {
@@ -307,8 +307,8 @@ static bool subproc_PrepareExecv(run_t* run) {
             return false;
         }
         if (run->global->exe.fuzzStdin &&
-            TEMP_FAILURE_RETRY(dup2(run->dynamicFileFd, STDIN_FILENO)) == -1) {
-            PLOG_E("dup2(_HF_INPUT_FD=%d, STDIN_FILENO=%d)", run->dynamicFileFd, STDIN_FILENO);
+            TEMP_FAILURE_RETRY(dup2(run->dynfile->fd, STDIN_FILENO)) == -1) {
+            PLOG_E("dup2(_HF_INPUT_FD=%d, STDIN_FILENO=%d)", run->dynfile->fd, STDIN_FILENO);
             return false;
         }
     }
