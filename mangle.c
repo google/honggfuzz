@@ -685,7 +685,12 @@ static void mangle_NegByte(run_t* run, bool printable) {
 
 static void mangle_Expand(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
-    size_t len = mangle_getLen(run->global->mutate.maxInputSz - off);
+    size_t len;
+    if (util_rnd64() % 16) {
+        len = mangle_getLen(HF_MIN(16, run->global->mutate.maxInputSz - off));
+    } else {
+        len = mangle_getLen(run->global->mutate.maxInputSz - off);
+    }
 
     mangle_Inflate(run, off, len, printable);
 }
@@ -697,6 +702,14 @@ static void mangle_Shrink(run_t* run, bool printable HF_ATTR_UNUSED) {
 
     size_t off_start = mangle_getOffSet(run);
     size_t len = mangle_LenLeft(run, off_start);
+    if (len == 0) {
+        return;
+    }
+    if (util_rnd64() % 16) {
+        len = mangle_getLen(HF_MIN(16, len));
+    } else {
+        len = mangle_getLen(len);
+    }
     size_t off_end = off_start + len;
     size_t len_to_move = run->dynfile->size - off_end;
 
@@ -798,15 +811,6 @@ void mangle_mangleContent(run_t* run, unsigned slow_factor) {
     static void (*const mangleFuncs[])(run_t * run, bool printable) = {
         /* Every *Insert or Expand expands file, so add one Shrink for each */
         mangle_Shrink,
-        mangle_Shrink,
-        mangle_Shrink,
-        mangle_Shrink,
-        mangle_Shrink,
-        mangle_Shrink,
-        mangle_Shrink,
-        mangle_Shrink,
-        mangle_Shrink,
-        mangle_Shrink,
         mangle_Expand,
         mangle_Bit,
         mangle_IncByte,
@@ -837,7 +841,6 @@ void mangle_mangleContent(run_t* run, unsigned slow_factor) {
     if (run->mutationsPerRun == 0U) {
         return;
     }
-
     if (run->dynfile->size == 0U) {
         mangle_Resize(run, /* printable= */ run->global->cfg.only_printable);
     }
@@ -851,11 +854,11 @@ void mangle_mangleContent(run_t* run, unsigned slow_factor) {
         case 6 ... 10:
             changesCnt = HF_MAX(run->global->mutate.mutationsPerRun, 5);
             break;
-        case 11 ... 15:
+        case 11 ... 20:
             changesCnt = HF_MAX(run->global->mutate.mutationsPerRun, 10);
             break;
         default:
-            changesCnt = HF_MAX(run->global->mutate.mutationsPerRun, 20);
+            changesCnt = HF_MAX(run->global->mutate.mutationsPerRun, 30);
             break;
     }
 
