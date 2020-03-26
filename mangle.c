@@ -858,7 +858,7 @@ void mangle_mangleContent(run_t* run, unsigned slow_factor) {
             changesCnt = HF_MAX(run->global->mutate.mutationsPerRun, 10);
             break;
         default:
-            changesCnt = HF_MAX(run->global->mutate.mutationsPerRun, 15);
+            changesCnt = HF_MAX(run->global->mutate.mutationsPerRun, 20);
             break;
     }
 
