@@ -48,17 +48,17 @@
 #define __hf_pid() getpid()
 #endif
 
-static int log_fd = STDERR_FILENO;
-static bool log_fd_isatty = false;
-enum llevel_t log_level = INFO;
+static int hf_log_fd = STDERR_FILENO;
+static bool hf_log_fd_isatty = false;
+enum llevel_t hf_log_level = INFO;
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 __attribute__((constructor)) static void log_init(void) {
-    log_fd = fcntl(log_fd, F_DUPFD_CLOEXEC, 0);
-    if (log_fd == -1) {
-        log_fd = STDERR_FILENO;
+    hf_log_fd = fcntl(hf_log_fd, F_DUPFD_CLOEXEC, 0);
+    if (hf_log_fd == -1) {
+        hf_log_fd = STDERR_FILENO;
     }
-    log_fd_isatty = isatty(log_fd);
+    hf_log_fd_isatty = isatty(hf_log_fd);
 }
 
 /*
@@ -66,20 +66,20 @@ __attribute__((constructor)) static void log_init(void) {
  * connection socket with fd (0, 1, 2).
  */
 void logInitLogFile(const char* logfile, int fd, enum llevel_t ll) {
-    log_level = ll;
+    hf_log_level = ll;
 
     if (logfile) {
-        log_fd = TEMP_FAILURE_RETRY(open(logfile, O_CREAT | O_RDWR | O_TRUNC, 0640));
-        if (log_fd == -1) {
-            log_fd = STDERR_FILENO;
+        hf_log_fd = TEMP_FAILURE_RETRY(open(logfile, O_CREAT | O_RDWR | O_TRUNC, 0640));
+        if (hf_log_fd == -1) {
+            hf_log_fd = STDERR_FILENO;
             PLOG_E("Couldn't open logfile open('%s')", logfile);
         }
     }
     if (fd != -1) {
-        log_fd = fd;
+        hf_log_fd = fd;
     }
 
-    log_fd_isatty = (isatty(log_fd) == 1 ? true : false);
+    hf_log_fd_isatty = (isatty(hf_log_fd) == 1 ? true : false);
 }
 
 void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt, ...) {
@@ -116,28 +116,28 @@ void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt
     {
         MX_LOCK(&log_mutex);
 
-        if (log_fd_isatty) {
-            dprintf(log_fd, "%s", logLevels[ll].prefix);
+        if (hf_log_fd_isatty) {
+            dprintf(hf_log_fd, "%s", logLevels[ll].prefix);
         }
         if (logLevels[ll].print_time) {
-            dprintf(log_fd, "[%s][%s][%d] ", timestr, logLevels[ll].descr, __hf_pid());
+            dprintf(hf_log_fd, "[%s][%s][%d] ", timestr, logLevels[ll].descr, __hf_pid());
         }
         if (logLevels[ll].print_funcline) {
-            dprintf(log_fd, "%s():%d ", fn, ln);
+            dprintf(hf_log_fd, "%s():%d ", fn, ln);
         }
 
         va_list args;
         va_start(args, fmt);
-        vdprintf(log_fd, fmt, args);
+        vdprintf(hf_log_fd, fmt, args);
         va_end(args);
 
         if (perr == true) {
-            dprintf(log_fd, ": %s", strerr);
+            dprintf(hf_log_fd, ": %s", strerr);
         }
-        if (log_fd_isatty) {
-            dprintf(log_fd, "\033[0m");
+        if (hf_log_fd_isatty) {
+            dprintf(hf_log_fd, "\033[0m");
         }
-        dprintf(log_fd, "\n");
+        dprintf(hf_log_fd, "\n");
 
         MX_UNLOCK(&log_mutex);
     }
@@ -154,12 +154,12 @@ void logStop(int sig) {
 }
 
 void logRedirectLogFD(int fd) {
-    log_fd = fd;
-    log_fd_isatty = isatty(log_fd);
+    hf_log_fd = fd;
+    hf_log_fd_isatty = isatty(hf_log_fd);
 }
 
 void logDirectlyToFD(const char* msg) {
-    dprintf(log_fd, "%s", msg);
+    dprintf(hf_log_fd, "%s", msg);
 }
 
 pthread_mutex_t* logMutexGet(void) {
@@ -171,13 +171,13 @@ void logMutexReset(void) {
 }
 
 bool logIsTTY(void) {
-    return log_fd_isatty;
+    return hf_log_fd_isatty;
 }
 
 int logFd(void) {
-    return log_fd;
+    return hf_log_fd;
 }
 
 enum llevel_t logGetLevel(void) {
-    return log_level;
+    return hf_log_level;
 }
