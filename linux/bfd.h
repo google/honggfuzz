@@ -36,8 +36,12 @@
 #define PACKAGE 1
 #define PACKAGE_VERSION 1
 
+#if !defined(_HF_LINUX_NO_BFD)
+
 extern void arch_bfdDemangle(funcs_t* funcs, size_t funcCnt);
 extern void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num);
 extern void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr);
+
+#endif /* !defined(_HF_LINUX_NO_BFD) */
 
 #endif

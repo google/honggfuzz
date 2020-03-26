@@ -21,6 +21,8 @@
  *
  */
 
+#if !defined(_HF_LINUX_NO_BFD)
+
 #include "linux/bfd.h"
 
 #include <bfd.h>
@@ -242,3 +244,5 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
 
     bfd_close(bfdh);
 }
+
+#endif /*  !defined(_HF_LINUX_NO_BFD)  */

@@ -440,8 +440,10 @@ static void arch_getInstrStr(pid_t pid, uint64_t pc, uint64_t status_reg HF_ATTR
         return;
     }
 #if !defined(__ANDROID__)
+#if !defined(_HF_LINUX_NO_BFD)
     arch_bfdDisasm(pid, buf, memsz, instr);
-#else
+#endif /* !defined(_HF_LINUX_NO_BFD) */
+#else  /* !defined(__ANDROID__) */
     cs_arch arch;
     cs_mode mode;
 #if defined(__arm__) || defined(__aarch64__)
@@ -509,12 +511,16 @@ static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
     if (funcCnt <= 0) {
         funcCnt = arch_unwindStack(pid, funcs);
 #if !defined(__ANDROID__)
+#if !defined(_HF_LINUX_NO_BFD)
         arch_bfdResolveSyms(pid, funcs, funcCnt);
+#endif /* !defined(_HF_LINUX_NO_BFD) */
 #endif /* !defined(__ANDROID__) */
     }
 
 #if !defined(__ANDROID__)
+#if !defined(_HF_LINUX_NO_BFD)
     arch_bfdDemangle(funcs, funcCnt);
+#endif /* !defined(_HF_LINUX_NO_BFD) */
 #endif /* !defined(__ANDROID__) */
 
     /*
@@ -558,12 +564,16 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     if (funcCnt == 0) {
         funcCnt = arch_unwindStack(pid, funcs);
 #if !defined(__ANDROID__)
+#if !defined(_HF_LINUX_NO_BFD)
         arch_bfdResolveSyms(pid, funcs, funcCnt);
+#endif /* !defined(_HF_LINUX_NO_BFD) */
 #endif /* !defined(__ANDROID__) */
     }
 
 #if !defined(__ANDROID__)
+#if !defined(_HF_LINUX_NO_BFD)
     arch_bfdDemangle(funcs, funcCnt);
+#endif /* !defined(_HF_LINUX_NO_BFD) */
 #endif /* !defined(__ANDROID__) */
     arch_getInstrStr(pid, pc, status_reg, pcRegSz, instr);
 

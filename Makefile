@@ -34,6 +34,7 @@ LDFLAGS ?=
 LIBS_CFLAGS ?= -fPIC -fno-stack-protector -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0  # fortify-source intercepts some functions, so we disable it for libraries
 GREP_COLOR ?=
 BUILD_OSSFUZZ_STATIC ?= false # for https://github.com/google/oss-fuzz
+BUILD_LINUX_NO_BFD ?= false # for users who don't want to use libbfd/binutils
 
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
@@ -53,6 +54,9 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
     else
             ARCH_LDFLAGS += -lunwind-ptrace -lunwind-generic -lunwind  -llzma \
                             -lopcodes -lbfd
+    endif
+    ifeq ($(BUILD_LINUX_NO_BFD),true)
+            ARCH_CFLAGS += -D_HF_LINUX_NO_BFD
     endif
     ARCH_LDFLAGS += -lrt -ldl -lm
 
