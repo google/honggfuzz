@@ -39,10 +39,23 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 
+/* Maximum reasonable block size for many types of mutations (but not for all) */
+#define HF_MAX_LEN_BLOCK 512U
+
+static inline size_t mangle_LenLeft(run_t* run, size_t off) {
+    if (off >= run->dynfile->size) {
+        LOG_F("Offset is too large: off:%zu >= len:%zu", off, run->dynfile->size);
+    }
+    return (run->dynfile->size - off - 1);
+}
+
 /* Get a random value between <1:max> with x^2 distribution */
 static inline size_t mangle_getLen(size_t max) {
     if (max > _HF_INPUT_MAX_SIZE) {
         LOG_F("max (%zu) > _HF_INPUT_MAX_SIZE (%zu)", max, (size_t)_HF_INPUT_MAX_SIZE);
+    }
+    if (max == 0) {
+        LOG_F("max == 0");
     }
     if (max == 1) {
         return 1;
@@ -79,15 +92,11 @@ static inline void mangle_Move(run_t* run, size_t off_from, size_t off_to, size_
         return;
     }
 
-    ssize_t len_from = (ssize_t)run->dynfile->size - off_from - 1;
-    ssize_t len_to = (ssize_t)run->dynfile->size - off_to - 1;
+    size_t len_from = run->dynfile->size - off_from;
+    len = HF_MIN(len, len_from);
 
-    if ((ssize_t)len > len_from) {
-        len = len_from;
-    }
-    if ((ssize_t)len > len_to) {
-        len = len_to;
-    }
+    size_t len_to = run->dynfile->size - off_to;
+    len = HF_MIN(len, len_to);
 
     memmove(&run->dynfile->data[off_to], &run->dynfile->data[off_from], len);
 }
@@ -134,7 +143,7 @@ static inline void mangle_Insert(
 static void mangle_MemCopyOverwrite(run_t* run, bool printable HF_ATTR_UNUSED) {
     size_t off_from = mangle_getOffSet(run);
     size_t off_to = mangle_getOffSet(run);
-    size_t len = mangle_getLen(run->dynfile->size - off_from);
+    size_t len = mangle_getLen(HF_MIN(HF_MAX_LEN_BLOCK, run->dynfile->size - off_from));
 
     mangle_Overwrite(run, off_to, &run->dynfile->data[off_from], len, printable);
 }
@@ -142,7 +151,7 @@ static void mangle_MemCopyOverwrite(run_t* run, bool printable HF_ATTR_UNUSED) {
 static void mangle_MemCopyInsert(run_t* run, bool printable) {
     size_t off_to = mangle_getOffSet(run);
     size_t off_from = mangle_getOffSet(run);
-    size_t len = mangle_getLen(run->dynfile->size - off_from);
+    size_t len = mangle_getLen(HF_MIN(HF_MAX_LEN_BLOCK, run->dynfile->size - off_from));
 
     mangle_Insert(run, off_to, &run->dynfile->data[off_from], len, printable);
 }
@@ -187,7 +196,7 @@ static void mangle_ByteRepeatOverwrite(run_t* run, bool printable) {
         return;
     }
 
-    size_t len = mangle_getLen(maxSz);
+    size_t len = mangle_getLen(HF_MIN(HF_MAX_LEN_BLOCK, maxSz));
     memset(&run->dynfile->data[destOff], run->dynfile->data[off], len);
 }
 
@@ -202,7 +211,7 @@ static void mangle_ByteRepeatInsert(run_t* run, bool printable) {
         return;
     }
 
-    size_t len = mangle_getLen(maxSz);
+    size_t len = mangle_getLen(HF_MIN(HF_MAX_LEN_BLOCK, maxSz));
     len = mangle_Inflate(run, destOff, len, printable);
     memset(&run->dynfile->data[destOff], run->dynfile->data[off], len);
 }
@@ -529,21 +538,17 @@ static void mangle_ConstFeedbackOverwrite(run_t* run, bool printable) {
     mangle_Overwrite(run, off, val, len, printable);
 }
 
-static inline void mangle_MemSetWithVal(run_t* run, int val) {
+static void mangle_MemSet(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
-    size_t len = mangle_getLen(run->dynfile->size - off);
+    size_t len = mangle_getLen(HF_MIN(HF_MAX_LEN_BLOCK, run->dynfile->size - off));
+    int val = printable ? (int)util_rndPrintable() : (int)util_rndGet(0, UINT8_MAX);
 
     memset(&run->dynfile->data[off], val, len);
 }
 
-static void mangle_MemSet(run_t* run, bool printable) {
-    mangle_MemSetWithVal(
-        run, printable ? (int)util_rndPrintable() : (int)util_rndGet(0, UINT8_MAX));
-}
-
 static void mangle_RandomOverwrite(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
-    size_t len = mangle_getLen(run->dynfile->size - off);
+    size_t len = mangle_getLen(HF_MIN(HF_MAX_LEN_BLOCK, run->dynfile->size - off));
     if (printable) {
         util_rndBufPrintable(&run->dynfile->data[off], len);
     } else {
@@ -553,7 +558,7 @@ static void mangle_RandomOverwrite(run_t* run, bool printable) {
 
 static void mangle_RandomInsert(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
-    size_t len = mangle_getLen(run->dynfile->size - off);
+    size_t len = mangle_getLen(HF_MIN(HF_MAX_LEN_BLOCK, run->dynfile->size - off));
 
     len = mangle_Inflate(run, off, len, printable);
 
@@ -680,21 +685,23 @@ static void mangle_NegByte(run_t* run, bool printable) {
 
 static void mangle_Expand(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
-    size_t len = mangle_getLen(run->dynfile->size - off);
+    size_t len = mangle_getLen(run->global->mutate.maxInputSz - off);
 
     mangle_Inflate(run, off, len, printable);
 }
 
 static void mangle_Shrink(run_t* run, bool printable HF_ATTR_UNUSED) {
-    if (run->dynfile->size <= 1U) {
+    if (run->dynfile->size <= 2U) {
         return;
     }
 
     size_t off_start = mangle_getOffSet(run);
-    size_t off_end = util_rndGet(0, off_start);
+    size_t len = mangle_LenLeft(run, off_start);
+    size_t off_end = off_start + len;
+    size_t len_to_move = run->dynfile->size - off_end;
 
-    mangle_Move(run, off_start, off_end, run->dynfile->size - off_start);
-    input_setSize(run, run->dynfile->size - (off_start - off_end));
+    mangle_Move(run, off_end, off_start, len_to_move);
+    input_setSize(run, run->dynfile->size - len);
 }
 static void mangle_ASCIINumOverwrite(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
@@ -724,7 +731,7 @@ static void mangle_SpliceOverwrite(run_t* run, bool printable) {
         return;
     }
 
-    size_t remoteOff = util_rndGet(0, sz - 1);
+    size_t remoteOff = mangle_getLen(sz) - 1;
     size_t localOff = mangle_getOffSet(run);
     size_t len = mangle_getLen(HF_MIN(sz - remoteOff, run->dynfile->size - localOff));
     mangle_Overwrite(run, localOff, &buf[remoteOff], len, printable);
@@ -738,7 +745,7 @@ static void mangle_SpliceInsert(run_t* run, bool printable) {
         return;
     }
 
-    size_t remoteOff = util_rndGet(0, sz - 1);
+    size_t remoteOff = mangle_getLen(sz) - 1;
     size_t localOff = mangle_getOffSet(run);
     size_t len = mangle_getLen(HF_MIN(sz - remoteOff, run->dynfile->size - localOff));
     mangle_Insert(run, localOff, &buf[remoteOff], len, printable);
