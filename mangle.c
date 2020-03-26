@@ -858,8 +858,21 @@ void mangle_mangleContent(run_t* run, unsigned slow_factor) {
             changesCnt = HF_MAX(run->global->mutate.mutationsPerRun, 10);
             break;
         default:
-            changesCnt = HF_MAX(run->global->mutate.mutationsPerRun, 30);
+            changesCnt = HF_MAX(run->global->mutate.mutationsPerRun, 15);
             break;
+    }
+
+    if ((util_timeNowMillis() - ATOMIC_GET(run->global->timing.lastCovUpdate)) > 1000) {
+        switch (util_rnd64() % 3) {
+            case 0:
+                mangle_SpliceOverwrite(run, run->global->cfg.only_printable);
+                break;
+            case 1:
+                mangle_SpliceInsert(run, run->global->cfg.only_printable);
+                break;
+            default:
+                break;
+        }
     }
 
     for (uint64_t x = 0; x < changesCnt; x++) {
