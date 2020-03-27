@@ -851,17 +851,11 @@ void mangle_mangleContent(run_t* run, unsigned slow_factor) {
     uint64_t changesCnt = run->global->mutate.mutationsPerRun;
     /* Give it a good shake-up, if it's a slow input */
     switch (slow_factor) {
-        case 0 ... 2:
+        case 0 ... 5:
             changesCnt = util_rndGet(1, run->global->mutate.mutationsPerRun);
             break;
-        case 3 ... 4:
-            changesCnt = HF_MAX(run->global->mutate.mutationsPerRun, 5);
-            break;
-        case 5 ... 9:
-            changesCnt = HF_MAX(run->global->mutate.mutationsPerRun, 7);
-            break;
         default:
-            changesCnt = HF_MAX(run->global->mutate.mutationsPerRun, 10);
+            changesCnt = HF_MIN(slow_factor, 20);
             break;
     }
 

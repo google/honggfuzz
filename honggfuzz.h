@@ -172,6 +172,8 @@ struct _dynfile_t {
     int fd;
     uint64_t timeExecMillis;
     char path[PATH_MAX];
+    struct _dynfile_t* src;
+    uint32_t refs;
     uint8_t* data;
     TAILQ_ENTRY(_dynfile_t) pointers;
 };

@@ -380,6 +380,10 @@ void input_addDynamicInput(run_t* run) {
     memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
     dynfile->timeExecMillis = util_timeNowMillis() - run->timeStartedMillis;
     dynfile->data = (uint8_t*)util_Malloc(run->dynfile->size);
+    dynfile->src = run->dynfile->src;
+    if (run->dynfile->src) {
+        ATOMIC_POST_INC(run->dynfile->src->refs);
+    }
     memcpy(dynfile->data, run->dynfile->data, run->dynfile->size);
     input_generateFileName(dynfile, NULL, dynfile->path);
 
@@ -437,29 +441,63 @@ bool input_inDynamicCorpus(run_t* run, const char* fname) {
     return false;
 }
 
-static inline unsigned input_slowFactor(run_t* run, dynfile_t* current) {
-    uint64_t msec_per_run = ((uint64_t)(time(NULL) - run->global->timing.timeStart) * 1000);
-    msec_per_run /= ATOMIC_GET(run->global->cnts.mutationsCnt);
-    msec_per_run /= run->global->threads.threadsMax;
-    if (msec_per_run == 0) {
-        msec_per_run = 1;
-    }
-    return (unsigned)(current->timeExecMillis / msec_per_run);
-}
+static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile) {
+    int penalty = 1;
 
-/* If an input is n-times slower than the average exec time, give it 1/n chance of being tested */
-static bool input_trySlowInput(unsigned slow_factor) {
-    if (slow_factor <= 1) {
-        return true;
+    {
+        uint64_t msec_per_run = ((uint64_t)(time(NULL) - run->global->timing.timeStart) * 1000);
+        msec_per_run /= ATOMIC_GET(run->global->cnts.mutationsCnt);
+        msec_per_run /= run->global->threads.threadsMax;
+        if (msec_per_run == 0) {
+            msec_per_run = 1;
+        }
+        const unsigned slow_factor = (unsigned)(dynfile->timeExecMillis / msec_per_run);
+        penalty += ((slow_factor - 2) * 5);
     }
 
-    /* Be harsh towards offenders */
-    slow_factor *= 10;
-    if (slow_factor > 1000) {
-        slow_factor = 1000;
+    {
+        /* Older inputs -> lower chance of being tested */
+        const int scaleMap[] = {
+            [99 ... 200] = -5,
+            [96 ... 98] = -2,
+            [91 ... 95] = -1,
+            [81 ... 90] = 0,
+            [71 ... 80] = 1,
+            [61 ... 70] = 3,
+            [41 ... 60] = 5,
+            [0 ... 40] = 10,
+        };
+
+        const unsigned percentile = (dynfile->idx * 100) / run->global->io.dynfileqCnt;
+        penalty += scaleMap[percentile];
     }
 
-    return ((util_rnd64() % slow_factor) == 0);
+    {
+        /* If the input wasn't source of other inputs so far, make it less likely to be tested */
+        switch (dynfile->refs) {
+            case 0:
+                penalty += 5;
+                break;
+            case 1:
+                break;
+            default:
+                penalty -= (dynfile->refs * 5);
+                break;
+        }
+    }
+
+    {
+        /* Add penalty for the input being too big, max 10 for 1MB files */
+        if (dynfile->size > 8192) {
+            penalty += util_Log2(dynfile->size) / 10;
+        }
+    }
+
+    if (penalty < 1) {
+        penalty = 1;
+    }
+
+    return (unsigned)penalty;
 }
 
 bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
@@ -469,7 +507,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
         LOG_F("The dynamic file corpus is empty. This shouldn't happen");
     }
 
-    unsigned slow_factor = 0;
+    unsigned skip_factor = 0;
     for (;;) {
         MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 
@@ -480,8 +518,8 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
         current = run->global->io.dynfileqCurrent;
         run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
 
-        slow_factor = input_slowFactor(run, current);
-        if (input_trySlowInput(slow_factor)) {
+        skip_factor = input_skipFactor(run, current);
+        if ((util_rnd64() % skip_factor) == 0) {
             break;
         }
     }
@@ -491,10 +529,12 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     run->dynfile->idx = current->idx;
     run->dynfile->timeExecMillis = current->timeExecMillis;
     snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s", current->path);
+    run->dynfile->src = current;
+    run->dynfile->refs = 0;
     memcpy(run->dynfile->data, current->data, current->size);
 
     if (needs_mangle) {
-        mangle_mangleContent(run, slow_factor);
+        mangle_mangleContent(run, skip_factor);
     }
 
     return true;
@@ -577,6 +617,10 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
     }
 
     input_setSize(run, fileSz);
+    memset(run->dynfile->cov, '\0', sizeof(run->dynfile->cov));
+    run->dynfile->idx = 0;
+    run->dynfile->src = NULL;
+    run->dynfile->refs = 0;
 
     if (needs_mangle) {
         mangle_mangleContent(run, /* slow_factor= */ 0);
@@ -655,8 +699,6 @@ bool input_postProcessFile(run_t* run, const char* cmd) {
     }
 
     input_setSize(run, (size_t)sz);
-    memset(run->dynfile->cov, '\0', sizeof(run->dynfile->cov));
-    run->dynfile->idx = 0;
 
     return true;
 }
