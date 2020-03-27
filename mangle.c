@@ -809,7 +809,10 @@ static void mangle_Resize(run_t* run, bool printable) {
 
 void mangle_mangleContent(run_t* run, unsigned slow_factor) {
     static void (*const mangleFuncs[])(run_t * run, bool printable) = {
-        /* Every *Insert or Expand expands file, so add one Shrink for each */
+        /* Every *Insert or Expand expands file, so add more Shrink's */
+        mangle_Shrink,
+        mangle_Shrink,
+        mangle_Shrink,
         mangle_Shrink,
         mangle_Expand,
         mangle_Bit,
