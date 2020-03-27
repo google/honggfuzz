@@ -447,6 +447,21 @@ static inline unsigned input_slowFactor(run_t* run, dynfile_t* current) {
     return (unsigned)(current->timeExecMillis / msec_per_run);
 }
 
+/* If an input is n-times slower than the average exec time, give it 1/n chance of being tested */
+static bool input_trySlowInput(unsigned slow_factor) {
+    if (slow_factor <= 1) {
+        return true;
+    }
+
+    /* Be harsh towards offenders */
+    slow_factor *= 10;
+    if (slow_factor > 1000) {
+        slow_factor = 1000;
+    }
+
+    return ((util_rnd64() % slow_factor) == 0);
+}
+
 bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     dynfile_t* current = NULL;
 
@@ -454,7 +469,8 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
         LOG_F("The dynamic file corpus is empty. This shouldn't happen");
     }
 
-    {
+    unsigned slow_factor = 0;
+    for (;;) {
         MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 
         if (run->global->io.dynfileqCurrent == NULL) {
@@ -463,6 +479,11 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
 
         current = run->global->io.dynfileqCurrent;
         run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
+
+        slow_factor = input_slowFactor(run, current);
+        if (input_trySlowInput(slow_factor)) {
+            break;
+        }
     }
 
     input_setSize(run, current->size);
@@ -473,7 +494,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     memcpy(run->dynfile->data, current->data, current->size);
 
     if (needs_mangle) {
-        mangle_mangleContent(run, input_slowFactor(run, current));
+        mangle_mangleContent(run, slow_factor);
     }
 
     return true;
