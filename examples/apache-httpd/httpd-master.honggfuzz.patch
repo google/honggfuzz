@@ -1,9 +1,9 @@
 diff --git a/configure.in b/configure.in
-index b20aad0..eec5ba2 100644
+index 423d58d..4beea8c 100644
 --- a/configure.in
 +++ b/configure.in
-@@ -725,7 +725,7 @@ AC_MSG_CHECKING([for Check to enable unit tests])
- if test "x$PKGCONFIG" != "x" && `$PKGCONFIG --atleast-version='0.9.12' check`; then
+@@ -769,7 +769,7 @@ AC_MSG_CHECKING([for Check to enable unit tests])
+ if test "x$PKGCONFIG" != "x" -a "$ap_reduced_exports" = "no" && `$PKGCONFIG --atleast-version='0.9.12' check`; then
    UNITTEST_CFLAGS=`$PKGCONFIG --cflags check`
    UNITTEST_LIBS=`$PKGCONFIG --libs check`
 -  other_targets="$other_targets test/httpdunit"
@@ -13,7 +13,7 @@ index b20aad0..eec5ba2 100644
  else
 diff --git a/hfuzz.compile_and_install.asan.sh b/hfuzz.compile_and_install.asan.sh
 new file mode 100755
-index 0000000..f8a9a41
+index 0000000..ad24349
 --- /dev/null
 +++ b/hfuzz.compile_and_install.asan.sh
 @@ -0,0 +1,63 @@
@@ -81,7 +81,7 @@ index 0000000..f8a9a41
 +make -j$(nproc)
 +make install
 diff --git a/modules/generators/mod_autoindex.c b/modules/generators/mod_autoindex.c
-index c887056..1be2d16 100644
+index 21fc59a..3c67164 100644
 --- a/modules/generators/mod_autoindex.c
 +++ b/modules/generators/mod_autoindex.c
 @@ -1907,6 +1907,8 @@ static void output_directories(struct ent **ar, int n,
@@ -94,10 +94,10 @@ index c887056..1be2d16 100644
      struct ent *c2;
      int result = 0;
 diff --git a/server/request.c b/server/request.c
-index 70812fe..b62272e 100644
+index a448fa7..c4785d4 100644
 --- a/server/request.c
 +++ b/server/request.c
-@@ -1393,7 +1393,7 @@ AP_DECLARE(int) ap_directory_walk(request_rec *r)
+@@ -1401,7 +1401,7 @@ AP_DECLARE(int) ap_directory_walk(request_rec *r)
      return OK;
  }
  
@@ -107,10 +107,10 @@ index 70812fe..b62272e 100644
  {
      ap_conf_vector_t *now_merged = NULL;
 diff --git a/server/util_pcre.c b/server/util_pcre.c
-index 8254cc4..ef70c43 100644
+index fedf6e6..053eb77 100644
 --- a/server/util_pcre.c
 +++ b/server/util_pcre.c
-@@ -388,6 +388,7 @@ AP_DECLARE(int) ap_regexec_len(const ap_regex_t *preg, const char *buff,
+@@ -390,6 +390,7 @@ AP_DECLARE(int) ap_regexec_len(const ap_regex_t *preg, const char *buff,
      }
  }
  
