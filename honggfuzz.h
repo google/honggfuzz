@@ -124,39 +124,6 @@ typedef struct {
     uint64_t softCntCmp;
 } hwcnt_t;
 
-typedef struct {
-    uint32_t capacity;
-    uint32_t* pChunks;
-    uint32_t nChunks;
-} bitmap_t;
-
-/* Memory map struct */
-typedef struct __attribute__((packed)) {
-    uint64_t start;         // region start addr
-    uint64_t end;           // region end addr
-    uint64_t base;          // region base addr
-    char module[NAME_MAX];  // bin/DSO name
-    uint64_t bbCnt;
-    uint64_t newBBCnt;
-} memMap_t;
-
-/* Trie node data struct */
-typedef struct __attribute__((packed)) {
-    bitmap_t* pBM;
-} trieData_t;
-
-/* Trie node struct */
-typedef struct node {
-    char key;
-    trieData_t data;
-    struct node* next;
-    struct node* prev;
-    struct node* children;
-    struct node* parent;
-} node_t;
-
-/* EOF Sanitizer coverage specific data structures */
-
 typedef enum {
     _HF_STATE_UNSET = 0,
     _HF_STATE_STATIC,
