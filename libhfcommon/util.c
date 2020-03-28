@@ -63,7 +63,13 @@ void* util_Calloc(size_t sz) {
     return p;
 }
 
-extern void* util_Realloc(void* ptr, size_t sz) {
+void* util_AllocCopy(const uint8_t* ptr, size_t sz) {
+    void* p = util_Malloc(sz);
+    memcpy(p, ptr, sz);
+    return p;
+}
+
+void* util_Realloc(void* ptr, size_t sz) {
     void* ret = realloc(ptr, sz);
     if (ret == NULL) {
         PLOG_W("realloc(%p, %zu)", ptr, sz);

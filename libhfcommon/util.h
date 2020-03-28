@@ -102,6 +102,7 @@ typedef enum {
 
 extern void* util_Malloc(size_t sz);
 extern void* util_Calloc(size_t sz);
+extern void* util_AllocCopy(const uint8_t* ptr, size_t sz);
 extern void* util_MMap(size_t sz);
 extern void* util_Realloc(void* ptr, size_t sz);
 

@@ -375,16 +375,15 @@ static bool input_cmpCov(dynfile_t* item1, dynfile_t* item2) {
 void input_addDynamicInput(run_t* run) {
     ATOMIC_SET(run->global->timing.lastCovUpdate, time(NULL));
 
-    dynfile_t* dynfile = (dynfile_t*)util_Malloc(sizeof(dynfile_t));
+    dynfile_t* dynfile = (dynfile_t*)util_Calloc(sizeof(dynfile_t));
     dynfile->size = run->dynfile->size;
     memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
     dynfile->timeExecMillis = util_timeNowMillis() - run->timeStartedMillis;
-    dynfile->data = (uint8_t*)util_Malloc(run->dynfile->size);
+    dynfile->data = (uint8_t*)util_AllocCopy(run->dynfile->data, run->dynfile->size);
     dynfile->src = run->dynfile->src;
     if (run->dynfile->src) {
         ATOMIC_POST_INC(run->dynfile->src->refs);
     }
-    memcpy(dynfile->data, run->dynfile->data, run->dynfile->size);
     input_generateFileName(dynfile, NULL, dynfile->path);
 
     MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);

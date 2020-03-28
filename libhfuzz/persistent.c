@@ -93,7 +93,7 @@ static int HonggfuzzRunFromFile(int argc, char** argv) {
     LOG_I("Accepting input from '%s'", fname);
     LOG_I("Usage for fuzzing: honggfuzz -P [flags] -- %s", argv[0]);
 
-    uint8_t* buf = (uint8_t*)util_Malloc(_HF_INPUT_MAX_SIZE);
+    uint8_t* buf = (uint8_t*)util_Calloc(_HF_INPUT_MAX_SIZE);
     ssize_t len = files_readFromFd(in_fd, buf, _HF_INPUT_MAX_SIZE);
     if (len < 0) {
         LOG_E("Couldn't read data from stdin: %s", strerror(errno));
