@@ -22,6 +22,8 @@
 
 static bool isCXX = false;
 static bool isGCC = false;
+static bool usePCGuard = false;
+static bool hasCmdLineFSanitizeFuzzer = false;
 
 /* Embed libhf/.a inside this binary */
 __asm__("\n"
@@ -86,20 +88,6 @@ static bool useBelowGCC8() {
     return false;
 }
 
-static bool useClangFuzzerNoLink() {
-    if (getenv("HFUZZ_CLANG_USE_FUZZER_NO_LINK")) {
-        return true;
-    }
-    return false;
-}
-
-static bool useClangPCGuards() {
-    if (getenv("HFUZZ_CLANG_USE_PC_GUARDS")) {
-        return true;
-    }
-    return false;
-}
-
 static bool isLDMode(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--version") == 0) {
@@ -121,7 +109,7 @@ static bool isLDMode(int argc, char** argv) {
     return true;
 }
 
-static bool isFSanitizeFuzzer(int argc, char** argv) {
+static bool hasFSanitizeFuzzer(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         if (util_strStartsWith(argv[i], "-fsanitize=") && strstr(argv[i], "fuzzer")) {
             return true;
@@ -347,7 +335,7 @@ static void commonPreOpts(int* j, char** args) {
     }
 }
 
-static void commonPostOpts(int* j, char** args, int argc, char** argv) {
+static void commonPostOpts(int* j, char** args) {
     if (isGCC) {
         if (useBelowGCC8()) {
             /* trace-pc is the best that gcc-6/7 currently offers */
@@ -357,22 +345,17 @@ static void commonPostOpts(int* j, char** args, int argc, char** argv) {
             args[(*j)++] = "-fsanitize-coverage=trace-pc,trace-cmp";
         }
     } else {
-        if (useClangFuzzerNoLink() && useClangPCGuards()) {
-            LOG_F("You cannot set HFUZZ_CLANG_USE_FUZZER_NO_LINK and HFUZZ_CLANG_USE_PC_GUARDS at "
-                  "the same time");
-        }
-
-        if (useClangFuzzerNoLink()) {
-            args[(*j)++] = "-fno-sanitize-coverage=trace-pc-guard";
-            args[(*j)++] = "-fno-sanitize=fuzzer";
-            args[(*j)++] = "-fsanitize=fuzzer-no-link";
-            args[(*j)++] = "-fsanitize-coverage=trace-cmp,trace-div,indirect-calls";
-        } else {
-            if (isFSanitizeFuzzer(argc, argv)) {
+        if (usePCGuard) {
+            if (hasCmdLineFSanitizeFuzzer) {
                 args[(*j)++] = "-fno-sanitize=fuzzer";
                 args[(*j)++] = "-fno-sanitize=fuzzer-no-link";
             }
             args[(*j)++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,trace-div,indirect-calls";
+        } else {
+            args[(*j)++] = "-fno-sanitize-coverage=trace-pc-guard";
+            args[(*j)++] = "-fno-sanitize=fuzzer";
+            args[(*j)++] = "-fsanitize=fuzzer-no-link";
+            args[(*j)++] = "-fsanitize-coverage=trace-cmp,trace-div,indirect-calls";
         }
     }
 }
@@ -393,7 +376,7 @@ static int ccMode(int argc, char** argv) {
         args[j++] = argv[i];
     }
 
-    commonPostOpts(&j, args, argc, argv);
+    commonPostOpts(&j, args);
 
     return execCC(j, args);
 }
@@ -493,7 +476,7 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-latomic";
 #endif
 
-    commonPostOpts(&j, args, argc, argv);
+    commonPostOpts(&j, args);
 
     return execCC(j, args);
 }
@@ -515,6 +498,11 @@ int main(int argc, char** argv) {
     if (baseNameContains(argv[0], "-g++")) {
         isGCC = true;
     }
+    if (baseNameContains(argv[0], "-pcguard-")) {
+        usePCGuard = true;
+    }
+    hasCmdLineFSanitizeFuzzer = hasFSanitizeFuzzer(argc, argv);
+
     if (argc <= 1) {
         return execCC(argc, argv);
     }

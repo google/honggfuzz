@@ -25,8 +25,8 @@ index 0000000..f8a9a41
 +HFUZZ_DIR="/home/jagger/src/honggfuzz"
 +# Change this to a directory where apache should be installed into
 +INSTALL_PREFIX="$(realpath "$PWD/../dist")"
-+NGHTTP2_VER=1.33.0
-+APR_VER=1.6.5
++NGHTTP2_VER=1.40.0
++APR_VER=1.7.0
 +APR_UTIL_VER=1.6.1
 +CFLAGS_SAN="-fsanitize=address -O3 -ggdb"
 +# Another viable option: few
@@ -36,8 +36,8 @@ index 0000000..f8a9a41
 +APR_PATH="$(realpath "$PWD/../apr-$APR_VER")"
 +APR_UTIL_PATH="$(realpath "$PWD/../apr-util-$APR_UTIL_VER")/"
 +
-+export CC="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang"
-+export CXX="$HFUZZ_DIR/hfuzz_cc/hfuzz-clang++"
++export CC="$HFUZZ_DIR/hfuzz_cc/hfuzz-pcguard-clang"
++export CXX="$HFUZZ_DIR/hfuzz_cc/hfuzz-pcguard-clang++"
 +
 +echo "Compiling APR"
 +cd "$APR_PATH"
