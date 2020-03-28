@@ -51,40 +51,44 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 
-ssize_t files_readFileToBufMax(const char* fileName, uint8_t* buf, size_t fileMaxSz) {
-    int fd = TEMP_FAILURE_RETRY(open(fileName, O_RDONLY | O_CLOEXEC));
+ssize_t files_readFileToBufMax(const char* fname, uint8_t* buf, size_t fileMaxSz) {
+    int fd = TEMP_FAILURE_RETRY(open(fname, O_RDONLY | O_CLOEXEC));
     if (fd == -1) {
-        PLOG_W("Couldn't open '%s' for R/O", fileName);
+        PLOG_W("Couldn't open '%s' for R/O", fname);
         return -1;
     }
 
     ssize_t readSz = files_readFromFd(fd, buf, fileMaxSz);
     if (readSz < 0) {
-        LOG_W("Couldn't read '%s' to a buf", fileName);
+        LOG_W("Couldn't read '%s' to a buf", fname);
     }
     close(fd);
 
-    LOG_D("Read %zu bytes (%zu requested) from '%s'", (size_t)readSz, fileMaxSz, fileName);
+    LOG_D("Read %zu bytes (%zu requested) from '%s'", (size_t)readSz, fileMaxSz, fname);
     return readSz;
 }
 
-bool files_writeBufToFile(const char* fileName, const uint8_t* buf, size_t fileSz, int flags) {
-    int fd = TEMP_FAILURE_RETRY(open(fileName, flags, 0644));
+bool files_writeBufToFile(const char* fname, const uint8_t* buf, size_t fileSz, int flags) {
+    int fd = TEMP_FAILURE_RETRY(open(fname, flags, 0644));
     if (fd == -1) {
-        PLOG_W("Couldn't create/open '%s' for R/W", fileName);
+        PLOG_W("Couldn't create/open '%s' for R/W", fname);
         return false;
     }
 
     bool ret = files_writeToFd(fd, buf, fileSz);
     if (ret == false) {
-        PLOG_W("Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fileName, fd);
-        unlink(fileName);
+        PLOG_W("Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fname, fd);
+        unlink(fname);
     } else {
-        LOG_D("Written '%zu' bytes to '%s'", fileSz, fileName);
+        LOG_D("Written '%zu' bytes to '%s'", fileSz, fname);
     }
 
     close(fd);
     return ret;
+}
+
+bool files_writeStrToFile(const char* fname, const char* str, int flags) {
+    return files_writeBufToFile(fname, (uint8_t*)str, strlen(str), flags);
 }
 
 int files_writeBufToTmpFile(const char* dir, const uint8_t* buf, size_t fileSz, int flags) {
@@ -150,8 +154,8 @@ ssize_t files_readFromFdSeek(int fd, uint8_t* buf, size_t fileSz, off_t off) {
     return files_readFromFd(fd, buf, fileSz);
 }
 
-bool files_exists(const char* fileName) {
-    return (access(fileName, F_OK) != -1);
+bool files_exists(const char* fname) {
+    return (access(fname, F_OK) != -1);
 }
 
 bool files_writePatternToFd(int fd, off_t size, unsigned char p) {
@@ -253,27 +257,27 @@ size_t files_parseSymbolFilter(const char* srcFile, char*** filterList) {
     return symbolsRead;
 }
 
-uint8_t* files_mapFile(const char* fileName, off_t* fileSz, int* fd, bool isWritable) {
+uint8_t* files_mapFile(const char* fname, off_t* fileSz, int* fd, bool isWritable) {
     int mmapProt = PROT_READ;
     if (isWritable) {
         mmapProt |= PROT_WRITE;
     }
 
-    if ((*fd = TEMP_FAILURE_RETRY(open(fileName, O_RDONLY))) == -1) {
-        PLOG_W("Couldn't open() '%s' file in R/O mode", fileName);
+    if ((*fd = TEMP_FAILURE_RETRY(open(fname, O_RDONLY))) == -1) {
+        PLOG_W("Couldn't open() '%s' file in R/O mode", fname);
         return NULL;
     }
 
     struct stat st;
     if (fstat(*fd, &st) == -1) {
-        PLOG_W("Couldn't stat() the '%s' file", fileName);
+        PLOG_W("Couldn't stat() the '%s' file", fname);
         close(*fd);
         return NULL;
     }
 
     uint8_t* buf;
     if ((buf = mmap(NULL, st.st_size, mmapProt, MAP_PRIVATE, *fd, 0)) == MAP_FAILED) {
-        PLOG_W("Couldn't mmap() the '%s' file", fileName);
+        PLOG_W("Couldn't mmap() the '%s' file", fname);
         close(*fd);
         return NULL;
     }

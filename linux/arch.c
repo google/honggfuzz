@@ -123,9 +123,7 @@ bool arch_launchChild(run_t* run) {
     }
 
     /* Increase our OOM score, so fuzzed processes die faster */
-    static const char score100[] = "+500";
-    if (!files_writeBufToFile(
-            "/proc/self/oom_score_adj", (uint8_t*)score100, strlen(score100), O_WRONLY)) {
+    if (!files_writeStrToFile("/proc/self/oom_score_adj", "+500", O_WRONLY)) {
         LOG_W("Couldn't increase our oom_score");
     }
 
