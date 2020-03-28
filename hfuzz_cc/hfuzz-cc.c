@@ -93,6 +93,13 @@ static bool useClangFuzzerNoLink() {
     return false;
 }
 
+static bool useClangPCGuards() {
+    if (getenv("HFUZZ_CLANG_USE_PC_GUARDS")) {
+        return true;
+    }
+    return false;
+}
+
 static bool isLDMode(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--version") == 0) {
@@ -350,6 +357,11 @@ static void commonPostOpts(int* j, char** args, int argc, char** argv) {
             args[(*j)++] = "-fsanitize-coverage=trace-pc,trace-cmp";
         }
     } else {
+        if (useClangFuzzerNoLink() && useClangPCGuards()) {
+            LOG_F("You cannot set HFUZZ_CLANG_USE_FUZZER_NO_LINK and HFUZZ_CLANG_USE_PC_GUARDS at "
+                  "the same time");
+        }
+
         if (useClangFuzzerNoLink()) {
             args[(*j)++] = "-fno-sanitize-coverage=trace-pc-guard";
             args[(*j)++] = "-fno-sanitize=fuzzer";
