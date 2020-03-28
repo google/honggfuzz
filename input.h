@@ -42,7 +42,7 @@ extern void input_renumerateInputs(honggfuzz_t* hfuzz);
 extern bool input_prepareDynamicInput(run_t* run, bool needs_mangle);
 extern size_t input_getRandomInputAsBuf(run_t* run, const uint8_t** buf);
 extern bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle);
-extern void input_removeStaticFile(const char* dir, const char* name);
+extern bool input_removeStaticFile(const char* dir, const char* name);
 extern bool input_prepareExternalFile(run_t* run);
 extern bool input_postProcessFile(run_t* run, const char* cmd);
 extern bool input_prepareDynamicFileForMinimization(run_t* run);

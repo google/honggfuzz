@@ -628,12 +628,14 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
     return true;
 }
 
-void input_removeStaticFile(const char* dir, const char* name) {
+bool input_removeStaticFile(const char* dir, const char* name) {
     char path[PATH_MAX];
     snprintf(path, sizeof(path), "%s/%s", dir, name);
-    if (unlink(path) == -1) {
+    if (unlink(path) == -1 && errno != EEXIST) {
         PLOG_E("unlink('%s') failed", path);
+        return false;
     }
+    return true;
 }
 
 bool input_prepareExternalFile(run_t* run) {
