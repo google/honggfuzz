@@ -440,7 +440,7 @@ bool input_inDynamicCorpus(run_t* run, const char* fname) {
     return false;
 }
 
-static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile) {
+static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile, unsigned* slow_factor) {
     int penalty = 1;
 
     {
@@ -449,10 +449,11 @@ static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile) {
         msec_per_run /= ATOMIC_GET(run->global->cnts.mutationsCnt);
         msec_per_run /= run->global->threads.threadsMax;
         /* Cap this to 1-10 ms */
-        msec_per_run = HF_MAX(1, msec_per_run);
-        msec_per_run = HF_MIN(10, msec_per_run);
-        const unsigned slow_factor = (unsigned)(dynfile->timeExecMillis / msec_per_run);
-        penalty += (slow_factor - 3);
+        msec_per_run = HF_CAP(msec_per_run, 1, 10);
+
+        *slow_factor = (unsigned)(dynfile->timeExecMillis / msec_per_run);
+        *slow_factor = HF_MIN(*slow_factor, 20);
+        penalty += (*slow_factor - 3);
     }
 
     {
@@ -481,7 +482,7 @@ static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile) {
             case 1:
                 break;
             default:
-                penalty -= (dynfile->refs * 5);
+                penalty -= HF_MIN(dynfile->refs * 5, 20);
                 break;
         }
     }
@@ -507,7 +508,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
         LOG_F("The dynamic file corpus is empty. This shouldn't happen");
     }
 
-    unsigned skip_factor = 0;
+    unsigned slow_factor = 0;
     for (;;) {
         MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 
@@ -518,7 +519,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
         current = run->global->io.dynfileqCurrent;
         run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
 
-        skip_factor = input_skipFactor(run, current);
+        unsigned skip_factor = input_skipFactor(run, current, &slow_factor);
         if ((util_rnd64() % skip_factor) == 0) {
             break;
         }
@@ -534,7 +535,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     memcpy(run->dynfile->data, current->data, current->size);
 
     if (needs_mangle) {
-        mangle_mangleContent(run, skip_factor);
+        mangle_mangleContent(run, slow_factor);
     }
 
     return true;

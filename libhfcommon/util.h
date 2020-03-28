@@ -91,6 +91,7 @@ __attribute__((always_inline)) static inline bool ATOMIC_BITMAP_SET(uint8_t* add
 
 #define HF_MAX(x, y) ((x > y) ? x : y)
 #define HF_MIN(x, y) ((x < y) ? x : y)
+#define HF_CAP(v, x, y) HF_MAX(x, HF_MIN(y, v))
 
 #define util_Log2(v) ((sizeof(unsigned int) * 8) - __builtin_clz((unsigned int)v) - 1)
 
