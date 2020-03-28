@@ -140,6 +140,24 @@ static inline void mangle_Insert(
     mangle_Overwrite(run, off, val, len, printable);
 }
 
+static void mangle_MemSwap(run_t* run, bool printable HF_ATTR_UNUSED) {
+    size_t off1 = mangle_getOffSet(run);
+    size_t maxlen1 = run->dynfile->size - off1;
+
+    size_t off2 = mangle_getOffSet(run);
+    size_t maxlen2 = run->dynfile->size - off2;
+
+    size_t len = mangle_getLen(HF_MIN(maxlen1, maxlen2));
+    uint8_t* tmp = (uint8_t*)util_Malloc(len);
+    defer {
+        free(tmp);
+    };
+
+    memcpy(tmp, &run->dynfile->data[off1], len);
+    memmove(&run->dynfile->data[off1], &run->dynfile->data[off2], len);
+    memcpy(&run->dynfile->data[off2], tmp, len);
+}
+
 static void mangle_MemCopyOverwrite(run_t* run, bool printable HF_ATTR_UNUSED) {
     size_t off_from = mangle_getOffSet(run);
     size_t off_to = mangle_getOffSet(run);
@@ -821,6 +839,7 @@ void mangle_mangleContent(run_t* run, unsigned slow_factor) {
         mangle_NegByte,
         mangle_AddSub,
         mangle_MemSet,
+        mangle_MemSwap,
         mangle_MemCopyOverwrite,
         mangle_MemCopyInsert,
         mangle_BytesOverwrite,
@@ -859,8 +878,8 @@ void mangle_mangleContent(run_t* run, unsigned slow_factor) {
             break;
     }
 
-    if ((util_timeNowMillis() - ATOMIC_GET(run->global->timing.lastCovUpdate)) > 1000) {
-        switch (util_rnd64() % 3) {
+    if ((util_timeNowMillis() - ATOMIC_GET(run->global->timing.lastCovUpdate)) > 5000) {
+        switch (util_rnd64() % 4) {
             case 0:
                 mangle_SpliceOverwrite(run, run->global->cfg.only_printable);
                 break;
