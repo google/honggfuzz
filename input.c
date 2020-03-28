@@ -447,9 +447,9 @@ static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile) {
         uint64_t msec_per_run = ((uint64_t)(time(NULL) - run->global->timing.timeStart) * 1000);
         msec_per_run /= ATOMIC_GET(run->global->cnts.mutationsCnt);
         msec_per_run /= run->global->threads.threadsMax;
-        if (msec_per_run == 0) {
-            msec_per_run = 1;
-        }
+        /* Cap this to 1-10 ms */
+        msec_per_run = HF_MAX(1, msec_per_run);
+        msec_per_run = HF_MIN(10, msec_per_run);
         const unsigned slow_factor = (unsigned)(dynfile->timeExecMillis / msec_per_run);
         penalty += ((slow_factor - 2) * 5);
     }
