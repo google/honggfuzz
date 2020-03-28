@@ -444,6 +444,7 @@ static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile) {
     int penalty = 1;
 
     {
+        /* Slower the input, lower the chance of it being tested */
         uint64_t msec_per_run = ((uint64_t)(time(NULL) - run->global->timing.timeStart) * 1000);
         msec_per_run /= ATOMIC_GET(run->global->cnts.mutationsCnt);
         msec_per_run /= run->global->threads.threadsMax;
@@ -451,7 +452,7 @@ static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile) {
         msec_per_run = HF_MAX(1, msec_per_run);
         msec_per_run = HF_MIN(10, msec_per_run);
         const unsigned slow_factor = (unsigned)(dynfile->timeExecMillis / msec_per_run);
-        penalty += ((slow_factor - 2) * 5);
+        penalty += (slow_factor - 3);
     }
 
     {
@@ -486,9 +487,9 @@ static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile) {
     }
 
     {
-        /* Add penalty for the input being too big, max 10 for 1MB files */
-        if (dynfile->size > 8192) {
-            penalty += util_Log2(dynfile->size) / 10;
+        /* Add penalty for the input being too big - 0 is for 1kB input */
+        if (dynfile->size > 0) {
+            penalty += (util_Log2(dynfile->size) - 10);
         }
     }
 

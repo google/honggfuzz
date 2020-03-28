@@ -874,7 +874,7 @@ void mangle_mangleContent(run_t* run, unsigned slow_factor) {
             changesCnt = util_rndGet(1, run->global->mutate.mutationsPerRun);
             break;
         default:
-            changesCnt = HF_MIN(slow_factor, 20);
+            changesCnt = HF_MIN(slow_factor * 10, 50);
             break;
     }
 
