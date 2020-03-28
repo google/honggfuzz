@@ -316,7 +316,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             {
                 .timeStart = time(NULL),
                 .runEndTime = 0,
-                .tmOut = 2,
+                .tmOut = 1,
                 .lastCovUpdate = time(NULL),
                 .timeOfLongestUnitInMilliseconds = 0,
                 .tmoutVTALRM = false,
@@ -434,7 +434,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "minimize", no_argument, NULL, 'M' }, "Minimize the input corpus. It will most likely delete some corpus files (from the --input directory) if no --output is used!" },
         { { "noinst", no_argument, NULL, 'x' }, "Static mode only, disable any instrumentation (hw/sw) feedback" },
         { { "keep_output", no_argument, NULL, 'Q' }, "Don't close children's stdin, stdout, stderr; can be noisy" },
-        { { "timeout", required_argument, NULL, 't' }, "Timeout in seconds (default: 10)" },
+        { { "timeout", required_argument, NULL, 't' }, "Timeout in seconds (default: 1 (second))" },
         { { "threads", required_argument, NULL, 'n' }, "Number of concurrent fuzzing threads (default: number of CPUs / 2)" },
         { { "stdin_input", no_argument, NULL, 's' }, "Provide fuzzing input on STDIN, instead of " _HF_FILE_PLACEHOLDER },
         { { "mutations_per_run", required_argument, NULL, 'r' }, "Maximal number of mutations per one run (default: 6)" },
