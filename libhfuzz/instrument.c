@@ -574,8 +574,8 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
         bool prev = ATOMIC_XCHG(covFeedback->pcGuardMap[*guard], true);
         if (prev == false) {
             ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackEdge[my_thread_no]);
-            wmb();
         }
+        wmb();
     }
 }
 
@@ -602,31 +602,32 @@ void instrument8BitCountersCount(void) {
                 [1] = 1U << 0,
                 [2] = 1U << 1,
                 [3] = 1U << 2,
-                [4] = 1U << 3,
-                [5 ... 6] = 1U << 4,
-                [7 ... 10] = 1U << 5,
-                [11 ... 20] = 1U << 6,
-                [21 ... 255] = 1U << 7,
+                [4 ... 5] = 1U << 3,
+                [6 ... 10] = 1U << 4,
+                [11 ... 32] = 1U << 5,
+                [33 ... 64] = 1U << 6,
+                [65 ... 255] = 1U << 7,
             };
-            const uint8_t new = scaleMap[v];
-            const size_t guard = hf8bitcounters[i].guard + j;
+            const uint8_t newval = scaleMap[v];
 
-            if (ATOMIC_GET(covFeedback->pcGuardMap[guard]) < new) {
-                const uint8_t prev = ATOMIC_POST_OR(covFeedback->pcGuardMap[guard], new);
-                if (!prev) {
+            const size_t guard = hf8bitcounters[i].guard + j;
+            if (ATOMIC_GET(covFeedback->pcGuardMap[guard]) < newval) {
+                const uint8_t prevval = ATOMIC_POST_OR(covFeedback->pcGuardMap[guard], newval);
+                if (!prevval) {
                     ATOMIC_PRE_INC(covFeedback->pidFeedbackEdge[my_thread_no]);
-                } else if (prev < new) {
+                } else if (prevval < newval) {
                     ATOMIC_PRE_INC(covFeedback->pidFeedbackCmp[my_thread_no]);
                 }
             }
-            wmb();
         }
     }
+
+    wmb();
 }
 
 void instrument8BitCountersClear(void) {
     for (size_t i = 0; i < ARRAYSIZE(hf8bitcounters) && hf8bitcounters[i].start; i++) {
-        memset(hf8bitcounters[i].start, '\0', hf8bitcounters[i].cnt);
+        bzero(hf8bitcounters[i].start, hf8bitcounters[i].cnt);
     }
     wmb();
 }
