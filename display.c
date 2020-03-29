@@ -53,9 +53,6 @@
 #define ESC_NAV_HORIZ(x) "\033[" #x "G"
 #define ESC_RESET_SETTINGS "\033[!p"
 
-/* printf() nonmonetary separator. According to MacOSX's man it's supported there as well */
-#define _HF_NONMON_SEP "'"
-
 static char displayBuf[1024 * 1024];
 static void display_start(void) {
     memset(displayBuf, '\0', sizeof(displayBuf));
