@@ -159,6 +159,30 @@ bool cmdlineAddEnv(honggfuzz_t* hfuzz, char* env) {
     return false;
 }
 
+tristate_t cmdlineParseTriState(const char* optname, const char* optarg) {
+    if (!optarg) {
+        LOG_F("Option '--%s' needs an argument (true|false|maybe)", optname);
+    }
+    /* Probably '-' belong to the next option */
+    if (optarg[0] == '-') {
+        LOG_F("Option '--%s' needs an argument (true|false|maybe)", optname);
+    }
+    if ((strcasecmp(optarg, "0") == 0) || (strcasecmp(optarg, "false") == 0) ||
+        (strcasecmp(optarg, "n") == 0) || (strcasecmp(optarg, "no") == 0)) {
+        return false;
+    }
+    if ((strcasecmp(optarg, "1") == 0) || (strcasecmp(optarg, "true") == 0) ||
+        (strcasecmp(optarg, "y") == 0) || (strcasecmp(optarg, "yes") == 0)) {
+        return true;
+    }
+    if ((strcasecmp(optarg, "-1") == 0) || (strcasecmp(optarg, "maybe") == 0) ||
+        (strcasecmp(optarg, "m") == 0) || (strcasecmp(optarg, "if_supported") == 0)) {
+        return true;
+    }
+    LOG_F("Unknown value for option --%s=%s. Use true, false or maybe", optname, optarg);
+    return false;
+}
+
 bool cmdlineParseTrueFalse(const char* optname, const char* optarg) {
     if (!optarg) {
         LOG_F("Option '--%s' needs an argument (true|false)", optname);
@@ -406,6 +430,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .symsWlCnt = 0,
                 .symsWl = NULL,
                 .cloneFlags = 0,
+                .useNetNs = HF_MAYBE,
                 .kernelOnly = false,
                 .useClone = true,
             },
@@ -488,7 +513,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "linux_perf_bts_edge", no_argument, NULL, 0x513 }, "Use Intel BTS to count unique edges" },
         { { "linux_perf_ipt_block", no_argument, NULL, 0x514 }, "Use Intel Processor Trace to count unique blocks (requires libipt.so)" },
         { { "linux_perf_kernel_only", no_argument, NULL, 0x515 }, "Gather kernel-only coverage with Intel PT and with Intel BTS" },
-        { { "linux_ns_net", no_argument, NULL, 0x0530 }, "Use Linux NET namespace isolation" },
+        { { "linux_ns_net", required_argument, NULL, 0x0530 }, "Use Linux NET namespace isolation (yes/no/maybe [default:maybe/if_supported])" },
         { { "linux_ns_pid", no_argument, NULL, 0x0531 }, "Use Linux PID namespace isolation" },
         { { "linux_ns_ipc", no_argument, NULL, 0x0532 }, "Use Linux IPC namespace isolation" },
 #endif // defined(_HF_ARCH_LINUX)
@@ -711,7 +736,10 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->linux.kernelOnly = true;
                 break;
             case 0x530:
-                hfuzz->linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWNET);
+                hfuzz->linux.useNetNs = cmdlineParseTriState(opts[opt_index].name, optarg);
+                if (hfuzz->linux.useNetNs == HF_YES) {
+                    hfuzz->linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWNET);
+                }
                 break;
             case 0x531:
                 hfuzz->linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWPID);

@@ -440,27 +440,31 @@ bool input_inDynamicCorpus(run_t* run, const char* fname) {
     return false;
 }
 
+static inline unsigned input_slowFactor(run_t* run, dynfile_t* dynfile) {
+    /* Slower the input, lower the chance of it being tested */
+    uint64_t msec_per_run = ((uint64_t)(time(NULL) - run->global->timing.timeStart) * 1000);
+    msec_per_run /= ATOMIC_GET(run->global->cnts.mutationsCnt);
+    msec_per_run /= run->global->threads.threadsMax;
+    /* Cap this to 1-10 ms */
+    msec_per_run = HF_CAP(msec_per_run, 1, 10);
+
+    unsigned slow_factor = (unsigned)(dynfile->timeExecMillis / msec_per_run);
+    return HF_MIN(slow_factor, 20);
+}
+
 static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile, unsigned* slow_factor) {
     int penalty = 1;
 
     {
-        /* Slower the input, lower the chance of it being tested */
-        uint64_t msec_per_run = ((uint64_t)(time(NULL) - run->global->timing.timeStart) * 1000);
-        msec_per_run /= ATOMIC_GET(run->global->cnts.mutationsCnt);
-        msec_per_run /= run->global->threads.threadsMax;
-        /* Cap this to 1-10 ms */
-        msec_per_run = HF_CAP(msec_per_run, 1, 10);
-
-        *slow_factor = (unsigned)(dynfile->timeExecMillis / msec_per_run);
-        *slow_factor = HF_MIN(*slow_factor, 20);
-        penalty += (*slow_factor - 3);
+        *slow_factor = input_slowFactor(run, dynfile);
+        penalty += HF_CAP(((int)*slow_factor - 3), -15, 30);
     }
 
     {
         /* Older inputs -> lower chance of being tested */
         const int scaleMap[] = {
-            [99 ... 200] = -5,
-            [96 ... 98] = -2,
+            [99 ... 200] = -10,
+            [96 ... 98] = -3,
             [91 ... 95] = -1,
             [81 ... 90] = 0,
             [71 ... 80] = 1,
@@ -475,22 +479,13 @@ static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile, unsigned
 
     {
         /* If the input wasn't source of other inputs so far, make it less likely to be tested */
-        switch (dynfile->refs) {
-            case 0:
-                penalty += 5;
-                break;
-            case 1:
-                break;
-            default:
-                penalty -= HF_MIN(dynfile->refs * 5, 20);
-                break;
-        }
+        penalty += HF_CAP((2 - (int)dynfile->refs * 5), -15, 15);
     }
 
     {
-        /* Add penalty for the input being too big - 0 is for 1kB input */
+        /* Add penalty for the input being too big - 0 is for 256B input */
         if (dynfile->size > 0) {
-            penalty += (util_Log2(dynfile->size) - 10);
+            penalty += HF_CAP(((int)util_Log2(dynfile->size) - 8), -15, 15);
         }
     }
 

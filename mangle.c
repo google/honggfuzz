@@ -874,7 +874,7 @@ void mangle_mangleContent(run_t* run, unsigned slow_factor) {
             break;
         default:
             /* Give it a good shake-up, if it's a slow input */
-            changesCnt = HF_MIN(slow_factor, 15);
+            changesCnt = HF_MIN(slow_factor, 20);
             changesCnt = HF_MAX(changesCnt, run->global->mutate.mutationsPerRun);
             break;
     }

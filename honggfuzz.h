@@ -132,6 +132,12 @@ typedef enum {
     _HF_STATE_DYNAMIC_MINIMIZE,
 } fuzzState_t;
 
+typedef enum {
+    HF_MAYBE = -1,
+    HF_NO = 0,
+    HF_YES = 1,
+} tristate_t;
+
 struct _dynfile_t {
     size_t size;
     uint64_t cov[4];
@@ -300,6 +306,7 @@ typedef struct {
         char** symsWl;
         size_t symsWlCnt;
         uintptr_t cloneFlags;
+        tristate_t useNetNs;
         bool kernelOnly;
         bool useClone;
     } linux;

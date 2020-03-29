@@ -98,21 +98,28 @@ pid_t arch_fork(run_t* run) {
 }
 
 bool arch_launchChild(run_t* run) {
-    if ((run->global->linux.cloneFlags & CLONE_NEWNET) && (nsIfaceUp("lo") == false)) {
+    if ((run->global->linux.cloneFlags & CLONE_NEWNET) && !nsIfaceUp("lo")) {
         LOG_W("Cannot bring interface 'lo' up");
     }
 
-    /*
-     * Make it attach-able by ptrace()
-     */
+    /* Try to enable network namespacing if requested */
+    if (run->global->linux.useNetNs == HF_MAYBE) {
+        if (unshare(CLONE_NEWUSER | CLONE_NEWNET) == -1) {
+            PLOG_D("unshare((CLONE_NEWUSER|CLONE_NEWNS) failed");
+        } else if (!nsIfaceUp("lo")) {
+            LOG_E("Network namespacing enabled, but couldn't bring interface 'lo' up");
+            return false;
+        }
+        LOG_D("Network namespacing enabled, and the 'lo' interface is set up");
+    }
+
+    /* Make it attach-able by ptrace() */
     if (prctl(PR_SET_DUMPABLE, 1UL, 0UL, 0UL, 0UL) == -1) {
         PLOG_E("prctl(PR_SET_DUMPABLE, 1)");
         return false;
     }
 
-    /*
-     * Kill a process which corrupts its own heap (with ABRT)
-     */
+    /* Kill rocess which corrupts its own heap (with ABRT) */
     if (setenv("MALLOC_CHECK_", "7", 0) == -1) {
         PLOG_E("setenv(MALLOC_CHECK_=7) failed");
         return false;
@@ -137,7 +144,7 @@ bool arch_launchChild(run_t* run) {
         PLOG_D("personality(ADDR_NO_RANDOMIZE) failed");
     }
 
-    /* alarms persist across execve(), so disable it here */
+    /* Alarms persist across execve(), so disable them here */
     alarm(0);
 
     /* Wait for the ptrace to attach now */
