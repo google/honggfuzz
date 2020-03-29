@@ -666,6 +666,7 @@ bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
     if (prev < v) {
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+        wmb();
         return true;
     }
     return false;
@@ -676,6 +677,7 @@ void instrumentClearNewCov() {
     covFeedback->pidFeedbackPc[my_thread_no] = 0U;
     covFeedback->pidFeedbackEdge[my_thread_no] = 0U;
     covFeedback->pidFeedbackCmp[my_thread_no] = 0U;
+    wmb();
 }
 
 void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
