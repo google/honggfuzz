@@ -542,3 +542,9 @@ HF_WEAK_WRAP(bool, g_str_has_suffix, const char* str, const char* suffix) {
     return (
         HF_strcmp(str + str_len - suffix_len, suffix, (uintptr_t)__builtin_return_address(0)) == 0);
 }
+
+/* C++ wrappers */
+int _ZNSt11char_traitsIcE7compareEPKcS2_m(const char* s1, const char* s2, size_t count) {
+    return HF_memcmp(
+        s1, s2, count, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
+}
