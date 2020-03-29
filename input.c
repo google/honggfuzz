@@ -457,25 +457,26 @@ static inline int input_speedFactor(run_t* run, dynfile_t* dynfile) {
     }
 }
 
-static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_factor) {
-    int penalty = 1;
+static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_factor) {
+    int penalty = 0;
 
     {
         *speed_factor = input_speedFactor(run, dynfile);
-        penalty += HF_CAP(*speed_factor, -30, 30);
+        penalty += HF_CAP(*speed_factor, -15, 15);
     }
 
     {
         /* Older inputs -> lower chance of being tested */
-        const int scaleMap[] = {
-            [99 ... 200] = -10,
-            [96 ... 98] = -3,
+        static const int scaleMap[] = {
+            [100 ... 200] = -15,
+            [98 ... 99] = -5,
+            [96 ... 97] = -2,
             [91 ... 95] = -1,
             [81 ... 90] = 0,
             [71 ... 80] = 1,
-            [61 ... 70] = 3,
-            [41 ... 60] = 5,
-            [0 ... 40] = 10,
+            [61 ... 70] = 2,
+            [41 ... 60] = 3,
+            [0 ... 40] = 5,
         };
 
         const unsigned percentile = (dynfile->idx * 100) / run->global->io.dynfileqCnt;
@@ -484,21 +485,17 @@ static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile, int* spe
 
     {
         /* If the input wasn't source of other inputs so far, make it less likely to be tested */
-        penalty += HF_CAP((2 - (int)dynfile->refs * 5), -15, 15);
+        penalty += HF_CAP((2 - (int)dynfile->refs) * 2, -15, 15);
     }
 
     {
-        /* Add penalty for the input being too big - 0 is for 256B input */
+        /* Add penalty for the input being too big - 0 is for 256B inputs */
         if (dynfile->size > 0) {
-            penalty += HF_CAP(((int)util_Log2(dynfile->size) - 8), -15, 15);
+            penalty += HF_CAP(((int)util_Log2(dynfile->size) - 8) / 4, -15, 15);
         }
     }
 
-    if (penalty < 1) {
-        penalty = 1;
-    }
-
-    return (unsigned)penalty;
+    return penalty;
 }
 
 bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
@@ -519,8 +516,8 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
         current = run->global->io.dynfileqCurrent;
         run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
 
-        unsigned skip_factor = input_skipFactor(run, current, &speed_factor);
-        if ((util_rnd64() % skip_factor) == 0) {
+        int skip_factor = input_skipFactor(run, current, &speed_factor);
+        if (skip_factor <= 0 || (util_rnd64() % skip_factor) == 0) {
             break;
         }
     }
