@@ -133,7 +133,7 @@ extern bool util_64bitValInBinary(uint32_t v);
 extern uint64_t util_hash(const char* buf, size_t len);
 extern int64_t fastArray64Search(uint64_t* array, size_t arraySz, uint64_t key);
 
-extern int64_t util_timeNowMillis(void);
+extern int64_t util_timeNowUSecs(void);
 extern void util_sleepForMSec(uint64_t msec);
 
 extern uint64_t util_getUINT32(const uint8_t* buf);

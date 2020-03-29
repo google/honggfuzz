@@ -429,13 +429,13 @@ bool subproc_Run(run_t* run) {
     arch_prepareParent(run);
     arch_reapChild(run);
 
-    int64_t diffMillis = util_timeNowMillis() - run->timeStartedMillis;
+    int64_t diffUSecs = util_timeNowUSecs() - run->timeStartedUSecs;
 
     {
         static pthread_mutex_t local_mutex = PTHREAD_MUTEX_INITIALIZER;
         MX_SCOPED_LOCK(&local_mutex);
-        if (diffMillis >= ATOMIC_GET(run->global->timing.timeOfLongestUnitInMilliseconds)) {
-            ATOMIC_SET(run->global->timing.timeOfLongestUnitInMilliseconds, diffMillis);
+        if (diffUSecs >= ATOMIC_GET(run->global->timing.timeOfLongestUnitUSecs)) {
+            ATOMIC_SET(run->global->timing.timeOfLongestUnitUSecs, diffUSecs);
         }
     }
 
@@ -506,17 +506,17 @@ void subproc_checkTimeLimit(run_t* run) {
         return;
     }
 
-    int64_t curMillis = util_timeNowMillis();
-    int64_t diffMillis = curMillis - run->timeStartedMillis;
+    int64_t curUSecs = util_timeNowUSecs();
+    int64_t diffUSecs = curUSecs - run->timeStartedUSecs;
 
-    if (run->tmOutSignaled && (diffMillis > ((run->global->timing.tmOut + 1) * 1000))) {
+    if (run->tmOutSignaled && (diffUSecs > ((run->global->timing.tmOut + 1) * 1000000))) {
         /* Has this instance been already signaled due to timeout? Just, SIGKILL it */
         LOG_W("pid=%d has already been signaled due to timeout. Killing it with SIGKILL", run->pid);
         kill(run->pid, SIGKILL);
         return;
     }
 
-    if ((diffMillis > (run->global->timing.tmOut * 1000)) && !run->tmOutSignaled) {
+    if ((diffUSecs > (run->global->timing.tmOut * 1000000)) && !run->tmOutSignaled) {
         run->tmOutSignaled = true;
         LOG_W("pid=%d took too much time (limit %ld s). Killing it with %s", (int)run->pid,
             (long)run->global->timing.tmOut,

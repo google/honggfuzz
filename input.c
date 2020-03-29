@@ -378,7 +378,7 @@ void input_addDynamicInput(run_t* run) {
     dynfile_t* dynfile = (dynfile_t*)util_Calloc(sizeof(dynfile_t));
     dynfile->size = run->dynfile->size;
     memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
-    dynfile->timeExecMillis = util_timeNowMillis() - run->timeStartedMillis;
+    dynfile->timeExecUSecs = util_timeNowUSecs() - run->timeStartedUSecs;
     dynfile->data = (uint8_t*)util_AllocCopy(run->dynfile->data, run->dynfile->size);
     dynfile->src = run->dynfile->src;
     if (run->dynfile->src) {
@@ -440,24 +440,29 @@ bool input_inDynamicCorpus(run_t* run, const char* fname) {
     return false;
 }
 
-static inline unsigned input_slowFactor(run_t* run, dynfile_t* dynfile) {
+static inline int input_speedFactor(run_t* run, dynfile_t* dynfile) {
     /* Slower the input, lower the chance of it being tested */
-    uint64_t msec_per_run = ((uint64_t)(time(NULL) - run->global->timing.timeStart) * 1000);
-    msec_per_run /= ATOMIC_GET(run->global->cnts.mutationsCnt);
-    msec_per_run /= run->global->threads.threadsMax;
-    /* Cap this to 1-10 ms */
-    msec_per_run = HF_CAP(msec_per_run, 1, 10);
+    uint64_t usecs_per_run = ((uint64_t)(time(NULL) - run->global->timing.timeStart) * 1000000);
+    usecs_per_run /= ATOMIC_GET(run->global->cnts.mutationsCnt);
+    usecs_per_run /= run->global->threads.threadsMax;
 
-    unsigned slow_factor = (unsigned)(dynfile->timeExecMillis / msec_per_run);
-    return HF_MIN(slow_factor, 20);
+    /* Cap both vals to 1us-1s */
+    usecs_per_run = HF_CAP(usecs_per_run, 1U, 1000000U);
+    uint64_t sample_exec_usec = HF_CAP(dynfile->timeExecUSecs, 1U, 1000000U);
+
+    if (sample_exec_usec >= usecs_per_run) {
+        return (int)(sample_exec_usec / usecs_per_run);
+    } else {
+        return -(int)(usecs_per_run / sample_exec_usec);
+    }
 }
 
-static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile, unsigned* slow_factor) {
+static inline unsigned input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_factor) {
     int penalty = 1;
 
     {
-        *slow_factor = input_slowFactor(run, dynfile);
-        penalty += HF_CAP(((int)*slow_factor - 3), -15, 30);
+        *speed_factor = input_speedFactor(run, dynfile);
+        penalty += HF_CAP(*speed_factor, -30, 30);
     }
 
     {
@@ -503,7 +508,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
         LOG_F("The dynamic file corpus is empty. This shouldn't happen");
     }
 
-    unsigned slow_factor = 0;
+    int speed_factor = 0;
     for (;;) {
         MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 
@@ -514,7 +519,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
         current = run->global->io.dynfileqCurrent;
         run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
 
-        unsigned skip_factor = input_skipFactor(run, current, &slow_factor);
+        unsigned skip_factor = input_skipFactor(run, current, &speed_factor);
         if ((util_rnd64() % skip_factor) == 0) {
             break;
         }
@@ -523,14 +528,14 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     input_setSize(run, current->size);
     memcpy(run->dynfile->cov, current->cov, sizeof(run->dynfile->cov));
     run->dynfile->idx = current->idx;
-    run->dynfile->timeExecMillis = current->timeExecMillis;
+    run->dynfile->timeExecUSecs = current->timeExecUSecs;
     snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s", current->path);
     run->dynfile->src = current;
     run->dynfile->refs = 0;
     memcpy(run->dynfile->data, current->data, current->size);
 
     if (needs_mangle) {
-        mangle_mangleContent(run, slow_factor);
+        mangle_mangleContent(run, speed_factor);
     }
 
     return true;

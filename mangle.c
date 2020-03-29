@@ -825,7 +825,7 @@ static void mangle_Resize(run_t* run, bool printable) {
     }
 }
 
-void mangle_mangleContent(run_t* run, unsigned slow_factor) {
+void mangle_mangleContent(run_t* run, int speed_factor) {
     static void (*const mangleFuncs[])(run_t * run, bool printable) = {
         /* Every *Insert or Expand expands file, so add more Shrink's */
         mangle_Shrink,
@@ -868,18 +868,18 @@ void mangle_mangleContent(run_t* run, unsigned slow_factor) {
     }
 
     uint64_t changesCnt = run->global->mutate.mutationsPerRun;
-    switch (slow_factor) {
-        case 0 ... 3:
-            changesCnt = util_rndGet(1, run->global->mutate.mutationsPerRun);
-            break;
-        default:
-            /* Give it a good shake-up, if it's a slow input */
-            changesCnt = HF_MIN(slow_factor, 20);
-            changesCnt = HF_MAX(changesCnt, run->global->mutate.mutationsPerRun);
-            break;
+
+    if (speed_factor <= 1) {
+        changesCnt = util_rndGet(1, run->global->mutate.mutationsPerRun);
+    } else if (speed_factor <= 3) {
+        changesCnt = run->global->mutate.mutationsPerRun;
+    } else {
+        changesCnt = HF_MIN(speed_factor, 20);
+        changesCnt = HF_MAX(changesCnt, run->global->mutate.mutationsPerRun);
     }
 
-    if ((util_timeNowMillis() - ATOMIC_GET(run->global->timing.lastCovUpdate)) > 5000) {
+    /* If last coverage acquisition was mroe than 5 secs ago, use splicing more frequently */
+    if ((util_timeNowUSecs() - ATOMIC_GET(run->global->timing.lastCovUpdate)) > 5000000) {
         switch (util_rnd64() % 4) {
             case 0:
                 mangle_SpliceOverwrite(run, run->global->cfg.only_printable);

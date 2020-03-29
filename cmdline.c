@@ -342,7 +342,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .runEndTime = 0,
                 .tmOut = 1,
                 .lastCovUpdate = time(NULL),
-                .timeOfLongestUnitInMilliseconds = 0,
+                .timeOfLongestUnitUSecs = 0,
                 .tmoutVTALRM = false,
             },
         .mutate =
@@ -357,7 +357,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .display =
             {
                 .useScreen = true,
-                .lastDisplayMillis = util_timeNowMillis(),
+                .lastDisplayUSecs = util_timeNowUSecs(),
                 .cmdline_txt[0] = '\0',
             },
         .cfg =

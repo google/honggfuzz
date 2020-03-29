@@ -132,7 +132,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
             .cov = {},
             .idx = 0,
             .fd = -1,
-            .timeExecMillis = 1,
+            .timeExecUSecs = 1,
             .path = "[DYNAMIC-0-SIZE]",
             .data = (uint8_t*)"",
         };
@@ -219,10 +219,10 @@ static void fuzz_perfFeedback(run_t* run) {
         run->global->linux.hwCnts.softCntEdge += softCntEdge;
         run->global->linux.hwCnts.softCntCmp += softCntCmp;
 
-        LOG_I("Size:%zu Time:%" PRIu64 "ms (i/b/h/e/p/c): %" PRIu64 "/%" PRIu64 "/%" PRIu64
+        LOG_I("Size:%zu Time:%" PRIu64 "us (i/b/h/e/p/c): %" PRIu64 "/%" PRIu64 "/%" PRIu64
               "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Tot:%" PRIu64 "/%" PRIu64 "/%" PRIu64
               "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
-            run->dynfile->size, util_timeNowMillis() - run->timeStartedMillis,
+            run->dynfile->size, util_timeNowUSecs() - run->timeStartedUSecs,
             run->linux.hwCnts.cpuInstrCnt, run->linux.hwCnts.cpuBranchCnt,
             run->linux.hwCnts.newBBCnt, softCntEdge, softCntPc, softCntCmp,
             run->global->linux.hwCnts.cpuInstrCnt, run->global->linux.hwCnts.cpuBranchCnt,
@@ -260,7 +260,7 @@ static bool fuzz_runVerifier(run_t* run) {
     for (int i = 0; i < _HF_VERIFIER_ITER; i++) {
         LOG_I("Launching verifier for HASH: %" PRIx64 " (iteration: %d out of %d)", run->backtrace,
             i + 1, _HF_VERIFIER_ITER);
-        run->timeStartedMillis = util_timeNowMillis();
+        run->timeStartedUSecs = util_timeNowUSecs();
         run->backtrace = 0;
         run->access = 0;
         run->exception = 0;
@@ -375,7 +375,7 @@ static bool fuzz_fetchInput(run_t* run) {
 }
 
 static void fuzz_fuzzLoop(run_t* run) {
-    run->timeStartedMillis = util_timeNowMillis();
+    run->timeStartedUSecs = util_timeNowUSecs();
     run->crashFileName[0] = '\0';
     run->pc = 0;
     run->backtrace = 0;
@@ -412,7 +412,7 @@ static void fuzz_fuzzLoop(run_t* run) {
 }
 
 static void fuzz_fuzzLoopSocket(run_t* run) {
-    run->timeStartedMillis = util_timeNowMillis();
+    run->timeStartedUSecs = util_timeNowUSecs();
     run->crashFileName[0] = '\0';
     run->pc = 0;
     run->backtrace = 0;

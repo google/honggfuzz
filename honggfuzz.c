@@ -211,7 +211,7 @@ static void printSummary(honggfuzz_t* hfuzz) {
           "peak_rss_mb:%lu",
         hfuzz->cnts.mutationsCnt, elapsed_sec, exec_per_sec, hfuzz->cnts.crashesCnt,
         hfuzz->cnts.timeoutedCnt, hfuzz->io.newUnitsAdded,
-        hfuzz->timing.timeOfLongestUnitInMilliseconds, hfuzz->feedback.covFeedbackMap->guardNb,
+        hfuzz->timing.timeOfLongestUnitUSecs / 1000U, hfuzz->feedback.covFeedbackMap->guardNb,
         branch_percent_cov, usage.ru_maxrss);
 }
 

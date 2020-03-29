@@ -143,7 +143,7 @@ struct _dynfile_t {
     uint64_t cov[4];
     size_t idx;
     int fd;
-    uint64_t timeExecMillis;
+    uint64_t timeExecUSecs;
     char path[PATH_MAX];
     struct _dynfile_t* src;
     uint32_t refs;
@@ -232,7 +232,7 @@ typedef struct {
         time_t runEndTime;
         time_t tmOut;
         time_t lastCovUpdate;
-        int64_t timeOfLongestUnitInMilliseconds;
+        int64_t timeOfLongestUnitUSecs;
         bool tmoutVTALRM;
     } timing;
     struct {
@@ -249,7 +249,7 @@ typedef struct {
     struct {
         bool useScreen;
         char cmdline_txt[65];
-        int64_t lastDisplayMillis;
+        int64_t lastDisplayUSecs;
     } display;
     struct {
         bool useVerifier;
@@ -332,7 +332,7 @@ typedef enum {
 typedef struct {
     honggfuzz_t* global;
     pid_t pid;
-    int64_t timeStartedMillis;
+    int64_t timeStartedUSecs;
     char crashFileName[PATH_MAX];
     uint64_t pc;
     uint64_t backtrace;
