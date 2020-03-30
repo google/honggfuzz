@@ -589,6 +589,13 @@ static struct {
 void instrument8BitCountersCount(void) {
     rmb();
 
+    ATOMIC_CLEAR(covFeedback->pidTotalPC[my_thread_no]);
+    ATOMIC_CLEAR(covFeedback->pidTotalEdge[my_thread_no]);
+    ATOMIC_CLEAR(covFeedback->pidTotalCmp[my_thread_no]);
+
+    uint64_t totalEdge = 0;
+    uint64_t totalCmp = 0;
+
     for (size_t i = 0; i < ARRAYSIZE(hf8bitcounters) && hf8bitcounters[i].start; i++) {
         for (size_t j = 0; j < hf8bitcounters[i].cnt; j++) {
             const uint8_t v = hf8bitcounters[i].start[j];
@@ -609,8 +616,9 @@ void instrument8BitCountersCount(void) {
                 [65 ... 255] = 1U << 7,
             };
             const uint8_t newval = scaleMap[v];
-
             const size_t guard = hf8bitcounters[i].guard + j;
+
+            /* New hits */
             if (ATOMIC_GET(covFeedback->pcGuardMap[guard]) < newval) {
                 const uint8_t prevval = ATOMIC_POST_OR(covFeedback->pcGuardMap[guard], newval);
                 if (!prevval) {
@@ -619,8 +627,20 @@ void instrument8BitCountersCount(void) {
                     ATOMIC_PRE_INC(covFeedback->pidNewCmp[my_thread_no]);
                 }
             }
+
+            /* Total hits */
+            {
+                totalEdge++;
+                if (v > 1) {
+                    totalCmp += newval;
+                }
+            }
         }
     }
+
+    ATOMIC_SET(covFeedback->pidTotalPC[my_thread_no], 0);
+    ATOMIC_SET(covFeedback->pidTotalEdge[my_thread_no], totalEdge);
+    ATOMIC_SET(covFeedback->pidTotalCmp[my_thread_no], totalCmp);
 
     wmb();
 }

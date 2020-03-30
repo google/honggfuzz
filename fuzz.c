@@ -192,19 +192,30 @@ static void fuzz_perfFeedback(run_t* run) {
         wmb();
     };
 
-    uint64_t softCntPc = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewPC[run->fuzzNo]);
+    uint64_t softNewPC = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewPC[run->fuzzNo]);
     ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewPC[run->fuzzNo]);
-    uint64_t softCntEdge =
+    uint64_t softCurPC = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalPC[run->fuzzNo]);
+    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalPC[run->fuzzNo]);
+
+    uint64_t softNewEdge =
         ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewEdge[run->fuzzNo]);
     ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewEdge[run->fuzzNo]);
-    uint64_t softCntCmp = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewCmp[run->fuzzNo]);
-    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewCmp[run->fuzzNo]);
+    uint64_t softCurEdge =
+        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalEdge[run->fuzzNo]);
+    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalEdge[run->fuzzNo]);
 
-    int64_t diff0 = run->global->linux.hwCnts.cpuInstrCnt - run->linux.hwCnts.cpuInstrCnt;
-    int64_t diff1 = run->global->linux.hwCnts.cpuBranchCnt - run->linux.hwCnts.cpuBranchCnt;
+    uint64_t softNewCmp = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewCmp[run->fuzzNo]);
+    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewCmp[run->fuzzNo]);
+    uint64_t softCurCmp =
+        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalCmp[run->fuzzNo]);
+    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalCmp[run->fuzzNo]);
+
+    int64_t diff0 = (int64_t)run->global->linux.hwCnts.cpuInstrCnt - run->linux.hwCnts.cpuInstrCnt;
+    int64_t diff1 =
+        (int64_t)run->global->linux.hwCnts.cpuBranchCnt - run->linux.hwCnts.cpuBranchCnt;
 
     /* Any increase in coverage (edge, pc, cmp, hw) counters forces adding input to the corpus */
-    if (run->linux.hwCnts.newBBCnt > 0 || softCntPc > 0 || softCntEdge > 0 || softCntCmp > 0 ||
+    if (run->linux.hwCnts.newBBCnt > 0 || softNewPC > 0 || softNewEdge > 0 || softNewCmp > 0 ||
         diff0 < 0 || diff1 < 0) {
         if (diff0 < 0) {
             run->global->linux.hwCnts.cpuInstrCnt = run->linux.hwCnts.cpuInstrCnt;
@@ -213,26 +224,22 @@ static void fuzz_perfFeedback(run_t* run) {
             run->global->linux.hwCnts.cpuBranchCnt = run->linux.hwCnts.cpuBranchCnt;
         }
         run->global->linux.hwCnts.bbCnt += run->linux.hwCnts.newBBCnt;
-        run->global->linux.hwCnts.softCntPc += softCntPc;
-        run->global->linux.hwCnts.softCntEdge += softCntEdge;
-        run->global->linux.hwCnts.softCntCmp += softCntCmp;
+        run->global->linux.hwCnts.softCntPc += softNewPC;
+        run->global->linux.hwCnts.softCntEdge += softNewEdge;
+        run->global->linux.hwCnts.softCntCmp += softNewCmp;
 
-        LOG_I("Size:%zu Time:%" _HF_NONMON_SEP PRIu64 "us (i/b/h/e/p/c): %" PRIu64 "/%" PRIu64
-              "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Tot:%" PRIu64 "/%" PRIu64
+        LOG_I("Sz:%zu Tm:%" _HF_NONMON_SEP PRIu64 "us (i/b/h/e/p/c) New:%" PRIu64 "/%" PRIu64
+              "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Cur:%" PRIu64 "/%" PRIu64
               "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
             run->dynfile->size, util_timeNowUSecs() - run->timeStartedUSecs,
             run->linux.hwCnts.cpuInstrCnt, run->linux.hwCnts.cpuBranchCnt,
-            run->linux.hwCnts.newBBCnt, softCntEdge, softCntPc, softCntCmp,
-            run->global->linux.hwCnts.cpuInstrCnt, run->global->linux.hwCnts.cpuBranchCnt,
-            run->global->linux.hwCnts.bbCnt, run->global->linux.hwCnts.softCntEdge,
-            run->global->linux.hwCnts.softCntPc, run->global->linux.hwCnts.softCntCmp);
+            run->linux.hwCnts.newBBCnt, softNewEdge, softNewPC, softNewCmp,
+            run->linux.hwCnts.cpuInstrCnt, run->linux.hwCnts.cpuBranchCnt, run->linux.hwCnts.bbCnt,
+            softCurEdge, softCurPC, softCurCmp);
 
         /* Update per-input coverage metrics */
-        run->dynfile->cov[0] =
-            ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalPC[run->fuzzNo]) +
-            ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalEdge[run->fuzzNo]);
-        run->dynfile->cov[1] =
-            ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalCmp[run->fuzzNo]);
+        run->dynfile->cov[0] = softCurEdge + softCurPC + run->linux.hwCnts.bbCnt;
+        run->dynfile->cov[1] = softCurCmp;
         run->dynfile->cov[2] = run->linux.hwCnts.cpuInstrCnt + run->linux.hwCnts.cpuBranchCnt;
         run->dynfile->cov[3] = run->dynfile->size ? (64 - util_Log2(run->dynfile->size)) : 64;
         input_addDynamicInput(run);
