@@ -442,18 +442,19 @@ bool input_inDynamicCorpus(run_t* run, const char* fname) {
 
 static inline int input_speedFactor(run_t* run, dynfile_t* dynfile) {
     /* Slower the input, lower the chance of it being tested */
-    uint64_t usecs_per_run = ((uint64_t)(time(NULL) - run->global->timing.timeStart) * 1000000);
-    usecs_per_run /= ATOMIC_GET(run->global->cnts.mutationsCnt);
-    usecs_per_run /= run->global->threads.threadsMax;
+    uint64_t avg_usecs_per_input =
+        ((uint64_t)(time(NULL) - run->global->timing.timeStart) * 1000000);
+    avg_usecs_per_input /= ATOMIC_GET(run->global->cnts.mutationsCnt);
+    avg_usecs_per_input /= run->global->threads.threadsMax;
 
     /* Cap both vals to 1us-1s */
-    usecs_per_run = HF_CAP(usecs_per_run, 1U, 1000000U);
-    uint64_t sample_exec_usec = HF_CAP(dynfile->timeExecUSecs, 1U, 1000000U);
+    avg_usecs_per_input = HF_CAP(avg_usecs_per_input, 1U, 1000000U);
+    uint64_t sample_usecs = HF_CAP(dynfile->timeExecUSecs, 1U, 1000000U);
 
-    if (sample_exec_usec >= usecs_per_run) {
-        return (int)(sample_exec_usec / usecs_per_run);
+    if (sample_usecs >= avg_usecs_per_input) {
+        return (int)(sample_usecs / avg_usecs_per_input);
     } else {
-        return -(int)(usecs_per_run / sample_exec_usec);
+        return -(int)(avg_usecs_per_input / sample_usecs);
     }
 }
 
