@@ -66,9 +66,6 @@
 #define ATOMIC_PRE_OR(x, y) __atomic_or_fetch(&(x), y, __ATOMIC_RELAXED)
 #define ATOMIC_POST_OR(x, y) __atomic_fetch_or(&(x), y, __ATOMIC_RELAXED)
 
-#define ATOMIC_PRE_INC_RELAXED(x) __atomic_add_fetch(&(x), 1, __ATOMIC_RELAXED)
-#define ATOMIC_POST_OR_RELAXED(x, y) __atomic_fetch_or(&(x), y, __ATOMIC_RELAXED)
-
 __attribute__((always_inline)) static inline bool ATOMIC_BITMAP_SET(uint8_t* addr, size_t offset) {
     addr += (offset / 8);
     uint8_t mask = (1U << (offset % 8));

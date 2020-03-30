@@ -219,7 +219,7 @@ HF_REQUIRE_SSE42_POPCNT void __cyg_profile_func_enter(void* func, void* caller) 
         (((uintptr_t)func << 12) | ((uintptr_t)caller & 0xFFF)) & _HF_PERF_BITMAP_BITSZ_MASK;
     register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
     if (!prev) {
-        ATOMIC_PRE_INC_RELAXED(covFeedback->pidNewPC[my_thread_no]);
+        ATOMIC_PRE_INC(covFeedback->pidNewPC[my_thread_no]);
         wmb();
     }
 }
@@ -237,7 +237,7 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_pc_internal(uintptr_t pc)
 
     register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, ret);
     if (!prev) {
-        ATOMIC_PRE_INC_RELAXED(covFeedback->pidNewPC[my_thread_no]);
+        ATOMIC_PRE_INC(covFeedback->pidNewPC[my_thread_no]);
         wmb();
     }
 }
@@ -489,7 +489,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_indir(uintptr_t callee) {
 
     register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
     if (!prev) {
-        ATOMIC_PRE_INC_RELAXED(covFeedback->pidNewPC[my_thread_no]);
+        ATOMIC_PRE_INC(covFeedback->pidNewPC[my_thread_no]);
         wmb();
     }
 }
@@ -506,7 +506,7 @@ __attribute__((weak)) HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_indir_call16(
 
     register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
     if (!prev) {
-        ATOMIC_PRE_INC_RELAXED(covFeedback->pidNewPC[my_thread_no]);
+        ATOMIC_PRE_INC(covFeedback->pidNewPC[my_thread_no]);
         wmb();
     }
 }
@@ -573,7 +573,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
     if (!ATOMIC_GET(covFeedback->pcGuardMap[*guard])) {
         bool prev = ATOMIC_XCHG(covFeedback->pcGuardMap[*guard], true);
         if (prev == false) {
-            ATOMIC_PRE_INC_RELAXED(covFeedback->pidNewEdge[my_thread_no]);
+            ATOMIC_PRE_INC(covFeedback->pidNewEdge[my_thread_no]);
         }
         wmb();
     }
@@ -624,7 +624,7 @@ void instrument8BitCountersCount(void) {
                 if (!prevval) {
                     ATOMIC_PRE_INC(covFeedback->pidNewEdge[my_thread_no]);
                 } else if (prevval < newval) {
-                    ATOMIC_PRE_INC(covFeedback->pidNewCmp[my_thread_no]);
+                    ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], newval);
                 }
             }
 
@@ -638,7 +638,6 @@ void instrument8BitCountersCount(void) {
         }
     }
 
-    ATOMIC_SET(covFeedback->pidTotalPC[my_thread_no], 0);
     ATOMIC_SET(covFeedback->pidTotalEdge[my_thread_no], totalEdge);
     ATOMIC_SET(covFeedback->pidTotalCmp[my_thread_no], totalCmp);
 
@@ -694,9 +693,9 @@ bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
 
 /* Reset the counters of newly discovered edges/pcs/features */
 void instrumentClearNewCov() {
-    covFeedback->pidNewPC[my_thread_no] = 0U;
-    covFeedback->pidNewEdge[my_thread_no] = 0U;
-    covFeedback->pidNewCmp[my_thread_no] = 0U;
+    ATOMIC_CLEAR(covFeedback->pidNewPC[my_thread_no]);
+    ATOMIC_CLEAR(covFeedback->pidNewEdge[my_thread_no]);
+    ATOMIC_CLEAR(covFeedback->pidNewCmp[my_thread_no]);
     wmb();
 }
 
