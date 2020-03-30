@@ -192,15 +192,13 @@ static void fuzz_perfFeedback(run_t* run) {
         wmb();
     };
 
-    uint64_t softCntPc =
-        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidFeedbackPc[run->fuzzNo]);
-    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidFeedbackPc[run->fuzzNo]);
+    uint64_t softCntPc = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewPC[run->fuzzNo]);
+    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewPC[run->fuzzNo]);
     uint64_t softCntEdge =
-        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidFeedbackEdge[run->fuzzNo]);
-    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidFeedbackEdge[run->fuzzNo]);
-    uint64_t softCntCmp =
-        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidFeedbackCmp[run->fuzzNo]);
-    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidFeedbackCmp[run->fuzzNo]);
+        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewEdge[run->fuzzNo]);
+    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewEdge[run->fuzzNo]);
+    uint64_t softCntCmp = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewCmp[run->fuzzNo]);
+    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewCmp[run->fuzzNo]);
 
     int64_t diff0 = run->global->linux.hwCnts.cpuInstrCnt - run->linux.hwCnts.cpuInstrCnt;
     int64_t diff1 = run->global->linux.hwCnts.cpuBranchCnt - run->linux.hwCnts.cpuBranchCnt;
@@ -229,6 +227,14 @@ static void fuzz_perfFeedback(run_t* run) {
             run->global->linux.hwCnts.bbCnt, run->global->linux.hwCnts.softCntEdge,
             run->global->linux.hwCnts.softCntPc, run->global->linux.hwCnts.softCntCmp);
 
+        /* Update per-input coverage metrics */
+        run->dynfile->cov[0] =
+            ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalPC[run->fuzzNo]) +
+            ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalEdge[run->fuzzNo]);
+        run->dynfile->cov[1] =
+            ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalCmp[run->fuzzNo]);
+        run->dynfile->cov[2] = run->linux.hwCnts.cpuInstrCnt + run->linux.hwCnts.cpuBranchCnt;
+        run->dynfile->cov[3] = run->dynfile->size ? (64 - util_Log2(run->dynfile->size)) : 64;
         input_addDynamicInput(run);
 
         if (run->global->socketFuzzer.enabled) {

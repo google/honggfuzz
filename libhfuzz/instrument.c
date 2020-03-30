@@ -219,7 +219,7 @@ HF_REQUIRE_SSE42_POPCNT void __cyg_profile_func_enter(void* func, void* caller) 
         (((uintptr_t)func << 12) | ((uintptr_t)caller & 0xFFF)) & _HF_PERF_BITMAP_BITSZ_MASK;
     register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
     if (!prev) {
-        ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackPc[my_thread_no]);
+        ATOMIC_PRE_INC_RELAXED(covFeedback->pidNewPC[my_thread_no]);
         wmb();
     }
 }
@@ -237,7 +237,7 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_pc_internal(uintptr_t pc)
 
     register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, ret);
     if (!prev) {
-        ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackPc[my_thread_no]);
+        ATOMIC_PRE_INC_RELAXED(covFeedback->pidNewPC[my_thread_no]);
         wmb();
     }
 }
@@ -260,7 +260,7 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp1_internal(
     uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
     if (prev < v) {
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+        ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
         wmb();
     }
 }
@@ -272,7 +272,7 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp2_internal(
     uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
     if (prev < v) {
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+        ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
         wmb();
     }
 }
@@ -284,7 +284,7 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp4_internal(
     uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
     if (prev < v) {
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+        ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
         wmb();
     }
 }
@@ -296,7 +296,7 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp8_internal(
     uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
     if (prev < v) {
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+        ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
         wmb();
     }
 }
@@ -437,7 +437,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t
         uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
         if (prev < v) {
             ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-            ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+            ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
             wmb();
         }
     }
@@ -463,7 +463,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_div8(uint64_t Val) {
     uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
     if (prev < v) {
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+        ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
         wmb();
     }
 }
@@ -474,7 +474,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_div4(uint32_t Val) {
     uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
     if (prev < v) {
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+        ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
         wmb();
     }
 }
@@ -489,7 +489,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_indir(uintptr_t callee) {
 
     register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
     if (!prev) {
-        ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackPc[my_thread_no]);
+        ATOMIC_PRE_INC_RELAXED(covFeedback->pidNewPC[my_thread_no]);
         wmb();
     }
 }
@@ -506,7 +506,7 @@ __attribute__((weak)) HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_indir_call16(
 
     register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
     if (!prev) {
-        ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackPc[my_thread_no]);
+        ATOMIC_PRE_INC_RELAXED(covFeedback->pidNewPC[my_thread_no]);
         wmb();
     }
 }
@@ -573,7 +573,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
     if (!ATOMIC_GET(covFeedback->pcGuardMap[*guard])) {
         bool prev = ATOMIC_XCHG(covFeedback->pcGuardMap[*guard], true);
         if (prev == false) {
-            ATOMIC_PRE_INC_RELAXED(covFeedback->pidFeedbackEdge[my_thread_no]);
+            ATOMIC_PRE_INC_RELAXED(covFeedback->pidNewEdge[my_thread_no]);
         }
         wmb();
     }
@@ -614,9 +614,9 @@ void instrument8BitCountersCount(void) {
             if (ATOMIC_GET(covFeedback->pcGuardMap[guard]) < newval) {
                 const uint8_t prevval = ATOMIC_POST_OR(covFeedback->pcGuardMap[guard], newval);
                 if (!prevval) {
-                    ATOMIC_PRE_INC(covFeedback->pidFeedbackEdge[my_thread_no]);
+                    ATOMIC_PRE_INC(covFeedback->pidNewEdge[my_thread_no]);
                 } else if (prevval < newval) {
-                    ATOMIC_PRE_INC(covFeedback->pidFeedbackCmp[my_thread_no]);
+                    ATOMIC_PRE_INC(covFeedback->pidNewCmp[my_thread_no]);
                 }
             }
         }
@@ -665,7 +665,7 @@ bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
     uint32_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
     if (prev < v) {
         ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidFeedbackCmp[my_thread_no], v - prev);
+        ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
         wmb();
         return true;
     }
@@ -674,9 +674,9 @@ bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
 
 /* Reset the counters of newly discovered edges/pcs/features */
 void instrumentClearNewCov() {
-    covFeedback->pidFeedbackPc[my_thread_no] = 0U;
-    covFeedback->pidFeedbackEdge[my_thread_no] = 0U;
-    covFeedback->pidFeedbackCmp[my_thread_no] = 0U;
+    covFeedback->pidNewPC[my_thread_no] = 0U;
+    covFeedback->pidNewEdge[my_thread_no] = 0U;
+    covFeedback->pidNewCmp[my_thread_no] = 0U;
     wmb();
 }
 

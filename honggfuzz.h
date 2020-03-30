@@ -166,10 +166,13 @@ typedef struct {
     uint8_t pcGuardMap[_HF_PC_GUARD_MAX];
     uint8_t bbMapPc[_HF_PERF_BITMAP_SIZE_16M];
     uint32_t bbMapCmp[_HF_PERF_BITMAP_SIZE_16M];
-    uint64_t pidFeedbackPc[_HF_THREAD_MAX];
-    uint64_t pidFeedbackEdge[_HF_THREAD_MAX];
-    uint64_t pidFeedbackCmp[_HF_THREAD_MAX];
+    uint64_t pidNewPC[_HF_THREAD_MAX];
+    uint64_t pidNewEdge[_HF_THREAD_MAX];
+    uint64_t pidNewCmp[_HF_THREAD_MAX];
     uint64_t guardNb;
+    uint64_t pidTotalPC[_HF_THREAD_MAX];
+    uint64_t pidTotalEdge[_HF_THREAD_MAX];
+    uint64_t pidTotalCmp[_HF_THREAD_MAX];
 } feedback_t;
 
 typedef struct {
