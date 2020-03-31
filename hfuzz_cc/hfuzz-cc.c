@@ -313,6 +313,12 @@ static void commonPreOpts(int* j, char** args) {
      * Make the execution flow more explicit, allowing for more code blocks
      * (and better code coverage estimates)
      */
+    if (isGCC) {
+        args[(*j)++] = "--param max-inline-insns-single=2000";
+    } else {
+        args[(*j)++] = "-mllvm";
+        args[(*j)++] = "-inline-threshold=2000";
+    }
     args[(*j)++] = "-fno-builtin";
     args[(*j)++] = "-fno-omit-frame-pointer";
     args[(*j)++] = "-D__NO_STRING_INLINES";
