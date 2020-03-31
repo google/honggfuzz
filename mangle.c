@@ -764,7 +764,7 @@ static void mangle_SpliceOverwrite(run_t* run, bool printable) {
 
     size_t remoteOff = mangle_getLen(sz) - 1;
     size_t localOff = mangle_getOffSet(run);
-    size_t len = mangle_getLen(HF_MIN(sz - remoteOff, run->dynfile->size - localOff));
+    size_t len = mangle_getLen(sz - remoteOff);
     mangle_Overwrite(run, localOff, &buf[remoteOff], len, printable);
 }
 
@@ -778,7 +778,21 @@ static void mangle_SpliceInsert(run_t* run, bool printable) {
 
     size_t remoteOff = mangle_getLen(sz) - 1;
     size_t localOff = mangle_getOffSet(run);
-    size_t len = mangle_getLen(HF_MIN(sz - remoteOff, run->dynfile->size - localOff));
+    size_t len = mangle_getLen(sz - remoteOff);
+    mangle_Insert(run, localOff, &buf[remoteOff], len, printable);
+}
+
+static void mangle_SpliceAppend(run_t* run, bool printable) {
+    const uint8_t* buf;
+    size_t sz = input_getRandomInputAsBuf(run, &buf);
+    if (!sz) {
+        mangle_BytesInsert(run, printable);
+        return;
+    }
+
+    size_t remoteOff = mangle_getLen(sz) - 1;
+    size_t localOff = run->dynfile->size;
+    size_t len = mangle_getLen(sz - remoteOff);
     mangle_Insert(run, localOff, &buf[remoteOff], len, printable);
 }
 
@@ -858,6 +872,7 @@ void mangle_mangleContent(run_t* run, int speed_factor) {
         mangle_RandomInsert,
         mangle_SpliceOverwrite,
         mangle_SpliceInsert,
+        mangle_SpliceAppend,
     };
 
     if (run->mutationsPerRun == 0U) {
@@ -880,12 +895,15 @@ void mangle_mangleContent(run_t* run, int speed_factor) {
 
     /* If last coverage acquisition was mroe than 5 secs ago, use splicing more frequently */
     if ((util_timeNowUSecs() - ATOMIC_GET(run->global->timing.lastCovUpdate)) > 5000000) {
-        switch (util_rnd64() % 4) {
+        switch (util_rnd64() % 6) {
             case 0:
                 mangle_SpliceOverwrite(run, run->global->cfg.only_printable);
                 break;
             case 1:
                 mangle_SpliceInsert(run, run->global->cfg.only_printable);
+                break;
+            case 2:
+                mangle_SpliceAppend(run, run->global->cfg.only_printable);
                 break;
             default:
                 break;
