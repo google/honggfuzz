@@ -313,7 +313,6 @@ static void commonPreOpts(int* j, char** args) {
      * Make the execution flow more explicit, allowing for more code blocks
      * (and better code coverage estimates)
      */
-    args[(*j)++] = "-fno-inline";
     args[(*j)++] = "-fno-builtin";
     args[(*j)++] = "-fno-omit-frame-pointer";
     args[(*j)++] = "-D__NO_STRING_INLINES";
