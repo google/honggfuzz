@@ -24,6 +24,7 @@
 
 #include "mangle.h"
 
+#include <ctype.h>
 #include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
@@ -754,6 +755,51 @@ static void mangle_ASCIINumInsert(run_t* run, bool printable) {
     mangle_Insert(run, off, (const uint8_t*)buf, len, printable);
 }
 
+static void mangle_ASCIINumChange(run_t* run, bool printable) {
+    size_t off = mangle_getOffSet(run);
+
+    /* Find a digit */
+    for (; off < run->dynfile->size; off++) {
+        if (isdigit(run->dynfile->data[off])) {
+            break;
+        }
+    }
+    if (off == run->dynfile->size) {
+        return mangle_BytesOverwrite(run, printable);
+    }
+
+    size_t len = HF_MIN(20, run->dynfile->size - off);
+    char numbuf[21] = {};
+    strncpy(numbuf, (const char*)&run->dynfile->data[off], len);
+    uint64_t val = (uint64_t)strtoull(numbuf, NULL, 10);
+
+    switch (util_rndGet(0, 5)) {
+        case 0:
+            val += util_rndGet(1, 256);
+            break;
+        case 1:
+            val -= util_rndGet(1, 256);
+            break;
+        case 2:
+            val *= util_rndGet(1, 256);
+            break;
+        case 3:
+            val /= util_rndGet(1, 256);
+            break;
+        case 4:
+            val = ~(val);
+            break;
+        case 5:
+            val = util_rnd64();
+            break;
+        default:
+            LOG_F("Invalid choice");
+    };
+
+    len = HF_MIN((size_t)snprintf(numbuf, sizeof(numbuf), "%" PRIu64, val), len);
+    mangle_Overwrite(run, off, (const uint8_t*)numbuf, len, printable);
+}
+
 static void mangle_SpliceOverwrite(run_t* run, bool printable) {
     const uint8_t* buf;
     size_t sz = input_getRandomInputAsBuf(run, &buf);
@@ -860,6 +906,7 @@ void mangle_mangleContent(run_t* run, int speed_factor) {
         mangle_BytesInsert,
         mangle_ASCIINumOverwrite,
         mangle_ASCIINumInsert,
+        mangle_ASCIINumChange,
         mangle_ByteRepeatOverwrite,
         mangle_ByteRepeatInsert,
         mangle_MagicOverwrite,
