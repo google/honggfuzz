@@ -229,6 +229,10 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
         LOG_E("Couldn't test binary for signatures");
         return false;
     }
+    if (hfuzz->exe.netDriver && hfuzz->linux.useNetNs == HF_MAYBE) {
+        LOG_I("The binary uses netdriver, disabling network namespacing");
+        hfuzz->linux.useNetNs = HF_NO;
+    }
 
     if (!hfuzz->exe.fuzzStdin && !hfuzz->exe.persistent &&
         !checkFor_FILE_PLACEHOLDER(hfuzz->exe.cmdline)) {
