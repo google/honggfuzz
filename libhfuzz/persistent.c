@@ -20,6 +20,7 @@
 #include "libhfuzz/fetch.h"
 #include "libhfuzz/instrument.h"
 #include "libhfuzz/libhfuzz.h"
+#include "libhfuzz/performance.h"
 
 __attribute__((weak)) int LLVMFuzzerInitialize(
     int* argc HF_ATTR_UNUSED, char*** argv HF_ATTR_UNUSED) {
@@ -72,6 +73,9 @@ static void HonggfuzzPersistentLoop(void) {
     for (;;) {
         size_t len;
         const uint8_t* buf;
+
+        /* Check whether the current benchmark is fast enough, or maybe we should restart it */
+        performanceCheck();
 
         HonggfuzzFetchData(&buf, &len);
         HonggfuzzRunOneInput(buf, len);

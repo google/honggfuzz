@@ -429,10 +429,13 @@ libhfuzz/linux.o: libhfcommon/common.h libhfcommon/log.h libhfcommon/ns.h
 libhfuzz/linux.o: libhfuzz/libhfuzz.h
 libhfuzz/memorycmp.o: libhfcommon/common.h libhfcommon/util.h
 libhfuzz/memorycmp.o: libhfuzz/instrument.h
+libhfuzz/performance.o: libhfuzz/performance.h honggfuzz.h libhfcommon/util.h
+libhfuzz/performance.o: libhfcommon/log.h
 libhfuzz/persistent.o: honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 libhfuzz/persistent.o: libhfcommon/files.h libhfcommon/common.h
 libhfuzz/persistent.o: libhfcommon/log.h libhfuzz/fetch.h
 libhfuzz/persistent.o: libhfuzz/instrument.h libhfuzz/libhfuzz.h
+libhfuzz/persistent.o: libhfuzz/performance.h
 linux/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h
 linux/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 linux/arch.o: libhfcommon/log.h libhfcommon/ns.h linux/perf.h linux/trace.h
