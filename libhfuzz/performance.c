@@ -27,6 +27,9 @@ void performanceCheck(void) {
     }
     if (iterCnt == 1000) {
         first1000USecsPerExec = (util_timeNowUSecs() - firstInputUSecs) / 1000;
+        if (first1000USecsPerExec == 0) {
+            first1000USecsPerExec = 1;
+        }
         lastCheckUSecs = util_timeNowUSecs();
         lastCheckIters = 0;
     }
@@ -38,8 +41,8 @@ void performanceCheck(void) {
         uint64_t currentUSecsPerExec =
             (util_timeNowUSecs() - lastCheckUSecs) / (iterCnt - lastCheckIters);
         if (currentUSecsPerExec > (first1000USecsPerExec * 5)) {
-            LOG_W("PID %d became to slow, initial USecsPerExec:%" PRIu64
-                  " us. current: %" PRIu64 " us. Restaring!",
+            LOG_W("pid=%d became to slow, initially: %" PRIu64 " us/exec, now: %" PRIu64
+                  " us/exec. Restaring!",
                 getpid(), first1000USecsPerExec, currentUSecsPerExec);
             exit(0);
         }
