@@ -40,9 +40,6 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 
-/* Maximum reasonable block size for many types of mutations (but not for all) */
-#define HF_MAX_LEN_BLOCK 512U
-
 static inline size_t mangle_LenLeft(run_t* run, size_t off) {
     if (off >= run->dynfile->size) {
         LOG_F("Offset is too large: off:%zu >= len:%zu", off, run->dynfile->size);
@@ -171,21 +168,28 @@ static void mangle_MemSwap(run_t* run, bool printable HF_ATTR_UNUSED) {
     size_t maxlen2 = run->dynfile->size - off2;
 
     size_t len = mangle_getLen(HF_MIN(maxlen1, maxlen2));
-    uint8_t* tmp = (uint8_t*)util_Malloc(len);
+    uint8_t* tmpbuf = (uint8_t*)util_Malloc(len);
     defer {
-        free(tmp);
+        free(tmpbuf);
     };
 
-    memcpy(tmp, &run->dynfile->data[off1], len);
+    memcpy(tmpbuf, &run->dynfile->data[off1], len);
     memmove(&run->dynfile->data[off1], &run->dynfile->data[off2], len);
-    memcpy(&run->dynfile->data[off2], tmp, len);
+    memcpy(&run->dynfile->data[off2], tmpbuf, len);
 }
 
 static void mangle_MemCopy(run_t* run, bool printable HF_ATTR_UNUSED) {
-    size_t off_from = mangle_getOffSet(run);
-    size_t len = mangle_getLen(HF_MIN(HF_MAX_LEN_BLOCK, run->dynfile->size - off_from));
+    size_t off = mangle_getOffSet(run);
+    size_t len = mangle_getLen(run->dynfile->size - off);
 
-    mangle_UseValue(run, &run->dynfile->data[off_from], len, printable);
+    /* Use a temp buf, as Insert/Inflate can change source bytes */
+    uint8_t* tmpbuf = (uint8_t*)util_Malloc(len);
+    defer {
+        free(tmpbuf);
+    };
+    memcpy(tmpbuf, &run->dynfile->data[off], len);
+
+    mangle_UseValue(run, tmpbuf, len, printable);
 }
 
 static void mangle_Bytes(run_t* run, bool printable) {
@@ -212,7 +216,7 @@ static void mangle_ByteRepeatOverwrite(run_t* run, bool printable) {
         return;
     }
 
-    size_t len = mangle_getLen(HF_MIN(HF_MAX_LEN_BLOCK, maxSz));
+    size_t len = mangle_getLen(maxSz);
     memset(&run->dynfile->data[destOff], run->dynfile->data[off], len);
 }
 
@@ -227,7 +231,7 @@ static void mangle_ByteRepeatInsert(run_t* run, bool printable) {
         return;
     }
 
-    size_t len = mangle_getLen(HF_MIN(HF_MAX_LEN_BLOCK, maxSz));
+    size_t len = mangle_getLen(maxSz);
     len = mangle_Inflate(run, destOff, len, printable);
     memset(&run->dynfile->data[destOff], run->dynfile->data[off], len);
 }
@@ -524,7 +528,7 @@ static void mangle_ConstFeedbackDict(run_t* run, bool printable) {
 
 static void mangle_MemSet(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
-    size_t len = mangle_getLen(HF_MIN(HF_MAX_LEN_BLOCK, run->dynfile->size - off));
+    size_t len = mangle_getLen(run->dynfile->size - off);
     int val = printable ? (int)util_rndPrintable() : (int)util_rndGet(0, UINT8_MAX);
 
     memset(&run->dynfile->data[off], val, len);
@@ -532,7 +536,7 @@ static void mangle_MemSet(run_t* run, bool printable) {
 
 static void mangle_RandomOverwrite(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
-    size_t len = mangle_getLen(HF_MIN(HF_MAX_LEN_BLOCK, run->dynfile->size - off));
+    size_t len = mangle_getLen(run->dynfile->size - off);
     if (printable) {
         util_rndBufPrintable(&run->dynfile->data[off], len);
     } else {
@@ -542,7 +546,7 @@ static void mangle_RandomOverwrite(run_t* run, bool printable) {
 
 static void mangle_RandomInsert(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
-    size_t len = mangle_getLen(HF_MIN(HF_MAX_LEN_BLOCK, run->dynfile->size - off));
+    size_t len = mangle_getLen(run->dynfile->size - off);
 
     len = mangle_Inflate(run, off, len, printable);
 
