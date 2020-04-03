@@ -12,41 +12,59 @@
 #include "libhfcommon/util.h"
 
 #define HF_USEC_PER_SEC 1000000
-#define HF_CHECK_INTERVAL (HF_USEC_PER_SEC * 20) /* Peform check every 20 sec. */
+#define HF_CHECK_INTERVAL_USECS (HF_USEC_PER_SEC * 20) /* Peform check every 20 sec. */
 
 static uint64_t iterCnt = 0;
 static time_t firstInputUSecs = 0;
-static uint64_t first1000USecsPerExec = 0;
+
+static uint64_t initialUSecsPerExec = 0;
+
 static uint64_t lastCheckUSecs = 0;
 static uint64_t lastCheckIters = 0;
 
-void performanceCheck(void) {
-    iterCnt += 1;
+static bool performanceInit(void) {
     if (iterCnt == 1) {
         firstInputUSecs = util_timeNowUSecs();
     }
-    if (iterCnt == 1000) {
-        first1000USecsPerExec = (util_timeNowUSecs() - firstInputUSecs) / 1000;
-        if (first1000USecsPerExec == 0) {
-            first1000USecsPerExec = 1;
-        }
+
+    uint64_t timeDiffUSecs = util_timeNowUSecs() - firstInputUSecs;
+    if (iterCnt == 5000 || timeDiffUSecs > HF_CHECK_INTERVAL_USECS) {
+        initialUSecsPerExec = timeDiffUSecs / iterCnt;
         lastCheckUSecs = util_timeNowUSecs();
-        lastCheckIters = 0;
-    }
-    if (iterCnt <= 1000) {
-        return;
+        lastCheckIters = iterCnt;
+        return true;
     }
 
-    if ((util_timeNowUSecs() - lastCheckUSecs) > HF_CHECK_INTERVAL) {
-        uint64_t currentUSecsPerExec =
-            (util_timeNowUSecs() - lastCheckUSecs) / (iterCnt - lastCheckIters);
-        if (currentUSecsPerExec > (first1000USecsPerExec * 5)) {
-            LOG_W("pid=%d became to slow, initially: %" PRIu64 " us/exec, now: %" PRIu64
-                  " us/exec. Restaring!",
-                getpid(), first1000USecsPerExec, currentUSecsPerExec);
-            exit(0);
+    return false;
+}
+
+bool performanceTooSlow(void) {
+    uint64_t timeDiffUSecs = util_timeNowUSecs() - lastCheckUSecs;
+    if (timeDiffUSecs > HF_CHECK_INTERVAL_USECS) {
+        uint64_t currentUSecsPerExec = timeDiffUSecs / (iterCnt - lastCheckIters);
+        if (currentUSecsPerExec > (initialUSecsPerExec * 5)) {
+            LOG_W("pid=%d became too slow to process fuzzing data, initial: %" PRIu64
+                  " us/exec, current: %" PRIu64 " us/exec. Restaring myself!",
+                getpid(), initialUSecsPerExec, currentUSecsPerExec);
+            return true;
         }
         lastCheckIters = iterCnt;
         lastCheckUSecs = util_timeNowUSecs();
+    }
+
+    return false;
+}
+
+void performanceCheck(void) {
+    iterCnt += 1;
+
+    static bool initialized = false;
+    if (!initialized) {
+        initialized = performanceInit();
+        return;
+    }
+
+    if (performanceTooSlow()) {
+        exit(0);
     }
 }
