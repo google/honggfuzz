@@ -13,6 +13,7 @@
 
 #define HF_USEC_PER_SEC 1000000
 #define HF_CHECK_INTERVAL_USECS (HF_USEC_PER_SEC * 20) /* Peform check every 20 sec. */
+#define HF_RESET_RATIO 10 /* Reset if currently n times slower that at the beginning */
 
 static uint64_t iterCnt = 0;
 static time_t firstInputUSecs = 0;
@@ -42,10 +43,10 @@ bool performanceTooSlow(void) {
     uint64_t timeDiffUSecs = util_timeNowUSecs() - lastCheckUSecs;
     if (timeDiffUSecs > HF_CHECK_INTERVAL_USECS) {
         uint64_t currentUSecsPerExec = timeDiffUSecs / (iterCnt - lastCheckIters);
-        if (currentUSecsPerExec > (initialUSecsPerExec * 5)) {
+        if (currentUSecsPerExec > (initialUSecsPerExec * HF_RESET_RATIO)) {
             LOG_W("pid=%d became too slow to process fuzzing data, initial: %" PRIu64
-                  " us/exec, current: %" PRIu64 " us/exec. Restaring myself!",
-                getpid(), initialUSecsPerExec, currentUSecsPerExec);
+                  " us/exec, current: %" PRIu64 " us/exec (reset ratio: %d). Restaring myself!",
+                getpid(), initialUSecsPerExec, currentUSecsPerExec, HF_RESET_RATIO);
             return true;
         }
         lastCheckIters = iterCnt;
