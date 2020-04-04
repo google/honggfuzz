@@ -35,7 +35,7 @@ static bool performanceInit(void) {
         lastCheckUSecs = util_timeNowUSecs();
         lastCheckIters = iterCnt;
 
-        LOG_I("Thread %u (pid=%d) initial speed set at %" PRIu64 " us/sec", instrumentThreadNo(),
+        LOG_I("Thread %u (pid=%d) initial speed set at %" PRIu64 " us/exec", instrumentThreadNo(),
             (int)getpid(), initialUSecsPerExec);
         return true;
     }
