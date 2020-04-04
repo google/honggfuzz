@@ -30,7 +30,6 @@
 
 /* Returns true if the new value is better */
 extern void instrument8BitCountersCount(void);
-extern void instrument8BitCountersClear(void);
 extern unsigned instrumentThreadNo(void);
 extern bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v);
 extern void instrumentClearNewCov();

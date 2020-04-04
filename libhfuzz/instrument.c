@@ -599,6 +599,7 @@ void instrument8BitCountersCount(void) {
     for (size_t i = 0; i < ARRAYSIZE(hf8bitcounters) && hf8bitcounters[i].start; i++) {
         for (size_t j = 0; j < hf8bitcounters[i].cnt; j++) {
             const uint8_t v = hf8bitcounters[i].start[j];
+            hf8bitcounters[i].start[j] = 0;
             if (!v) {
                 continue;
             }
@@ -641,13 +642,6 @@ void instrument8BitCountersCount(void) {
     ATOMIC_SET(covFeedback->pidTotalEdge[my_thread_no], totalEdge);
     ATOMIC_SET(covFeedback->pidTotalCmp[my_thread_no], totalCmp);
 
-    wmb();
-}
-
-void instrument8BitCountersClear(void) {
-    for (size_t i = 0; i < ARRAYSIZE(hf8bitcounters) && hf8bitcounters[i].start; i++) {
-        bzero(hf8bitcounters[i].start, hf8bitcounters[i].cnt);
-    }
     wmb();
 }
 
