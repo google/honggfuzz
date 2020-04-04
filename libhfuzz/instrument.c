@@ -675,6 +675,10 @@ void __sanitizer_cov_pcs_init(
     const uintptr_t* pcs_beg HF_ATTR_UNUSED, const uintptr_t* pcs_end HF_ATTR_UNUSED) {
 }
 
+unsigned instrumentThreadNo(void) {
+    return my_thread_no;
+}
+
 /* For some reason -fsanitize=fuzzer-no-link references this symbol */
 __attribute__((tls_model("initial-exec")))
 __attribute__((weak)) __thread uintptr_t __sancov_lowest_stack = 0;

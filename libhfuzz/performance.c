@@ -10,6 +10,7 @@
 #include "honggfuzz.h"
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
+#include "libhfuzz/instrument.h"
 
 #define HF_USEC_PER_SEC 1000000
 #define HF_CHECK_INTERVAL_USECS (HF_USEC_PER_SEC * 20) /* Peform check every 20 sec. */
@@ -33,6 +34,9 @@ static bool performanceInit(void) {
         initialUSecsPerExec = timeDiffUSecs / iterCnt;
         lastCheckUSecs = util_timeNowUSecs();
         lastCheckIters = iterCnt;
+
+        LOG_I("Thread %u (pid=%d) initial speed set at %" PRIu64 " us/sec", instrumentThreadNo(),
+            (int)getpid(), initialUSecsPerExec);
         return true;
     }
 
@@ -44,9 +48,9 @@ bool performanceTooSlow(void) {
     if (timeDiffUSecs > HF_CHECK_INTERVAL_USECS) {
         uint64_t currentUSecsPerExec = timeDiffUSecs / (iterCnt - lastCheckIters);
         if (currentUSecsPerExec > (initialUSecsPerExec * HF_RESET_RATIO)) {
-            LOG_W("pid=%d became too slow to process fuzzing data, initial: %" PRIu64
-                  " us/exec, current: %" PRIu64 " us/exec (reset ratio: %d). Restaring myself!",
-                getpid(), initialUSecsPerExec, currentUSecsPerExec, HF_RESET_RATIO);
+            LOG_W("Thread %u (pid=%d) became too slow to process fuzzing data, initial: %" PRIu64
+                  " us/exec, current: %" PRIu64 " us/exec. Restaring myself!",
+                instrumentThreadNo(), (int)getpid(), initialUSecsPerExec, currentUSecsPerExec);
             return true;
         }
         lastCheckIters = iterCnt;
