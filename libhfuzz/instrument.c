@@ -86,7 +86,7 @@ static void initializeCmpFeedback(void) {
     void* ret =
         mmap(NULL, sizeof(cmpfeedback_t), PROT_READ | PROT_WRITE, mflags, _HF_CMP_BITMAP_FD, 0);
     if (ret == MAP_FAILED) {
-        PLOG_W("mmap(_HF_CMP_BITMAP_FD==%d, size=%zu) of the feedback structure failed",
+        PLOG_W("mmap(_HF_CMP_BITMAP_FD=%d, size=%zu) of the feedback structure failed",
             _HF_CMP_BITMAP_FD, sizeof(cmpfeedback_t));
         return;
     }
