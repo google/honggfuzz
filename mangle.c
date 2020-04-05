@@ -717,7 +717,8 @@ static void mangle_ASCIINumChange(run_t* run, bool printable) {
         }
     }
     if (off == run->dynfile->size) {
-        return mangle_Bytes(run, printable);
+        mangle_Bytes(run, printable);
+        return;
     }
 
     size_t len = HF_MIN(20, run->dynfile->size - off);
