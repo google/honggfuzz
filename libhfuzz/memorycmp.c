@@ -543,6 +543,57 @@ HF_WEAK_WRAP(bool, g_str_has_suffix, const char* str, const char* suffix) {
         HF_strcmp(str + str_len - suffix_len, suffix, (uintptr_t)__builtin_return_address(0)) == 0);
 }
 
+/* CUrl wrappers */
+static int curl_toupper(int c) {
+    if (c >= 'a' && c <= 'z') {
+        return ('A' + c - 'a');
+    }
+    return c;
+}
+
+HF_WEAK_WRAP(int, Curl_strcasecompare, const char* first, const char* second) {
+    if (HF_strcasecmp(first, second, curl_toupper, (uintptr_t)__builtin_return_address(0)) == 0) {
+        return 1;
+    }
+    return 0;
+}
+
+HF_WEAK_WRAP(int, curl_strequal, const char* first, const char* second) {
+    if (HF_strcasecmp(first, second, curl_toupper, (uintptr_t)__builtin_return_address(0)) == 0) {
+        return 1;
+    }
+    return 0;
+}
+
+HF_WEAK_WRAP(int, Curl_safe_strcasecompare, const char* first, const char* second) {
+    if (!first && !second) {
+        return 1;
+    }
+    if (!first || !second) {
+        return 0;
+    }
+    if (HF_strcasecmp(first, second, curl_toupper, (uintptr_t)__builtin_return_address(0)) == 0) {
+        return 1;
+    }
+    return 0;
+}
+
+HF_WEAK_WRAP(int, Curl_strncasecompare, const char* first, const char* second, size_t max) {
+    if (HF_strncasecmp(first, second, max, curl_toupper, instrumentConstAvail(),
+            (uintptr_t)__builtin_return_address(0)) == 0) {
+        return 1;
+    }
+    return 0;
+}
+
+HF_WEAK_WRAP(int, curl_strnequal, const char* first, const char* second, size_t max) {
+    if (HF_strncasecmp(first, second, max, curl_toupper, instrumentConstAvail(),
+            (uintptr_t)__builtin_return_address(0)) == 0) {
+        return 1;
+    }
+    return 0;
+}
+
 /* C++ wrappers */
 int _ZNSt11char_traitsIcE7compareEPKcS2_m(const char* s1, const char* s2, size_t count) {
     return HF_memcmp(s1, s2, count, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));

@@ -413,19 +413,19 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=bcmp";
     args[j++] = "-Wl,--wrap=memmem";
     args[j++] = "-Wl,--wrap=strcpy";
-    /* Apache's httpd mem/str cmp functions */
+    /* Apache httpd */
     args[j++] = "-Wl,--wrap=ap_cstr_casecmp";
     args[j++] = "-Wl,--wrap=ap_cstr_casecmpn";
     args[j++] = "-Wl,--wrap=ap_strcasestr";
     args[j++] = "-Wl,--wrap=apr_cstr_casecmp";
     args[j++] = "-Wl,--wrap=apr_cstr_casecmpn";
-    /* Frequently used time-constant *SSL functions */
+    /* *SSL */
     args[j++] = "-Wl,--wrap=CRYPTO_memcmp";
     args[j++] = "-Wl,--wrap=OPENSSL_memcmp";
     args[j++] = "-Wl,--wrap=OPENSSL_strcasecmp";
     args[j++] = "-Wl,--wrap=OPENSSL_strncasecmp";
     args[j++] = "-Wl,--wrap=memcmpct";
-    /* Frequently used libXML2 functions */
+    /* libXML2 */
     args[j++] = "-Wl,--wrap=xmlStrncmp";
     args[j++] = "-Wl,--wrap=xmlStrcmp";
     args[j++] = "-Wl,--wrap=xmlStrEqual";
@@ -433,12 +433,12 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=xmlStrncasecmp";
     args[j++] = "-Wl,--wrap=xmlStrstr";
     args[j++] = "-Wl,--wrap=xmlStrcasestr";
-    /* Some Samba functions */
+    /* Samba */
     args[j++] = "-Wl,--wrap=memcmp_const_time";
     args[j++] = "-Wl,--wrap=strcsequal";
-    /* LittleCMS wrappers */
+    /* LittleCMS */
     args[j++] = "-Wl,--wrap=cmsstrcasecmp";
-    /* GLib wrappers */
+    /* GLib */
     args[j++] = "-Wl,--wrap=g_strcmp0";
     args[j++] = "-Wl,--wrap=g_strcasecmp";
     args[j++] = "-Wl,--wrap=g_strncasecmp";
@@ -447,6 +447,12 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=g_ascii_strncasecmp";
     args[j++] = "-Wl,--wrap=g_str_has_prefix";
     args[j++] = "-Wl,--wrap=g_str_has_suffix";
+    /* CUrl */
+    args[j++] = "-Wl,--wrap=Curl_strcasecompare";
+    args[j++] = "-Wl,--wrap=curl_strequal";
+    args[j++] = "-Wl,--wrap=Curl_safe_strcasecompare";
+    args[j++] = "-Wl,--wrap=Curl_strncasecompare";
+    args[j++] = "-Wl,--wrap=curl_strnequal";
 #endif /* _HF_ARCH_DARWIN */
 
     /* Pull modules defining the following symbols (if they exist) */
