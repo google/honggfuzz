@@ -84,7 +84,8 @@ static inline size_t mangle_getOffSet(run_t* run) {
 
 /* Offset which can be equal to the file size */
 static inline size_t mangle_getOffSetPlus1(run_t* run) {
-    return mangle_getLen(run->dynfile->size + 1) - 1;
+    size_t reqlen = HF_MIN(run->dynfile->size + 1, _HF_INPUT_MAX_SIZE);
+    return mangle_getLen(reqlen) - 1;
 }
 
 static inline void mangle_Move(run_t* run, size_t off_from, size_t off_to, size_t len) {
