@@ -22,7 +22,7 @@
 
 static bool isCXX = false;
 static bool isGCC = false;
-static bool usePCGuard = false;
+static bool usePCGuard = true;
 static bool hasCmdLineFSanitizeFuzzer = false;
 
 /* Embed libhf/.a inside this binary */
@@ -511,6 +511,9 @@ int main(int argc, char** argv) {
     }
     if (baseNameContains(argv[0], "-pcguard-")) {
         usePCGuard = true;
+    }
+    if (baseNameContains(argv[0], "-8bitcnt-")) {
+        usePCGuard = false;
     }
     hasCmdLineFSanitizeFuzzer = hasFSanitizeFuzzer(argc, argv);
 
