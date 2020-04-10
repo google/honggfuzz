@@ -80,11 +80,16 @@ static void* initialzeTryMapHugeTLB(int fd, size_t sz) {
 
 #if defined(_HF_ARCH_LINUX)
     /*
-     * Try to map the local structure using HugeTLB maps. It'll be way fatser later to clean it with
+     * Try to map the local structure using HugeTLB. It'll be way fatser later to clean it with
      * { ftruncate(fd, 0); ftruncate(fd, size); }
      */
-    mflags = files_getTmpMapFlags(MAP_SHARED | MAP_HUGETLB, /* nocore= */ true);
+    mflags = files_getTmpMapFlags(MAP_SHARED | MAP_HUGE_2MB, /* nocore= */ true);
     void* ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, mflags, fd, 0);
+#if defined(__x86_64__) || defined(__i386__)
+    if (ret == MAP_FAILED) {
+        PLOG_W("mmap(sz=%zu fd=%d flags=MAP_SHARED|MAP_HUGE_2MB) failed", sz, fd);
+    }
+#endif /* defined(__x86_64__) || defined(__i386__) */
     if (ret != MAP_FAILED) {
         return ret;
     }

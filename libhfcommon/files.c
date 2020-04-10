@@ -351,6 +351,8 @@ int files_createSharedMem(size_t sz, const char* name, bool exportmap) {
         }
     }
 #endif /* defined(SHM_ANON) */
+
+/* Use regular shm_open */
 #if !defined(_HF_ARCH_DARWIN) && !defined(__ANDROID__)
     /* shm objects under MacOSX are 'a-typical' */
     if (fd == -1) {
@@ -366,6 +368,8 @@ int files_createSharedMem(size_t sz, const char* name, bool exportmap) {
         }
     }
 #endif /* !defined(_HF_ARCH_DARWIN) && !defined(__ANDROID__) */
+
+    /* As a last resort, create a file in /tmp */
     if (fd == -1) {
         char template[PATH_MAX];
         snprintf(template, sizeof(template), "/tmp/%s.XXXXXX", name);
@@ -375,6 +379,7 @@ int files_createSharedMem(size_t sz, const char* name, bool exportmap) {
         }
         unlink(template);
     }
+
     if (TEMP_FAILURE_RETRY(ftruncate(fd, sz)) == -1) {
         PLOG_W("ftruncate(%d, %zu)", fd, sz);
         close(fd);
