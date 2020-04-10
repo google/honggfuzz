@@ -76,6 +76,8 @@
 /* Default maximum size of produced inputs */
 #define _HF_INPUT_DEFAULT_SIZE (1024ULL * 8)
 
+/* Per-thread bitmap */
+#define _HF_PERTHREAD_BITMAP_FD 1018
 /* FD used to report back used int/str constants from the fuzzed process */
 #define _HF_CMP_BITMAP_FD 1019
 /* FD used to log inside the child process */
@@ -355,6 +357,7 @@ typedef struct {
     runState_t runState;
     bool tmOutSignaled;
     char* args[_HF_ARGS_MAX + 1];
+    int perThreadCovFeedbackFd;
 #if !defined(_HF_ARCH_DARWIN)
     timer_t timerId;
 #endif  // !defined(_HF_ARCH_DARWIN)

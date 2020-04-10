@@ -404,6 +404,11 @@ static void fuzz_fuzzLoop(run_t* run) {
     run->linux.hwCnts.bbCnt = 0;
     run->linux.hwCnts.newBBCnt = 0;
 
+    if (!files_resetFile(run->perThreadCovFeedbackFd, sizeof(feedback_t))) {
+        LOG_F("Couldn't reset the per-thread coverage file fd=%d sz=%zu",
+            run->perThreadCovFeedbackFd, sizeof(feedback_t));
+    }
+
     if (!fuzz_fetchInput(run)) {
         if (run->global->cfg.minimize && fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MINIMIZE) {
             fuzz_setTerminating();
@@ -481,7 +486,7 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
 static void* fuzz_threadNew(void* arg) {
     honggfuzz_t* hfuzz = (honggfuzz_t*)arg;
     unsigned int fuzzNo = ATOMIC_POST_INC(hfuzz->threads.threadsActiveCnt);
-    LOG_I("Launched new fuzzing thread, no. #%" PRId32, fuzzNo);
+    LOG_I("Launched new fuzzing thread, no. #%u", fuzzNo);
 
     run_t run = {
         .global = hfuzz,
@@ -493,15 +498,30 @@ static void* fuzz_threadNew(void* arg) {
     };
 
     /* Do not try to handle input files with socketfuzzer */
+    char mapname[32];
+    snprintf(mapname, sizeof(mapname), "hf-%u-input", fuzzNo);
     if (!hfuzz->socketFuzzer.enabled) {
         if (!(run.dynfile->data = files_mapSharedMem(hfuzz->mutate.maxInputSz, &(run.dynfile->fd),
-                  "hf-input", /* nocore= */ true, /* export= */ false))) {
-            LOG_F("Couldn't create an input file of size: %zu", hfuzz->mutate.maxInputSz);
+                  mapname, /* nocore= */ true, /* exportmap= */ false))) {
+            LOG_F("Couldn't create an input file of size: %zu, name:'%s'", hfuzz->mutate.maxInputSz,
+                mapname);
         }
     }
     defer {
         if (run.dynfile->fd != -1) {
             close(run.dynfile->fd);
+        }
+    };
+
+    snprintf(mapname, sizeof(mapname), "hf-%u-perthreadmap", fuzzNo);
+    if ((run.perThreadCovFeedbackFd = files_createSharedMem(sizeof(feedback_t), mapname,
+             /* exportmap= */ run.global->io.exportFeedback)) == -1) {
+        LOG_F("files_createSharedMem(name='%s', sz=%zu, dir='%s') failed", mapname,
+            sizeof(feedback_t), run.global->io.workDir);
+    }
+    defer {
+        if (run.perThreadCovFeedbackFd != -1) {
+            close(run.perThreadCovFeedbackFd);
         }
     };
 

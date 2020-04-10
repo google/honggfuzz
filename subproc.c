@@ -295,6 +295,13 @@ static bool subproc_PrepareExecv(run_t* run) {
         return false;
     }
 
+    /* The per-thread coverage feedback bitmap */
+    if (TEMP_FAILURE_RETRY(dup2(run->perThreadCovFeedbackFd, _HF_PERTHREAD_BITMAP_FD)) == -1) {
+        PLOG_E("dup2(%d, _HF_CMP_PERTHREAD_FD=%d)", run->perThreadCovFeedbackFd,
+            _HF_PERTHREAD_BITMAP_FD);
+        return false;
+    }
+
     /* Do not try to handle input files with socketfuzzer */
     if (!run->global->socketFuzzer.enabled) {
         /* The input file to _HF_INPUT_FD */

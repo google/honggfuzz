@@ -29,6 +29,9 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
+#if defined(_HF_ARCH_LINUX)
+#include <linux/memfd.h>
+#endif /* defined(_HF_ARCH_LINUX) */
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <stddef.h>
@@ -210,6 +213,18 @@ const char* files_basename(const char* path) {
     return base ? base + 1 : path;
 }
 
+bool files_resetFile(int fd, size_t sz) {
+    if (ftruncate(fd, (off_t)0) == -1) {
+        PLOG_W("ftruncate(fd=%d, sz=0)", fd);
+        return false;
+    }
+    if (ftruncate(fd, (off_t)sz) == -1) {
+        PLOG_W("ftruncate(fd=%d, sz=%zu)", fd, sz);
+        return false;
+    }
+    return true;
+}
+
 /*
  * Reads symbols from src file (one per line) and append them to filterList. The
  * total number of added symbols is returned.
@@ -310,76 +325,71 @@ int files_getTmpMapFlags(int flag, bool nocore) {
     return flag;
 }
 
-void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore, bool export) {
-    *fd = -1;
+int files_createSharedMem(size_t sz, const char* name, bool exportmap) {
+    int fd = -1;
 
-    if (export) {
+    if (exportmap) {
         char path[PATH_MAX];
         snprintf(path, sizeof(path), "./%s", name);
-        if ((*fd = open(path, O_RDWR | O_CREAT | O_TRUNC | O_CLOEXEC, 0644)) == -1) {
+        if ((fd = open(path, O_RDWR | O_CREAT | O_TRUNC | O_CLOEXEC, 0644)) == -1) {
             PLOG_W("open('%s')", path);
-            return NULL;
+            return -1;
         }
     }
 
 #if defined(_HF_ARCH_LINUX)
-
-#if !defined(MFD_CLOEXEC) /* sys/memfd.h is not always present */
-#define MFD_CLOEXEC 0x0001U
-#endif /* !defined(MFD_CLOEXEC) */
-
-#if !defined(__NR_memfd_create)
-#if defined(__x86_64__)
-#define __NR_memfd_create 319
-#endif /* defined(__x86_64__) */
-#endif /* !defined(__NR_memfd_create) */
-
-#if defined(__NR_memfd_create)
-    if (*fd == -1) {
-        *fd = syscall(__NR_memfd_create, name, (uintptr_t)MFD_CLOEXEC);
+    if (fd == -1) {
+        fd = syscall(__NR_memfd_create, name, (uintptr_t)(MFD_CLOEXEC));
     }
-#endif /* defined__NR_memfd_create) */
-
 #endif /* defined(_HF_ARCH_LINUX) */
 
 /* SHM_ANON is available with some *BSD OSes */
 #if defined(SHM_ANON)
-    if (*fd == -1) {
-        if ((*fd = shm_open(SHM_ANON, O_RDWR | O_CLOEXEC, 0600)) == -1) {
+    if (fd == -1) {
+        if ((fd = shm_open(SHM_ANON, O_RDWR | O_CLOEXEC, 0600)) == -1) {
             PLOG_W("shm_open(SHM_ANON, O_RDWR|O_CLOEXEC, 0600)");
         }
     }
 #endif /* defined(SHM_ANON) */
 #if !defined(_HF_ARCH_DARWIN) && !defined(__ANDROID__)
     /* shm objects under MacOSX are 'a-typical' */
-    if (*fd == -1) {
+    if (fd == -1) {
         char tmpname[PATH_MAX];
         struct timeval tv;
         gettimeofday(&tv, NULL);
         snprintf(tmpname, sizeof(tmpname), "/%s%lx%lx%d", name, (unsigned long)tv.tv_sec,
             (unsigned long)tv.tv_usec, (int)getpid());
-        if ((*fd = shm_open(tmpname, O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC, 0600)) == -1) {
+        if ((fd = shm_open(tmpname, O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC, 0600)) == -1) {
             PLOG_W("shm_open('%s', O_RDWR|O_CREAT|O_EXCL|O_CLOEXEC, 0600)", tmpname);
         } else {
             shm_unlink(tmpname);
         }
     }
 #endif /* !defined(_HF_ARCH_DARWIN) && !defined(__ANDROID__) */
-    if (*fd == -1) {
+    if (fd == -1) {
         char template[PATH_MAX];
         snprintf(template, sizeof(template), "/tmp/%s.XXXXXX", name);
-        if ((*fd = mkostemp(template, O_CLOEXEC)) == -1) {
+        if ((fd = mkostemp(template, O_CLOEXEC)) == -1) {
             PLOG_W("mkstemp('%s')", template);
-            return NULL;
+            return -1;
         }
         unlink(template);
     }
-    if (TEMP_FAILURE_RETRY(ftruncate(*fd, sz)) == -1) {
-        PLOG_W("ftruncate(%d, %zu)", *fd, sz);
-        close(*fd);
-        *fd = -1;
+    if (TEMP_FAILURE_RETRY(ftruncate(fd, sz)) == -1) {
+        PLOG_W("ftruncate(%d, %zu)", fd, sz);
+        close(fd);
+        return -1;
+    }
+
+    return fd;
+}
+
+void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore, bool exportmap) {
+    *fd = files_createSharedMem(sz, name, exportmap);
+    if (*fd == -1) {
         return NULL;
     }
+
     int mflags = files_getTmpMapFlags(MAP_SHARED, /* nocore= */ true);
     void* ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, mflags, *fd, 0);
     if (ret == MAP_FAILED) {

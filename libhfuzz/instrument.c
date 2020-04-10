@@ -5,6 +5,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#if defined(_HF_ARCH_LINUX)
+#include <linux/mman.h>
+#endif /* defined(_HF_ARCH_LINUX) */
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -40,8 +43,9 @@ const char* const LIBHFUZZ_module_instrument = "LIBHFUZZ_module_instrument";
  */
 static feedback_t bbMapFb;
 
-feedback_t* covFeedback = &bbMapFb;
-cmpfeedback_t* cmpFeedback = NULL;
+feedback_t* globalCovFeedback = &bbMapFb;
+feedback_t* localCovFeedback = &bbMapFb;
+cmpfeedback_t* globalCmpFeedback = NULL;
 
 uint32_t my_thread_no = 0;
 
@@ -71,31 +75,49 @@ static void initializeLibcFunctions(void) {
     LOG_D("libc_memcmp at %p", libc_memcmp);
 }
 
+static void* initialzeTryMapHugeTLB(int fd, size_t sz) {
+    int mflags = 0;
+
+#if defined(_HF_ARCH_LINUX)
+    /*
+     * Try to map the local structure using HugeTLB maps. It'll be way fatser later to clean it with
+     * { ftruncate(fd, 0); ftruncate(fd, size); }
+     */
+    mflags = files_getTmpMapFlags(MAP_SHARED | MAP_HUGETLB, /* nocore= */ true);
+    void* ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, mflags, fd, 0);
+    if (ret != MAP_FAILED) {
+        return ret;
+    }
+#endif /* defined(_HF_ARCH_LINUX) */
+
+    mflags = files_getTmpMapFlags(MAP_SHARED, /* nocore= */ true);
+    return mmap(NULL, sz, PROT_READ | PROT_WRITE, mflags, fd, 0);
+}
+
 static void initializeCmpFeedback(void) {
     struct stat st;
     if (fstat(_HF_CMP_BITMAP_FD, &st) == -1) {
         return;
     }
     if (st.st_size != sizeof(cmpfeedback_t)) {
-        LOG_W("Size of the cmpFeedback structure mismatch: st.size != sizeof(cmpfeedback_t) (%zu "
-              "!= %zu). Link your fuzzed binaries with the newest honggfuzz and hfuzz-clang(++)",
+        LOG_W(
+            "Size of the globalCmpFeedback structure mismatch: st.size != sizeof(cmpfeedback_t) "
+            "(%zu != %zu). Link your fuzzed binaries with the newest honggfuzz and hfuzz-clang(++)",
             (size_t)st.st_size, sizeof(cmpfeedback_t));
         return;
     }
-    int mflags = files_getTmpMapFlags(MAP_SHARED, /* nocore= */ true);
-    void* ret =
-        mmap(NULL, sizeof(cmpfeedback_t), PROT_READ | PROT_WRITE, mflags, _HF_CMP_BITMAP_FD, 0);
+    void* ret = initialzeTryMapHugeTLB(_HF_CMP_BITMAP_FD, sizeof(cmpfeedback_t));
     if (ret == MAP_FAILED) {
         PLOG_W("mmap(_HF_CMP_BITMAP_FD=%d, size=%zu) of the feedback structure failed",
             _HF_CMP_BITMAP_FD, sizeof(cmpfeedback_t));
         return;
     }
-    ATOMIC_SET(cmpFeedback, ret);
+    ATOMIC_SET(globalCmpFeedback, ret);
 }
 
-static bool initializeCovFeedback(void) {
+static bool initializeLocalCovFeedback(void) {
     struct stat st;
-    if (fstat(_HF_COV_BITMAP_FD, &st) == -1) {
+    if (fstat(_HF_PERTHREAD_BITMAP_FD, &st) == -1) {
         return false;
     }
     if ((size_t)st.st_size < sizeof(feedback_t)) {
@@ -104,9 +126,30 @@ static bool initializeCovFeedback(void) {
             (size_t)st.st_size, sizeof(feedback_t));
         return false;
     }
-    int mflags = files_getTmpMapFlags(MAP_SHARED, /* nocore= */ true);
-    if ((covFeedback = mmap(NULL, sizeof(feedback_t), PROT_READ | PROT_WRITE, mflags,
-             _HF_COV_BITMAP_FD, 0)) == MAP_FAILED) {
+
+    localCovFeedback = initialzeTryMapHugeTLB(_HF_PERTHREAD_BITMAP_FD, sizeof(feedback_t));
+    if (localCovFeedback == MAP_FAILED) {
+        PLOG_W("mmap(_HF_PERTHREAD_BITMAP_FD=%d, size=%zu) of the local feedback structure failed",
+            _HF_PERTHREAD_BITMAP_FD, sizeof(feedback_t));
+        return false;
+    }
+    return true;
+}
+
+static bool initializeGlobalCovFeedback(void) {
+    struct stat st;
+    if (fstat(_HF_COV_BITMAP_FD, &st) == -1) {
+        return false;
+    }
+    if ((size_t)st.st_size < sizeof(feedback_t)) {
+        LOG_W("Size of the feedback structure mismatch: st.size < sizeof(feedback_t) (%zu < %zu). "
+              "Build your honggfuzz binary from newer sources",
+            (size_t)st.st_size, sizeof(feedback_t));
+        return false;
+    }
+
+    globalCovFeedback = initialzeTryMapHugeTLB(_HF_COV_BITMAP_FD, sizeof(feedback_t));
+    if (globalCovFeedback == MAP_FAILED) {
         PLOG_W("mmap(_HF_COV_BITMAP_FD=%d, size=%zu) of the feedback structure failed",
             _HF_COV_BITMAP_FD, sizeof(feedback_t));
         return false;
@@ -137,9 +180,13 @@ static void initializeInstrument(void) {
             my_thread_no, _HF_THREAD_MAX);
     }
 
-    if (!initializeCovFeedback()) {
-        covFeedback = &bbMapFb;
-        LOG_F("Could not intialize the coverage feedback map");
+    if (!initializeGlobalCovFeedback()) {
+        globalCovFeedback = &bbMapFb;
+        LOG_F("Could not intialize the global coverage feedback map");
+    }
+    if (!initializeLocalCovFeedback()) {
+        localCovFeedback = &bbMapFb;
+        LOG_F("Could not intialize the local coverage feedback map");
     }
     initializeCmpFeedback();
 
@@ -165,8 +212,8 @@ __attribute__((weak)) size_t instrumentReserveGuard(size_t cnt) {
         LOG_F(
             "This process requested too many PC-guards, total:%zu, requested:%zu)", guardCnt, cnt);
     }
-    if (ATOMIC_GET(covFeedback->guardNb) < guardCnt) {
-        ATOMIC_SET(covFeedback->guardNb, guardCnt);
+    if (ATOMIC_GET(globalCovFeedback->guardNb) < guardCnt) {
+        ATOMIC_SET(globalCovFeedback->guardNb, guardCnt);
         wmb();
     }
     return base;
@@ -185,29 +232,29 @@ static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
     if (len == 0) {
         return;
     }
-    if (len > sizeof(cmpFeedback->valArr[0].val)) {
-        len = sizeof(cmpFeedback->valArr[0].val);
+    if (len > sizeof(globalCmpFeedback->valArr[0].val)) {
+        len = sizeof(globalCmpFeedback->valArr[0].val);
     }
-    uint32_t curroff = ATOMIC_GET(cmpFeedback->cnt);
-    if (curroff >= ARRAYSIZE(cmpFeedback->valArr)) {
+    uint32_t curroff = ATOMIC_GET(globalCmpFeedback->cnt);
+    if (curroff >= ARRAYSIZE(globalCmpFeedback->valArr)) {
         return;
     }
 
     for (uint32_t i = 0; i < curroff; i++) {
-        if ((len == ATOMIC_GET(cmpFeedback->valArr[i].len)) &&
-            libc_memcmp(cmpFeedback->valArr[i].val, mem, len) == 0) {
+        if ((len == ATOMIC_GET(globalCmpFeedback->valArr[i].len)) &&
+            libc_memcmp(globalCmpFeedback->valArr[i].val, mem, len) == 0) {
             return;
         }
     }
 
-    uint32_t newoff = ATOMIC_POST_INC(cmpFeedback->cnt);
-    if (newoff >= ARRAYSIZE(cmpFeedback->valArr)) {
-        ATOMIC_SET(cmpFeedback->cnt, ARRAYSIZE(cmpFeedback->valArr));
+    uint32_t newoff = ATOMIC_POST_INC(globalCmpFeedback->cnt);
+    if (newoff >= ARRAYSIZE(globalCmpFeedback->valArr)) {
+        ATOMIC_SET(globalCmpFeedback->cnt, ARRAYSIZE(globalCmpFeedback->valArr));
         return;
     }
 
-    memcpy(cmpFeedback->valArr[newoff].val, mem, len);
-    ATOMIC_SET(cmpFeedback->valArr[newoff].len, len);
+    memcpy(globalCmpFeedback->valArr[newoff].val, mem, len);
+    ATOMIC_SET(globalCmpFeedback->valArr[newoff].len, len);
     wmb();
 }
 
@@ -217,9 +264,9 @@ static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
 HF_REQUIRE_SSE42_POPCNT void __cyg_profile_func_enter(void* func, void* caller) {
     register size_t pos =
         (((uintptr_t)func << 12) | ((uintptr_t)caller & 0xFFF)) & _HF_PERF_BITMAP_BITSZ_MASK;
-    register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
+    register bool prev = ATOMIC_BITMAP_SET(globalCovFeedback->bbMapPc, pos);
     if (!prev) {
-        ATOMIC_PRE_INC(covFeedback->pidNewPC[my_thread_no]);
+        ATOMIC_PRE_INC(globalCovFeedback->pidNewPC[my_thread_no]);
         wmb();
     }
 }
@@ -235,9 +282,9 @@ HF_REQUIRE_SSE42_POPCNT void __cyg_profile_func_exit(
 HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_pc_internal(uintptr_t pc) {
     register uintptr_t ret = pc & _HF_PERF_BITMAP_BITSZ_MASK;
 
-    register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, ret);
+    register bool prev = ATOMIC_BITMAP_SET(globalCovFeedback->bbMapPc, ret);
     if (!prev) {
-        ATOMIC_PRE_INC(covFeedback->pidNewPC[my_thread_no]);
+        ATOMIC_PRE_INC(globalCovFeedback->pidNewPC[my_thread_no]);
         wmb();
     }
 }
@@ -257,10 +304,10 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp1_internal(
     uintptr_t pc, uint8_t Arg1, uint8_t Arg2) {
     uintptr_t pos = pc % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
-    uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
+    uint8_t prev = ATOMIC_GET(globalCovFeedback->bbMapCmp[pos]);
     if (prev < v) {
-        ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
+        ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
+        ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
         wmb();
     }
 }
@@ -269,10 +316,10 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp2_internal(
     uintptr_t pc, uint16_t Arg1, uint16_t Arg2) {
     uintptr_t pos = pc % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
-    uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
+    uint8_t prev = ATOMIC_GET(globalCovFeedback->bbMapCmp[pos]);
     if (prev < v) {
-        ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
+        ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
+        ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
         wmb();
     }
 }
@@ -281,10 +328,10 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp4_internal(
     uintptr_t pc, uint32_t Arg1, uint32_t Arg2) {
     uintptr_t pos = pc % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcount(Arg1 ^ Arg2));
-    uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
+    uint8_t prev = ATOMIC_GET(globalCovFeedback->bbMapCmp[pos]);
     if (prev < v) {
-        ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
+        ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
+        ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
         wmb();
     }
 }
@@ -293,10 +340,10 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp8_internal(
     uintptr_t pc, uint64_t Arg1, uint64_t Arg2) {
     uintptr_t pos = pc % _HF_PERF_BITMAP_SIZE_16M;
     register uint8_t v = ((sizeof(Arg1) * 8) - __builtin_popcountll(Arg1 ^ Arg2));
-    uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
+    uint8_t prev = ATOMIC_GET(globalCovFeedback->bbMapCmp[pos]);
     if (prev < v) {
-        ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
+        ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
+        ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
         wmb();
     }
 }
@@ -312,7 +359,7 @@ void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2) {
 
 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
     /* Add 4byte values to the const_dictionary if they exist within the binary */
-    if (cmpFeedback && instrumentLimitEvery(4095)) {
+    if (globalCmpFeedback && instrumentLimitEvery(4095)) {
         if (Arg1 > 0xffff) {
             uint32_t bswp = __builtin_bswap32(Arg1);
             if (util_32bitValInBinary(Arg1) || util_32bitValInBinary(bswp)) {
@@ -334,7 +381,7 @@ void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
 
 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
     /* Add 8byte values to the const_dictionary if they exist within the binary */
-    if (cmpFeedback && instrumentLimitEvery(4095)) {
+    if (globalCmpFeedback && instrumentLimitEvery(4095)) {
         if (Arg1 > 0xffffff) {
             uint64_t bswp = __builtin_bswap64(Arg1);
             if (util_64bitValInBinary(Arg1) || util_64bitValInBinary(bswp)) {
@@ -434,10 +481,10 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t
     for (uint64_t i = 0; i < Cases[0]; i++) {
         uintptr_t pos = ((uintptr_t)__builtin_return_address(0) + i) % _HF_PERF_BITMAP_SIZE_16M;
         uint8_t v = (uint8_t)Cases[1] - __builtin_popcountll(Val ^ Cases[i + 2]);
-        uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
+        uint8_t prev = ATOMIC_GET(globalCovFeedback->bbMapCmp[pos]);
         if (prev < v) {
-            ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-            ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
+            ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
+            ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
             wmb();
         }
     }
@@ -460,10 +507,10 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmpd(
 HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_div8(uint64_t Val) {
     uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     uint8_t v = ((sizeof(Val) * 8) - __builtin_popcountll(Val));
-    uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
+    uint8_t prev = ATOMIC_GET(globalCovFeedback->bbMapCmp[pos]);
     if (prev < v) {
-        ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
+        ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
+        ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
         wmb();
     }
 }
@@ -471,10 +518,10 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_div8(uint64_t Val) {
 HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_div4(uint32_t Val) {
     uintptr_t pos = (uintptr_t)__builtin_return_address(0) % _HF_PERF_BITMAP_SIZE_16M;
     uint8_t v = ((sizeof(Val) * 8) - __builtin_popcount(Val));
-    uint8_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
+    uint8_t prev = ATOMIC_GET(globalCovFeedback->bbMapCmp[pos]);
     if (prev < v) {
-        ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
+        ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
+        ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
         wmb();
     }
 }
@@ -487,9 +534,9 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_indir(uintptr_t callee) {
     register size_t pos2 = callee & 0xFFF;
     register size_t pos = (pos1 | pos2) & _HF_PERF_BITMAP_BITSZ_MASK;
 
-    register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
+    register bool prev = ATOMIC_BITMAP_SET(globalCovFeedback->bbMapPc, pos);
     if (!prev) {
-        ATOMIC_PRE_INC(covFeedback->pidNewPC[my_thread_no]);
+        ATOMIC_PRE_INC(globalCovFeedback->pidNewPC[my_thread_no]);
         wmb();
     }
 }
@@ -504,9 +551,9 @@ __attribute__((weak)) HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_indir_call16(
     register size_t pos2 = (uintptr_t)callee & 0xFFF;
     register size_t pos = (pos1 | pos2) & _HF_PERF_BITMAP_BITSZ_MASK;
 
-    register bool prev = ATOMIC_BITMAP_SET(covFeedback->bbMapPc, pos);
+    register bool prev = ATOMIC_BITMAP_SET(globalCovFeedback->bbMapPc, pos);
     if (!prev) {
-        ATOMIC_PRE_INC(covFeedback->pidNewPC[my_thread_no]);
+        ATOMIC_PRE_INC(globalCovFeedback->pidNewPC[my_thread_no]);
         wmb();
     }
 }
@@ -536,10 +583,23 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard_init(uint32_t* start
     for (uint32_t* x = start; x < stop; x++) {
         uint32_t guardNo = instrumentReserveGuard(1);
         /* If the corresponding PC was already hit, map this specific guard as uninteresting (0) */
-        *x = ATOMIC_GET(covFeedback->pcGuardMap[guardNo]) ? 0U : guardNo;
+        *x = ATOMIC_GET(globalCovFeedback->pcGuardMap[guardNo]) ? 0U : guardNo;
         wmb();
     }
 }
+
+/* Map number of visits to an edge into buckets */
+static uint8_t const instrumentCntMap[256] = {
+    [0] = 0,
+    [1] = 1U << 0,
+    [2] = 1U << 1,
+    [3] = 1U << 2,
+    [4 ... 5] = 1U << 3,
+    [6 ... 10] = 1U << 4,
+    [11 ... 32] = 1U << 5,
+    [33 ... 64] = 1U << 6,
+    [65 ... 255] = 1U << 7,
+};
 
 HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
 #if defined(__ANDROID__)
@@ -570,10 +630,16 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
         return;
     }
 #endif /* defined(__ANDROID__) */
-    if (!ATOMIC_GET(covFeedback->pcGuardMap[*guard])) {
-        bool prev = ATOMIC_XCHG(covFeedback->pcGuardMap[*guard], true);
-        if (prev == false) {
-            ATOMIC_PRE_INC(covFeedback->pidNewEdge[my_thread_no]);
+
+    uint8_t v = ++(localCovFeedback->pcGuardMap[*guard]);
+    const uint8_t newval = instrumentCntMap[v];
+
+    if (ATOMIC_GET(globalCovFeedback->pcGuardMap[*guard]) < newval) {
+        const uint8_t prevval = ATOMIC_POST_OR(globalCovFeedback->pcGuardMap[*guard], newval);
+        if (prevval == 0) {
+            ATOMIC_PRE_INC(globalCovFeedback->pidNewEdge[my_thread_no]);
+        } else if (prevval < newval) {
+            ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], newval);
         }
         wmb();
     }
@@ -589,9 +655,9 @@ static struct {
 void instrument8BitCountersCount(void) {
     rmb();
 
-    ATOMIC_CLEAR(covFeedback->pidTotalPC[my_thread_no]);
-    ATOMIC_CLEAR(covFeedback->pidTotalEdge[my_thread_no]);
-    ATOMIC_CLEAR(covFeedback->pidTotalCmp[my_thread_no]);
+    ATOMIC_CLEAR(globalCovFeedback->pidTotalPC[my_thread_no]);
+    ATOMIC_CLEAR(globalCovFeedback->pidTotalEdge[my_thread_no]);
+    ATOMIC_CLEAR(globalCovFeedback->pidTotalCmp[my_thread_no]);
 
     uint64_t totalEdge = 0;
     uint64_t totalCmp = 0;
@@ -604,28 +670,17 @@ void instrument8BitCountersCount(void) {
                 continue;
             }
 
-            /* Map number of visits to an edge into buckets */
-            static uint8_t const scaleMap[256] = {
-                [0] = 0,
-                [1] = 1U << 0,
-                [2] = 1U << 1,
-                [3] = 1U << 2,
-                [4 ... 5] = 1U << 3,
-                [6 ... 10] = 1U << 4,
-                [11 ... 32] = 1U << 5,
-                [33 ... 64] = 1U << 6,
-                [65 ... 255] = 1U << 7,
-            };
-            const uint8_t newval = scaleMap[v];
+            const uint8_t newval = instrumentCntMap[v];
             const size_t guard = hf8bitcounters[i].guard + j;
 
             /* New hits */
-            if (ATOMIC_GET(covFeedback->pcGuardMap[guard]) < newval) {
-                const uint8_t prevval = ATOMIC_POST_OR(covFeedback->pcGuardMap[guard], newval);
+            if (ATOMIC_GET(globalCovFeedback->pcGuardMap[guard]) < newval) {
+                const uint8_t prevval =
+                    ATOMIC_POST_OR(globalCovFeedback->pcGuardMap[guard], newval);
                 if (!prevval) {
-                    ATOMIC_PRE_INC(covFeedback->pidNewEdge[my_thread_no]);
+                    ATOMIC_PRE_INC(globalCovFeedback->pidNewEdge[my_thread_no]);
                 } else if (prevval < newval) {
-                    ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], newval);
+                    ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], newval);
                 }
             }
 
@@ -639,8 +694,8 @@ void instrument8BitCountersCount(void) {
         }
     }
 
-    ATOMIC_SET(covFeedback->pidTotalEdge[my_thread_no], totalEdge);
-    ATOMIC_SET(covFeedback->pidTotalCmp[my_thread_no], totalCmp);
+    ATOMIC_SET(globalCovFeedback->pidTotalEdge[my_thread_no], totalEdge);
+    ATOMIC_SET(globalCovFeedback->pidTotalCmp[my_thread_no], totalCmp);
 
     wmb();
 }
@@ -679,10 +734,10 @@ __attribute__((weak)) __thread uintptr_t __sancov_lowest_stack = 0;
 
 bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
     uintptr_t pos = addr % _HF_PERF_BITMAP_SIZE_16M;
-    uint32_t prev = ATOMIC_GET(covFeedback->bbMapCmp[pos]);
+    uint32_t prev = ATOMIC_GET(globalCovFeedback->bbMapCmp[pos]);
     if (prev < v) {
-        ATOMIC_SET(covFeedback->bbMapCmp[pos], v);
-        ATOMIC_POST_ADD(covFeedback->pidNewCmp[my_thread_no], v - prev);
+        ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
+        ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
         wmb();
         return true;
     }
@@ -691,14 +746,14 @@ bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
 
 /* Reset the counters of newly discovered edges/pcs/features */
 void instrumentClearNewCov() {
-    ATOMIC_CLEAR(covFeedback->pidNewPC[my_thread_no]);
-    ATOMIC_CLEAR(covFeedback->pidNewEdge[my_thread_no]);
-    ATOMIC_CLEAR(covFeedback->pidNewCmp[my_thread_no]);
+    ATOMIC_CLEAR(globalCovFeedback->pidNewPC[my_thread_no]);
+    ATOMIC_CLEAR(globalCovFeedback->pidNewEdge[my_thread_no]);
+    ATOMIC_CLEAR(globalCovFeedback->pidNewCmp[my_thread_no]);
     wmb();
 }
 
 void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
-    if (!cmpFeedback) {
+    if (!globalCmpFeedback) {
         return;
     }
     if (len == 0) {
@@ -714,7 +769,7 @@ void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
 }
 
 void instrumentAddConstStr(const char* s) {
-    if (!cmpFeedback) {
+    if (!globalCmpFeedback) {
         return;
     }
     if (!instrumentLimitEvery(127)) {
@@ -727,7 +782,7 @@ void instrumentAddConstStr(const char* s) {
 }
 
 void instrumentAddConstStrN(const char* s, size_t n) {
-    if (!cmpFeedback) {
+    if (!globalCmpFeedback) {
         return;
     }
     if (n == 0) {
@@ -743,5 +798,5 @@ void instrumentAddConstStrN(const char* s, size_t n) {
 }
 
 bool instrumentConstAvail(void) {
-    return (ATOMIC_GET(cmpFeedback) != NULL);
+    return (ATOMIC_GET(globalCmpFeedback) != NULL);
 }
