@@ -82,7 +82,7 @@ __attribute__((always_inline)) static inline bool ATOMIC_BITMAP_SET(uint8_t* add
                          : "Ir"(offset % 8));
     return old;
 #else  /* defined(__x86_64__) || defined(__i386__) */
-    return (ATOMIC_POST_OR_RELAXED(*addr, mask) & mask);
+    return (ATOMIC_POST_OR(*addr, mask) & mask);
 #endif /* defined(__x86_64__) || defined(__i386__) */
 }
 
