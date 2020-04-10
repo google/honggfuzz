@@ -608,13 +608,15 @@ static uint8_t const instrumentCntMap[256] = {
 
 HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
 #if defined(__ANDROID__)
-    // ANDROID: Bionic invokes routines that Honggfuzz wraps, before either
-    //          *SAN or Honggfuzz have initialized.  Check to see if Honggfuzz
-    //          has initialized -- if not, force *SAN to initialize (otherwise
-    //          _strcmp() will crash, as it is *SAN-instrumented).
-    //
-    //          Defer all trace_pc_guard activity until trace_pc_guard_init is
-    //          invoked via sancov.module_ctor in the normal process of things.
+    /*
+     * ANDROID: Bionic invokes routines that Honggfuzz wraps, before either
+     *          *SAN or Honggfuzz have initialized.  Check to see if Honggfuzz
+     *          has initialized -- if not, force *SAN to initialize (otherwise
+     *          _strcmp() will crash, as it is *SAN-instrumented).
+     *
+     *          Defer all trace_pc_guard activity until trace_pc_guard_init is
+     *          invoked via sancov.module_ctor in the normal process of things.
+     */
     if (!guards_initialized) {
         void __asan_init(void) __attribute__((weak));
         if (__asan_init) {
@@ -636,14 +638,14 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
     }
 #endif /* defined(__ANDROID__) */
 
-    uint8_t v = ++(localCovFeedback->pcGuardMap[*guard]);
+    const uint8_t v = ATOMIC_PRE_INC(localCovFeedback->pcGuardMap[*guard]);
     const uint8_t newval = instrumentCntMap[v];
 
     if (ATOMIC_GET(globalCovFeedback->pcGuardMap[*guard]) < newval) {
-        const uint8_t prevval = ATOMIC_POST_OR(globalCovFeedback->pcGuardMap[*guard], newval);
-        if (prevval == 0) {
+        const uint8_t oldval = ATOMIC_POST_OR(globalCovFeedback->pcGuardMap[*guard], newval);
+        if (!oldval) {
             ATOMIC_PRE_INC(globalCovFeedback->pidNewEdge[my_thread_no]);
-        } else if (prevval < newval) {
+        } else if (oldval < newval) {
             ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], newval);
         }
         wmb();
@@ -680,11 +682,10 @@ void instrument8BitCountersCount(void) {
 
             /* New hits */
             if (ATOMIC_GET(globalCovFeedback->pcGuardMap[guard]) < newval) {
-                const uint8_t prevval =
-                    ATOMIC_POST_OR(globalCovFeedback->pcGuardMap[guard], newval);
-                if (!prevval) {
+                const uint8_t oldval = ATOMIC_POST_OR(globalCovFeedback->pcGuardMap[guard], newval);
+                if (!oldval) {
                     ATOMIC_PRE_INC(globalCovFeedback->pidNewEdge[my_thread_no]);
-                } else if (prevval < newval) {
+                } else if (oldval < newval) {
                     ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], newval);
                 }
             }
