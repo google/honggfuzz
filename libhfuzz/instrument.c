@@ -612,7 +612,7 @@ static uint8_t const instrumentCntMap[256] = {
     [65 ... 255] = 1U << 7,
 };
 
-HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
+HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard_ptr) {
 #if defined(__ANDROID__)
     /*
      * ANDROID: Bionic invokes routines that Honggfuzz wraps, before either
@@ -644,18 +644,20 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
     }
 #endif /* defined(__ANDROID__) */
 
-    const uint8_t v = ++(localCovFeedback->pcGuardMap[*guard]);
+    const uint32_t guard = *guard_ptr;
+    const uint8_t v = ATOMIC_PRE_INC(localCovFeedback->pcGuardMap[guard]);
     const uint8_t newval = instrumentCntMap[v];
 
-    if (ATOMIC_GET(globalCovFeedback->pcGuardMap[*guard]) < newval) {
-        const uint8_t oldval = ATOMIC_POST_OR(globalCovFeedback->pcGuardMap[*guard], newval);
+    if (ATOMIC_GET(globalCovFeedback->pcGuardMap[guard]) < newval) {
+        const uint8_t oldval = ATOMIC_POST_OR(globalCovFeedback->pcGuardMap[guard], newval);
         if (!oldval) {
             ATOMIC_PRE_INC(globalCovFeedback->pidNewEdge[my_thread_no]);
         } else if (oldval < newval) {
             ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], newval);
         }
-        wmb();
     }
+
+    wmb();
 }
 
 /* Support up to 256 DSO modules with separate 8bit counters */
