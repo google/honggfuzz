@@ -650,6 +650,11 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard_ptr)
     }
 
     const uint8_t v = ATOMIC_PRE_INC(localCovFeedback->pcGuardMap[guard]);
+    if (v == 0) {
+        /* This guard has been maxed out. Mark it as uninteresting */
+        ATOMIC_CLEAR(*guard_ptr);
+    }
+
     const uint8_t newval = instrumentCntMap[v];
 
     if (ATOMIC_GET(globalCovFeedback->pcGuardMap[guard]) < newval) {
@@ -657,10 +662,9 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard_ptr)
         if (!oldval) {
             ATOMIC_PRE_INC(globalCovFeedback->pidNewEdge[my_thread_no]);
         } else if (oldval < newval) {
-            ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], newval);
+            ATOMIC_PRE_INC(globalCovFeedback->pidNewCmp[my_thread_no]);
         }
     }
-
     wmb();
 }
 
@@ -698,7 +702,7 @@ void instrument8BitCountersCount(void) {
                 if (!oldval) {
                     ATOMIC_PRE_INC(globalCovFeedback->pidNewEdge[my_thread_no]);
                 } else if (oldval < newval) {
-                    ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], newval);
+                    ATOMIC_PRE_INC(globalCovFeedback->pidNewCmp[my_thread_no]);
                 }
             }
 
