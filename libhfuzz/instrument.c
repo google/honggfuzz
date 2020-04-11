@@ -225,7 +225,9 @@ __attribute__((weak)) size_t instrumentReserveGuard(size_t cnt) {
 }
 
 void instrumentResetLocalCovFeedback(void) {
-    bzero(&(localCovFeedback->pcGuardMap[0]), instrumentReserveGuard(0));
+    bzero(&(localCovFeedback->pcGuardMap[0]),
+        HF_MIN(instrumentReserveGuard(0) + 1, _HF_PC_GUARD_MAX - 1));
+    wmb();
 }
 
 /* Used to limit certain expensive actions, like adding values to dictionaries */
@@ -642,7 +644,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
     }
 #endif /* defined(__ANDROID__) */
 
-    const uint8_t v = ATOMIC_PRE_INC(localCovFeedback->pcGuardMap[*guard]);
+    const uint8_t v = ++(localCovFeedback->pcGuardMap[*guard]);
     const uint8_t newval = instrumentCntMap[v];
 
     if (ATOMIC_GET(globalCovFeedback->pcGuardMap[*guard]) < newval) {
