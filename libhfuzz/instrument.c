@@ -645,6 +645,10 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard_ptr)
 #endif /* defined(__ANDROID__) */
 
     const uint32_t guard = *guard_ptr;
+    if (!guard) {
+        return;
+    }
+
     const uint8_t v = ATOMIC_PRE_INC(localCovFeedback->pcGuardMap[guard]);
     const uint8_t newval = instrumentCntMap[v];
 
