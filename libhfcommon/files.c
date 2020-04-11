@@ -213,7 +213,16 @@ const char* files_basename(const char* path) {
     return base ? base + 1 : path;
 }
 
+/* Zero all bytes in the file */
 bool files_resetFile(int fd, size_t sz) {
+#if defined(_HF_ARCH_LINUX)
+    if (fallocate(fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, (off_t)0, (off_t)sz) != -1) {
+        return true;
+    }
+    PLOG_W("fallocate(fd=%d, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, sz=%zu)", fd, sz);
+#endif /* defined(_HF_ARCH_LINUX) */
+
+    /* Fallback mode */
     if (ftruncate(fd, (off_t)0) == -1) {
         PLOG_W("ftruncate(fd=%d, sz=0)", fd);
         return false;
