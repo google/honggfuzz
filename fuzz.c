@@ -404,11 +404,6 @@ static void fuzz_fuzzLoop(run_t* run) {
     run->linux.hwCnts.bbCnt = 0;
     run->linux.hwCnts.newBBCnt = 0;
 
-    if (!files_resetFile(run->perThreadCovFeedbackFd, sizeof(feedback_t))) {
-        LOG_F("Couldn't reset the per-thread coverage file fd=%d sz=%zu",
-            run->perThreadCovFeedbackFd, sizeof(feedback_t));
-    }
-
     if (!fuzz_fetchInput(run)) {
         if (run->global->cfg.minimize && fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MINIMIZE) {
             fuzz_setTerminating();

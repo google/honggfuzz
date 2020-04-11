@@ -28,8 +28,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-/* Returns true if the new value is better */
 extern void instrument8BitCountersCount(void);
+extern void instrumentResetLocalCovFeedback(void);
 extern unsigned instrumentThreadNo(void);
 extern bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v);
 extern void instrumentClearNewCov();

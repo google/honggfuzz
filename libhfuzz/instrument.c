@@ -224,6 +224,10 @@ __attribute__((weak)) size_t instrumentReserveGuard(size_t cnt) {
     return base;
 }
 
+void instrumentResetLocalCovFeedback(void) {
+    bzero(&(localCovFeedback->pcGuardMap[0]), instrumentReserveGuard(0));
+}
+
 /* Used to limit certain expensive actions, like adding values to dictionaries */
 static inline bool instrumentLimitEvery(uint64_t step) {
     static __thread uint64_t staticCnt = 0;
