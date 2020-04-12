@@ -225,8 +225,8 @@ __attribute__((weak)) size_t instrumentReserveGuard(size_t cnt) {
 }
 
 void instrumentResetLocalCovFeedback(void) {
-    bzero(&(localCovFeedback->pcGuardMap[0]),
-        HF_MIN(instrumentReserveGuard(0) + 1, _HF_PC_GUARD_MAX - 1));
+    bzero(localCovFeedback->pcGuardMap, HF_MIN(instrumentReserveGuard(0), _HF_PC_GUARD_MAX));
+
     wmb();
 }
 
@@ -593,10 +593,10 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard_init(uint32_t* start
 
     for (uint32_t* x = start; x < stop; x++) {
         uint32_t guardNo = instrumentReserveGuard(1);
-        /* If the corresponding PC was already hit, map this specific guard as uninteresting (0) */
-        *x = ATOMIC_GET(globalCovFeedback->pcGuardMap[guardNo]) ? 0U : guardNo;
-        wmb();
+        *x = guardNo;
     }
+
+    wmb();
 }
 
 /* Map number of visits to an edge into buckets */
