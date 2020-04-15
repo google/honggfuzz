@@ -13,8 +13,8 @@
 #include "libhfuzz/instrument.h"
 
 #define HF_USEC_PER_SEC 1000000
-#define HF_CHECK_INTERVAL_USECS (HF_USEC_PER_SEC * 20) /* Peform check every 20 sec. */
-#define HF_RESET_RATIO 10 /* Reset if currently n times slower that at the beginning */
+#define HF_CHECK_INTERVAL_USECS (HF_USEC_PER_SEC * 20) /* Peform this check every 20 sec. */
+#define HF_RESET_RATIO 5 /* Reset ourselves, if currently n times slower than in the beginning */
 
 static uint64_t iterCnt = 0;
 static time_t firstInputUSecs = 0;
