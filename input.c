@@ -462,22 +462,22 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
     int penalty = 0;
 
     {
-        *speed_factor = input_speedFactor(run, dynfile);
-        penalty += HF_CAP(*speed_factor, -15, 15);
+        *speed_factor = HF_CAP(input_speedFactor(run, dynfile) / 3, 0, 15);
+        penalty += *speed_factor;
     }
 
     {
         /* Older inputs -> lower chance of being tested */
         static const int scaleMap[] = {
-            [100 ... 200] = -15,
-            [98 ... 99] = -5,
+            [100 ... 200] = -10,
+            [98 ... 99] = -7,
             [96 ... 97] = -2,
             [91 ... 95] = -1,
             [81 ... 90] = 0,
             [71 ... 80] = 1,
             [61 ... 70] = 2,
             [41 ... 60] = 3,
-            [0 ... 40] = 5,
+            [0 ... 40] = 4,
         };
 
         const unsigned percentile = (dynfile->idx * 100) / run->global->io.dynfileqCnt;
@@ -486,13 +486,13 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
 
     {
         /* If the input wasn't source of other inputs so far, make it less likely to be tested */
-        penalty += HF_CAP((2 - (int)dynfile->refs) * 2, -15, 15);
+        penalty += HF_CAP((1 - (int)dynfile->refs) * 10, -15, 10);
     }
 
     {
         /* Add penalty for the input being too big - 0 is for 256B inputs */
         if (dynfile->size > 0) {
-            penalty += HF_CAP(((int)util_Log2(dynfile->size) - 8) / 4, -15, 15);
+            penalty += HF_CAP(((int)util_Log2(dynfile->size) - 8) / 4, -5, 5);
         }
     }
 

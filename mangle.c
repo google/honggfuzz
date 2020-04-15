@@ -848,12 +848,12 @@ void mangle_mangleContent(run_t* run, int speed_factor) {
 
     uint64_t changesCnt = run->global->mutate.mutationsPerRun;
 
-    if (speed_factor <= 1) {
+    if (speed_factor < 5) {
         changesCnt = util_rndGet(1, run->global->mutate.mutationsPerRun);
-    } else if (speed_factor <= 3) {
+    } else if (speed_factor < 10) {
         changesCnt = run->global->mutate.mutationsPerRun;
     } else {
-        changesCnt = HF_MIN(speed_factor, 20);
+        changesCnt = HF_MIN(speed_factor, 12);
         changesCnt = HF_MAX(changesCnt, run->global->mutate.mutationsPerRun);
     }
 
