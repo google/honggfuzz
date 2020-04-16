@@ -285,6 +285,7 @@ typedef struct {
         uint64_t* blacklist;
         size_t blacklistCnt;
         bool skipFeedbackOnTimeout;
+        uint64_t maxCov[4];
         dynFileMethod_t dynFileMethod;
     } feedback;
     struct {

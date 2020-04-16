@@ -389,7 +389,11 @@ void input_addDynamicInput(run_t* run) {
     MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
 
     dynfile->idx = ATOMIC_PRE_INC(run->global->io.dynfileqCnt);
-    dynfile->cov[3] = dynfile->idx;
+
+    run->global->feedback.maxCov[0] = HF_MAX(run->global->feedback.maxCov[0], dynfile->cov[0]);
+    run->global->feedback.maxCov[1] = HF_MAX(run->global->feedback.maxCov[1], dynfile->cov[1]);
+    run->global->feedback.maxCov[2] = HF_MAX(run->global->feedback.maxCov[2], dynfile->cov[2]);
+    run->global->feedback.maxCov[3] = HF_MAX(run->global->feedback.maxCov[3], dynfile->cov[3]);
 
     run->global->io.dynfileqMaxSz = HF_MAX(run->global->io.dynfileqMaxSz, dynfile->size);
 
@@ -467,17 +471,36 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
     }
 
     {
+        /* Inputs with lower total coverage -> lower chance of being tested */
+        static const int scaleMap[] = {
+            [100 ... 200] = -15,
+            [90 ... 99] = -10,
+            [80 ... 89] = -7,
+            [70 ... 79] = -5,
+            [60 ... 69] = -2,
+            [50 ... 59] = 0,
+            [30 ... 49] = 5,
+            [10 ... 29] = 10,
+            [0 ... 10] = 15,
+        };
+
+        uint64_t maxCov0 = ATOMIC_GET(run->global->feedback.maxCov[0]);
+        if (maxCov0) {
+            const unsigned percentile = (dynfile->cov[0] * 100) / maxCov0;
+            penalty += scaleMap[percentile];
+        }
+    }
+
+    {
         /* Older inputs -> lower chance of being tested */
         static const int scaleMap[] = {
             [100 ... 200] = -10,
-            [98 ... 99] = -7,
-            [96 ... 97] = -2,
-            [91 ... 95] = -1,
-            [81 ... 90] = 0,
-            [71 ... 80] = 1,
-            [61 ... 70] = 2,
-            [41 ... 60] = 3,
-            [0 ... 40] = 4,
+            [98 ... 99] = -5,
+            [96 ... 97] = -1,
+            [91 ... 95] = 0,
+            [81 ... 90] = 1,
+            [71 ... 80] = 2,
+            [0 ... 70] = 3,
         };
 
         const unsigned percentile = (dynfile->idx * 100) / run->global->io.dynfileqCnt;
@@ -486,7 +509,7 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
 
     {
         /* If the input wasn't source of other inputs so far, make it less likely to be tested */
-        penalty += HF_CAP((1 - (int)dynfile->refs) * 10, -15, 10);
+        penalty += HF_CAP((3 - (int)dynfile->refs) * 3, -15, 10);
     }
 
     {
