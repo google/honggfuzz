@@ -359,6 +359,8 @@ typedef struct {
     bool tmOutSignaled;
     char* args[_HF_ARGS_MAX + 1];
     int perThreadCovFeedbackFd;
+    unsigned triesLeft;
+    dynfile_t* current;
 #if !defined(_HF_ARCH_DARWIN)
     timer_t timerId;
 #endif  // !defined(_HF_ARCH_DARWIN)

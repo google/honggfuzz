@@ -466,22 +466,22 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
     int penalty = 0;
 
     {
-        *speed_factor = HF_CAP(input_speedFactor(run, dynfile) / 3, 0, 15);
+        *speed_factor = HF_CAP(input_speedFactor(run, dynfile) / 2, -15, 15);
         penalty += *speed_factor;
     }
 
     {
         /* Inputs with lower total coverage -> lower chance of being tested */
-        static const int scaleMap[] = {
-            [100 ... 200] = -15,
-            [90 ... 99] = -10,
-            [80 ... 89] = -7,
+        static const int scaleMap[200] = {
+            [100 ... 199] = -20,
+            [90 ... 99] = -15,
+            [80 ... 89] = -10,
             [70 ... 79] = -5,
             [60 ... 69] = -2,
             [50 ... 59] = 0,
-            [30 ... 49] = 5,
-            [10 ... 29] = 10,
-            [0 ... 10] = 15,
+            [30 ... 49] = 1,
+            [11 ... 29] = 3,
+            [0 ... 10] = 5,
         };
 
         uint64_t maxCov0 = ATOMIC_GET(run->global->feedback.maxCov[0]);
@@ -493,14 +493,14 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
 
     {
         /* Older inputs -> lower chance of being tested */
-        static const int scaleMap[] = {
-            [100 ... 200] = -10,
-            [98 ... 99] = -5,
-            [96 ... 97] = -1,
-            [91 ... 95] = 0,
-            [81 ... 90] = 1,
-            [71 ... 80] = 2,
-            [0 ... 70] = 3,
+        static const int scaleMap[200] = {
+            [100 ... 199] = -10,
+            [95 ... 99] = -5,
+            [91 ... 94] = -1,
+            [81 ... 90] = 0,
+            [71 ... 80] = 1,
+            [41 ... 70] = 2,
+            [0 ... 40] = 3,
         };
 
         const unsigned percentile = (dynfile->idx * 100) / run->global->io.dynfileqCnt;
@@ -509,13 +509,13 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
 
     {
         /* If the input wasn't source of other inputs so far, make it less likely to be tested */
-        penalty += HF_CAP((3 - (int)dynfile->refs) * 3, -15, 10);
+        penalty += HF_CAP((2 - (int)dynfile->refs) * 3, -15, 10);
     }
 
     {
-        /* Add penalty for the input being too big - 0 is for 256B inputs */
+        /* Add penalty for the input being too big - 0 is for 1kB inputs */
         if (dynfile->size > 0) {
-            penalty += HF_CAP(((int)util_Log2(dynfile->size) - 8) / 4, -5, 5);
+            penalty += HF_CAP(((int)util_Log2(dynfile->size) - 10), -5, 5);
         }
     }
 
@@ -523,8 +523,6 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
 }
 
 bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
-    dynfile_t* current = NULL;
-
     if (ATOMIC_GET(run->global->io.dynfileqCnt) == 0) {
         LOG_F("The dynamic file corpus is empty. This shouldn't happen");
     }
@@ -537,23 +535,33 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
             run->global->io.dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
         }
 
-        current = run->global->io.dynfileqCurrent;
+        if (run->triesLeft) {
+            run->triesLeft--;
+            break;
+        }
+
+        run->current = run->global->io.dynfileqCurrent;
         run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
 
-        int skip_factor = input_skipFactor(run, current, &speed_factor);
-        if (skip_factor <= 0 || (util_rnd64() % skip_factor) == 0) {
+        int skip_factor = input_skipFactor(run, run->current, &speed_factor);
+        if (skip_factor <= 0) {
+            run->triesLeft = -(skip_factor);
+            break;
+        }
+
+        if ((util_rnd64() % skip_factor) == 0) {
             break;
         }
     }
 
-    input_setSize(run, current->size);
-    memcpy(run->dynfile->cov, current->cov, sizeof(run->dynfile->cov));
-    run->dynfile->idx = current->idx;
-    run->dynfile->timeExecUSecs = current->timeExecUSecs;
-    snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s", current->path);
-    run->dynfile->src = current;
+    input_setSize(run, run->current->size);
+    memcpy(run->dynfile->cov, run->current->cov, sizeof(run->dynfile->cov));
+    run->dynfile->idx = run->current->idx;
+    run->dynfile->timeExecUSecs = run->current->timeExecUSecs;
+    snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s", run->current->path);
+    run->dynfile->src = run->current;
     run->dynfile->refs = 0;
-    memcpy(run->dynfile->data, current->data, current->size);
+    memcpy(run->dynfile->data, run->current->data, run->current->size);
 
     if (needs_mangle) {
         mangle_mangleContent(run, speed_factor);
