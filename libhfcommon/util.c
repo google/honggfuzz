@@ -27,9 +27,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
-#if !defined(_HF_ARCH_DARWIN)
+#if !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__)
 #include <link.h>
-#endif
+#endif /* !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__) */
 #include <math.h>
 #include <pthread.h>
 #include <signal.h>
@@ -809,7 +809,7 @@ const char* util_sigName(int signo) {
     return signame;
 }
 
-#if !defined(_HF_ARCH_DARWIN)
+#if !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__)
 static int addrStatic_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
     for (size_t i = 0; i < info->dlpi_phnum; i++) {
         if (info->dlpi_phdr[i].p_type != PT_LOAD) {
@@ -896,15 +896,15 @@ static int check64_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, voi
 bool util_64bitValInBinary(uint32_t v) {
     return (dl_iterate_phdr(check64_cb, &v) == 1);
 }
-#else  /* !defined(_HF_ARCH_DARWIN) */
+#else  /* !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__) */
 /* Darwin doesn't use ELF file format for binaries, so dl_iterate_phdr() cannot be used there */
-lhfc_addr_t util_getProgAddr(const void* addr) {
+lhfc_addr_t util_getProgAddr(const void* addr HF_ATTR_UNUSED) {
     return LHFC_ADDR_NOTFOUND;
 }
-bool util_32bitValInBinary(uint32_t v) {
+bool util_32bitValInBinary(uint32_t v HF_ATTR_UNUSED) {
     return false;
 }
-bool util_64bitValInBinary(uint32_t v) {
+bool util_64bitValInBinary(uint32_t v HF_ATTR_UNUSED) {
     return false;
 }
-#endif /* !defined(_HF_ARCH_DARWIN) */
+#endif /* !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__) */
