@@ -210,6 +210,8 @@ static void fuzz_perfFeedback(run_t* run) {
         ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalCmp[run->fuzzNo]);
     ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalCmp[run->fuzzNo]);
 
+    rmb();
+
     int64_t diff0 = (int64_t)run->global->linux.hwCnts.cpuInstrCnt - run->linux.hwCnts.cpuInstrCnt;
     int64_t diff1 =
         (int64_t)run->global->linux.hwCnts.cpuBranchCnt - run->linux.hwCnts.cpuBranchCnt;

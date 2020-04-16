@@ -644,19 +644,27 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard_ptr)
     }
 #endif /* defined(__ANDROID__) */
 
+    /* This guard is uninteresting, it was probably maxed out already */
     const uint32_t guard = *guard_ptr;
     if (!guard) {
         return;
     }
 
-    const uint8_t v = ATOMIC_PRE_INC(localCovFeedback->pcGuardMap[guard]);
-    if (v == 0) {
+    if (ATOMIC_GET(localCovFeedback->pcGuardMap[guard]) > 100) {
         /* This guard has been maxed out. Mark it as uninteresting */
         ATOMIC_CLEAR(*guard_ptr);
     }
 
-    const uint8_t newval = instrumentCntMap[v];
+    /* Update the total/local counters */
+    const uint8_t v = ATOMIC_PRE_INC(localCovFeedback->pcGuardMap[guard]);
+    if (v == 1) {
+        ATOMIC_PRE_INC(globalCovFeedback->pidTotalEdge[my_thread_no]);
+    } else {
+        ATOMIC_PRE_INC(globalCovFeedback->pidTotalCmp[my_thread_no]);
+    }
 
+    /* Update the new/global counters */
+    const uint8_t newval = instrumentCntMap[v];
     if (ATOMIC_GET(globalCovFeedback->pcGuardMap[guard]) < newval) {
         const uint8_t oldval = ATOMIC_POST_OR(globalCovFeedback->pcGuardMap[guard], newval);
         if (!oldval) {
@@ -677,10 +685,6 @@ static struct {
 
 void instrument8BitCountersCount(void) {
     rmb();
-
-    ATOMIC_CLEAR(globalCovFeedback->pidTotalPC[my_thread_no]);
-    ATOMIC_CLEAR(globalCovFeedback->pidTotalEdge[my_thread_no]);
-    ATOMIC_CLEAR(globalCovFeedback->pidTotalCmp[my_thread_no]);
 
     uint64_t totalEdge = 0;
     uint64_t totalCmp = 0;
@@ -716,8 +720,8 @@ void instrument8BitCountersCount(void) {
         }
     }
 
-    ATOMIC_SET(globalCovFeedback->pidTotalEdge[my_thread_no], totalEdge);
-    ATOMIC_SET(globalCovFeedback->pidTotalCmp[my_thread_no], totalCmp);
+    ATOMIC_POST_ADD(globalCovFeedback->pidTotalEdge[my_thread_no], totalEdge);
+    ATOMIC_POST_ADD(globalCovFeedback->pidTotalCmp[my_thread_no], totalCmp);
 
     wmb();
 }
@@ -771,6 +775,11 @@ void instrumentClearNewCov() {
     ATOMIC_CLEAR(globalCovFeedback->pidNewPC[my_thread_no]);
     ATOMIC_CLEAR(globalCovFeedback->pidNewEdge[my_thread_no]);
     ATOMIC_CLEAR(globalCovFeedback->pidNewCmp[my_thread_no]);
+
+    ATOMIC_CLEAR(globalCovFeedback->pidTotalPC[my_thread_no]);
+    ATOMIC_CLEAR(globalCovFeedback->pidTotalEdge[my_thread_no]);
+    ATOMIC_CLEAR(globalCovFeedback->pidTotalCmp[my_thread_no]);
+
     wmb();
 }
 
