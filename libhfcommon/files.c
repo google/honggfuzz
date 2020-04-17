@@ -355,8 +355,8 @@ int files_createSharedMem(size_t sz, const char* name, bool exportmap) {
 /* SHM_ANON is available with some *BSD OSes */
 #if defined(SHM_ANON)
     if (fd == -1) {
-        if ((fd = shm_open(SHM_ANON, O_RDWR | O_CLOEXEC, 0600)) == -1) {
-            PLOG_W("shm_open(SHM_ANON, O_RDWR|O_CLOEXEC, 0600)");
+        if ((fd = shm_open(SHM_ANON, O_RDWR, 0600)) == -1) {
+            PLOG_W("shm_open(SHM_ANON, O_RDWR, 0600)");
         }
     }
 #endif /* defined(SHM_ANON) */
@@ -370,8 +370,8 @@ int files_createSharedMem(size_t sz, const char* name, bool exportmap) {
         gettimeofday(&tv, NULL);
         snprintf(tmpname, sizeof(tmpname), "/%s%lx%lx%d", name, (unsigned long)tv.tv_sec,
             (unsigned long)tv.tv_usec, (int)getpid());
-        if ((fd = shm_open(tmpname, O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC, 0600)) == -1) {
-            PLOG_W("shm_open('%s', O_RDWR|O_CREAT|O_EXCL|O_CLOEXEC, 0600)", tmpname);
+        if ((fd = shm_open(tmpname, O_RDWR | O_CREAT | O_EXCL, 0600)) == -1) {
+            PLOG_W("shm_open('%s', O_RDWR|O_CREAT|O_EXCL, 0600)", tmpname);
         } else {
             shm_unlink(tmpname);
         }
