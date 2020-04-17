@@ -473,15 +473,14 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
     {
         /* Inputs with lower total coverage -> lower chance of being tested */
         static const int scaleMap[200] = {
-            [100 ... 199] = -20,
-            [90 ... 99] = -15,
-            [80 ... 89] = -10,
-            [70 ... 79] = -5,
-            [60 ... 69] = -2,
+            [95 ... 199] = -15,
+            [90 ... 94] = -7,
+            [80 ... 89] = -3,
+            [60 ... 79] = -1,
             [50 ... 59] = 0,
-            [30 ... 49] = 1,
-            [11 ... 29] = 3,
-            [0 ... 10] = 5,
+            [30 ... 49] = 5,
+            [11 ... 29] = 10,
+            [0 ... 10] = 15,
         };
 
         uint64_t maxCov0 = ATOMIC_GET(run->global->feedback.maxCov[0]);
