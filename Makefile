@@ -168,7 +168,7 @@ ifeq ($(COMPILER),clang)
   endif
 endif
 ifeq ($(COMPILER),gcc)
-  ARCH_CFLAGS += --param max-inline-insns-single=2000
+  ARCH_CFLAGS += -finline-limit=4000
 endif
 
 SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
