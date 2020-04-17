@@ -314,7 +314,7 @@ static void commonPreOpts(int* j, char** args) {
      * (and better code coverage estimates)
      */
     if (isGCC) {
-        args[(*j)++] = "--param max-inline-insns-single=2000";
+        args[(*j)++] = "-finline-limit=4000";
     } else {
         args[(*j)++] = "-mllvm";
         args[(*j)++] = "-inline-threshold=2000";
