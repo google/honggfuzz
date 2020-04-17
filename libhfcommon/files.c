@@ -378,7 +378,7 @@ int files_createSharedMem(size_t sz, const char* name, bool exportmap) {
     }
 #endif /* !defined(_HF_ARCH_DARWIN) && !defined(__ANDROID__) */
 
-    /* As a last resort, create a file in /tmp */
+    /* As the last resort, create a file in /tmp */
     if (fd == -1) {
         char template[PATH_MAX];
         snprintf(template, sizeof(template), "/tmp/%s.XXXXXX", name);

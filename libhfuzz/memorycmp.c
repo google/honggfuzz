@@ -10,8 +10,10 @@
 #include "libhfcommon/util.h"
 #include "libhfuzz/instrument.h"
 
-__attribute__((visibility("hidden"))) __attribute__((used))
-const char* const LIBHFUZZ_module_memorycmp = "LIBHFUZZ_module_memorycmp";
+#if !defined(__CYGWIN__)
+__attribute__((visibility("hidden")))
+#endif /* !defined(__CYGWIN__) */
+__attribute__((used)) const char* const LIBHFUZZ_module_memorycmp = "LIBHFUZZ_module_memorycmp";
 
 /*
  * util_getProgAddr() check is quite costly, and it lowers the fuzzing speed typically by a factor

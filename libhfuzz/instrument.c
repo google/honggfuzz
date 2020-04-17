@@ -24,8 +24,11 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 
-__attribute__((visibility("hidden"))) __attribute__((used))
-const char* const LIBHFUZZ_module_instrument = "LIBHFUZZ_module_instrument";
+/* Cygwin doesn't support this */
+#if !defined(__CYGWIN__)
+__attribute__((visibility("hidden")))
+#endif /* !defined(__CYGWIN__) */
+__attribute__((used)) const char* const LIBHFUZZ_module_instrument = "LIBHFUZZ_module_instrument";
 
 /*
  * We require SSE4.2 with x86-(32|64) for the 'popcnt', as it's much faster than the software
@@ -754,9 +757,12 @@ unsigned instrumentThreadNo(void) {
     return my_thread_no;
 }
 
+/* Cygwin has problem with visibility of this symbol */
+#if !defined(__CYGWIN__)
 /* For some reason -fsanitize=fuzzer-no-link references this symbol */
 __attribute__((tls_model("initial-exec")))
 __attribute__((weak)) __thread uintptr_t __sancov_lowest_stack = 0;
+#endif /* !defined(__CYGWIN__) */
 
 bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
     uintptr_t pos = addr % _HF_PERF_BITMAP_SIZE_16M;
