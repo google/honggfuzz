@@ -52,7 +52,6 @@ cmpfeedback_t* globalCmpFeedback = NULL;
 
 uint32_t my_thread_no = 0;
 
-extern int __wrap_memcmp(const void* s1, const void* s2, size_t n);
 int (*libc_memcmp)(const void* s1, const void* s2, size_t n) = memcmp;
 
 static void* getsym(const char* sym) {
@@ -70,10 +69,8 @@ static void* getsym(const char* sym) {
 static void initializeLibcFunctions(void) {
     libc_memcmp = (int (*)(const void* s1, const void* s2, size_t n))getsym("memcmp");
     if (!libc_memcmp) {
-        LOG_F("dlsym(memcmp) failed: %s", dlerror());
-    }
-    if (libc_memcmp == __wrap_memcmp) {
-        LOG_F("libc_memcmp proxied to __wrap_memcmp");
+        LOG_W("dlsym(memcmp) failed: %s", dlerror());
+        libc_memcmp = memcmp;
     }
     LOG_D("libc_memcmp at %p", libc_memcmp);
 }
