@@ -125,7 +125,7 @@ __attribute__((hot)) inline static void perf_ptAnalyzePkt(run_t* run, struct pt_
     ip &= _HF_PERF_BITMAP_BITSZ_MASK;
     register bool prev = ATOMIC_BITMAP_SET(run->global->feedback.covFeedbackMap->bbMapPc, ip);
     if (!prev) {
-        run->linux.hwCnts.newBBCnt++;
+        run->hwCnts.newBBCnt++;
     }
 }
 

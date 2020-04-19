@@ -84,7 +84,7 @@ __attribute__((hot)) static inline void arch_perfBtsCount(run_t* run) {
 
         register bool prev = ATOMIC_BITMAP_SET(run->global->feedback.covFeedbackMap->bbMapPc, pos);
         if (!prev) {
-            run->linux.hwCnts.newBBCnt++;
+            run->hwCnts.newBBCnt++;
         }
     }
 }
@@ -370,8 +370,8 @@ void arch_perfAnalyze(run_t* run) {
         ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
     }
 
-    run->linux.hwCnts.cpuInstrCnt = instrCount;
-    run->linux.hwCnts.cpuBranchCnt = branchCount;
+    run->hwCnts.cpuInstrCnt = instrCount;
+    run->hwCnts.cpuBranchCnt = branchCount;
 }
 
 bool arch_perfInit(honggfuzz_t* hfuzz HF_ATTR_UNUSED) {

@@ -394,6 +394,15 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .skipFeedbackOnTimeout = false,
                 .dynFileMethod = _HF_DYNFILE_SOFT,
                 .state = _HF_STATE_UNSET,
+                .hwCnts =
+                    {
+                        .cpuInstrCnt = 0ULL,
+                        .cpuBranchCnt = 0ULL,
+                        .bbCnt = 0ULL,
+                        .newBBCnt = 0ULL,
+                        .softCntPc = 0ULL,
+                        .softCntCmp = 0ULL,
+                    },
             },
         .cnts =
             {
@@ -415,15 +424,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         .linux =
             {
                 .exeFd = -1,
-                .hwCnts =
-                    {
-                        .cpuInstrCnt = 0ULL,
-                        .cpuBranchCnt = 0ULL,
-                        .bbCnt = 0ULL,
-                        .newBBCnt = 0ULL,
-                        .softCntPc = 0ULL,
-                        .softCntCmp = 0ULL,
-                    },
                 .dynamicCutOffAddr = ~(0ULL),
                 .disableRandomization = true,
                 .ignoreAddr = NULL,

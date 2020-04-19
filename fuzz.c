@@ -212,37 +212,35 @@ static void fuzz_perfFeedback(run_t* run) {
 
     rmb();
 
-    int64_t diff0 = (int64_t)run->global->linux.hwCnts.cpuInstrCnt - run->linux.hwCnts.cpuInstrCnt;
-    int64_t diff1 =
-        (int64_t)run->global->linux.hwCnts.cpuBranchCnt - run->linux.hwCnts.cpuBranchCnt;
+    int64_t diff0 = (int64_t)run->global->feedback.hwCnts.cpuInstrCnt - run->hwCnts.cpuInstrCnt;
+    int64_t diff1 = (int64_t)run->global->feedback.hwCnts.cpuBranchCnt - run->hwCnts.cpuBranchCnt;
 
     /* Any increase in coverage (edge, pc, cmp, hw) counters forces adding input to the corpus */
-    if (run->linux.hwCnts.newBBCnt > 0 || softNewPC > 0 || softNewEdge > 0 || softNewCmp > 0 ||
+    if (run->hwCnts.newBBCnt > 0 || softNewPC > 0 || softNewEdge > 0 || softNewCmp > 0 ||
         diff0 < 0 || diff1 < 0) {
         if (diff0 < 0) {
-            run->global->linux.hwCnts.cpuInstrCnt = run->linux.hwCnts.cpuInstrCnt;
+            run->global->feedback.hwCnts.cpuInstrCnt = run->hwCnts.cpuInstrCnt;
         }
         if (diff1 < 0) {
-            run->global->linux.hwCnts.cpuBranchCnt = run->linux.hwCnts.cpuBranchCnt;
+            run->global->feedback.hwCnts.cpuBranchCnt = run->hwCnts.cpuBranchCnt;
         }
-        run->global->linux.hwCnts.bbCnt += run->linux.hwCnts.newBBCnt;
-        run->global->linux.hwCnts.softCntPc += softNewPC;
-        run->global->linux.hwCnts.softCntEdge += softNewEdge;
-        run->global->linux.hwCnts.softCntCmp += softNewCmp;
+        run->global->feedback.hwCnts.bbCnt += run->hwCnts.newBBCnt;
+        run->global->feedback.hwCnts.softCntPc += softNewPC;
+        run->global->feedback.hwCnts.softCntEdge += softNewEdge;
+        run->global->feedback.hwCnts.softCntCmp += softNewCmp;
 
         LOG_I("Sz:%zu Tm:%" _HF_NONMON_SEP PRIu64 "us (i/b/h/e/p/c) New:%" PRIu64 "/%" PRIu64
               "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 ", Cur:%" PRIu64 "/%" PRIu64
               "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64,
             run->dynfile->size, util_timeNowUSecs() - run->timeStartedUSecs,
-            run->linux.hwCnts.cpuInstrCnt, run->linux.hwCnts.cpuBranchCnt,
-            run->linux.hwCnts.newBBCnt, softNewEdge, softNewPC, softNewCmp,
-            run->linux.hwCnts.cpuInstrCnt, run->linux.hwCnts.cpuBranchCnt, run->linux.hwCnts.bbCnt,
-            softCurEdge, softCurPC, softCurCmp);
+            run->hwCnts.cpuInstrCnt, run->hwCnts.cpuBranchCnt, run->hwCnts.newBBCnt, softNewEdge,
+            softNewPC, softNewCmp, run->hwCnts.cpuInstrCnt, run->hwCnts.cpuBranchCnt,
+            run->hwCnts.bbCnt, softCurEdge, softCurPC, softCurCmp);
 
         /* Update per-input coverage metrics */
-        run->dynfile->cov[0] = softCurEdge + softCurPC + run->linux.hwCnts.bbCnt;
+        run->dynfile->cov[0] = softCurEdge + softCurPC + run->hwCnts.bbCnt;
         run->dynfile->cov[1] = softCurCmp;
-        run->dynfile->cov[2] = run->linux.hwCnts.cpuInstrCnt + run->linux.hwCnts.cpuBranchCnt;
+        run->dynfile->cov[2] = run->hwCnts.cpuInstrCnt + run->hwCnts.cpuBranchCnt;
         run->dynfile->cov[3] = run->dynfile->size ? (64 - util_Log2(run->dynfile->size)) : 64;
         input_addDynamicInput(run);
 
@@ -401,10 +399,10 @@ static void fuzz_fuzzLoop(run_t* run) {
     run->mutationsPerRun = run->global->mutate.mutationsPerRun;
     run->tmOutSignaled = false;
 
-    run->linux.hwCnts.cpuInstrCnt = 0;
-    run->linux.hwCnts.cpuBranchCnt = 0;
-    run->linux.hwCnts.bbCnt = 0;
-    run->linux.hwCnts.newBBCnt = 0;
+    run->hwCnts.cpuInstrCnt = 0;
+    run->hwCnts.cpuBranchCnt = 0;
+    run->hwCnts.bbCnt = 0;
+    run->hwCnts.newBBCnt = 0;
 
     if (!fuzz_fetchInput(run)) {
         if (run->global->cfg.minimize && fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MINIMIZE) {
@@ -438,10 +436,10 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
     run->mutationsPerRun = run->global->mutate.mutationsPerRun;
     run->tmOutSignaled = false;
 
-    run->linux.hwCnts.cpuInstrCnt = 0;
-    run->linux.hwCnts.cpuBranchCnt = 0;
-    run->linux.hwCnts.bbCnt = 0;
-    run->linux.hwCnts.newBBCnt = 0;
+    run->hwCnts.cpuInstrCnt = 0;
+    run->hwCnts.cpuBranchCnt = 0;
+    run->hwCnts.bbCnt = 0;
+    run->hwCnts.newBBCnt = 0;
 
     LOG_I("------------------------------------------------------");
 

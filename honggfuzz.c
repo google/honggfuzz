@@ -194,7 +194,7 @@ static void printSummary(honggfuzz_t* hfuzz) {
     }
     uint64_t guardNb = ATOMIC_GET(hfuzz->feedback.covFeedbackMap->guardNb);
     uint64_t branch_percent_cov =
-        guardNb ? ((100 * ATOMIC_GET(hfuzz->linux.hwCnts.softCntEdge)) / guardNb) : 0;
+        guardNb ? ((100 * ATOMIC_GET(hfuzz->feedback.hwCnts.softCntEdge)) / guardNb) : 0;
     struct rusage usage;
     if (getrusage(RUSAGE_CHILDREN, &usage)) {
         PLOG_W("getrusage  failed");

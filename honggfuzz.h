@@ -287,6 +287,7 @@ typedef struct {
         bool skipFeedbackOnTimeout;
         uint64_t maxCov[4];
         dynFileMethod_t dynFileMethod;
+        hwcnt_t hwCnts;
     } feedback;
     struct {
         size_t mutationsCnt;
@@ -304,7 +305,6 @@ typedef struct {
     /* For the Linux code */
     struct {
         int exeFd;
-        hwcnt_t hwCnts;
         uint64_t dynamicCutOffAddr;
         bool disableRandomization;
         void* ignoreAddr;
@@ -364,12 +364,12 @@ typedef struct {
 #if !defined(_HF_ARCH_DARWIN)
     timer_t timerId;
 #endif  // !defined(_HF_ARCH_DARWIN)
+    hwcnt_t hwCnts;
 
     struct {
         /* For Linux code */
         uint8_t* perfMmapBuf;
         uint8_t* perfMmapAux;
-        hwcnt_t hwCnts;
         int cpuInstrFd;
         int cpuBranchFd;
         int cpuIptBtsFd;
@@ -379,7 +379,6 @@ typedef struct {
         /* For NetBSD code */
         uint8_t* perfMmapBuf;
         uint8_t* perfMmapAux;
-        hwcnt_t hwCnts;
         int cpuInstrFd;
         int cpuBranchFd;
         int cpuIptBtsFd;

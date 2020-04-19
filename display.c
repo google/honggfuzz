@@ -280,24 +280,24 @@ void display_display(honggfuzz_t* hfuzz) {
     }
     if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
         display_put(" hwi: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
-            ATOMIC_GET(hfuzz->linux.hwCnts.cpuInstrCnt));
+            ATOMIC_GET(hfuzz->feedback.hwCnts.cpuInstrCnt));
     }
     if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
         display_put(" hwb: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
-            ATOMIC_GET(hfuzz->linux.hwCnts.cpuBranchCnt));
+            ATOMIC_GET(hfuzz->feedback.hwCnts.cpuBranchCnt));
     }
     if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         display_put(" bts: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
-            ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
+            ATOMIC_GET(hfuzz->feedback.hwCnts.bbCnt));
     }
     if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
         display_put(" ipt: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET,
-            ATOMIC_GET(hfuzz->linux.hwCnts.bbCnt));
+            ATOMIC_GET(hfuzz->feedback.hwCnts.bbCnt));
     }
     if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_SOFT) {
-        uint64_t softCntPc = ATOMIC_GET(hfuzz->linux.hwCnts.softCntPc);
-        uint64_t softCntEdge = ATOMIC_GET(hfuzz->linux.hwCnts.softCntEdge);
-        uint64_t softCntCmp = ATOMIC_GET(hfuzz->linux.hwCnts.softCntCmp);
+        uint64_t softCntPc = ATOMIC_GET(hfuzz->feedback.hwCnts.softCntPc);
+        uint64_t softCntEdge = ATOMIC_GET(hfuzz->feedback.hwCnts.softCntEdge);
+        uint64_t softCntCmp = ATOMIC_GET(hfuzz->feedback.hwCnts.softCntCmp);
         uint64_t guardNb = ATOMIC_GET(hfuzz->feedback.covFeedbackMap->guardNb);
         display_put(" edge: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET "/"
                     "%" _HF_NONMON_SEP PRIu64 " [%" PRId64 "%%]",
