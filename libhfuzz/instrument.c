@@ -52,7 +52,20 @@ cmpfeedback_t* globalCmpFeedback = NULL;
 
 uint32_t my_thread_no = 0;
 
-int (*libc_memcmp)(const void* s1, const void* s2, size_t n) = memcmp;
+static int _memcmp(const void* m1, const void* m2, size_t n) {
+    const unsigned char* s1 = (const unsigned char*)m1;
+    const unsigned char* s2 = (const unsigned char*)m2;
+
+    for (size_t i = 0; i < n; i++) {
+        if (s1[i] != s2[i]) {
+            return (int)s1[i] - (int)s2[i];
+        }
+    }
+
+    return 0;
+}
+
+int (*libc_memcmp)(const void* s1, const void* s2, size_t n) = _memcmp;
 
 static void* getsym(const char* sym) {
 #if defined(RTLD_NEXT)
@@ -70,9 +83,9 @@ static void initializeLibcFunctions(void) {
     libc_memcmp = (int (*)(const void* s1, const void* s2, size_t n))getsym("memcmp");
     if (!libc_memcmp) {
         LOG_W("dlsym(memcmp) failed: %s", dlerror());
-        libc_memcmp = memcmp;
+        libc_memcmp = _memcmp;
     }
-    LOG_D("libc_memcmp at %p", libc_memcmp);
+    LOG_D("libc_memcmp=%p, (_memcmp=%p, memcmp=%p)", libc_memcmp, _memcmp, memcmp);
 }
 
 static void* initialzeTryMapHugeTLB(int fd, size_t sz) {
