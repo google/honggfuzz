@@ -508,7 +508,7 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
 
     {
         /* If the input wasn't source of other inputs so far, make it less likely to be tested */
-        penalty += HF_CAP((2 - (int)dynfile->refs) * 3, -15, 10);
+        penalty += HF_CAP((1 - (int)dynfile->refs) * 3, -30, 5);
     }
 
     {
