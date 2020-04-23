@@ -74,7 +74,7 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
 
-    ARCH_SRCS := $(sort $(wildcard mac/*.c))
+    ARCH_SRCS := $(sort $(wildcard mac/*.c) mac/mach_excServer.c mac/mach_excUser.c)
 
     # MacOS-X grep seem to use colors unconditionally
     GREP_COLOR = --color=never
@@ -258,9 +258,11 @@ all: $(BIN) $(HFUZZ_CC_BIN) $(LHFUZZ_ARCH) $(LHFUZZ_SHARED) $(LCOMMON_ARCH) $(LN
 %.o: %.c
 	$(CC) -c $(CFLAGS) $(CFLAGS_BLOCKS) -o $@ $<
 
-mac/arch.o: mac/arch.c
+mac/mach_exc.h mac/mach_excServer.c mac/mach_excServer.h mac/mach_excUser.c &:
 	mig -header mac/mach_exc.h -user mac/mach_excUser.c -sheader mac/mach_excServer.h \
 		-server mac/mach_excServer.c $(SDK)/usr/include/mach/mach_exc.defs
+
+mac/arch.o: mac/arch.c mac/mach_exc.h mac/mach_excServer.h
 	$(CC) -c $(CFLAGS) $(CFLAGS_BLOCKS) -o $@ $<
 
 %.so: %.c
