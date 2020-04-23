@@ -1,3 +1,21 @@
+2020-04-24 - Version 2.2
+        - Added 8bitcnt instrumentation - use hfuzz-cc/hfuzz-8bitcnt-(gcc|clang) for that
+        - PC-guard instrumentation now uses edge counting
+        - --experimental_const_feedback is now set to true by default
+        - additional string instrumentation wrappers: glib, lcms
+        - additional mutators: splicing, changing ascii numbers
+        - additional integer comparison instrumentation (adding integers to the dynamic dictionary)
+        - fixed linking with ld.lld
+        - removed `sanitizer-coverage-prune-blocks` from hfuzz-cc.c
+        - most mutators have now either overwrite or insert versions
+        - fixed memory barriers in libhfuzz/
+        - implemented skip_factor which dictates how often a given input is fuzzed
+        - lowered the default timeout to 1 second
+        - honggfuzz now uses microseconds, instead of milliseconds across the code
+        - added some new functions to libhfcommon/files
+        - enabled more aggressive inlining in hfuzz-cc/
+        - fixed compilation dependency under MacOS X
+
 2020-03-03 - Version 2.1
         - string/int comparison enabled for targets built with *SAN, but w/o hfuzz-cc
         - Parallel work made faster by using faster ATOMIC constructs (check first, then update)
