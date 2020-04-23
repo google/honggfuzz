@@ -371,7 +371,7 @@ int main(int argc, char** argv) {
     if (hfuzz.feedback.blacklistFile && (input_parseBlacklist(&hfuzz) == false)) {
         LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.feedback.blacklistFile);
     }
-#define hfuzzl hfuzz.linux
+#define hfuzzl hfuzz.arch_linux
     if (hfuzzl.symsBlFile &&
         ((hfuzzl.symsBlCnt = files_parseSymbolFilter(hfuzzl.symsBlFile, &hfuzzl.symsBl)) == 0)) {
         LOG_F("Couldn't parse symbols blacklist file ('%s')", hfuzzl.symsBlFile);
@@ -413,18 +413,18 @@ int main(int argc, char** argv) {
         free(hfuzz.feedback.blacklist);
     }
 #if defined(_HF_ARCH_LINUX)
-    if (hfuzz.linux.symsBl) {
-        free(hfuzz.linux.symsBl);
+    if (hfuzz.arch_linux.symsBl) {
+        free(hfuzz.arch_linux.symsBl);
     }
-    if (hfuzz.linux.symsWl) {
-        free(hfuzz.linux.symsWl);
+    if (hfuzz.arch_linux.symsWl) {
+        free(hfuzz.arch_linux.symsWl);
     }
 #elif defined(_HF_ARCH_NETBSD)
-    if (hfuzz.netbsd.symsBl) {
-        free(hfuzz.netbsd.symsBl);
+    if (hfuzz.arch_netbsd.symsBl) {
+        free(hfuzz.arch_netbsd.symsBl);
     }
-    if (hfuzz.netbsd.symsWl) {
-        free(hfuzz.netbsd.symsWl);
+    if (hfuzz.arch_netbsd.symsWl) {
+        free(hfuzz.arch_netbsd.symsWl);
     }
 #endif
     if (hfuzz.socketFuzzer.enabled) {

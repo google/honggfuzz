@@ -229,9 +229,9 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
         LOG_E("Couldn't test binary for signatures");
         return false;
     }
-    if (hfuzz->exe.netDriver && hfuzz->linux.useNetNs == HF_MAYBE) {
+    if (hfuzz->exe.netDriver && hfuzz->arch_linux.useNetNs == HF_MAYBE) {
         LOG_I("The binary uses netdriver, disabling network namespacing");
-        hfuzz->linux.useNetNs = HF_NO;
+        hfuzz->arch_linux.useNetNs = HF_NO;
     }
 
     if (!hfuzz->exe.fuzzStdin && !hfuzz->exe.persistent &&
@@ -421,7 +421,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             },
 
         /* Linux code */
-        .linux =
+        .arch_linux =
             {
                 .exeFd = -1,
                 .dynamicCutOffAddr = ~(0ULL),
@@ -439,7 +439,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .useClone = true,
             },
         /* NetBSD code */
-        .netbsd =
+        .arch_netbsd =
             {
                 .ignoreAddr = NULL,
                 .symsBlFile = NULL,
@@ -710,19 +710,19 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
 #if defined(_HF_ARCH_LINUX)
             case 0x500:
-                hfuzz->linux.ignoreAddr = (void*)strtoul(optarg, NULL, 0);
+                hfuzz->arch_linux.ignoreAddr = (void*)strtoul(optarg, NULL, 0);
                 break;
             case 0x501:
-                hfuzz->linux.disableRandomization = false;
+                hfuzz->arch_linux.disableRandomization = false;
                 break;
             case 0x503:
-                hfuzz->linux.dynamicCutOffAddr = strtoull(optarg, NULL, 0);
+                hfuzz->arch_linux.dynamicCutOffAddr = strtoull(optarg, NULL, 0);
                 break;
             case 0x504:
-                hfuzz->linux.symsBlFile = optarg;
+                hfuzz->arch_linux.symsBlFile = optarg;
                 break;
             case 0x505:
-                hfuzz->linux.symsWlFile = optarg;
+                hfuzz->arch_linux.symsWlFile = optarg;
                 break;
             case 0x510:
                 hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_INSTR_COUNT;
@@ -737,30 +737,30 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_IPT_BLOCK;
                 break;
             case 0x515:
-                hfuzz->linux.kernelOnly = true;
+                hfuzz->arch_linux.kernelOnly = true;
                 break;
             case 0x530:
-                hfuzz->linux.useNetNs = cmdlineParseTriState(opts[opt_index].name, optarg);
-                if (hfuzz->linux.useNetNs == HF_YES) {
-                    hfuzz->linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWNET);
+                hfuzz->arch_linux.useNetNs = cmdlineParseTriState(opts[opt_index].name, optarg);
+                if (hfuzz->arch_linux.useNetNs == HF_YES) {
+                    hfuzz->arch_linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWNET);
                 }
                 break;
             case 0x531:
-                hfuzz->linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWPID);
+                hfuzz->arch_linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWPID);
                 break;
             case 0x532:
-                hfuzz->linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWIPC);
+                hfuzz->arch_linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWIPC);
                 break;
 #endif /* defined(_HF_ARCH_LINUX) */
 #if defined(_HF_ARCH_NETBSD)
             case 0x500:
-                hfuzz->netbsd.ignoreAddr = (void*)strtoul(optarg, NULL, 0);
+                hfuzz->arch_netbsd.ignoreAddr = (void*)strtoul(optarg, NULL, 0);
                 break;
             case 0x504:
-                hfuzz->netbsd.symsBlFile = optarg;
+                hfuzz->arch_netbsd.symsBlFile = optarg;
                 break;
             case 0x505:
-                hfuzz->netbsd.symsWlFile = optarg;
+                hfuzz->arch_netbsd.symsWlFile = optarg;
                 break;
 #endif /* defined(_HF_ARCH_NETBSD) */
             default:

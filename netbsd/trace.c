@@ -294,10 +294,10 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         info.psi_siginfo.si_addr, pc, instr);
 
     if (!SI_FROMUSER(&info.psi_siginfo) && pc &&
-        info.psi_siginfo.si_addr < run->global->netbsd.ignoreAddr) {
+        info.psi_siginfo.si_addr < run->global->arch_netbsd.ignoreAddr) {
         LOG_I("Input is interesting (%s), but the si.si_addr is %p (below %p), skipping",
             util_sigName(info.psi_siginfo.si_signo), info.psi_siginfo.si_addr,
-            run->global->netbsd.ignoreAddr);
+            run->global->arch_netbsd.ignoreAddr);
         return;
     }
 
@@ -369,9 +369,9 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
      * both stackhash and symbol blacklist. Crash is always kept regardless
      * of the status of uniqueness flag.
      */
-    if (run->global->netbsd.symsWl) {
+    if (run->global->arch_netbsd.symsWl) {
         char* wlSymbol = arch_btContainsSymbol(
-            run->global->netbsd.symsWlCnt, run->global->netbsd.symsWl, funcCnt, funcs);
+            run->global->arch_netbsd.symsWlCnt, run->global->arch_netbsd.symsWl, funcCnt, funcs);
         if (wlSymbol != NULL) {
             saveUnique = false;
             LOG_D("Whitelisted symbol '%s' found, skipping blacklist checks", wlSymbol);
@@ -392,7 +392,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
          * Check if backtrace contains blacklisted symbol
          */
         char* blSymbol = arch_btContainsSymbol(
-            run->global->netbsd.symsBlCnt, run->global->netbsd.symsBl, funcCnt, funcs);
+            run->global->arch_netbsd.symsBlCnt, run->global->arch_netbsd.symsBl, funcCnt, funcs);
         if (blSymbol != NULL) {
             LOG_I("Blacklisted symbol '%s' found, skipping", blSymbol);
             ATOMIC_POST_INC(run->global->cnts.blCrashesCnt);

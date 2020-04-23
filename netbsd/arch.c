@@ -196,11 +196,11 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
 }
 
 bool arch_archThreadInit(run_t* run) {
-    run->netbsd.perfMmapBuf = NULL;
-    run->netbsd.perfMmapAux = NULL;
-    run->netbsd.cpuInstrFd = -1;
-    run->netbsd.cpuBranchFd = -1;
-    run->netbsd.cpuIptBtsFd = -1;
+    run->arch_netbsd.perfMmapBuf = NULL;
+    run->arch_netbsd.perfMmapAux = NULL;
+    run->arch_netbsd.cpuInstrFd = -1;
+    run->arch_netbsd.cpuBranchFd = -1;
+    run->arch_netbsd.cpuIptBtsFd = -1;
 
     return true;
 }

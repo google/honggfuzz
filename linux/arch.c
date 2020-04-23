@@ -83,7 +83,7 @@ static pid_t arch_clone(uintptr_t flags) {
 }
 
 pid_t arch_fork(run_t* run) {
-    pid_t pid = run->global->linux.useClone ? arch_clone(CLONE_UNTRACED | SIGCHLD) : fork();
+    pid_t pid = run->global->arch_linux.useClone ? arch_clone(CLONE_UNTRACED | SIGCHLD) : fork();
     if (pid == -1) {
         return pid;
     }
@@ -98,12 +98,12 @@ pid_t arch_fork(run_t* run) {
 }
 
 bool arch_launchChild(run_t* run) {
-    if ((run->global->linux.cloneFlags & CLONE_NEWNET) && !nsIfaceUp("lo")) {
+    if ((run->global->arch_linux.cloneFlags & CLONE_NEWNET) && !nsIfaceUp("lo")) {
         LOG_W("Cannot bring interface 'lo' up");
     }
 
     /* Try to enable network namespacing if requested */
-    if (run->global->linux.useNetNs == HF_MAYBE) {
+    if (run->global->arch_linux.useNetNs == HF_MAYBE) {
         if (unshare(CLONE_NEWUSER | CLONE_NEWNET) == -1) {
             PLOG_D("unshare((CLONE_NEWUSER|CLONE_NEWNS) failed");
         } else if (!nsIfaceUp("lo")) {
@@ -139,7 +139,7 @@ bool arch_launchChild(run_t* run) {
      * This might fail in Docker, as Docker blocks __NR_personality. Consequently
      * it's just a debug warning
      */
-    if (run->global->linux.disableRandomization &&
+    if (run->global->arch_linux.disableRandomization &&
         syscall(__NR_personality, ADDR_NO_RANDOMIZE) == -1) {
         PLOG_D("personality(ADDR_NO_RANDOMIZE) failed");
     }
@@ -152,13 +152,14 @@ bool arch_launchChild(run_t* run) {
         LOG_F("Couldn't stop itself");
     }
 #if defined(__NR_execveat)
-    syscall(__NR_execveat, run->global->linux.exeFd, "", run->args, environ, AT_EMPTY_PATH);
+    syscall(__NR_execveat, run->global->arch_linux.exeFd, "", run->args, environ, AT_EMPTY_PATH);
 #endif /* defined__NR_execveat) */
     execve(run->args[0], (char* const*)run->args, environ);
     int errno_cpy = errno;
     alarm(1);
 
-    LOG_E("execve('%s', fd=%d): %s", run->args[0], run->global->linux.exeFd, strerror(errno_cpy));
+    LOG_E("execve('%s', fd=%d): %s", run->args[0], run->global->arch_linux.exeFd,
+        strerror(errno_cpy));
 
     return false;
 }
@@ -279,7 +280,7 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
         PLOG_E("File '%s' doesn't seem to be executable", hfuzz->exe.cmdline[0]);
         return false;
     }
-    if ((hfuzz->linux.exeFd =
+    if ((hfuzz->arch_linux.exeFd =
                 TEMP_FAILURE_RETRY(open(hfuzz->exe.cmdline[0], O_RDONLY | O_CLOEXEC))) == -1) {
         PLOG_E("Cannot open the executable binary: %s)", hfuzz->exe.cmdline[0]);
         return false;
@@ -306,7 +307,7 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
             break;
         }
         LOG_D("Glibc version:'%s', OK", gversion);
-        hfuzz->linux.useClone = false;
+        hfuzz->arch_linux.useClone = false;
         break;
     }
 
@@ -374,8 +375,8 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
     /* Updates the important signal array based on input args */
     arch_traceSignalsInit(hfuzz);
 
-    if (hfuzz->linux.cloneFlags && unshare(hfuzz->linux.cloneFlags) == -1) {
-        LOG_E("unshare(%tx)", hfuzz->linux.cloneFlags);
+    if (hfuzz->arch_linux.cloneFlags && unshare(hfuzz->arch_linux.cloneFlags) == -1) {
+        LOG_E("unshare(%tx)", hfuzz->arch_linux.cloneFlags);
         return false;
     }
 
@@ -383,11 +384,11 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
 }
 
 bool arch_archThreadInit(run_t* run) {
-    run->linux.perfMmapBuf = NULL;
-    run->linux.perfMmapAux = NULL;
-    run->linux.cpuInstrFd = -1;
-    run->linux.cpuBranchFd = -1;
-    run->linux.cpuIptBtsFd = -1;
+    run->arch_linux.perfMmapBuf = NULL;
+    run->arch_linux.perfMmapAux = NULL;
+    run->arch_linux.cpuInstrFd = -1;
+    run->arch_linux.cpuBranchFd = -1;
+    run->arch_linux.cpuIptBtsFd = -1;
 
     if (prctl(PR_SET_CHILD_SUBREAPER, 1UL, 0UL, 0UL, 0UL) == -1) {
         PLOG_W("prctl(PR_SET_CHILD_SUBREAPER, 1)");

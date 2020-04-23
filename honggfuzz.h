@@ -318,7 +318,7 @@ typedef struct {
         tristate_t useNetNs;
         bool kernelOnly;
         bool useClone;
-    } linux;
+    } arch_linux;
     /* For the NetBSD code */
     struct {
         void* ignoreAddr;
@@ -328,7 +328,7 @@ typedef struct {
         const char* symsWlFile;
         char** symsWl;
         size_t symsWlCnt;
-    } netbsd;
+    } arch_netbsd;
 } honggfuzz_t;
 
 typedef enum {
@@ -373,7 +373,7 @@ typedef struct {
         int cpuInstrFd;
         int cpuBranchFd;
         int cpuIptBtsFd;
-    } linux;
+    } arch_linux;
 
     struct {
         /* For NetBSD code */
@@ -382,7 +382,7 @@ typedef struct {
         int cpuInstrFd;
         int cpuBranchFd;
         int cpuIptBtsFd;
-    } netbsd;
+    } arch_netbsd;
 } run_t;
 
 /*

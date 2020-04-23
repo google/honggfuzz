@@ -581,9 +581,10 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
           " instr: '%s'",
         pid, si.si_signo, si.si_errno, si.si_code, si.si_addr, pc, crashAddr, instr);
 
-    if (!SI_FROMUSER(&si) && pc && crashAddr < (uint64_t)(uintptr_t)run->global->linux.ignoreAddr) {
+    if (!SI_FROMUSER(&si) && pc &&
+        crashAddr < (uint64_t)(uintptr_t)run->global->arch_linux.ignoreAddr) {
         LOG_I("Input is interesting (%s), but the si.si_addr is %p (below %p), skipping",
-            util_sigName(si.si_signo), si.si_addr, run->global->linux.ignoreAddr);
+            util_sigName(si.si_signo), si.si_addr, run->global->arch_linux.ignoreAddr);
         return;
     }
 
@@ -634,9 +635,9 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
      * both stackhash and symbol blacklist. Crash is always kept regardless
      * of the status of uniqueness flag.
      */
-    if (run->global->linux.symsWl) {
+    if (run->global->arch_linux.symsWl) {
         char* wlSymbol = arch_btContainsSymbol(
-            run->global->linux.symsWlCnt, run->global->linux.symsWl, funcCnt, funcs);
+            run->global->arch_linux.symsWlCnt, run->global->arch_linux.symsWl, funcCnt, funcs);
         if (wlSymbol != NULL) {
             saveUnique = false;
             LOG_D("Whitelisted symbol '%s' found, skipping blacklist checks", wlSymbol);
@@ -657,7 +658,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
          * Check if backtrace contains blacklisted symbol
          */
         char* blSymbol = arch_btContainsSymbol(
-            run->global->linux.symsBlCnt, run->global->linux.symsBl, funcCnt, funcs);
+            run->global->arch_linux.symsBlCnt, run->global->arch_linux.symsBl, funcCnt, funcs);
         if (blSymbol != NULL) {
             LOG_I("Blacklisted symbol '%s' found, skipping", blSymbol);
             ATOMIC_POST_INC(run->global->cnts.blCrashesCnt);
@@ -669,7 +670,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     ATOMIC_POST_ADD(run->global->cfg.dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
     /* Those addresses will be random, so depend on stack-traces for uniqueness */
-    if (!run->global->linux.disableRandomization) {
+    if (!run->global->arch_linux.disableRandomization) {
         pc = 0UL;
         crashAddr = 0UL;
     }

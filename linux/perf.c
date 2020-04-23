@@ -54,7 +54,7 @@ static int32_t perfIntelBtsPerfType = -1;
 
 #if defined(PERF_ATTR_SIZE_VER5)
 __attribute__((hot)) static inline void arch_perfBtsCount(run_t* run) {
-    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
+    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->arch_linux.perfMmapBuf;
     struct bts_branch {
         uint64_t from;
         uint64_t to;
@@ -62,20 +62,20 @@ __attribute__((hot)) static inline void arch_perfBtsCount(run_t* run) {
     };
 
     uint64_t aux_head = ATOMIC_GET(pem->aux_head);
-    struct bts_branch* br = (struct bts_branch*)run->linux.perfMmapAux;
-    for (; br < ((struct bts_branch*)(run->linux.perfMmapAux + aux_head)); br++) {
+    struct bts_branch* br = (struct bts_branch*)run->arch_linux.perfMmapAux;
+    for (; br < ((struct bts_branch*)(run->arch_linux.perfMmapAux + aux_head)); br++) {
         /*
          * Kernel sometimes reports branches from the kernel (iret), we are not interested in that
          * as it makes the whole concept of unique branch counting less predictable
          */
-        if (run->global->linux.kernelOnly == false &&
+        if (run->global->arch_linux.kernelOnly == false &&
             (__builtin_expect(br->from > 0xFFFFFFFF00000000, false) ||
                 __builtin_expect(br->to > 0xFFFFFFFF00000000, false))) {
             LOG_D("Adding branch %#018" PRIx64 " - %#018" PRIx64, br->from, br->to);
             continue;
         }
-        if (br->from >= run->global->linux.dynamicCutOffAddr ||
-            br->to >= run->global->linux.dynamicCutOffAddr) {
+        if (br->from >= run->global->arch_linux.dynamicCutOffAddr ||
+            br->to >= run->global->arch_linux.dynamicCutOffAddr) {
             continue;
         }
 
@@ -92,7 +92,7 @@ __attribute__((hot)) static inline void arch_perfBtsCount(run_t* run) {
 
 static inline void arch_perfMmapParse(run_t* run HF_ATTR_UNUSED) {
 #if defined(PERF_ATTR_SIZE_VER5)
-    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
+    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->arch_linux.perfMmapBuf;
     if (pem->aux_head == pem->aux_tail) {
         return;
     }
@@ -131,7 +131,7 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(struct perf_event_attr));
     pe.size = sizeof(struct perf_event_attr);
-    if (run->global->linux.kernelOnly) {
+    if (run->global->arch_linux.kernelOnly) {
         pe.exclude_user = 1;
     } else {
         pe.exclude_kernel = 1;
@@ -182,9 +182,9 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
         return true;
     }
 #if defined(PERF_ATTR_SIZE_VER5)
-    if ((run->linux.perfMmapBuf = mmap(NULL, _HF_PERF_MAP_SZ + getpagesize(),
+    if ((run->arch_linux.perfMmapBuf = mmap(NULL, _HF_PERF_MAP_SZ + getpagesize(),
              PROT_READ | PROT_WRITE, MAP_SHARED, *perfFd, 0)) == MAP_FAILED) {
-        run->linux.perfMmapBuf = NULL;
+        run->arch_linux.perfMmapBuf = NULL;
         PLOG_W("mmap(mmapBuf) failed, sz=%zu, try increasing the kernel.perf_event_mlock_kb sysctl "
                "(up to even 300000000)",
             (size_t)_HF_PERF_MAP_SZ + getpagesize());
@@ -193,14 +193,14 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
         return false;
     }
 
-    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
+    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->arch_linux.perfMmapBuf;
     pem->aux_offset = pem->data_offset + pem->data_size;
     pem->aux_size = _HF_PERF_AUX_SZ;
-    if ((run->linux.perfMmapAux = mmap(
+    if ((run->arch_linux.perfMmapAux = mmap(
              NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset)) == MAP_FAILED) {
-        munmap(run->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
-        run->linux.perfMmapBuf = NULL;
-        run->linux.perfMmapAux = NULL;
+        munmap(run->arch_linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
+        run->arch_linux.perfMmapBuf = NULL;
+        run->arch_linux.perfMmapAux = NULL;
         PLOG_W(
             "mmap(mmapAuxBuf) failed, try increasing the kernel.perf_event_mlock_kb sysctl (up to "
             "even 300000000)");
@@ -221,25 +221,26 @@ bool arch_perfOpen(run_t* run) {
     }
 
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        if (!arch_perfCreate(run, run->pid, _HF_DYNFILE_INSTR_COUNT, &run->linux.cpuInstrFd)) {
+        if (!arch_perfCreate(run, run->pid, _HF_DYNFILE_INSTR_COUNT, &run->arch_linux.cpuInstrFd)) {
             LOG_E("Cannot set up perf for pid=%d (_HF_DYNFILE_INSTR_COUNT)", (int)run->pid);
             goto out;
         }
     }
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        if (!arch_perfCreate(run, run->pid, _HF_DYNFILE_BRANCH_COUNT, &run->linux.cpuBranchFd)) {
+        if (!arch_perfCreate(
+                run, run->pid, _HF_DYNFILE_BRANCH_COUNT, &run->arch_linux.cpuBranchFd)) {
             LOG_E("Cannot set up perf for pid=%d (_HF_DYNFILE_BRANCH_COUNT)", (int)run->pid);
             goto out;
         }
     }
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        if (!arch_perfCreate(run, run->pid, _HF_DYNFILE_BTS_EDGE, &run->linux.cpuIptBtsFd)) {
+        if (!arch_perfCreate(run, run->pid, _HF_DYNFILE_BTS_EDGE, &run->arch_linux.cpuIptBtsFd)) {
             LOG_E("Cannot set up perf for pid=%d (_HF_DYNFILE_BTS_EDGE)", (int)run->pid);
             goto out;
         }
     }
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        if (!arch_perfCreate(run, run->pid, _HF_DYNFILE_IPT_BLOCK, &run->linux.cpuIptBtsFd)) {
+        if (!arch_perfCreate(run, run->pid, _HF_DYNFILE_IPT_BLOCK, &run->arch_linux.cpuIptBtsFd)) {
             LOG_E("Cannot set up perf for pid=%d (_HF_DYNFILE_IPT_BLOCK)", (int)run->pid);
             goto out;
         }
@@ -248,12 +249,12 @@ bool arch_perfOpen(run_t* run) {
     return true;
 
 out:
-    close(run->linux.cpuInstrFd);
-    run->linux.cpuInstrFd = -1;
-    close(run->linux.cpuBranchFd);
-    run->linux.cpuBranchFd = -1;
-    close(run->linux.cpuIptBtsFd);
-    run->linux.cpuIptBtsFd = -1;
+    close(run->arch_linux.cpuInstrFd);
+    run->arch_linux.cpuInstrFd = -1;
+    close(run->arch_linux.cpuBranchFd);
+    run->arch_linux.cpuBranchFd = -1;
+    close(run->arch_linux.cpuIptBtsFd);
+    run->arch_linux.cpuIptBtsFd = -1;
 
     return false;
 }
@@ -263,30 +264,30 @@ void arch_perfClose(run_t* run) {
         return;
     }
 
-    if (run->linux.perfMmapAux != NULL) {
-        munmap(run->linux.perfMmapAux, _HF_PERF_AUX_SZ);
-        run->linux.perfMmapAux = NULL;
+    if (run->arch_linux.perfMmapAux != NULL) {
+        munmap(run->arch_linux.perfMmapAux, _HF_PERF_AUX_SZ);
+        run->arch_linux.perfMmapAux = NULL;
     }
-    if (run->linux.perfMmapBuf != NULL) {
-        munmap(run->linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
-        run->linux.perfMmapBuf = NULL;
+    if (run->arch_linux.perfMmapBuf != NULL) {
+        munmap(run->arch_linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
+        run->arch_linux.perfMmapBuf = NULL;
     }
 
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        close(run->linux.cpuInstrFd);
-        run->linux.cpuInstrFd = -1;
+        close(run->arch_linux.cpuInstrFd);
+        run->arch_linux.cpuInstrFd = -1;
     }
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        close(run->linux.cpuBranchFd);
-        run->linux.cpuBranchFd = -1;
+        close(run->arch_linux.cpuBranchFd);
+        run->arch_linux.cpuBranchFd = -1;
     }
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        close(run->linux.cpuIptBtsFd);
-        run->linux.cpuIptBtsFd = -1;
+        close(run->arch_linux.cpuIptBtsFd);
+        run->arch_linux.cpuIptBtsFd = -1;
     }
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        close(run->linux.cpuIptBtsFd);
-        run->linux.cpuIptBtsFd = -1;
+        close(run->arch_linux.cpuIptBtsFd);
+        run->arch_linux.cpuIptBtsFd = -1;
     }
 }
 
@@ -300,16 +301,16 @@ bool arch_perfEnable(run_t* run) {
     }
 
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_INSTR_COUNT) {
-        ioctl(run->linux.cpuInstrFd, PERF_EVENT_IOC_ENABLE, 0);
+        ioctl(run->arch_linux.cpuInstrFd, PERF_EVENT_IOC_ENABLE, 0);
     }
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) {
-        ioctl(run->linux.cpuBranchFd, PERF_EVENT_IOC_ENABLE, 0);
+        ioctl(run->arch_linux.cpuBranchFd, PERF_EVENT_IOC_ENABLE, 0);
     }
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
-        ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_ENABLE, 0);
+        ioctl(run->arch_linux.cpuIptBtsFd, PERF_EVENT_IOC_ENABLE, 0);
     }
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_IPT_BLOCK) {
-        ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_ENABLE, 0);
+        ioctl(run->arch_linux.cpuIptBtsFd, PERF_EVENT_IOC_ENABLE, 0);
     }
 
     return true;
@@ -319,7 +320,7 @@ static void arch_perfMmapReset(run_t* run) {
     /* smp_mb() required as per /usr/include/linux/perf_event.h */
     wmb();
 
-    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->linux.perfMmapBuf;
+    struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->arch_linux.perfMmapBuf;
     ATOMIC_SET(pem->data_head, 0);
     ATOMIC_SET(pem->data_tail, 0);
 #if defined(PERF_ATTR_SIZE_VER5)
@@ -335,39 +336,39 @@ void arch_perfAnalyze(run_t* run) {
 
     uint64_t instrCount = 0;
     if ((run->global->feedback.dynFileMethod & _HF_DYNFILE_INSTR_COUNT) &&
-        run->linux.cpuInstrFd != -1) {
-        ioctl(run->linux.cpuInstrFd, PERF_EVENT_IOC_DISABLE, 0);
-        if (files_readFromFd(run->linux.cpuInstrFd, (uint8_t*)&instrCount, sizeof(instrCount)) !=
-            sizeof(instrCount)) {
-            PLOG_E("read(perfFd='%d') failed", run->linux.cpuInstrFd);
+        run->arch_linux.cpuInstrFd != -1) {
+        ioctl(run->arch_linux.cpuInstrFd, PERF_EVENT_IOC_DISABLE, 0);
+        if (files_readFromFd(run->arch_linux.cpuInstrFd, (uint8_t*)&instrCount,
+                sizeof(instrCount)) != sizeof(instrCount)) {
+            PLOG_E("read(perfFd='%d') failed", run->arch_linux.cpuInstrFd);
         }
-        ioctl(run->linux.cpuInstrFd, PERF_EVENT_IOC_RESET, 0);
+        ioctl(run->arch_linux.cpuInstrFd, PERF_EVENT_IOC_RESET, 0);
     }
 
     uint64_t branchCount = 0;
     if ((run->global->feedback.dynFileMethod & _HF_DYNFILE_BRANCH_COUNT) &&
-        run->linux.cpuBranchFd != -1) {
-        ioctl(run->linux.cpuBranchFd, PERF_EVENT_IOC_DISABLE, 0);
-        if (files_readFromFd(run->linux.cpuBranchFd, (uint8_t*)&branchCount, sizeof(branchCount)) !=
-            sizeof(branchCount)) {
-            PLOG_E("read(perfFd='%d') failed", run->linux.cpuBranchFd);
+        run->arch_linux.cpuBranchFd != -1) {
+        ioctl(run->arch_linux.cpuBranchFd, PERF_EVENT_IOC_DISABLE, 0);
+        if (files_readFromFd(run->arch_linux.cpuBranchFd, (uint8_t*)&branchCount,
+                sizeof(branchCount)) != sizeof(branchCount)) {
+            PLOG_E("read(perfFd='%d') failed", run->arch_linux.cpuBranchFd);
         }
-        ioctl(run->linux.cpuBranchFd, PERF_EVENT_IOC_RESET, 0);
+        ioctl(run->arch_linux.cpuBranchFd, PERF_EVENT_IOC_RESET, 0);
     }
 
     if ((run->global->feedback.dynFileMethod & _HF_DYNFILE_BTS_EDGE) &&
-        run->linux.cpuIptBtsFd != -1) {
-        ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
+        run->arch_linux.cpuIptBtsFd != -1) {
+        ioctl(run->arch_linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(run);
         arch_perfMmapReset(run);
-        ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
+        ioctl(run->arch_linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
     }
     if ((run->global->feedback.dynFileMethod & _HF_DYNFILE_IPT_BLOCK) &&
-        run->linux.cpuIptBtsFd != -1) {
-        ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
+        run->arch_linux.cpuIptBtsFd != -1) {
+        ioctl(run->arch_linux.cpuIptBtsFd, PERF_EVENT_IOC_DISABLE, 0);
         arch_perfMmapParse(run);
         arch_perfMmapReset(run);
-        ioctl(run->linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
+        ioctl(run->arch_linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
     }
 
     run->hwCnts.cpuInstrCnt = instrCount;

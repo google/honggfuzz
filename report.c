@@ -111,9 +111,9 @@ void report_saveReport(run_t* run) {
         run->global->exe.externalCommand == NULL ? "NULL" : run->global->exe.externalCommand,
         run->global->exe.fuzzStdin ? "TRUE" : "FALSE", run->global->timing.tmOut,
 #if defined(_HF_ARCH_LINUX)
-        run->global->linux.ignoreAddr,
+        run->global->arch_linux.ignoreAddr,
 #elif defined(_HF_ARCH_NETBSD)
-        run->global->netbsd.ignoreAddr,
+        run->global->arch_netbsd.ignoreAddr,
 #endif
         run->global->exe.asLimit, run->global->exe.rssLimit, run->global->exe.dataLimit,
         run->global->mutate.dictionaryFile == NULL ? "NULL" : run->global->mutate.dictionaryFile);
