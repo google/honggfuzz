@@ -362,9 +362,8 @@ static bool netDriver_checkIfServerReady(int argc, char **argv) {
     }
 
     LOG_I("Honggfuzz Net Driver (pid=%d): Waiting for the TCP server process to start "
-          "accepting connections at TCP4/TCP6 port: %hu or at the socket path: '%*s'",
-        (int)getpid(), tcp_port,
-        (int)strnlen(sun.sun_path, slen - offsetof(struct sockaddr_un, sun_path)), sun.sun_path);
+          "accepting connections at TCP4/TCP6 port: %hu or at the socket path: '%s'",
+        (int)getpid(), tcp_port, files_sockAddrToStr((const struct sockaddr *)&sun, slen));
     return false;
 }
 
