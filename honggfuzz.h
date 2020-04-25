@@ -374,15 +374,6 @@ typedef struct {
         int cpuBranchFd;
         int cpuIptBtsFd;
     } arch_linux;
-
-    struct {
-        /* For NetBSD code */
-        uint8_t* perfMmapBuf;
-        uint8_t* perfMmapAux;
-        int cpuInstrFd;
-        int cpuBranchFd;
-        int cpuIptBtsFd;
-    } arch_netbsd;
 } run_t;
 
 /*
