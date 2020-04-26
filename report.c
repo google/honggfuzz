@@ -70,7 +70,7 @@ void report_saveReport(run_t* run) {
         return;
     }
 
-    MX_SCOPED_LOCK(&run->global->cfg.report_mutex);
+    MX_SCOPED_LOCK(&run->global->mutex.report);
 
     if (reportFD == -1) {
         char reportFName[PATH_MAX];

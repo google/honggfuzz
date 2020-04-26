@@ -92,8 +92,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
     static uint32_t cnt = 0;
     ATOMIC_PRE_INC(cnt);
 
-    static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
-    MX_SCOPED_LOCK(&state_mutex);
+    MX_SCOPED_LOCK(&run->global->mutex.state);
 
     if (fuzz_getState(run->global) != _HF_STATE_DYNAMIC_DRY_RUN) {
         /* Already switched out of the Dry Run */
@@ -187,7 +186,7 @@ static void fuzz_perfFeedback(run_t* run) {
         return;
     }
 
-    MX_SCOPED_LOCK(&run->global->feedback.covFeedback_mutex);
+    MX_SCOPED_LOCK(&run->global->mutex.feedback);
     defer {
         wmb();
     };

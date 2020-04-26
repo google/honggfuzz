@@ -316,7 +316,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .saveUnique = true,
                 .dynfileqMaxSz = 0U,
                 .dynfileqCnt = 0U,
-                .dynfileq_mutex = PTHREAD_RWLOCK_INITIALIZER,
                 .dynfileqCurrent = NULL,
                 .dynfileq2Current = NULL,
                 .exportFeedback = false,
@@ -368,7 +367,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             {
                 .useVerifier = false,
                 .exitUponCrash = false,
-                .report_mutex = PTHREAD_MUTEX_INITIALIZER,
                 .reportFile = NULL,
                 .dynFileIterExpire = 0,
                 .only_printable = false,
@@ -384,7 +382,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             {
                 .covFeedbackMap = NULL,
                 .covFeedbackFd = -1,
-                .covFeedback_mutex = PTHREAD_MUTEX_INITIALIZER,
                 .cmpFeedbackMap = NULL,
                 .cmpFeedbackFd = -1,
                 .cmpFeedback = true,
@@ -418,6 +415,12 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .enabled = false,
                 .serverSocket = -1,
                 .clientSocket = -1,
+            },
+        .mutex =
+            {
+                .dynfileq = PTHREAD_RWLOCK_INITIALIZER,
+                .feedback = PTHREAD_MUTEX_INITIALIZER,
+                .report = PTHREAD_MUTEX_INITIALIZER,
             },
 
         /* Linux code */

@@ -124,8 +124,7 @@ bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
 }
 
 bool input_getNext(run_t* run, char fname[PATH_MAX], bool rewind) {
-    static pthread_mutex_t input_mutex = PTHREAD_MUTEX_INITIALIZER;
-    MX_SCOPED_LOCK(&input_mutex);
+    MX_SCOPED_LOCK(&run->global->mutex.input);
 
     if (run->global->io.fileCnt == 0U) {
         LOG_W("No useful files in the input directory");
@@ -386,7 +385,7 @@ void input_addDynamicInput(run_t* run) {
     }
     input_generateFileName(dynfile, NULL, dynfile->path);
 
-    MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
+    MX_SCOPED_RWLOCK_WRITE(&run->global->mutex.dynfileq);
 
     dynfile->idx = ATOMIC_PRE_INC(run->global->io.dynfileqCnt);
 
@@ -433,7 +432,7 @@ void input_addDynamicInput(run_t* run) {
 }
 
 bool input_inDynamicCorpus(run_t* run, const char* fname) {
-    MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
+    MX_SCOPED_RWLOCK_WRITE(&run->global->mutex.dynfileq);
 
     dynfile_t* iter = NULL;
     TAILQ_FOREACH_HF(iter, &run->global->io.dynfileq, pointers) {
@@ -528,7 +527,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
 
     int speed_factor = 0;
     for (;;) {
-        MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
+        MX_SCOPED_RWLOCK_WRITE(&run->global->mutex.dynfileq);
 
         if (run->global->io.dynfileqCurrent == NULL) {
             run->global->io.dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
@@ -578,7 +577,7 @@ size_t input_getRandomInputAsBuf(run_t* run, const uint8_t** buf) {
 
     dynfile_t* current = NULL;
     {
-        MX_SCOPED_RWLOCK_WRITE(&run->global->io.dynfileq_mutex);
+        MX_SCOPED_RWLOCK_WRITE(&run->global->mutex.dynfileq);
 
         if (run->global->io.dynfileq2Current == NULL) {
             run->global->io.dynfileq2Current = TAILQ_FIRST(&run->global->io.dynfileq);

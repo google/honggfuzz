@@ -209,7 +209,6 @@ typedef struct {
         bool saveUnique;
         size_t dynfileqMaxSz;
         size_t dynfileqCnt;
-        pthread_rwlock_t dynfileq_mutex;
         dynfile_t* dynfileqCurrent;
         dynfile_t* dynfileq2Current;
         TAILQ_HEAD(dyns_t, _dynfile_t) dynfileq;
@@ -263,7 +262,6 @@ typedef struct {
         bool useVerifier;
         bool exitUponCrash;
         const char* reportFile;
-        pthread_mutex_t report_mutex;
         size_t dynFileIterExpire;
         bool only_printable;
         bool minimize;
@@ -277,7 +275,6 @@ typedef struct {
         fuzzState_t state;
         feedback_t* covFeedbackMap;
         int covFeedbackFd;
-        pthread_mutex_t covFeedback_mutex;
         cmpfeedback_t* cmpFeedbackMap;
         int cmpFeedbackFd;
         bool cmpFeedback;
@@ -302,6 +299,15 @@ typedef struct {
         int serverSocket;
         int clientSocket;
     } socketFuzzer;
+    struct {
+        pthread_rwlock_t dynfileq;
+        pthread_mutex_t feedback;
+        pthread_mutex_t report;
+        pthread_mutex_t state;
+        pthread_mutex_t input;
+        pthread_mutex_t timing;
+    } mutex;
+
     /* For the Linux code */
     struct {
         int exeFd;

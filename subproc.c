@@ -439,8 +439,7 @@ bool subproc_Run(run_t* run) {
     int64_t diffUSecs = util_timeNowUSecs() - run->timeStartedUSecs;
 
     {
-        static pthread_mutex_t local_mutex = PTHREAD_MUTEX_INITIALIZER;
-        MX_SCOPED_LOCK(&local_mutex);
+        MX_SCOPED_LOCK(&run->global->mutex.timing);
         if (diffUSecs >= ATOMIC_GET(run->global->timing.timeOfLongestUnitUSecs)) {
             ATOMIC_SET(run->global->timing.timeOfLongestUnitUSecs, diffUSecs);
         }
