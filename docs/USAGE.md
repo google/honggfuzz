@@ -255,8 +255,8 @@ Examples:
   * **SIGSEGV**,**SIGILL**,**SIGBUS**,**SIGABRT**,**SIGFPE** - Description of the signal which terminated the process (when using ptrace() API, it's a signal which was delivered to the process, even if silently discarded)
   * **PC.0x8056ad7** - Program Counter (PC) value (ptrace() API only), for x86 it's a value of the EIP register (RIP for x86-64)
   * **STACK.13599d485** - Stack signature (based on stack-tracing)
-  * **ADDR.0x30333037** - Value of the _siginfo`_`t.si`_`addr_ (see _man 2 signaction_ for more details) (most likely meaningless for SIGABRT)
-  * **INSTR.mov____0x10(%rbx),%rax`** - Disassembled instruction which was found under the last known PC (Program Counter) (x86, x86-64 architectures only, meaningless for SIGABRT)
+  * **ADDR.0x30333037** - Value of the ```_siginfo_t.si_addr_``` (see _man 2 signaction_ for more details) (most likely meaningless for SIGABRT)
+  * **INSTR.mov____0x10(%rbx),%rax** - Disassembled instruction which was found under the last known PC (Program Counter) (x86, x86-64 architectures only, meaningless for SIGABRT)
 
 # FAQ #
 
@@ -267,7 +267,7 @@ Examples:
   * A: The ptrace() API is more flexible when it comes to analyzing a process' crash. wait3/4() syscalls are only able to determine the type of signal which crashed an application and limited resource usage information (see _man wait4_).
 
   * Q: **Why isn't there any support for the ptrace() API when compiling under FreeBSD or Mac OS X operating systems**?
-  * A: These operating systems lack some specific ptrace() operations, including **PT`_`GETREGS** (Mac OS X) and **PT`_`GETSIGINFO**, both of which honggfuzz depends on. If you have any ideas on how to get around this limitation, send us an email or patch.
+  * A: These operating systems lack some specific ptrace() operations, including ```PT_GETREGS``` (Mac OS X) and ```PT_GETSIGINFO```, both of which honggfuzz depends on. If you have any ideas on how to get around this limitation, send us an email or patch.
 
 # LICENSE #
 
