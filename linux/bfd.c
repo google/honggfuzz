@@ -146,7 +146,7 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num) {
 
     bfd_init();
 
-    __block bfd_t bfdParams = {
+    bfd_t bfdParams = {
         .bfdh = NULL,
         .syms = NULL,
         .dsyms = NULL,
