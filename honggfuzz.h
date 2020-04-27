@@ -360,7 +360,6 @@ typedef struct {
     bool staticFileTryMore;
     uint32_t fuzzNo;
     int persistentSock;
-    bool waitingForReady;
     runState_t runState;
     bool tmOutSignaled;
     char* args[_HF_ARGS_MAX + 1];
