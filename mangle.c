@@ -857,7 +857,7 @@ void mangle_mangleContent(run_t* run, int speed_factor) {
         changesCnt = HF_MAX(changesCnt, run->global->mutate.mutationsPerRun);
     }
 
-    /* If last coverage acquisition was mroe than 5 secs ago, use splicing more frequently */
+    /* If last coverage acquisition was more than 5 secs ago, use splicing more frequently */
     if ((time(NULL) - ATOMIC_GET(run->global->timing.lastCovUpdate)) > 5) {
         if (util_rnd64() % 2) {
             mangle_Splice(run, run->global->cfg.only_printable);
