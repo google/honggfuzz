@@ -93,6 +93,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Heap buffer-overflow in __picoc__](https://gitlab.com/zsaleeba/picoc/issues/44)
   * Crashes in __OpenCOBOL__: [#1](https://sourceforge.net/p/open-cobol/bugs/586/), [#2](https://sourceforge.net/p/open-cobol/bugs/587/)
   * DoS in __ProFTPD__: [#1](https://twitter.com/SecReLabs/status/1186548245553483783), [#2](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-18217)
+  * [Multiple security problems in ImageIO (iOS/MacOS)](https://googleprojectzero.blogspot.com/2020/04/fuzzing-imageio.html)
   * [Memory corruption in __htmldoc__](https://github.com/michaelrsweet/htmldoc/issues/370)
   * [Memory corruption in __OpenDetex__](https://github.com/pkubowicz/opendetex/issues/60)
   * [Memory corruption in __Yabasic__](https://github.com/marcIhm/yabasic/issues/36)
@@ -157,6 +158,8 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__rcc__: a Rust C compiler](https://github.com/jyn514/rcc#testing)
   * [__EIP1962Fuzzing__: Fuzzy testing of various EIP1962 implementations](https://github.com/matter-labs/eip1962_fuzzing)
   * [__wasm-fuzz__: Fuzzing of wasmer](https://github.com/wasmerio/wasm-fuzz/blob/master/honggfuzz.md), [blog post](https://medium.com/wasmer/fuzz-testing-in-webassembly-vms-3a301f982e5a)
+  * [__P0__: Fuzzing ImageIO](https://googleprojectzero.blogspot.com/2020/04/fuzzing-imageio.html)
+    * [__TrapFuzz__: by P0](https://github.com/googleprojectzero/p0tools/tree/master/TrapFuzz)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
     * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
 
