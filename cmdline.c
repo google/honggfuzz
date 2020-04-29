@@ -422,6 +422,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .feedback = PTHREAD_MUTEX_INITIALIZER,
                 .report   = PTHREAD_MUTEX_INITIALIZER,
                 .input    = PTHREAD_MUTEX_INITIALIZER,
+                .timing   = PTHREAD_MUTEX_INITIALIZER,
             },
 
         /* Linux code */
