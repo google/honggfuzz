@@ -1,0 +1,6 @@
+BasedOnStyle: Google
+IndentWidth: 4
+ColumnLimit: 100
+AlignAfterOpenBracket: DontAlign
+AllowShortFunctionsOnASingleLine: false
+AlwaysBreakBeforeMultilineStrings: false
