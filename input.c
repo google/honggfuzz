@@ -374,12 +374,12 @@ static bool input_cmpCov(dynfile_t* item1, dynfile_t* item2) {
 void input_addDynamicInput(run_t* run) {
     ATOMIC_SET(run->global->timing.lastCovUpdate, time(NULL));
 
-    dynfile_t* dynfile = (dynfile_t*)util_Calloc(sizeof(dynfile_t));
-    dynfile->size      = run->dynfile->size;
-    memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
+    dynfile_t* dynfile     = (dynfile_t*)util_Calloc(sizeof(dynfile_t));
+    dynfile->size          = run->dynfile->size;
     dynfile->timeExecUSecs = util_timeNowUSecs() - run->timeStartedUSecs;
     dynfile->data          = (uint8_t*)util_AllocCopy(run->dynfile->data, run->dynfile->size);
     dynfile->src           = run->dynfile->src;
+    memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
     if (run->dynfile->src) {
         ATOMIC_POST_INC(run->dynfile->src->refs);
     }
@@ -553,12 +553,12 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     }
 
     input_setSize(run, run->current->size);
-    memcpy(run->dynfile->cov, run->current->cov, sizeof(run->dynfile->cov));
     run->dynfile->idx           = run->current->idx;
     run->dynfile->timeExecUSecs = run->current->timeExecUSecs;
+    run->dynfile->src           = run->current;
+    run->dynfile->refs          = 0;
+    memcpy(run->dynfile->cov, run->current->cov, sizeof(run->dynfile->cov));
     snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s", run->current->path);
-    run->dynfile->src  = run->current;
-    run->dynfile->refs = 0;
     memcpy(run->dynfile->data, run->current->data, run->current->size);
 
     if (needs_mangle) {
