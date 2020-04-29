@@ -46,8 +46,8 @@
 #include "socketfuzzer.h"
 #include "subproc.h"
 
-static int sigReceived = 0;
-static bool clearWin = false;
+static int  sigReceived = 0;
+static bool clearWin    = false;
 
 /*
  * CygWin/MinGW incorrectly copies stack during fork(), so we need to keep some
@@ -103,7 +103,7 @@ static void setupRLimits(void) {
         LOG_E("RLIMIT_NOFILE max limit < 1024 (%zu). Expect troubles!", (size_t)rlim.rlim_max);
         return;
     }
-    rlim.rlim_cur = MIN(1024, rlim.rlim_max);  // we don't need more
+    rlim.rlim_cur = MIN(1024, rlim.rlim_max);    // we don't need more
     if (setrlimit(RLIMIT_NOFILE, &rlim) == -1) {
         PLOG_E("Couldn't setrlimit(RLIMIT_NOFILE, cur=%zu/max=%zu)", (size_t)rlim.rlim_cur,
             (size_t)rlim.rlim_max);
@@ -114,12 +114,12 @@ static void setupMainThreadTimer(void) {
     const struct itimerval it = {
         .it_value =
             {
-                .tv_sec = 1,
+                .tv_sec  = 1,
                 .tv_usec = 0,
             },
         .it_interval =
             {
-                .tv_sec = 0,
+                .tv_sec  = 0,
                 .tv_usec = 1000ULL * 200ULL,
             },
     };
@@ -149,7 +149,7 @@ static void setupSignalsPreThreads(void) {
 
     struct sigaction sa = {
         .sa_handler = sigHandler,
-        .sa_flags = 0,
+        .sa_flags   = 0,
     };
     sigemptyset(&sa.sa_mask);
     if (sigaction(SIGTERM, &sa, NULL) == -1) {
@@ -188,7 +188,7 @@ static void setupSignalsMainThread(void) {
 
 static void printSummary(honggfuzz_t* hfuzz) {
     uint64_t exec_per_sec = 0;
-    uint64_t elapsed_sec = time(NULL) - hfuzz->timing.timeStart;
+    uint64_t elapsed_sec  = time(NULL) - hfuzz->timing.timeStart;
     if (elapsed_sec) {
         exec_per_sec = hfuzz->cnts.mutationsCnt / elapsed_sec;
     }
@@ -198,7 +198,7 @@ static void printSummary(honggfuzz_t* hfuzz) {
     struct rusage usage;
     if (getrusage(RUSAGE_CHILDREN, &usage)) {
         PLOG_W("getrusage  failed");
-        usage.ru_maxrss = 0;  // 0 means something went wrong with rusage
+        usage.ru_maxrss = 0;    // 0 means something went wrong with rusage
     }
 #ifdef _HF_ARCH_DARWIN
     usage.ru_maxrss >>= 20;
@@ -235,7 +235,7 @@ static void* signalThread(void* arg) {
 
     for (;;) {
         int sig = 0;
-        errno = 0;
+        errno   = 0;
         int ret = sigwait(&ss, &sig);
         if (ret == EINTR) {
             continue;

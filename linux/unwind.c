@@ -56,16 +56,16 @@ static const char* UNW_ER[] = {
 typedef struct {
     unsigned long start;
     unsigned long end;
-    char perms[6];
+    char          perms[6];
     unsigned long offset;
-    char dev[8];
+    char          dev[8];
     unsigned long inode;
-    char name[PATH_MAX];
+    char          name[PATH_MAX];
 } procMap_t;
 
 static procMap_t* arch_parsePidMaps(pid_t pid, size_t* mapsCount) {
-    FILE* f = NULL;
-    char fProcMaps[PATH_MAX] = {0};
+    FILE* f                   = NULL;
+    char  fProcMaps[PATH_MAX] = {0};
     snprintf(fProcMaps, PATH_MAX, "/proc/%d/maps", pid);
 
     if ((f = fopen(fProcMaps, "rb")) == NULL) {
@@ -76,7 +76,7 @@ static procMap_t* arch_parsePidMaps(pid_t pid, size_t* mapsCount) {
         fclose(f);
     };
 
-    *mapsCount = 0;
+    *mapsCount          = 0;
     procMap_t* mapsList = malloc(sizeof(procMap_t));
     if (mapsList == NULL) {
         PLOG_W("malloc(size='%zu')", sizeof(procMap_t));
@@ -121,7 +121,7 @@ static char* arch_searchMaps(unsigned long addr, size_t mapsCnt, procMap_t* maps
 
 #ifndef __ANDROID__
 size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
-    size_t num_frames = 0, mapsCnt = 0;
+    size_t     num_frames = 0, mapsCnt = 0;
     procMap_t* mapsList = arch_parsePidMaps(pid, &mapsCnt);
     defer {
         free(mapsList);
@@ -146,7 +146,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
     };
 
     unw_cursor_t c;
-    int ret = unw_init_remote(&c, as, ui);
+    int          ret = unw_init_remote(&c, as, ui);
     if (ret < 0) {
         LOG_E("[pid='%d'] unw_init_remote failed (%s)", pid, UNW_ER[-ret]);
         return num_frames;
@@ -154,8 +154,8 @@ size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
 
     for (num_frames = 0; unw_step(&c) > 0 && num_frames < _HF_MAX_FUNCS; num_frames++) {
         unw_word_t ip;
-        char* module = NULL;
-        ret = unw_get_reg(&c, UNW_REG_IP, &ip);
+        char*      module = NULL;
+        ret               = unw_get_reg(&c, UNW_REG_IP, &ip);
         if (ret < 0) {
             LOG_E("[pid='%d'] [%zd] failed to read IP (%s)", pid, num_frames, UNW_ER[-ret]);
             funcs[num_frames].pc = 0;
@@ -174,7 +174,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
 
 #else  /* !defined(__ANDROID__) */
 size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
-    size_t num_frames = 0, mapsCnt = 0;
+    size_t     num_frames = 0, mapsCnt = 0;
     procMap_t* mapsList = arch_parsePidMaps(pid, &mapsCnt);
     defer {
         free(mapsList);
@@ -199,16 +199,16 @@ size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
     };
 
     unw_cursor_t cursor;
-    int ret = unw_init_remote(&cursor, as, ui);
+    int          ret = unw_init_remote(&cursor, as, ui);
     if (ret < 0) {
         LOG_E("[pid='%d'] unw_init_remote failed (%s)", pid, UNW_ER[-ret]);
         return num_frames;
     }
 
     do {
-        char* module = NULL;
+        char*      module = NULL;
         unw_word_t pc = 0, offset = 0;
-        char buf[_HF_FUNC_NAME_SZ] = {0};
+        char       buf[_HF_FUNC_NAME_SZ] = {0};
 
         ret = unw_get_reg(&cursor, UNW_REG_IP, &pc);
         if (ret < 0) {
@@ -237,7 +237,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
         // Compared to bfd, line var plays the role of offset from func_name
         // Reports format is adjusted accordingly to reflect in saved file
         funcs[num_frames].line = offset;
-        funcs[num_frames].pc = (void*)pc;
+        funcs[num_frames].pc   = (void*)pc;
         memcpy(funcs[num_frames].func, buf, sizeof(funcs[num_frames].func));
         if (mapsCnt > 0 && (module = arch_searchMaps(pc, mapsCnt, mapsList)) != NULL) {
             memcpy(funcs[num_frames].module, module, sizeof(funcs[num_frames].module));

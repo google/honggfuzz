@@ -102,27 +102,27 @@ static char* g_fuzzer_crash_callstack[PID_MAX + 1];
 char g_service_name[256];
 
 struct {
-    bool important;
+    bool        important;
     const char* descr;
 } arch_sigs[NSIG];
 
 __attribute__((constructor)) void arch_initSigs(void) {
     for (int x = 0; x < NSIG; x++) arch_sigs[x].important = false;
 
-    arch_sigs[SIGILL].important = true;
-    arch_sigs[SIGILL].descr = "SIGILL";
-    arch_sigs[SIGFPE].important = true;
-    arch_sigs[SIGFPE].descr = "SIGFPE";
+    arch_sigs[SIGILL].important  = true;
+    arch_sigs[SIGILL].descr      = "SIGILL";
+    arch_sigs[SIGFPE].important  = true;
+    arch_sigs[SIGFPE].descr      = "SIGFPE";
     arch_sigs[SIGSEGV].important = true;
-    arch_sigs[SIGSEGV].descr = "SIGSEGV";
-    arch_sigs[SIGBUS].important = true;
-    arch_sigs[SIGBUS].descr = "SIGBUS";
+    arch_sigs[SIGSEGV].descr     = "SIGSEGV";
+    arch_sigs[SIGBUS].important  = true;
+    arch_sigs[SIGBUS].descr      = "SIGBUS";
     arch_sigs[SIGABRT].important = true;
-    arch_sigs[SIGABRT].descr = "SIGABRT";
+    arch_sigs[SIGABRT].descr     = "SIGABRT";
 
     /* Is affected from tmoutVTALRM flag */
     arch_sigs[SIGVTALRM].important = false;
-    arch_sigs[SIGVTALRM].descr = "SIGVTALRM";
+    arch_sigs[SIGVTALRM].descr     = "SIGVTALRM";
 }
 
 const char* exception_to_string(int exception) {
@@ -220,9 +220,9 @@ static void arch_analyzeSignal(run_t* run, int status) {
     /*
      * Get data from exception handler
      */
-    run->pc = g_fuzzer_crash_information[run->pid].pc;
+    run->pc        = g_fuzzer_crash_information[run->pid].pc;
     run->exception = g_fuzzer_crash_information[run->pid].exception;
-    run->access = g_fuzzer_crash_information[run->pid].access;
+    run->access    = g_fuzzer_crash_information[run->pid].access;
     run->backtrace = g_fuzzer_crash_information[run->pid].backtrace;
 
     defer {
@@ -336,7 +336,7 @@ void arch_prepareParentAfterFork(run_t* run HF_ATTR_UNUSED) {
 static bool arch_checkWait(run_t* run) {
     /* All queued wait events must be tested when SIGCHLD was delivered */
     for (;;) {
-        int status;
+        int   status;
         pid_t pid = TEMP_FAILURE_RETRY(wait4(run->pid, &status, WNOHANG, NULL));
         if (pid == 0) {
             return false;
@@ -378,7 +378,7 @@ void arch_reapChild(run_t* run) {
 
         if (run->global->exe.persistent) {
             struct pollfd pfd = {
-                .fd = run->persistentSock,
+                .fd     = run->persistentSock,
                 .events = POLLIN,
             };
             int r = poll(&pfd, 1, 250 /* 0.25s */);
@@ -483,8 +483,8 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
 static void write_crash_report(thread_port_t thread, task_port_t task, exception_type_t exception,
     mach_exception_data_t code, mach_msg_type_number_t code_count, int* flavor,
     thread_state_t in_state, mach_msg_type_number_t in_state_count) {
-    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-    CrashReport* _crashReport = nil;
+    NSAutoreleasePool* pool         = [[NSAutoreleasePool alloc] init];
+    CrashReport*       _crashReport = nil;
 
     _crashReport = [[CrashReport alloc] initWithTask:task
                                        exceptionType:exception
@@ -496,7 +496,7 @@ static void write_crash_report(thread_port_t thread, task_port_t task, exception
                                     threadStateCount:in_state_count];
 
     NSString* crashDescription = [_crashReport description];
-    char* description = (char*)[crashDescription UTF8String];
+    char*     description      = (char*)[crashDescription UTF8String];
 
     LOG_D("CrashReport: %s", description);
 
@@ -509,8 +509,8 @@ static void write_crash_report(thread_port_t thread, task_port_t task, exception
 static uint64_t hash_callstack(thread_port_t thread, task_port_t task, exception_type_t exception,
     mach_exception_data_t code, mach_msg_type_number_t code_count, int* flavor,
     thread_state_t in_state, mach_msg_type_number_t in_state_count) {
-    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-    CrashReport* _crashReport = nil;
+    NSAutoreleasePool* pool         = [[NSAutoreleasePool alloc] init];
+    CrashReport*       _crashReport = nil;
 
     _crashReport = [[CrashReport alloc] initWithTask:task
                                        exceptionType:exception
@@ -522,7 +522,7 @@ static uint64_t hash_callstack(thread_port_t thread, task_port_t task, exception
                                     threadStateCount:in_state_count];
 
     NSString* crashDescription = [_crashReport description];
-    char* description = (char*)[crashDescription UTF8String];
+    char*     description      = (char*)[crashDescription UTF8String];
 
     /*
      * The callstack begins with the following word
@@ -569,7 +569,7 @@ static uint64_t hash_callstack(thread_port_t thread, task_port_t task, exception
         LOG_W("Too large callstack (%zu bytes), truncating to %d bytes", callstack_size,
             MAX_CALLSTACK_SIZE);
         callstack_start[MAX_CALLSTACK_SIZE] = '\0';
-        callstack_end = callstack_start + MAX_CALLSTACK_SIZE;
+        callstack_end                       = callstack_start + MAX_CALLSTACK_SIZE;
     }
 
     pid_t pid;
@@ -590,7 +590,7 @@ static uint64_t hash_callstack(thread_port_t thread, task_port_t task, exception
      * it's NULL-terminated.
      */
     *callstack_end = '\0';
-    *buf = util_StrDup(callstack_start);
+    *buf           = util_StrDup(callstack_start);
 
     /*
      *
@@ -630,7 +630,7 @@ static uint64_t hash_callstack(thread_port_t thread, task_port_t task, exception
      */
 
     uint64_t hash = 0;
-    char* pos = callstack_start;
+    char*    pos  = callstack_start;
 
     /*
      * Go through each line until we run out of lines
@@ -724,7 +724,7 @@ kern_return_t catch_mach_exception_raise_state_identity(
     exception_data[1] = code[1];
 
     mach_exception_data_type_t access_address = exception_data[1];
-    run->access = (uint64_t)access_address;
+    run->access                               = (uint64_t)access_address;
 
     /*
      * Get a hash of the callstack

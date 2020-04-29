@@ -20,9 +20,9 @@
 
 #define ARGS_MAX 4096
 
-static bool isCXX = false;
-static bool isGCC = false;
-static bool usePCGuard = true;
+static bool isCXX                     = false;
+static bool isGCC                     = false;
+static bool usePCGuard                = true;
 static bool hasCmdLineFSanitizeFuzzer = false;
 
 /* Embed libhf/.a inside this binary */
@@ -206,7 +206,7 @@ static int execCC(int argc, char** argv) {
 /* It'll point back to the libhfuzz's source tree */
 char* getIncPaths(void) {
 #if !defined(_HFUZZ_INC_PATH)
-#error \
+#error                                                                                             \
     "You need to define _HFUZZ_INC_PATH to a directory with the directory called 'includes', containing honggfuzz's lib* includes. Typically it'd be the build/sources dir"
 #endif
 
@@ -223,8 +223,8 @@ static bool getLibPath(
         return true;
     }
 
-    ptrdiff_t len = (uintptr_t)end - (uintptr_t)start;
-    uint64_t crc64 = util_CRC64(start, len);
+    ptrdiff_t len   = (uintptr_t)end - (uintptr_t)start;
+    uint64_t  crc64 = util_CRC64(start, len);
     snprintf(path, PATH_MAX, "/tmp/%s.%d.%" PRIx64 ".a", name, geteuid(), crc64);
 
     /* Does the library exist, belongs to the user, and is of expected size? */
@@ -235,7 +235,7 @@ static bool getLibPath(
 
     /* If not, create it with atomic rename() */
     char template[] = "/tmp/lib.honggfuzz.a.XXXXXX";
-    int fd = TEMP_FAILURE_RETRY(mkostemp(template, O_CLOEXEC));
+    int fd          = TEMP_FAILURE_RETRY(mkostemp(template, O_CLOEXEC));
     if (fd == -1) {
         PLOG_E("mkostemp('%s')", template);
         return false;

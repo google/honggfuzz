@@ -113,10 +113,10 @@ bool fuzz_notifySocketFuzzerCrash(run_t* run) {
 }
 
 bool setupSocketFuzzer(honggfuzz_t* run) {
-    int s, len;
-    socklen_t t;
+    int                s, len;
+    socklen_t          t;
     struct sockaddr_un local, remote;
-    char socketPath[512];
+    char               socketPath[512];
     snprintf(socketPath, sizeof(socketPath), "/tmp/honggfuzz_socket.%i", getpid());
 
     if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {

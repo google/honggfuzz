@@ -33,7 +33,7 @@
 
 #define _HF_INSTR_SZ 64
 
-#define PACKAGE 1
+#define PACKAGE         1
 #define PACKAGE_VERSION 1
 
 #if !defined(_HF_LINUX_NO_BFD)

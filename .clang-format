@@ -1,6 +1,14 @@
 BasedOnStyle: Google
-IndentWidth: 4
-ColumnLimit: 100
 AlignAfterOpenBracket: DontAlign
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros: true
+AlignEscapedNewlines: false
+AlignOperands: true
 AllowShortFunctionsOnASingleLine: false
 AlwaysBreakBeforeMultilineStrings: false
+ColumnLimit: 100
+ForEachMacros:
+  - TAILQ_FOREACH_HF
+IndentWidth: 4
+SpacesBeforeTrailingComments: 4

@@ -49,7 +49,7 @@
 
 struct custom_option {
     struct option opt;
-    const char* descr;
+    const char*   descr;
 };
 
 static bool checkFor_FILE_PLACEHOLDER(const char* const* args) {
@@ -62,8 +62,8 @@ static bool checkFor_FILE_PLACEHOLDER(const char* const* args) {
 }
 
 static bool cmdlineCheckBinaryType(honggfuzz_t* hfuzz) {
-    int fd;
-    off_t fileSz;
+    int      fd;
+    off_t    fileSz;
     uint8_t* map = files_mapFile(hfuzz->exe.cmdline[0], &fileSz, &fd, /* isWriteable= */ false);
     if (!map) {
         /* It's not a critical error */
@@ -135,8 +135,8 @@ static void cmdlineUsage(const char* pname, struct custom_option* opts) {
 }
 
 bool cmdlineAddEnv(honggfuzz_t* hfuzz, char* env) {
-    size_t enveqlen = strlen(env);
-    const char* eqpos = strchr(env, '=');
+    size_t      enveqlen = strlen(env);
+    const char* eqpos    = strchr(env, '=');
     if (eqpos) {
         enveqlen = (uintptr_t)eqpos - (uintptr_t)env + 1;
     }
@@ -291,128 +291,128 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     *hfuzz = (honggfuzz_t){
         .threads =
             {
-                .threadsFinished = 0,
-                .threadsMax = ({
+                .threadsFinished  = 0,
+                .threadsMax       = ({
                     long ncpus = sysconf(_SC_NPROCESSORS_ONLN);
                     (ncpus <= 1 ? 1 : ncpus / 2);
                 }),
                 .threadsActiveCnt = 0,
-                .mainThread = pthread_self(),
-                .mainPid = getpid(),
+                .mainThread       = pthread_self(),
+                .mainPid          = getpid(),
             },
         .io =
             {
-                .inputDir = NULL,
-                .outputDir = NULL,
-                .inputDirPtr = NULL,
-                .fileCnt = 0,
-                .testedFileCnt = 0,
-                .maxFileSz = 0,
-                .newUnitsAdded = 0,
-                .fileExtn = "fuzz",
-                .workDir = {},
-                .crashDir = NULL,
-                .covDirNew = NULL,
-                .saveUnique = true,
-                .dynfileqMaxSz = 0U,
-                .dynfileqCnt = 0U,
-                .dynfileqCurrent = NULL,
+                .inputDir         = NULL,
+                .outputDir        = NULL,
+                .inputDirPtr      = NULL,
+                .fileCnt          = 0,
+                .testedFileCnt    = 0,
+                .maxFileSz        = 0,
+                .newUnitsAdded    = 0,
+                .fileExtn         = "fuzz",
+                .workDir          = {},
+                .crashDir         = NULL,
+                .covDirNew        = NULL,
+                .saveUnique       = true,
+                .dynfileqMaxSz    = 0U,
+                .dynfileqCnt      = 0U,
+                .dynfileqCurrent  = NULL,
                 .dynfileq2Current = NULL,
-                .exportFeedback = false,
+                .exportFeedback   = false,
             },
         .exe =
             {
-                .argc = 0,
-                .cmdline = NULL,
-                .nullifyStdio = true,
-                .fuzzStdin = false,
-                .externalCommand = NULL,
-                .postExternalCommand = NULL,
+                .argc                  = 0,
+                .cmdline               = NULL,
+                .nullifyStdio          = true,
+                .fuzzStdin             = false,
+                .externalCommand       = NULL,
+                .postExternalCommand   = NULL,
                 .feedbackMutateCommand = NULL,
-                .persistent = false,
-                .netDriver = false,
-                .asLimit = 0U,
-                .rssLimit = 0U,
-                .dataLimit = 0U,
-                .stackLimit = 0U,
-                .clearEnv = false,
-                .env_ptrs = {},
-                .env_vals = {},
+                .persistent            = false,
+                .netDriver             = false,
+                .asLimit               = 0U,
+                .rssLimit              = 0U,
+                .dataLimit             = 0U,
+                .stackLimit            = 0U,
+                .clearEnv              = false,
+                .env_ptrs              = {},
+                .env_vals              = {},
             },
         .timing =
             {
-                .timeStart = time(NULL),
-                .runEndTime = 0,
-                .tmOut = 1,
-                .lastCovUpdate = time(NULL),
+                .timeStart              = time(NULL),
+                .runEndTime             = 0,
+                .tmOut                  = 1,
+                .lastCovUpdate          = time(NULL),
                 .timeOfLongestUnitUSecs = 0,
-                .tmoutVTALRM = false,
+                .tmoutVTALRM            = false,
             },
         .mutate =
             {
-                .mutationsMax = 0,
-                .dictionary = {},
-                .dictionaryCnt = 0,
-                .dictionaryFile = NULL,
+                .mutationsMax    = 0,
+                .dictionary      = {},
+                .dictionaryCnt   = 0,
+                .dictionaryFile  = NULL,
                 .mutationsPerRun = 5,
-                .maxInputSz = 0,
+                .maxInputSz      = 0,
             },
         .display =
             {
-                .useScreen = true,
+                .useScreen        = true,
                 .lastDisplayUSecs = util_timeNowUSecs(),
-                .cmdline_txt[0] = '\0',
+                .cmdline_txt[0]   = '\0',
             },
         .cfg =
             {
-                .useVerifier = false,
-                .exitUponCrash = false,
-                .reportFile = NULL,
+                .useVerifier       = false,
+                .exitUponCrash     = false,
+                .reportFile        = NULL,
                 .dynFileIterExpire = 0,
-                .only_printable = false,
-                .minimize = false,
-                .switchingToFDM = false,
+                .only_printable    = false,
+                .minimize          = false,
+                .switchingToFDM    = false,
             },
         .sanitizer =
             {
-                .enable = false,
+                .enable     = false,
                 .del_report = false,
             },
         .feedback =
             {
-                .covFeedbackMap = NULL,
-                .covFeedbackFd = -1,
-                .cmpFeedbackMap = NULL,
-                .cmpFeedbackFd = -1,
-                .cmpFeedback = true,
-                .blacklistFile = NULL,
-                .blacklist = NULL,
-                .blacklistCnt = 0,
+                .covFeedbackMap        = NULL,
+                .covFeedbackFd         = -1,
+                .cmpFeedbackMap        = NULL,
+                .cmpFeedbackFd         = -1,
+                .cmpFeedback           = true,
+                .blacklistFile         = NULL,
+                .blacklist             = NULL,
+                .blacklistCnt          = 0,
                 .skipFeedbackOnTimeout = false,
-                .dynFileMethod = _HF_DYNFILE_SOFT,
-                .state = _HF_STATE_UNSET,
+                .dynFileMethod         = _HF_DYNFILE_SOFT,
+                .state                 = _HF_STATE_UNSET,
                 .hwCnts =
                     {
-                        .cpuInstrCnt = 0ULL,
+                        .cpuInstrCnt  = 0ULL,
                         .cpuBranchCnt = 0ULL,
-                        .bbCnt = 0ULL,
-                        .newBBCnt = 0ULL,
-                        .softCntPc = 0ULL,
-                        .softCntCmp = 0ULL,
+                        .bbCnt        = 0ULL,
+                        .newBBCnt     = 0ULL,
+                        .softCntPc    = 0ULL,
+                        .softCntCmp   = 0ULL,
                     },
             },
         .cnts =
             {
-                .mutationsCnt = 0,
-                .crashesCnt = 0,
-                .uniqueCrashesCnt = 0,
+                .mutationsCnt       = 0,
+                .crashesCnt         = 0,
+                .uniqueCrashesCnt   = 0,
                 .verifiedCrashesCnt = 0,
-                .blCrashesCnt = 0,
-                .timeoutedCnt = 0,
+                .blCrashesCnt       = 0,
+                .timeoutedCnt       = 0,
             },
         .socketFuzzer =
             {
-                .enabled = false,
+                .enabled      = false,
                 .serverSocket = -1,
                 .clientSocket = -1,
             },
@@ -420,37 +420,37 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             {
                 .dynfileq = PTHREAD_RWLOCK_INITIALIZER,
                 .feedback = PTHREAD_MUTEX_INITIALIZER,
-                .report = PTHREAD_MUTEX_INITIALIZER,
+                .report   = PTHREAD_MUTEX_INITIALIZER,
             },
 
         /* Linux code */
         .arch_linux =
             {
-                .exeFd = -1,
-                .dynamicCutOffAddr = ~(0ULL),
+                .exeFd                = -1,
+                .dynamicCutOffAddr    = ~(0ULL),
                 .disableRandomization = true,
-                .ignoreAddr = NULL,
-                .symsBlFile = NULL,
-                .symsBlCnt = 0,
-                .symsBl = NULL,
-                .symsWlFile = NULL,
-                .symsWlCnt = 0,
-                .symsWl = NULL,
-                .cloneFlags = 0,
-                .useNetNs = HF_MAYBE,
-                .kernelOnly = false,
-                .useClone = true,
+                .ignoreAddr           = NULL,
+                .symsBlFile           = NULL,
+                .symsBlCnt            = 0,
+                .symsBl               = NULL,
+                .symsWlFile           = NULL,
+                .symsWlCnt            = 0,
+                .symsWl               = NULL,
+                .cloneFlags           = 0,
+                .useNetNs             = HF_MAYBE,
+                .kernelOnly           = false,
+                .useClone             = true,
             },
         /* NetBSD code */
         .arch_netbsd =
             {
                 .ignoreAddr = NULL,
                 .symsBlFile = NULL,
-                .symsBlCnt = 0,
-                .symsBl = NULL,
+                .symsBlCnt  = 0,
+                .symsBl     = NULL,
                 .symsWlFile = NULL,
-                .symsWlCnt = 0,
-                .symsWl = NULL,
+                .symsWlCnt  = 0,
+                .symsWl     = NULL,
             },
     };
 
@@ -539,9 +539,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         opts[i] = custom_opts[i].opt;
     }
 
-    enum llevel_t ll = INFO;
-    const char* logfile = NULL;
-    int opt_index = 0;
+    enum llevel_t ll        = INFO;
+    const char*   logfile   = NULL;
+    int           opt_index = 0;
     for (;;) {
         int c = getopt_long(
             argc, argv, "-?hQvVsuPxf:i:dqe:W:r:c:F:t:R:n:N:l:p:g:E:w:B:zMTS", opts, &opt_index);
@@ -614,7 +614,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 0x10B:
                 hfuzz->socketFuzzer.enabled = true;
-                hfuzz->timing.tmOut = 0; /* Disable process timeout checks */
+                hfuzz->timing.tmOut         = 0; /* Disable process timeout checks */
                 break;
             case 0x10C:
                 hfuzz->exe.netDriver = true;
@@ -645,7 +645,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 'n':
                 if (optarg[0] == 'a') {
-                    long ncpus = sysconf(_SC_NPROCESSORS_ONLN);
+                    long ncpus                = sysconf(_SC_NPROCESSORS_ONLN);
                     hfuzz->threads.threadsMax = (ncpus < 1 ? 1 : ncpus);
                 } else {
                     if (!util_isANumber(optarg)) {
@@ -775,7 +775,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 
     logInitLogFile(logfile, -1, ll);
 
-    hfuzz->exe.argc = argc - optind;
+    hfuzz->exe.argc    = argc - optind;
     hfuzz->exe.cmdline = (const char* const*)&argv[optind];
     if (hfuzz->exe.argc <= 0) {
         LOG_E("No fuzz command provided");

@@ -154,7 +154,7 @@ void arch_reapChild(run_t* run) {
 
         if (run->global->exe.persistent) {
             struct pollfd pfd = {
-                .fd = run->persistentSock,
+                .fd     = run->persistentSock,
                 .events = POLLIN,
             };
             int r = poll(&pfd, 1, 250 /* 0.25s */);
@@ -164,7 +164,7 @@ void arch_reapChild(run_t* run) {
         } else {
             /* Return with SIGIO, SIGCHLD */
             const struct timespec ts = {
-                .tv_sec = 0ULL,
+                .tv_sec  = 0ULL,
                 .tv_nsec = (1000ULL * 1000ULL * 250ULL),
             };
             int sig = sigtimedwait(&run->global->exe.waitSigSet, NULL, &ts /* 0.25s */);

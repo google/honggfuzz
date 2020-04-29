@@ -247,7 +247,7 @@ size_t files_parseSymbolFilter(const char* srcFile, char*** filterList) {
         return 0;
     }
 
-    char* lineptr = NULL;
+    char*  lineptr     = NULL;
     size_t symbolsRead = 0, n = 0;
     for (;;) {
         if (getline(&lineptr, &n, f) == -1) {
@@ -365,7 +365,7 @@ int files_createSharedMem(size_t sz, const char* name, bool exportmap) {
 #if !defined(_HF_ARCH_DARWIN) && !defined(__ANDROID__)
     /* shm objects under MacOSX are 'a-typical' */
     if (fd == -1) {
-        char tmpname[PATH_MAX];
+        char           tmpname[PATH_MAX];
         struct timeval tv;
         gettimeofday(&tv, NULL);
         snprintf(tmpname, sizeof(tmpname), "/%s%lx%lx%d", name, (unsigned long)tv.tv_sec,
@@ -404,8 +404,8 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore, bool
         return NULL;
     }
 
-    int mflags = files_getTmpMapFlags(MAP_SHARED, /* nocore= */ true);
-    void* ret = mmap(NULL, sz, PROT_READ | PROT_WRITE, mflags, *fd, 0);
+    int   mflags = files_getTmpMapFlags(MAP_SHARED, /* nocore= */ true);
+    void* ret    = mmap(NULL, sz, PROT_READ | PROT_WRITE, mflags, *fd, 0);
     if (ret == MAP_FAILED) {
         PLOG_W("mmap(sz=%zu, fd=%d)", sz, *fd);
         *fd = -1;
@@ -432,7 +432,7 @@ void* files_mapSharedMem(size_t sz, int* fd, const char* name, bool nocore, bool
 
 sa_family_t files_sockFamily(int sock) {
     struct sockaddr addr;
-    socklen_t addrlen = sizeof(addr);
+    socklen_t       addrlen = sizeof(addr);
 
     if (getsockname(sock, &addr, &addrlen) == -1) {
         PLOG_W("getsockname(sock=%d)", sock);
@@ -471,7 +471,7 @@ const char* files_sockAddrToStr(const struct sockaddr* sa, const socklen_t len) 
         }
 
         struct sockaddr_un* sun = (struct sockaddr_un*)sa;
-        int pathlen;
+        int                 pathlen;
 
         if (sun->sun_path[0] == '\0') {
             /* Abstract socket

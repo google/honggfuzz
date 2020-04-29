@@ -38,20 +38,20 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 
-#define ESC_CLEAR_ALL "\033[2J"
-#define ESC_CLEAR_LINE "\033[2K"
-#define ESC_CLEAR_ABOVE "\033[1J"
-#define ESC_TERM_RESET "\033c"
-#define ESC_NAV(x, y) "\033[" #x ";" #y "H"
-#define ESC_BOLD "\033[1m"
-#define ESC_RED "\033[31m"
-#define ESC_RESET "\033[0m"
+#define ESC_CLEAR_ALL           "\033[2J"
+#define ESC_CLEAR_LINE          "\033[2K"
+#define ESC_CLEAR_ABOVE         "\033[1J"
+#define ESC_TERM_RESET          "\033c"
+#define ESC_NAV(x, y)           "\033[" #x ";" #y "H"
+#define ESC_BOLD                "\033[1m"
+#define ESC_RED                 "\033[31m"
+#define ESC_RESET               "\033[0m"
 #define ESC_SCROLL_REGION(x, y) "\033[" #x ";" #y "r"
-#define ESC_SCROLL_DISABLE "\033[?7h"
-#define ESC_SCROLL_RESET "\033[r"
-#define ESC_NAV_DOWN(x) "\033[" #x "B"
-#define ESC_NAV_HORIZ(x) "\033[" #x "G"
-#define ESC_RESET_SETTINGS "\033[!p"
+#define ESC_SCROLL_DISABLE      "\033[?7h"
+#define ESC_SCROLL_RESET        "\033[r"
+#define ESC_NAV_DOWN(x)         "\033[" #x "B"
+#define ESC_NAV_HORIZ(x)        "\033[" #x "G"
+#define ESC_RESET_SETTINGS      "\033[!p"
 
 static char displayBuf[1024 * 1024];
 static void display_start(void) {
@@ -86,10 +86,10 @@ static void display_printKMG(uint64_t val) {
 }
 
 static unsigned getCpuUse(int numCpus) {
-    static uint64_t prevUserT = 0UL;
-    static uint64_t prevNiceT = 0UL;
+    static uint64_t prevUserT   = 0UL;
+    static uint64_t prevNiceT   = 0UL;
     static uint64_t prevSystemT = 0UL;
-    static uint64_t prevIdleT = 0UL;
+    static uint64_t prevIdleT   = 0UL;
 
     FILE* f = fopen("/proc/stat", "re");
     if (f == NULL) {
@@ -105,15 +105,15 @@ static unsigned getCpuUse(int numCpus) {
         return 0;
     }
 
-    uint64_t userCycles = (userT - prevUserT);
-    uint64_t niceCycles = (niceT - prevNiceT);
+    uint64_t userCycles   = (userT - prevUserT);
+    uint64_t niceCycles   = (niceT - prevNiceT);
     uint64_t systemCycles = (systemT - prevSystemT);
-    uint64_t idleCycles = (idleT - prevIdleT);
+    uint64_t idleCycles   = (idleT - prevIdleT);
 
-    prevUserT = userT;
-    prevNiceT = niceT;
+    prevUserT   = userT;
+    prevNiceT   = niceT;
     prevSystemT = systemT;
-    prevIdleT = idleT;
+    prevIdleT   = idleT;
 
     uint64_t allCycles = userCycles + niceCycles + systemCycles + idleCycles;
     if (allCycles == 0) {
@@ -130,11 +130,11 @@ static void getDuration(time_t elapsed_second, char* buf, size_t bufSz) {
     }
 
     unsigned int day, hour, min, second;
-    day = elapsed_second / 24 / 3600;
+    day            = elapsed_second / 24 / 3600;
     elapsed_second = elapsed_second - day * 24 * 3600;
-    hour = elapsed_second / 3600;
-    min = (elapsed_second - 3600 * hour) / 60;
-    second = elapsed_second - hour * 3600 - min * 60;
+    hour           = elapsed_second / 3600;
+    min            = (elapsed_second - 3600 * hour) / 60;
+    second         = elapsed_second - hour * 3600 - min * 60;
     snprintf(buf, bufSz, "%u days %02u hrs %02u mins %02u secs", day, hour, min, second);
 }
 
@@ -166,10 +166,10 @@ void display_display(honggfuzz_t* hfuzz) {
         return;
     }
 
-    const time_t curr_sec = time(NULL);
-    const time_t elapsed_sec = curr_sec - hfuzz->timing.timeStart;
-    const int64_t curr_time_usecs = util_timeNowUSecs();
-    const int64_t elapsed_usecs = curr_time_usecs - hfuzz->display.lastDisplayUSecs;
+    const time_t  curr_sec          = time(NULL);
+    const time_t  elapsed_sec       = curr_sec - hfuzz->timing.timeStart;
+    const int64_t curr_time_usecs   = util_timeNowUSecs();
+    const int64_t elapsed_usecs     = curr_time_usecs - hfuzz->display.lastDisplayUSecs;
     hfuzz->display.lastDisplayUSecs = curr_time_usecs;
 
     char lastCovStr[64];
@@ -197,7 +197,7 @@ void display_display(honggfuzz_t* hfuzz) {
     }
 
     static size_t prev_exec_cnt = 0UL;
-    size_t exec_per_usecs =
+    size_t        exec_per_usecs =
         elapsed_usecs ? ((curr_exec_cnt - prev_exec_cnt) * 1000000) / elapsed_usecs : 0;
     prev_exec_cnt = curr_exec_cnt;
 
@@ -295,12 +295,12 @@ void display_display(honggfuzz_t* hfuzz) {
             ATOMIC_GET(hfuzz->feedback.hwCnts.bbCnt));
     }
     if (hfuzz->feedback.dynFileMethod & _HF_DYNFILE_SOFT) {
-        uint64_t softCntPc = ATOMIC_GET(hfuzz->feedback.hwCnts.softCntPc);
+        uint64_t softCntPc   = ATOMIC_GET(hfuzz->feedback.hwCnts.softCntPc);
         uint64_t softCntEdge = ATOMIC_GET(hfuzz->feedback.hwCnts.softCntEdge);
-        uint64_t softCntCmp = ATOMIC_GET(hfuzz->feedback.hwCnts.softCntCmp);
-        uint64_t guardNb = ATOMIC_GET(hfuzz->feedback.covFeedbackMap->guardNb);
+        uint64_t softCntCmp  = ATOMIC_GET(hfuzz->feedback.hwCnts.softCntCmp);
+        uint64_t guardNb     = ATOMIC_GET(hfuzz->feedback.covFeedbackMap->guardNb);
         display_put(" edge: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET "/"
-                    "%" _HF_NONMON_SEP PRIu64 " [%" PRId64 "%%]",
+                    "%" _HF_NONMON_SEP                           PRIu64 " [%" PRId64 "%%]",
             softCntEdge, guardNb, guardNb ? ((softCntEdge * 100) / guardNb) : 0);
         display_put(" pc: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET, softCntPc);
         display_put(" cmp: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET, softCntCmp);

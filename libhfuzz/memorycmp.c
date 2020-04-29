@@ -198,7 +198,7 @@ static inline char* HF_strcpy(char* dest, const char* src, uintptr_t addr) {
 
 /* Define a weak function x, as well as __wrap_x pointing to x */
 #define XVAL(x) x
-#define HF_WEAK_WRAP(ret, func, ...) \
+#define HF_WEAK_WRAP(ret, func, ...)                                                               \
     _Pragma(HF__XSTR(weak func = __wrap_##func)) XVAL(ret) XVAL(__wrap_##func)(__VA_ARGS__)
 
 /* Typical libc wrappers */
@@ -543,7 +543,7 @@ HF_WEAK_WRAP(bool, g_str_has_suffix, const char* str, const char* suffix) {
     if (!str || !suffix) {
         return false;
     }
-    size_t str_len = __builtin_strlen(str);
+    size_t str_len    = __builtin_strlen(str);
     size_t suffix_len = __builtin_strlen(suffix);
     if (str_len < suffix_len) {
         return false;

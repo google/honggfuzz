@@ -512,7 +512,7 @@ void subproc_checkTimeLimit(run_t* run) {
         return;
     }
 
-    int64_t curUSecs = util_timeNowUSecs();
+    int64_t curUSecs  = util_timeNowUSecs();
     int64_t diffUSecs = curUSecs - run->timeStartedUSecs;
 
     if (run->tmOutSignaled && (diffUSecs > ((run->global->timing.tmOut + 1) * 1000000))) {

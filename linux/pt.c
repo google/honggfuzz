@@ -36,9 +36,9 @@
 #include <intel-pt.h>
 
 struct pt_cpu ptCpu = {
-    .vendor = pcv_unknown,
-    .family = 0,
-    .model = 0,
+    .vendor   = pcv_unknown,
+    .family   = 0,
+    .model    = 0,
     .stepping = 0,
 };
 
@@ -50,7 +50,7 @@ void perf_ptInit(void) {
     }
     for (;;) {
         char k[1024], t[1024], v[1024];
-        int ret = fscanf(f, "%1023[^\t]%1023[\t]: %1023[^\n]\n", k, t, v);
+        int  ret = fscanf(f, "%1023[^\t]%1023[\t]: %1023[^\n]\n", k, t, v);
         if (ret == EOF) {
             break;
         }
@@ -87,7 +87,7 @@ inline static uint64_t sext(uint64_t val, uint8_t sign) {
     uint64_t signbit, mask;
 
     signbit = 1ull << (sign - 1);
-    mask = ~0ull << sign;
+    mask    = ~0ull << sign;
 
     return val & signbit ? val | mask : val & ~mask;
 }
@@ -141,8 +141,8 @@ void arch_ptAnalyze(run_t* run) {
     struct pt_config ptc;
     pt_config_init(&ptc);
     ptc.begin = &run->arch_linux.perfMmapAux[aux_tail];
-    ptc.end = &run->arch_linux.perfMmapAux[aux_head];
-    ptc.cpu = ptCpu;
+    ptc.end   = &run->arch_linux.perfMmapAux[aux_head];
+    ptc.cpu   = ptCpu;
 
     int errcode = pt_cpu_errata(&ptc.errata, &ptc.cpu);
     if (errcode < 0) {

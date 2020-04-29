@@ -47,8 +47,8 @@ void handleData5(char *data, int len) {
 
 void doprocessing(int sock, int serversock) {
     char data[1024];
-    int n = 0;
-    int len = 0;
+    int  n   = 0;
+    int  len = 0;
 
     while (1) {
         bzero(data, sizeof(data));
@@ -95,10 +95,10 @@ void doprocessing(int sock, int serversock) {
 }
 
 int main(int argc, char *argv[]) {
-    int sockfd, newsockfd, portno, clilen;
-    char buffer[256];
+    int                sockfd, newsockfd, portno, clilen;
+    char               buffer[256];
     struct sockaddr_in serv_addr, cli_addr;
-    int n, pid;
+    int                n, pid;
 
     if (argc == 2) {
         portno = atoi(argv[1]);
@@ -117,9 +117,9 @@ int main(int argc, char *argv[]) {
         perror("# vulnserver_cov: setsockopt(SO_REUSEPORT) failed");
 
     bzero((char *)&serv_addr, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_family      = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(portno);
+    serv_addr.sin_port        = htons(portno);
 
     printf("# vulnserver_cov: Listening on port: %i\n", portno);
 

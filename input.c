@@ -65,7 +65,7 @@ bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
 
     size_t fileCnt = 0U;
     for (;;) {
-        errno = 0;
+        errno                = 0;
         struct dirent* entry = readdir(hfuzz->io.inputDirPtr);
         if (entry == NULL && errno == EINTR) {
             continue;
@@ -132,7 +132,7 @@ bool input_getNext(run_t* run, char fname[PATH_MAX], bool rewind) {
     }
 
     for (;;) {
-        errno = 0;
+        errno                = 0;
         struct dirent* entry = readdir(run->global->io.inputDirPtr);
         if (entry == NULL && errno == EINTR) {
             continue;
@@ -207,8 +207,8 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
         fclose(fDict);
     };
 
-    char* lineptr = NULL;
-    size_t n = 0;
+    char*  lineptr = NULL;
+    size_t n       = 0;
     defer {
         free(lineptr);
     };
@@ -237,7 +237,7 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
         }
 
         const char* start = strchr(lineptr, '"');
-        char* end = strrchr(lineptr, '"');
+        char*       end   = strrchr(lineptr, '"');
         if (!start || !end) {
             LOG_W("Malformed dictionary line '%s', skipping", lineptr);
             continue;
@@ -256,9 +256,9 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
 
         LOG_D("Parsing dictionary word: '%s'", bufv);
 
-        len = util_decodeCString(bufv);
+        len              = util_decodeCString(bufv);
         size_t dictEntry = ATOMIC_POST_INC(hfuzz->mutate.dictionaryCnt);
-        len = HF_MIN((size_t)len, sizeof(hfuzz->mutate.dictionary[dictEntry].val));
+        len              = HF_MIN((size_t)len, sizeof(hfuzz->mutate.dictionary[dictEntry].val));
         memcpy(hfuzz->mutate.dictionary[dictEntry].val, bufv, len);
         hfuzz->mutate.dictionary[dictEntry].len = len;
 
@@ -368,18 +368,18 @@ static bool input_cmpCov(dynfile_t* item1, dynfile_t* item2) {
     return false;
 }
 
-#define TAILQ_FOREACH_HF(var, head, field) \
+#define TAILQ_FOREACH_HF(var, head, field)                                                         \
     for ((var) = TAILQ_FIRST((head)); (var); (var) = TAILQ_NEXT((var), field))
 
 void input_addDynamicInput(run_t* run) {
     ATOMIC_SET(run->global->timing.lastCovUpdate, time(NULL));
 
     dynfile_t* dynfile = (dynfile_t*)util_Calloc(sizeof(dynfile_t));
-    dynfile->size = run->dynfile->size;
+    dynfile->size      = run->dynfile->size;
     memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
     dynfile->timeExecUSecs = util_timeNowUSecs() - run->timeStartedUSecs;
-    dynfile->data = (uint8_t*)util_AllocCopy(run->dynfile->data, run->dynfile->size);
-    dynfile->src = run->dynfile->src;
+    dynfile->data          = (uint8_t*)util_AllocCopy(run->dynfile->data, run->dynfile->size);
+    dynfile->src           = run->dynfile->src;
     if (run->dynfile->src) {
         ATOMIC_POST_INC(run->dynfile->src->refs);
     }
@@ -398,7 +398,7 @@ void input_addDynamicInput(run_t* run) {
 
     /* Sort it by coverage - put better coverage earlier in the list */
     dynfile_t* iter = NULL;
-    TAILQ_FOREACH_HF(iter, &run->global->io.dynfileq, pointers) {
+    TAILQ_FOREACH_HF (iter, &run->global->io.dynfileq, pointers) {
         if (input_cmpCov(dynfile, iter)) {
             TAILQ_INSERT_BEFORE(iter, dynfile, pointers);
             break;
@@ -435,7 +435,7 @@ bool input_inDynamicCorpus(run_t* run, const char* fname) {
     MX_SCOPED_RWLOCK_WRITE(&run->global->mutex.dynfileq);
 
     dynfile_t* iter = NULL;
-    TAILQ_FOREACH_HF(iter, &run->global->io.dynfileq, pointers) {
+    TAILQ_FOREACH_HF (iter, &run->global->io.dynfileq, pointers) {
         if (strncmp(iter->path, fname, PATH_MAX) == 0) {
             return true;
         }
@@ -451,7 +451,7 @@ static inline int input_speedFactor(run_t* run, dynfile_t* dynfile) {
     avg_usecs_per_input /= run->global->threads.threadsMax;
 
     /* Cap both vals to 1us-1s */
-    avg_usecs_per_input = HF_CAP(avg_usecs_per_input, 1U, 1000000U);
+    avg_usecs_per_input   = HF_CAP(avg_usecs_per_input, 1U, 1000000U);
     uint64_t sample_usecs = HF_CAP(dynfile->timeExecUSecs, 1U, 1000000U);
 
     if (sample_usecs >= avg_usecs_per_input) {
@@ -473,13 +473,13 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
         /* Inputs with lower total coverage -> lower chance of being tested */
         static const int scaleMap[200] = {
             [95 ... 199] = -15,
-            [90 ... 94] = -7,
-            [80 ... 89] = -3,
-            [60 ... 79] = -1,
-            [50 ... 59] = 0,
-            [30 ... 49] = 5,
-            [11 ... 29] = 10,
-            [0 ... 10] = 15,
+            [90 ... 94]  = -7,
+            [80 ... 89]  = -3,
+            [60 ... 79]  = -1,
+            [50 ... 59]  = 0,
+            [30 ... 49]  = 5,
+            [11 ... 29]  = 10,
+            [0 ... 10]   = 15,
         };
 
         uint64_t maxCov0 = ATOMIC_GET(run->global->feedback.maxCov[0]);
@@ -493,12 +493,12 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
         /* Older inputs -> lower chance of being tested */
         static const int scaleMap[200] = {
             [100 ... 199] = -10,
-            [95 ... 99] = -5,
-            [91 ... 94] = -1,
-            [81 ... 90] = 0,
-            [71 ... 80] = 1,
-            [41 ... 70] = 2,
-            [0 ... 40] = 3,
+            [95 ... 99]   = -5,
+            [91 ... 94]   = -1,
+            [81 ... 90]   = 0,
+            [71 ... 80]   = 1,
+            [41 ... 70]   = 2,
+            [0 ... 40]    = 3,
         };
 
         const unsigned percentile = (dynfile->idx * 100) / run->global->io.dynfileqCnt;
@@ -538,7 +538,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
             break;
         }
 
-        run->current = run->global->io.dynfileqCurrent;
+        run->current                    = run->global->io.dynfileqCurrent;
         run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
 
         int skip_factor = input_skipFactor(run, run->current, &speed_factor);
@@ -554,10 +554,10 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
 
     input_setSize(run, run->current->size);
     memcpy(run->dynfile->cov, run->current->cov, sizeof(run->dynfile->cov));
-    run->dynfile->idx = run->current->idx;
+    run->dynfile->idx           = run->current->idx;
     run->dynfile->timeExecUSecs = run->current->timeExecUSecs;
     snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s", run->current->path);
-    run->dynfile->src = run->current;
+    run->dynfile->src  = run->current;
     run->dynfile->refs = 0;
     memcpy(run->dynfile->data, run->current->data, run->current->size);
 
@@ -583,7 +583,7 @@ size_t input_getRandomInputAsBuf(run_t* run, const uint8_t** buf) {
             run->global->io.dynfileq2Current = TAILQ_FIRST(&run->global->io.dynfileq);
         }
 
-        current = run->global->io.dynfileq2Current;
+        current                          = run->global->io.dynfileq2Current;
         run->global->io.dynfileq2Current = TAILQ_NEXT(run->global->io.dynfileq2Current, pointers);
     }
 
@@ -608,7 +608,7 @@ static bool input_shouldReadNewFile(run_t* run) {
     size_t newsz = run->dynfile->size * 2;
     if (newsz >= run->global->mutate.maxInputSz) {
         /* That's the largest size for this specific file that will be ever used */
-        newsz = run->global->mutate.maxInputSz;
+        newsz                  = run->global->mutate.maxInputSz;
         run->staticFileTryMore = false;
     }
 
@@ -646,8 +646,8 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
 
     input_setSize(run, fileSz);
     memset(run->dynfile->cov, '\0', sizeof(run->dynfile->cov));
-    run->dynfile->idx = 0;
-    run->dynfile->src = NULL;
+    run->dynfile->idx  = 0;
+    run->dynfile->src  = NULL;
     run->dynfile->refs = 0;
 
     if (needs_mangle) {

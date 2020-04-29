@@ -30,47 +30,47 @@ enum llevel_t { FATAL = 0, ERROR, WARNING, INFO, DEBUG, HELP, HELP_BOLD };
 
 extern enum llevel_t hf_log_level;
 
-#define LOG_HELP(...) logLog(HELP, __FUNCTION__, __LINE__, false, __VA_ARGS__);
+#define LOG_HELP(...)      logLog(HELP, __FUNCTION__, __LINE__, false, __VA_ARGS__);
 #define LOG_HELP_BOLD(...) logLog(HELP_BOLD, __FUNCTION__, __LINE__, false, __VA_ARGS__);
 
-#define LOG_D(...)                                                 \
-    if (hf_log_level >= DEBUG) {                                   \
-        logLog(DEBUG, __FUNCTION__, __LINE__, false, __VA_ARGS__); \
+#define LOG_D(...)                                                                                 \
+    if (hf_log_level >= DEBUG) {                                                                   \
+        logLog(DEBUG, __FUNCTION__, __LINE__, false, __VA_ARGS__);                                 \
     }
-#define LOG_I(...)                                                \
-    if (hf_log_level >= INFO) {                                   \
-        logLog(INFO, __FUNCTION__, __LINE__, false, __VA_ARGS__); \
+#define LOG_I(...)                                                                                 \
+    if (hf_log_level >= INFO) {                                                                    \
+        logLog(INFO, __FUNCTION__, __LINE__, false, __VA_ARGS__);                                  \
     }
-#define LOG_W(...)                                                   \
-    if (hf_log_level >= WARNING) {                                   \
-        logLog(WARNING, __FUNCTION__, __LINE__, false, __VA_ARGS__); \
+#define LOG_W(...)                                                                                 \
+    if (hf_log_level >= WARNING) {                                                                 \
+        logLog(WARNING, __FUNCTION__, __LINE__, false, __VA_ARGS__);                               \
     }
-#define LOG_E(...)                                                 \
-    if (hf_log_level >= ERROR) {                                   \
-        logLog(ERROR, __FUNCTION__, __LINE__, false, __VA_ARGS__); \
+#define LOG_E(...)                                                                                 \
+    if (hf_log_level >= ERROR) {                                                                   \
+        logLog(ERROR, __FUNCTION__, __LINE__, false, __VA_ARGS__);                                 \
     }
-#define LOG_F(...)                                             \
-    logLog(FATAL, __FUNCTION__, __LINE__, false, __VA_ARGS__); \
+#define LOG_F(...)                                                                                 \
+    logLog(FATAL, __FUNCTION__, __LINE__, false, __VA_ARGS__);                                     \
     exit(EXIT_FAILURE);
 
-#define PLOG_D(...)                                               \
-    if (hf_log_level >= DEBUG) {                                  \
-        logLog(DEBUG, __FUNCTION__, __LINE__, true, __VA_ARGS__); \
+#define PLOG_D(...)                                                                                \
+    if (hf_log_level >= DEBUG) {                                                                   \
+        logLog(DEBUG, __FUNCTION__, __LINE__, true, __VA_ARGS__);                                  \
     }
-#define PLOG_I(...)                                              \
-    if (hf_log_level >= INFO) {                                  \
-        logLog(INFO, __FUNCTION__, __LINE__, true, __VA_ARGS__); \
+#define PLOG_I(...)                                                                                \
+    if (hf_log_level >= INFO) {                                                                    \
+        logLog(INFO, __FUNCTION__, __LINE__, true, __VA_ARGS__);                                   \
     }
-#define PLOG_W(...)                                                 \
-    if (hf_log_level >= WARNING) {                                  \
-        logLog(WARNING, __FUNCTION__, __LINE__, true, __VA_ARGS__); \
+#define PLOG_W(...)                                                                                \
+    if (hf_log_level >= WARNING) {                                                                 \
+        logLog(WARNING, __FUNCTION__, __LINE__, true, __VA_ARGS__);                                \
     }
-#define PLOG_E(...)                                               \
-    if (hf_log_level >= ERROR) {                                  \
-        logLog(ERROR, __FUNCTION__, __LINE__, true, __VA_ARGS__); \
+#define PLOG_E(...)                                                                                \
+    if (hf_log_level >= ERROR) {                                                                   \
+        logLog(ERROR, __FUNCTION__, __LINE__, true, __VA_ARGS__);                                  \
     }
-#define PLOG_F(...)                                           \
-    logLog(FATAL, __FUNCTION__, __LINE__, true, __VA_ARGS__); \
+#define PLOG_F(...)                                                                                \
+    logLog(FATAL, __FUNCTION__, __LINE__, true, __VA_ARGS__);                                      \
     exit(EXIT_FAILURE);
 
 extern void logInitLogFile(const char* logfile, int fd, enum llevel_t ll);

@@ -61,7 +61,7 @@ static inline size_t mangle_getLen(size_t max) {
 
     const uint64_t max2 = (uint64_t)max * max;
     const uint64_t max3 = (uint64_t)max * max * max;
-    const uint64_t rnd = util_rndGet(1, max2 - 1);
+    const uint64_t rnd  = util_rndGet(1, max2 - 1);
 
     uint64_t ret = rnd * rnd;
     ret /= max3;
@@ -100,10 +100,10 @@ static inline void mangle_Move(run_t* run, size_t off_from, size_t off_to, size_
     }
 
     size_t len_from = run->dynfile->size - off_from;
-    len = HF_MIN(len, len_from);
+    len             = HF_MIN(len, len_from);
 
     size_t len_to = run->dynfile->size - off_to;
-    len = HF_MIN(len, len_to);
+    len           = HF_MIN(len, len_to);
 
     memmove(&run->dynfile->data[off_to], &run->dynfile->data[off_from], len);
 }
@@ -156,13 +156,13 @@ static inline void mangle_UseValue(run_t* run, const uint8_t* val, size_t len, b
 }
 
 static void mangle_MemSwap(run_t* run, bool printable HF_ATTR_UNUSED) {
-    size_t off1 = mangle_getOffSet(run);
+    size_t off1    = mangle_getOffSet(run);
     size_t maxlen1 = run->dynfile->size - off1;
 
-    size_t off2 = mangle_getOffSet(run);
+    size_t off2    = mangle_getOffSet(run);
     size_t maxlen2 = run->dynfile->size - off2;
 
-    size_t len = mangle_getLen(HF_MIN(maxlen1, maxlen2));
+    size_t   len    = mangle_getLen(HF_MIN(maxlen1, maxlen2));
     uint8_t* tmpbuf = (uint8_t*)util_Malloc(len);
     defer {
         free(tmpbuf);
@@ -201,9 +201,9 @@ static void mangle_Bytes(run_t* run, bool printable) {
 }
 
 static void mangle_ByteRepeatOverwrite(run_t* run, bool printable) {
-    size_t off = mangle_getOffSet(run);
+    size_t off     = mangle_getOffSet(run);
     size_t destOff = off + 1;
-    size_t maxSz = run->dynfile->size - destOff;
+    size_t maxSz   = run->dynfile->size - destOff;
 
     /* No space to repeat */
     if (!maxSz) {
@@ -216,9 +216,9 @@ static void mangle_ByteRepeatOverwrite(run_t* run, bool printable) {
 }
 
 static void mangle_ByteRepeatInsert(run_t* run, bool printable) {
-    size_t off = mangle_getOffSet(run);
+    size_t off     = mangle_getOffSet(run);
     size_t destOff = off + 1;
-    size_t maxSz = run->dynfile->size - destOff;
+    size_t maxSz   = run->dynfile->size - destOff;
 
     /* No space to repeat */
     if (!maxSz) {
@@ -227,7 +227,7 @@ static void mangle_ByteRepeatInsert(run_t* run, bool printable) {
     }
 
     size_t len = mangle_getLen(maxSz);
-    len = mangle_Inflate(run, destOff, len, printable);
+    len        = mangle_Inflate(run, destOff, len, printable);
     memset(&run->dynfile->data[destOff], run->dynfile->data[off], len);
 }
 
@@ -241,7 +241,7 @@ static void mangle_Bit(run_t* run, bool printable) {
 
 static const struct {
     const uint8_t val[8];
-    const size_t size;
+    const size_t  size;
 } mangleMagicVals[] = {
     /* 1B - No endianness */
     {"\x00\x00\x00\x00\x00\x00\x00\x00", 1},
@@ -496,7 +496,7 @@ static inline const uint8_t* mangle_FeedbackDict(run_t* run, size_t* len) {
         return NULL;
     }
     cmpfeedback_t* cmpf = run->global->feedback.cmpFeedbackMap;
-    uint32_t cnt = ATOMIC_GET(cmpf->cnt);
+    uint32_t       cnt  = ATOMIC_GET(cmpf->cnt);
     if (cnt == 0) {
         return NULL;
     }
@@ -504,7 +504,7 @@ static inline const uint8_t* mangle_FeedbackDict(run_t* run, size_t* len) {
         cnt = ARRAYSIZE(cmpf->valArr);
     }
     uint32_t choice = util_rndGet(0, cnt - 1);
-    *len = (size_t)ATOMIC_GET(cmpf->valArr[choice].len);
+    *len            = (size_t)ATOMIC_GET(cmpf->valArr[choice].len);
     if (*len == 0) {
         return NULL;
     }
@@ -512,7 +512,7 @@ static inline const uint8_t* mangle_FeedbackDict(run_t* run, size_t* len) {
 }
 
 static void mangle_ConstFeedbackDict(run_t* run, bool printable) {
-    size_t len;
+    size_t         len;
     const uint8_t* val = mangle_FeedbackDict(run, &len);
     if (val == NULL) {
         mangle_Bytes(run, printable);
@@ -524,7 +524,7 @@ static void mangle_ConstFeedbackDict(run_t* run, bool printable) {
 static void mangle_MemSet(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
     size_t len = mangle_getLen(run->dynfile->size - off);
-    int val = printable ? (int)util_rndPrintable() : (int)util_rndGet(0, UINT8_MAX);
+    int    val = printable ? (int)util_rndPrintable() : (int)util_rndGet(0, UINT8_MAX);
 
     memset(&run->dynfile->data[off], val, len);
 }
@@ -684,7 +684,7 @@ static void mangle_Shrink(run_t* run, bool printable HF_ATTR_UNUSED) {
     }
 
     size_t off_start = mangle_getOffSet(run);
-    size_t len = mangle_LenLeft(run, off_start);
+    size_t len       = mangle_LenLeft(run, off_start);
     if (len == 0) {
         return;
     }
@@ -693,7 +693,7 @@ static void mangle_Shrink(run_t* run, bool printable HF_ATTR_UNUSED) {
     } else {
         len = mangle_getLen(len);
     }
-    size_t off_end = off_start + len;
+    size_t off_end     = off_start + len;
     size_t len_to_move = run->dynfile->size - off_end;
 
     mangle_Move(run, off_end, off_start, len_to_move);
@@ -722,8 +722,8 @@ static void mangle_ASCIINumChange(run_t* run, bool printable) {
         return;
     }
 
-    size_t len = HF_MIN(20, run->dynfile->size - off);
-    char numbuf[21] = {};
+    size_t len        = HF_MIN(20, run->dynfile->size - off);
+    char   numbuf[21] = {};
     strncpy(numbuf, (const char*)&run->dynfile->data[off], len);
     uint64_t val = (uint64_t)strtoull(numbuf, NULL, 10);
 
@@ -756,14 +756,14 @@ static void mangle_ASCIINumChange(run_t* run, bool printable) {
 
 static void mangle_Splice(run_t* run, bool printable) {
     const uint8_t* buf;
-    size_t sz = input_getRandomInputAsBuf(run, &buf);
+    size_t         sz = input_getRandomInputAsBuf(run, &buf);
     if (!sz) {
         mangle_Bytes(run, printable);
         return;
     }
 
     size_t remoteOff = mangle_getLen(sz) - 1;
-    size_t len = mangle_getLen(sz - remoteOff);
+    size_t len       = mangle_getLen(sz - remoteOff);
     mangle_UseValue(run, &buf[remoteOff], len, printable);
 }
 

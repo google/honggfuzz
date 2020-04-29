@@ -28,7 +28,7 @@
 
 #include "honggfuzz.h"
 
-#define _HF_DYNFILE_SUB_MASK 0xFFFUL  // Zero-set two MSB
+#define _HF_DYNFILE_SUB_MASK 0xFFFUL    // Zero-set two MSB
 
 extern bool arch_traceWaitForPidStop(pid_t pid);
 extern bool arch_traceEnable(run_t* run);

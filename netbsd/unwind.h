@@ -30,7 +30,7 @@
 #include "sanitizers.h"
 
 /* String buffer size for function names in stack traces produced from libunwind */
-#define _HF_FUNC_NAME_SZ 256  // Should be alright for mangled C++ procs too
+#define _HF_FUNC_NAME_SZ 256    // Should be alright for mangled C++ procs too
 
 extern char* arch_btContainsSymbol(
     size_t symbolsListSz, char** symbolsList, size_t num_frames, funcs_t* funcs);

@@ -127,16 +127,16 @@ static void fuzz_setDynamicMainState(run_t* run) {
      */
     if (run->global->io.dynfileqCnt == 0) {
         dynfile_t dynfile = {
-            .size = 0,
-            .cov = {},
-            .idx = 0,
-            .fd = -1,
+            .size          = 0,
+            .cov           = {},
+            .idx           = 0,
+            .fd            = -1,
             .timeExecUSecs = 1,
-            .path = "[DYNAMIC-0-SIZE]",
-            .data = (uint8_t*)"",
+            .path          = "[DYNAMIC-0-SIZE]",
+            .data          = (uint8_t*)"",
         };
         dynfile_t* tmp_dynfile = run->dynfile;
-        run->dynfile = &dynfile;
+        run->dynfile           = &dynfile;
         input_addDynamicInput(run);
         run->dynfile = tmp_dynfile;
     }
@@ -273,10 +273,10 @@ static bool fuzz_runVerifier(run_t* run) {
         LOG_I("Launching verifier for HASH: %" PRIx64 " (iteration: %d out of %d)", run->backtrace,
             i + 1, _HF_VERIFIER_ITER);
         run->timeStartedUSecs = util_timeNowUSecs();
-        run->backtrace = 0;
-        run->access = 0;
-        run->exception = 0;
-        run->mainWorker = false;
+        run->backtrace        = 0;
+        run->access           = 0;
+        run->exception        = 0;
+        run->mainWorker       = false;
 
         if (!subproc_Run(run)) {
             LOG_F("subproc_Run()");
@@ -389,19 +389,19 @@ static bool fuzz_fetchInput(run_t* run) {
 static void fuzz_fuzzLoop(run_t* run) {
     run->timeStartedUSecs = util_timeNowUSecs();
     run->crashFileName[0] = '\0';
-    run->pc = 0;
-    run->backtrace = 0;
-    run->access = 0;
-    run->exception = 0;
-    run->report[0] = '\0';
-    run->mainWorker = true;
-    run->mutationsPerRun = run->global->mutate.mutationsPerRun;
-    run->tmOutSignaled = false;
+    run->pc               = 0;
+    run->backtrace        = 0;
+    run->access           = 0;
+    run->exception        = 0;
+    run->report[0]        = '\0';
+    run->mainWorker       = true;
+    run->mutationsPerRun  = run->global->mutate.mutationsPerRun;
+    run->tmOutSignaled    = false;
 
-    run->hwCnts.cpuInstrCnt = 0;
+    run->hwCnts.cpuInstrCnt  = 0;
     run->hwCnts.cpuBranchCnt = 0;
-    run->hwCnts.bbCnt = 0;
-    run->hwCnts.newBBCnt = 0;
+    run->hwCnts.bbCnt        = 0;
+    run->hwCnts.newBBCnt     = 0;
 
     if (!fuzz_fetchInput(run)) {
         if (run->global->cfg.minimize && fuzz_getState(run->global) == _HF_STATE_DYNAMIC_MINIMIZE) {
@@ -426,19 +426,19 @@ static void fuzz_fuzzLoop(run_t* run) {
 static void fuzz_fuzzLoopSocket(run_t* run) {
     run->timeStartedUSecs = util_timeNowUSecs();
     run->crashFileName[0] = '\0';
-    run->pc = 0;
-    run->backtrace = 0;
-    run->access = 0;
-    run->exception = 0;
-    run->report[0] = '\0';
-    run->mainWorker = true;
-    run->mutationsPerRun = run->global->mutate.mutationsPerRun;
-    run->tmOutSignaled = false;
+    run->pc               = 0;
+    run->backtrace        = 0;
+    run->access           = 0;
+    run->exception        = 0;
+    run->report[0]        = '\0';
+    run->mainWorker       = true;
+    run->mutationsPerRun  = run->global->mutate.mutationsPerRun;
+    run->tmOutSignaled    = false;
 
-    run->hwCnts.cpuInstrCnt = 0;
+    run->hwCnts.cpuInstrCnt  = 0;
     run->hwCnts.cpuBranchCnt = 0;
-    run->hwCnts.bbCnt = 0;
-    run->hwCnts.newBBCnt = 0;
+    run->hwCnts.bbCnt        = 0;
+    run->hwCnts.newBBCnt     = 0;
 
     LOG_I("------------------------------------------------------");
 
@@ -462,7 +462,7 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
            or: it crashed by fuzzing. Restart it too.
            */
         LOG_D("------[ 2.1: Target down, will restart it");
-        run->pid = 0;  // make subproc_Run() restart it on next iteration
+        run->pid = 0;    // make subproc_Run() restart it on next iteration
         return;
     }
 
@@ -478,17 +478,17 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
 }
 
 static void* fuzz_threadNew(void* arg) {
-    honggfuzz_t* hfuzz = (honggfuzz_t*)arg;
+    honggfuzz_t* hfuzz  = (honggfuzz_t*)arg;
     unsigned int fuzzNo = ATOMIC_POST_INC(hfuzz->threads.threadsActiveCnt);
     LOG_I("Launched new fuzzing thread, no. #%u", fuzzNo);
 
     run_t run = {
-        .global = hfuzz,
-        .pid = 0,
-        .dynfile = (dynfile_t*)util_Malloc(sizeof(dynfile_t) + hfuzz->io.maxFileSz),
-        .fuzzNo = fuzzNo,
+        .global         = hfuzz,
+        .pid            = 0,
+        .dynfile        = (dynfile_t*)util_Malloc(sizeof(dynfile_t) + hfuzz->io.maxFileSz),
+        .fuzzNo         = fuzzNo,
         .persistentSock = -1,
-        .tmOutSignaled = false,
+        .tmOutSignaled  = false,
     };
 
     /* Do not try to handle input files with socketfuzzer */

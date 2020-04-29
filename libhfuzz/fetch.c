@@ -22,7 +22,7 @@
 __attribute__((visibility("default"))) __attribute__((used)) const char* LIBHFUZZ_module_fetch =
     _HF_PERSISTENT_SIG;
 
-static const uint8_t* inputFile = NULL;
+static const uint8_t*                    inputFile = NULL;
 __attribute__((constructor)) static void init(void) {
     if (fcntl(_HF_INPUT_FD, F_GETFD) == -1 && errno == EBADF) {
         return;
@@ -40,7 +40,7 @@ void HonggfuzzFetchData(const uint8_t** buf_ptr, size_t* len_ptr) {
     }
 
     uint64_t rcvLen;
-    ssize_t sz = files_readFromFd(_HF_PERSISTENT_FD, (uint8_t*)&rcvLen, sizeof(rcvLen));
+    ssize_t  sz = files_readFromFd(_HF_PERSISTENT_FD, (uint8_t*)&rcvLen, sizeof(rcvLen));
     if (sz == -1) {
         PLOG_F("readFromFd(fd=%d, size=%zu) failed", _HF_PERSISTENT_FD, sizeof(rcvLen));
     }

@@ -29,7 +29,7 @@
 
 /* Stringify */
 #define HF__XSTR(x) #x
-#define HF_XSTR(x) HF__XSTR(x)
+#define HF_XSTR(x)  HF__XSTR(x)
 
 #define HF_ATTR_UNUSED __attribute__((unused))
 
@@ -43,13 +43,13 @@
 
 /* TEMP_FAILURE_RETRY, but for all OSes */
 #ifndef TEMP_FAILURE_RETRY
-#define TEMP_FAILURE_RETRY(exp)                \
-    ({                                         \
-        __typeof(exp) _rc;                     \
-        do {                                   \
-            _rc = (exp);                       \
-        } while (_rc == -1 && errno == EINTR); \
-        _rc;                                   \
+#define TEMP_FAILURE_RETRY(exp)                                                                    \
+    ({                                                                                             \
+        __typeof(exp) _rc;                                                                         \
+        do {                                                                                       \
+            _rc = (exp);                                                                           \
+        } while (_rc == -1 && errno == EINTR);                                                     \
+        _rc;                                                                                       \
     })
 #endif /* ifndef TEMP_FAILURE_RETRY */
 

@@ -50,7 +50,7 @@
 #endif /* !defined(bfd_get_section_size) */
 
 typedef struct {
-    bfd* bfdh;
+    bfd*      bfdh;
     asymbol** syms;
     asymbol** dsyms;
 } bfd_t;
@@ -132,7 +132,7 @@ void arch_bfdDemangle(funcs_t* funcs, size_t funcCnt) {
 static struct bfd_section* arch_getSectionForPc(bfd* bfdh, uint64_t pc) {
     for (struct bfd_section* section = bfdh->sections; section; section = section->next) {
         uintptr_t vma = (uintptr_t)bfd_get_section_vma(bfdh, section);
-        uintptr_t sz = (uintptr_t)bfd_get_section_size(section);
+        uintptr_t sz  = (uintptr_t)bfd_get_section_size(section);
         if ((pc > vma) && (pc < (vma + sz))) {
             return section;
         }
@@ -147,8 +147,8 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num) {
     bfd_init();
 
     bfd_t bfdParams = {
-        .bfdh = NULL,
-        .syms = NULL,
+        .bfdh  = NULL,
+        .syms  = NULL,
         .dsyms = NULL,
     };
 
@@ -156,8 +156,8 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num) {
         return;
     }
 
-    const char* func;
-    const char* file;
+    const char*  func;
+    const char*  file;
     unsigned int line;
     for (unsigned int i = 0; i < num; i++) {
         snprintf(funcs[i].func, sizeof(funcs->func), "UNKNOWN");
@@ -220,7 +220,7 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
         disassembler(bfd_get_arch(bfdh), bfd_little_endian(bfdh) ? FALSE : TRUE, 0, NULL);
 #else
     disassembler_ftype disassemble = disassembler(bfdh);
-#endif  // defined(_HD_BFD_GE_2_29)
+#endif    // defined(_HD_BFD_GE_2_29)
     if (disassemble == NULL) {
         LOG_W("disassembler() failed");
         bfd_close(bfdh);
@@ -229,12 +229,12 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
 
     struct disassemble_info info;
     init_disassemble_info(&info, instr, arch_bfdFPrintF);
-    info.arch = bfd_get_arch(bfdh);
-    info.mach = bfd_get_mach(bfdh);
-    info.buffer = mem;
+    info.arch          = bfd_get_arch(bfdh);
+    info.mach          = bfd_get_mach(bfdh);
+    info.buffer        = mem;
     info.buffer_length = size;
-    info.section = NULL;
-    info.endian = bfd_little_endian(bfdh) ? BFD_ENDIAN_LITTLE : BFD_ENDIAN_BIG;
+    info.section       = NULL;
+    info.endian        = bfd_little_endian(bfdh) ? BFD_ENDIAN_LITTLE : BFD_ENDIAN_BIG;
     disassemble_init_for_target(&info);
 
     strcpy(instr, "");

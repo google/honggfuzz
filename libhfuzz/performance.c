@@ -12,12 +12,12 @@
 #include "libhfcommon/util.h"
 #include "libhfuzz/instrument.h"
 
-#define HF_USEC_PER_SEC 1000000
+#define HF_USEC_PER_SEC         1000000
 #define HF_CHECK_INTERVAL_USECS (HF_USEC_PER_SEC * 20) /* Peform this check every 20 sec. */
-#define HF_RESET_RATIO 5 /* Reset ourselves, if currently n times slower than in the beginning */
+#define HF_RESET_RATIO          5 /* Reset ourselves, if currently n times slower than in the beginning */
 
-static uint64_t iterCnt = 0;
-static time_t firstInputUSecs = 0;
+static uint64_t iterCnt         = 0;
+static time_t   firstInputUSecs = 0;
 
 static uint64_t initialUSecsPerExec = 0;
 
@@ -32,8 +32,8 @@ static bool performanceInit(void) {
     uint64_t timeDiffUSecs = util_timeNowUSecs() - firstInputUSecs;
     if (iterCnt == 5000 || timeDiffUSecs > HF_CHECK_INTERVAL_USECS) {
         initialUSecsPerExec = timeDiffUSecs / iterCnt;
-        lastCheckUSecs = util_timeNowUSecs();
-        lastCheckIters = iterCnt;
+        lastCheckUSecs      = util_timeNowUSecs();
+        lastCheckIters      = iterCnt;
 
         LOG_I("Thread %u (pid=%d) initial speed set at %" PRIu64 " us/exec", instrumentThreadNo(),
             (int)getpid(), initialUSecsPerExec);

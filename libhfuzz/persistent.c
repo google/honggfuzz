@@ -40,7 +40,7 @@ __attribute__((weak)) int LLVMFuzzerTestOneInput(
     return 0;
 }
 
-static const uint8_t* inputFile = NULL;
+static const uint8_t*                    inputFile = NULL;
 __attribute__((constructor)) static void initializePersistent(void) {
     if (fcntl(_HF_INPUT_FD, F_GETFD) == -1 && errno == EBADF) {
         return;
@@ -59,7 +59,7 @@ void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr) {
 
 extern const char* const LIBHFUZZ_module_memorycmp;
 extern const char* const LIBHFUZZ_module_instrument;
-static void HonggfuzzRunOneInput(const uint8_t* buf, size_t len) {
+static void              HonggfuzzRunOneInput(const uint8_t* buf, size_t len) {
     instrumentResetLocalCovFeedback();
     int ret = LLVMFuzzerTestOneInput(buf, len);
     if (ret != 0) {
@@ -71,7 +71,7 @@ static void HonggfuzzRunOneInput(const uint8_t* buf, size_t len) {
 
 static void HonggfuzzPersistentLoop(void) {
     for (;;) {
-        size_t len;
+        size_t         len;
         const uint8_t* buf;
 
         /* Check whether the current benchmark is fast enough, or maybe we should restart it */
@@ -83,7 +83,7 @@ static void HonggfuzzPersistentLoop(void) {
 }
 
 static int HonggfuzzRunFromFile(int argc, char** argv) {
-    int in_fd = STDIN_FILENO;
+    int         in_fd = STDIN_FILENO;
     const char* fname = "[STDIN]";
     if (argc > 1) {
         fname = argv[argc - 1];
@@ -98,7 +98,7 @@ static int HonggfuzzRunFromFile(int argc, char** argv) {
     LOG_I("Usage for fuzzing: honggfuzz -P [flags] -- %s", argv[0]);
 
     uint8_t* buf = (uint8_t*)util_Calloc(_HF_INPUT_MAX_SIZE);
-    ssize_t len = files_readFromFd(in_fd, buf, _HF_INPUT_MAX_SIZE);
+    ssize_t  len = files_readFromFd(in_fd, buf, _HF_INPUT_MAX_SIZE);
     if (len < 0) {
         LOG_E("Couldn't read data from stdin: %s", strerror(errno));
         free(buf);

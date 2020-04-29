@@ -49,7 +49,7 @@
 #define _HF_PERF_MAP_SZ (1024 * 512)
 #define _HF_PERF_AUX_SZ (1024 * 1024)
 /* PERF_TYPE for Intel_PT/BTS -1 if none */
-static int32_t perfIntelPtPerfType = -1;
+static int32_t perfIntelPtPerfType  = -1;
 static int32_t perfIntelBtsPerfType = -1;
 
 #if defined(PERF_ATTR_SIZE_VER5)
@@ -61,8 +61,8 @@ __attribute__((hot)) static inline void arch_perfBtsCount(run_t* run) {
         uint64_t misc;
     };
 
-    uint64_t aux_head = ATOMIC_GET(pem->aux_head);
-    struct bts_branch* br = (struct bts_branch*)run->arch_linux.perfMmapAux;
+    uint64_t           aux_head = ATOMIC_GET(pem->aux_head);
+    struct bts_branch* br       = (struct bts_branch*)run->arch_linux.perfMmapAux;
     for (; br < ((struct bts_branch*)(run->arch_linux.perfMmapAux + aux_head)); br++) {
         /*
          * Kernel sometimes reports branches from the kernel (iret), we are not interested in that
@@ -141,17 +141,17 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
         pe.enable_on_exec = 1;
     }
     pe.exclude_hv = 1;
-    pe.type = PERF_TYPE_HARDWARE;
+    pe.type       = PERF_TYPE_HARDWARE;
 
     switch (method) {
         case _HF_DYNFILE_INSTR_COUNT:
             LOG_D("Using: PERF_COUNT_HW_INSTRUCTIONS for pid=%d", (int)pid);
-            pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+            pe.config  = PERF_COUNT_HW_INSTRUCTIONS;
             pe.inherit = 1;
             break;
         case _HF_DYNFILE_BRANCH_COUNT:
             LOG_D("Using: PERF_COUNT_HW_BRANCH_INSTRUCTIONS for pid=%d", (int)pid);
-            pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+            pe.config  = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
             pe.inherit = 1;
             break;
         case _HF_DYNFILE_BTS_EDGE:
@@ -160,7 +160,7 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
             break;
         case _HF_DYNFILE_IPT_BLOCK:
             LOG_D("Using: (Intel PT) type=%" PRIu32 " for pid=%d", perfIntelPtPerfType, (int)pid);
-            pe.type = perfIntelPtPerfType;
+            pe.type   = perfIntelPtPerfType;
             pe.config = RTIT_CTL_DISRETC;
             break;
         default:
@@ -194,8 +194,8 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
     }
 
     struct perf_event_mmap_page* pem = (struct perf_event_mmap_page*)run->arch_linux.perfMmapBuf;
-    pem->aux_offset = pem->data_offset + pem->data_size;
-    pem->aux_size = _HF_PERF_AUX_SZ;
+    pem->aux_offset                  = pem->data_offset + pem->data_size;
+    pem->aux_size                    = _HF_PERF_AUX_SZ;
     if ((run->arch_linux.perfMmapAux = mmap(
              NULL, pem->aux_size, PROT_READ, MAP_SHARED, *perfFd, pem->aux_offset)) == MAP_FAILED) {
         munmap(run->arch_linux.perfMmapBuf, _HF_PERF_MAP_SZ + getpagesize());
@@ -371,19 +371,19 @@ void arch_perfAnalyze(run_t* run) {
         ioctl(run->arch_linux.cpuIptBtsFd, PERF_EVENT_IOC_RESET, 0);
     }
 
-    run->hwCnts.cpuInstrCnt = instrCount;
+    run->hwCnts.cpuInstrCnt  = instrCount;
     run->hwCnts.cpuBranchCnt = branchCount;
 }
 
 bool arch_perfInit(honggfuzz_t* hfuzz HF_ATTR_UNUSED) {
-    static char const intel_pt_path[] = "/sys/bus/event_source/devices/intel_pt/type";
+    static char const intel_pt_path[]  = "/sys/bus/event_source/devices/intel_pt/type";
     static char const intel_bts_path[] = "/sys/bus/event_source/devices/intel_bts/type";
 
     if (files_exists(intel_pt_path)) {
         uint8_t buf[256];
         ssize_t sz = files_readFileToBufMax(intel_pt_path, buf, sizeof(buf) - 1);
         if (sz > 0) {
-            buf[sz] = '\0';
+            buf[sz]             = '\0';
             perfIntelPtPerfType = (int32_t)strtoul((char*)buf, NULL, 10);
             LOG_D("perfIntelPtPerfType = %" PRIu32, perfIntelPtPerfType);
         }
@@ -393,7 +393,7 @@ bool arch_perfInit(honggfuzz_t* hfuzz HF_ATTR_UNUSED) {
         uint8_t buf[256];
         ssize_t sz = files_readFileToBufMax(intel_bts_path, buf, sizeof(buf) - 1);
         if (sz > 0) {
-            buf[sz] = '\0';
+            buf[sz]              = '\0';
             perfIntelBtsPerfType = (int32_t)strtoul((char*)buf, NULL, 10);
             LOG_D("perfIntelBtsPerfType = %" PRIu32, perfIntelBtsPerfType);
         }

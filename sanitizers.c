@@ -19,18 +19,18 @@
 /*
  * Common sanitizer flags if --sanitizers is enabled
  */
-#define kSAN_COMMON                \
-    "symbolize=1:"                 \
-    "detect_leaks=0:"              \
-    "disable_coredump=0:"          \
-    "detect_odr_violation=0:"      \
-    "allocator_may_return_null=1:" \
-    "allow_user_segv_handler=0:"   \
-    "handle_segv=2:"               \
-    "handle_sigbus=2:"             \
-    "handle_abort=2:"              \
-    "handle_sigill=2:"             \
-    "handle_sigfpe=2:"             \
+#define kSAN_COMMON                                                                                \
+    "symbolize=1:"                                                                                 \
+    "detect_leaks=0:"                                                                              \
+    "disable_coredump=0:"                                                                          \
+    "detect_odr_violation=0:"                                                                      \
+    "allocator_may_return_null=1:"                                                                 \
+    "allow_user_segv_handler=0:"                                                                   \
+    "handle_segv=2:"                                                                               \
+    "handle_sigbus=2:"                                                                             \
+    "handle_abort=2:"                                                                              \
+    "handle_sigill=2:"                                                                             \
+    "handle_sigfpe=2:"                                                                             \
     "abort_on_error=1"
 
 /* --{ ASan }-- */
@@ -50,18 +50,18 @@
 #define kLSAN_OPTS kSAN_COMMON
 
 /* If no sanitzer support was requested, simply abort() on errors */
-#define kSAN_REGULAR               \
-    "symbolize=1:"                 \
-    "detect_leaks=0:"              \
-    "disable_coredump=0:"          \
-    "detect_odr_violation=0:"      \
-    "allocator_may_return_null=1:" \
-    "allow_user_segv_handler=1:"   \
-    "handle_segv=0:"               \
-    "handle_sigbus=0:"             \
-    "handle_abort=0:"              \
-    "handle_sigill=0:"             \
-    "handle_sigfpe=0:"             \
+#define kSAN_REGULAR                                                                               \
+    "symbolize=1:"                                                                                 \
+    "detect_leaks=0:"                                                                              \
+    "disable_coredump=0:"                                                                          \
+    "detect_odr_violation=0:"                                                                      \
+    "allocator_may_return_null=1:"                                                                 \
+    "allow_user_segv_handler=1:"                                                                   \
+    "handle_segv=0:"                                                                               \
+    "handle_sigbus=0:"                                                                             \
+    "handle_abort=0:"                                                                              \
+    "handle_sigill=0:"                                                                             \
+    "handle_sigfpe=0:"                                                                             \
     "abort_on_error=1"
 
 static void sanitizers_AddFlag(honggfuzz_t* hfuzz, const char* env, const char* val) {
@@ -110,8 +110,8 @@ static pid_t sanitizers_PidForTid(pid_t pid) {
     defer {
         fclose(f);
     };
-    char* lineptr = NULL;
-    size_t n = 0;
+    char*  lineptr = NULL;
+    size_t n       = 0;
     defer {
         free(lineptr);
     };
@@ -128,7 +128,7 @@ static pid_t sanitizers_PidForTid(pid_t pid) {
 
 size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* pc,
     uint64_t* crashAddr, char description[HF_STR_LEN]) {
-    char crashReport[PATH_MAX];
+    char        crashReport[PATH_MAX];
     const char* crashReportCpy = crashReport;
 
     /* Under Linux the crash is seen in TID, but the sanitizer report is created for PID */
@@ -148,12 +148,12 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
         }
     };
 
-    bool headerFound = false;
-    bool frameFound = false;
-    unsigned int frameIdx = 0;
+    bool         headerFound = false;
+    bool         frameFound  = false;
+    unsigned int frameIdx    = 0;
 
-    char* lineptr = NULL;
-    size_t n = 0;
+    char*  lineptr = NULL;
+    size_t n       = 0;
     defer {
         free(lineptr);
     };

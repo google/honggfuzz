@@ -82,36 +82,36 @@
 
 static struct {
     const char* descr;
-    bool important;
+    bool        important;
 } arch_sigs[_NSIG + 1] = {
     [0 ...(_NSIG)].important = false,
-    [0 ...(_NSIG)].descr = "UNKNOWN",
+    [0 ...(_NSIG)].descr     = "UNKNOWN",
 
     [SIGTRAP].important = false,
-    [SIGTRAP].descr = "SIGTRAP",
+    [SIGTRAP].descr     = "SIGTRAP",
 
     [SIGILL].important = true,
-    [SIGILL].descr = "SIGILL",
+    [SIGILL].descr     = "SIGILL",
 
     [SIGFPE].important = true,
-    [SIGFPE].descr = "SIGFPE",
+    [SIGFPE].descr     = "SIGFPE",
 
     [SIGSEGV].important = true,
-    [SIGSEGV].descr = "SIGSEGV",
+    [SIGSEGV].descr     = "SIGSEGV",
 
     [SIGBUS].important = true,
-    [SIGBUS].descr = "SIGBUS",
+    [SIGBUS].descr     = "SIGBUS",
 
     [SIGABRT].important = true,
-    [SIGABRT].descr = "SIGABRT",
+    [SIGABRT].descr     = "SIGABRT",
 
     /* Is affected from tmoutVTALRM flag */
     [SIGVTALRM].important = false,
-    [SIGVTALRM].descr = "SIGVTALRM-TMOUT",
+    [SIGVTALRM].descr     = "SIGVTALRM-TMOUT",
 
     /* seccomp-bpf kill */
     [SIGSYS].important = true,
-    [SIGSYS].descr = "SIGSYS",
+    [SIGSYS].descr     = "SIGSYS",
 };
 
 #ifndef SI_FROMUSER
@@ -120,10 +120,10 @@ static struct {
 
 static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, register_t pc) {
     struct ptrace_io_desc io;
-    size_t bytes_read;
+    size_t                bytes_read;
 
-    bytes_read = 0;
-    io.piod_op = PIOD_READ_D;
+    bytes_read  = 0;
+    io.piod_op  = PIOD_READ_D;
     io.piod_len = len;
 
     do {
@@ -137,7 +137,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, register_t pc
             break;
         }
 
-        bytes_read = io.piod_len;
+        bytes_read  = io.piod_len;
         io.piod_len = len - bytes_read;
     } while (bytes_read < len);
 
@@ -169,8 +169,8 @@ static void arch_getInstrStr(pid_t pid, lwpid_t lwp, register_t* pc, char* instr
      * We need a value aligned to 8
      * which is sizeof(long) on 64bit CPU archs (on most of them, I hope;)
      */
-    uint8_t buf[MAX_INSTR_SZ];
-    size_t memsz;
+    uint8_t    buf[MAX_INSTR_SZ];
+    size_t     memsz;
     register_t status_reg = 0;
 
     snprintf(instr, _HF_INSTR_SZ, "%s", "[UNKNOWN]");
@@ -193,13 +193,13 @@ static void arch_getInstrStr(pid_t pid, lwpid_t lwp, register_t* pc, char* instr
     arch = CS_ARCH_X86;
     mode = CS_MODE_32;
 #elif defined(__x86_64__)
-    arch = CS_ARCH_X86;
-    mode = CS_MODE_64;
+    arch        = CS_ARCH_X86;
+    mode        = CS_MODE_64;
 #else
 #error Unsupported CPU architecture
 #endif
 
-    csh handle;
+    csh    handle;
     cs_err err = cs_open(arch, mode, &handle);
     if (err != CS_ERR_OK) {
         LOG_W("Capstone initialization failed: '%s'", cs_strerror(err));
@@ -207,7 +207,7 @@ static void arch_getInstrStr(pid_t pid, lwpid_t lwp, register_t* pc, char* instr
     }
 
     cs_insn* insn;
-    size_t count = cs_disasm(handle, buf, sizeof(buf), *pc, 0, &insn);
+    size_t   count = cs_disasm(handle, buf, sizeof(buf), *pc, 0, &insn);
 
     if (count < 1) {
         LOG_W("Couldn't disassemble the assembler instructions' stream: '%s'",
@@ -232,7 +232,7 @@ static void arch_getInstrStr(pid_t pid, lwpid_t lwp, register_t* pc, char* instr
 
 static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
     ptrace_siginfo_t info;
-    register_t pc = 0, status_reg = 0;
+    register_t       pc = 0, status_reg = 0;
 
     if (ptrace(PT_GET_SIGINFO, pid, &info, sizeof(info)) == -1) {
         PLOG_W("Couldn't get siginfo for pid %d", pid);
@@ -262,7 +262,7 @@ static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
     if (pc) {
         /* Manually update major frame PC & frames counter */
         funcs[0].pc = (void*)(uintptr_t)pc;
-        funcCnt = 1;
+        funcCnt     = 1;
     } else {
         return;
     }
@@ -279,7 +279,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     /* Local copy since flag is overridden for some crashes */
     bool saveUnique = run->global->io.saveUnique;
 
-    char instr[_HF_INSTR_SZ] = "\x00";
+    char                  instr[_HF_INSTR_SZ] = "\x00";
     struct ptrace_siginfo info;
     memset(&info, 0, sizeof(info));
 
@@ -320,7 +320,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     if (pc) {
         /* Manually update major frame PC & frames counter */
         funcs[0].pc = (void*)(uintptr_t)pc;
-        funcCnt = 1;
+        funcCnt     = 1;
     } else {
         saveUnique = false;
     }
@@ -404,8 +404,8 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     ATOMIC_POST_ADD(run->global->cfg.dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
 
     void* sig_addr = info.psi_siginfo.si_addr;
-    pc = 0UL;
-    sig_addr = NULL;
+    pc             = 0UL;
+    sig_addr       = NULL;
 
     /* User-induced signals don't set si.si_addr */
     if (SI_FROMUSER(&info.psi_siginfo)) {
@@ -454,9 +454,9 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
 }
 
 static void arch_traceEvent(run_t* run HF_ATTR_UNUSED, pid_t pid) {
-    ptrace_state_t state;
+    ptrace_state_t   state;
     ptrace_siginfo_t info;
-    int sig = 0;
+    int              sig = 0;
 
     if (ptrace(PT_GET_SIGINFO, pid, &info, sizeof(info)) == -1) {
         PLOG_E("ptrace(PT_GET_SIGINFO, pid=%d)", (int)pid);
@@ -584,7 +584,7 @@ bool arch_traceWaitForPidStop(pid_t pid) {
     LOG_D("Waiting for pid=%d to stop", (int)pid);
 
     for (;;) {
-        int status;
+        int   status;
         pid_t ret = wait4(pid, &status, __WALL | WUNTRACED | WTRAPPED, NULL);
         if (ret == -1 && errno == EINTR) {
             continue;

@@ -178,7 +178,7 @@ void arch_prepareParentAfterFork(run_t* run) {
     if (run->global->exe.persistent) {
         const struct f_owner_ex fown = {
             .type = F_OWNER_TID,
-            .pid = syscall(__NR_gettid),
+            .pid  = syscall(__NR_gettid),
         };
         if (fcntl(run->persistentSock, F_SETOWN_EX, &fown)) {
             PLOG_F("fcntl(%d, F_SETOWN_EX)", run->persistentSock);
@@ -209,7 +209,7 @@ void arch_prepareParent(run_t* run) {
 static bool arch_checkWait(run_t* run) {
     /* All queued wait events must be tested when SIGCHLD was delivered */
     for (;;) {
-        int status;
+        int   status;
         pid_t pid = TEMP_FAILURE_RETRY(waitpid(-1, &status, __WALL | __WNOTHREAD | WNOHANG));
         if (pid == 0) {
             return false;
@@ -250,7 +250,7 @@ void arch_reapChild(run_t* run) {
         subproc_checkTermination(run);
 
         const struct timespec ts = {
-            .tv_sec = 0ULL,
+            .tv_sec  = 0ULL,
             .tv_nsec = (1000ULL * 1000ULL * 100ULL),
         };
         /* Return with SIGIO, SIGCHLD */
@@ -293,7 +293,7 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
             break;
         }
         const char* gversion = gnu_get_libc_version();
-        int major, minor;
+        int         major, minor;
         if (sscanf(gversion, "%d.%d", &major, &minor) != 2) {
             LOG_W("Unknown glibc version:'%s'. Using clone() instead of fork()", gversion);
             break;
@@ -313,7 +313,7 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
 
     if (hfuzz->feedback.dynFileMethod != _HF_DYNFILE_NONE) {
         unsigned long major = 0, minor = 0;
-        char* p = NULL;
+        char*         p = NULL;
 
         /*
          * Check that Linux kernel is compatible
@@ -342,7 +342,7 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
             return false;
         }
 
-        p = uts.release;
+        p     = uts.release;
         major = strtoul(p, &p, 10);
         if (*p++ != '.') {
             LOG_F("Unsupported kernel version (%s)", uts.release);
@@ -386,7 +386,7 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
 bool arch_archThreadInit(run_t* run) {
     run->arch_linux.perfMmapBuf = NULL;
     run->arch_linux.perfMmapAux = NULL;
-    run->arch_linux.cpuInstrFd = -1;
+    run->arch_linux.cpuInstrFd  = -1;
     run->arch_linux.cpuBranchFd = -1;
     run->arch_linux.cpuIptBtsFd = -1;
 

@@ -96,7 +96,7 @@ char* util_StrDup(const char* s) {
 }
 
 static __thread pthread_once_t rndThreadOnce = PTHREAD_ONCE_INIT;
-static __thread uint64_t rndState[2];
+static __thread uint64_t       rndState[2];
 
 static void util_rndInitThread(void) {
     int fd = TEMP_FAILURE_RETRY(open("/dev/urandom", O_RDONLY | O_CLOEXEC));
@@ -117,8 +117,8 @@ static inline uint64_t util_RotL(const uint64_t x, int k) {
 }
 
 static inline uint64_t util_InternalRnd64(void) {
-    const uint64_t s0 = rndState[0];
-    uint64_t s1 = rndState[1];
+    const uint64_t s0     = rndState[0];
+    uint64_t       s1     = rndState[1];
     const uint64_t result = s0 + s1;
     s1 ^= s0;
     rndState[0] = util_RotL(s0, 55) ^ s1 ^ (s1 << 14);
@@ -257,7 +257,7 @@ void util_sleepForMSec(uint64_t msec) {
         return;
     }
     struct timespec ts = {
-        .tv_sec = msec / 1000U,
+        .tv_sec  = msec / 1000U,
         .tv_nsec = (msec % 1000U) * 1000000U,
     };
     TEMP_FAILURE_RETRY(nanosleep(&ts, &ts));
@@ -306,7 +306,7 @@ void util_mutexRWUnlock(pthread_rwlock_t* mutex, const char* func, int line) {
 }
 
 int64_t fastArray64Search(uint64_t* array, size_t arraySz, uint64_t key) {
-    size_t low = 0;
+    size_t low  = 0;
     size_t high = arraySz - 1;
     size_t mid;
 
@@ -369,7 +369,7 @@ size_t util_decodeCString(char* s) {
                     case 'x': {
                         if (s[i + 1] && s[i + 2]) {
                             char hex[] = {s[i + 1], s[i + 2], 0};
-                            s[o] = strtoul(hex, NULL, 16);
+                            s[o]       = strtoul(hex, NULL, 16);
                             i += 2;
                         } else {
                             s[o] = s[i];
@@ -673,7 +673,7 @@ uint64_t util_CRC64Rev(const uint8_t* buf, size_t len) {
 }
 
 static const struct {
-    const int signo;
+    const int         signo;
     const char* const signame;
 } sigNames[] = {
 #if defined(SIGHUP)
