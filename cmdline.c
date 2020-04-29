@@ -421,6 +421,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .dynfileq = PTHREAD_RWLOCK_INITIALIZER,
                 .feedback = PTHREAD_MUTEX_INITIALIZER,
                 .report   = PTHREAD_MUTEX_INITIALIZER,
+                .input    = PTHREAD_MUTEX_INITIALIZER,
             },
 
         /* Linux code */
