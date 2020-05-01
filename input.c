@@ -303,7 +303,7 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz) {
             hfuzz->feedback.blacklist[hfuzz->feedback.blacklistCnt]);
 
         /* Verify entries are sorted so we can use interpolation search */
-        if (hfuzz->feedback.blacklistCnt > 1) {
+        if (hfuzz->feedback.blacklistCnt >= 1) {
             if (hfuzz->feedback.blacklist[hfuzz->feedback.blacklistCnt - 1] >
                 hfuzz->feedback.blacklist[hfuzz->feedback.blacklistCnt]) {
                 LOG_F("Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort "
