@@ -195,6 +195,6 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
     return true;
 }
 
-bool arch_archThreadInit(run_t* run) {
+bool arch_archThreadInit(run_t* run HF_ATTR_UNUSED) {
     return true;
 }
