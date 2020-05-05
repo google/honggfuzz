@@ -33,7 +33,7 @@
 #define WIFCONTINUED(x) WEXITSTATUS(0)
 #endif
 
-extern const char* subproc_StatusToStr(int status, char* str, size_t len);
+extern const char* subproc_StatusToStr(int status);
 
 extern bool subproc_Run(run_t* run);
 

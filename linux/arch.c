@@ -222,9 +222,7 @@ static bool arch_checkWait(run_t* run) {
             PLOG_F("waitpid() failed");
         }
 
-        char statusStr[4096];
-        LOG_D("pid=%d returned with status: %s", pid,
-            subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
+        LOG_D("pid=%d returned with status: %s", pid, subproc_StatusToStr(status));
 
         arch_traceAnalyze(run, status, pid);
 
@@ -232,7 +230,7 @@ static bool arch_checkWait(run_t* run) {
             if (run->global->exe.persistent) {
                 if (!fuzz_isTerminating()) {
                     LOG_W("Persistent mode: pid=%d exited with status: %s", (int)run->pid,
-                        subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
+                        subproc_StatusToStr(status));
                 }
             }
             return true;

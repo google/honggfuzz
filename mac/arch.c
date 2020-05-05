@@ -351,15 +351,13 @@ static bool arch_checkWait(run_t* run) {
 
         arch_analyzeSignal(run, status);
 
-        char statusStr[4096];
-        LOG_D("pid=%d returned with status: %s", pid,
-            subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
+        LOG_D("pid=%d returned with status: %s", pid, subproc_StatusToStr(status));
 
         if (pid == run->pid && (WIFEXITED(status) || WIFSIGNALED(status))) {
             if (run->global->exe.persistent) {
                 if (!fuzz_isTerminating()) {
                     LOG_W("Persistent mode: PID %d exited with status: %s", pid,
-                        subproc_StatusToStr(status, statusStr, sizeof(statusStr)));
+                        subproc_StatusToStr(status));
                 }
             }
             return true;

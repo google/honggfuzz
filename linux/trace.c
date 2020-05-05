@@ -876,7 +876,8 @@ bool arch_traceWaitForPidStop(pid_t pid) {
             return false;
         }
         if (!WIFSTOPPED(status)) {
-            LOG_W("PID %d not in a stopped state - status:%d", pid, status);
+            LOG_W("PID %d not in a stopped state - status:%d (%s)", pid, status,
+                subproc_StatusToStr(status));
             return false;
         }
         return true;

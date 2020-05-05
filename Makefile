@@ -391,7 +391,7 @@ input.o: subproc.h
 mangle.o: mangle.h honggfuzz.h libhfcommon/util.h input.h
 mangle.o: libhfcommon/common.h libhfcommon/log.h
 report.o: report.h honggfuzz.h libhfcommon/util.h sanitizers.h
-report.o: libhfcommon/log.h
+report.o: libhfcommon/common.h libhfcommon/log.h
 sanitizers.o: sanitizers.h honggfuzz.h libhfcommon/util.h cmdline.h
 sanitizers.o: libhfcommon/common.h libhfcommon/log.h
 socketfuzzer.o: socketfuzzer.h honggfuzz.h libhfcommon/util.h
