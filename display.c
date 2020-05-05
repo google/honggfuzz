@@ -21,8 +21,6 @@
  *
  */
 
-#define _WITH_DPRINTF
-
 #include "display.h"
 
 #include <errno.h>
@@ -315,7 +313,7 @@ void display_display(honggfuzz_t* hfuzz) {
     display_stop();
 }
 
-void display_fini(void) {
+static void display_fini(void) {
     display_imm(ESC_SCROLL_RESET ESC_NAV_DOWN(500));
 }
 
