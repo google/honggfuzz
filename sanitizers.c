@@ -1,18 +1,16 @@
 #include "sanitizers.h"
 
 #include <ctype.h>
-#include <dirent.h>
 #include <inttypes.h>
+#include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <unistd.h>
 
 #include "cmdline.h"
 #include "libhfcommon/common.h"
-#include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 

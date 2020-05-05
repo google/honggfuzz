@@ -26,10 +26,10 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
-#include <signal.h>
+#include <limits.h>
 #include <stdio.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "libhfcommon/common.h"
 #include "libhfcommon/log.h"

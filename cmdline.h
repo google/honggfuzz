@@ -22,11 +22,10 @@
 #ifndef _HF_CMDLINE_H_
 #define _HF_CMDLINE_H_
 
+#include <stdbool.h>
 #include <sys/resource.h>
-#include <sys/time.h>
 
 #include "honggfuzz.h"
-#include "libhfcommon/common.h"
 
 rlim_t cmdlineParseRLimit(int res, const char* optarg, unsigned long mul);
 

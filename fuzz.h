@@ -8,7 +8,6 @@
  * Copyright 2010-2018 by Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
  * a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
@@ -24,9 +23,8 @@
 #ifndef _HF_FUZZ_H_
 #define _HF_FUZZ_H_
 
-#include <pthread.h>
-
-#include "honggfuzz.h"
+#include <honggfuzz.h>
+#include <stdbool.h>
 
 extern void        fuzz_threadsStart(honggfuzz_t* fuzz);
 extern bool        fuzz_isTerminating(void);

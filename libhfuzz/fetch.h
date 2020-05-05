@@ -24,10 +24,9 @@
 #ifndef _HF_LIBHFUZZ_FETCH_H_
 #define _HF_LIBHFUZZ_FETCH_H_
 
-#include <inttypes.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
-#include <unistd.h>
 
 extern void HonggfuzzFetchData(const uint8_t** buf_ptr, size_t* len_ptr);
 extern bool fetchIsInputAvailable(void);

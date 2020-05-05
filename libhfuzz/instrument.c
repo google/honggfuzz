@@ -2,17 +2,17 @@
 
 #include <ctype.h>
 #include <dlfcn.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #if defined(_HF_ARCH_LINUX)
 #include <linux/mman.h>
 #endif /* defined(_HF_ARCH_LINUX) */
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>

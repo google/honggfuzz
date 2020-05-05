@@ -2,16 +2,12 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <inttypes.h>
-#include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
 #include "honggfuzz.h"
-#include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
 

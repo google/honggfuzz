@@ -20,7 +20,11 @@
 #ifndef _HF_SANITIZERS_H_
 #define _HF_SANITIZERS_H_
 
+#include <stdbool.h>
+#include <stdint.h>
+
 #include "honggfuzz.h"
+#include "libhfcommon/util.h"
 
 /* Prefix for sanitizer report files */
 #define kLOGPREFIX "HF.sanitizer.log"

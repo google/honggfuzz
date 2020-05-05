@@ -26,14 +26,13 @@
 
 #include <ctype.h>
 #include <inttypes.h>
-#include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
+#include <time.h>
 
 #include "input.h"
 #include "libhfcommon/common.h"

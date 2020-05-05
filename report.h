@@ -24,7 +24,10 @@
 #ifndef _HF_REPORT_H_
 #define _HF_REPORT_H_
 
+#include <stdint.h>
+
 #include "honggfuzz.h"
+#include "libhfcommon/util.h"
 #include "sanitizers.h"
 
 extern void report_saveReport(run_t* run);

@@ -25,6 +25,9 @@
 #define _HF_INPUT_H_
 
 #include <limits.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #include "honggfuzz.h"
 

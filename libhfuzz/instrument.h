@@ -24,9 +24,9 @@
 #ifndef _HF_LIBHFUZZ_INSTRUMENT_H_
 #define _HF_LIBHFUZZ_INSTRUMENT_H_
 
-#include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 extern void     instrument8BitCountersCount(void);
 extern void     instrumentResetLocalCovFeedback(void);
