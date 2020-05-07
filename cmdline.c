@@ -259,6 +259,11 @@ static bool cmdlineVerify(honggfuzz_t* hfuzz) {
         return false;
     }
 
+    if (hfuzz->io.outputDir && mkdir(hfuzz->io.outputDir, 0700) == -1 && errno != EEXIST) {
+        PLOG_E("Couldn't create the output directory '%s'", hfuzz->io.outputDir);
+        return false;
+    }
+
     if (strlen(hfuzz->io.workDir) == 0) {
         if (getcwd(hfuzz->io.workDir, sizeof(hfuzz->io.workDir)) == NULL) {
             PLOG_W("getcwd() failed. Using '.'");
