@@ -747,7 +747,8 @@ static void arch_traceEvent(int status, pid_t pid) {
                 LOG_D(
                     "PID: %d terminated with signal: %lu", pid, (unsigned long)WTERMSIG(event_msg));
             } else {
-                LOG_D("PID: %d exited with unknown status: %lu", pid, event_msg);
+                LOG_D("PID: %d exited with unknown status: %lu (%s)", pid, event_msg,
+                    subproc_StatusToStr(event_msg));
             }
         } break;
         default:
