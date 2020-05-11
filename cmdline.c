@@ -448,7 +448,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .symsWlCnt            = 0,
                 .symsWl               = NULL,
                 .cloneFlags           = 0,
-                .useNetNs             = HF_MAYBE,
+                .useNetNs             = HF_NO,
                 .kernelOnly           = false,
                 .useClone             = true,
             },
