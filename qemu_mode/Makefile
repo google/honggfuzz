@@ -10,7 +10,7 @@ qemu_bin: honggfuzz-qemu/config.status
 honggfuzz-qemu/config.status: honggfuzz-qemu/
 	@echo "=== Configuring QEMU for \"$(TARGETS)\" ==="
 	@cd honggfuzz-qemu/ && \
-		./configure --honggfuzz-path="$(PWD)/../" --disable-system --target-list="$(TARGETS)"
+		LIBS=-ldl ./configure --honggfuzz-path="$(PWD)/../" --disable-system --target-list="$(TARGETS)"
 
 honggfuzz-qemu/:
 	@echo "=== Cloning custom QEMU version ==="
@@ -19,4 +19,3 @@ honggfuzz-qemu/:
 clean:
 	@echo "=== Cleaning ==="
 	rm -rf honggfuzz-qemu/
-
