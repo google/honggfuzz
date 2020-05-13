@@ -1,5 +1,7 @@
 FROM ubuntu:rolling
 
+ENV DEBIAN_FRONTEND noninteractive
+
 RUN apt-get -y update && apt-get install -y \
     gcc \
     git \
