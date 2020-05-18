@@ -166,7 +166,7 @@ tristate_t cmdlineParseTriState(const char* optname, const char* optarg) {
     if (!optarg) {
         LOG_F("Option '--%s' needs an argument (true|false|maybe)", optname);
     }
-    /* Probably '-' belong to the next option */
+    /* Probably '-' belongs to the next option */
     if (optarg[0] == '-') {
         LOG_F("Option '--%s' needs an argument (true|false|maybe)", optname);
     }
