@@ -217,7 +217,7 @@ rlim_t cmdlineParseRLimit(int res, const char* optarg, unsigned long mul) {
     if (strcasecmp(optarg, "def") == 0) {
         return cur.rlim_cur;
     }
-    if (util_isANumber(optarg) == false) {
+    if (!util_isANumber(optarg)) {
         LOG_F("RLIMIT %d needs a numeric or 'max'/'def' value ('%s' provided)", res, optarg);
     }
     rlim_t val = strtoul(optarg, NULL, 0) * mul;

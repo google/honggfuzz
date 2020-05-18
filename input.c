@@ -140,11 +140,11 @@ bool input_getNext(run_t* run, char fname[PATH_MAX], bool rewind) {
             PLOG_W("readdir_r('%s')", run->global->io.inputDir);
             return false;
         }
-        if (entry == NULL && rewind == false) {
+        if (entry == NULL && !rewind) {
             return false;
         }
-        if (entry == NULL && rewind == true) {
-            if (input_getDirStatsAndRewind(run->global) == false) {
+        if (entry == NULL && rewind) {
+            if (!input_getDirStatsAndRewind(run->global)) {
                 LOG_E("input_getDirStatsAndRewind('%s')", run->global->io.inputDir);
                 return false;
             }
@@ -185,7 +185,7 @@ bool input_init(honggfuzz_t* hfuzz) {
         close(dir_fd);
         return false;
     }
-    if (input_getDirStatsAndRewind(hfuzz) == false) {
+    if (!input_getDirStatsAndRewind(hfuzz)) {
         hfuzz->io.fileCnt = 0U;
         LOG_W("input_getDirStatsAndRewind('%s')", hfuzz->io.inputDir);
         return false;

@@ -85,7 +85,7 @@ void logInitLogFile(const char* logfile, int fd, enum llevel_t ll) {
 void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt, ...) {
     int  saved_errno = errno;
     char strerr[512];
-    if (perr == true) {
+    if (perr) {
         snprintf(strerr, sizeof(strerr), "%s", strerror(saved_errno));
     }
     struct ll_t {
@@ -131,7 +131,7 @@ void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt
         vdprintf(hf_log_fd, fmt, args);
         va_end(args);
 
-        if (perr == true) {
+        if (perr) {
             dprintf(hf_log_fd, ": %s", strerr);
         }
         if (hf_log_fd_isatty) {

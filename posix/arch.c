@@ -167,8 +167,8 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
     /* If unique crash found, reset dynFile counter */
     ATOMIC_CLEAR(run->global->cfg.dynFileIterExpire);
 
-    if (files_writeBufToFile(run->crashFileName, run->dynfile->data, run->dynfile->size,
-            O_CREAT | O_EXCL | O_WRONLY) == false) {
+    if (!files_writeBufToFile(run->crashFileName, run->dynfile->data, run->dynfile->size,
+            O_CREAT | O_EXCL | O_WRONLY)) {
         LOG_E("Couldn't save crash to '%s'", run->crashFileName);
     }
 

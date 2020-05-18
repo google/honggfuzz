@@ -162,7 +162,7 @@ void display_createTargetStr(honggfuzz_t* hfuzz) {
 }
 
 void display_display(honggfuzz_t* hfuzz) {
-    if (logIsTTY() == false) {
+    if (!logIsTTY()) {
         return;
     }
 

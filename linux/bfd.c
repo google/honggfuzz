@@ -152,7 +152,7 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num) {
         .dsyms = NULL,
     };
 
-    if (arch_bfdInit(pid, &bfdParams) == false) {
+    if (!arch_bfdInit(pid, &bfdParams)) {
         return;
     }
 

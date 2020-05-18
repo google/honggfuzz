@@ -321,7 +321,7 @@ int main(int argc, char** argv) {
     }
     myargs[i] = NULL;
 
-    if (cmdlineParse(argc, myargs, &hfuzz) == false) {
+    if (!cmdlineParse(argc, myargs, &hfuzz)) {
         LOG_F("Parsing of the cmd-line arguments failed");
     }
     if (hfuzz.io.inputDir && access(hfuzz.io.inputDir, R_OK) == -1) {
@@ -362,11 +362,11 @@ int main(int argc, char** argv) {
         exit(EXIT_FAILURE);
     }
 
-    if (hfuzz.mutate.dictionaryFile && (input_parseDictionary(&hfuzz) == false)) {
+    if (hfuzz.mutate.dictionaryFile && !input_parseDictionary(&hfuzz)) {
         LOG_F("Couldn't parse dictionary file ('%s')", hfuzz.mutate.dictionaryFile);
     }
 
-    if (hfuzz.feedback.blacklistFile && (input_parseBlacklist(&hfuzz) == false)) {
+    if (hfuzz.feedback.blacklistFile && !input_parseBlacklist(&hfuzz)) {
         LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.feedback.blacklistFile);
     }
 #define hfuzzl hfuzz.arch_linux

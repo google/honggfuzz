@@ -79,7 +79,7 @@ bool files_writeBufToFile(const char* fname, const uint8_t* buf, size_t fileSz, 
     }
 
     bool ret = files_writeToFd(fd, buf, fileSz);
-    if (ret == false) {
+    if (!ret) {
         PLOG_W("Couldn't write '%zu' bytes to file '%s' (fd='%d')", fileSz, fname, fd);
         unlink(fname);
     } else {

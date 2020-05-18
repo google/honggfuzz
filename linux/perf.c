@@ -68,7 +68,7 @@ __attribute__((hot)) static inline void arch_perfBtsCount(run_t* run) {
          * Kernel sometimes reports branches from the kernel (iret), we are not interested in that
          * as it makes the whole concept of unique branch counting less predictable
          */
-        if (run->global->arch_linux.kernelOnly == false &&
+        if (!run->global->arch_linux.kernelOnly &&
             (__builtin_expect(br->from > 0xFFFFFFFF00000000, false) ||
                 __builtin_expect(br->to > 0xFFFFFFFF00000000, false))) {
             LOG_D("Adding branch %#018" PRIx64 " - %#018" PRIx64, br->from, br->to);
