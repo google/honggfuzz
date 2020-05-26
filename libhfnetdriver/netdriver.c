@@ -437,18 +437,17 @@ int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
      * pressure on the stack size
      */
 #ifdef NORECVTIME
-    struct timeval timeout={1,0};//1s
-    setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout));
-    clock_t start,end;
+    struct timeval timeout = {1, 0};    // 1s
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    clock_t start, end;
     start = clock();
-#endif				 
+#endif
     static char b[1024ULL * 1024ULL * 4ULL];
-    while (TEMP_FAILURE_RETRY(recv(sock, b, sizeof(b), MSG_WAITALL)) > 0){
+    while (TEMP_FAILURE_RETRY(recv(sock, b, sizeof(b), MSG_WAITALL)) > 0) {
 #ifdef NORECVTIME
-        end= clock();
-        if(  ((double)end-start)/CLK_TCK>NORECVTIME)
-            break;
-#endif						 
+        end = clock();
+        if (((double)end - start) / CLK_TCK > NORECVTIME) break;
+#endif
     }
 
     close(sock);
