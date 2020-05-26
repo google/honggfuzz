@@ -32,7 +32,11 @@ const char *const LIBHFNETDRIVER_module_netdriver = _HF_NETDRIVER_SIG;
 #define HFND_TCP_PORT_ENV     "HFND_TCP_PORT"
 #define HFND_SOCK_PATH_ENV    "HFND_SOCK_PATH"
 #define HFND_SKIP_FUZZING_ENV "HFND_SKIP_FUZZING"
-//# define NORECVTIME            10
+
+/* Define this to use receiving timeouts
+#define HFND_RECVTIME 10
+*/
+
 static char *initial_server_argv[] = {"fuzzer", NULL};
 
 static struct {
@@ -431,22 +435,26 @@ int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len) {
         PLOG_F("shutdown(sock=%d, SHUT_WR)", sock);
     }
 
+#ifdef HFND_RECVTIME
+    const struct timeval timeout = {1, 0};    // 1s
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1) {
+        PLOG_W("Couldn't set setsockopt(sock, SO_RCVTIMEO, 1s) for fd=%d", sock);
+    }
+    time_t start = time(NULL);
+#endif
+
     /*
      * Try to read data from the server, assuming that an early TCP close would sometimes cause the
      * TCP server to drop the input data, instead of processing it. Use BSS to avoid putting
      * pressure on the stack size
      */
-#ifdef NORECVTIME
-    struct timeval timeout = {1, 0};    // 1s
-    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-    clock_t start, end;
-    start = clock();
-#endif
     static char b[1024ULL * 1024ULL * 4ULL];
     while (TEMP_FAILURE_RETRY(recv(sock, b, sizeof(b), MSG_WAITALL)) > 0) {
-#ifdef NORECVTIME
-        end = clock();
-        if (((double)end - start) / CLK_TCK > NORECVTIME) break;
+#ifdef HFND_RECVTIME
+        time_t end = time(NULL);
+        if ((end - start) > HFND_RECVTIME) {
+            break;
+        }
 #endif
     }
 
