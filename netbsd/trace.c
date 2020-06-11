@@ -32,6 +32,7 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
+#include <sys/sysctl.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/uio.h>
@@ -80,6 +81,9 @@
 #define MAX_INSTR_SZ 8
 #endif
 
+/*
+ * Keep in sync the important signals with the PT_SET_SIGPASS call.
+ */
 static struct {
     const char* descr;
     bool        important;
@@ -118,9 +122,38 @@ static struct {
 #define SI_FROMUSER(siptr) ((siptr)->si_code == SI_USER)
 #endif /* SI_FROMUSER */
 
+/*
+ * Check whether VA0 page is mappable into the process address space.
+ */
+static bool
+get_user_va0_disable(void)
+{
+    static int user_va0_disable = -1;
+    size_t user_va0_disable_len = sizeof(user_va0_disable);
+
+    if (user_va0_disable == -1) {
+        if (sysctlbyname("vm.user_va0_disable",
+            &user_va0_disable, &user_va0_disable_len, NULL, 0) == -1) {
+            return true;
+        }
+    }
+
+    if (user_va0_disable > 0)
+        return true;
+    else
+        return false;
+}
+
 static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, register_t pc) {
     struct ptrace_io_desc io;
     size_t                bytes_read;
+
+    /*
+     * Check whether the 0x0 virtual address is always invalid, if so
+     * an attempt of reading from its address will return EINVAL.
+     */
+    if (pc == 0 && get_user_va0_disable() == true)
+        return 0;
 
     bytes_read  = 0;
     io.piod_op  = PIOD_READ_D;
@@ -477,7 +510,7 @@ static void arch_traceEvent(run_t* run HF_ATTR_UNUSED, pid_t pid) {
                 break;
             case TRAP_CHLD:
             case TRAP_LWP:
-                /* Child/LWP trap, ignore */
+                /* Child/LWP trap, unused */
                 if (ptrace(PT_GET_PROCESS_STATE, pid, &state, sizeof(state)) != -1) {
                     switch (state.pe_report_event) {
                         case PTRACE_FORK:
@@ -490,6 +523,12 @@ static void arch_traceEvent(run_t* run HF_ATTR_UNUSED, pid_t pid) {
                             LOG_D("PID: %d child trap (TRAP_CHLD) : vfork (PTRACE_VFORK_DONE)",
                                 (int)pid);
                             break;
+#ifdef PTRACE_POSIX_SPAWN
+                        case PTRACE_POSIX_SPAWN:
+                            LOG_D("PID: %d child trap (TRAP_CHLD) : spawn (POSIX_SPAWN)",
+                                (int)pid);
+                            break;
+#endif
                         case PTRACE_LWP_CREATE:
                             LOG_E("PID: %d unexpected lwp trap (TRAP_LWP) : create "
                                   "(PTRACE_LWP_CREATE)",
@@ -615,17 +654,25 @@ bool arch_traceAttach(run_t* run) {
         return false;
     }
 
-    ptrace_event_t event = {
-        /*
-         * NetBSD 8.0 seems to support PTRACE_FORK only:
-         *          .pe_set_event = PTRACE_FORK | PTRACE_VFORK | PTRACE_VFORK_DONE,
-         */
-        .pe_set_event = PTRACE_FORK,
-    };
-    if (ptrace(PT_SET_EVENT_MASK, run->pid, &event, sizeof(event)) == -1) {
-        PLOG_W("Couldn't ptrace(PT_SET_EVENT_MASK) to pid: %d", (int)run->pid);
+#ifdef PT_SET_SIGPASS
+    /*
+     * Don't intercept uninteresting signals.
+     *
+     * Note that crash signals (SIGSEGV, SIGILL, SIGFPE, SIGBUS, SIGTRAP) for
+     * real crashes (thus not including: kill(2), raise(2) etc) are never passed
+     * over and are always directed to the debugger.
+     *
+     * Keep in sync with struct arch_sigs[].
+     */
+    sigset_t set;
+    sigfillset(&set);
+    sigdelset(&set, SIGABRT);
+    sigdelset(&set, SIGSYS);
+    if (ptrace(PT_SET_SIGPASS, run->pid, &set, sizeof(set)) == -1) {
+        PLOG_W("Couldn't ptrace(PT_SET_SIGPASS) to pid: %d", (int)run->pid);
         return false;
     }
+#endif
 
     LOG_D("Attached to PID: %d", run->pid);
 
