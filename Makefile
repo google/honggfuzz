@@ -368,9 +368,12 @@ install: all
 	install -m 755 hfuzz_cc/hfuzz-clang++ $${DESTDIR}$(BIN_PATH)
 	install -m 755 hfuzz_cc/hfuzz-gcc $${DESTDIR}$(BIN_PATH)
 	install -m 755 hfuzz_cc/hfuzz-g++ $${DESTDIR}$(BIN_PATH)
-	install -m 755 -t $${DESTDIR}$(INC_PATH)/libhfcommon -D includes/libhfcommon/*.h
-	install -m 755 -t $${DESTDIR}$(INC_PATH)/libhfuzz -D includes/libhfuzz/*.h
-	install -m 755 -t $${DESTDIR}$(INC_PATH)/libhnetdriver -D includes/libhfnetdriver/*.h
+	install -d $${DESTDIR}$(INC_PATH)/libhfcommon
+	install -d $${DESTDIR}$(INC_PATH)/libhfuzz
+	install -d $${DESTDIR}$(INC_PATH)/libhnetdrive
+	install -m 755 includes/libhfcommon/*.h $${DESTDIR}$(INC_PATH)/libhfcommon
+	install -m 755 includes/libhfuzz/*.h $${DESTDIR}$(INC_PATH)/libhfuzz
+	install -m 755 includes/libhfnetdriver/*.h $${DESTDIR}$(INC_PATH)/libhnetdriver
 
 # DO NOT DELETE
 
