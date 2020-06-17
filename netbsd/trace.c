@@ -125,15 +125,13 @@ static struct {
 /*
  * Check whether VA0 page is mappable into the process address space.
  */
-static bool
-get_user_va0_disable(void)
-{
-    static int user_va0_disable = -1;
-    size_t user_va0_disable_len = sizeof(user_va0_disable);
+static bool get_user_va0_disable(void) {
+    static int user_va0_disable     = -1;
+    size_t     user_va0_disable_len = sizeof(user_va0_disable);
 
     if (user_va0_disable == -1) {
-        if (sysctlbyname("vm.user_va0_disable",
-            &user_va0_disable, &user_va0_disable_len, NULL, 0) == -1) {
+        if (sysctlbyname(
+                "vm.user_va0_disable", &user_va0_disable, &user_va0_disable_len, NULL, 0) == -1) {
             return true;
         }
     }
@@ -152,8 +150,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, register_t pc
      * Check whether the 0x0 virtual address is always invalid, if so
      * an attempt of reading from its address will return EINVAL.
      */
-    if (pc == 0 && get_user_va0_disable() == true)
-        return 0;
+    if (pc == 0 && get_user_va0_disable() == true) return 0;
 
     bytes_read  = 0;
     io.piod_op  = PIOD_READ_D;
@@ -525,8 +522,7 @@ static void arch_traceEvent(run_t* run HF_ATTR_UNUSED, pid_t pid) {
                             break;
 #ifdef PTRACE_POSIX_SPAWN
                         case PTRACE_POSIX_SPAWN:
-                            LOG_D("PID: %d child trap (TRAP_CHLD) : spawn (POSIX_SPAWN)",
-                                (int)pid);
+                            LOG_D("PID: %d child trap (TRAP_CHLD) : spawn (POSIX_SPAWN)", (int)pid);
                             break;
 #endif
                         case PTRACE_LWP_CREATE:
