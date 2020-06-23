@@ -95,7 +95,7 @@
 #define _HF_INPUT_FILE_PATH "/dev/fd/" HF_XSTR(_HF_INPUT_FD)
 
 /* Maximum number of supported execve() args */
-#define _HF_ARGS_MAX 512
+#define _HF_ARGS_MAX 2048
 
 /* Message indicating that the fuzzed process is ready for new data */
 static const uint8_t HFReadyTag = 'R';
