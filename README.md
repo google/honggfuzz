@@ -44,7 +44,7 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
 Honggfuzz has been used to find a few interesting security problems in major software packages; An incomplete list:
 
-
+  * Dozens of security problems via the [OSS-Fuzz](https://bugs.chromium.org/p/oss-fuzz/issues/list?q=honggfuzz&can=1) project
   * [Pre-auth remote crash in __OpenSSH__](https://anongit.mindrot.org/openssh.git/commit/?id=28652bca29046f62c7045e933e6b931de1d16737)
   * __Apache HTTPD__
     * [Remote crash in __mod\_http2__ • CVE-2017-7659](http://seclists.org/oss-sec/2017/q2/504)
@@ -102,6 +102,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Memory corruption in __Xfig__](https://sourceforge.net/p/mcj/tickets/67/)
   * [Memory corruption in __LibreOffice__](https://github.com/LibreOffice/core/commit/0754e581b0d8569dd08cf26f88678754f249face)
   * [Memory corruption in __ATasm__](https://sourceforge.net/p/atasm/bugs/8/)
+  * [Memory corruption in __LibRaw__](https://github.com/LibRaw/LibRaw/issues/309)
   * __Rust__:
     * panic() in regex [#1](https://github.com/rust-lang/regex/issues/464), [#2](https://github.com/rust-lang/regex/issues/465), [#3](https://github.com/rust-lang/regex/issues/465#issuecomment-381412816)
     * panic() in h2 [#1](https://github.com/carllerche/h2/pull/260), [#2](https://github.com/carllerche/h2/pull/261), [#3](https://github.com/carllerche/h2/pull/262)
@@ -160,6 +161,12 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__rcc__: a Rust C compiler](https://github.com/jyn514/rcc#testing)
   * [__EIP1962Fuzzing__: Fuzzy testing of various EIP1962 implementations](https://github.com/matter-labs/eip1962_fuzzing)
   * [__wasm-fuzz__: Fuzzing of wasmer](https://github.com/wasmerio/wasm-fuzz/blob/master/honggfuzz.md), [blog post](https://medium.com/wasmer/fuzz-testing-in-webassembly-vms-3a301f982e5a)
+  * [__propfuzz__: Rust tools to combine coverage-guided fuzzing with property-based testing - from Facebook](https://github.com/facebookincubator/propfuzz)
+  * [__Bitcoin Core__](https://github.com/Nampu898/btc-2/blob/2af56d6d5c387c3208d3d5aae8d428a3d610446f/doc/fuzzing.md#fuzzing-bitcoin-core-using-honggfuzz)
+  * [__ESP32-Fuzzing-Framework__: A Fuzzing Framework for ESP32 applications](https://github.com/MaxCamillo/esp32-fuzzing-framework/tree/5130a3c7bf9796fdeb44346eec3dcdc7e507a62b)
+  * [__Fuzzbench__: Fuzzer Benchmarking As a Service](https://www.fuzzbench.com/)
+  * [__rumpsyscallfuzz__: NetBSD Rump Kernel fuzzing](https://github.com/adityavardhanpadala/rumpsyscallfuzz)
+  * [__libnbd__: fuzzing libnbd with honggfuzz](https://github.com/libguestfs/libnbd/commit/329c5235f81ab0d1849946bab5e5c4119b35e140)
   * [__P0__: Fuzzing ImageIO](https://googleprojectzero.blogspot.com/2020/04/fuzzing-imageio.html)
     * [__TrapFuzz__: by P0](https://github.com/googleprojectzero/p0tools/tree/master/TrapFuzz)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
