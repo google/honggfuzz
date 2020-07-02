@@ -221,7 +221,6 @@ __attribute__((weak)) size_t instrumentReserveGuard(size_t cnt) {
     }
     if (ATOMIC_GET(globalCovFeedback->guardNb) < guardCnt) {
         ATOMIC_SET(globalCovFeedback->guardNb, guardCnt);
-        wmb();
     }
     return base;
 }
@@ -280,7 +279,6 @@ HF_REQUIRE_SSE42_POPCNT void __cyg_profile_func_enter(void* func, void* caller) 
     register bool prev = ATOMIC_BITMAP_SET(globalCovFeedback->bbMapPc, pos);
     if (!prev) {
         ATOMIC_PRE_INC(globalCovFeedback->pidNewPC[my_thread_no]);
-        wmb();
     }
 }
 
@@ -298,7 +296,6 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_pc_internal(uintptr_t pc)
     register bool prev = ATOMIC_BITMAP_SET(globalCovFeedback->bbMapPc, ret);
     if (!prev) {
         ATOMIC_PRE_INC(globalCovFeedback->pidNewPC[my_thread_no]);
-        wmb();
     }
 }
 
@@ -321,7 +318,6 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp1_internal(
     if (prev < v) {
         ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
-        wmb();
     }
 }
 
@@ -333,7 +329,6 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp2_internal(
     if (prev < v) {
         ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
-        wmb();
     }
 }
 
@@ -345,7 +340,6 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp4_internal(
     if (prev < v) {
         ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
-        wmb();
     }
 }
 
@@ -357,7 +351,6 @@ HF_REQUIRE_SSE42_POPCNT static inline void hfuzz_trace_cmp8_internal(
     if (prev < v) {
         ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
-        wmb();
     }
 }
 
@@ -498,7 +491,6 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t
         if (prev < v) {
             ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
             ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
-            wmb();
         }
     }
 }
@@ -524,7 +516,6 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_div8(uint64_t Val) {
     if (prev < v) {
         ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
-        wmb();
     }
 }
 
@@ -535,7 +526,6 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_div4(uint32_t Val) {
     if (prev < v) {
         ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
-        wmb();
     }
 }
 
@@ -550,7 +540,6 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_indir(uintptr_t callee) {
     register bool prev = ATOMIC_BITMAP_SET(globalCovFeedback->bbMapPc, pos);
     if (!prev) {
         ATOMIC_PRE_INC(globalCovFeedback->pidNewPC[my_thread_no]);
-        wmb();
     }
 }
 
@@ -567,7 +556,6 @@ __attribute__((weak)) HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_indir_call16(
     register bool prev = ATOMIC_BITMAP_SET(globalCovFeedback->bbMapPc, pos);
     if (!prev) {
         ATOMIC_PRE_INC(globalCovFeedback->pidNewPC[my_thread_no]);
-        wmb();
     }
 }
 
@@ -675,7 +663,6 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_pc_guard(uint32_t* guard_ptr)
             ATOMIC_PRE_INC(globalCovFeedback->pidNewCmp[my_thread_no]);
         }
     }
-    wmb();
 }
 
 /* Support up to 256 DSO modules with separate 8bit counters */
@@ -725,7 +712,6 @@ void instrument8BitCountersCount(void) {
     ATOMIC_POST_ADD(globalCovFeedback->pidTotalEdge[my_thread_no], totalEdge);
     ATOMIC_POST_ADD(globalCovFeedback->pidTotalCmp[my_thread_no], totalCmp);
 
-    wmb();
 }
 
 void __sanitizer_cov_8bit_counters_init(char* start, char* end) {
@@ -769,7 +755,6 @@ bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
     if (prev < v) {
         ATOMIC_SET(globalCovFeedback->bbMapCmp[pos], v);
         ATOMIC_POST_ADD(globalCovFeedback->pidNewCmp[my_thread_no], v - prev);
-        wmb();
         return true;
     }
     return false;
@@ -784,8 +769,6 @@ void instrumentClearNewCov() {
     ATOMIC_CLEAR(globalCovFeedback->pidTotalPC[my_thread_no]);
     ATOMIC_CLEAR(globalCovFeedback->pidTotalEdge[my_thread_no]);
     ATOMIC_CLEAR(globalCovFeedback->pidTotalCmp[my_thread_no]);
-
-    wmb();
 }
 
 void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
