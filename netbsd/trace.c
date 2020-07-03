@@ -319,14 +319,20 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
 
     arch_getInstrStr(pid, info.psi_lwpid, &pc, instr);
 
+    void* sig_addr = info.psi_siginfo.si_addr;
+    /* User-induced signals don't set si.si_addr */
+    if (SI_FROMUSER(&info.psi_siginfo)) {
+        sig_addr = NULL;
+    }
+
     LOG_D("Pid: %d, signo: %d, errno: %d, code: %d, addr: %p, pc: %" PRIxREGISTER ", instr: '%s'",
         pid, info.psi_siginfo.si_signo, info.psi_siginfo.si_errno, info.psi_siginfo.si_code,
-        info.psi_siginfo.si_addr, pc, instr);
+        sig_addr, pc, instr);
 
     if (!SI_FROMUSER(&info.psi_siginfo) && pc &&
-        info.psi_siginfo.si_addr < run->global->arch_netbsd.ignoreAddr) {
+        sig_addr < run->global->arch_netbsd.ignoreAddr) {
         LOG_I("Input is interesting (%s), but the si.si_addr is %p (below %p), skipping",
-            util_sigName(info.psi_siginfo.si_signo), info.psi_siginfo.si_addr,
+            util_sigName(info.psi_siginfo.si_signo), sig_addr,
             run->global->arch_netbsd.ignoreAddr);
         return;
     }
@@ -432,15 +438,6 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
 
     /* If non-blacklisted crash detected, zero set two MSB */
     ATOMIC_POST_ADD(run->global->cfg.dynFileIterExpire, _HF_DYNFILE_SUB_MASK);
-
-    void* sig_addr = info.psi_siginfo.si_addr;
-    pc             = 0UL;
-    sig_addr       = NULL;
-
-    /* User-induced signals don't set si.si_addr */
-    if (SI_FROMUSER(&info.psi_siginfo)) {
-        sig_addr = NULL;
-    }
 
     /* If dry run mode, copy file with same name into workspace */
     if (run->global->mutate.mutationsPerRun == 0U && run->global->cfg.useVerifier) {
