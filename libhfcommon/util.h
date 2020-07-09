@@ -189,7 +189,7 @@ extern void util_closeStdio(bool close_stdin, bool close_stdout, bool close_stde
 
 extern lhfc_addr_t util_getProgAddr(const void* addr);
 extern bool        util_32bitValInBinary(uint32_t v);
-extern bool        util_64bitValInBinary(uint32_t v);
+extern bool        util_64bitValInBinary(uint64_t v);
 
 extern uint64_t util_hash(const char* buf, size_t len);
 extern int64_t  fastArray64Search(uint64_t* array, size_t arraySz, uint64_t key);
