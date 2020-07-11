@@ -1067,7 +1067,7 @@ lhfc_addr_t util_getProgAddr(const void* addr HF_ATTR_UNUSED) {
 bool util_32bitValInBinary(uint32_t v HF_ATTR_UNUSED) {
     return false;
 }
-bool util_64bitValInBinary(uint32_t v HF_ATTR_UNUSED) {
+bool util_64bitValInBinary(uint64_t v HF_ATTR_UNUSED) {
     return false;
 }
 #endif /* !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__) */
