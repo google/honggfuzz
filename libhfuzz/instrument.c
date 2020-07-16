@@ -233,10 +233,7 @@ void instrumentResetLocalCovFeedback(void) {
 
 /* Used to limit certain expensive actions, like adding values to dictionaries */
 static inline bool instrumentLimitEvery(uint64_t step) {
-    static __thread uint64_t staticCnt = 0;
-    if (((staticCnt++) % step) == 0) {
-        return true;
-    }
+    if (util_rndGet(0, step) == 0) return true;
     return false;
 }
 
