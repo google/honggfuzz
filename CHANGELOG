@@ -1,3 +1,14 @@
+2020-07-22 - Version 2.3
+        - honggfuzz.h - split run_t into substructs
+        - clang-format options in .clang-format
+        - added missing mutex initializers
+        - removed unncessary comparisons to 'true' and 'false'
+        - improved NetBSD compatibility
+        - removed unnecessary memory fences (speed ups)
+        - faster searching through the binary for const 4/8-byte values
+        - removed unnecessary includes with iwyu
+        - libhfnetdriver - general improvements around local socket fuzzing and timeouts
+
 2020-04-24 - Version 2.2
         - Added 8bitcnt instrumentation - use hfuzz-cc/hfuzz-8bitcnt-(gcc|clang) for that
         - PC-guard instrumentation now uses edge counting
