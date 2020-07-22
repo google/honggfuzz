@@ -370,7 +370,7 @@ install: all
 	install -m 755 hfuzz_cc/hfuzz-g++ $${DESTDIR}$(BIN_PATH)
 	install -d $${DESTDIR}$(INC_PATH)/libhfcommon
 	install -d $${DESTDIR}$(INC_PATH)/libhfuzz
-	install -d $${DESTDIR}$(INC_PATH)/libhnetdrive
+	install -d $${DESTDIR}$(INC_PATH)/libhnetdriver
 	install -m 755 includes/libhfcommon/*.h $${DESTDIR}$(INC_PATH)/libhfcommon
 	install -m 755 includes/libhfuzz/*.h $${DESTDIR}$(INC_PATH)/libhfuzz
 	install -m 755 includes/libhfnetdriver/*.h $${DESTDIR}$(INC_PATH)/libhnetdriver
