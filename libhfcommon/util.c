@@ -832,25 +832,25 @@ static int addrStatic_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, 
 lhfc_addr_t util_getProgAddr(const void* addr) {
     return (lhfc_addr_t)dl_iterate_phdr(addrStatic_cb, (void*)addr);
 }
-static uint64_t * values64InBinary = NULL;
-static size_t values64InBinary_size = 0;
-static size_t values64InBinary_cap = 0;
+static uint64_t* values64InBinary      = NULL;
+static size_t    values64InBinary_size = 0;
+static size_t    values64InBinary_cap  = 0;
 
-static uint32_t * values32InBinary = NULL;
-static size_t values32InBinary_size = 0;
-static size_t values32InBinary_cap = 0;
+static uint32_t* values32InBinary      = NULL;
+static size_t    values32InBinary_size = 0;
+static size_t    values32InBinary_cap  = 0;
 
-static int cmp_u64(const void * pa, const void *pb) {
-    uint64_t a = *(uint64_t*) pa;
-    uint64_t b = *(uint64_t*) pb;
+static int cmp_u64(const void* pa, const void* pb) {
+    uint64_t a = *(uint64_t*)pa;
+    uint64_t b = *(uint64_t*)pb;
     if (a < b) return -1;
     if (a > b) return 1;
     return 0;
 }
 
-static int cmp_u32(const void * pa, const void *pb) {
-    uint32_t a = *(uint32_t*) pa;
-    uint32_t b = *(uint32_t*) pb;
+static int cmp_u32(const void* pa, const void* pb) {
+    uint32_t a = *(uint32_t*)pa;
+    uint32_t b = *(uint32_t*)pb;
     if (a < b) return -1;
     if (a > b) return 1;
     return 0;
@@ -912,8 +912,8 @@ static int check64_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, voi
     return 0;
 }
 
-static int collectValuesInBinary_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data HF_ATTR_UNUSED) {
-
+static int collectValuesInBinary_cb(
+    struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data HF_ATTR_UNUSED) {
     for (size_t i = 0; i < info->dlpi_phnum; i++) {
         /* Look only in the actual binary, and not in libraries */
         if (info->dlpi_name[0] != '\0') {
@@ -942,7 +942,8 @@ static int collectValuesInBinary_cb(struct dl_phdr_info* info, size_t size HF_AT
                     values32InBinary_cap = 1024;
                 }
                 values32InBinary_cap *= 2;
-                values32InBinary = util_Realloc(values32InBinary, values32InBinary_cap * sizeof(uint32_t));
+                values32InBinary =
+                    util_Realloc(values32InBinary, values32InBinary_cap * sizeof(uint32_t));
             }
             values32InBinary[values32InBinary_size++] = *start_32;
         }
@@ -963,7 +964,8 @@ static int collectValuesInBinary_cb(struct dl_phdr_info* info, size_t size HF_AT
                     values64InBinary_cap = 1024;
                 }
                 values64InBinary_cap *= 2;
-                values64InBinary = util_Realloc(values64InBinary, values64InBinary_cap * sizeof(uint64_t));
+                values64InBinary =
+                    util_Realloc(values64InBinary, values64InBinary_cap * sizeof(uint64_t));
             }
             values64InBinary[values64InBinary_size++] = *start_64;
         }
@@ -972,22 +974,22 @@ static int collectValuesInBinary_cb(struct dl_phdr_info* info, size_t size HF_AT
     return 0;
 }
 
-static void collectValuesInBinary () {
-    //collect values
+static void collectValuesInBinary() {
+    // collect values
     dl_iterate_phdr(collectValuesInBinary_cb, NULL);
 
-    //sort values
+    // sort values
     qsort(values32InBinary, values32InBinary_size, sizeof(uint32_t), cmp_u32);
     qsort(values64InBinary, values64InBinary_size, sizeof(uint64_t), cmp_u64);
 
-    //remove duplicated values
+    // remove duplicated values
     if (values32InBinary_size) {
         uint32_t previous_value = values32InBinary[0];
-        size_t new_size = 1;
+        size_t   new_size       = 1;
         for (size_t i = 1; i < values32InBinary_size; i++) {
             uint32_t current_value = values32InBinary[i];
             if (current_value != previous_value) {
-                //a new non-duplicated value
+                // a new non-duplicated value
                 values32InBinary[new_size++] = current_value;
             }
             previous_value = current_value;
@@ -996,11 +998,11 @@ static void collectValuesInBinary () {
     }
     if (values64InBinary_size) {
         uint64_t previous_value = values64InBinary[0];
-        size_t new_size = 1;
+        size_t   new_size       = 1;
         for (size_t i = 1; i < values64InBinary_size; i++) {
             uint64_t current_value = values64InBinary[i];
             if (current_value != previous_value) {
-                //a new non-duplicated value
+                // a new non-duplicated value
                 values64InBinary[new_size++] = current_value;
             }
             previous_value = current_value;
@@ -1008,55 +1010,52 @@ static void collectValuesInBinary () {
         values64InBinary_size = new_size;
     }
 
-    //reduce memory
+    // reduce memory
     values32InBinary_cap = values32InBinary_size;
-    values32InBinary = util_Realloc(values32InBinary, values32InBinary_cap * sizeof(uint32_t));
+    values32InBinary     = util_Realloc(values32InBinary, values32InBinary_cap * sizeof(uint32_t));
     values64InBinary_cap = values64InBinary_size;
-    values64InBinary = util_Realloc(values64InBinary, values64InBinary_cap * sizeof(uint64_t));
-
+    values64InBinary     = util_Realloc(values64InBinary, values64InBinary_cap * sizeof(uint64_t));
 }
 
 static pthread_once_t collectValuesInBinary_InitOnce = PTHREAD_ONCE_INIT;
 
 bool util_32bitValInBinary(uint32_t v) {
     pthread_once(&collectValuesInBinary_InitOnce, collectValuesInBinary);
-    //check if it in read-only values
+    // check if it in read-only values
     if (values32InBinary_size != 0) {
-        size_t l = 0, r = values32InBinary_size-1;
-        //binary search
+        size_t l = 0, r = values32InBinary_size - 1;
+        // binary search
         while (l != r) {
-            size_t mid = (l + r)/2;
+            size_t mid = (l + r) / 2;
             if (values32InBinary[mid] < v) {
                 l = mid + 1;
-            }
-            else {
+            } else {
                 r = mid;
             }
         }
         if (values32InBinary[l] == v) return true;
     }
-    //check if it's in writable values
+    // check if it's in writable values
     return (dl_iterate_phdr(check32_cb, &v) == 1);
 }
 
 bool util_64bitValInBinary(uint64_t v) {
     pthread_once(&collectValuesInBinary_InitOnce, collectValuesInBinary);
-    //check if it in read-only values
+    // check if it in read-only values
     if (values64InBinary_size != 0) {
-        size_t l = 0, r = values64InBinary_size-1;
-        //binary search
+        size_t l = 0, r = values64InBinary_size - 1;
+        // binary search
         while (l != r) {
-            size_t mid = (l + r)/2;
+            size_t mid = (l + r) / 2;
             if (values64InBinary[mid] < v) {
                 l = mid + 1;
-            }
-            else {
+            } else {
                 r = mid;
             }
         }
         if (values64InBinary[l] == v) return true;
     }
-    //check if it's in writable values
+    // check if it's in writable values
     return (dl_iterate_phdr(check64_cb, &v) == 1);
 }
 #else  /* !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__) */

@@ -329,11 +329,9 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         pid, info.psi_siginfo.si_signo, info.psi_siginfo.si_errno, info.psi_siginfo.si_code,
         sig_addr, pc, instr);
 
-    if (!SI_FROMUSER(&info.psi_siginfo) && pc &&
-        sig_addr < run->global->arch_netbsd.ignoreAddr) {
+    if (!SI_FROMUSER(&info.psi_siginfo) && pc && sig_addr < run->global->arch_netbsd.ignoreAddr) {
         LOG_I("Input is interesting (%s), but the si.si_addr is %p (below %p), skipping",
-            util_sigName(info.psi_siginfo.si_signo), sig_addr,
-            run->global->arch_netbsd.ignoreAddr);
+            util_sigName(info.psi_siginfo.si_signo), sig_addr, run->global->arch_netbsd.ignoreAddr);
         return;
     }
 

@@ -708,7 +708,6 @@ void instrument8BitCountersCount(void) {
 
     ATOMIC_POST_ADD(globalCovFeedback->pidTotalEdge[my_thread_no], totalEdge);
     ATOMIC_POST_ADD(globalCovFeedback->pidTotalCmp[my_thread_no], totalCmp);
-
 }
 
 void __sanitizer_cov_8bit_counters_init(char* start, char* end) {
