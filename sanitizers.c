@@ -183,7 +183,7 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
         } else {
             char* pLineLC = lineptr;
             /* Trim leading spaces */
-            while (*pLineLC != '\0' && isspace((int)*pLineLC)) {
+            while (*pLineLC != '\0' && isspace((unsigned char)*pLineLC)) {
                 ++pLineLC;
             }
 
