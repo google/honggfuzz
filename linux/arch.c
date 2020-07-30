@@ -183,9 +183,6 @@ void arch_prepareParentAfterFork(run_t* run) {
         if (fcntl(run->persistentSock, F_SETOWN_EX, &fown)) {
             PLOG_F("fcntl(%d, F_SETOWN_EX)", run->persistentSock);
         }
-        if (fcntl(run->persistentSock, F_SETSIG, SIGIO) == -1) {
-            PLOG_F("fcntl(%d, F_SETSIG, SIGIO)", run->persistentSock);
-        }
         if (fcntl(run->persistentSock, F_SETFL, O_ASYNC) == -1) {
             PLOG_F("fcntl(%d, F_SETFL, O_ASYNC)", run->persistentSock);
         }
