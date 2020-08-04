@@ -61,20 +61,20 @@ static inline size_t mangle_getLen(size_t max) {
     /* Give 50% chance the the uniform distribution */
     switch (util_rndGet(0, 9)) {
         case 0:
-            return util_rndGet(1, HF_MIN(16, max));
+            return (size_t)util_rndGet(1, HF_MIN(16, max));
         case 1:
-            return util_rndGet(1, HF_MIN(64, max));
+            return (size_t)util_rndGet(1, HF_MIN(64, max));
         case 2:
-            return util_rndGet(1, HF_MIN(256, max));
+            return (size_t)util_rndGet(1, HF_MIN(256, max));
         case 3:
-            return util_rndGet(1, HF_MIN(1024, max));
+            return (size_t)util_rndGet(1, HF_MIN(1024, max));
         case 4:
-            return util_rndGet(1, HF_MIN(4096, max));
+            return (size_t)util_rndGet(1, HF_MIN(4096, max));
         default:
             break;
     }
 
-    return util_rndGet(1, max);
+    return (size_t)util_rndGet(1, max);
 }
 
 /* Prefer smaller values here, so use mangle_getLen() */
