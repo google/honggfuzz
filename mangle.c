@@ -46,7 +46,7 @@ static inline size_t mangle_LenLeft(run_t* run, size_t off) {
     return (run->dynfile->size - off - 1);
 }
 
-/* Get a random value <1:max>, but prefer smaller ones - up to 4KiB */
+/* Get a random value <1:max>, but prefer smaller ones - up to 8KiB */
 static inline size_t mangle_getLen(size_t max) {
     if (max > _HF_INPUT_MAX_SIZE) {
         LOG_F("max (%zu) > _HF_INPUT_MAX_SIZE (%zu)", max, (size_t)_HF_INPUT_MAX_SIZE);
@@ -59,17 +59,19 @@ static inline size_t mangle_getLen(size_t max) {
     }
 
     /* Give 50% chance the the uniform distribution */
-    switch (util_rndGet(0, 9)) {
+    switch (util_rndGet(0, 11)) {
         case 0:
-            return (size_t)util_rndGet(1, HF_MIN(16, max));
+            return (size_t)util_rndGet(1, HF_MIN(8, max));
         case 1:
-            return (size_t)util_rndGet(1, HF_MIN(64, max));
+            return (size_t)util_rndGet(1, HF_MIN(32, max));
         case 2:
-            return (size_t)util_rndGet(1, HF_MIN(256, max));
+            return (size_t)util_rndGet(1, HF_MIN(128, max));
         case 3:
-            return (size_t)util_rndGet(1, HF_MIN(1024, max));
+            return (size_t)util_rndGet(1, HF_MIN(512, max));
         case 4:
-            return (size_t)util_rndGet(1, HF_MIN(4096, max));
+            return (size_t)util_rndGet(1, HF_MIN(2048, max));
+        case 5:
+            return (size_t)util_rndGet(1, HF_MIN(8192, max));
         default:
             break;
     }
