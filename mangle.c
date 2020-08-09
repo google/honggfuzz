@@ -158,21 +158,30 @@ static inline void mangle_UseValue(run_t* run, const uint8_t* val, size_t len, b
 }
 
 static void mangle_MemSwap(run_t* run, bool printable HF_ATTR_UNUSED) {
+    /* No big deal if those two are overlapping */
     size_t off1    = mangle_getOffSet(run);
     size_t maxlen1 = run->dynfile->size - off1;
-
     size_t off2    = mangle_getOffSet(run);
     size_t maxlen2 = run->dynfile->size - off2;
+    size_t len     = mangle_getLen(HF_MIN(maxlen1, maxlen2));
 
-    size_t   len    = mangle_getLen(HF_MIN(maxlen1, maxlen2));
-    uint8_t* tmpbuf = (uint8_t*)util_Malloc(len);
-    defer {
-        free(tmpbuf);
-    };
+    if (off1 == off2) {
+        return;
+    }
 
-    memcpy(tmpbuf, &run->dynfile->data[off1], len);
-    memmove(&run->dynfile->data[off1], &run->dynfile->data[off2], len);
-    memcpy(&run->dynfile->data[off2], tmpbuf, len);
+    for (size_t i = 0; i < (len / 2); i++) {
+        /*
+         * First - from the head, next from the tail. Don't worry about layout of the overlapping
+         * part - there's no good solution to that, ond it can be left somewhat scrambled,
+         * still preserving the entropy
+         */
+        const uint8_t tmp1                       = run->dynfile->data[off2 + i];
+        run->dynfile->data[off2 + i]             = run->dynfile->data[off1 + i];
+        run->dynfile->data[off1 + i]             = tmp1;
+        const uint8_t tmp2                       = run->dynfile->data[off2 + len - (i + 1)];
+        run->dynfile->data[off2 + len - (i + 1)] = run->dynfile->data[off1 + len - (i + 1)];
+        run->dynfile->data[off1 + len - (i + 1)] = tmp2;
+    }
 }
 
 static void mangle_MemCopy(run_t* run, bool printable HF_ATTR_UNUSED) {
