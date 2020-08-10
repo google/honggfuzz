@@ -46,7 +46,10 @@ static inline size_t mangle_LenLeft(run_t* run, size_t off) {
     return (run->dynfile->size - off - 1);
 }
 
-/* Get a random value <1:max>, but prefer smaller ones - up to 8KiB */
+/*
+ * Get a random value <1:max>, but prefer smaller ones
+ * Based on an idea by https://twitter.com/gamozolabs
+ */
 static inline size_t mangle_getLen(size_t max) {
     if (max > _HF_INPUT_MAX_SIZE) {
         LOG_F("max (%zu) > _HF_INPUT_MAX_SIZE (%zu)", max, (size_t)_HF_INPUT_MAX_SIZE);
@@ -59,24 +62,12 @@ static inline size_t mangle_getLen(size_t max) {
     }
 
     /* Give 50% chance the the uniform distribution */
-    switch (util_rndGet(0, 11)) {
-        case 0:
-            return (size_t)util_rndGet(1, HF_MIN(8, max));
-        case 1:
-            return (size_t)util_rndGet(1, HF_MIN(32, max));
-        case 2:
-            return (size_t)util_rndGet(1, HF_MIN(128, max));
-        case 3:
-            return (size_t)util_rndGet(1, HF_MIN(512, max));
-        case 4:
-            return (size_t)util_rndGet(1, HF_MIN(2048, max));
-        case 5:
-            return (size_t)util_rndGet(1, HF_MIN(8192, max));
-        default:
-            break;
+    if (util_rnd64() & 1) {
+        return (size_t)util_rndGet(1, max);
     }
 
-    return (size_t)util_rndGet(1, max);
+    /* effectively exprand() */
+    return (size_t)util_rndGet(1, util_rndGet(1, max));
 }
 
 /* Prefer smaller values here, so use mangle_getLen() */
@@ -172,15 +163,15 @@ static void mangle_MemSwap(run_t* run, bool printable HF_ATTR_UNUSED) {
     for (size_t i = 0; i < (len / 2); i++) {
         /*
          * First - from the head, next from the tail. Don't worry about layout of the overlapping
-         * part - there's no good solution to that, ond it can be left somewhat scrambled,
-         * still preserving the entropy
+         * part - there's no good solution to that, and it can be left somewhat scrambled,
+         * while still preserving the entropy
          */
         const uint8_t tmp1                       = run->dynfile->data[off2 + i];
         run->dynfile->data[off2 + i]             = run->dynfile->data[off1 + i];
         run->dynfile->data[off1 + i]             = tmp1;
-        const uint8_t tmp2                       = run->dynfile->data[off2 + len - (i + 1)];
-        run->dynfile->data[off2 + len - (i + 1)] = run->dynfile->data[off1 + len - (i + 1)];
-        run->dynfile->data[off1 + len - (i + 1)] = tmp2;
+        const uint8_t tmp2                       = run->dynfile->data[off2 + (len - 1) - i];
+        run->dynfile->data[off2 + (len - 1) - i] = run->dynfile->data[off1 + (len - 1) - i];
+        run->dynfile->data[off1 + (len - 1) - i] = tmp2;
     }
 }
 
