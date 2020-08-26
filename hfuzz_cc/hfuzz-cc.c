@@ -466,7 +466,7 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,-U,_HonggfuzzNetDriver_main";
     args[j++] = "-Wl,-U,_LIBHFUZZ_module_instrument";
     args[j++] = "-Wl,-U,_LIBHFUZZ_module_memorycmp";
-#else  /* _HF_ARCH_DARWIN */
+#else /* _HF_ARCH_DARWIN */
     args[j++] = "-Wl,-u,HonggfuzzNetDriver_main";
     args[j++] = "-Wl,-u,LIBHFUZZ_module_instrument";
     args[j++] = "-Wl,-u,LIBHFUZZ_module_memorycmp";

@@ -443,7 +443,7 @@ static void arch_getInstrStr(pid_t pid, uint64_t pc, uint64_t status_reg HF_ATTR
 #if !defined(_HF_LINUX_NO_BFD)
     arch_bfdDisasm(pid, buf, memsz, instr);
 #endif /* !defined(_HF_LINUX_NO_BFD) */
-#else  /* !defined(__ANDROID__) */
+#else /* !defined(__ANDROID__) */
     cs_arch arch;
     cs_mode mode;
 #if defined(__arm__) || defined(__aarch64__)

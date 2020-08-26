@@ -208,7 +208,7 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
         *perfFd = -1;
         return false;
     }
-#else  /* defined(PERF_ATTR_SIZE_VER5) */
+#else /* defined(PERF_ATTR_SIZE_VER5) */
     LOG_F("Your <linux/perf_event.h> includes are too old to support Intel PT/BTS");
 #endif /* defined(PERF_ATTR_SIZE_VER5) */
 

@@ -139,7 +139,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
         size_t newsz = (run->global->io.dynfileqMaxSz >= _HF_INPUT_DEFAULT_SIZE)
                            ? run->global->io.dynfileqMaxSz
                            : _HF_INPUT_DEFAULT_SIZE;
-        newsz = (newsz + newsz / 4); /* Add 25% overhead for growth */
+        newsz        = (newsz + newsz / 4); /* Add 25% overhead for growth */
         if (newsz > run->global->mutate.maxInputSz) {
             newsz = run->global->mutate.maxInputSz;
         }

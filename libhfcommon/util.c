@@ -1058,7 +1058,7 @@ bool util_64bitValInBinary(uint64_t v) {
     // check if it's in writable values
     return (dl_iterate_phdr(check64_cb, &v) == 1);
 }
-#else  /* !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__) */
+#else /* !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__) */
 /* Darwin doesn't use ELF file format for binaries, so dl_iterate_phdr() cannot be used there */
 lhfc_addr_t util_getProgAddr(const void* addr HF_ATTR_UNUSED) {
     return LHFC_ADDR_NOTFOUND;

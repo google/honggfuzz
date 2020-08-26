@@ -70,7 +70,7 @@ int (*libc_memcmp)(const void* s1, const void* s2, size_t n) = _memcmp;
 static void* getsym(const char* sym) {
 #if defined(RTLD_NEXT)
     return dlsym(RTLD_NEXT, sym);
-#else  /* defined(RTLD_NEXT) */
+#else /* defined(RTLD_NEXT) */
     void* dlh = dlopen(NULL, RTLD_LAZY);
     if (!dlh) {
         return NULL;
