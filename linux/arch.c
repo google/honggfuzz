@@ -98,11 +98,7 @@ pid_t arch_fork(run_t* run) {
 }
 
 bool arch_launchChild(run_t* run) {
-    if ((run->global->arch_linux.cloneFlags & CLONE_NEWNET) && !nsIfaceUp("lo")) {
-        LOG_W("Cannot bring interface 'lo' up");
-    }
-
-    /* Try to enable network namespacing if requested */
+    /* Try to enable network namespacing */
     if (run->global->arch_linux.useNetNs == HF_MAYBE) {
         if (unshare(CLONE_NEWUSER | CLONE_NEWNET) == -1) {
             PLOG_D("unshare((CLONE_NEWUSER|CLONE_NEWNS) failed");
@@ -111,6 +107,15 @@ bool arch_launchChild(run_t* run) {
             return false;
         }
         LOG_D("Network namespacing enabled, and the 'lo' interface is set up");
+    }
+
+    /* Enter requested namespaces */
+    if (run->global->arch_linux.cloneFlags && unshare(run->global->arch_linux.cloneFlags) == -1) {
+        LOG_E("unshare(%tx)", run->global->arch_linux.cloneFlags);
+        return false;
+    }
+    if ((run->global->arch_linux.cloneFlags & CLONE_NEWNET) && !nsIfaceUp("lo")) {
+        LOG_W("Cannot bring interface 'lo' up");
     }
 
     /* Make it attach-able by ptrace() */
@@ -369,11 +374,6 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
 
     /* Updates the important signal array based on input args */
     arch_traceSignalsInit(hfuzz);
-
-    if (hfuzz->arch_linux.cloneFlags && unshare(hfuzz->arch_linux.cloneFlags) == -1) {
-        LOG_E("unshare(%tx)", hfuzz->arch_linux.cloneFlags);
-        return false;
-    }
 
     return true;
 }
