@@ -172,18 +172,18 @@ tristate_t cmdlineParseTriState(const char* optname, const char* optarg) {
     }
     if ((strcasecmp(optarg, "0") == 0) || (strcasecmp(optarg, "false") == 0) ||
         (strcasecmp(optarg, "n") == 0) || (strcasecmp(optarg, "no") == 0)) {
-        return false;
+        return HF_NO;
     }
     if ((strcasecmp(optarg, "1") == 0) || (strcasecmp(optarg, "true") == 0) ||
         (strcasecmp(optarg, "y") == 0) || (strcasecmp(optarg, "yes") == 0)) {
-        return true;
+        return HF_YES;
     }
     if ((strcasecmp(optarg, "-1") == 0) || (strcasecmp(optarg, "maybe") == 0) ||
         (strcasecmp(optarg, "m") == 0) || (strcasecmp(optarg, "if_supported") == 0)) {
-        return true;
+        return HF_MAYBE;
     }
     LOG_F("Unknown value for option --%s=%s. Use true, false or maybe", optname, optarg);
-    return false;
+    return HF_NO;
 }
 
 bool cmdlineParseTrueFalse(const char* optname, const char* optarg) {
@@ -531,7 +531,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "linux_perf_bts_edge", no_argument, NULL, 0x513 }, "Use Intel BTS to count unique edges" },
         { { "linux_perf_ipt_block", no_argument, NULL, 0x514 }, "Use Intel Processor Trace to count unique blocks (requires libipt.so)" },
         { { "linux_perf_kernel_only", no_argument, NULL, 0x515 }, "Gather kernel-only coverage with Intel PT and with Intel BTS" },
-        { { "linux_ns_net", required_argument, NULL, 0x0530 }, "Use Linux NET namespace isolation (yes/no/maybe [default:maybe/if_supported])" },
+        { { "linux_ns_net", required_argument, NULL, 0x0530 }, "Use Linux NET namespace isolation (yes/no/maybe [default:no])" },
         { { "linux_ns_pid", no_argument, NULL, 0x0531 }, "Use Linux PID namespace isolation" },
         { { "linux_ns_ipc", no_argument, NULL, 0x0532 }, "Use Linux IPC namespace isolation" },
 #endif // defined(_HF_ARCH_LINUX)
