@@ -28,7 +28,9 @@
 
 #include <inttypes.h>
 #include <stdbool.h>
+#include <sys/types.h>
 
+bool nsSetup(uid_t origuid, gid_t origgid);
 bool nsEnter(uintptr_t cloneFlags);
 bool nsIfaceUp(const char* ifacename);
 bool nsMountTmpfs(const char* dst, const char* opts);

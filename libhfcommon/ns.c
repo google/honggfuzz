@@ -43,6 +43,38 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+bool nsSetup(uid_t origuid, gid_t origgid) {
+    if (!files_writeStrToFile("/proc/self/setgroups", "deny", O_WRONLY)) {
+        PLOG_E("Couldn't write to /proc/self/setgroups");
+        return false;
+    }
+
+    char gid_map[4096];
+    snprintf(gid_map, sizeof(gid_map), "%d %d 1", (int)origgid, (int)origgid);
+    if (!files_writeStrToFile("/proc/self/gid_map", gid_map, O_WRONLY)) {
+        PLOG_E("Couldn't write to /proc/self/gid_map");
+        return false;
+    }
+
+    char uid_map[4096];
+    snprintf(uid_map, sizeof(uid_map), "%d %d 1", (int)origuid, (int)origuid);
+    if (!files_writeStrToFile("/proc/self/uid_map", uid_map, O_WRONLY)) {
+        PLOG_E("Couldn't write to /proc/self/uid_map");
+        return false;
+    }
+
+    if (setresgid(origgid, origgid, origgid) == -1) {
+        PLOG_E("setresgid(%d)", (int)origgid);
+        return false;
+    }
+    if (setresuid(origuid, origuid, origuid) == -1) {
+        PLOG_E("setresuid(%d)", (int)origuid);
+        return false;
+    }
+
+    return true;
+}
+
 bool nsEnter(uintptr_t cloneFlags) {
     pid_t current_uid = getuid();
     gid_t current_gid = getgid();
@@ -55,31 +87,7 @@ bool nsEnter(uintptr_t cloneFlags) {
         return false;
     }
 
-    if (!files_writeStrToFile("/proc/self/setgroups", "deny", O_WRONLY)) {
-        PLOG_E("Couldn't write to /proc/self/setgroups");
-        return false;
-    }
-
-    char gid_map[4096];
-    snprintf(gid_map, sizeof(gid_map), "%d %d 1", (int)current_gid, (int)current_gid);
-    if (!files_writeStrToFile("/proc/self/gid_map", gid_map, O_WRONLY)) {
-        PLOG_E("Couldn't write to /proc/self/gid_map");
-        return false;
-    }
-
-    char uid_map[4096];
-    snprintf(uid_map, sizeof(uid_map), "%d %d 1", (int)current_uid, (int)current_uid);
-    if (!files_writeStrToFile("/proc/self/uid_map", uid_map, O_WRONLY)) {
-        PLOG_E("Couldn't write to /proc/self/uid_map");
-        return false;
-    }
-
-    if (setresgid(current_gid, current_gid, current_gid) == -1) {
-        PLOG_E("setresgid(%d)", (int)current_gid);
-        return false;
-    }
-    if (setresuid(current_uid, current_uid, current_uid) == -1) {
-        PLOG_E("setresuid(%d)", (int)current_uid);
+    if (!nsSetup(current_uid, current_gid)) {
         return false;
     }
 
