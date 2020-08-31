@@ -83,7 +83,9 @@ static pid_t arch_clone(uintptr_t flags) {
 }
 
 pid_t arch_fork(run_t* run) {
-    pid_t pid = run->global->arch_linux.useClone ? arch_clone(CLONE_UNTRACED | SIGCHLD) : fork();
+    pid_t pid = run->global->arch_linux.useClone
+                    ? arch_clone(run->global->arch_linux.cloneFlags | CLONE_UNTRACED | SIGCHLD)
+                    : fork();
     if (pid == -1) {
         return pid;
     }
@@ -107,12 +109,6 @@ bool arch_launchChild(run_t* run) {
             return false;
         }
         LOG_D("Network namespacing enabled, and the 'lo' interface is set up");
-    }
-
-    /* Enter requested namespaces */
-    if (run->global->arch_linux.cloneFlags && unshare(run->global->arch_linux.cloneFlags) == -1) {
-        LOG_E("unshare(%tx)", run->global->arch_linux.cloneFlags);
-        return false;
     }
     if ((run->global->arch_linux.cloneFlags & CLONE_NEWNET) && !nsIfaceUp("lo")) {
         LOG_W("Cannot bring interface 'lo' up");
@@ -287,6 +283,12 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
     }
 
     for (;;) {
+        /* We need to use clone() to enable CLONE_NEW* flags */
+        if (hfuzz->arch_linux.cloneFlags) {
+            hfuzz->arch_linux.useClone = true;
+            break;
+        }
+
         __attribute__((weak)) const char* gnu_get_libc_version(void);
         if (!gnu_get_libc_version) {
             LOG_W("Unknown libc implementation. Using clone() instead of fork()");
