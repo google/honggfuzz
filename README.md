@@ -102,6 +102,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Memory corruption in __Xfig__](https://sourceforge.net/p/mcj/tickets/67/)
   * [Memory corruption in __LibreOffice__](https://github.com/LibreOffice/core/commit/0754e581b0d8569dd08cf26f88678754f249face)
   * [Memory corruption in __ATasm__](https://sourceforge.net/p/atasm/bugs/8/)
+  * [Memory corruption in __oocborrt__](https://warcollar.com/cve-2020-24753.html), (CVE-2020-24753)[https://nvd.nist.gov/vuln/detail/CVE-2020-24753)
   * [Memory corruption in __LibRaw__](https://github.com/LibRaw/LibRaw/issues/309)
   * __Rust__:
     * panic() in regex [#1](https://github.com/rust-lang/regex/issues/464), [#2](https://github.com/rust-lang/regex/issues/465), [#3](https://github.com/rust-lang/regex/issues/465#issuecomment-381412816)
