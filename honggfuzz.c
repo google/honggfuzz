@@ -82,7 +82,7 @@ static void sigHandler(int sig) {
     }
 
     if (ATOMIC_GET(sigReceived) != 0) {
-        exitWithMsg("Repeated termination signal caugth\n", EXIT_FAILURE);
+        exitWithMsg("Repeated termination signal caught\n", EXIT_FAILURE);
     }
 
     ATOMIC_SET(sigReceived, sig);
