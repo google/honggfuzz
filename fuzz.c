@@ -478,7 +478,7 @@ static void* fuzz_threadNew(void* arg) {
     run_t run = {
         .global         = hfuzz,
         .pid            = 0,
-        .dynfile        = (dynfile_t*)util_Malloc(sizeof(dynfile_t) + hfuzz->io.maxFileSz),
+        .dynfile        = (dynfile_t*)util_Calloc(sizeof(dynfile_t) + hfuzz->io.maxFileSz),
         .fuzzNo         = fuzzNo,
         .persistentSock = -1,
         .tmOutSignaled  = false,
