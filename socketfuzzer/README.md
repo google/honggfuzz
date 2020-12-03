@@ -59,7 +59,7 @@ Start hongfuzz in socket-client mode:
 $ cd ~/honggfuzz
 $ mkdir test
 $ cd test
-$ ../honggfuzz --keep_output --debug --sanitizers --sancov --stdin_input --threads 1 --verbose --logfile log.txt --socket_fuzzer -- ../socketfuzzer/vulnserver_cov
+$ ../honggfuzz --keep_output --debug --sanitizers --stdin_input --threads 1 --verbose --logfile log.txt --socket_fuzzer -- ../socketfuzzer/vulnserver_cov
 Waiting for SocketFuzzer connection on socket: /tmp/honggfuzz_socket.<pid>
 ```
 
