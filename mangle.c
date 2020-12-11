@@ -812,6 +812,13 @@ static void mangle_Resize(run_t* run, bool printable) {
     }
 }
 
+static void mangle_Custom(run_t* run, bool printable HF_ATTR_UNUSED) {
+    if (run->global->mutate.customMutatorFunction) {
+        LOG_D("Running custom mutator...");
+        run->global->mutate.customMutatorFunction(run->dynfile->data, run->dynfile->size);
+    }
+}
+
 void mangle_mangleContent(run_t* run, int speed_factor) {
     static void (*const mangleFuncs[])(run_t * run, bool printable) = {
         /* Every *Insert or Expand expands file, so add more Shrink's */
@@ -846,6 +853,13 @@ void mangle_mangleContent(run_t* run, int speed_factor) {
     }
     if (run->dynfile->size == 0U) {
         mangle_Resize(run, /* printable= */ run->global->cfg.only_printable);
+    }
+
+    /* Custom mutator. */
+    if (run->global->mutate.customMutatorFunction) {
+        mangle_Custom(run, /* printable= */ run->global->cfg.only_printable);
+        wmb();
+        return;
     }
 
     uint64_t changesCnt = run->global->mutate.mutationsPerRun;

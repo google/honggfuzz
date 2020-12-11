@@ -22,6 +22,7 @@
  *
  */
 
+#include <dlfcn.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <signal.h>
@@ -394,6 +395,22 @@ int main(int argc, char** argv) {
                 sizeof(cmpfeedback_t), hfuzz.io.workDir);
         }
     }
+    /* Custom mutator. */
+    if (hfuzz.mutate.customMutatorFileName) {
+        LOG_I("Loading custom mutator library");
+
+        hfuzz.mutate.customMutatorLibHandler = dlopen(hfuzz.mutate.customMutatorFileName, RTLD_NOW);
+
+        if (!hfuzz.mutate.customMutatorLibHandler) {
+            LOG_F("Error loading custom mutator library!");
+        } else {
+            hfuzz.mutate.customMutatorFunction = (customMutator_t) dlsym(hfuzz.mutate.customMutatorLibHandler, "custom_mutator");
+
+            if (!hfuzz.mutate.customMutatorFunction) {
+                LOG_F("Error loading custom mutator function!");
+            }
+        }
+    }
 
     setupRLimits();
     setupSignalsPreThreads();
@@ -427,6 +444,16 @@ int main(int argc, char** argv) {
 #endif
     if (hfuzz.socketFuzzer.enabled) {
         cleanupSocketFuzzer();
+    }
+    /* Custom mutator. */
+    if (hfuzz.mutate.customMutatorLibHandler) {
+        LOG_I("Unloading custom mutator library");
+
+        if (dlclose(hfuzz.mutate.customMutatorLibHandler) != 0) {
+            LOG_E("Error unloading custom mutator library.");
+        } else {
+            hfuzz.mutate.customMutatorFunction = NULL;
+        }
     }
 
     printSummary(&hfuzz);

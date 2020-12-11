@@ -111,6 +111,8 @@ static const uint8_t HFReadyTag = 'R';
 /* printf() nonmonetary separator. According to MacOSX's man it's supported there as well */
 #define _HF_NONMON_SEP "'"
 
+typedef void (*customMutator_t)(uint8_t data[], size_t size);
+
 typedef enum {
     _HF_DYNFILE_NONE         = 0x0,
     _HF_DYNFILE_INSTR_COUNT  = 0x1,
@@ -253,6 +255,9 @@ typedef struct {
         size_t      mutationsMax;
         unsigned    mutationsPerRun;
         size_t      maxInputSz;
+        const char* customMutatorFileName;
+        void*       customMutatorLibHandler;
+        customMutator_t customMutatorFunction;
     } mutate;
     struct {
         bool    useScreen;
