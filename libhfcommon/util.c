@@ -809,6 +809,16 @@ const char* util_sigName(int signo) {
     return signame;
 }
 
+/*
+ * Should we use the more complex algorithm of collecting (once) known 32/64-bit values in RO
+ * sections and then search through them, or shall we simply search through the process' VM?
+ *
+ * 'false' for now, in order to estimate effectiveness of both methods.
+ */
+#if !defined(_HF_COMMON_BIN_COLLECT_VALS)
+#define _HF_COMMON_BIN_COLLECT_VALS false
+#endif /* !defined(_HF_COMMON_BIN_COLLECT_VALS) */
+
 #if !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__)
 static int addrStatic_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
     for (size_t i = 0; i < info->dlpi_phnum; i++) {
@@ -856,8 +866,8 @@ static int cmp_u32(const void* pa, const void* pb) {
     return 0;
 }
 
-static int check32_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
-    uint32_t v = *(uint32_t*)data;
+static int check32_cb(struct dl_phdr_info* info, void* data, unsigned elf_flags) {
+    const uint32_t v = *(const uint32_t*)data;
 
     for (size_t i = 0; i < info->dlpi_phnum; i++) {
         /* Look only in the actual binary, and not in libraries */
@@ -867,7 +877,7 @@ static int check32_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, voi
         if (info->dlpi_phdr[i].p_type != PT_LOAD) {
             continue;
         }
-        if (!(info->dlpi_phdr[i].p_flags & PF_W)) {
+        if ((info->dlpi_phdr[i].p_flags & elf_flags) != elf_flags) {
             continue;
         }
         uint32_t* start = (uint32_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
@@ -884,8 +894,8 @@ static int check32_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, voi
     return 0;
 }
 
-static int check64_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
-    uint64_t v = *(uint64_t*)data;
+static int check64_cb(struct dl_phdr_info* info, void* data, unsigned elf_flags) {
+    const uint64_t v = *(const uint64_t*)data;
 
     for (size_t i = 0; i < info->dlpi_phnum; i++) {
         /* Look only in the actual binary, and not in libraries */
@@ -895,7 +905,7 @@ static int check64_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, voi
         if (info->dlpi_phdr[i].p_type != PT_LOAD) {
             continue;
         }
-        if (!(info->dlpi_phdr[i].p_flags & PF_W)) {
+        if ((info->dlpi_phdr[i].p_flags & elf_flags) != elf_flags) {
             continue;
         }
         uint64_t* start = (uint64_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
@@ -910,6 +920,22 @@ static int check64_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, voi
         }
     }
     return 0;
+}
+
+static int check32_cb_r(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
+    return check32_cb(info, data, PF_R);
+}
+
+static int check64_cb_r(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
+    return check64_cb(info, data, PF_R);
+}
+
+static int check32_cb_w(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
+    return check32_cb(info, data, PF_W);
+}
+
+static int check64_cb_w(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
+    return check64_cb(info, data, PF_W);
 }
 
 static int collectValuesInBinary_cb(
@@ -1020,6 +1046,10 @@ static void collectValuesInBinary() {
 static pthread_once_t collectValuesInBinary_InitOnce = PTHREAD_ONCE_INIT;
 
 bool util_32bitValInBinary(uint32_t v) {
+    if (!(_HF_COMMON_BIN_COLLECT_VALS)) {
+        return (dl_iterate_phdr(check32_cb_r, &v) == 1);
+    }
+
     pthread_once(&collectValuesInBinary_InitOnce, collectValuesInBinary);
     // check if it in read-only values
     if (values32InBinary_size != 0) {
@@ -1036,10 +1066,14 @@ bool util_32bitValInBinary(uint32_t v) {
         if (values32InBinary[l] == v) return true;
     }
     // check if it's in writable values
-    return (dl_iterate_phdr(check32_cb, &v) == 1);
+    return (dl_iterate_phdr(check32_cb_w, &v) == 1);
 }
 
 bool util_64bitValInBinary(uint64_t v) {
+    if (!(_HF_COMMON_BIN_COLLECT_VALS)) {
+        return (dl_iterate_phdr(check64_cb_r, &v) == 1);
+    }
+
     pthread_once(&collectValuesInBinary_InitOnce, collectValuesInBinary);
     // check if it in read-only values
     if (values64InBinary_size != 0) {
@@ -1056,7 +1090,7 @@ bool util_64bitValInBinary(uint64_t v) {
         if (values64InBinary[l] == v) return true;
     }
     // check if it's in writable values
-    return (dl_iterate_phdr(check64_cb, &v) == 1);
+    return (dl_iterate_phdr(check64_cb_w, &v) == 1);
 }
 #else  /* !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__) */
 /* Darwin doesn't use ELF file format for binaries, so dl_iterate_phdr() cannot be used there */
