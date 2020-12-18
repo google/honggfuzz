@@ -172,7 +172,7 @@ size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
     return num_frames;
 }
 
-#else /* !defined(__ANDROID__) */
+#else  /* !defined(__ANDROID__) */
 size_t arch_unwindStack(pid_t pid, funcs_t* funcs) {
     size_t     num_frames = 0, mapsCnt = 0;
     procMap_t* mapsList = arch_parsePidMaps(pid, &mapsCnt);
