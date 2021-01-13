@@ -92,21 +92,21 @@ inline static uint64_t sext(uint64_t val, uint8_t sign) {
     return val & signbit ? val | mask : val & ~mask;
 }
 
-__attribute__((hot)) inline static void perf_ptAnalyzePkt(run_t* run, struct pt_packet* packet) {
-    if (packet->type != ppt_tip) {
+__attribute__((hot)) inline static void perf_ptAnalyzePkt(run_t* run, struct pt_packet* packet, uint64_t* last_tip_ip) {
+    if ((packet->type != ppt_tip) && (packet->type != ppt_tip_pge) && (packet->type != ppt_tip_pgd)) {
         return;
-    }
+    }    
 
     uint64_t ip;
     switch (packet->payload.ip.ipc) {
         case pt_ipc_update_16:
-            ip = packet->payload.ip.ip & 0xFFFF;
+            ip = (*last_tip_ip & ~0xFFFFull) | (packet->payload.ip.ip & 0xFFFFull);
             break;
         case pt_ipc_update_32:
-            ip = packet->payload.ip.ip & 0xFFFFFFFF;
+            ip = (*last_tip_ip & ~0xFFFFFFFFull) | (packet->payload.ip.ip & 0xFFFFFFFFull);
             break;
         case pt_ipc_update_48:
-            ip = packet->payload.ip.ip & 0xFFFFFFFFFFFF;
+            ip = (*last_tip_ip & ~0xFFFFFFFFFFFFull) | (packet->payload.ip.ip & 0xFFFFFFFFFFFFull);
             break;
         case pt_ipc_sext_48:
             ip = sext(packet->payload.ip.ip, 48);
@@ -116,6 +116,12 @@ __attribute__((hot)) inline static void perf_ptAnalyzePkt(run_t* run, struct pt_
             break;
         default:
             return;
+    }
+
+    *last_tip_ip = ip;
+
+    if (packet->type != ppt_tip) {
+        return;
     }
 
     if (ip >= run->global->arch_linux.dynamicCutOffAddr) {
@@ -163,6 +169,8 @@ void arch_ptAnalyze(run_t* run) {
         return;
     }
 
+    uint64_t last_tip_ip = 0; /* for IP compression */
+
     for (;;) {
         struct pt_packet packet;
         errcode = pt_pkt_next(ptd, &packet, sizeof(packet));
@@ -173,7 +181,7 @@ void arch_ptAnalyze(run_t* run) {
             LOG_W("pt_pkt_next() failed: %s", pt_errstr(-errcode));
             break;
         }
-        perf_ptAnalyzePkt(run, &packet);
+        perf_ptAnalyzePkt(run, &packet, &last_tip_ip);
     }
 }
 
