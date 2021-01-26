@@ -471,10 +471,10 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
     {
         /* Inputs with lower total coverage -> lower chance of being tested */
         static const int scaleMap[200] = {
-            [90 ... 199] = -30,
-            [80 ... 90]  = -20,
-            [50 ... 79]  = -10,
-            [11 ... 49]  = 0,
+            [95 ... 199] = -100,
+            [80 ... 94]  = -20,
+            [50 ... 79]  = 0,
+            [11 ... 49]  = 5,
             [0 ... 10]   = 15,
         };
 
@@ -500,7 +500,7 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
 
     {
         /* If the input wasn't source of other inputs so far, make it less likely to be tested */
-        penalty += HF_CAP((1 - (int)dynfile->refs) * 2, -200, 1);
+        penalty += HF_CAP((1 - (int)dynfile->refs) * 5, -500, 1);
     }
 
     {
