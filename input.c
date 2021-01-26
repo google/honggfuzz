@@ -464,20 +464,17 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
     int penalty = 0;
 
     {
-        *speed_factor = HF_CAP(input_speedFactor(run, dynfile) / 2, -15, 15);
+        *speed_factor = HF_CAP(input_speedFactor(run, dynfile) / 2, -15, 0);
         penalty += *speed_factor;
     }
 
     {
         /* Inputs with lower total coverage -> lower chance of being tested */
         static const int scaleMap[200] = {
-            [95 ... 199] = -15,
-            [90 ... 94]  = -7,
-            [80 ... 89]  = -3,
-            [60 ... 79]  = -1,
-            [50 ... 59]  = 0,
-            [30 ... 49]  = 5,
-            [11 ... 29]  = 10,
+            [90 ... 199] = -30,
+            [80 ... 90]  = -20,
+            [50 ... 79]  = -10,
+            [11 ... 49]  = 0,
             [0 ... 10]   = 15,
         };
 
@@ -491,13 +488,10 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
     {
         /* Older inputs -> lower chance of being tested */
         static const int scaleMap[200] = {
-            [100 ... 199] = -10,
-            [95 ... 99]   = -5,
-            [91 ... 94]   = -1,
-            [81 ... 90]   = 0,
-            [71 ... 80]   = 1,
-            [41 ... 70]   = 2,
-            [0 ... 40]    = 3,
+            [81 ... 199] = -2,
+            [71 ... 80]  = 0,
+            [41 ... 70]  = 2,
+            [0 ... 40]   = 5,
         };
 
         const unsigned percentile = (dynfile->idx * 100) / run->global->io.dynfileqCnt;
@@ -506,13 +500,13 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
 
     {
         /* If the input wasn't source of other inputs so far, make it less likely to be tested */
-        penalty += HF_CAP((1 - (int)dynfile->refs) * 3, -30, 5);
+        penalty += HF_CAP((1 - (int)dynfile->refs) * 2, -200, 1);
     }
 
     {
         /* Add penalty for the input being too big - 0 is for 1kB inputs */
         if (dynfile->size > 0) {
-            penalty += HF_CAP(((int)util_Log2(dynfile->size) - 10), -5, 5);
+            penalty += HF_CAP(((int)util_Log2(dynfile->size) - 10), -2, 2);
         }
     }
 

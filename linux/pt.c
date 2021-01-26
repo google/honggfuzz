@@ -92,10 +92,12 @@ inline static uint64_t sext(uint64_t val, uint8_t sign) {
     return val & signbit ? val | mask : val & ~mask;
 }
 
-__attribute__((hot)) inline static void perf_ptAnalyzePkt(run_t* run, struct pt_packet* packet, uint64_t* last_tip_ip) {
-    if ((packet->type != ppt_tip) && (packet->type != ppt_tip_pge) && (packet->type != ppt_tip_pgd)) {
+__attribute__((hot)) inline static void perf_ptAnalyzePkt(
+    run_t* run, struct pt_packet* packet, uint64_t* last_tip_ip) {
+    if ((packet->type != ppt_tip) && (packet->type != ppt_tip_pge) &&
+        (packet->type != ppt_tip_pgd)) {
         return;
-    }    
+    }
 
     uint64_t ip;
     switch (packet->payload.ip.ipc) {
