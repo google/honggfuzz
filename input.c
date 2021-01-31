@@ -461,8 +461,16 @@ static inline int input_speedFactor(run_t* run, dynfile_t* dynfile) {
 }
 
 static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_factor) {
-    int penalty = 0;
+    /*
+     * TODO: measure impact of the skipFactor on the speed of fuzzing.
+     * It's currently unsure how much it helps, so disable it for now,
+     * and re-enable once proper test has been conducted
+     */
+    int penalty   = 0;
+    *speed_factor = HF_CAP(input_speedFactor(run, dynfile) / 2, -15, 0);
+    return penalty;
 
+#if 0
     {
         *speed_factor = HF_CAP(input_speedFactor(run, dynfile) / 2, -15, 0);
         penalty += *speed_factor;
@@ -511,6 +519,7 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
     }
 
     return penalty;
+#endif
 }
 
 bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
