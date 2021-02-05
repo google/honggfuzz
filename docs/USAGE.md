@@ -179,6 +179,8 @@ Options:
 	Pass this environment variable, can be used multiple times
  --save_all|-u 
 	Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames
+ --save_smaller|-U
+    Save smaller test-cases, renaming first found with .orig suffix
  --tmout_sigvtalrm|-T 
 	Use SIGVTALRM to kill timeouting processes (default: use SIGKILL)
  --sanitizers|-S 

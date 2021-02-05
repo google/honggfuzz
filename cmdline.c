@@ -322,6 +322,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .crashDir         = NULL,
                 .covDirNew        = NULL,
                 .saveUnique       = true,
+                .saveSmaller      = false,
                 .dynfileqMaxSz    = 0U,
                 .dynfileqCnt      = 0U,
                 .dynfileqCurrent  = NULL,
@@ -508,6 +509,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "clear_env", no_argument, NULL, 0x108 }, "Clear all environment variables before executing the binary" },
         { { "env", required_argument, NULL, 'E' }, "Pass this environment variable, can be used multiple times" },
         { { "save_all", no_argument, NULL, 'u' }, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames" },
+        { { "save_smaller", no_argument, NULL, 'U' }, "Save smaller test-cases, renaming first filename with .orig suffix" },
         { { "tmout_sigvtalrm", no_argument, NULL, 'T' }, "Treat time-outs as crashes - use SIGVTALRM to kill timeouting processes (default: use SIGKILL)" },
         { { "sanitizers", no_argument, NULL, 'S' }, "** DEPRECATED ** Enable sanitizers settings (default: false)" },
         { { "sanitizers_del_report", required_argument, NULL, 0x10F }, "Delete sanitizer report after use (default: false)" },
@@ -555,7 +557,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     int           opt_index = 0;
     for (;;) {
         int c = getopt_long(
-            argc, argv, "-?hQvVsuPxf:i:o:dqe:W:r:c:F:t:R:n:N:l:p:g:E:w:B:zMTS", opts, &opt_index);
+            argc, argv, "-?hQvVsuUPxf:i:o:dqe:W:r:c:F:t:R:n:N:l:p:g:E:w:B:zMTS", opts, &opt_index);
         if (c < 0) {
             break;
         }
@@ -586,6 +588,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 'u':
                 hfuzz->io.saveUnique = false;
+                break;
+            case 'U':
+                hfuzz->io.saveSmaller = true;
                 break;
             case 'l':
                 logfile = optarg;

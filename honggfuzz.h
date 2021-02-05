@@ -208,6 +208,7 @@ typedef struct {
         const char* crashDir;
         const char* covDirNew;
         bool        saveUnique;
+        bool        saveSmaller;
         size_t      dynfileqMaxSz;
         size_t      dynfileqCnt;
         dynfile_t*  dynfileqCurrent;
