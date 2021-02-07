@@ -531,6 +531,14 @@ static void mangle_MemSet(run_t* run, bool printable) {
     memset(&run->dynfile->data[off], val, len);
 }
 
+static void mangle_MemClr(run_t* run, bool printable) {
+    size_t off = mangle_getOffSet(run);
+    size_t len = mangle_getLen(run->dynfile->size - off);
+    int    val = printable ? ' ' : 0;
+
+    memset(&run->dynfile->data[off], val, len);
+}
+
 static void mangle_RandomOverwrite(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
     size_t len = mangle_getLen(run->dynfile->size - off);
@@ -826,6 +834,7 @@ void mangle_mangleContent(run_t* run, int speed_factor) {
         mangle_NegByte,
         mangle_AddSub,
         mangle_MemSet,
+        mangle_MemClr,
         mangle_MemSwap,
         mangle_MemCopy,
         mangle_Bytes,
