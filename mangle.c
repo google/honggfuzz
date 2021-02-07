@@ -148,6 +148,15 @@ static inline void mangle_UseValue(run_t* run, const uint8_t* val, size_t len, b
     }
 }
 
+static inline void mangle_UseValueAt(
+    run_t* run, size_t off, const uint8_t* val, size_t len, bool printable) {
+    if (util_rnd64() % 2) {
+        mangle_Insert(run, off, val, len, printable);
+    } else {
+        mangle_Overwrite(run, off, val, len, printable);
+    }
+}
+
 static void mangle_MemSwap(run_t* run, bool printable HF_ATTR_UNUSED) {
     /* No big deal if those two are overlapping */
     size_t off1    = mangle_getOffSet(run);
@@ -727,41 +736,56 @@ static void mangle_ASCIINumChange(run_t* run, bool printable) {
             break;
         }
     }
-    if (off == run->dynfile->size) {
-        mangle_Bytes(run, printable);
+    size_t left = run->dynfile->size - off;
+    if (left == 0) {
         return;
     }
 
-    size_t len        = HF_MIN(20, run->dynfile->size - off);
-    char   numbuf[21] = {};
-    strncpy(numbuf, (const char*)&run->dynfile->data[off], len);
-    uint64_t val = (uint64_t)strtoull(numbuf, NULL, 10);
+    size_t   len = 0;
+    uint64_t val = 0;
+    /* 20 is maximum lenght of a string representing a 64-bit unsigned value */
+    for (len = 0; (len < 20) && (len < left); len++) {
+        char c = run->dynfile->data[off + len];
+        if (!isdigit(c)) {
+            break;
+        }
+        val *= 10;
+        val += (c - '0');
+    }
 
-    switch (util_rndGet(0, 5)) {
+    switch (util_rndGet(0, 7)) {
         case 0:
-            val += util_rndGet(1, 256);
+            val++;
             break;
         case 1:
-            val -= util_rndGet(1, 256);
+            val--;
             break;
         case 2:
-            val *= util_rndGet(1, 256);
+            val *= 2;
             break;
         case 3:
-            val /= util_rndGet(1, 256);
+            val /= 2;
             break;
         case 4:
-            val = ~(val);
+            val = util_rnd64();
             break;
         case 5:
-            val = util_rnd64();
+            val += util_rndGet(1, 256);
+            break;
+        case 6:
+            val -= util_rndGet(1, 256);
+            break;
+        case 7:
+            val = ~(val);
             break;
         default:
             LOG_F("Invalid choice");
     };
 
-    len = HF_MIN((size_t)snprintf(numbuf, sizeof(numbuf), "%" PRIu64, val), len);
-    mangle_Overwrite(run, off, (const uint8_t*)numbuf, len, printable);
+    char buf[20];
+    snprintf(buf, sizeof(buf), "%-19" PRIu64, val);
+
+    mangle_UseValueAt(run, off, (const uint8_t*)buf, len, printable);
 }
 
 static void mangle_Splice(run_t* run, bool printable) {
