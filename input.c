@@ -466,24 +466,24 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
      * It's currently unsure how much it helps, so disable it for now,
      * and re-enable once proper test has been conducted
      */
-    int penalty   = 0;
-    *speed_factor = HF_CAP(input_speedFactor(run, dynfile) / 2, -15, 0);
-    return penalty;
+    int penalty = 0;
+
+#if 1
+    {
+        *speed_factor = HF_CAP(input_speedFactor(run, dynfile), -10, 2);
+        penalty += *speed_factor;
+    }
+#endif
 
 #if 0
     {
-        *speed_factor = HF_CAP(input_speedFactor(run, dynfile) / 2, -15, 0);
-        penalty += *speed_factor;
-    }
-
-    {
         /* Inputs with lower total coverage -> lower chance of being tested */
         static const int scaleMap[200] = {
-            [95 ... 199] = -100,
-            [80 ... 94]  = -20,
+            [95 ... 199] = -10,
+            [80 ... 94]  = -2,
             [50 ... 79]  = 0,
-            [11 ... 49]  = 5,
-            [0 ... 10]   = 15,
+            [11 ... 49]  = 1,
+            [0 ... 10]   = 2,
         };
 
         uint64_t maxCov0 = ATOMIC_GET(run->global->feedback.maxCov[0]);
@@ -492,34 +492,42 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
             penalty += scaleMap[percentile];
         }
     }
+#endif
 
+#if 1
     {
         /* Older inputs -> lower chance of being tested */
         static const int scaleMap[200] = {
-            [81 ... 199] = -2,
+            [98 ... 199] = -3,
+            [91 ... 97]  = -2,
+            [81 ... 90]  = -1,
             [71 ... 80]  = 0,
-            [41 ... 70]  = 2,
-            [0 ... 40]   = 5,
+            [41 ... 70]  = 1,
+            [0 ... 40]   = 2,
         };
 
         const unsigned percentile = (dynfile->idx * 100) / run->global->io.dynfileqCnt;
         penalty += scaleMap[percentile];
     }
+#endif
 
+#if 0
     {
         /* If the input wasn't source of other inputs so far, make it less likely to be tested */
-        penalty += HF_CAP((1 - (int)dynfile->refs) * 5, -500, 1);
+        penalty += HF_CAP((0 - (int)dynfile->refs), -10, 0);
     }
+#endif
 
+#if 1
     {
         /* Add penalty for the input being too big - 0 is for 1kB inputs */
         if (dynfile->size > 0) {
-            penalty += HF_CAP(((int)util_Log2(dynfile->size) - 10), -2, 2);
+            penalty += HF_CAP(((int)util_Log2(dynfile->size) - 10), -5, 5);
         }
     }
+#endif
 
     return penalty;
-#endif
 }
 
 bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
