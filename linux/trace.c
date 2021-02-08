@@ -712,7 +712,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
              * suffix before overwriting.
              */
             struct stat st;
-            char origFile[PATH_MAX];
+            char        origFile[PATH_MAX];
             if (stat(run->crashFileName, &st) == -1) {
                 LOG_W("Couldn't stat() the '%s' file", run->crashFileName);
             } else if (st.st_size <= (off_t)run->dynfile->size) {
@@ -722,12 +722,12 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
                 return;
             } else {
                 /* we have a new champion */
-                LOG_I("Crash: overwriting '%s' (old %zu bytes, new %zu bytes)",
-                      run->crashFileName, (size_t)st.st_size, (size_t)run->dynfile->size);
+                LOG_I("Crash: overwriting '%s' (old %zu bytes, new %zu bytes)", run->crashFileName,
+                    (size_t)st.st_size, (size_t)run->dynfile->size);
             }
 
             snprintf(origFile, sizeof(origFile), "%s.orig", run->crashFileName);
-            if (! files_exists(origFile)) {
+            if (!files_exists(origFile)) {
                 rename(run->crashFileName, origFile);
             }
         } else {
