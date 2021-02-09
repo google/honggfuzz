@@ -771,7 +771,7 @@ void instrumentAddConstMem(const void* mem, size_t len, bool check_if_ro) {
     if (!globalCmpFeedback) {
         return;
     }
-    if (len == 0) {
+    if (len <= 1) {
         return;
     }
     if (!instrumentLimitEvery(127)) {
@@ -790,6 +790,12 @@ void instrumentAddConstStr(const char* s) {
     if (!instrumentLimitEvery(127)) {
         return;
     }
+    /*
+     * if (len <= 1)
+     */
+    if (s[0] == '\0' || s[1] == '\0') {
+        return;
+    }
     if (util_getProgAddr(s) == LHFC_ADDR_NOTFOUND) {
         return;
     }
@@ -800,7 +806,7 @@ void instrumentAddConstStrN(const char* s, size_t n) {
     if (!globalCmpFeedback) {
         return;
     }
-    if (n == 0) {
+    if (n <= 1) {
         return;
     }
     if (!instrumentLimitEvery(127)) {
