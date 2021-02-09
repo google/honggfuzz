@@ -470,7 +470,7 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
 
 #if 1
     {
-        *speed_factor = HF_CAP(input_speedFactor(run, dynfile), -10, 2);
+        *speed_factor = HF_CAP(input_speedFactor(run, dynfile), -10, 5);
         penalty += *speed_factor;
     }
 #endif
