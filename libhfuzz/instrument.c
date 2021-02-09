@@ -238,7 +238,7 @@ static inline bool instrumentLimitEvery(uint64_t step) {
 }
 
 static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
-    if (len == 0) {
+    if (len <= 1) {
         return;
     }
     if (len > sizeof(globalCmpFeedback->valArr[0].val)) {
