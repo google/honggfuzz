@@ -119,8 +119,8 @@ HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH=$(uname -m)
 
 
-export CC="$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_NDK_COMPILER_PREFIX""$ANDROID_API_V"-clang
-export CXX="$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/"$ANDROID_NDK_COMPILER_PREFIX""$ANDROID_API_V"-clang++
+export CC="$NDK"/toolchains/llvm/prebuilt/"$HOST_OS"-x86_64/bin/"$ANDROID_NDK_COMPILER_PREFIX""$ANDROID_API_V"-clang
+export CXX="$NDK"/toolchains/llvm/prebuilt/"$HOST_OS"-x86_64/bin/"$ANDROID_NDK_COMPILER_PREFIX""$ANDROID_API_V"-clang++
 
 if [ ! -x "$CC" ]; then
   echo "[-] clang doesn't exist: $CC"
@@ -148,6 +148,13 @@ if [ $? -ne 0 ]; then
   abort 1
 fi
 
+# Fix stuff that configure failed to detect
+# TODO: Investigate for more elegant patches
+if [ "$ARCH" == "arm64" ]; then
+  sed -i -e 's/#define HAVE_DECL_PTRACE_POKEUSER 1/#define HAVE_DECL_PTRACE_POKEUSER 0/g' include/config.h
+  echo "#define HAVE_DECL_PT_GETREGSET 1" >> include/config.h
+fi
+
 make -j"$JOBS" CFLAGS="$LC_CFLAGS" LDFLAGS="$LC_LDFLAGS"
 if [ $? -ne 0 ]; then
     echo "[-] Compilation failed"
@@ -157,14 +164,15 @@ fi
 
 # Naming conventions for arm64
 if [[ "$ARCH" == "arm64" ]]; then
-  cd "$ARCH"
   find . -type f -name "*aarch64*.a" | while read -r libFile
   do
+    dir=$(dirname "$libFile")
+    pushd $dir
     fName=$(basename "$libFile")
     newFName=$(echo "$fName" | sed "s#aarch64#arm64#")
     ln -sf "$fName" "$newFName"
+    popd
   done
-  cd -
 fi
 
 abort 0

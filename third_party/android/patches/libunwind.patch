@@ -188,7 +188,7 @@ index 6379d8e..8222c02 100644
    return 0;
  }
 diff --git a/src/ptrace/_UPT_access_fpreg.c b/src/ptrace/_UPT_access_fpreg.c
-index e90ec47..50a4c25 100644
+index e90ec47d..ae61d093 100644
 --- a/src/ptrace/_UPT_access_fpreg.c
 +++ b/src/ptrace/_UPT_access_fpreg.c
 @@ -46,8 +46,8 @@ _UPT_access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
@@ -202,7 +202,7 @@ index e90ec47..50a4c25 100644
  #endif
          if (errno)
            return -UNW_EBADREG;
-@@ -59,7 +59,7 @@ _UPT_access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
+@@ -59,14 +59,14 @@ _UPT_access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
  #       warning No support for ttrace() yet.
  #else
          wp[i] = ptrace (PTRACE_PEEKUSER, pid,
@@ -211,6 +211,14 @@ index e90ec47..50a4c25 100644
  #endif
          if (errno)
            return -UNW_EBADREG;
+       }
+   return 0;
+ }
+-#elif HAVE_DECL_PT_GETFPREGS
++#elif HAVE_DECL_PT_GETFPREGS && !defined(__aarch64__)
+ int
+ _UPT_access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
+                    int write, void *arg)
 @@ -100,6 +100,14 @@ _UPT_access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
  #endif
    return 0;
