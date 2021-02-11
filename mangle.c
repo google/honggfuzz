@@ -537,6 +537,10 @@ static void mangle_MemSet(run_t* run, bool printable) {
     size_t len = mangle_getLen(run->dynfile->size - off);
     int    val = printable ? (int)util_rndPrintable() : (int)util_rndGet(0, UINT8_MAX);
 
+    if (util_rnd64() & 1) {
+        len = mangle_Inflate(run, off, len, printable);
+    }
+
     memset(&run->dynfile->data[off], val, len);
 }
 
@@ -545,24 +549,20 @@ static void mangle_MemClr(run_t* run, bool printable) {
     size_t len = mangle_getLen(run->dynfile->size - off);
     int    val = printable ? ' ' : 0;
 
+    if (util_rnd64() & 1) {
+        len = mangle_Inflate(run, off, len, printable);
+    }
+
     memset(&run->dynfile->data[off], val, len);
 }
 
-static void mangle_RandomOverwrite(run_t* run, bool printable) {
+static void mangle_RandomBuf(run_t* run, bool printable) {
     size_t off = mangle_getOffSet(run);
     size_t len = mangle_getLen(run->dynfile->size - off);
-    if (printable) {
-        util_rndBufPrintable(&run->dynfile->data[off], len);
-    } else {
-        util_rndBuf(&run->dynfile->data[off], len);
+
+    if (util_rnd64() & 1) {
+        len = mangle_Inflate(run, off, len, printable);
     }
-}
-
-static void mangle_RandomInsert(run_t* run, bool printable) {
-    size_t off = mangle_getOffSet(run);
-    size_t len = mangle_getLen(run->dynfile->size - off);
-
-    len = mangle_Inflate(run, off, len, printable);
 
     if (printable) {
         util_rndBufPrintable(&run->dynfile->data[off], len);
@@ -874,8 +874,7 @@ void mangle_mangleContent(run_t* run, int speed_factor) {
         mangle_Magic,
         mangle_StaticDict,
         mangle_ConstFeedbackDict,
-        mangle_RandomOverwrite,
-        mangle_RandomInsert,
+        mangle_RandomBuf,
         mangle_Splice,
     };
 
