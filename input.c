@@ -579,10 +579,14 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
 }
 
 size_t input_getRandomInputAsBuf(run_t* run, const uint8_t** buf) {
+    if (run->global->feedback.dynFileMethod == _HF_DYNFILE_NONE) {
+        LOG_W(
+            "The dynamic input queue is empty because no instrumentation mode (-x) was requested");
+        *buf = NULL;
+        return 0;
+    }
+
     if (ATOMIC_GET(run->global->io.dynfileqCnt) == 0) {
-        if (run->global->feedback.dynFileMethod != _HF_DYNFILE_NONE) {
-            LOG_E("The dynamic input queue shouldn't be empty");
-        }
         *buf = NULL;
         return 0;
     }

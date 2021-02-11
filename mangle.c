@@ -789,10 +789,15 @@ static void mangle_ASCIINumChange(run_t* run, bool printable) {
 }
 
 static void mangle_Splice(run_t* run, bool printable) {
+    if (run->global->feedback.dynFileMethod == _HF_DYNFILE_NONE) {
+        mangle_Bytes(run, printable);
+        return;
+    }
+
     const uint8_t* buf;
     size_t         sz = input_getRandomInputAsBuf(run, &buf);
     if (!sz) {
-        mangle_Bytes(run, printable);
+        LOG_E("input_getRandomInputAsBuf() returned no input");
         return;
     }
 
