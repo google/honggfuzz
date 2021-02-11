@@ -543,7 +543,7 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         crashAddr = 0UL;
     }
 
-    int open_flags = O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC;
+    int      open_flags = O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC;
     uint64_t pc         = 0;
     uint64_t status_reg = 0;
     size_t   pcRegSz    = arch_getPC(pid, &pc, &status_reg);
@@ -731,8 +731,8 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
             if (!files_exists(origFile)) {
                 rename(run->crashFileName, origFile);
             } else {
-                    /* allow overwrite */
-                open_flags =  O_CREAT | O_WRONLY | O_CLOEXEC;
+                /* allow overwrite */
+                open_flags = O_CREAT | O_WRONLY | O_CLOEXEC;
             }
         } else {
             LOG_I("Crash (dup): '%s' already exists, skipping", run->crashFileName);
@@ -742,8 +742,8 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         }
     }
 
-    if (!files_writeBufToFile(run->crashFileName, run->dynfile->data, run->dynfile->size,
-            open_flags)) {
+    if (!files_writeBufToFile(
+            run->crashFileName, run->dynfile->data, run->dynfile->size, open_flags)) {
         LOG_E("Couldn't write to '%s'", run->crashFileName);
         return;
     }
