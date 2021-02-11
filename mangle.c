@@ -141,19 +141,19 @@ static inline void mangle_Insert(
 }
 
 static inline void mangle_UseValue(run_t* run, const uint8_t* val, size_t len, bool printable) {
-    if (util_rnd64() % 2) {
-        mangle_Insert(run, mangle_getOffSetPlus1(run), val, len, printable);
-    } else {
+    if (util_rnd64() & 1) {
         mangle_Overwrite(run, mangle_getOffSet(run), val, len, printable);
+    } else {
+        mangle_Insert(run, mangle_getOffSetPlus1(run), val, len, printable);
     }
 }
 
 static inline void mangle_UseValueAt(
     run_t* run, size_t off, const uint8_t* val, size_t len, bool printable) {
-    if (util_rnd64() % 2) {
-        mangle_Insert(run, off, val, len, printable);
-    } else {
+    if (util_rnd64() & 1) {
         mangle_Overwrite(run, off, val, len, printable);
+    } else {
+        mangle_Insert(run, off, val, len, printable);
     }
 }
 
@@ -193,7 +193,7 @@ static void mangle_MemCopy(run_t* run, bool printable HF_ATTR_UNUSED) {
     defer {
         free(tmpbuf);
     };
-    memcpy(tmpbuf, &run->dynfile->data[off], len);
+    memmove(tmpbuf, &run->dynfile->data[off], len);
 
     mangle_UseValue(run, tmpbuf, len, printable);
 }
