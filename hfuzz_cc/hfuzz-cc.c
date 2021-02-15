@@ -320,10 +320,10 @@ static void commonPreOpts(int* j, char** args) {
      * (and better code coverage estimates)
      */
     if (isGCC) {
-        args[(*j)++] = "-finline-limit=4000";
+        args[(*j)++] = "-finline-limit=1000";
     } else {
         args[(*j)++] = "-mllvm";
-        args[(*j)++] = "-inline-threshold=2000";
+        args[(*j)++] = "-inline-threshold=1000";
     }
     args[(*j)++] = "-fno-builtin";
     args[(*j)++] = "-fno-omit-frame-pointer";
