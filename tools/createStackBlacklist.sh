@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 #
-#   honggfuzz stackhash blacklist file create script
+#   honggfuzz stackhash blocklist file create script
 #   -----------------------------------------
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -90,7 +90,7 @@ gatherMode=false
 
 # Sort only mode
 if [[ "$BL_FILE" == "" ]]; then
-  echo "[-] Missing blacklist file"
+  echo "[-] Missing blocklist file"
   usage
 fi
 
@@ -149,12 +149,12 @@ if $gatherMode; then
 fi
 
 # sort hex values
-echo "[*] Sorting blacklist file entries"
+echo "[*] Sorting blocklist file entries"
 perl -lpe '$_=hex' $tmpFile | \
 paste -d" " - $tmpFile  | sort -nu | cut -d" " -f 2- \
 > $BL_FILE
 
 entries=$(cat $BL_FILE | wc -l | tr -d " ")
-echo "[*] $BL_FILE contains $entries blacklisted stack hashes"
+echo "[*] $BL_FILE contains $entries blocklisted stack hashes"
 
 rm $tmpFile

@@ -259,7 +259,7 @@ void display_display(honggfuzz_t* hfuzz) {
     uint64_t crashesCnt = ATOMIC_GET(hfuzz->cnts.crashesCnt);
     /* colored the crash count as red when exist crash */
     display_put("     Crashes : " ESC_BOLD "%s"
-                "%zu" ESC_RESET " [unique: %s" ESC_BOLD "%zu" ESC_RESET ", blacklist: " ESC_BOLD
+                "%zu" ESC_RESET " [unique: %s" ESC_BOLD "%zu" ESC_RESET ", blocklist: " ESC_BOLD
                 "%zu" ESC_RESET ", verified: " ESC_BOLD "%zu" ESC_RESET "]\n",
         crashesCnt > 0 ? ESC_RED : "", hfuzz->cnts.crashesCnt, crashesCnt > 0 ? ESC_RED : "",
         ATOMIC_GET(hfuzz->cnts.uniqueCrashesCnt), ATOMIC_GET(hfuzz->cnts.blCrashesCnt),

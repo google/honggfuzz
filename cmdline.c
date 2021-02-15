@@ -394,9 +394,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .cmpFeedbackMap        = NULL,
                 .cmpFeedbackFd         = -1,
                 .cmpFeedback           = true,
-                .blacklistFile         = NULL,
-                .blacklist             = NULL,
-                .blacklistCnt          = 0,
+                .blocklistFile         = NULL,
+                .blocklist             = NULL,
+                .blocklistCnt          = 0,
                 .skipFeedbackOnTimeout = false,
                 .dynFileMethod         = _HF_DYNFILE_SOFT,
                 .state                 = _HF_STATE_UNSET,
@@ -493,7 +493,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "covdir_all", required_argument, NULL, 'o' }, "** DEPRECATED ** use --output" },
         { { "covdir_new", required_argument, NULL, 0x602 }, "New coverage (beyond the dry-run fuzzing phase) is written to this separate directory" },
         { { "dict", required_argument, NULL, 'w' }, "Dictionary file. Format:http://llvm.org/docs/LibFuzzer.html#dictionaries" },
-        { { "stackhash_bl", required_argument, NULL, 'B' }, "Stackhashes blacklist file (one entry per line)" },
+        { { "stackhash_bl", required_argument, NULL, 'B' }, "Stackhashes blocklist file (one entry per line)" },
         { { "mutate_cmd", required_argument, NULL, 'c' }, "External command producing fuzz files (instead of internal mutators)" },
         { { "pprocess_cmd", required_argument, NULL, 0x111 }, "External command postprocessing files produced by internal mutators" },
         { { "ffmutate_cmd", required_argument, NULL, 0x110 }, "External command mutating files which have effective coverage feedback" },
@@ -523,8 +523,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "const_feedback", required_argument, NULL, 0x112 }, "Use constant integer/string values from fuzzed programs to mangle input files via a dynamic dictionary (default: true)" },
 
 #if defined(_HF_ARCH_LINUX)
-        { { "linux_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blacklist filter file (one entry per line)" },
-        { { "linux_symbols_wl", required_argument, NULL, 0x505 }, "Symbols whitelist filter file (one entry per line)" },
+        { { "linux_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blocklist filter file (one entry per line)" },
+        { { "linux_symbols_wl", required_argument, NULL, 0x505 }, "Symbols allowlist filter file (one entry per line)" },
+        { { "linux_symbols_al", required_argument, NULL, 0x505 }, "Symbols allowlist filter file (one entry per line)" },
         { { "linux_addr_low_limit", required_argument, NULL, 0x500 }, "Address limit (from si.si_addr) below which crashes are not reported, (default: 0)" },
         { { "linux_keep_aslr", no_argument, NULL, 0x501 }, "Don't disable ASLR randomization, might be useful with MSAN" },
         { { "linux_perf_ignore_above", required_argument, NULL, 0x503 }, "Ignore perf events which report IPs above this address" },
@@ -539,8 +540,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 #endif // defined(_HF_ARCH_LINUX)
 
 #if defined(_HF_ARCH_NETBSD)
-        { { "netbsd_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blacklist filter file (one entry per line)" },
-        { { "netbsd_symbols_wl", required_argument, NULL, 0x505 }, "Symbols whitelist filter file (one entry per line)" },
+        { { "netbsd_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blocklist filter file (one entry per line)" },
+        { { "netbsd_symbols_wl", required_argument, NULL, 0x505 }, "Symbols allowlist filter file (one entry per line)" },
+        { { "netbsd_symbols_al", required_argument, NULL, 0x505 }, "Symbols allowlist filter file (one entry per line)" },
         { { "netbsd_addr_low_limit", required_argument, NULL, 0x500 }, "Address limit (from si.si_addr) below which crashes are not reported, (default: 0)" },
 #endif // defined(_HF_ARCH_NETBSD)
         { { 0, 0, 0, 0 }, NULL },
@@ -725,7 +727,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->mutate.dictionaryFile = optarg;
                 break;
             case 'B':
-                hfuzz->feedback.blacklistFile = optarg;
+                hfuzz->feedback.blocklistFile = optarg;
                 break;
 #if defined(_HF_ARCH_LINUX)
             case 0x500:

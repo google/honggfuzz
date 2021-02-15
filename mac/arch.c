@@ -233,10 +233,10 @@ static void arch_analyzeSignal(run_t* run, int status) {
     };
 
     /*
-     * Check if stackhash is blacklisted
+     * Check if stackhash is blocklisted
      */
-    if (run->global->feedback.blacklist &&
-        (fastArray64Search(run->global->feedback.blacklist, run->global->feedback.blacklistCnt,
+    if (run->global->feedback.blocklist &&
+        (fastArray64Search(run->global->feedback.blocklist, run->global->feedback.blocklistCnt,
              run->backtrace) != -1)) {
         LOG_I("Blacklisted stack hash '%" PRIx64 "', skipping", run->backtrace);
         ATOMIC_POST_INC(run->global->cnts.blCrashesCnt);

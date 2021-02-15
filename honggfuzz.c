@@ -366,18 +366,18 @@ int main(int argc, char** argv) {
         LOG_F("Couldn't parse dictionary file ('%s')", hfuzz.mutate.dictionaryFile);
     }
 
-    if (hfuzz.feedback.blacklistFile && !input_parseBlacklist(&hfuzz)) {
-        LOG_F("Couldn't parse stackhash blacklist file ('%s')", hfuzz.feedback.blacklistFile);
+    if (hfuzz.feedback.blocklistFile && !input_parseBlacklist(&hfuzz)) {
+        LOG_F("Couldn't parse stackhash blocklist file ('%s')", hfuzz.feedback.blocklistFile);
     }
 #define hfuzzl hfuzz.arch_linux
     if (hfuzzl.symsBlFile &&
         ((hfuzzl.symsBlCnt = files_parseSymbolFilter(hfuzzl.symsBlFile, &hfuzzl.symsBl)) == 0)) {
-        LOG_F("Couldn't parse symbols blacklist file ('%s')", hfuzzl.symsBlFile);
+        LOG_F("Couldn't parse symbols blocklist file ('%s')", hfuzzl.symsBlFile);
     }
 
     if (hfuzzl.symsWlFile &&
         ((hfuzzl.symsWlCnt = files_parseSymbolFilter(hfuzzl.symsWlFile, &hfuzzl.symsWl)) == 0)) {
-        LOG_F("Couldn't parse symbols whitelist file ('%s')", hfuzzl.symsWlFile);
+        LOG_F("Couldn't parse symbols allowlist file ('%s')", hfuzzl.symsWlFile);
     }
 
     if (!(hfuzz.feedback.covFeedbackMap =
@@ -407,8 +407,8 @@ int main(int argc, char** argv) {
     mainThreadLoop(&hfuzz);
 
     /* Clean-up global buffers */
-    if (hfuzz.feedback.blacklist) {
-        free(hfuzz.feedback.blacklist);
+    if (hfuzz.feedback.blocklist) {
+        free(hfuzz.feedback.blocklist);
     }
 #if defined(_HF_ARCH_LINUX)
     if (hfuzz.arch_linux.symsBl) {

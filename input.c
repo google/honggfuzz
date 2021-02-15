@@ -269,9 +269,9 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
 }
 
 bool input_parseBlacklist(honggfuzz_t* hfuzz) {
-    FILE* fBl = fopen(hfuzz->feedback.blacklistFile, "rb");
+    FILE* fBl = fopen(hfuzz->feedback.blocklistFile, "rb");
     if (fBl == NULL) {
-        PLOG_W("Couldn't open '%s' - R/O mode", hfuzz->feedback.blacklistFile);
+        PLOG_W("Couldn't open '%s' - R/O mode", hfuzz->feedback.blocklistFile);
         return false;
     }
     defer {
@@ -289,34 +289,34 @@ bool input_parseBlacklist(honggfuzz_t* hfuzz) {
             break;
         }
 
-        if ((hfuzz->feedback.blacklist = util_Realloc(hfuzz->feedback.blacklist,
-                 (hfuzz->feedback.blacklistCnt + 1) * sizeof(hfuzz->feedback.blacklist[0]))) ==
+        if ((hfuzz->feedback.blocklist = util_Realloc(hfuzz->feedback.blocklist,
+                 (hfuzz->feedback.blocklistCnt + 1) * sizeof(hfuzz->feedback.blocklist[0]))) ==
             NULL) {
             PLOG_W("realloc failed (sz=%zu)",
-                (hfuzz->feedback.blacklistCnt + 1) * sizeof(hfuzz->feedback.blacklist[0]));
+                (hfuzz->feedback.blocklistCnt + 1) * sizeof(hfuzz->feedback.blocklist[0]));
             return false;
         }
 
-        hfuzz->feedback.blacklist[hfuzz->feedback.blacklistCnt] = strtoull(lineptr, 0, 16);
+        hfuzz->feedback.blocklist[hfuzz->feedback.blocklistCnt] = strtoull(lineptr, 0, 16);
         LOG_D("Blacklist: loaded %'" PRIu64 "'",
-            hfuzz->feedback.blacklist[hfuzz->feedback.blacklistCnt]);
+            hfuzz->feedback.blocklist[hfuzz->feedback.blocklistCnt]);
 
         /* Verify entries are sorted so we can use interpolation search */
-        if (hfuzz->feedback.blacklistCnt >= 1) {
-            if (hfuzz->feedback.blacklist[hfuzz->feedback.blacklistCnt - 1] >
-                hfuzz->feedback.blacklist[hfuzz->feedback.blacklistCnt]) {
+        if (hfuzz->feedback.blocklistCnt >= 1) {
+            if (hfuzz->feedback.blocklist[hfuzz->feedback.blocklistCnt - 1] >
+                hfuzz->feedback.blocklist[hfuzz->feedback.blocklistCnt]) {
                 LOG_F("Blacklist file not sorted. Use 'tools/createStackBlacklist.sh' to sort "
                       "records");
                 return false;
             }
         }
-        hfuzz->feedback.blacklistCnt += 1;
+        hfuzz->feedback.blocklistCnt += 1;
     }
 
-    if (hfuzz->feedback.blacklistCnt > 0) {
-        LOG_I("Loaded %zu stack hash(es) from the blacklist file", hfuzz->feedback.blacklistCnt);
+    if (hfuzz->feedback.blocklistCnt > 0) {
+        LOG_I("Loaded %zu stack hash(es) from the blocklist file", hfuzz->feedback.blocklistCnt);
     } else {
-        LOG_F("Empty stack hashes blacklist file '%s'", hfuzz->feedback.blacklistFile);
+        LOG_F("Empty stack hashes blocklist file '%s'", hfuzz->feedback.blocklistFile);
     }
     return true;
 }
