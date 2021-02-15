@@ -853,9 +853,6 @@ void mangle_mangleContent(run_t* run, int speed_factor) {
     static void (*const mangleFuncs[])(run_t * run, bool printable) = {
         /* Every *Insert or Expand expands file, so add more Shrink's */
         mangle_Shrink,
-        mangle_Shrink,
-        mangle_Shrink,
-        mangle_Shrink,
         mangle_Expand,
         mangle_Bit,
         mangle_IncByte,
