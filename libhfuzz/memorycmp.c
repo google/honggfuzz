@@ -57,7 +57,7 @@ static inline int HF_strcasecmp(
     instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
     instrumentAddConstStr(s1);
     instrumentAddConstStr(s2);
-    return cmp_func((unsigned char)s1[i]) - cmp_func((unsigned char)s2[i]);
+    return ((int)cmp_func((unsigned char)s1[i]) - (int)cmp_func((unsigned char)s2[i]));
 }
 
 static inline int HF_strncmp(
