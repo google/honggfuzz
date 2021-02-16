@@ -48,7 +48,7 @@ static inline int HF_strcmp(const char* s1, const char* s2, uintptr_t addr) {
 static inline int HF_strcasecmp(
     const char* s1, const char* s2, int (*cmp_func)(int), uintptr_t addr) {
     size_t i;
-    for (i = 0; cmp_func((unsigned char)s1[i]) == cmp_func((unsigned char)s2[i]); i++) {
+    for (i = 0; cmp_func((int)(unsigned char)s1[i]) == cmp_func((int)(unsigned char)s2[i]); i++) {
         if (s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
@@ -57,7 +57,7 @@ static inline int HF_strcasecmp(
     instrumentUpdateCmpMap(HF_cmphash(addr, s1, s2), i);
     instrumentAddConstStr(s1);
     instrumentAddConstStr(s2);
-    return ((int)cmp_func((unsigned char)s1[i]) - (int)cmp_func((unsigned char)s2[i]));
+    return (cmp_func((int)(unsigned char)s1[i]) - cmp_func((int)(unsigned char)s2[i]));
 }
 
 static inline int HF_strncmp(
@@ -86,8 +86,8 @@ static inline int HF_strncasecmp(
     const char* s1, const char* s2, size_t n, int (*cmp_func)(int), bool constfb, uintptr_t addr) {
     size_t i;
     for (i = 0; i < n; i++) {
-        if ((cmp_func((unsigned char)s1[i]) != cmp_func((unsigned char)s2[i])) || s1[i] == '\0' ||
-            s2[i] == '\0') {
+        if ((cmp_func((int)(unsigned char)s1[i]) != cmp_func((int)(unsigned char)s2[i])) ||
+            s1[i] == '\0' || s2[i] == '\0') {
             break;
         }
     }
@@ -102,7 +102,7 @@ static inline int HF_strncasecmp(
         return 0;
     }
 
-    return cmp_func((unsigned char)s1[i]) - cmp_func((unsigned char)s2[i]);
+    return cmp_func((int)(unsigned char)s1[i]) - cmp_func((int)(unsigned char)s2[i]);
 }
 
 static inline char* HF_strstr(const char* haystack, const char* needle, uintptr_t addr) {
