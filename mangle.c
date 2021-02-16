@@ -211,7 +211,7 @@ static void mangle_Bytes(run_t* run, bool printable) {
     mangle_UseValue(run, (const uint8_t*)&buf, toCopy, printable);
 }
 
-static void mangle_ByteRepeatOverwrite(run_t* run, bool printable) {
+static void mangle_ByteRepeat(run_t* run, bool printable) {
     size_t off     = mangle_getOffSet(run);
     size_t destOff = off + 1;
     size_t maxSz   = run->dynfile->size - destOff;
@@ -223,22 +223,9 @@ static void mangle_ByteRepeatOverwrite(run_t* run, bool printable) {
     }
 
     size_t len = mangle_getLen(maxSz);
-    memset(&run->dynfile->data[destOff], run->dynfile->data[off], len);
-}
-
-static void mangle_ByteRepeatInsert(run_t* run, bool printable) {
-    size_t off     = mangle_getOffSet(run);
-    size_t destOff = off + 1;
-    size_t maxSz   = run->dynfile->size - destOff;
-
-    /* No space to repeat */
-    if (!maxSz) {
-        mangle_Bytes(run, printable);
-        return;
+    if (util_rnd64() & 0x1) {
+        len = mangle_Inflate(run, destOff, len, printable);
     }
-
-    size_t len = mangle_getLen(maxSz);
-    len        = mangle_Inflate(run, destOff, len, printable);
     memset(&run->dynfile->data[destOff], run->dynfile->data[off], len);
 }
 
@@ -865,8 +852,7 @@ void mangle_mangleContent(run_t* run, int speed_factor) {
         mangle_Bytes,
         mangle_ASCIINum,
         mangle_ASCIINumChange,
-        mangle_ByteRepeatOverwrite,
-        mangle_ByteRepeatInsert,
+        mangle_ByteRepeat,
         mangle_Magic,
         mangle_StaticDict,
         mangle_ConstFeedbackDict,
