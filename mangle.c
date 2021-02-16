@@ -851,7 +851,6 @@ static void mangle_Resize(run_t* run, bool printable) {
 
 void mangle_mangleContent(run_t* run, int speed_factor) {
     static void (*const mangleFuncs[])(run_t * run, bool printable) = {
-        /* Every *Insert or Expand expands file, so add more Shrink's */
         mangle_Shrink,
         mangle_Expand,
         mangle_Bit,
@@ -889,20 +888,28 @@ void mangle_mangleContent(run_t* run, int speed_factor) {
     } else if (speed_factor < 10) {
         changesCnt = run->global->mutate.mutationsPerRun;
     } else {
-        changesCnt = HF_MIN(speed_factor, 12);
-        changesCnt = HF_MAX(changesCnt, run->global->mutate.mutationsPerRun);
+        changesCnt = HF_MIN(speed_factor, 10);
+        changesCnt = HF_MAX(changesCnt, (run->global->mutate.mutationsPerRun * 5));
     }
 
     /* If last coverage acquisition was more than 5 secs ago, use splicing more frequently */
     if ((time(NULL) - ATOMIC_GET(run->global->timing.lastCovUpdate)) > 5) {
-        if (util_rnd64() % 2) {
+        if (util_rnd64() & 0x1) {
             mangle_Splice(run, run->global->cfg.only_printable);
         }
     }
 
     for (uint64_t x = 0; x < changesCnt; x++) {
-        uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);
-        mangleFuncs[choice](run, /* printable= */ run->global->cfg.only_printable);
+        if (run->global->feedback.cmpFeedback && (util_rnd64() & 0x1)) {
+            /*
+             * mangle_ConstFeedbackDict() is quite powerful if the dynamic feedback dictionary
+             * exists. If so, give it 50% chance of being used among all mangling functions.
+             */
+            mangle_ConstFeedbackDict(run, /* printable= */ run->global->cfg.only_printable);
+        } else {
+            uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);
+            mangleFuncs[choice](run, /* printable= */ run->global->cfg.only_printable);
+        }
     }
 
     wmb();
