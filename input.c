@@ -578,17 +578,17 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     return true;
 }
 
-size_t input_getRandomInputAsBuf(run_t* run, const uint8_t** buf) {
+const uint8_t* input_getRandomInputAsBuf(run_t* run, size_t* len) {
     if (run->global->feedback.dynFileMethod == _HF_DYNFILE_NONE) {
         LOG_W(
             "The dynamic input queue is empty because no instrumentation mode (-x) was requested");
-        *buf = NULL;
-        return 0;
+        *len = 0;
+        return NULL;
     }
 
     if (ATOMIC_GET(run->global->io.dynfileqCnt) == 0) {
-        *buf = NULL;
-        return 0;
+        *len = 0;
+        return NULL;
     }
 
     dynfile_t* current = NULL;
@@ -603,8 +603,8 @@ size_t input_getRandomInputAsBuf(run_t* run, const uint8_t** buf) {
         run->global->io.dynfileq2Current = TAILQ_NEXT(run->global->io.dynfileq2Current, pointers);
     }
 
-    *buf = current->data;
-    return current->size;
+    *len = current->size;
+    return current->data;
 }
 
 static bool input_shouldReadNewFile(run_t* run) {

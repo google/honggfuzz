@@ -781,10 +781,15 @@ static void mangle_Splice(run_t* run, bool printable) {
         return;
     }
 
-    const uint8_t* buf;
-    size_t         sz = input_getRandomInputAsBuf(run, &buf);
-    if (!sz) {
+    size_t         sz  = 0;
+    const uint8_t* buf = input_getRandomInputAsBuf(run, &sz);
+    if (!buf) {
         LOG_E("input_getRandomInputAsBuf() returned no input");
+        mangle_Bytes(run, printable);
+        return;
+    }
+    if (!sz) {
+        mangle_Bytes(run, printable);
         return;
     }
 
