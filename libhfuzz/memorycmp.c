@@ -22,11 +22,11 @@ __attribute__((used)) const char* const LIBHFUZZ_module_memorycmp = "LIBHFUZZ_mo
 #define HF_TEST_ADDR_CMPHASH true
 
 static inline uintptr_t HF_cmphash(uintptr_t addr, const void* s1, const void* s2) {
-    if (HF_TEST_ADDR_CMPHASH && util_getProgAddr(s1) == LHFC_ADDR_RO) {
-        addr ^= ((uintptr_t)s1 << 2);
+    if (HF_TEST_ADDR_CMPHASH && util_getProgAddr(s1) != LHFC_ADDR_NOTFOUND) {
+        addr ^= ((uintptr_t)s1 << 1);
     }
-    if (HF_TEST_ADDR_CMPHASH && util_getProgAddr(s2) == LHFC_ADDR_RO) {
-        addr ^= ((uintptr_t)s2 << 4);
+    if (HF_TEST_ADDR_CMPHASH && util_getProgAddr(s2) != LHFC_ADDR_NOTFOUND) {
+        addr ^= ((uintptr_t)s2 << 2);
     }
     return addr;
 }
