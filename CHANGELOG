@@ -1,3 +1,13 @@
+2021-02-24 - Version 2.4
+        - better NetBSD support (compatiblity)
+        - fixed mangle_getLen() #360
+        - disabled --linux_net_ns by default, as the Linux kernel dies under heavy load of new net namespaces
+        - added support for address compression in IntelPT mode
+        - simplified input_skipFactor() which now yields better results (faster coverage acquisition)
+        - added --save_smaller for the use with Rust fuzzing
+        - fixed Android build under MacOSX
+        - simplified some mangle() functions
+
 2020-07-22 - Version 2.3
         - honggfuzz.h - split run_t into substructs
         - clang-format options in .clang-format
