@@ -34,6 +34,11 @@
 #include <time.h>
 #include <unistd.h>
 
+#if defined(__FreeBSD__)
+#include <sys/resource.h>
+#include <sys/sysctl.h>
+#endif
+
 #include "libhfcommon/common.h"
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
@@ -90,7 +95,9 @@ static unsigned getCpuUse(int numCpus) {
     static uint64_t prevNiceT   = 0UL;
     static uint64_t prevSystemT = 0UL;
     static uint64_t prevIdleT   = 0UL;
+    uint64_t userT, niceT, systemT, idleT;
 
+#if defined(__linux__)
     FILE* f = fopen("/proc/stat", "re");
     if (f == NULL) {
         return 0;
@@ -98,12 +105,38 @@ static unsigned getCpuUse(int numCpus) {
     defer {
         fclose(f);
     };
-    uint64_t userT, niceT, systemT, idleT;
     if (fscanf(f, "cpu  %" PRIu64 "%" PRIu64 "%" PRIu64 "%" PRIu64, &userT, &niceT, &systemT,
             &idleT) != 4) {
         LOG_W("fscanf('/proc/stat') != 4");
         return 0;
     }
+#elif defined(__FreeBSD__)
+    long ticks = (1000 / sysconf(_SC_CLK_TCK));
+    long off = 0;
+    size_t cpuDataLen = sizeof(long) * CPUSTATES * numCpus;
+    long *cpuData = malloc(cpuDataLen);
+    if (cpuData == NULL) {
+        return 0;
+    }
+
+    if (sysctlbyname("kern.cp_times", cpuData, &cpuDataLen, NULL, 0) != 0) {
+        LOG_W("sysctlbyname('kern.cp_times') != 0");
+        free(cpuData);
+        return 0;
+    }
+
+    userT = niceT = systemT = idleT = 0;
+
+    for (int i = 0; i < numCpus; i++) {
+        userT += cpuData[CP_USER + off] * ticks;
+        niceT += cpuData[CP_NICE + off] * ticks;
+        systemT += cpuData[CP_SYS + off] * ticks;
+        idleT += cpuData[CP_IDLE + off] * ticks;
+        off += CPUSTATES;
+    }
+
+    free(cpuData);
+#endif
 
     uint64_t userCycles   = (userT - prevUserT);
     uint64_t niceCycles   = (niceT - prevNiceT);
