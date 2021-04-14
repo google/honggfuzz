@@ -95,7 +95,10 @@ static unsigned getCpuUse(int numCpus) {
     static uint64_t prevNiceT   = 0UL;
     static uint64_t prevSystemT = 0UL;
     static uint64_t prevIdleT   = 0UL;
-    uint64_t userT, niceT, systemT, idleT;
+    uint64_t        userT       = 0UL;
+    uint64_t        niceT       = 0UL;
+    uint64_t        systemT     = 0UL;
+    uint64_t        idleT       = 0UL;
 
 #if defined(__linux__)
     FILE* f = fopen("/proc/stat", "re");
@@ -111,10 +114,10 @@ static unsigned getCpuUse(int numCpus) {
         return 0;
     }
 #elif defined(__FreeBSD__)
-    long ticks = (1000 / sysconf(_SC_CLK_TCK));
-    long off = 0;
+    long   ticks      = (1000 / sysconf(_SC_CLK_TCK));
+    long   off        = 0;
     size_t cpuDataLen = sizeof(long) * CPUSTATES * numCpus;
-    long *cpuData = malloc(cpuDataLen);
+    long*  cpuData    = malloc(cpuDataLen);
     if (cpuData == NULL) {
         return 0;
     }
@@ -143,8 +146,8 @@ static unsigned getCpuUse(int numCpus) {
 
     for (int i = 0; i < numCpus; i++) {
         uint64_t cpuData[CPUSTATES];
-        size_t cpuDataLen = sizeof(cpuData);
-        char mib[24] = {0};
+        size_t   cpuDataLen = sizeof(cpuData);
+        char     mib[24]    = {0};
         snprintf(mib, sizeof(mib), "kern.cp_time.%d", i);
         if (sysctlbyname(mib, &cpuData, &cpuDataLen, NULL, 0) != 0) {
             LOG_W("sysctlbyname('kern.cp_time') != 0");
