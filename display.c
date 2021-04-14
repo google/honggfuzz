@@ -165,14 +165,15 @@ static unsigned getCpuUse(int numCpus) {
     }
 #else
     host_cpu_load_info_data_t avg;
-    mach_msg_type_number_t num = HOST_CPU_LOAD_INFO_COUNT;
+    mach_msg_type_number_t    num = HOST_CPU_LOAD_INFO_COUNT;
     userT = niceT = systemT = idleT = 0;
 
-    if (host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, (host_info_t)&avg, &num) == KERN_SUCCESS) {
-	    userT = avg.cpu_ticks[CPU_STATE_USER];
-	    niceT = avg.cpu_ticks[CPU_STATE_NICE];
-	    systemT = avg.cpu_ticks[CPU_STATE_SYSTEM];
-	    idleT = avg.cpu_ticks[CPU_STATE_IDLE];
+    if (host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, (host_info_t)&avg, &num) ==
+        KERN_SUCCESS) {
+        userT   = avg.cpu_ticks[CPU_STATE_USER];
+        niceT   = avg.cpu_ticks[CPU_STATE_NICE];
+        systemT = avg.cpu_ticks[CPU_STATE_SYSTEM];
+        idleT   = avg.cpu_ticks[CPU_STATE_IDLE];
     }
 
 #endif
