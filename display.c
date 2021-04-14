@@ -39,6 +39,11 @@
 #include <sys/sysctl.h>
 #endif
 
+#if defined(__APPLE__)
+#include <mach/mach.h>
+#include <mach/task_info.h>
+#endif
+
 #include "libhfcommon/common.h"
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
@@ -158,6 +163,18 @@ static unsigned getCpuUse(int numCpus) {
         systemT += cpuData[CP_SYS] * ticks;
         idleT += cpuData[CP_IDLE] * ticks;
     }
+#else
+    host_cpu_load_info_data_t avg;
+    mach_msg_type_number_t num = HOST_CPU_LOAD_INFO_COUNT;
+    userT = niceT = systemT = idleT = 0;
+
+    if (host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, (host_info_t)&avg, &num) == KERN_SUCCESS) {
+	    userT = avg.cpu_ticks[CPU_STATE_USER];
+	    niceT = avg.cpu_ticks[CPU_STATE_NICE];
+	    systemT = avg.cpu_ticks[CPU_STATE_SYSTEM];
+	    idleT = avg.cpu_ticks[CPU_STATE_IDLE];
+    }
+
 #endif
 
     uint64_t userCycles   = (userT - prevUserT);
