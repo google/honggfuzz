@@ -34,7 +34,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__NetBSD__)
 #include <sys/resource.h>
 #include <sys/sysctl.h>
 #endif
@@ -136,6 +136,25 @@ static unsigned getCpuUse(int numCpus) {
     }
 
     free(cpuData);
+#elif defined(__NetBSD__)
+    long ticks = (1000 / sysconf(_SC_CLK_TCK));
+
+    userT = niceT = systemT = idleT = 0;
+
+    for (int i = 0; i < numCpus; i++) {
+        uint64_t cpuData[CPUSTATES];
+        size_t cpuDataLen = sizeof(cpuData);
+        char mib[24] = {0};
+        snprintf(mib, sizeof(mib), "kern.cp_time.%d", i);
+        if (sysctlbyname(mib, &cpuData, &cpuDataLen, NULL, 0) != 0) {
+            LOG_W("sysctlbyname('kern.cp_time') != 0");
+            return 0;
+        }
+        userT += cpuData[CP_USER] * ticks;
+        niceT += cpuData[CP_NICE] * ticks;
+        systemT += cpuData[CP_SYS] * ticks;
+        idleT += cpuData[CP_IDLE] * ticks;
+    }
 #endif
 
     uint64_t userCycles   = (userT - prevUserT);
