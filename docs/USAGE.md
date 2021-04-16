@@ -172,7 +172,7 @@ Options:
  --report|-R VALUE
 	Write report to this file (default: '<workdir>/HONGGFUZZ.REPORT.TXT')
  --max_file_size|-F VALUE
-	Maximal size of files processed by the fuzzer in bytes (default: 134217728 = 128MB)
+	Maximal size of files processed by the fuzzer in bytes (default: 1048576 = 1MB)
  --clear_env 
 	Clear all environment variables before executing the binary
  --env|-E VALUE
