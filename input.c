@@ -144,10 +144,7 @@ bool input_getNext(run_t* run, char fname[PATH_MAX], bool rewind) {
             return false;
         }
         if (entry == NULL && rewind) {
-            if (!input_getDirStatsAndRewind(run->global)) {
-                LOG_E("input_getDirStatsAndRewind('%s')", run->global->io.inputDir);
-                return false;
-            }
+            rewinddir(run->global->io.inputDirPtr);
             continue;
         }
         char path[PATH_MAX];
