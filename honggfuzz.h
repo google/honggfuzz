@@ -263,6 +263,7 @@ typedef struct {
     struct {
         bool        useVerifier;
         bool        exitUponCrash;
+        uint8_t     exitCodeUponCrash;
         const char* reportFile;
         size_t      dynFileIterExpire;
         bool        only_printable;
