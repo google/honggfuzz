@@ -437,5 +437,4 @@ int main(int argc, char** argv) {
     printSummary(&hfuzz);
 
     return exitcode;
-
 }
