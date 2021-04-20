@@ -376,6 +376,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             {
                 .useVerifier       = false,
                 .exitUponCrash     = false,
+                .exitCodeUponCrash = 0,
                 .reportFile        = NULL,
                 .dynFileIterExpire = 0,
                 .only_printable    = false,
@@ -515,7 +516,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "sanitizers_del_report", required_argument, NULL, 0x10F }, "Delete sanitizer report after use (default: false)" },
         { { "monitor_sigabrt", required_argument, NULL, 0x105 }, "** DEPRECATED ** SIGABRT is always monitored" },
         { { "no_fb_timeout", required_argument, NULL, 0x106 }, "Skip feedback if the process has timeouted (default: false)" },
-        { { "exit_upon_crash", no_argument, NULL, 0x107 }, "Exit upon seeing the first crash (default: false)" },
+        { { "exit_upon_crash", no_argument, NULL, 0x107 }, "Exit upon seeing the first crash" },
+        { { "exit_code_upon_crash", required_argument, NULL, 0x113 }, "Exit code to use upon seeing the first crash" },
         { { "socket_fuzzer", no_argument, NULL, 0x10B }, "Instrument external fuzzer via socket" },
         { { "netdriver", no_argument, NULL, 0x10C }, "Use netdriver (libhfnetdriver/). In most cases it will be autodetected through a binary signature" },
         { { "only_printable", no_argument, NULL, 0x10D }, "Only generate printable inputs" },
@@ -708,6 +710,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 0x107:
                 hfuzz->cfg.exitUponCrash = true;
+                break;
+            case 0x113:
+                hfuzz->cfg.exitCodeUponCrash = strtoul(optarg, NULL, 0);
                 break;
             case 0x108:
                 hfuzz->exe.clearEnv = true;

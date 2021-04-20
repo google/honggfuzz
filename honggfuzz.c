@@ -255,7 +255,7 @@ static void* signalThread(void* arg) {
     return NULL;
 }
 
-static void mainThreadLoop(honggfuzz_t* hfuzz) {
+static uint8_t mainThreadLoop(honggfuzz_t* hfuzz) {
     setupSignalsMainThread();
     setupMainThreadTimer();
 
@@ -290,6 +290,11 @@ static void mainThreadLoop(honggfuzz_t* hfuzz) {
         }
         pingThreads(hfuzz);
         util_sleepForMSec(50); /* 50ms */
+    }
+    if (hfuzz->cfg.exitUponCrash && ATOMIC_GET(hfuzz->cnts.crashesCnt) > 0) {
+        return hfuzz->cfg.exitCodeUponCrash;
+    } else {
+        return EXIT_SUCCESS;
     }
 }
 
@@ -404,7 +409,7 @@ int main(int argc, char** argv) {
         LOG_F("Couldn't start the signal thread");
     }
 
-    mainThreadLoop(&hfuzz);
+    uint8_t exitcode = mainThreadLoop(&hfuzz);
 
     /* Clean-up global buffers */
     if (hfuzz.feedback.blocklist) {
@@ -431,5 +436,6 @@ int main(int argc, char** argv) {
 
     printSummary(&hfuzz);
 
-    return EXIT_SUCCESS;
+    return exitcode;
+
 }
