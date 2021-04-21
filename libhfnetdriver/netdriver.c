@@ -18,6 +18,9 @@
 #if defined(_HF_ARCH_LINUX)
 #include <sched.h>
 #endif /* defined(_HF_ARCH_LINUX) */
+#if defined(__FreeBSD__)
+#define SOL_TCP IPPROTO_TCP
+#endif
 
 #include "honggfuzz.h"
 #include "libhfcommon/common.h"
@@ -159,7 +162,6 @@ static int netDriver_sockConnAddr(
             PLOG_W("setsockopt(sock=%d, SOL_SOCKET, SO_REUSEADDR, %d)", sock, val);
         }
 #if defined(SOL_TCP) && defined(TCP_NODELAY)
-        val = 1;
         if (setsockopt(sock, SOL_TCP, TCP_NODELAY, &val, (socklen_t)sizeof(val)) == -1) {
             PLOG_W("setsockopt(sock=%d, SOL_TCP, TCP_NODELAY, %d)", sock, val);
         }
