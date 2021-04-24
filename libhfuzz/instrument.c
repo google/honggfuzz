@@ -89,7 +89,11 @@ static void initializeLibcFunctions(void) {
 }
 
 static void* initialzeTryMapHugeTLB(int fd, size_t sz) {
-    int   mflags = files_getTmpMapFlags(MAP_SHARED, /* nocore= */ true);
+    int   initflags = MAP_SHARED;
+#if defined(MAP_ALIGNED_SUPER)
+    initflags |= MAP_ALIGNED_SUPER;
+#endif
+    int   mflags = files_getTmpMapFlags(initflags, /* nocore= */ true);
     void* ret    = mmap(NULL, sz, PROT_READ | PROT_WRITE, mflags, fd, 0);
 
 #if defined(MADV_HUGEPAGE)
