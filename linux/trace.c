@@ -34,7 +34,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(__GLIBC__)
 #include <sys/cdefs.h>
+#endif
 #include <sys/personality.h>
 #include <sys/ptrace.h>
 #include <sys/resource.h>
