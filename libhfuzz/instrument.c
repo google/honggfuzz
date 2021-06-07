@@ -89,7 +89,7 @@ static void initializeLibcFunctions(void) {
 }
 
 static void* initialzeTryMapHugeTLB(int fd, size_t sz) {
-    int   initflags = MAP_SHARED;
+    int initflags = MAP_SHARED;
 #if defined(MAP_ALIGNED_SUPER)
     initflags |= MAP_ALIGNED_SUPER;
 #endif
