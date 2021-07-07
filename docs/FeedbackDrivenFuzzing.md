@@ -4,7 +4,7 @@ Honggfuzz is capable of performing feedback-guided (code coverage driven) fuzzin
   * (Linux) Hardware-based counters (instructions, branches)
   * (Linux) Intel BTS code coverage (kernel >= 4.2)
   * (Linux) Intel PT code coverage (kernel >= 4.2)
-  * Sanitzer-coverage instrumentation (`-fsanitize-coverage=bb`)
+  * Sanitizer-coverage instrumentation (`-fsanitize-coverage=bb`)
   * Compile-time instrumentation (`-finstrument-functions` or `-fsanitize-coverage=trace-pc[-guard],indirect-calls,trace-cmp` or both)
 
 Developers may provide the initial file corpus which will be gradually improved upon, but it's not necessary with feedback-driven modes.
