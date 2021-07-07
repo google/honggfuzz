@@ -67,7 +67,7 @@ int fuzz_waitforSocketFuzzer(run_t* run) {
     uint8_t buf[16];
 
     // Wait until the external fuzzer did his thing
-    bzero(buf, 16);
+    memset(buf, 0, 16);
     ret = files_readFromFd(run->global->socketFuzzer.clientSocket, buf, 4);
     LOG_D("fuzz_waitforSocketFuzzer: RECV: %s", buf);
 

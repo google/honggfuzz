@@ -231,6 +231,11 @@ struct user_regs_struct {
 #endif /* defined(PTRACE_GETREGS) */
 #endif /* defined(__ANDROID__) */
 
+#if defined(__clang__)
+_Pragma("clang Diagnostic push\n");
+_Pragma("clang Diagnostic ignored \"-Woverride-init\"\n");
+#endif
+
 static struct {
     const char* descr;
     bool        important;
@@ -264,6 +269,10 @@ static struct {
     [SIGSYS].important = true,
     [SIGSYS].descr     = "SIGSYS",
 };
+
+#if defined(__clang__)
+_Pragma("clang diagnostic pop");
+#endif
 
 #ifndef SI_FROMUSER
 #define SI_FROMUSER(siptr) ((siptr)->si_code <= 0)
