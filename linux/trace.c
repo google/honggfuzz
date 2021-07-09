@@ -542,7 +542,12 @@ static void arch_traceAnalyzeData(run_t* run, pid_t pid) {
 
 static void arch_traceSaveData(run_t* run, pid_t pid) {
     char      instr[_HF_INSTR_SZ] = "\x00";
+#if defined(__GNUC__) && ((__GNUC__ < 5) || (__GNUC__ == 5 && __GNUC_MINOR__ < 1))
+    siginfo_t si;
+    bzero(&si, sizeof(si));
+#else
     siginfo_t si                  = {};
+#endif
 
     if (ptrace(PTRACE_GETSIGINFO, pid, 0, &si) == -1) {
         PLOG_W("Couldn't get siginfo for pid %d", pid);
