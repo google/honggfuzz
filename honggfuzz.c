@@ -160,7 +160,7 @@ static void setupSignalsPreThreads(void) {
         PLOG_F("sigaction(SIGQUIT) failed");
     }
     if (sigaction(SIGALRM, &sa, NULL) == -1) {
-        PLOG_F("sigaction(SIGQUIT) failed");
+        PLOG_F("sigaction(SIGALRM) failed");
     }
     if (sigaction(SIGCHLD, &sa, NULL) == -1) {
         PLOG_F("sigaction(SIGCHLD) failed");
