@@ -88,6 +88,21 @@ static bool useBelowGCC8() {
     return false;
 }
 
+static bool isVersionMode(int argc, char** argv) {
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--version") == 0) {
+            return true;
+        }
+        if (strcmp(argv[i], "--target-help") == 0) {
+            return true;
+        }
+        if (strcmp(argv[i], "--help") == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool isLDMode(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--version") == 0) {
@@ -526,6 +541,10 @@ int main(int argc, char** argv) {
     if (argc <= 1) {
         return execCC(argc, argv);
     }
+    if (isVersionMode(argc, argv)) {
+        return execCC(argc, argv);
+    }
+
     if (argc > (ARGS_MAX - 128)) {
         LOG_F("'%s': Too many positional arguments: %d", argv[0], argc);
         return EXIT_FAILURE;
