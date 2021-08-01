@@ -25,6 +25,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #ifdef _HF_ARCH_DARWIN
 #pragma push_macro("DEBUG")
@@ -96,6 +97,11 @@ extern enum llevel_t logGetLevel(void);
 extern pthread_mutex_t* logMutexGet(void);
 
 void logMutexReset(void);
+
+#if defined(__sun)
+void dprintf(int fd, const char *, ...);
+int vdprintf(int fd, const char *, va_list);
+#endif
 
 #ifdef _HF_ARCH_DARWIN
 #pragma pop_macro("DEBUG")

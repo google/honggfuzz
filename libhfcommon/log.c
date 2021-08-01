@@ -181,3 +181,20 @@ int logFd(void) {
 enum llevel_t logGetLevel(void) {
     return hf_log_level;
 }
+
+#if defined(__sun)
+void dprintf(int fd, const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    vdprintf(fd, fmt, ap);
+    va_end(ap);
+}
+
+int vdprintf(int fd, const char *fmt, va_list ap) {
+    FILE fp = {
+	    ._magic = (unsigned char )fd,
+	    ._flag = _IOREAD,
+    };
+    return vfprintf(&fp, fmt, ap);
+}
+#endif
