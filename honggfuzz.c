@@ -101,7 +101,7 @@ static void setupRLimits(void) {
         LOG_E("RLIMIT_NOFILE max limit < 1024 (%zu). Expect troubles!", (size_t)rlim.rlim_max);
         return;
     }
-    rlim.rlim_cur = MIN(1024, rlim.rlim_max);    // we don't need more
+    rlim.rlim_cur = HF_MIN(1024, rlim.rlim_max);    // we don't need more
     if (setrlimit(RLIMIT_NOFILE, &rlim) == -1) {
         PLOG_E("Couldn't setrlimit(RLIMIT_NOFILE, cur=%zu/max=%zu)", (size_t)rlim.rlim_cur,
             (size_t)rlim.rlim_max);

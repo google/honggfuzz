@@ -32,7 +32,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if !defined(__sun)
 #include <sys/cdefs.h>
+#endif
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -93,7 +95,7 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
      * Boring, the process just exited
      */
     if (WIFEXITED(status)) {
-        LOG_D("Process (pid %d) exited normally with status %d", pid, WEXITSTATUS(status));
+        LOG_D("Process (pid %d) exited normally with status %d", (int)pid, WEXITSTATUS(status));
         return;
     }
 
@@ -102,12 +104,12 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
      */
     if (!WIFSIGNALED(status)) {
         LOG_E("Process (pid %d) exited with the following status %d, please report that as a bug",
-            pid, status);
+            (int)pid, status);
         return;
     }
 
     int termsig = WTERMSIG(status);
-    LOG_D("Process (pid %d) killed by signal %d '%s'", pid, termsig, strsignal(termsig));
+    LOG_D("Process (pid %d) killed by signal %d '%s'", (int)pid, termsig, strsignal(termsig));
     if (!arch_sigs[termsig].important) {
         LOG_D("It's not that important signal, skipping");
         return;
@@ -150,7 +152,7 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".ADDR.%" PRIx64 ".%s.%d.%s",
             run->global->io.crashDir, util_sigName(termsig), pc, run->backtrace, crashAddr,
-            localtmstr, pid, run->global->io.fileExtn);
+            localtmstr, (int)pid, run->global->io.fileExtn);
     }
 
     if (files_exists(run->crashFileName)) {
@@ -210,7 +212,7 @@ static bool arch_checkWait(run_t* run) {
             PLOG_F("waitpid() failed");
         }
 
-        LOG_D("pid=%d returned with status: %s", pid, subproc_StatusToStr(status));
+        LOG_D("pid=%d returned with status: %s", (int)pid, subproc_StatusToStr(status));
 
         arch_analyzeSignal(run, pid, status);
 

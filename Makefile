@@ -146,6 +146,10 @@ else
     ARCH_CFLAGS := -Wno-initializer-overrides \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas
     ARCH_LDFLAGS := -L/usr/local/lib -lm
+    ifeq ($(OS),SunOS)
+        ARCH_CFLAGS += -D_POSIX_C_SOURCE=200809L -D__EXTENSIONS__=1
+	ARCH_LDFLAGS += -lkstat -lsocket -lnsl
+    endif
     ifneq ($(OS),OpenBSD)
         ARCH_LDFLAGS += -lrt
     endif

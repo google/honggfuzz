@@ -39,6 +39,10 @@
 #include <sys/sysctl.h>
 #endif
 
+#if defined(__sun)
+#include <kstat.h>
+#endif
+
 #if defined(__APPLE__)
 #include <mach/mach.h>
 #include <mach/task_info.h>
@@ -163,6 +167,25 @@ static unsigned getCpuUse(int numCpus) {
         systemT += cpuData[CP_SYS] * ticks;
         idleT += cpuData[CP_IDLE] * ticks;
     }
+#elif defined(__sun)
+    kstat_ctl_t *kctl = kstat_open();
+    for (int i = 0; i < numCpus; i++) {
+        kstat_named_t *data;
+        kstat_t *cpu = kstat_lookup(kctl, "cpu", i, NULL);
+	if (!cpu) {
+            LOG_W("kstat_lookup('cpu_info') != 0");
+           continue;
+	}
+	kstat_read(kctl, cpu, NULL);
+	data = kstat_data_lookup(cpu, "cpu_ticks_user");
+	userT += data->value.ui64;
+	data = kstat_data_lookup(cpu, "cpu_ticks_kernel");
+	systemT += data->value.ui64;
+	data = kstat_data_lookup(cpu, "cpu_ticks_idle");
+	idleT += data->value.ui64;
+    }
+
+    kstat_close(kctl);
 #else
     host_cpu_load_info_data_t avg;
     mach_msg_type_number_t    num = HOST_CPU_LOAD_INFO_COUNT;
