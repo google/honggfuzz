@@ -131,8 +131,8 @@ size_t sanitizers_parseReport(run_t* run, pid_t pid, funcs_t* funcs, uint64_t* p
 
     /* Under Linux the crash is seen in TID, but the sanitizer report is created for PID */
     pid = sanitizers_PidForTid(pid);
-    snprintf(
-        crashReport, sizeof(crashReport), "%s/%s.%d", run->global->io.workDir, kLOGPREFIX, (int)pid);
+    snprintf(crashReport, sizeof(crashReport), "%s/%s.%d", run->global->io.workDir, kLOGPREFIX,
+        (int)pid);
 
     FILE* fReport = fopen(crashReport, "rb");
     if (fReport == NULL) {

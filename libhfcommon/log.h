@@ -23,9 +23,9 @@
 #define _HF_COMMON_LOG_H_
 
 #include <pthread.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <stdarg.h>
 
 #ifdef _HF_ARCH_DARWIN
 #pragma push_macro("DEBUG")
@@ -99,8 +99,8 @@ extern pthread_mutex_t* logMutexGet(void);
 void logMutexReset(void);
 
 #if defined(__sun)
-void dprintf(int fd, const char *, ...);
-int vdprintf(int fd, const char *, va_list);
+void dprintf(int fd, const char*, ...);
+int  vdprintf(int fd, const char*, va_list);
 #endif
 
 #ifdef _HF_ARCH_DARWIN
