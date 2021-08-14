@@ -34,7 +34,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#if defined(__FreeBSD__) || defined(__NetBSD__)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
 #include <sys/resource.h>
 #include <sys/sysctl.h>
 #endif
@@ -122,7 +122,7 @@ static unsigned getCpuUse(int numCpus) {
         LOG_W("fscanf('/proc/stat') != 4");
         return 0;
     }
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__DragonFly__)
     long   ticks      = (1000 / sysconf(_SC_CLK_TCK));
     long   off        = 0;
     size_t cpuDataLen = sizeof(long) * CPUSTATES * numCpus;
