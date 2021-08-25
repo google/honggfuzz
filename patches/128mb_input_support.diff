@@ -1,0 +1,112 @@
+diff --git a/cmdline.c b/cmdline.c
+index 5c841154..bf1361d1 100644
+--- a/cmdline.c
++++ b/cmdline.c
+@@ -505,7 +505,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
+         { { "rlimit_core", required_argument, NULL, 0x103 }, "Per process RLIMIT_CORE in MiB (default: 0 [no cores are produced])" },
+         { { "rlimit_stack", required_argument, NULL, 0x104 }, "Per process RLIMIT_STACK in MiB (default: 0 [default limit])" },
+         { { "report", required_argument, NULL, 'R' }, "Write report to this file (default: '<workdir>/" _HF_REPORT_FILE "')" },
+-        { { "max_file_size", required_argument, NULL, 'F' }, "Maximal size of files processed by the fuzzer in bytes (default: 1048576 = 1MB)" },
++        { { "max_file_size", required_argument, NULL, 'F' }, "Maximal size of files processed by the fuzzer in bytes (default: 33554432 = 32MiB)" },
+         { { "clear_env", no_argument, NULL, 0x108 }, "Clear all environment variables before executing the binary" },
+         { { "env", required_argument, NULL, 'E' }, "Pass this environment variable, can be used multiple times" },
+         { { "save_all", no_argument, NULL, 'u' }, "Save all test-cases (not only the unique ones) by appending the current time-stamp to the filenames" },
+diff --git a/docs/USAGE.md b/docs/USAGE.md
+index 47ac3d57..ded57e51 100644
+--- a/docs/USAGE.md
++++ b/docs/USAGE.md
+@@ -172,7 +172,7 @@ Options:
+  --report|-R VALUE
+ 	Write report to this file (default: '<workdir>/HONGGFUZZ.REPORT.TXT')
+  --max_file_size|-F VALUE
+-	Maximal size of files processed by the fuzzer in bytes (default: 1048576 = 1MB)
++	Maximal size of files processed by the fuzzer in bytes (default: 33554432 = 32MiB)
+  --clear_env 
+ 	Clear all environment variables before executing the binary
+  --env|-E VALUE
+diff --git a/fuzz.c b/fuzz.c
+index 2b4babd4..44bfba25 100644
+--- a/fuzz.c
++++ b/fuzz.c
+@@ -135,10 +135,11 @@ static void fuzz_setDynamicMainState(run_t* run) {
+     }
+     snprintf(run->dynfile->path, sizeof(run->dynfile->path), "[DYNAMIC]");
+ 
+-    if (run->global->io.maxFileSz == 0 && run->global->mutate.maxInputSz > _HF_INPUT_DEFAULT_SIZE) {
+-        size_t newsz = (run->global->io.dynfileqMaxSz >= _HF_INPUT_DEFAULT_SIZE)
++    if (run->global->io.maxFileSz == 0 &&
++        run->global->mutate.maxInputSz > _HF_INPUT_DEFAULT_MIN_SIZE) {
++        size_t newsz = (run->global->io.dynfileqMaxSz >= _HF_INPUT_DEFAULT_MIN_SIZE)
+                            ? run->global->io.dynfileqMaxSz
+-                           : _HF_INPUT_DEFAULT_SIZE;
++                           : _HF_INPUT_DEFAULT_MIN_SIZE;
+         newsz        = (newsz + newsz / 4); /* Add 25% overhead for growth */
+         if (newsz > run->global->mutate.maxInputSz) {
+             newsz = run->global->mutate.maxInputSz;
+diff --git a/honggfuzz.h b/honggfuzz.h
+index c80cdd87..4d4d27bb 100644
+--- a/honggfuzz.h
++++ b/honggfuzz.h
+@@ -71,11 +71,12 @@
+ /* Maximum number of PC guards (=trace-pc-guard) we support */
+ #define _HF_PC_GUARD_MAX (1024ULL * 1024ULL * 64ULL)
+ 
+-/* Maximum size of the input file in bytes (1 MiB) */
+-#define _HF_INPUT_MAX_SIZE (1024ULL * 1024ULL)
+-
+-/* Default maximum size of produced inputs */
+-#define _HF_INPUT_DEFAULT_SIZE (1024ULL * 8)
++/* Maximum size of the input file in bytes (32 MiB) */
++#define _HF_INPUT_MAX_SIZE (1024ULL * 1024ULL * 32ULL)
++/* Default minimum limit for produced inputs */
++#define _HF_INPUT_DEFAULT_MIN_SIZE (1024ULL * 8ULL)
++/* Default maximum limit for produced inputs */
++#define _HF_INPUT_DEFAULT_MAX_SIZE (1024ULL * 1024ULL)
+ 
+ /* Per-thread bitmap */
+ #define _HF_PERTHREAD_BITMAP_FD 1018
+diff --git a/input.c b/input.c
+index 3998235a..91294886 100644
+--- a/input.c
++++ b/input.c
+@@ -92,9 +92,14 @@ bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
+             continue;
+         }
+         if (hfuzz->io.maxFileSz && st.st_size > (off_t)hfuzz->io.maxFileSz) {
+-            LOG_D("File '%s' is bigger than maximal defined file size (-F): %" PRIu64 " > %zu",
++            LOG_W("File '%s' is bigger than maximal defined file size (-F): %" PRIu64 " > %zu",
+                 path, (uint64_t)st.st_size, hfuzz->io.maxFileSz);
+         }
++        if (hfuzz->io.maxFileSz == 0 && st.st_size > (off_t)_HF_INPUT_DEFAULT_MAX_SIZE) {
++            LOG_W("File '%s' is bigger than maximum default file size : %" PRIu64
++                  " > (_HF_INPUT_DEFAULT_MAX_SIZE) %zu",
++                path, (uint64_t)st.st_size, (size_t)_HF_INPUT_DEFAULT_MAX_SIZE);
++        }
+         if ((size_t)st.st_size > hfuzz->mutate.maxInputSz) {
+             hfuzz->mutate.maxInputSz = st.st_size;
+         }
+@@ -102,12 +107,13 @@ bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
+     }
+ 
+     ATOMIC_SET(hfuzz->io.fileCnt, fileCnt);
+-    if (hfuzz->io.maxFileSz) {
++
++    if (hfuzz->io.maxFileSz > 0) {
+         hfuzz->mutate.maxInputSz = hfuzz->io.maxFileSz;
+-    } else if (hfuzz->mutate.maxInputSz < _HF_INPUT_DEFAULT_SIZE) {
+-        hfuzz->mutate.maxInputSz = _HF_INPUT_DEFAULT_SIZE;
+-    } else if (hfuzz->mutate.maxInputSz > _HF_INPUT_MAX_SIZE) {
+-        hfuzz->mutate.maxInputSz = _HF_INPUT_MAX_SIZE;
++    } else if (hfuzz->mutate.maxInputSz <= _HF_INPUT_DEFAULT_MIN_SIZE) {
++        hfuzz->mutate.maxInputSz = _HF_INPUT_DEFAULT_MIN_SIZE;
++    } else {
++        hfuzz->mutate.maxInputSz = HF_MIN(hfuzz->io.maxFileSz, _HF_INPUT_DEFAULT_MAX_SIZE);
+     }
+ 
+     if (hfuzz->io.fileCnt == 0U) {
+diff --git a/third_party/android/libunwind b/third_party/android/libunwind
+--- a/third_party/android/libunwind
++++ b/third_party/android/libunwind
+@@ -1 +1 @@
+-Subproject commit bc8698fd7ed13a629a8ec3cb2a89bd74f9d8b5c0
++Subproject commit bc8698fd7ed13a629a8ec3cb2a89bd74f9d8b5c0-dirty
