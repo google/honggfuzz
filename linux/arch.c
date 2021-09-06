@@ -96,9 +96,6 @@ pid_t arch_fork(run_t* run) {
     }
     if (pid == 0) {
         logMutexReset();
-        if (prctl(PR_SET_PDEATHSIG, (unsigned long)SIGKILL, 0UL, 0UL, 0UL) == -1) {
-            PLOG_W("prctl(PR_SET_PDEATHSIG, SIGKILL)");
-        }
 
         if (run->global->arch_linux.cloneFlags != 0 && !nsSetup(uid, gid)) {
             PLOG_W("nsSetup(uid=%d, gid=%d)", (int)uid, (int)gid);

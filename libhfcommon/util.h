@@ -162,6 +162,8 @@ typedef enum {
     LHFC_ADDR_RW       = 2,
 } lhfc_addr_t;
 
+extern void util_ParentDeathSigIfAvail(int signo);
+
 extern void* util_Malloc(size_t sz);
 extern void* util_Calloc(size_t sz);
 extern void* util_AllocCopy(const uint8_t* ptr, size_t sz);

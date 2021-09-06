@@ -39,6 +39,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#if defined(_HF_ARCH_LINUX)
+#include <sys/prctl.h>
+#endif /* defined(_HF_ARCH_LINUX) */
+#if defined(__FreeBSD__)
+#include <sys/procctl.h>
+#endif /* defined(__FreeBSD__) */
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -48,6 +54,19 @@
 #include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
+
+void util_ParentDeathSigIfAvail(int signo HF_ATTR_UNUSED) {
+#if defined(__FreeBSD__)
+    if (procctl(P_PID, 0, PROC_PDEATHSIG_CTL, &signo) == -1) {
+        PLOG_W("procctl(P_PID, PROC_PDEATHSIG_CTL, signo=%d (%s))", signo, util_sigName(signo));
+    }
+#endif /* defined(__FreeBSD__) */
+#if defined(_HF_ARCH_LINUX)
+    if (prctl(PR_SET_PDEATHSIG, (unsigned long)signo, 0UL, 0UL, 0UL) == -1) {
+        PLOG_W("prctl(PR_SET_PDEATHSIG, signo=%d (%s))", signo, util_sigName(signo));
+    }
+#endif /* defined(_HF_ARCH_LINUX) */
+}
 
 void* util_Malloc(size_t sz) {
     void* p = malloc(sz);

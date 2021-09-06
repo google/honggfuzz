@@ -36,9 +36,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#if defined(__FreeBSD__)
-#include <sys/procctl.h>
-#endif
 #include <unistd.h>
 
 #include "arch.h"
@@ -208,6 +205,8 @@ static void subproc_prepareExecvArgs(run_t* run) {
 }
 
 static bool subproc_PrepareExecv(run_t* run) {
+    util_ParentDeathSigIfAvail(SIGKILL);
+
     /*
      * The address space limit. If big enough - roughly the size of RAM used
      */
@@ -379,10 +378,6 @@ static bool subproc_New(run_t* run) {
     /* The child process */
     if (!run->pid) {
         logMutexReset();
-#if defined(__FreeBSD__)
-	int sig = SIGKILL;
-	procctl(P_PID, 0, PROC_PDEATHSIG_CTL, &sig);
-#endif
         /*
          * Reset sighandlers, and set alarm(1). It's a guarantee against dead-locks
          * in the child, where we ensure here that the child process will either
