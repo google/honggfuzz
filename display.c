@@ -34,9 +34,12 @@
 #include <time.h>
 #include <unistd.h>
 
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
 #include <sys/resource.h>
 #include <sys/sysctl.h>
+#if defined(__OpenBSD__)
+#include <sys/sched.h>
+#endif
 #endif
 
 #if defined(__sun)
@@ -160,6 +163,24 @@ static unsigned getCpuUse(int numCpus) {
         snprintf(mib, sizeof(mib), "kern.cp_time.%d", i);
         if (sysctlbyname(mib, &cpuData, &cpuDataLen, NULL, 0) != 0) {
             LOG_W("sysctlbyname('kern.cp_time') != 0");
+            return 0;
+        }
+        userT += cpuData[CP_USER] * ticks;
+        niceT += cpuData[CP_NICE] * ticks;
+        systemT += cpuData[CP_SYS] * ticks;
+        idleT += cpuData[CP_IDLE] * ticks;
+    }
+#elif defined(__OpenBSD__)
+    long ticks = (1000 / sysconf(_SC_CLK_TCK));
+
+    userT = niceT = systemT = idleT = 0;
+
+    for (int i = 0; i < numCpus; i++) {
+        uint64_t cpuData[CPUSTATES];
+        size_t   cpuDataLen = sizeof(cpuData);
+	int mib[3] = {CTL_KERN, KERN_CPTIME2, i};
+        if (sysctl(mib, 3, &cpuData, &cpuDataLen, NULL, 0) != 0) {
+            LOG_W("sysctl('KERN_CPTIME2') != 0");
             return 0;
         }
         userT += cpuData[CP_USER] * ticks;

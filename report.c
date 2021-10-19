@@ -109,7 +109,7 @@ void report_saveReport(run_t* run) {
         " wordlistFile    : %s\n",
         localtmstr, run->global->mutate.mutationsPerRun,
         run->global->exe.externalCommand == NULL ? "NULL" : run->global->exe.externalCommand,
-        run->global->exe.fuzzStdin ? "TRUE" : "FALSE", run->global->timing.tmOut,
+        run->global->exe.fuzzStdin ? "TRUE" : "FALSE", (long)run->global->timing.tmOut,
 #if defined(_HF_ARCH_LINUX)
         run->global->arch_linux.ignoreAddr,
 #elif defined(_HF_ARCH_NETBSD)
