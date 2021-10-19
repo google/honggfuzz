@@ -178,7 +178,7 @@ static unsigned getCpuUse(int numCpus) {
     for (int i = 0; i < numCpus; i++) {
         uint64_t cpuData[CPUSTATES];
         size_t   cpuDataLen = sizeof(cpuData);
-	int mib[3] = {CTL_KERN, KERN_CPTIME2, i};
+        int      mib[3]     = {CTL_KERN, KERN_CPTIME2, i};
         if (sysctl(mib, 3, &cpuData, &cpuDataLen, NULL, 0) != 0) {
             LOG_W("sysctl('KERN_CPTIME2') != 0");
             return 0;
