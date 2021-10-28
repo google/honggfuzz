@@ -475,6 +475,11 @@ static void* fuzz_threadNew(void* arg) {
     unsigned int fuzzNo = ATOMIC_POST_INC(hfuzz->threads.threadsActiveCnt);
     LOG_I("Launched new fuzzing thread, no. #%u", fuzzNo);
 
+    if (!util_PinThreadToCPUs(fuzzNo, hfuzz->threads.pinThreadToCPUs)) {
+        PLOG_W("Pinning thread #%u to %" PRIu32 " CPUs failed", fuzzNo,
+            hfuzz->threads.pinThreadToCPUs);
+    }
+
     run_t run = {
         .global         = hfuzz,
         .pid            = 0,

@@ -305,6 +305,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                     (ncpus <= 1 ? 1 : ncpus / 2);
                 }),
                 .threadsActiveCnt = 0,
+                .pinThreadToCPUs  = 0,
                 .mainThread       = pthread_self(),
                 .mainPid          = getpid(),
             },
@@ -523,6 +524,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "only_printable", no_argument, NULL, 0x10D }, "Only generate printable inputs" },
         { { "export_feedback", no_argument, NULL, 0x10E }, "Export the coverage feedback structure as ./hfuzz-feedback" },
         { { "const_feedback", required_argument, NULL, 0x112 }, "Use constant integer/string values from fuzzed programs to mangle input files via a dynamic dictionary (default: true)" },
+        { { "pin_thread_cpu", required_argument, NULL, 0x114 }, "Pin a single execution thread to this many consecutive CPUs (default: 0 = no CPU pinning)" },
 
 #if defined(_HF_ARCH_LINUX)
         { { "linux_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blocklist filter file (one entry per line)" },
@@ -713,6 +715,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
             case 0x113:
                 hfuzz->cfg.exitCodeUponCrash = strtoul(optarg, NULL, 0);
+                break;
+            case 0x114:
+                hfuzz->threads.pinThreadToCPUs = strtoul(optarg, NULL, 0);
                 break;
             case 0x108:
                 hfuzz->exe.clearEnv = true;

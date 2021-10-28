@@ -32,6 +32,9 @@
 #endif /* !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__) */
 #include <math.h>
 #include <pthread.h>
+#if defined(_HF_ARCH_LINUX)
+#include <sched.h>
+#endif /* defined(_HF_ARCH_LINUX) */
 #include <signal.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -66,6 +69,47 @@ void util_ParentDeathSigIfAvail(int signo HF_ATTR_UNUSED) {
         PLOG_W("prctl(PR_SET_PDEATHSIG, signo=%d (%s))", signo, util_sigName(signo));
     }
 #endif /* defined(_HF_ARCH_LINUX) */
+}
+
+bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
+    if (cpucnt == 0) {
+        return true;
+    }
+
+    long num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+    if (num_cpus == -1) {
+        PLOG_W("sysconf(_SC_NPROCESSORS_ONLN) failed");
+        return false;
+    }
+
+    uint32_t start_cpu = (threadno * cpucnt) % (uint32_t)num_cpus;
+    uint32_t end_cpu   = (threadno * cpucnt + cpucnt - 1U) % (uint32_t)num_cpus;
+
+    LOG_D("Setting CPU affinity for the current thread #%" PRIu32 " to %" PRId32
+          " consecutive CPUs, (start:%" PRIu32 "-end:%" PRIu32 ") total_cpus:%ld",
+        threadno, cpucnt, start_cpu, end_cpu, num_cpus);
+
+    if (cpucnt > (uint32_t)num_cpus) {
+        LOG_W("Number of requested CPUs (%" PRId32
+              ") is bigger than number of available CPUs (%ld)",
+            cpucnt, num_cpus);
+        return false;
+    }
+
+#if defined(_HF_ARCH_LINUX)
+    cpu_set_t set;
+    CPU_ZERO(&set);
+
+    for (uint32_t i = 0; i < cpucnt; i++) {
+        CPU_SET((start_cpu + i) % num_cpus, &set);
+    }
+
+    if (sched_setaffinity(gettid(), sizeof(set), &set) == -1) {
+        PLOG_W("sched_setaffinity(tid=%d, sizeof(set)) failed", (int)gettid());
+        return false;
+    }
+#endif /* defined(_HF_ARCH_LINUX) */
+    return true;
 }
 
 void* util_Malloc(size_t sz) {

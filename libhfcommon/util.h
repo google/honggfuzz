@@ -163,6 +163,7 @@ typedef enum {
 } lhfc_addr_t;
 
 extern void util_ParentDeathSigIfAvail(int signo);
+extern bool util_PinThreadToCPUs(uint32_t startcpu, uint32_t cpucnt);
 
 extern void* util_Malloc(size_t sz);
 extern void* util_Calloc(size_t sz);
