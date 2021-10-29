@@ -36,11 +36,13 @@
 #include <sched.h>
 #endif /* defined(_HF_ARCH_LINUX) */
 #if defined(__FreeBSD__)
-#include <sys/param.h>
-#include <sys/cpuset.h>
 #include <pthread_np.h>
-#define cpu_set_t cpuset_t
+#include <sys/cpuset.h>
+#include <sys/param.h>
 #endif
+#if defined(HF_ARCH_NETBSD)
+#include <sched.h>
+#endif /* defined(HF_ARCH_NETBSD) */
 #include <signal.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -89,37 +91,34 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
     }
 
     uint32_t start_cpu = (threadno * cpucnt) % (uint32_t)num_cpus;
-    uint32_t end_cpu   = (threadno * cpucnt + cpucnt - 1U) % (uint32_t)num_cpus;
+    uint32_t end_cpu   = (start_cpu + cpucnt - 1U) % (uint32_t)num_cpus;
 
     LOG_D("Setting CPU affinity for the current thread #%" PRIu32 " to %" PRId32
           " consecutive CPUs, (start:%" PRIu32 "-end:%" PRIu32 ") total_cpus:%ld",
         threadno, cpucnt, start_cpu, end_cpu, num_cpus);
 
     if (cpucnt > (uint32_t)num_cpus) {
-        LOG_W("Number of requested CPUs (%" PRId32
-              ") is bigger than number of available CPUs (%ld)",
-            cpucnt, num_cpus);
+        LOG_W("Requested CPUs (%" PRId32 ") > available CPUs (%ld)", cpucnt, num_cpus);
         return false;
     }
 
-#if defined(_HF_ARCH_LINUX) || defined(__FreeBSD__)
+#if defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || defined(HF_ARCH_NETBSD)
+#if defined(_HF_ARCH_LINUX)
     cpu_set_t set;
+#endif /* defined(_HF_ARCH_LINUX) */
+#if defined(__FreeBSD__) || defined(HF_ARCH_NETBSD)
+    cpuset_t set;
+#endif /* defined(__FreeBSD__) || defined(HF_ARCH_NETBSD) */
     CPU_ZERO(&set);
 
     for (uint32_t i = 0; i < cpucnt; i++) {
         CPU_SET((start_cpu + i) % num_cpus, &set);
     }
-
-#if defined(_HF_ARCH_LINUX)
-    if (sched_setaffinity(gettid(), sizeof(set), &set) == -1) {
-        PLOG_W("sched_setaffinity(tid=%d, sizeof(set)) failed", (int)gettid());
-#elif defined(__FreeBSD__)
-    if (cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_TID, -1, sizeof(set), &set) == -1) {
-        PLOG_W("cpuset_setaffinity(tid=%d, sizeof(set)) failed", (int)pthread_getthreadid_np());
-#endif
+    if (pthread_setaffinity_np(pthread_self(), sizeof(set), &set) != 0) {
+        PLOG_W("sched_setaffinity(thread=#%" PRIu32 "), failed", threadno);
         return false;
     }
-#endif /* defined(_HF_ARCH_LINUX) */
+#endif /* defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || defined(HF_ARCH_NETBSD) */
     return true;
 }
 
