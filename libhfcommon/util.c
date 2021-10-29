@@ -40,9 +40,9 @@
 #include <sys/cpuset.h>
 #include <sys/param.h>
 #endif
-#if defined(HF_ARCH_NETBSD)
+#if defined(_HF_ARCH_NETBSD)
 #include <sched.h>
-#endif /* defined(HF_ARCH_NETBSD) */
+#endif /* defined(_HF_ARCH_NETBSD) */
 #include <signal.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -102,23 +102,39 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
         return false;
     }
 
-#if defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || defined(HF_ARCH_NETBSD)
+#if defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || defined(_HF_ARCH_NETBSD)
 #if defined(_HF_ARCH_LINUX)
     cpu_set_t set;
-#endif /* defined(_HF_ARCH_LINUX) */
-#if defined(__FreeBSD__) || defined(HF_ARCH_NETBSD)
-    cpuset_t set;
-#endif /* defined(__FreeBSD__) || defined(HF_ARCH_NETBSD) */
     CPU_ZERO(&set);
+#endif /* defined(_HF_ARCH_LINUX) */
+#if defined(__FreeBSD__)
+    cpuset_t set;
+    CPU_ZERO(&set);
+#endif /* defined(__FreeBSD__) || defined(_HF_ARCH_NETBSD) */
+#if defined(_HF_ARCH_NETBSD)
+    cpuset_t* set = cpuset_create();
+    defer {
+        cpuset_destroy(set);
+    };
+#endif /* defined(_HF_ARCH_NETBSD) */
 
     for (uint32_t i = 0; i < cpucnt; i++) {
+#if defined(_HF_ARCH_NETBSD)
+        cpuset_set((start_cpu + i) % num_cpus, set);
+#else  /* defined((_HF_ARCH_NETBSD) */
         CPU_SET((start_cpu + i) % num_cpus, &set);
+#endif /* defined((_HF_ARCH_NETBSD) */
     }
+
+#if defined(_HF_ARCH_NETBSD)
+    if (pthread_setaffinity_np(pthread_self(), cpuset_size(set), set) != 0) {
+#else  /* defined((_HF_ARCH_NETBSD) */
     if (pthread_setaffinity_np(pthread_self(), sizeof(set), &set) != 0) {
+#endif /* defined((_HF_ARCH_NETBSD) */
         PLOG_W("sched_setaffinity(thread=#%" PRIu32 "), failed", threadno);
         return false;
     }
-#endif /* defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || defined(HF_ARCH_NETBSD) */
+#endif /* defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || defined(_HF_ARCH_NETBSD) */
     return true;
 }
 
