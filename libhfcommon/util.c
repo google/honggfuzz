@@ -134,8 +134,10 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
         PLOG_W("sched_setaffinity(thread=#%" PRIu32 "), failed", threadno);
         return false;
     }
-#endif /* defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || defined(_HF_ARCH_NETBSD) */
     return true;
+#endif /* defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || defined(_HF_ARCH_NETBSD) */
+    LOG_W("util_PinThreadToCPUs() not implemented for the current architecture");
+    return false;
 }
 
 void* util_Malloc(size_t sz) {
