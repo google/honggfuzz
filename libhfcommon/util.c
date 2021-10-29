@@ -35,6 +35,12 @@
 #if defined(_HF_ARCH_LINUX)
 #include <sched.h>
 #endif /* defined(_HF_ARCH_LINUX) */
+#if defined(__FreeBSD__)
+#include <sys/param.h>
+#include <sys/cpuset.h>
+#include <pthread_np.h>
+#define cpu_set_t cpuset_t
+#endif
 #include <signal.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -96,7 +102,7 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
         return false;
     }
 
-#if defined(_HF_ARCH_LINUX)
+#if defined(_HF_ARCH_LINUX) || defined(__FreeBSD__)
     cpu_set_t set;
     CPU_ZERO(&set);
 
@@ -104,8 +110,13 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
         CPU_SET((start_cpu + i) % num_cpus, &set);
     }
 
+#if defined(_HF_ARCH_LINUX)
     if (sched_setaffinity(gettid(), sizeof(set), &set) == -1) {
         PLOG_W("sched_setaffinity(tid=%d, sizeof(set)) failed", (int)gettid());
+#elif defined(__FreeBSD__)
+    if (cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_TID, -1, sizeof(set), &set) == -1) {
+        PLOG_W("cpuset_setaffinity(tid=%d, sizeof(set)) failed", (int)pthread_getthreadid_np());
+#endif
         return false;
     }
 #endif /* defined(_HF_ARCH_LINUX) */
