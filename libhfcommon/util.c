@@ -39,10 +39,14 @@
 #include <pthread_np.h>
 #include <sys/cpuset.h>
 #include <sys/param.h>
-#endif
+#endif /* defined(__FreebSD__) */
 #if defined(_HF_ARCH_NETBSD)
 #include <sched.h>
 #endif /* defined(_HF_ARCH_NETBSD) */
+#if defined(__DragonFly__)
+#include <pthread.h>
+#include <pthread_np.h>
+#endif /* defined(__DragonFly__) */
 #include <signal.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -102,8 +106,9 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
         return false;
     }
 
-#if defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || defined(_HF_ARCH_NETBSD)
-#if defined(_HF_ARCH_LINUX)
+#if defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || \
+    defined(_HF_ARCH_NETBSD) || defined(__DragonFly__)
+#if defined(_HF_ARCH_LINUX) || defined(__DragonFly__)
     cpu_set_t set;
     CPU_ZERO(&set);
 #endif /* defined(_HF_ARCH_LINUX) */
@@ -131,7 +136,7 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
 #else  /* defined((_HF_ARCH_NETBSD) */
     if (pthread_setaffinity_np(pthread_self(), sizeof(set), &set) != 0) {
 #endif /* defined((_HF_ARCH_NETBSD) */
-        PLOG_W("sched_setaffinity(thread=#%" PRIu32 "), failed", threadno);
+        PLOG_W("pthread_setaffinity_np(thread=#%" PRIu32 "), failed", threadno);
         return false;
     }
 #endif /* defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || defined(_HF_ARCH_NETBSD) */
