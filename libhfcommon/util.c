@@ -60,6 +60,9 @@
 #if defined(__FreeBSD__)
 #include <sys/procctl.h>
 #endif /* defined(__FreeBSD__) */
+#if defined(__sun)
+#include <sys/pset.h>
+#endif /* defined(__sun) */
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -140,6 +143,33 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
         return false;
     }
     return true;
+#elif defined(__sun)
+    psetid_t set;
+    pid_t p;
+    bool ret = true;
+
+    if (pset_create(&set) != 0) {
+        PLOG_W("pset_create failed");
+        return false;
+    }
+
+    for (uint32_t i = 0; i < cpucnt; i++) {
+        if (pset_assign(set, i, NULL) != 0) {
+            PLOG_W("pset_assign(%" PRIu32 "), failed", i);
+	    pset_destroy(set);
+	    return false;
+	}
+    }
+
+    p = getpid();
+
+    if (pset_bind(set, P_PID, p, NULL) != 0) {
+        PLOG_W("pset_bind(%ld) failed", p);
+	ret = false;
+    }
+
+    pset_destroy(set);
+    return ret;
 #endif /* defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || defined(_HF_ARCH_NETBSD) */
     LOG_W("util_PinThreadToCPUs() not implemented for the current architecture");
     return false;
