@@ -154,7 +154,7 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
     }
 
     for (uint32_t i = 0; i < cpucnt; i++) {
-        if (pset_assign(set, i, NULL) != 0) {
+        if (pset_assign(set, ((start_cpu + i) % num_cpus), NULL) != 0) {
             PLOG_W("pset_assign(%" PRIu32 "), failed", i);
             pset_destroy(set);
             return false;
