@@ -109,8 +109,8 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
         return false;
     }
 
-#if defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || \
-    defined(_HF_ARCH_NETBSD) || defined(__DragonFly__)
+#if defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || defined(_HF_ARCH_NETBSD) ||                 \
+    defined(__DragonFly__)
 #if defined(_HF_ARCH_LINUX) || defined(__DragonFly__)
     cpu_set_t set;
     CPU_ZERO(&set);
@@ -145,8 +145,8 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
     return true;
 #elif defined(__sun)
     psetid_t set;
-    pid_t p;
-    bool ret = true;
+    pid_t    p;
+    bool     ret = true;
 
     if (pset_create(&set) != 0) {
         PLOG_W("pset_create failed");
@@ -156,16 +156,16 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
     for (uint32_t i = 0; i < cpucnt; i++) {
         if (pset_assign(set, i, NULL) != 0) {
             PLOG_W("pset_assign(%" PRIu32 "), failed", i);
-	    pset_destroy(set);
-	    return false;
-	}
+            pset_destroy(set);
+            return false;
+        }
     }
 
     p = getpid();
 
     if (pset_bind(set, P_PID, p, NULL) != 0) {
         PLOG_W("pset_bind(%ld) failed", p);
-	ret = false;
+        ret = false;
     }
 
     pset_destroy(set);
