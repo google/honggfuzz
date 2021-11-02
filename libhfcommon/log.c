@@ -191,10 +191,21 @@ void dprintf(int fd, const char* fmt, ...) {
 }
 
 int vdprintf(int fd, const char* fmt, va_list ap) {
+#if defined(__LP64__)
+    // The data is priv on 64 bits but size is 128
+    struct FILEPRIV {
+        int _pad[8];
+        int _magic;
+        unsigned int _flag;
+        char fill[88];
+    };
+    struct FILEPRIV fp = {
+#else
     FILE fp = {
+#endif
         ._magic = (unsigned char)fd,
         ._flag  = _IOREAD,
     };
-    return vfprintf(&fp, fmt, ap);
+    return vfprintf((FILE *)&fp, fmt, ap);
 }
 #endif
