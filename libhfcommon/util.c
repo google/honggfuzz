@@ -91,23 +91,24 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
         return true;
     }
 
-    long num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
-    if (num_cpus == -1) {
+    long r = sysconf(_SC_NPROCESSORS_ONLN);
+    if (r == -1) {
         PLOG_W("sysconf(_SC_NPROCESSORS_ONLN) failed");
         return false;
     }
+    uint32_t num_cpus = (uint32_t)r;
 
-    uint32_t start_cpu = (threadno * cpucnt) % (uint32_t)num_cpus;
-    uint32_t end_cpu   = (start_cpu + cpucnt - 1U) % (uint32_t)num_cpus;
-
-    LOG_D("Setting CPU affinity for the current thread #%" PRIu32 " to %" PRId32
-          " consecutive CPUs, (start:%" PRIu32 "-end:%" PRIu32 ") total_cpus:%ld",
-        threadno, cpucnt, start_cpu, end_cpu, num_cpus);
-
-    if (cpucnt > (uint32_t)num_cpus) {
-        LOG_W("Requested CPUs (%" PRId32 ") > available CPUs (%ld)", cpucnt, num_cpus);
+    if (cpucnt > num_cpus) {
+        LOG_W("Requested CPUs (%" PRIu32 ") > available CPUs (%" PRIu32 ") for thread #%" PRIu32,
+            cpucnt, num_cpus, threadno);
         return false;
     }
+
+    uint32_t start_cpu = (threadno * cpucnt) % num_cpus;
+    uint32_t end_cpu   = (start_cpu + cpucnt - 1U) % num_cpus;
+    LOG_D("Setting CPU affinity for the current thread #%" PRIu32 " to %" PRIu32
+          " consecutive CPUs, (start:%" PRIu32 "-end:%" PRIu32 ") total_cpus:%" PRIu32,
+        threadno, cpucnt, start_cpu, end_cpu, num_cpus);
 
 #if defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || defined(_HF_ARCH_NETBSD) ||                 \
     defined(__DragonFly__)
