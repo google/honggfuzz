@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <sys/param.h>
 #if !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__)
 #include <link.h>
 #endif /* !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__) */
@@ -38,7 +39,6 @@
 #if defined(__FreeBSD__)
 #include <pthread_np.h>
 #include <sys/cpuset.h>
-#include <sys/param.h>
 #endif /* defined(__FreebSD__) */
 #if defined(_HF_ARCH_NETBSD)
 #include <sched.h>
@@ -226,6 +226,7 @@ static __thread pthread_once_t rndThreadOnce = PTHREAD_ONCE_INIT;
 static __thread uint64_t       rndState[2];
 
 static void util_rndInitThread(void) {
+#if !defined(BSD)
     int fd = TEMP_FAILURE_RETRY(open("/dev/urandom", O_RDONLY | O_CLOEXEC));
     if (fd == -1) {
         PLOG_F("Couldn't open /dev/urandom for reading");
@@ -234,6 +235,9 @@ static void util_rndInitThread(void) {
         PLOG_F("Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndState));
     }
     close(fd);
+#else
+    arc4random_buf((void *)rndState, sizeof(rndState));
+#endif
 }
 
 /*
