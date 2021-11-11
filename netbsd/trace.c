@@ -185,6 +185,8 @@ static size_t arch_getPC(
     *status_reg = r.regs[_REG_EFLAGS];
 #elif defined(__x86_64__)
     *status_reg = r.regs[_REG_RFLAGS];
+#elif defined(__aarch64__)
+    *status_reg = r.r_spsr;
 #else
 #error unsupported CPU architecture
 #endif
