@@ -188,7 +188,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [__P0__: Fuzzing ImageIO](https://googleprojectzero.blogspot.com/2020/04/fuzzing-imageio.html)
     * [__TrapFuzz__: by P0](https://github.com/googleprojectzero/p0tools/tree/master/TrapFuzz)
   * [__Rust's fuzztest__](https://docs.rs/crate/fuzztest)
-    * [_and multiple Rust projecs_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
+    * [_and multiple Rust projects_](https://github.com/search?q=%22extern+crate+honggfuzz%22&type=Code)
 
 ## Contact
 
