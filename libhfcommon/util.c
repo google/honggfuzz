@@ -236,7 +236,7 @@ static void util_rndInitThread(void) {
     }
     close(fd);
 #else
-    arc4random_buf((void *)rndState, sizeof(rndState));
+    arc4random_buf((void*)rndState, sizeof(rndState));
 #endif
 }
 
