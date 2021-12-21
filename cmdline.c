@@ -134,7 +134,7 @@ static void cmdlineHelp(const char* pname, struct custom_option* opts) {
 
 static void cmdlineUsage(const char* pname, struct custom_option* opts) {
     cmdlineHelp(pname, opts);
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
 
 bool cmdlineAddEnv(honggfuzz_t* hfuzz, char* env) {
@@ -570,9 +570,11 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 
         switch (c) {
             case 'h':
-            case '?':
                 cmdlineUsage(argv[0], custom_opts);
                 break;
+            case '?':
+                cmdlineHelp(argv[0], custom_opts);
+                return false;
             case 'i':
             case 'f': /* Synonym for -i, stands for -f(iles) */
                 hfuzz->io.inputDir = optarg;
@@ -795,9 +797,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 break;
 #endif /* defined(_HF_ARCH_NETBSD) */
             default:
-                cmdlineUsage(argv[0], custom_opts);
+                cmdlineHelp(argv[0], custom_opts);
                 return false;
-                break;
         }
     }
 
@@ -807,7 +808,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
     hfuzz->exe.cmdline = (const char* const*)&argv[optind];
     if (hfuzz->exe.argc <= 0) {
         LOG_E("No fuzz command provided");
-        cmdlineUsage(argv[0], custom_opts);
+        cmdlineHelp(argv[0], custom_opts);
         return false;
     }
     if (!files_exists(hfuzz->exe.cmdline[0])) {
