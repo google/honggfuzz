@@ -123,6 +123,7 @@ static void initializeCmpFeedback(void) {
             _HF_CMP_BITMAP_FD, sizeof(cmpfeedback_t));
         return;
     }
+    memset(ret, 0, sizeof(cmpfeedback_t));
     ATOMIC_SET(globalCmpFeedback, ret);
 }
 
@@ -242,6 +243,7 @@ static inline bool instrumentLimitEvery(uint64_t step) {
 }
 
 static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
+    size_t vallen = 0;
     if (len <= 1) {
         return;
     }
@@ -254,10 +256,11 @@ static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
     }
 
     for (uint32_t i = 0; i < curroff; i++) {
-        if ((len == ATOMIC_GET(globalCmpFeedback->valArr[i].len)) &&
+        vallen = ATOMIC_GET(globalCmpFeedback->valArr[i].len);
+        if (vallen && (len == vallen) &&
             libc_memcmp(globalCmpFeedback->valArr[i].val, mem, len) == 0) {
             return;
-        }
+        }   
     }
 
     uint32_t newoff = ATOMIC_POST_INC(globalCmpFeedback->cnt);
