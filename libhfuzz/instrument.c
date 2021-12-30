@@ -89,7 +89,7 @@ static void initializeLibcFunctions(void) {
 }
 
 static void* initialzeTryMapHugeTLB(int fd, size_t sz) {
-    int initflags = MAP_SHARED;
+    int   initflags = MAP_SHARED;
 #if defined(MAP_ALIGNED_SUPER)
     initflags |= MAP_ALIGNED_SUPER;
 #endif
@@ -101,30 +101,30 @@ static void* initialzeTryMapHugeTLB(int fd, size_t sz) {
         PLOG_W("madvise(addr=%p, sz=%zu, MADV_HUGEPAGE) failed", ret, sz);
     }
 #endif /* defined(MADV_HUGEPAGE) */
-
     return ret;
 }
 
-static void initializeCmpFeedback(void) {
+static void initializeCmpFeedback(void) { 
     struct stat st;
-    if (fstat(_HF_CMP_BITMAP_FD, &st) == -1) {
+    if (fstat(_HF_CMP_BITMAP_FD, &st) == -1) { 
         return;
-    }
-    if (st.st_size != sizeof(cmpfeedback_t)) {
+    }   
+    if (st.st_size != sizeof(cmpfeedback_t)) { 
         LOG_W(
             "Size of the globalCmpFeedback structure mismatch: st.size != sizeof(cmpfeedback_t) "
             "(%zu != %zu). Link your fuzzed binaries with the newest honggfuzz and hfuzz-clang(++)",
             (size_t)st.st_size, sizeof(cmpfeedback_t));
         return;
-    }
+    }   
     void* ret = initialzeTryMapHugeTLB(_HF_CMP_BITMAP_FD, sizeof(cmpfeedback_t));
-    if (ret == MAP_FAILED) {
+    if (ret == MAP_FAILED) { 
         PLOG_W("mmap(_HF_CMP_BITMAP_FD=%d, size=%zu) of the feedback structure failed",
             _HF_CMP_BITMAP_FD, sizeof(cmpfeedback_t));
         return;
-    }
+    }   
+    memset(ret, 0, sizeof(cmpfeedback_t));
     ATOMIC_SET(globalCmpFeedback, ret);
-}
+}   
 
 static bool initializeLocalCovFeedback(void) {
     struct stat st;
@@ -168,37 +168,37 @@ static bool initializeGlobalCovFeedback(void) {
     return true;
 }
 
-static void initializeInstrument(void) {
-    if (fcntl(_HF_LOG_FD, F_GETFD) != -1) {
+static void initializeInstrument(void) { 
+    if (fcntl(_HF_LOG_FD, F_GETFD) != -1) { 
         enum llevel_t ll    = INFO;
         const char*   llstr = getenv(_HF_LOG_LEVEL_ENV);
-        if (llstr) {
+        if (llstr) { 
             ll = atoi(llstr);
-        }
+        }   
         logInitLogFile(NULL, _HF_LOG_FD, ll);
-    }
+    }   
     LOG_D("Initializing pid=%d", (int)getpid());
 
     char* my_thread_no_str = getenv(_HF_THREAD_NO_ENV);
-    if (my_thread_no_str == NULL) {
+    if (my_thread_no_str == NULL) { 
         LOG_D("The '%s' envvar is not set", _HF_THREAD_NO_ENV);
         return;
-    }
+    }   
     my_thread_no = atoi(my_thread_no_str);
 
-    if (my_thread_no >= _HF_THREAD_MAX) {
+    if (my_thread_no >= _HF_THREAD_MAX) { 
         LOG_F("Received (via envvar) my_thread_no > _HF_THREAD_MAX (%" PRIu32 " > %d)\n",
             my_thread_no, _HF_THREAD_MAX);
-    }
+    }   
 
-    if (!initializeGlobalCovFeedback()) {
+    if (!initializeGlobalCovFeedback()) { 
         globalCovFeedback = &bbMapFb;
         LOG_F("Could not intialize the global coverage feedback map");
-    }
-    if (!initializeLocalCovFeedback()) {
+    }   
+    if (!initializeLocalCovFeedback()) { 
         localCovFeedback = &bbMapFb;
         LOG_F("Could not intialize the local coverage feedback map");
-    }
+    }   
     initializeCmpFeedback();
 
     /* Initialize native functions found in libc */
@@ -206,34 +206,34 @@ static void initializeInstrument(void) {
 
     /* Reset coverage counters to their initial state */
     instrumentClearNewCov();
-}
+}   
 
 static __thread pthread_once_t localInitOnce = PTHREAD_ONCE_INIT;
 
 extern void                       hfuzzInstrumentInit(void);
-__attribute__((constructor)) void hfuzzInstrumentInit(void) {
+__attribute__((constructor)) void hfuzzInstrumentInit(void) { 
     pthread_once(&localInitOnce, initializeInstrument);
-}
+}   
 
-__attribute__((weak)) size_t instrumentReserveGuard(size_t cnt) {
+__attribute__((weak)) size_t instrumentReserveGuard(size_t cnt) { 
     static size_t guardCnt = 1;
     size_t        base     = guardCnt;
     guardCnt += cnt;
-    if (guardCnt >= _HF_PC_GUARD_MAX) {
+    if (guardCnt >= _HF_PC_GUARD_MAX) { 
         LOG_F(
             "This process requested too many PC-guards, total:%zu, requested:%zu)", guardCnt, cnt);
-    }
-    if (ATOMIC_GET(globalCovFeedback->guardNb) < guardCnt) {
+    }   
+    if (ATOMIC_GET(globalCovFeedback->guardNb) < guardCnt) { 
         ATOMIC_SET(globalCovFeedback->guardNb, guardCnt);
-    }
+    }   
     return base;
-}
+}   
 
-void instrumentResetLocalCovFeedback(void) {
+void instrumentResetLocalCovFeedback(void) { 
     bzero(localCovFeedback->pcGuardMap, HF_MIN(instrumentReserveGuard(0), _HF_PC_GUARD_MAX));
 
     wmb();
-}
+}   
 
 /* Used to limit certain expensive actions, like adding values to dictionaries */
 static inline bool instrumentLimitEvery(uint64_t step) {
@@ -242,6 +242,7 @@ static inline bool instrumentLimitEvery(uint64_t step) {
 }
 
 static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
+    size_t vallen = 0;
     if (len <= 1) {
         return;
     }
@@ -253,12 +254,13 @@ static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
         return;
     }
 
-    for (uint32_t i = 0; i < curroff; i++) {
-        if ((len == ATOMIC_GET(globalCmpFeedback->valArr[i].len)) &&
+    for (uint32_t i = 0; i < curroff; i++) { 
+        vallen = ATOMIC_GET(globalCmpFeedback->valArr[i].len);
+        if (vallen && (len == vallen) &&
             libc_memcmp(globalCmpFeedback->valArr[i].val, mem, len) == 0) {
             return;
-        }
-    }
+        }   
+    }   
 
     uint32_t newoff = ATOMIC_POST_INC(globalCmpFeedback->cnt);
     if (newoff >= ARRAYSIZE(globalCmpFeedback->valArr)) {
