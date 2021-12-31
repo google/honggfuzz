@@ -112,7 +112,7 @@ static unsigned getCpuUse(int numCpus) {
     uint64_t        systemT     = 0UL;
     uint64_t        idleT       = 0UL;
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__CYGWIN__)
     FILE* f = fopen("/proc/stat", "re");
     if (f == NULL) {
         return 0;
