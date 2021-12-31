@@ -495,6 +495,12 @@ static int ldMode(int argc, char** argv) {
         args[j++] = argv[i];
     }
 
+    /*
+     * Disable enforcement of the programming language, in case it had been enabled explicitly,
+     * e.g. via -xc
+     */
+    args[j++] = "-xnone";
+
     /* Reference standard honggfuzz libraries first (libhfuzz, libhfcommon and libhfnetdriver) */
     args[j++] = getLibHFNetDriverPath();
     args[j++] = getLibHFuzzPath();
