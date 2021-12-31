@@ -134,8 +134,9 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
         CPU_SET((start_cpu + i) % num_cpus, &set);
 #endif /* defined((_HF_ARCH_NETBSD) */
     }
-
-#if defined(_HF_ARCH_NETBSD)
+#if defined(__ANDROID__)
+    if (sched_setaffinity(getpid(), sizeof(set), &set) != 0) {
+#elif defined(_HF_ARCH_NETBSD)
     if (pthread_setaffinity_np(pthread_self(), cpuset_size(set), set) != 0) {
 #else  /* defined((_HF_ARCH_NETBSD) */
     if (pthread_setaffinity_np(pthread_self(), sizeof(set), &set) != 0) {

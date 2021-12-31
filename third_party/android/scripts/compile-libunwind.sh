@@ -76,7 +76,7 @@ if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
 fi
 ANDROID_API_V=$(echo "$ANDROID_API" | grep -oE '[0-9]{1,2}$')
 
-LC_LDFLAGS="-static"
+LC_LDFLAGS="-static -Wl,-z,muldefs"
 
 ARCH="$2"
 
@@ -137,7 +137,8 @@ if [ ! -f configure ]; then
     abort 1
   fi
   # Patch configure
-  sed -i -e 's/-lgcc_s/-lgcc/g' configure
+  sed -i -e 's/-lgcc_s//g' configure
+  sed -i -e 's/-lgcc//g' configure
 else
   make clean
 fi
