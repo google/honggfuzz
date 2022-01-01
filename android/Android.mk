@@ -175,7 +175,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := honggfuzz
 LOCAL_SRC_FILES := $(wildcard *.c)
 LOCAL_CFLAGS := $(COMMON_CFLAGS)
-LOCAL_LDFLAGS := -lm -latomic
+LOCAL_LDFLAGS := -lm -latomic -lz
 LOCAL_STATIC_LIBRARIES := $(COMMON_STATIC_LIBS) common
 
 ifeq ($(ANDROID_WITH_PTRACE),true)

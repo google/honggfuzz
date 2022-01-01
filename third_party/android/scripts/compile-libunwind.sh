@@ -96,28 +96,9 @@ case "$ARCH" in
     ;;
 esac
 
-# Apply patches required for Android
-# TODO: Automate global patching when all archs have been tested
-
-# Ptrace patches due to Android incompatibilities
-git reset --hard
-
-#git apply --check ../patches/libunwind.patch
-#if [ $? -eq 0 ]; then
-#  git apply ../patches/libunwind.patch
-#  if [ $? -ne 0 ]; then
-#    echo "[-] Failed to apply libunwind patches"
-#    abort 1
-#  fi
-#else
-#  echo "[-] Cannot apply libunwind patches"
-#  abort 1
-#fi
-
 # Support both Linux & Darwin
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH=$(uname -m)
-
 
 export CC="$NDK"/toolchains/llvm/prebuilt/"$HOST_OS"-x86_64/bin/"$ANDROID_NDK_COMPILER_PREFIX""$ANDROID_API_V"-clang
 export CXX="$NDK"/toolchains/llvm/prebuilt/"$HOST_OS"-x86_64/bin/"$ANDROID_NDK_COMPILER_PREFIX""$ANDROID_API_V"-clang++
@@ -131,9 +112,9 @@ elif [ ! -x "$CXX" ]; then
 fi
 
 if [ ! -f configure ]; then
-  NOCONFIGURE=true ./autogen.sh
+  autoreconf -i
   if [ $? -ne 0 ]; then
-    echo "[-] autogen failed"
+    echo "[-] autoreconf failed"
     abort 1
   fi
   # Patch configure
@@ -143,7 +124,7 @@ else
   make clean
 fi
 
-./configure --host=$TOOLCHAIN --disable-coredump
+./configure "--host=$TOOLCHAIN" --disable-coredump --enable-static --disable-shared --disable-tests --enable-ptrace
 if [ $? -ne 0 ]; then
   echo "[-] configure failed"
   abort 1

@@ -4,5 +4,5 @@
 	branch = 4.0.1
 [submodule "third_party/android/libunwind"]
 	path = third_party/android/libunwind
-	url = git://git.sv.gnu.org/libunwind.git
-	branch = master
+	url = https://github.com/libunwind/libunwind.git
+	branch = v1.6.2
