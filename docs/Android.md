@@ -17,8 +17,8 @@ build an upstream git fork is executed
 
 | **Dependency** | **Last Tested Version** |
 |:-------|:-----------|
-| **Android NDK** | r20 |
-| **libunwind** | upstream master commit [bc8698f] |
+| **Android NDK** | r23b2 |
+| **libunwind** | upstream master commit [b3ca1b59a795a617877c01fe5d299ab7a07ff29d v1.6.2] |
 | **capstone** | 3.0.4 stable version |
 
 ## Compatibility list ##
@@ -100,9 +100,9 @@ $ make android ANDROID_APP_ABI=<arch>
 
 Were `<arch>` can be:
 
+* arm64-v8a (**default**)
 * armeabi
-* armeabi-v7a (**default**)
-* arm64-v8a
+* armeabi-v7a
 * x86
 * x86_64
 
@@ -112,9 +112,9 @@ Were `<arch>` can be:
 | **Flag** | **Options** | **Description** |
 |:----------|:------------|:----------------|
 | **ANDROID_DEBUG_ENABLED** | true, false (default: false) | Enable Android debug builds |
-| **ANDROID_APP_ABI** | armeabi, armeabi-v7a, arm64-v8a, x86, x86_64 (default: armeabi-v7a) | Target CPU |
+| **ANDROID_APP_ABI** | armeabi, armeabi-v7a, arm64-v8a, x86, x86_64 (default: arm64-v8a) | Target CPU |
 | **ANDROID_WITH_PTRACE** | true, false (default: true) `1`| Fuzzing engine backend architecture |
-| **ANDROID_API** | android-21, android-22, ... (default: android-26) `2` | Target Android API |
+| **ANDROID_API** | android-30, android-31, ... (default: android-30) `2` | Target Android API |
 | **ANDROID_CLANG** | true, false (default: true) | Android NDK compiler toolchain to use |
 
 _`1`) If false, POSIX signals interface is used instead of PTRACE API_

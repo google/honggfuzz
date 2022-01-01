@@ -68,7 +68,7 @@ if [ -z "$NDK" ]; then
 fi
 
 if [ -z "$ANDROID_API" ]; then
-  ANDROID_API="android-26"
+  ANDROID_API="android-30"
 fi
 if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
   echo "[-] Invalid ANDROID_API '$ANDROID_API'"
@@ -128,13 +128,6 @@ fi
 if [ $? -ne 0 ]; then
   echo "[-] configure failed"
   abort 1
-fi
-
-# Fix stuff that configure failed to detect
-# TODO: Investigate for more elegant patches
-if [ "$ARCH" == "arm64" ]; then
-  sed -i -e 's/#define HAVE_DECL_PTRACE_POKEUSER 1/#define HAVE_DECL_PTRACE_POKEUSER 0/g' include/config.h
-  echo "#define HAVE_DECL_PT_GETREGSET 1" >> include/config.h
 fi
 
 make -j"$JOBS" CFLAGS="$LC_CFLAGS" LDFLAGS="$LC_LDFLAGS"

@@ -202,9 +202,9 @@ ifdef DEBUG
 endif
 
 # Control Android builds
-ANDROID_API           ?= android-26 # Minimal working version is android-23
+ANDROID_API           ?= android-30 # Minimal working version is android-30 (ndk 22)
 ANDROID_DEBUG_ENABLED ?= false
-ANDROID_APP_ABI       ?= armeabi-v7a
+ANDROID_APP_ABI       ?= arm64-v8a
 ANDROID_SKIP_CLEAN    ?= false
 NDK_BUILD_ARGS :=
 
