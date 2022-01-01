@@ -15,9 +15,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-set -x
-
-readonly JOBS=$(getconf _NPROCESSORS_ONLN)
+set -xu
 
 abort() {
   cd - &>/dev/null
@@ -42,41 +40,24 @@ if [ ! -d "$LIBUNWIND_DIR/.git" ]; then
   }
 fi
 
-# register client hooks
-hooksDir="$(git -C "$LIBUNWIND_DIR" rev-parse --git-dir)/hooks"
-mkdir -p "$hooksDir"
-
-if [ ! -f "$hooksDir/post-checkout" ]; then
-  cat > "$hooksDir/post-checkout" <<'endmsg'
-#!/usr/bin/env bash
-
-endmsg
-  chmod +x "$hooksDir/post-checkout"
-fi
-
 # Change workspace
 cd "$LIBUNWIND_DIR" &>/dev/null
 
-if [ -z "$NDK" ]; then
-  # Search in $PATH
-  if [[ $(which ndk-build) != "" ]]; then
-    NDK=$(dirname $(which ndk-build))
-  else
-    echo "[-] Could not detect Android NDK dir"
-    abort 1
-  fi
+# Search in $PATH
+if [[ $(which ndk-build) != "" ]]; then
+  NDK=$(dirname $(which ndk-build))
+else
+  echo "[-] Could not detect Android NDK dir"
+  abort 1
 fi
 
-if [ -z "$ANDROID_API" ]; then
-  ANDROID_API="android-30"
-fi
 if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
   echo "[-] Invalid ANDROID_API '$ANDROID_API'"
   abort 1
 fi
 ANDROID_API_V=$(echo "$ANDROID_API" | grep -oE '[0-9]{1,2}$')
 
-LC_LDFLAGS="-static -Wl,-z,muldefs"
+LC_LDFLAGS="-static"
 
 ARCH="$2"
 
@@ -127,7 +108,7 @@ if [ $? -ne 0 ]; then
   abort 1
 fi
 
-make -j"$JOBS" CFLAGS="$LC_CFLAGS" LDFLAGS="$LC_LDFLAGS"
+make -j LDFLAGS="$LC_LDFLAGS"
 if [ $? -ne 0 ]; then
     echo "[-] Compilation failed"
     cd - &>/dev/null

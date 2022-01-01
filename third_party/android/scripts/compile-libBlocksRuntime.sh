@@ -15,21 +15,16 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-set -x
+set -xu
 
-if [ -z "$NDK" ]; then
-  # Search in $PATH
-  if [[ $(which ndk-build) != "" ]]; then
-    NDK=$(dirname $(which ndk-build))
-  else
-    echo "[-] Could not detect Android NDK dir"
-    exit 1
-  fi
+# Search in $PATH
+if [[ $(which ndk-build) != "" ]]; then
+  NDK=$(dirname $(which ndk-build))
+else
+  echo "[-] Could not detect Android NDK dir"
+  exit 1
 fi
 
-if [ -z "$ANDROID_API" ]; then
-  ANDROID_API="android-30"
-fi
 if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
   echo "[-] Invalid ANDROID_API '$ANDROID_API'"
   exit 1

@@ -15,7 +15,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-set -x
+set -xu
 
 abort() {
   cd - &>/dev/null
@@ -40,29 +40,14 @@ if [ ! -d "$CAPSTONE_DIR/.git" ]; then
   }
 fi
 
-# register client hooks
-hooksDir="$(git -C "$CAPSTONE_DIR" rev-parse --git-dir)/hooks"
-mkdir -p "$hooksDir"
-
-if [ ! -f "$hooksDir/post-checkout" ]; then
-  cat > "$hooksDir/post-checkout" <<'endmsg'
-#!/usr/bin/env bash
-
-endmsg
-  chmod +x "$hooksDir/post-checkout"
-fi
-
 # Change workspace
 cd "$CAPSTONE_DIR" &>/dev/null
 
-if [ -z "$NDK" ]; then
-  # Search in $PATH
-  if [[ $(which ndk-build) != "" ]]; then
-    NDK=$(dirname $(which ndk-build))
-  else
-    echo "[-] Could not detect Android NDK dir"
-    abort 1
-  fi
+if [[ $(which ndk-build) != "" ]]; then
+  NDK=$(dirname $(which ndk-build))
+else
+  echo "[-] Could not detect Android NDK dir"
+  abort 1
 fi
 
 ARCH="$2"
@@ -86,21 +71,13 @@ case "$ARCH" in
     ;;
 esac
 
-# Capstone ARM/ARM64 cross-compile automation is broken,
-# we need to prepare the Android NDK toolchains manually
-if [ -z "$NDK" ]; then
-  # Search in $PATH
-  if [[ $(which ndk-build) != "" ]]; then
-    $NDK=$(dirname $(which ndk-build))
-  else
-    echo "[-] Could not detect Android NDK dir"
-    abort 1
-  fi
+if [[ $(which ndk-build) != "" ]]; then
+  $NDK=$(dirname $(which ndk-build))
+else
+  echo "[-] Could not detect Android NDK dir"
+  abort 1
 fi
 
-if [ -z "$ANDROID_API" ]; then
-  ANDROID_API="android-30"
-fi
 if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
   echo "[-] Invalid ANDROID_API '$ANDROID_API'"
   abort 1
