@@ -146,7 +146,7 @@ endif
 
 # libhfcommon module
 include $(CLEAR_VARS)
-LOCAL_MODULE := common
+LOCAL_MODULE := hfcommon
 LOCAL_SRC_FILES := $(wildcard libhfcommon/*.c)
 LOCAL_CFLAGS := -D_HF_ARCH_${ARCH} $(COMMON_CFLAGS)
 LOCAL_STATIC_LIBRARIES := $(COMMON_STATIC_LIBS)
@@ -176,7 +176,7 @@ LOCAL_MODULE := honggfuzz
 LOCAL_SRC_FILES := $(wildcard *.c)
 LOCAL_CFLAGS := $(COMMON_CFLAGS)
 LOCAL_LDFLAGS := -lm -latomic -lz
-LOCAL_STATIC_LIBRARIES := $(COMMON_STATIC_LIBS) common
+LOCAL_STATIC_LIBRARIES := $(COMMON_STATIC_LIBS) hfcommon
 
 ifeq ($(ANDROID_WITH_PTRACE),true)
   LOCAL_STATIC_LIBRARIES += libunwind-arch \
