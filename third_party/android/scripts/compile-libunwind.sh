@@ -117,9 +117,6 @@ if [ ! -f configure ]; then
     echo "[-] autoreconf failed"
     abort 1
   fi
-  # Patch configure
-  sed -i -e 's/-lgcc_s//g' configure
-  sed -i -e 's/-lgcc//g' configure
 else
   make clean
 fi
