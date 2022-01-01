@@ -102,17 +102,17 @@ esac
 # Ptrace patches due to Android incompatibilities
 git reset --hard
 
-git apply --check ../patches/libunwind.patch
-if [ $? -eq 0 ]; then
-  git apply ../patches/libunwind.patch
-  if [ $? -ne 0 ]; then
-    echo "[-] Failed to apply libunwind patches"
-    abort 1
-  fi
-else
-  echo "[-] Cannot apply libunwind patches"
-  abort 1
-fi
+#git apply --check ../patches/libunwind.patch
+#if [ $? -eq 0 ]; then
+#  git apply ../patches/libunwind.patch
+#  if [ $? -ne 0 ]; then
+#    echo "[-] Failed to apply libunwind patches"
+#    abort 1
+#  fi
+#else
+#  echo "[-] Cannot apply libunwind patches"
+#  abort 1
+#fi
 
 # Support both Linux & Darwin
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
