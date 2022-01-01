@@ -317,7 +317,7 @@ depend: all
 .PHONY: android
 android:
 	$(info ***************************************************************)
-	$(info *                 Use Android NDK 20 or newer                 *)
+	$(info *                 Use Android NDK 22 or newer                 *)
 	$(info ***************************************************************)
 	@ANDROID_API=$(ANDROID_API) ANDROID_NDK_COMPILER_PREFIX=$(ANDROID_NDK_COMPILER_PREFIX) third_party/android/scripts/compile-libunwind.sh \
 	third_party/android/libunwind $(ANDROID_ARCH_CPU)
