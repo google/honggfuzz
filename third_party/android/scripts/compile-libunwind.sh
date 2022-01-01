@@ -15,7 +15,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-set -x # debug
+set -x
 
 readonly JOBS=$(getconf _NPROCESSORS_ONLN)
 
