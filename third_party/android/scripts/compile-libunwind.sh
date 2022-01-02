@@ -15,7 +15,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-set -xu
+set -xeu
 
 abort() {
   cd - &>/dev/null
@@ -34,16 +34,12 @@ fi
 readonly LIBUNWIND_DIR="$1"
 
 if [ ! -d "$LIBUNWIND_DIR/.git" ]; then
-  git submodule update --init third_party/android/libunwind || {
-    echo "[-] git submodules init failed"
-    exit 1
-  }
+  git submodule update --init third_party/android/libunwind
 fi
 
 # Change workspace
 cd "$LIBUNWIND_DIR" &>/dev/null
 
-# Search in $PATH
 if [[ $(which ndk-build) != "" ]]; then
   NDK=$(dirname $(which ndk-build))
 else
@@ -94,26 +90,12 @@ fi
 
 if [ ! -f configure ]; then
   autoreconf -i
-  if [ $? -ne 0 ]; then
-    echo "[-] autoreconf failed"
-    abort 1
-  fi
 else
   make clean
 fi
 
 ./configure "--host=$TOOLCHAIN" --disable-coredump --enable-static --disable-shared --disable-tests --enable-ptrace
-if [ $? -ne 0 ]; then
-  echo "[-] configure failed"
-  abort 1
-fi
-
 make -j LDFLAGS="$LC_LDFLAGS"
-if [ $? -ne 0 ]; then
-    echo "[-] Compilation failed"
-    cd - &>/dev/null
-    abort 1
-fi
 
 # Naming conventions for arm64
 if [[ "$ARCH" == "arm64" ]]; then

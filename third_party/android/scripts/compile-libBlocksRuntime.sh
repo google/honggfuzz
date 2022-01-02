@@ -15,14 +15,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-set -xu
+set -xeu
 
 # Search in $PATH
 if [[ $(which ndk-build) != "" ]]; then
   NDK=$(dirname $(which ndk-build))
 else
   echo "[-] Could not detect Android NDK dir"
-  exit 1
+  abort 1
 fi
 
 if ! echo "$ANDROID_API" | grep -qoE 'android-[0-9]{1,2}'; then
@@ -49,8 +49,6 @@ case "$2" in
     exit 1
     ;;
 esac
-
-ARCH="$2"
 
 case "$ARCH" in
   arm)
@@ -80,15 +78,11 @@ $NDK/ndk-build NDK_PROJECT_PATH=$BRT_DIR APP_BUILD_SCRIPT=$BRT_DIR/Android.mk \
 $NDK/ndk-build NDK_PROJECT_PATH=$BRT_DIR APP_BUILD_SCRIPT=$BRT_DIR/Android.mk \
   APP_PLATFORM=$ANDROID_API APP_ABI=$BRT_ARCH \
   NDK_TOOLCHAIN=$BRT_TOOLCHAIN
-if [ $? -ne 0 ]; then
-    echo "[-] Compilation failed"
-    exit 1
-else
-    echo "[*] '$ARCH' libBlocksRuntime available at '$BRT_DIR/$ARCH'"
-fi
+
+echo "[*] '$ARCH' libBlocksRuntime available at '$BRT_DIR/$ARCH'"
 
 # Change workdir to simplify args
-cd $BRT_DIR
+cd "$BRT_DIR"
 
 # Revert workdir to caller
 cd - &>/dev/null
