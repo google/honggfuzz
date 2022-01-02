@@ -101,6 +101,7 @@ static void* initialzeTryMapHugeTLB(int fd, size_t sz) {
         PLOG_W("madvise(addr=%p, sz=%zu, MADV_HUGEPAGE) failed", ret, sz);
     }
 #endif /* defined(MADV_HUGEPAGE) */
+
     return ret;
 }
 
