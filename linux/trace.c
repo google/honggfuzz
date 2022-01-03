@@ -39,9 +39,6 @@
 #endif
 #include <sys/personality.h>
 #include <sys/ptrace.h>
-#if defined(__GLIBC__)
-#include <linux/ptrace.h>
-#endif
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -137,7 +134,24 @@ union user_regs_t {
 
 #if defined(__arm__) || defined(__aarch64__)
 struct user_regs_32 {
-    uint32_t uregs[18];
+    uint32_t r0;
+    uint32_t r1;
+    uint32_t r2;
+    uint32_t r3;
+    uint32_t r4;
+    uint32_t r5;
+    uint32_t r6;
+    uint32_t r7;
+    uint32_t r8;
+    uint32_t r9;
+    uint32_t r10;
+    uint32_t fp;
+    uint32_t ip;
+    uint32_t sp;
+    uint32_t lr;
+    uint32_t pc;
+    uint32_t cpsr;
+    uint32_t ORIG_r0;
 };
 
 struct user_regs_64 {
@@ -378,19 +392,12 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
 #endif /* defined(__i386__) || defined(__x86_64__) */
 
 #if defined(__arm__) || defined(__aarch64__)
-#if !defined(ARM_pc)
-#define ARM_pc uregs[15]
-#endif
-#if !defined(ARM_cpsr)
-#define ARM_cpsr uregs[16]
-#endif /* !defined(ARM_cpsr) */
-
     /*
      * 32-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_32)) {
-        *pc         = regs.regs32.ARM_pc;
-        *status_reg = regs.regs32.ARM_cpsr;
+        *pc         = regs.regs32.pc;
+        *status_reg = regs.regs32.cpsr;
         return pt_iov.iov_len;
     }
 
