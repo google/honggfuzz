@@ -76,7 +76,7 @@
 #endif
 
 #if defined(__i386__) || defined(__x86_64__)
-struct user_regs_struct_32 {
+struct user_regs_32 {
     uint32_t ebx;
     uint32_t ecx;
     uint32_t edx;
@@ -96,7 +96,7 @@ struct user_regs_struct_32 {
     uint16_t ss, __ss;
 };
 
-struct user_regs_struct_64 {
+struct user_regs_64 {
     uint64_t r15;
     uint64_t r14;
     uint64_t r13;
@@ -125,6 +125,11 @@ struct user_regs_struct_64 {
     uint64_t fs;
     uint64_t gs;
 };
+
+union user_regs_t {
+    struct user_regs_32 regs32;
+    struct user_regs_64 regs64;
+};
 #endif /* defined(__i386__) || defined(__x86_64__) */
 
 #if defined(__arm__) || defined(__aarch64__)
@@ -142,20 +147,25 @@ struct user_regs_struct_64 {
 #define ARM_cpsr 16
 #endif
 #endif /* ARM_cpsr */
-struct user_regs_struct_32 {
+struct user_regs_32 {
     uint32_t uregs[18];
 };
 
-struct user_regs_struct_64 {
+struct user_regs_64 {
     uint64_t regs[31];
     uint64_t sp;
     uint64_t pc;
     uint64_t pstate;
 };
+
+union user_regs_t {
+    struct user_regs_32 regs32;
+    struct user_regs_64 regs64;
+};
 #endif /* defined(__arm__) || defined(__aarch64__) */
 
 #if defined(__powerpc64__) || defined(__powerpc__)
-struct user_regs_struct_32 {
+struct user_regs_32 {
     uint32_t gpr[32];
     uint32_t nip;
     uint32_t msr;
@@ -178,7 +188,8 @@ struct user_regs_struct_32 {
     uint32_t zero2;
     uint32_t zero3;
 };
-struct user_regs_struct_64 {
+
+struct user_regs_64 {
     uint64_t gpr[32];
     uint64_t nip;
     uint64_t msr;
@@ -201,18 +212,26 @@ struct user_regs_struct_64 {
     uint64_t zero2;
     uint64_t zero3;
 };
+
+union user_regs_t {
+    struct user_regs_32 regs32;
+    struct user_regs_64 regs64;
+};
+
 #endif /* defined(__powerpc64__) || defined(__powerpc__) */
 
 #if defined(__mips__) || defined(__mips64__)
-struct user_regs_struct {
-    uint64_t regs[32];
+union user_regs_t {
+    struct {
+        uint64_t regs[32];
 
-    uint64_t lo;
-    uint64_t hi;
-    uint64_t cp0_epc;
-    uint64_t cp0_badvaddr;
-    uint64_t cp0_status;
-    uint64_t cp0_cause;
+        uint64_t lo;
+        uint64_t hi;
+        uint64_t cp0_epc;
+        uint64_t cp0_badvaddr;
+        uint64_t cp0_status;
+        uint64_t cp0_cause;
+    } regs;
 };
 #endif /* defined(__mips__) || defined(__mips64__) */
 
@@ -323,9 +342,9 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
  * the struct size to 32bit version for arm CPU.
  */
 #if defined(__arm__)
-    struct user_regs_struct_32 regs;
+    struct user_regs_32 regs;
 #else
-    struct user_regs_struct_64 regs;
+    union user_regs_t regs;
 #endif
     const struct iovec pt_iov = {
         .iov_base = &regs,
@@ -350,20 +369,18 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
     /*
      * 32-bit
      */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32* r32 = (struct user_regs_struct_32*)&regs;
-        *pc                             = r32->eip;
-        *status_reg                     = r32->eflags;
+    if (pt_iov.iov_len == sizeof(struct user_regs_32)) {
+        *pc         = regs.regs32.eip;
+        *status_reg = regs.regs32.eflags;
         return pt_iov.iov_len;
     }
 
     /*
      * 64-bit
      */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64* r64 = (struct user_regs_struct_64*)&regs;
-        *pc                             = r64->ip;
-        *status_reg                     = r64->flags;
+    if (pt_iov.iov_len == sizeof(struct user_regs_64)) {
+        *pc         = regs.regs64.ip;
+        *status_reg = regs.regs64.flags;
         return pt_iov.iov_len;
     }
     LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
@@ -374,8 +391,8 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
     /*
      * 32-bit
      */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32* r32 = (struct user_regs_struct_32*)&regs;
+    if (pt_iov.iov_len == sizeof(struct user_regs_32)) {
+        struct user_regs_32* r32 = (struct user_regs_32*)&regs;
 #ifdef __ANDROID__
         *pc         = r32->ARM_pc;
         *status_reg = r32->ARM_cpsr;
@@ -389,10 +406,10 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
     /*
      * 64-bit
      */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64* r64 = (struct user_regs_struct_64*)&regs;
-        *pc                             = r64->pc;
-        *status_reg                     = r64->pstate;
+    if (pt_iov.iov_len == sizeof(struct user_regs_64)) {
+		struct user_regs_64* r64 = (struct user_regs_64*)&regs;
+        *pc         = r64->pc;
+        *status_reg = r64->pstate;
         return pt_iov.iov_len;
     }
     LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
@@ -403,18 +420,16 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
     /*
      * 32-bit
      */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32* r32 = (struct user_regs_struct_32*)&regs;
-        *pc                             = r32->nip;
+    if (pt_iov.iov_len == sizeof(struct user_regs_32)) {
+        *pc = regs.regs32.nip;
         return pt_iov.iov_len;
     }
 
     /*
      * 64-bit
      */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64* r64 = (struct user_regs_struct_64*)&regs;
-        *pc                             = r64->nip;
+    if (pt_iov.iov_len == sizeof(struct user_regs_64)) {
+        *pc = regs.regs64.nip;
         return pt_iov.iov_len;
     }
 
@@ -423,7 +438,7 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
 #endif /* defined(__powerpc64__) || defined(__powerpc__) */
 
 #if defined(__mips__) || defined(__mips64__)
-    *pc = regs.cp0_epc;
+    *pc = regs.regs.cp0_epc;
     return pt_iov.iov_len;
 #endif /* defined(__mips__) || defined(__mips64__) */
 
@@ -454,7 +469,7 @@ static void arch_getInstrStr(pid_t pid, uint64_t pc, uint64_t status_reg HF_ATTR
     cs_arch arch;
     cs_mode mode;
 #if defined(__arm__) || defined(__aarch64__)
-    arch = (pcRegSz == sizeof(struct user_regs_struct_64)) ? CS_ARCH_ARM64 : CS_ARCH_ARM;
+    arch = (pcRegSz == sizeof(struct user_regs_64)) ? CS_ARCH_ARM64 : CS_ARCH_ARM;
     if (arch == CS_ARCH_ARM) {
         mode = (status_reg & 0x20) ? CS_MODE_THUMB : CS_MODE_ARM;
     } else {
@@ -462,7 +477,7 @@ static void arch_getInstrStr(pid_t pid, uint64_t pc, uint64_t status_reg HF_ATTR
     }
 #elif defined(__i386__) || defined(__x86_64__)
     arch = CS_ARCH_X86;
-    mode = (pcRegSz == sizeof(struct user_regs_struct_64)) ? CS_MODE_64 : CS_MODE_32;
+    mode = (pcRegSz == sizeof(struct user_regs_64)) ? CS_MODE_64 : CS_MODE_32;
 #else
     LOG_E("Unknown/Unsupported Android CPU architecture");
 #endif
