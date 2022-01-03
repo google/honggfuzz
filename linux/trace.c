@@ -407,9 +407,9 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
      * 64-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_64)) {
-		struct user_regs_64* r64 = (struct user_regs_64*)&regs;
-        *pc         = r64->pc;
-        *status_reg = r64->pstate;
+        struct user_regs_64* r64 = (struct user_regs_64*)&regs;
+        *pc                      = r64->pc;
+        *status_reg              = r64->pstate;
         return pt_iov.iov_len;
     }
     LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
