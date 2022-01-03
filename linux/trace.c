@@ -125,7 +125,6 @@ struct user_regs_struct_64 {
     uint64_t fs;
     uint64_t gs;
 };
-#define HEADERS_STRUCT struct user_regs_struct_64
 #endif /* defined(__i386__) || defined(__x86_64__) */
 
 #if defined(__arm__) || defined(__aarch64__)
@@ -153,11 +152,9 @@ struct user_regs_struct_64 {
     uint64_t pc;
     uint64_t pstate;
 };
-#define HEADERS_STRUCT struct user_regs_struct_64
 #endif /* defined(__arm__) || defined(__aarch64__) */
 
 #if defined(__powerpc64__) || defined(__powerpc__)
-#define HEADERS_STRUCT struct user_regs_struct_64
 struct user_regs_struct_32 {
     uint32_t gpr[32];
     uint32_t nip;
@@ -217,7 +214,6 @@ struct user_regs_struct {
     uint64_t cp0_status;
     uint64_t cp0_cause;
 };
-#define HEADERS_STRUCT struct user_regs_struct
 #endif /* defined(__mips__) || defined(__mips64__) */
 
 #if defined(__ANDROID__)
@@ -329,7 +325,7 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
 #if defined(__arm__)
     struct user_regs_struct_32 regs;
 #else
-    HEADERS_STRUCT regs;
+    struct user_regs_struct_64 regs;
 #endif
     const struct iovec pt_iov = {
         .iov_base = &regs,
