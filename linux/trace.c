@@ -39,6 +39,9 @@
 #endif
 #include <sys/personality.h>
 #include <sys/ptrace.h>
+#if defined(__GLIBC__)
+#include <linux/ptrace.h>
+#endif
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -133,20 +136,6 @@ union user_regs_t {
 #endif /* defined(__i386__) || defined(__x86_64__) */
 
 #if defined(__arm__) || defined(__aarch64__)
-#ifndef ARM_pc
-#ifdef __ANDROID__ /* Building with NDK headers */
-#define ARM_pc uregs[15]
-#else /* Building with glibc headers */
-#define ARM_pc 15
-#endif
-#endif /* ARM_pc */
-#ifndef ARM_cpsr
-#ifdef __ANDROID__ /* Building with NDK headers */
-#define ARM_cpsr uregs[16]
-#else /* Building with glibc headers */
-#define ARM_cpsr 16
-#endif
-#endif /* ARM_cpsr */
 struct user_regs_32 {
     uint32_t uregs[18];
 };
@@ -334,27 +323,28 @@ static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, uint64_t pc) 
 }
 
 static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_UNUSED) {
-/*
- * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
- * the correct register values if struct size is bigger than expected. As such the
- * 32/64-bit multiplexing trick is not working for them in case PTRACE_GETREGSET
- * fails or is not implemented. To cover such cases we explicitly define
- * the struct size to 32bit version for arm CPU.
- */
-#if defined(__arm__)
-    struct user_regs_32 regs;
-#else
     union user_regs_t regs;
-#endif
+
+    /*
+     * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
+     * the correct register values if struct size is bigger than expected. As such the
+     * 32/64-bit multiplexing trick is not working for them in case PTRACE_GETREGSET
+     * fails or is not implemented. To cover such cases we explicitly define
+     * the struct size to 32bit version for arm CPU.
+     */
     const struct iovec pt_iov = {
         .iov_base = &regs,
-        .iov_len  = sizeof(regs),
+#if defined(__arm__)
+        .iov_len = sizeof(struct user_regs_32),
+#else
+        .iov_len = sizeof(regs),
+#endif /* defined(__arm__)  */
     };
 
     if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
         PLOG_D("ptrace(PTRACE_GETREGSET) failed");
 
-// If PTRACE_GETREGSET fails, try PTRACE_GETREGS if available
+/* If PTRACE_GETREGSET fails, try PTRACE_GETREGS if available */
 #if PTRACE_GETREGS_AVAILABLE
         if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
             PLOG_D("ptrace(PTRACE_GETREGS) failed");
@@ -392,14 +382,8 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
      * 32-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_32)) {
-        struct user_regs_32* r32 = (struct user_regs_32*)&regs;
-#ifdef __ANDROID__
-        *pc         = r32->ARM_pc;
-        *status_reg = r32->ARM_cpsr;
-#else
-        *pc         = r32->uregs[ARM_pc];
-        *status_reg = r32->uregs[ARM_cpsr];
-#endif
+        *pc         = regs.regs32.ARM_pc;
+        *status_reg = regs.regs32.ARM_cpsr;
         return pt_iov.iov_len;
     }
 
@@ -407,9 +391,8 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
      * 64-bit
      */
     if (pt_iov.iov_len == sizeof(struct user_regs_64)) {
-        struct user_regs_64* r64 = (struct user_regs_64*)&regs;
-        *pc                      = r64->pc;
-        *status_reg              = r64->pstate;
+        *pc         = regs.regs64.pc;
+        *status_reg = regs.regs64.pstate;
         return pt_iov.iov_len;
     }
     LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
@@ -482,7 +465,7 @@ static void arch_getInstrStr(pid_t pid, uint64_t pc, uint64_t status_reg HF_ATTR
     LOG_E("Unknown/Unsupported Android CPU architecture");
 #endif
 
-    csh    handle;
+    csh handle;
     cs_err err = cs_open(arch, mode, &handle);
     if (err != CS_ERR_OK) {
         LOG_W("Capstone initialization failed: '%s'", cs_strerror(err));
@@ -490,7 +473,7 @@ static void arch_getInstrStr(pid_t pid, uint64_t pc, uint64_t status_reg HF_ATTR
     }
 
     cs_insn* insn;
-    size_t   count = cs_disasm(handle, buf, sizeof(buf), pc, 0, &insn);
+    size_t count = cs_disasm(handle, buf, sizeof(buf), pc, 0, &insn);
 
     if (count < 1) {
         LOG_W("Couldn't disassemble the assembler instructions' stream: '%s'",
