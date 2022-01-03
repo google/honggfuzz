@@ -125,7 +125,6 @@ struct user_regs_struct_64 {
     uint64_t fs;
     uint64_t gs;
 };
-#define HEADERS_STRUCT struct user_regs_struct_64
 #endif /* defined(__i386__) || defined(__x86_64__) */
 
 #if defined(__arm__) || defined(__aarch64__)
@@ -153,11 +152,9 @@ struct user_regs_struct_64 {
     uint64_t pc;
     uint64_t pstate;
 };
-#define HEADERS_STRUCT struct user_regs_struct_64
 #endif /* defined(__arm__) || defined(__aarch64__) */
 
 #if defined(__powerpc64__) || defined(__powerpc__)
-#define HEADERS_STRUCT struct pt_regs
 struct user_regs_struct_32 {
     uint32_t gpr[32];
     uint32_t nip;
@@ -319,6 +316,16 @@ static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, uint64_t pc) 
 }
 
 static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_UNUSED) {
+#ifdef HEADERS_STRUCT
+    HEADERS_STRUCT regs;
+#else
+    union {
+            struct user_regs_struct_32 r32;
+            struct user_regs_struct_64 r64;
+    } regs;
+#endif
+    const struct iovec pt_iov = {
+        .iov_base = &regs,
 /*
  * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
  * the correct register values if struct size is bigger than expected. As such the
@@ -327,13 +334,10 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
  * the struct size to 32bit version for arm CPU.
  */
 #if defined(__arm__)
-    struct user_regs_struct_32 regs;
+        .iov_len  = sizeof(regs.r32),
 #else
-    HEADERS_STRUCT regs;
-#endif
-    const struct iovec pt_iov = {
-        .iov_base = &regs,
         .iov_len  = sizeof(regs),
+#endif
     };
 
     if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
@@ -354,20 +358,18 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
     /*
      * 32-bit
      */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32* r32 = (struct user_regs_struct_32*)&regs;
-        *pc                             = r32->eip;
-        *status_reg                     = r32->eflags;
+    if (pt_iov.iov_len == sizeof(regs.r32)) {
+        *pc         = regs.r32.eip;
+        *status_reg = regs.r32.eflags;
         return pt_iov.iov_len;
     }
 
     /*
      * 64-bit
      */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64* r64 = (struct user_regs_struct_64*)&regs;
-        *pc                             = r64->ip;
-        *status_reg                     = r64->flags;
+    if (pt_iov.iov_len == sizeof(regs.r64)) {
+        *pc         = regs.r64.ip;
+        *status_reg = regs.r64.flags;
         return pt_iov.iov_len;
     }
     LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
@@ -378,14 +380,13 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
     /*
      * 32-bit
      */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32* r32 = (struct user_regs_struct_32*)&regs;
+    if (pt_iov.iov_len == sizeof(regs.r32)) {
 #ifdef __ANDROID__
-        *pc         = r32->ARM_pc;
-        *status_reg = r32->ARM_cpsr;
+        *pc         = regs.r32.ARM_pc;
+        *status_reg = regs.r32.ARM_cpsr;
 #else
-        *pc         = r32->uregs[ARM_pc];
-        *status_reg = r32->uregs[ARM_cpsr];
+        *pc         = regs.r32.uregs[ARM_pc];
+        *status_reg = regs.r32.uregs[ARM_cpsr];
 #endif
         return pt_iov.iov_len;
     }
@@ -393,10 +394,9 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
     /*
      * 64-bit
      */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64* r64 = (struct user_regs_struct_64*)&regs;
-        *pc                             = r64->pc;
-        *status_reg                     = r64->pstate;
+    if (pt_iov.iov_len == sizeof(regs.r64)) {
+        *pc         = regs.r64.pc;
+        *status_reg = regs.r64.pstate;
         return pt_iov.iov_len;
     }
     LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
@@ -407,18 +407,16 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
     /*
      * 32-bit
      */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_32)) {
-        struct user_regs_struct_32* r32 = (struct user_regs_struct_32*)&regs;
-        *pc                             = r32->nip;
+    if (pt_iov.iov_len == sizeof(regs.r32)) {
+        *pc = regs.r32.nip;
         return pt_iov.iov_len;
     }
 
     /*
      * 64-bit
      */
-    if (pt_iov.iov_len == sizeof(struct user_regs_struct_64)) {
-        struct user_regs_struct_64* r64 = (struct user_regs_struct_64*)&regs;
-        *pc                             = r64->nip;
+    if (pt_iov.iov_len == sizeof(regs.r64)) {
+        *pc = regs.r64.nip;
         return pt_iov.iov_len;
     }
 
