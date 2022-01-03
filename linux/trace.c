@@ -378,6 +378,13 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
 #endif /* defined(__i386__) || defined(__x86_64__) */
 
 #if defined(__arm__) || defined(__aarch64__)
+#if !defined(ARM_pc)
+#define ARM_pc uregs[15]
+#endif
+#if !defined(ARM_cpsr)
+#define ARM_cpsr uregs[16]
+#endif /* !defined(ARM_cpsr) */
+
     /*
      * 32-bit
      */
