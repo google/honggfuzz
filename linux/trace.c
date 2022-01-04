@@ -370,61 +370,48 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
 #endif
     }
 #if defined(__i386__) || defined(__x86_64__)
-    /*
-     * 32-bit
-     */
+    /* 32-bit */
     if (pt_iov.iov_len == sizeof(struct user_regs_32)) {
         *pc         = regs.regs32.eip;
         *status_reg = regs.regs32.eflags;
         return pt_iov.iov_len;
     }
-
-    /*
-     * 64-bit
-     */
+    /* 64-bit */
     if (pt_iov.iov_len == sizeof(struct user_regs_64)) {
         *pc         = regs.regs64.ip;
         *status_reg = regs.regs64.flags;
         return pt_iov.iov_len;
     }
+
     LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
     return 0;
 #endif /* defined(__i386__) || defined(__x86_64__) */
 
 #if defined(__arm__) || defined(__aarch64__)
-    /*
-     * 32-bit
-     */
+    /* 32-bit */
     if (pt_iov.iov_len == sizeof(struct user_regs_32)) {
         *pc         = regs.regs32.pc;
         *status_reg = regs.regs32.cpsr;
         return pt_iov.iov_len;
     }
-
-    /*
-     * 64-bit
-     */
+    /* 64-bit */
     if (pt_iov.iov_len == sizeof(struct user_regs_64)) {
         *pc         = regs.regs64.pc;
         *status_reg = regs.regs64.pstate;
         return pt_iov.iov_len;
     }
+
     LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
     return 0;
 #endif /* defined(__arm__) || defined(__aarch64__) */
 
 #if defined(__powerpc64__) || defined(__powerpc__)
-    /*
-     * 32-bit
-     */
+    /* 32-bit */
     if (pt_iov.iov_len == sizeof(struct user_regs_32)) {
         *pc = regs.regs32.nip;
         return pt_iov.iov_len;
     }
-
-    /*
-     * 64-bit
-     */
+    /* 64-bit */
     if (pt_iov.iov_len == sizeof(struct user_regs_64)) {
         *pc = regs.regs64.nip;
         return pt_iov.iov_len;
@@ -435,8 +422,14 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
 #endif /* defined(__powerpc64__) || defined(__powerpc__) */
 
 #if defined(__mips__) || defined(__mips64__)
-    *pc = regs.regs.cp0_epc;
-    return pt_iov.iov_len;
+    /* 32/64-bit combined */
+    if (pt_iov.iov_len == sizeof(union user_regs_t)) {
+        *pc = regs.regs.cp0_epc;
+        return pt_iov.iov_len;
+    }
+
+    LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
+    return 0;
 #endif /* defined(__mips__) || defined(__mips64__) */
 
     LOG_D("Unknown/unsupported CPU architecture");
