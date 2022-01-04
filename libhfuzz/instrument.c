@@ -88,7 +88,7 @@ static void initializeLibcFunctions(void) {
     LOG_D("libc_memcmp=%p, (_memcmp=%p, memcmp=%p)", libc_memcmp, _memcmp, memcmp);
 }
 
-static void* initialzeTryMapHugeTLB(int fd, size_t sz) {
+static void* initializeTryMapHugeTLB(int fd, size_t sz) {
     int initflags = MAP_SHARED;
 #if defined(MAP_ALIGNED_SUPER)
     initflags |= MAP_ALIGNED_SUPER;
@@ -117,7 +117,7 @@ static void initializeCmpFeedback(void) {
             (size_t)st.st_size, sizeof(cmpfeedback_t));
         return;
     }
-    void* ret = initialzeTryMapHugeTLB(_HF_CMP_BITMAP_FD, sizeof(cmpfeedback_t));
+    void* ret = initializeTryMapHugeTLB(_HF_CMP_BITMAP_FD, sizeof(cmpfeedback_t));
     if (ret == MAP_FAILED) {
         PLOG_W("mmap(_HF_CMP_BITMAP_FD=%d, size=%zu) of the feedback structure failed",
             _HF_CMP_BITMAP_FD, sizeof(cmpfeedback_t));
@@ -139,7 +139,7 @@ static bool initializeLocalCovFeedback(void) {
         return false;
     }
 
-    localCovFeedback = initialzeTryMapHugeTLB(_HF_PERTHREAD_BITMAP_FD, sizeof(feedback_t));
+    localCovFeedback = initializeTryMapHugeTLB(_HF_PERTHREAD_BITMAP_FD, sizeof(feedback_t));
     if (localCovFeedback == MAP_FAILED) {
         PLOG_W("mmap(_HF_PERTHREAD_BITMAP_FD=%d, size=%zu) of the local feedback structure failed",
             _HF_PERTHREAD_BITMAP_FD, sizeof(feedback_t));
@@ -160,7 +160,7 @@ static bool initializeGlobalCovFeedback(void) {
         return false;
     }
 
-    globalCovFeedback = initialzeTryMapHugeTLB(_HF_COV_BITMAP_FD, sizeof(feedback_t));
+    globalCovFeedback = initializeTryMapHugeTLB(_HF_COV_BITMAP_FD, sizeof(feedback_t));
     if (globalCovFeedback == MAP_FAILED) {
         PLOG_W("mmap(_HF_COV_BITMAP_FD=%d, size=%zu) of the feedback structure failed",
             _HF_COV_BITMAP_FD, sizeof(feedback_t));
