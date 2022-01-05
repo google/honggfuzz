@@ -123,7 +123,6 @@ static void initializeCmpFeedback(void) {
             _HF_CMP_BITMAP_FD, sizeof(cmpfeedback_t));
         return;
     }
-    memset(ret, 0, sizeof(cmpfeedback_t));
     ATOMIC_SET(globalCmpFeedback, ret);
 }
 
