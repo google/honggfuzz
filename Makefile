@@ -53,7 +53,7 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
                             -Wl,-Bdynamic
     else
             ARCH_LDFLAGS += -lunwind-ptrace -lunwind-generic -lunwind  -llzma \
-                            -lopcodes -lbfd
+                            -lopcodes -lbfd -liberty -lz
     endif
     ifeq ($(BUILD_LINUX_NO_BFD),true)
             ARCH_CFLAGS += -D_HF_LINUX_NO_BFD
