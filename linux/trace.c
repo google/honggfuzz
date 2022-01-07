@@ -237,17 +237,16 @@ struct user_regs_64 {
 
 /*
  * Despite what mips linux kernel headers/source code says, mips32 uses the same register laytout as
- * mips64 only with GETREGS. With GETREGSET(NT_PRSTATUS) the structure size is 180bytes
- * (ELF_NGREG=45 * sizeof(uint32_t)=4 = 180). It also uses 24-byte padding for some
- * not-entieraly-clear reason. The structure itself is not defined in the kernel, but only through
- * how mips_dump_regs32() saves those registers
+ * mips64 only with GETREGS. With GETREGSET(NT_PRSTATUS) the structure size is 180 bytes
+ * (ELF_NGREG=45 * sizeof(uint32_t)=4 = 180). It also uses 24-byte padding for some,
+ * not-entierely-clear, reasons. The structure itself is not defined in the kernel, but only through
+ * how mips_dump_regs32() saves those registers via via MIPS32_EF_* defines.
  */
 struct user_regs_32 {
     uint32_t pad0[6];
-    /* Saved main processor registers. */
+
     uint32_t regs[32];
 
-    /* Saved special registers. */
     uint32_t lo;
     uint32_t hi;
     uint32_t cp0_epc;
