@@ -73,6 +73,8 @@
 #define MAX_INSTR_SZ 8
 #elif defined(__mips__) || defined(__mips64__)
 #define MAX_INSTR_SZ 8
+#elif defined(__riscv)
+#define MAX_INSTR_SZ 4
 #endif
 
 #if defined(__i386__) || defined(__x86_64__)
@@ -261,6 +263,91 @@ union user_regs_t {
     struct user_regs_64 regs64;
 };
 #endif /* defined(__mips__) || defined(__mips64__) */
+
+#if defined(__riscv)
+struct user_regs_64 {
+    uint64_t epc;
+    uint64_t ra;
+    uint64_t sp;
+    uint64_t gp;
+    uint64_t tp;
+    uint64_t t0;
+    uint64_t t1;
+    uint64_t t2;
+    uint64_t s0;
+    uint64_t s1;
+    uint64_t a0;
+    uint64_t a1;
+    uint64_t a2;
+    uint64_t a3;
+    uint64_t a4;
+    uint64_t a5;
+    uint64_t a6;
+    uint64_t a7;
+    uint64_t s2;
+    uint64_t s3;
+    uint64_t s4;
+    uint64_t s5;
+    uint64_t s6;
+    uint64_t s7;
+    uint64_t s8;
+    uint64_t s9;
+    uint64_t s10;
+    uint64_t s11;
+    uint64_t t3;
+    uint64_t t4;
+    uint64_t t5;
+    uint64_t t6;
+    uint64_t status;
+    uint64_t badaddr;
+    uint64_t cause;
+    uint64_t orig_a0;
+};
+
+struct user_regs_32 {
+    uint32_t epc;
+    uint32_t ra;
+    uint32_t sp;
+    uint32_t gp;
+    uint32_t tp;
+    uint32_t t0;
+    uint32_t t1;
+    uint32_t t2;
+    uint32_t s0;
+    uint32_t s1;
+    uint32_t a0;
+    uint32_t a1;
+    uint32_t a2;
+    uint32_t a3;
+    uint32_t a4;
+    uint32_t a5;
+    uint32_t a6;
+    uint32_t a7;
+    uint32_t s2;
+    uint32_t s3;
+    uint32_t s4;
+    uint32_t s5;
+    uint32_t s6;
+    uint32_t s7;
+    uint32_t s8;
+    uint32_t s9;
+    uint32_t s10;
+    uint32_t s11;
+    uint32_t t3;
+    uint32_t t4;
+    uint32_t t5;
+    uint32_t t6;
+    uint32_t status;
+    uint32_t badaddr;
+    uint32_t cause;
+    uint32_t orig_a0;
+};
+
+union user_regs_t {
+    struct user_regs_32 regs32;
+    struct user_regs_64 regs64;
+};
+#endif /* defined(__riscv) */
 
 #if defined(__ANDROID__)
 /*
@@ -455,10 +542,23 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
         return pt_iov.iov_len;
     }
 
-    LOG_W("Unknown registers structure size: %zd %zd '%zd'", sizeof(struct user_regs_32),
-        sizeof(struct user_regs_64), pt_iov.iov_len);
+    LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
     return 0;
 #endif /* defined(__mips__) || defined(__mips64__) */
+
+#if defined(__riscv)
+    if (pt_iov.iov_len == sizeof(struct user_regs_64)) {
+        *pc = regs.regs64.epc;
+        return pt_iov.iov_len;
+    }
+    if (pt_iov.iov_len == sizeof(struct user_regs_32)) {
+        *pc = regs.regs32.epc;
+        return pt_iov.iov_len;
+    }
+
+    LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
+    return 0;
+#endif /* defined(__riscv) */
 
     LOG_D("Unknown/unsupported CPU architecture");
     return 0;
