@@ -224,17 +224,42 @@ union user_regs_t {
 #endif /* defined(__powerpc64__) || defined(__powerpc__) */
 
 #if defined(__mips__) || defined(__mips64__)
-union user_regs_t {
-    struct {
-        uint64_t regs[32];
+struct user_regs_64 {
+    uint64_t regs[32];
 
-        uint64_t lo;
-        uint64_t hi;
-        uint64_t cp0_epc;
-        uint64_t cp0_badvaddr;
-        uint64_t cp0_status;
-        uint64_t cp0_cause;
-    } regs;
+    uint64_t lo;
+    uint64_t hi;
+    uint64_t cp0_epc;
+    uint64_t cp0_badvaddr;
+    uint64_t cp0_status;
+    uint64_t cp0_cause;
+};
+
+/*
+ * Despite what mips linux kernel headers/source code says, mips32 uses the same register laytout as
+ * mips64 only with GETREGS. With GETREGSET(NT_PRSTATUS) the structure size is 180bytes
+ * (ELF_NGREG=45 * sizeof(uint32_t)=4 = 180). It also uses 24-byte padding for some
+ * not-entieraly-clear reason. The structure itself is not defined in the kernel, but only through
+ * how mips_dump_regs32() saves those registers
+ */
+struct user_regs_32 {
+    uint32_t pad0[6];
+    /* Saved main processor registers. */
+    uint32_t regs[32];
+
+    /* Saved special registers. */
+    uint32_t lo;
+    uint32_t hi;
+    uint32_t cp0_epc;
+    uint32_t cp0_badvaddr;
+    uint32_t cp0_status;
+    uint32_t cp0_cause;
+    uint32_t unused0;
+};
+
+union user_regs_t {
+    struct user_regs_32 regs32;
+    struct user_regs_64 regs64;
 };
 #endif /* defined(__mips__) || defined(__mips64__) */
 
@@ -422,13 +447,17 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
 #endif /* defined(__powerpc64__) || defined(__powerpc__) */
 
 #if defined(__mips__) || defined(__mips64__)
-    /* 32/64-bit combined */
-    if (pt_iov.iov_len == sizeof(union user_regs_t)) {
-        *pc = regs.regs.cp0_epc;
+    if (pt_iov.iov_len == sizeof(struct user_regs_64)) {
+        *pc = regs.regs64.cp0_epc;
+        return pt_iov.iov_len;
+    }
+    if (pt_iov.iov_len == sizeof(struct user_regs_32)) {
+        *pc = regs.regs32.cp0_epc;
         return pt_iov.iov_len;
     }
 
-    LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
+    LOG_W("Unknown registers structure size: %zd %zd '%zd'", sizeof(struct user_regs_32),
+        sizeof(struct user_regs_64), pt_iov.iov_len);
     return 0;
 #endif /* defined(__mips__) || defined(__mips64__) */
 
