@@ -411,7 +411,7 @@ static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, uint64_t pc) 
     if (process_vm_readv(pid, &local_iov, 1, &remote_iov, 1, 0) == (ssize_t)len) {
         return len;
     }
-    // Debug if failed since it shouldn't happen very often
+    /* Debug if failed since it shouldn't happen very often */
     PLOG_D("process_vm_readv() failed");
 
     /*
