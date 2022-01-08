@@ -349,17 +349,6 @@ union user_regs_t {
 };
 #endif /* defined(__riscv) */
 
-#if defined(__ANDROID__)
-/*
- * Some Android ABIs don't implement PTRACE_GETREGS (e.g. aarch64)
- */
-#if defined(PTRACE_GETREGS)
-#define PTRACE_GETREGS_AVAILABLE 1
-#else
-#define PTRACE_GETREGS_AVAILABLE 0
-#endif /* defined(PTRACE_GETREGS) */
-#endif /* defined(__ANDROID__) */
-
 #if defined(__clang__)
 _Pragma("clang diagnostic push");
 _Pragma("clang diagnostic ignored \"-Woverride-init\"");
@@ -448,38 +437,17 @@ static size_t arch_getProcMem(pid_t pid, uint8_t* buf, size_t len, uint64_t pc) 
 }
 
 static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_UNUSED) {
-    union user_regs_t regs;
-
-    /*
-     * Some old ARM android kernels are failing with PTRACE_GETREGS to extract
-     * the correct register values if struct size is bigger than expected. As such the
-     * 32/64-bit multiplexing trick is not working for them in case PTRACE_GETREGSET
-     * fails or is not implemented. To cover such cases we explicitly define
-     * the struct size to 32bit version for arm CPU.
-     */
+    union user_regs_t  regs;
     const struct iovec pt_iov = {
         .iov_base = &regs,
-#if defined(__arm__)
-        .iov_len = sizeof(struct user_regs_32),
-#else
-        .iov_len = sizeof(regs),
-#endif /* defined(__arm__)  */
+        .iov_len  = sizeof(regs),
     };
 
     if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
         PLOG_D("ptrace(PTRACE_GETREGSET) failed");
-
-/* If PTRACE_GETREGSET fails, try PTRACE_GETREGS if available */
-#if PTRACE_GETREGS_AVAILABLE
-        if (ptrace(PTRACE_GETREGS, pid, 0, &regs)) {
-            PLOG_D("ptrace(PTRACE_GETREGS) failed");
-            LOG_W("ptrace PTRACE_GETREGSET & PTRACE_GETREGS failed to extract target registers");
-            return 0;
-        }
-#else
         return 0;
-#endif
     }
+
 #if defined(__i386__) || defined(__x86_64__)
     /* 32-bit */
     if (pt_iov.iov_len == sizeof(struct user_regs_32)) {
@@ -600,7 +568,7 @@ static void arch_getInstrStr(pid_t pid, uint64_t pc, uint64_t status_reg HF_ATTR
     LOG_E("Unknown/Unsupported Android CPU architecture");
 #endif
 
-    csh handle;
+    csh    handle;
     cs_err err = cs_open(arch, mode, &handle);
     if (err != CS_ERR_OK) {
         LOG_W("Capstone initialization failed: '%s'", cs_strerror(err));
@@ -608,7 +576,7 @@ static void arch_getInstrStr(pid_t pid, uint64_t pc, uint64_t status_reg HF_ATTR
     }
 
     cs_insn* insn;
-    size_t count = cs_disasm(handle, buf, sizeof(buf), pc, 0, &insn);
+    size_t   count = cs_disasm(handle, buf, sizeof(buf), pc, 0, &insn);
 
     if (count < 1) {
         LOG_W("Couldn't disassemble the assembler instructions' stream: '%s'",
