@@ -56,7 +56,7 @@ typedef struct {
 } bfd_t;
 
 /*
- * This is probably the only define which was added with binutils 2.29, so we us
+ * This is probably the only define which was added with binutils 2.29, so we use
  * it, do decide which disassembler() prototype from dis-asm.h to use
  */
 #if defined(FOR_EACH_DISASSEMBLER_OPTION)
