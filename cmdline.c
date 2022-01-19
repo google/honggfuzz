@@ -549,6 +549,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "netbsd_symbols_al", required_argument, NULL, 0x505 }, "Symbols allowlist filter file (one entry per line)" },
         { { "netbsd_addr_low_limit", required_argument, NULL, 0x500 }, "Address limit (from si.si_addr) below which crashes are not reported, (default: 0)" },
 #endif // defined(_HF_ARCH_NETBSD)
+#if defined(__FreeBSD__)
+        { { "fbsd_keep_aslr", no_argument, NULL, 0x501 }, "Don't disable ASLR randomization, might be useful with MSAN" },
+#endif
         { { 0, 0, 0, 0 }, NULL },
     };
     // clang-format on
@@ -796,6 +799,11 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 hfuzz->arch_netbsd.symsWlFile = optarg;
                 break;
 #endif /* defined(_HF_ARCH_NETBSD) */
+#if defined(__FreeBSD__)
+            case 0x501:
+                hfuzz->arch_linux.disableRandomization = false;
+                break;
+#endif
             default:
                 cmdlineHelp(argv[0], custom_opts);
                 return false;
