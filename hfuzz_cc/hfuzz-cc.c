@@ -147,6 +147,7 @@ static int execCC(int argc, char** argv) {
     }
     if (useUBSAN()) {
         argv[argc++] = "-fsanitize=undefined";
+        argv[argc++] = "-fno-sanitize-recover=undefined";
     }
     argv[argc] = NULL;
 
