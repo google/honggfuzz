@@ -186,7 +186,7 @@ pid_t arch_fork(run_t* fuzzer HF_ATTR_UNUSED) {
 
 bool arch_launchChild(run_t* run) {
 #if defined(__FreeBSD__)
-    int enableTrace = PROC_TRACE_CTL_ENABLE;
+    int enableTrace          = PROC_TRACE_CTL_ENABLE;
     int disableRandomization = PROC_ASLR_FORCE_DISABLE;
     if (procctl(P_PID, 0, PROC_TRACE_CTL, &enableTrace) == -1) {
         PLOG_E("procctl(PROC_TRACE_CTL, PROC_TRACE_CTL_ENABLE)");
