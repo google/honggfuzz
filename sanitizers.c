@@ -102,7 +102,7 @@ static pid_t sanitizers_PidForTid(pid_t pid) {
     char status_path[PATH_MAX];
     snprintf(status_path, sizeof(status_path), "/proc/%d/status", (int)pid);
     FILE* f = fopen(status_path, "rb");
-    if (!f) {
+    if (UNLIKELY(!f)) {
         return pid;
     }
     defer {

@@ -44,7 +44,7 @@ struct pt_cpu ptCpu = {
 
 void perf_ptInit(void) {
     FILE* f = fopen("/proc/cpuinfo", "rb");
-    if (!f) {
+    if (UNLIKELY(!f)) {
         PLOG_E("Couldn't open '/proc/cpuinfo'");
         return;
     }

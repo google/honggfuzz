@@ -114,7 +114,7 @@ static unsigned getCpuUse(int numCpus) {
 
 #if defined(__linux__) || defined(__CYGWIN__)
     FILE* f = fopen("/proc/stat", "re");
-    if (f == NULL) {
+    if (UNLIKELY(f == NULL)) {
         return 0;
     }
     defer {
