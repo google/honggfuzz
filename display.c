@@ -130,7 +130,7 @@ static unsigned getCpuUse(int numCpus) {
     long   off        = 0;
     size_t cpuDataLen = sizeof(long) * CPUSTATES * numCpus;
     long*  cpuData    = malloc(cpuDataLen);
-    if (cpuData == NULL) {
+    if (UNLIKELY(cpuData == NULL)) {
         return 0;
     }
 
@@ -233,7 +233,7 @@ static unsigned getCpuUse(int numCpus) {
     prevIdleT   = idleT;
 
     uint64_t allCycles = userCycles + niceCycles + systemCycles + idleCycles;
-    if (allCycles == 0) {
+    if (UNLIKELY(allCycles == 0)) {
         return 0;
     }
 
