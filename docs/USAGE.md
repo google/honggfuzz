@@ -3,7 +3,7 @@
   * A POSIX compliant operating system, MacOSX, [Android](https://github.com/google/honggfuzz/blob/master/docs/Android.md) or Windows (CygWin)
   * GNU/Linux with modern kernel (>= v4.2) for hardware-based code coverage guided fuzzing (intel PT, Intel BTS, instruction/branch counting)
   * An input corpus: You might be interested in the following for some common file formats:
-    * Image formats: Tavis Ormandy's [Image Testuite](http://code.google.com/p/imagetestsuite/) has been effective at finding vulnerabilities in various graphics libraries.
+    * Image formats: Tavis Ormandy's [Image Testsuite](http://code.google.com/p/imagetestsuite/) has been effective at finding vulnerabilities in various graphics libraries.
     * PDF: Adobe provides some [test PDF files](http://acroeng.adobe.com/).
     * _**Note**: With the feedback-driven coverage-based modes, you can start your fuzzing without the input corpus._
 
