@@ -107,8 +107,8 @@ static void __attribute__((unused)) __clang_cleanup_func(void (^*dfunc)(void)) {
 #define MX_RWLOCK_WRITE(m)  util_mutexRWLockWrite(m, __func__, __LINE__)
 #define MX_RWLOCK_UNLOCK(m) util_mutexRWUnlock(m, __func__, __LINE__)
 
-#define LIKELY(cond)        __builtin_expect(!!(cond), true)
-#define UNLIKELY(cond)      __builtin_expect(!!(cond), false)
+#define LIKELY(cond)   __builtin_expect(!!(cond), true)
+#define UNLIKELY(cond) __builtin_expect(!!(cond), false)
 
 /* Atomics */
 #define ATOMIC_GET(x)     __atomic_load_n(&(x), __ATOMIC_RELAXED)
