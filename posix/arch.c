@@ -181,7 +181,12 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
 }
 
 pid_t arch_fork(run_t* fuzzer HF_ATTR_UNUSED) {
+#if defined(__FreeBSD__)
+    const int flags = RFPROC | RFCFDG;
+    return rfork(flags);
+#else
     return fork();
+#endif
 }
 
 bool arch_launchChild(run_t* run) {
