@@ -27,6 +27,7 @@ static bool hasCmdLineFSanitizeFuzzer = false;
 
 /* Embed libhf/.a inside this binary */
 __asm__("\n"
+	"   .section .rodata\n"
         "   .global lhfuzz_start\n"
         "   .global lhfuzz_end\n"
         "lhfuzz_start:\n"
