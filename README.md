@@ -9,6 +9,12 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
   * Latest stable version: [2.5](https://github.com/google/honggfuzz/releases)
   * [Changelog](https://github.com/google/honggfuzz/blob/master/CHANGELOG)
 
+## Installation
+```
+sudo apt-get binutils-dev libunwind-dev clang
+make
+```
+
 ## Features
 
   * It's __multi-process__ and __multi-threaded__: there's no need to run multiple copies of your fuzzer, as honggfuzz can unlock potential of all your available CPU cores with a single running instance. The file corpus is automatically shared and improved between all fuzzed processes.
