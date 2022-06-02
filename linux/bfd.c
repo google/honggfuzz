@@ -197,6 +197,24 @@ static int arch_bfdFPrintF(void* buf, const char* fmt, ...) {
     return ret;
 }
 
+static int arch_bfdFPrintFStyled(void* buf, int style HF_ATTR_UNUSED, const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    int ret = util_vssnprintf(buf, _HF_INSTR_SZ, fmt, args);
+    va_end(args);
+
+    return ret;
+}
+
+/*
+ * binutils/libopcode has an unstable public interface. At some point in time the function
+ * init_disassemble_info() started taking 4 arguments instead of 3. Always pass 4 arguments to it,
+ * no matter what's the declaration.
+ */
+static void arch_bfdInitDisassembleInfoStub(
+    struct disassemble_info* info, char* instr, void* bfd_printf_func, void* bfd_printf_styled_func)
+    __attribute__((weakref, alias("init_disassemble_info")));
+
 void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
     MX_SCOPED_LOCK(&arch_bfd_mutex);
 
@@ -227,8 +245,9 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
         return;
     }
 
-    struct disassemble_info info;
-    init_disassemble_info(&info, instr, arch_bfdFPrintF);
+    struct disassemble_info info = {};
+
+    arch_bfdInitDisassembleInfoStub(&info, instr, arch_bfdFPrintF, arch_bfdFPrintFStyled);
     info.arch          = bfd_get_arch(bfdh);
     info.mach          = bfd_get_mach(bfdh);
     info.buffer        = mem;
