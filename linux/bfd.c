@@ -26,6 +26,7 @@
 #include "linux/bfd.h"
 
 #include <bfd.h>
+#include <diagnostics.h>
 #include <dis-asm.h>
 #include <inttypes.h>
 #include <pthread.h>
@@ -61,7 +62,15 @@ typedef struct {
  */
 #if defined(FOR_EACH_DISASSEMBLER_OPTION)
 #define _HF_BFD_GE_2_29
-#endif
+#endif /* defined(FOR_EACH_DISASSEMBLER_OPTION) */
+/*
+ * binutils/libopcode has an unstable public interface. At some point in time the function
+ * init_disassemble_info() started taking 4 arguments instead of 3. Try to differentiate on the
+ * basis of some defines which apeared around the same time.
+ */
+#if defined(DIAGNOSTIC_ERROR_SWITCH)
+#define _HF_DISASM_4_ARGS
+#endif /* defined(DIAGNOSTIC_ERROR_SWITCH) */
 
 static pthread_mutex_t arch_bfd_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -197,7 +206,9 @@ static int arch_bfdFPrintF(void* buf, const char* fmt, ...) {
     return ret;
 }
 
-static int arch_bfdFPrintFStyled(void* buf, int style HF_ATTR_UNUSED, const char* fmt, ...) {
+#if defined(_HF_DISASM_4_ARGS)
+static int arch_bfdFPrintFStyled(
+    void* buf, enum disassembler_style style HF_ATTR_UNUSED, const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     int ret = util_vssnprintf(buf, _HF_INSTR_SZ, fmt, args);
@@ -205,15 +216,7 @@ static int arch_bfdFPrintFStyled(void* buf, int style HF_ATTR_UNUSED, const char
 
     return ret;
 }
-
-/*
- * binutils/libopcode has an unstable public interface. At some point in time the function
- * init_disassemble_info() started taking 4 arguments instead of 3. Always pass 4 arguments to it,
- * no matter what's the declaration.
- */
-static void arch_bfdInitDisassembleInfoStub(
-    struct disassemble_info* info, char* instr, void* bfd_printf_func, void* bfd_printf_styled_func)
-    __attribute__((weakref, alias("init_disassemble_info")));
+#endif /* defined(_HF_DISASM_4_ARGS) */
 
 void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
     MX_SCOPED_LOCK(&arch_bfd_mutex);
@@ -246,8 +249,11 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
     }
 
     struct disassemble_info info = {};
-    arch_bfdInitDisassembleInfoStub(&info, instr, arch_bfdFPrintF, arch_bfdFPrintFStyled);
-
+#if defined(_HF_DISASM_4_ARGS)
+    init_disassemble_info(&info, instr, arch_bfdFPrintF, arch_bfdFPrintFStyled);
+#else  /* defined(_HF_DISASM_4_ARGS) */
+    init_disassemble_info(&info, instr, arch_bfdFPrintF);
+#endif /* defined(_HF_DISASM_4_ARGS) */
     info.arch          = bfd_get_arch(bfdh);
     info.mach          = bfd_get_mach(bfdh);
     info.buffer        = mem;
