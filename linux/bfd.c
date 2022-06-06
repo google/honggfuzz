@@ -60,17 +60,17 @@ typedef struct {
     asymbol** dsyms;
 } bfd_t;
 
+/* INFO: binutils (libbfd, libopcode) has an unstable public interface. */
 /*
  * This is probably the only define which was added with binutils 2.29, so we use
- * it, do decide which disassembler() prototype from dis-asm.h to use
+ * it, do decide which disassembler() prototype from dis-asm.h to use.
  */
 #if defined(FOR_EACH_DISASSEMBLER_OPTION)
 #define _HF_BFD_GE_2_29
 #endif /* defined(FOR_EACH_DISASSEMBLER_OPTION) */
 /*
- * binutils/libopcode has an unstable public interface. At some point in time the function
- * init_disassemble_info() started taking 4 arguments instead of 3. Try to differentiate on the
- * basis of some defines which apeared around the same time.
+ * At some point in time the function init_disassemble_info() started taking 4 arguments instead
+ * of 3. Try to differentiate them on the basis of some defines which apeared around similar time.
  */
 #if defined(DIAGNOSTIC_ERROR_SWITCH)
 #define _HF_DISASM_4_ARGS
