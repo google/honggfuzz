@@ -26,7 +26,11 @@
 #include "linux/bfd.h"
 
 #include <bfd.h>
+#if defined __has_include
+#if __has_include(<diagnostics.h>)
 #include <diagnostics.h>
+#endif /* __has_include(<diagnostics.h>) */
+#endif /* defined __has_include */
 #include <dis-asm.h>
 #include <inttypes.h>
 #include <pthread.h>
