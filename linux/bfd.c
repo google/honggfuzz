@@ -271,6 +271,7 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
         snprintf(instr, _HF_INSTR_SZ, "[DIS-ASM_FAILURE]");
     }
 
+    disassemble_free_target(&info);
     bfd_close(bfdh);
 }
 
