@@ -26,11 +26,6 @@
 #include "linux/bfd.h"
 
 #include <bfd.h>
-#if defined __has_include
-#if __has_include(<diagnostics.h>)
-#include <diagnostics.h>
-#endif /* __has_include(<diagnostics.h>) */
-#endif /* defined __has_include */
 #include <dis-asm.h>
 #include <inttypes.h>
 #include <pthread.h>
@@ -72,9 +67,11 @@ typedef struct {
  * At some point in time the function init_disassemble_info() started taking 4 arguments instead
  * of 3. Try to differentiate them on the basis of some defines which apeared around similar time.
  */
-#if defined(DIAGNOSTIC_ERROR_SWITCH)
+#if defined __has_include
+#if __has_include(<libcollector.h>)
 #define _HF_DISASM_4_ARGS
-#endif /* defined(DIAGNOSTIC_ERROR_SWITCH) */
+#endif /* __has_include(<libcollector.h>) */
+#endif /* defined __has_include */
 
 static pthread_mutex_t arch_bfd_mutex = PTHREAD_MUTEX_INITIALIZER;
 
