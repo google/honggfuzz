@@ -79,13 +79,19 @@ static void* getsym(const char* sym) {
 #endif /* defined(RTLD_NEXT) */
 }
 
+extern int  __wrap_memcmp(const void* s1, const void* s2, size_t n) __attribute__((weak));
 static void initializeLibcFunctions(void) {
     libc_memcmp = (int (*)(const void* s1, const void* s2, size_t n))getsym("memcmp");
     if (!libc_memcmp) {
         LOG_W("dlsym(memcmp) failed: %s", dlerror());
         libc_memcmp = _memcmp;
     }
-    LOG_D("libc_memcmp=%p, (_memcmp=%p, memcmp=%p)", libc_memcmp, _memcmp, memcmp);
+    if (libc_memcmp == __wrap_memcmp) {
+        LOG_W("dlsym(memcmp)==__wrap_memcmp: %p==%p", libc_memcmp, __wrap_memcmp);
+        libc_memcmp = _memcmp;
+    }
+    LOG_D("libc_memcmp=%p, (_memcmp=%p, memcmp=%p, __wrap_memcmp=%p)", libc_memcmp, _memcmp, memcmp,
+        __wrap_memcmp);
 }
 
 static void* initializeTryMapHugeTLB(int fd, size_t sz) {
