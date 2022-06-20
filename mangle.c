@@ -569,7 +569,7 @@ static inline void mangle_AddSubWithRange(
         }
         case 2: {
             int16_t val;
-            memcpy(&val, &run->dynfile->data[off], sizeof(val));
+            util_memcpyInline(&val, &run->dynfile->data[off], sizeof(val));
             if (util_rnd64() & 0x1) {
                 val += delta;
             } else {
@@ -583,7 +583,7 @@ static inline void mangle_AddSubWithRange(
         }
         case 4: {
             int32_t val;
-            memcpy(&val, &run->dynfile->data[off], sizeof(val));
+            util_memcpyInline(&val, &run->dynfile->data[off], sizeof(val));
             if (util_rnd64() & 0x1) {
                 val += delta;
             } else {
@@ -597,7 +597,7 @@ static inline void mangle_AddSubWithRange(
         }
         case 8: {
             int64_t val;
-            memcpy(&val, &run->dynfile->data[off], sizeof(val));
+            util_memcpyInline(&val, &run->dynfile->data[off], sizeof(val));
             if (util_rnd64() & 0x1) {
                 val += delta;
             } else {
