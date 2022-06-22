@@ -110,6 +110,20 @@ static void __attribute__((unused)) __clang_cleanup_func(void (^*dfunc)(void)) {
 #define LIKELY(cond)   __builtin_expect(!!(cond), true)
 #define UNLIKELY(cond) __builtin_expect(!!(cond), false)
 
+#if !defined(__has_builtin)
+#define __has_builtin(b) 0
+#endif
+
+#if !__has_builtin(__builtin_memcpy_inline)
+#define util_memcpyInline(x, y, s)										\
+	do {													\
+		_Static_assert(__builtin_choose_expr(__builtin_constant_p(s), 1, 0), "len must be a constant");	\
+		__builtin_memcpy(x, y, s);									\
+	} while (0)
+#else
+#define util_memcpyInline(x, y, s) __builtin_memcpy_inline(x, y, s)
+#endif
+
 /* Atomics */
 #define ATOMIC_GET(x)     __atomic_load_n(&(x), __ATOMIC_RELAXED)
 #define ATOMIC_SET(x, y)  __atomic_store_n(&(x), y, __ATOMIC_RELAXED)

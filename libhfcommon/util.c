@@ -397,13 +397,13 @@ void util_sleepForMSec(uint64_t msec) {
 
 uint64_t util_getUINT32(const uint8_t* buf) {
     uint32_t r;
-    memcpy(&r, buf, sizeof(r));
+    util_memcpyInline(&r, buf, sizeof(r));
     return (uint64_t)r;
 }
 
 uint64_t util_getUINT64(const uint8_t* buf) {
     uint64_t r;
-    memcpy(&r, buf, sizeof(r));
+    util_memcpyInline(&r, buf, sizeof(r));
     return r;
 }
 
