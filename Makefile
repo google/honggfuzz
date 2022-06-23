@@ -415,7 +415,7 @@ libhfcommon/files.o: libhfcommon/common.h libhfcommon/log.h
 libhfcommon/files.o: libhfcommon/util.h
 libhfcommon/log.o: libhfcommon/log.h libhfcommon/common.h libhfcommon/util.h
 libhfcommon/ns.o: libhfcommon/ns.h libhfcommon/common.h libhfcommon/files.h
-libhfcommon/ns.o: libhfcommon/common.h libhfcommon/log.h
+libhfcommon/ns.o: libhfcommon/common.h libhfcommon/log.h libhfcommon/util.h
 libhfcommon/util.o: libhfcommon/util.h libhfcommon/common.h
 libhfcommon/util.o: libhfcommon/files.h libhfcommon/common.h
 libhfcommon/util.o: libhfcommon/log.h
