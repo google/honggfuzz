@@ -658,7 +658,7 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
     }
 
     input_setSize(run, fileSz);
-    memset(run->dynfile->cov, '\0', sizeof(run->dynfile->cov));
+    util_memsetInline(run->dynfile->cov, '\0', sizeof(run->dynfile->cov));
     run->dynfile->idx  = 0;
     run->dynfile->src  = NULL;
     run->dynfile->refs = 0;

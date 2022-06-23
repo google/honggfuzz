@@ -124,6 +124,16 @@ static void __attribute__((unused)) __clang_cleanup_func(void (^*dfunc)(void)) {
 #define util_memcpyInline(x, y, s) __builtin_memcpy_inline(x, y, s)
 #endif
 
+#if !__has_builtin(__builtin_memset_inline)
+#define util_memsetInline(x, y, s)										\
+	do {													\
+		_Static_assert(__builtin_choose_expr(__builtin_constant_p(s), 1, 0), "len must be a constant");	\
+		__builtin_memset(x, y, s);									\
+	} while (0)
+#else
+#define util_memsetInline(x, y, s) __builtin_memset_inline(x, y, s)
+#endif
+
 /* Atomics */
 #define ATOMIC_GET(x)     __atomic_load_n(&(x), __ATOMIC_RELAXED)
 #define ATOMIC_SET(x, y)  __atomic_store_n(&(x), y, __ATOMIC_RELAXED)
