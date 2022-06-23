@@ -67,7 +67,15 @@ static int _memcmp(const void* m1, const void* m2, size_t n) {
 
 int (*libc_memcmp)(const void* s1, const void* s2, size_t n) = _memcmp;
 
-static void* getsym(const char* sym) {
+static void* getsym(const char* fname, const char* sym) {
+    if (fname) {
+        void* dlh = dlopen(fname, RTLD_LAZY);
+        if (!dlh) {
+            return NULL;
+        }
+        return dlsym(dlh, sym);
+    }
+
 #if defined(RTLD_NEXT)
     return dlsym(RTLD_NEXT, sym);
 #else  /* defined(RTLD_NEXT) */
@@ -79,12 +87,28 @@ static void* getsym(const char* sym) {
 #endif /* defined(RTLD_NEXT) */
 }
 
-extern int  __wrap_memcmp(const void* s1, const void* s2, size_t n) __attribute__((weak));
+extern int __wrap_memcmp(const void* s1, const void* s2, size_t n) __attribute__((weak));
+extern int __sanitizer_weak_hook_memcmp(const void* s1, const void* s2, size_t n)
+    __attribute__((weak));
 static void initializeLibcFunctions(void) {
-    libc_memcmp = (int (*)(const void* s1, const void* s2, size_t n))getsym("memcmp");
+    /*
+     * Look for the original "memcmp" function.
+     *
+     * First, in standard C libraries, because if an instrumented shared library is loaded, it can
+     * overshadow the libc's symbol. Next, among the already loaded symbols.
+     */
+    libc_memcmp = (int (*)(const void* s1, const void* s2, size_t n))getsym("libc.so.6", "memcmp");
+    if (!libc_memcmp) {
+        libc_memcmp =
+            (int (*)(const void* s1, const void* s2, size_t n))getsym("libc.so", "memcmp");
+    }
+    if (!libc_memcmp) {
+        libc_memcmp = (int (*)(const void* s1, const void* s2, size_t n))getsym(NULL, "memcmp");
+    }
 
-    LOG_D("libc_memcmp=%p, (_memcmp=%p, memcmp=%p, __wrap_memcmp=%p)", libc_memcmp, _memcmp, memcmp,
-        __wrap_memcmp);
+    LOG_D("libc_memcmp=%p, (_memcmp=%p, memcmp=%p, __wrap_memcmp=%p, "
+          "__sanitizer_weak_hook_memcmp=%p)",
+        libc_memcmp, _memcmp, memcmp, __wrap_memcmp, __sanitizer_weak_hook_memcmp);
 
     if (!libc_memcmp) {
         LOG_W("dlsym(memcmp) failed: %s", dlerror());
@@ -92,6 +116,10 @@ static void initializeLibcFunctions(void) {
     }
     if (libc_memcmp == __wrap_memcmp) {
         LOG_W("dlsym(memcmp)==__wrap_memcmp: %p==%p", libc_memcmp, __wrap_memcmp);
+        libc_memcmp = _memcmp;
+    }
+    if (libc_memcmp == __sanitizer_weak_hook_memcmp) {
+        LOG_W("dlsym(memcmp)==__sanitizer_weak_hook_memcmp: %p==%p", libc_memcmp, __wrap_memcmp);
         libc_memcmp = _memcmp;
     }
 }
