@@ -119,7 +119,8 @@ static void initializeLibcFunctions(void) {
         libc_memcmp = _memcmp;
     }
     if (libc_memcmp == __sanitizer_weak_hook_memcmp) {
-        LOG_W("dlsym(memcmp)==__sanitizer_weak_hook_memcmp: %p==%p", libc_memcmp, __wrap_memcmp);
+        LOG_W("dlsym(memcmp)==__sanitizer_weak_hook_memcmp: %p==%p", libc_memcmp,
+            __sanitizer_weak_hook_memcmp);
         libc_memcmp = _memcmp;
     }
 }
