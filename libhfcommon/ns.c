@@ -26,6 +26,7 @@
 #include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
 #include "libhfcommon/log.h"
+#include "libhfcommon/util.h"
 
 #if defined(_HF_ARCH_LINUX)
 
@@ -104,7 +105,7 @@ bool nsIfaceUp(const char* ifacename) {
     }
 
     struct ifreq ifr;
-    memset(&ifr, '\0', sizeof(ifr));
+    util_memsetInline(&ifr, '\0', sizeof(ifr));
     snprintf(ifr.ifr_name, IF_NAMESIZE, "%s", ifacename);
 
     if (ioctl(sock, SIOCGIFFLAGS, &ifr) == -1) {
