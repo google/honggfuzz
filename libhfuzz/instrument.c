@@ -52,7 +52,7 @@ cmpfeedback_t* globalCmpFeedback = NULL;
 
 uint32_t my_thread_no = 0;
 
-static int _memcmp(const void* m1, const void* m2, size_t n) {
+__attribute__((hot)) static int _memcmp(const void* m1, const void* m2, size_t n) {
     const unsigned char* s1 = (const unsigned char*)m1;
     const unsigned char* s2 = (const unsigned char*)m2;
 
