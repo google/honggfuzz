@@ -65,7 +65,7 @@ static int _memcmp(const void* m1, const void* m2, size_t n) {
     return 0;
 }
 
-int (*libc_memcmp)(const void* s1, const void* s2, size_t n) = _memcmp;
+int (*hf_memcmp)(const void* s1, const void* s2, size_t n) = _memcmp;
 
 static void* getsym(const char* fname, const char* sym) {
     if (fname) {
@@ -97,32 +97,35 @@ static void initializeLibcFunctions(void) {
      * First, in standard C libraries, because if an instrumented shared library is loaded, it can
      * overshadow the libc's symbol. Next, among the already loaded symbols.
      */
-    libc_memcmp = (int (*)(const void* s1, const void* s2, size_t n))getsym("libc.so.6", "memcmp");
-    if (!libc_memcmp) {
-        libc_memcmp =
-            (int (*)(const void* s1, const void* s2, size_t n))getsym("libc.so", "memcmp");
-    }
-    if (!libc_memcmp) {
-        libc_memcmp = (int (*)(const void* s1, const void* s2, size_t n))getsym(NULL, "memcmp");
+    int (*libcso6_memcmp)(const void* s1, const void* s2, size_t n) =
+        (int (*)(const void* s1, const void* s2, size_t n))getsym("libc.so.6", "memcmp");
+    int (*libcso_memcmp)(const void* s1, const void* s2, size_t n) =
+        (int (*)(const void* s1, const void* s2, size_t n))getsym("libc.so", "memcmp");
+    int (*libc_memcmp)(const void* s1, const void* s2, size_t n) =
+        (int (*)(const void* s1, const void* s2, size_t n))getsym(NULL, "memcmp");
+
+    if (libcso6_memcmp) {
+        hf_memcmp = libcso6_memcmp;
+    } else if (libcso_memcmp) {
+        hf_memcmp = libcso_memcmp;
+    } else if (libc_memcmp) {
+        hf_memcmp = libc_memcmp;
     }
 
-    LOG_D("libc_memcmp=%p, (_memcmp=%p, memcmp=%p, __wrap_memcmp=%p, "
-          "__sanitizer_weak_hook_memcmp=%p)",
-        libc_memcmp, _memcmp, memcmp, __wrap_memcmp, __sanitizer_weak_hook_memcmp);
-
-    if (!libc_memcmp) {
-        LOG_W("dlsym(memcmp) failed: %s", dlerror());
-        libc_memcmp = _memcmp;
+    if (hf_memcmp == __wrap_memcmp) {
+        LOG_W("hf_memcmp==__wrap_memcmp: %p==%p", hf_memcmp, __wrap_memcmp);
+        hf_memcmp = _memcmp;
     }
-    if (libc_memcmp == __wrap_memcmp) {
-        LOG_W("dlsym(memcmp)==__wrap_memcmp: %p==%p", libc_memcmp, __wrap_memcmp);
-        libc_memcmp = _memcmp;
-    }
-    if (libc_memcmp == __sanitizer_weak_hook_memcmp) {
-        LOG_W("dlsym(memcmp)==__sanitizer_weak_hook_memcmp: %p==%p", libc_memcmp,
+    if (hf_memcmp == __sanitizer_weak_hook_memcmp) {
+        LOG_W("hf_memcmp==__sanitizer_weak_hook_memcmp: %p==%p", hf_memcmp,
             __sanitizer_weak_hook_memcmp);
-        libc_memcmp = _memcmp;
+        hf_memcmp = _memcmp;
     }
+
+    LOG_D("hf_memcmp=%p, (_memcmp=%p, memcmp=%p, __wrap_memcmp=%p, "
+          "__sanitizer_weak_hook_memcmp=%p, libcso6_memcmp=%p, libcso_memcmp=%p, libc_memcmp=%p)",
+        hf_memcmp, _memcmp, memcmp, __wrap_memcmp, __sanitizer_weak_hook_memcmp, libcso6_memcmp,
+        libcso_memcmp, libc_memcmp);
 }
 
 static void* initializeTryMapHugeTLB(int fd, size_t sz) {
@@ -292,7 +295,7 @@ static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
 
     for (uint32_t i = 0; i < curroff; i++) {
         if ((len == ATOMIC_GET(globalCmpFeedback->valArr[i].len)) &&
-            libc_memcmp(globalCmpFeedback->valArr[i].val, mem, len) == 0) {
+            hf_memcmp(globalCmpFeedback->valArr[i].val, mem, len) == 0) {
             return;
         }
     }
