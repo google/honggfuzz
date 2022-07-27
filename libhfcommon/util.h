@@ -194,10 +194,10 @@ typedef enum {
 extern void util_ParentDeathSigIfAvail(int signo);
 extern bool util_PinThreadToCPUs(uint32_t startcpu, uint32_t cpucnt);
 
-extern void* util_Malloc(size_t sz);
-extern void* util_Calloc(size_t sz);
-extern void* util_AllocCopy(const uint8_t* ptr, size_t sz);
-extern void* util_MMap(size_t sz);
+extern void* util_Malloc(size_t sz) __attribute__((__malloc__));
+extern void* util_Calloc(size_t sz) __attribute__((__malloc__));
+extern void* util_AllocCopy(const uint8_t* ptr, size_t sz) __attribute__((__malloc__));
+extern void* util_MMap(size_t sz) __attribute__((__malloc__));
 extern void* util_Realloc(void* ptr, size_t sz);
 
 extern uint64_t util_rndGet(uint64_t min, uint64_t max);
@@ -206,7 +206,7 @@ extern void     util_rndBufPrintable(uint8_t* buf, size_t sz);
 extern uint64_t util_rnd64(void);
 extern uint8_t  util_rndPrintable(void);
 
-extern char* util_StrDup(const char* s);
+extern char* util_StrDup(const char* s) __attribute__((__malloc__));
 extern int   util_ssnprintf(char* str, size_t size, const char* format, ...)
     __attribute__((format(printf, 3, 4)));
 extern int         util_vssnprintf(char* str, size_t size, const char* format, va_list ap);
