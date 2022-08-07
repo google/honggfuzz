@@ -27,7 +27,9 @@ static bool hasCmdLineFSanitizeFuzzer = false;
 
 /* Embed libhf/.a inside this binary */
 __asm__("\n"
+#ifndef _HF_ARCH_DARWIN
         "   .section .rodata\n"
+#endif /* _HF_ARCH_DARWIN */
         "   .global lhfuzz_start\n"
         "   .global lhfuzz_end\n"
         "lhfuzz_start:\n"
