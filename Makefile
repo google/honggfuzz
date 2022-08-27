@@ -27,7 +27,7 @@ BIN := honggfuzz
 HFUZZ_CC_BIN := hfuzz_cc/hfuzz-cc
 HFUZZ_CC_SRCS := hfuzz_cc/hfuzz-cc.c
 COMMON_CFLAGS := -std=c11 -I/usr/local/include -D_GNU_SOURCE -Wall -Wextra -Werror -Wno-format-truncation -Wno-override-init -I.
-COMMON_LDFLAGS := -pthread -lm
+COMMON_LDFLAGS := -pthread -L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -lm
 COMMON_SRCS := $(sort $(wildcard *.c))
 CFLAGS ?= -O3 -mtune=native -funroll-loops
 LDFLAGS ?=
@@ -82,24 +82,35 @@ else ifeq ($(OS),Darwin)
     # Figure out which crash reporter to use.
     CRASHWRANGLER := third_party/mac
     OS_VERSION := $(shell sw_vers -productVersion)
-    ifneq (,$(findstring 10.15,$(OS_VERSION)))
+    OS_MAJOR_VERSION := $(shell echo $(OS_VERSION) | cut -f1 -d.)
+    OS_MINOR_VERSION := $(shell echo $(OS_VERSION) | cut -f2 -d.)
+
+    ifeq ($(OS_MAJOR_VERSION), 12)
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
-    else ifneq (,$(findstring 10.14,$(OS_VERSION)))
+    else ifeq ($(OS_MAJOR_VERSION), 11)
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
-    else ifneq (,$(findstring 10.13,$(OS_VERSION)))
-        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
-    else ifneq (,$(findstring 10.12,$(OS_VERSION)))
-        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
-    else ifneq (,$(findstring 10.11,$(OS_VERSION)))
-        # El Capitan didn't break compatibility
-        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
-    else ifneq (,$(findstring 10.10,$(OS_VERSION)))
-        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
-    else ifneq (,$(findstring 10.9,$(OS_VERSION)))
-        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mavericks.o
-    else ifneq (,$(findstring 10.8,$(OS_VERSION)))
-        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mountain_Lion.o
-    else
+    else ifeq ($(OS_MAJOR_VERSION), 10)
+        ifeq ($(OS_MINOR_VERSION), 15)
+            CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
+        else ifeq ($(OS_MINOR_VERSION), 14)
+            CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
+        else ifeq ($(OS_MINOR_VERSION), 13)
+            CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
+        else ifeq ($(OS_MINOR_VERSION), 12)
+            CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
+        else ifeq ($(OS_MINOR_VERSION), 11)
+            # El Capitan didn't break compatibility
+            CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
+        else ifeq ($(OS_MINOR_VERSION), 10)
+            CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Yosemite.o
+        else ifeq ($(OS_MINOR_VERSION), 9)
+            CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mavericks.o
+        else ifeq ($(OS_MINOR_VERSION), 8)
+            CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Mountain_Lion.o
+        endif
+    endif
+
+    ifeq ($(CRASH_REPORT), )
         $(error Unsupported MAC OS X version)
     endif
 
@@ -121,7 +132,7 @@ else ifeq ($(OS),Darwin)
                    -Wno-embedded-directive
     ARCH_LDFLAGS := -F/System/Library/PrivateFrameworks -framework CoreSymbolication -framework IOKit \
                     -F$(SDK_V)/System/Library/Frameworks -F$(SDK_V)/System/Library/PrivateFrameworks \
-                    -F$(SDK)/System/Library/Frameworks \
+                    -F$(SDK)/System/Library/Frameworks -F$(SDK)/System/Library/PrivateFrameworks \
                     -framework Foundation -framework ApplicationServices -framework Symbolication \
                     -framework CoreServices -framework CrashReporterSupport -framework CoreFoundation \
                     -framework CommerceKit $(CRASH_REPORT)
