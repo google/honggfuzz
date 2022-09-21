@@ -268,7 +268,11 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
         snprintf(instr, _HF_INSTR_SZ, "[DIS-ASM_FAILURE]");
     }
 
-    disassemble_free_target(&info);
+    /* disassemble_free_target is available only since bfd/dis-asm 2019 */
+    __attribute__((weak)) void disassemble_free_target(struct disassemble_info*);
+    if (disassemble_free_target) {
+        disassemble_free_target(&info);
+    }
     bfd_close(bfdh);
 }
 
