@@ -11,7 +11,7 @@ A security oriented, feedback-driven, evolutionary, easy-to-use fuzzer with inte
 
 ## Installation
 ```
-sudo apt-get install binutils-dev libunwind-dev clang
+sudo apt-get install binutils-dev libunwind-dev libblocksruntime-dev clang
 make
 ```
 
