@@ -85,7 +85,9 @@ else ifeq ($(OS),Darwin)
     OS_MAJOR_VERSION := $(shell echo $(OS_VERSION) | cut -f1 -d.)
     OS_MINOR_VERSION := $(shell echo $(OS_VERSION) | cut -f2 -d.)
 
-    ifeq ($(OS_MAJOR_VERSION), 12)
+    ifeq ($(OS_MAJOR_VERSION), 13)
+        CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
+    else ifeq ($(OS_MAJOR_VERSION), 12)
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
     else ifeq ($(OS_MAJOR_VERSION), 11)
         CRASH_REPORT := $(CRASHWRANGLER)/CrashReport_Sierra.o
