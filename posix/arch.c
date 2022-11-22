@@ -288,9 +288,9 @@ void arch_reapKill(void) {
 #if defined(__FreeBSD__)
     struct procctl_reaper_kill lst;
     lst.rk_flags = 0;
-    lst.rk_sig = SIGTERM;
+    lst.rk_sig   = SIGTERM;
     if (procctl(P_PID, getpid(), PROC_REAP_KILL, &lst) == -1) {
-	    PLOG_W("procctl(PROC_REAP_KILL)");
+        PLOG_W("procctl(PROC_REAP_KILL)");
     }
 #endif
 }
