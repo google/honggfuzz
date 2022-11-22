@@ -284,6 +284,17 @@ void arch_reapChild(run_t* run) {
     }
 }
 
+void arch_reapKill(void) {
+#if defined(__FreeBSD__)
+    struct procctl_reaper_kill lst;
+    lst.rk_flags = 0;
+    lst.rk_sig = SIGTERM;
+    if (procctl(P_PID, getpid(), PROC_REAP_KILL, &lst) == -1) {
+	    PLOG_W("procctl(PROC_REAP_KILL)");
+    }
+#endif
+}
+
 bool arch_archInit(honggfuzz_t* hfuzz HF_ATTR_UNUSED) {
     /* Make %'d work */
     setlocale(LC_NUMERIC, "en_US.UTF-8");
@@ -292,5 +303,10 @@ bool arch_archInit(honggfuzz_t* hfuzz HF_ATTR_UNUSED) {
 }
 
 bool arch_archThreadInit(run_t* fuzzer HF_ATTR_UNUSED) {
+#if defined(__FreeBSD_)
+    if (procctl(P_PID, getpid(), PROC_REAP_ACQUIRE, NULL) == -1) {
+        PLOG_W("procctl(PROC_REAP_ACQUIRE)");
+    }
+#endif
     return true;
 }

@@ -177,6 +177,9 @@ void arch_reapChild(run_t* run) {
     }
 }
 
+void arch_reapKill(void) {
+}
+
 bool arch_archInit(honggfuzz_t* hfuzz) {
     /* Make %'d work */
     setlocale(LC_NUMERIC, "en_US.UTF-8");

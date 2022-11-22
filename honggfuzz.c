@@ -33,6 +33,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#if defined(__FreeBSD__)
+#include <sys/procctl.h>
+#endif
+
 #include "cmdline.h"
 #include "display.h"
 #include "fuzz.h"

@@ -553,6 +553,8 @@ static void* fuzz_threadNew(void* arg) {
         }
     }
 
+    arch_reapKill();
+
     if (run.pid) {
         kill(run.pid, SIGKILL);
     }

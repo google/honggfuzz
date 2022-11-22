@@ -36,6 +36,8 @@ extern pid_t arch_fork(run_t* run);
 
 extern void arch_reapChild(run_t* run);
 
+extern void arch_reapKill(void);
+
 extern void arch_prepareParent(run_t* run);
 
 extern void arch_prepareParentAfterFork(run_t* run);
