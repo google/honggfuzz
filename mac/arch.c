@@ -400,6 +400,9 @@ void arch_reapChild(run_t* run) {
     }
 }
 
+void arch_reapKill(void) {
+}
+
 void* wait_for_exception() {
     while (1) {
         mach_msg_server_once(mach_exc_server, 4096, g_exception_port, MACH_MSG_OPTION_NONE);
