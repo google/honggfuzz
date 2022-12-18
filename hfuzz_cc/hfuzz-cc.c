@@ -450,6 +450,7 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=bcmp";
     args[j++] = "-Wl,--wrap=memmem";
     args[j++] = "-Wl,--wrap=strcpy";
+    args[j++] = "-Wl,--wrap=strlcpy";
     /* Apache httpd */
     args[j++] = "-Wl,--wrap=ap_cstr_casecmp";
     args[j++] = "-Wl,--wrap=ap_cstr_casecmpn";
