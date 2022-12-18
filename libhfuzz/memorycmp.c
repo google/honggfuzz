@@ -196,6 +196,16 @@ static inline char* HF_strcpy(char* dest, const char* src, uintptr_t addr) {
     return __builtin_memcpy(dest, src, len + 1);
 }
 
+static inline size_t HF_strlcpy(char* dest, const char* src, size_t clen, uintptr_t addr) {
+    size_t len, rlen = __builtin_strlen(src);
+    len = clen < rlen ? clen : rlen;
+    if (len > 0) {
+        instrumentUpdateCmpMap(addr, util_Log2(len));
+    }
+    (void)__builtin_memcpy(dest, src, len + 1);
+    return len;
+}
+
 /* Define a weak function x, as well as __wrap_x pointing to x */
 #define XVAL(x) x
 #define HF_WEAK_WRAP(ret, func, ...)                                                               \
@@ -289,6 +299,13 @@ HF_WEAK_WRAP(char*, strcpy, char* dest, const char* src) {
 void __sanitizer_weak_hook_strcpy(
     uintptr_t pc, char* dest, const char* src, char* result HF_ATTR_UNUSED) {
     HF_strcpy(dest, src, pc);
+}
+HF_WEAK_WRAP(size_t, strlcpy, char* dest, const char* src, size_t len) {
+    return HF_strlcpy(dest, src, len, (uintptr_t)__builtin_return_address(0));
+}
+void __sanitizer_weak_hook_strlcpy(
+    uintptr_t pc, char* dest, const char* src, size_t len, size_t result HF_ATTR_UNUSED) {
+    HF_strlcpy(dest, src, len, pc);
 }
 
 /*
