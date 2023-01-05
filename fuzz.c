@@ -178,29 +178,38 @@ static void fuzz_perfFeedback(run_t* run) {
     if (run->global->feedback.skipFeedbackOnTimeout && run->tmOutSignaled) {
         return;
     }
+    if (run->global->feedback.dynFileMethod == _HF_DYNFILE_NONE) {
+        return;
+    }
 
     MX_SCOPED_LOCK(&run->global->mutex.feedback);
     defer {
         wmb();
     };
 
-    uint64_t softNewPC = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewPC[run->fuzzNo]);
-    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewPC[run->fuzzNo]);
-    uint64_t softCurPC = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalPC[run->fuzzNo]);
-    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalPC[run->fuzzNo]);
+    uint64_t softNewPC   = 0;
+    uint64_t softCurPC   = 0;
+    uint64_t softNewEdge = 0;
+    uint64_t softCurEdge = 0;
+    uint64_t softNewCmp  = 0;
+    uint64_t softCurCmp  = 0;
 
-    uint64_t softNewEdge =
-        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewEdge[run->fuzzNo]);
-    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewEdge[run->fuzzNo]);
-    uint64_t softCurEdge =
-        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalEdge[run->fuzzNo]);
-    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalEdge[run->fuzzNo]);
+    if (run->global->feedback.dynFileMethod & _HF_DYNFILE_SOFT) {
+        softNewPC = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewPC[run->fuzzNo]);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewPC[run->fuzzNo]);
+        softCurPC = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalPC[run->fuzzNo]);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalPC[run->fuzzNo]);
 
-    uint64_t softNewCmp = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewCmp[run->fuzzNo]);
-    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewCmp[run->fuzzNo]);
-    uint64_t softCurCmp =
-        ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalCmp[run->fuzzNo]);
-    ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalCmp[run->fuzzNo]);
+        softNewEdge = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewEdge[run->fuzzNo]);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewEdge[run->fuzzNo]);
+        softCurEdge = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalEdge[run->fuzzNo]);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalEdge[run->fuzzNo]);
+
+        softNewCmp = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewCmp[run->fuzzNo]);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewCmp[run->fuzzNo]);
+        softCurCmp = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalCmp[run->fuzzNo]);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalCmp[run->fuzzNo]);
+    }
 
     rmb();
 
