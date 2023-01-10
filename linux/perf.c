@@ -128,9 +128,8 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
         LOG_F("Intel PT events are not supported on this platform");
     }
 
-    struct perf_event_attr pe;
-    memset(&pe, 0, sizeof(struct perf_event_attr));
-    pe.size = sizeof(struct perf_event_attr);
+    struct perf_event_attr pe = {};
+    pe.size                   = sizeof(struct perf_event_attr);
     if (run->global->arch_linux.kernelOnly) {
         pe.exclude_user = 1;
     } else {
