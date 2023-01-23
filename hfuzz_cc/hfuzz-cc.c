@@ -337,7 +337,7 @@ static char* getLibHFCommonPath() {
     if (path[0]) {
         return path;
     }
-    if (!getLibPath("libhfuzz", "HFUZZ_LHFCOMMON_PATH", &lhfcommon_start, &lhfcommon_end, path)) {
+    if (!getLibPath("libhfcommon", "HFUZZ_LHFCOMMON_PATH", &lhfcommon_start, &lhfcommon_end, path)) {
         LOG_F("Couldn't create the temporary libhcommon.a");
     }
     return path;
