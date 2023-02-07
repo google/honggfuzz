@@ -153,6 +153,7 @@ struct _dynfile_t {
     char               path[PATH_MAX];
     struct _dynfile_t* src;
     uint32_t           refs;
+    fuzzState_t        phase;
     uint8_t*           data;
     TAILQ_ENTRY(_dynfile_t) pointers;
 };

@@ -379,6 +379,7 @@ void input_addDynamicInput(run_t* run) {
     if (run->dynfile->src) {
         ATOMIC_POST_INC(run->dynfile->src->refs);
     }
+    dynfile->phase = fuzz_getState(run->global);
     input_generateFileName(dynfile, NULL, dynfile->path);
 
     MX_SCOPED_RWLOCK_WRITE(&run->global->mutex.dynfileq);
@@ -458,11 +459,6 @@ static inline int input_speedFactor(run_t* run, dynfile_t* dynfile) {
 }
 
 static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_factor) {
-    /*
-     * TODO: measure impact of the skipFactor on the speed of fuzzing.
-     * It's currently unsure how much it helps, so disable it for now,
-     * and re-enable once proper test has been conducted
-     */
     int penalty = 0;
 
 #if 1
@@ -495,13 +491,17 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
     {
         /* Older inputs -> lower chance of being tested */
         static const int scaleMap[200] = {
-            [98 ... 199] = -3,
+            [98 ... 199] = -20,
             [91 ... 97]  = -2,
             [81 ... 90]  = -1,
             [71 ... 80]  = 0,
             [41 ... 70]  = 1,
             [0 ... 40]   = 2,
         };
+
+        if (dynfile->phase != _HF_STATE_DYNAMIC_MAIN) {
+            return 0;
+        }
 
         const unsigned percentile = (dynfile->idx * 100) / run->global->io.dynfileqCnt;
         penalty += scaleMap[percentile];
@@ -564,6 +564,7 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     run->dynfile->timeExecUSecs = run->current->timeExecUSecs;
     run->dynfile->src           = run->current;
     run->dynfile->refs          = 0;
+    run->dynfile->phase         = fuzz_getState(run->global);
     memcpy(run->dynfile->cov, run->current->cov, sizeof(run->dynfile->cov));
     snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s", run->current->path);
     memcpy(run->dynfile->data, run->current->data, run->current->size);
@@ -659,9 +660,10 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
 
     input_setSize(run, fileSz);
     util_memsetInline(run->dynfile->cov, '\0', sizeof(run->dynfile->cov));
-    run->dynfile->idx  = 0;
-    run->dynfile->src  = NULL;
-    run->dynfile->refs = 0;
+    run->dynfile->idx   = 0;
+    run->dynfile->src   = NULL;
+    run->dynfile->refs  = 0;
+    run->dynfile->phase = fuzz_getState(run->global);
 
     if (needs_mangle) {
         mangle_mangleContent(run, /* slow_factor= */ 0);
