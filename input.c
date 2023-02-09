@@ -499,12 +499,10 @@ static inline int input_skipFactor(run_t* run, dynfile_t* dynfile, int* speed_fa
             [0 ... 40]   = 2,
         };
 
-        if (dynfile->phase != _HF_STATE_DYNAMIC_MAIN) {
-            return 0;
+        if (dynfile->phase == _HF_STATE_DYNAMIC_MAIN) {
+            const unsigned percentile = (dynfile->idx * 100) / run->global->io.dynfileqCnt;
+            penalty += scaleMap[percentile];
         }
-
-        const unsigned percentile = (dynfile->idx * 100) / run->global->io.dynfileqCnt;
-        penalty += scaleMap[percentile];
     }
 #endif
 
