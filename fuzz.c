@@ -497,6 +497,9 @@ static void* fuzz_threadNew(void* arg) {
         .persistentSock = -1,
         .tmOutSignaled  = false,
     };
+    defer {
+        free(run.dynfile);
+    }
 
     /* Do not try to handle input files with socketfuzzer */
     char mapname[32];
