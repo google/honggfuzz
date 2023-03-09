@@ -499,7 +499,7 @@ static void* fuzz_threadNew(void* arg) {
     };
     defer {
         free(run.dynfile);
-    }
+    };
 
     /* Do not try to handle input files with socketfuzzer */
     char mapname[32];
