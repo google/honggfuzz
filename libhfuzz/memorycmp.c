@@ -196,13 +196,26 @@ static inline char* HF_strcpy(char* dest, const char* src, uintptr_t addr) {
     return __builtin_memcpy(dest, src, len + 1);
 }
 
-static inline size_t HF_strlcpy(char* dest, const char* src, size_t clen, uintptr_t addr) {
-    size_t len, rlen = __builtin_strlen(src);
-    len = clen < rlen ? clen : rlen;
+static inline size_t HF_strlcpy(char* dest, const char* src, size_t sz, uintptr_t addr) {
+    size_t slen = __builtin_strlen(src);
+    size_t len  = sz < slen ? sz : slen;
+
+    if (sz == 0) {
+        return 0;
+    }
+    /* Make space for NUL at the end of the string.
+     * sz != 0 here
+     */
+    if (len == sz) {
+        len--;
+    }
+
     if (len > 0) {
         instrumentUpdateCmpMap(addr, util_Log2(len));
+        (void)__builtin_memcpy(dest, src, len);
     }
-    (void)__builtin_memcpy(dest, src, len + 1);
+
+    dest[len] = '\0';
     return len;
 }
 
@@ -304,8 +317,8 @@ HF_WEAK_WRAP(size_t, strlcpy, char* dest, const char* src, size_t len) {
     return HF_strlcpy(dest, src, len, (uintptr_t)__builtin_return_address(0));
 }
 void __sanitizer_weak_hook_strlcpy(
-    uintptr_t pc, char* dest, const char* src, size_t len, size_t result HF_ATTR_UNUSED) {
-    HF_strlcpy(dest, src, len, pc);
+    uintptr_t pc, char* dest, const char* src, size_t sz, size_t result HF_ATTR_UNUSED) {
+    HF_strlcpy(dest, src, sz, pc);
 }
 
 /*
