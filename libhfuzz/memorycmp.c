@@ -196,6 +196,11 @@ static inline char* HF_strcpy(char* dest, const char* src, uintptr_t addr) {
     return __builtin_memcpy(dest, src, len + 1);
 }
 
+static inline char* HF_strcat(char *dest, const char *src, uintptr_t addr) {
+    size_t len = __builtin_strlen(dest);
+    return HF_strcpy(dest + len, src, addr);
+}
+
 static inline size_t HF_strlcpy(char* dest, const char* src, size_t sz, uintptr_t addr) {
     size_t slen = __builtin_strlen(src);
     size_t len  = sz < slen ? sz : slen;
@@ -312,6 +317,13 @@ HF_WEAK_WRAP(char*, strcpy, char* dest, const char* src) {
 void __sanitizer_weak_hook_strcpy(
     uintptr_t pc, char* dest, const char* src, char* result HF_ATTR_UNUSED) {
     HF_strcpy(dest, src, pc);
+}
+HF_WEAK_WRAP(char*, strcat, char* dest, const char* src) {
+    return HF_strcat(dest, src, (uintptr_t)__builtin_return_address(0));
+}
+void __sanitizer_weak_hook_strcat(
+    uintptr_t pc, char* dest, const char* src, char* result HF_ATTR_UNUSED) {
+    HF_strcat(dest, src, pc);
 }
 HF_WEAK_WRAP(size_t, strlcpy, char* dest, const char* src, size_t len) {
     return HF_strlcpy(dest, src, len, (uintptr_t)__builtin_return_address(0));
