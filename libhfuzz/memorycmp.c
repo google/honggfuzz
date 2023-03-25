@@ -224,6 +224,11 @@ static inline size_t HF_strlcpy(char* dest, const char* src, size_t sz, uintptr_
     return len;
 }
 
+static inline size_t HF_strlcat(char *dest, const char *src, size_t sz, uintptr_t addr) {
+    size_t len = __builtin_strlen(dest);
+    return HF_strlcpy(dest + len, src, sz, addr);
+}
+
 /* Define a weak function x, as well as __wrap_x pointing to x */
 #define XVAL(x) x
 #define HF_WEAK_WRAP(ret, func, ...)                                                               \
@@ -331,6 +336,13 @@ HF_WEAK_WRAP(size_t, strlcpy, char* dest, const char* src, size_t len) {
 void __sanitizer_weak_hook_strlcpy(
     uintptr_t pc, char* dest, const char* src, size_t sz, size_t result HF_ATTR_UNUSED) {
     HF_strlcpy(dest, src, sz, pc);
+}
+HF_WEAK_WRAP(size_t, strlcat, char* dest, const char* src, size_t len) {
+    return HF_strlcat(dest, src, len, (uintptr_t)__builtin_return_address(0));
+}
+void __sanitizer_weak_hook_strlcat(
+    uintptr_t pc, char* dest, const char* src, size_t sz, size_t result HF_ATTR_UNUSED) {
+    HF_strlcat(dest, src, sz, pc);
 }
 
 /*
