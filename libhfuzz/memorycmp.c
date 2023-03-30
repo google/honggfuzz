@@ -196,7 +196,7 @@ static inline char* HF_strcpy(char* dest, const char* src, uintptr_t addr) {
     return __builtin_memcpy(dest, src, len + 1);
 }
 
-static inline char* HF_strcat(char *dest, const char *src, uintptr_t addr) {
+static inline char* HF_strcat(char* dest, const char* src, uintptr_t addr) {
     size_t len = __builtin_strlen(dest);
     return HF_strcpy(dest + len, src, addr);
 }
@@ -224,7 +224,7 @@ static inline size_t HF_strlcpy(char* dest, const char* src, size_t sz, uintptr_
     return len;
 }
 
-static inline size_t HF_strlcat(char *dest, const char *src, size_t sz, uintptr_t addr) {
+static inline size_t HF_strlcat(char* dest, const char* src, size_t sz, uintptr_t addr) {
     size_t len = __builtin_strlen(dest);
     return HF_strlcpy(dest + len, src, sz, addr);
 }
