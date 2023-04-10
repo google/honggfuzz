@@ -371,9 +371,6 @@ typedef struct {
     int          perThreadCovFeedbackFd;
     unsigned     triesLeft;
     dynfile_t*   current;
-#if !defined(_HF_ARCH_DARWIN)
-    timer_t timerId;
-#endif    // !defined(_HF_ARCH_DARWIN)
     hwcnt_t hwCnts;
 
     struct {
