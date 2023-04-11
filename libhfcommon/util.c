@@ -28,7 +28,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <sys/param.h>
-#if !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__)
+#if !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__) && !defined(__APPLE__)
 #include <link.h>
 #endif /* !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__) */
 #include <math.h>
@@ -951,7 +951,7 @@ const char* util_sigName(int signo) {
 #define _HF_COMMON_BIN_COLLECT_VALS false
 #endif /* !defined(_HF_COMMON_BIN_COLLECT_VALS) */
 
-#if !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__)
+#if !defined(_HF_ARCH_DARWIN) && !defined(__CYGWIN__) && !defined(__APPLE__)
 static int addrStatic_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
     for (size_t i = 0; i < info->dlpi_phnum; i++) {
         if (info->dlpi_phdr[i].p_type != PT_LOAD) {

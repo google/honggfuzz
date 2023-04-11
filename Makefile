@@ -36,6 +36,7 @@ GREP_COLOR ?=
 BUILD_OSSFUZZ_STATIC ?= false # for https://github.com/google/oss-fuzz
 BUILD_LINUX_NO_BFD ?= false # for users who don't want to use libbfd/binutils
 
+REALOS = $(shell uname -s)
 OS ?= $(shell uname -s)
 MARCH ?= $(shell uname -m)
 KERNEL ?= $(shell uname -r)
@@ -163,8 +164,10 @@ else
         ARCH_CFLAGS += -D_POSIX_C_SOURCE=200809L -D__EXTENSIONS__=1
 	ARCH_LDFLAGS += -lkstat -lsocket -lnsl
     endif
-    ifneq ($(OS),OpenBSD)
+    ifneq ($(REALOS),OpenBSD)
+    ifneq ($(REALOS),Darwin)
         ARCH_LDFLAGS += -lrt
+    endif
     endif
 # OS Posix
 endif
@@ -180,7 +183,7 @@ ifeq ($(COMPILER),clang)
   ARCH_CFLAGS += -mllvm -inline-threshold=2000
   CFLAGS_BLOCKS = -fblocks
 
-  ifneq ($(OS),Darwin)
+  ifneq ($(REALOS),Darwin)
     ARCH_LDFLAGS += -Wl,-Bstatic -lBlocksRuntime -Wl,-Bdynamic
   endif
 endif

@@ -27,7 +27,7 @@ static bool hasCmdLineFSanitizeFuzzer = false;
 
 /* Embed libhf/.a inside this binary */
 __asm__("\n"
-#ifndef _HF_ARCH_DARWIN
+#if !defined(_HF_ARCH_DARWIN) && !defined(__APPLE__)
         "   .section .rodata\n"
 #endif /* _HF_ARCH_DARWIN */
         "   .global lhfuzz_start\n"

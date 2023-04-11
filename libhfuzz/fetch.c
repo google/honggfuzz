@@ -36,7 +36,7 @@ __attribute__((constructor)) static void init(void) {
  */
 static void fetchSanPoison(const uint8_t* buf, size_t len) {
 /* MacOS X linker doesn't like those */
-#if defined(_HF_ARCH_DARWIN)
+#if defined(_HF_ARCH_DARWIN) || defined(__APPLE__)
     return;
 #endif /* defined(_HF_ARCH_DARWIN) */
     __attribute__((weak)) extern void __asan_unpoison_memory_region(const void* addr, size_t sz);
