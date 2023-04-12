@@ -500,6 +500,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "pprocess_cmd", required_argument, NULL, 0x111 }, "External command postprocessing files produced by internal mutators" },
         { { "ffmutate_cmd", required_argument, NULL, 0x110 }, "External command mutating files which have effective coverage feedback" },
         { { "run_time", required_argument, NULL, 0x109 }, "Number of seconds this fuzzing session will last (default: 0 [no limit])" },
+        { { "exit_on_time", required_argument, NULL, 0x10A }, "Stop fuzzing session if no new coverage was found for this number of seconds (default: 0 [no limit])" },
         { { "iterations", required_argument, NULL, 'N' }, "Number of fuzzing iterations (default: 0 [no limit])" },
         { { "rlimit_as", required_argument, NULL, 0x100 }, "Per process RLIMIT_AS in MiB (default: 0 [default limit])" },
         { { "rlimit_rss", required_argument, NULL, 0x101 }, "Per process RLIMIT_RSS in MiB (default: 0 [default limit]). It will also set *SAN's soft_rss_limit_mb" },
@@ -688,6 +689,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                     hfuzz->timing.runEndTime = time(NULL) + p;
                 }
             } break;
+            case 0x10A:
+                hfuzz->timing.exitOnTime = atol(optarg);
+                break;
             case 'N':
                 hfuzz->mutate.mutationsMax = atol(optarg);
                 break;
