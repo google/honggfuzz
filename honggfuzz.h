@@ -372,7 +372,7 @@ typedef struct {
     int          perThreadCovFeedbackFd;
     unsigned     triesLeft;
     dynfile_t*   current;
-    hwcnt_t hwCnts;
+    hwcnt_t      hwCnts;
 
     struct {
         /* For Linux code */

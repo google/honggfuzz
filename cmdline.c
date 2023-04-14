@@ -355,6 +355,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .runEndTime             = 0,
                 .tmOut                  = 1,
                 .lastCovUpdate          = time(NULL),
+                .exitOnTime             = 0,
                 .timeOfLongestUnitUSecs = 0,
                 .tmoutVTALRM            = false,
             },
