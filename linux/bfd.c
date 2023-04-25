@@ -63,15 +63,6 @@ typedef struct {
 #if defined(FOR_EACH_DISASSEMBLER_OPTION)
 #define _HF_BFD_GE_2_29
 #endif /* defined(FOR_EACH_DISASSEMBLER_OPTION) */
-/*
- * At some point in time the function init_disassemble_info() started taking 4 arguments instead
- * of 3. Try to differentiate them on the basis of some defines which apeared around similar time.
- */
-#if defined __has_include
-#if __has_include(<libcollector.h>)
-#define _HF_DISASM_4_ARGS
-#endif /* __has_include(<libcollector.h>) */
-#endif /* defined __has_include */
 
 static pthread_mutex_t arch_bfd_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -207,7 +198,6 @@ static int arch_bfdFPrintF(void* buf, const char* fmt, ...) {
     return ret;
 }
 
-#if defined(_HF_DISASM_4_ARGS)
 static int arch_bfdFPrintFStyled(
     void* buf, enum disassembler_style style HF_ATTR_UNUSED, const char* fmt, ...) {
     va_list args;
@@ -217,7 +207,6 @@ static int arch_bfdFPrintFStyled(
 
     return ret;
 }
-#endif /* defined(_HF_DISASM_4_ARGS) */
 
 void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
     MX_SCOPED_LOCK(&arch_bfd_mutex);
@@ -250,11 +239,15 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
     }
 
     struct disassemble_info info = {};
-#if defined(_HF_DISASM_4_ARGS)
-    init_disassemble_info(&info, instr, arch_bfdFPrintF, arch_bfdFPrintFStyled);
-#else  /* defined(_HF_DISASM_4_ARGS) */
-    init_disassemble_info(&info, instr, arch_bfdFPrintF);
-#endif /* defined(_HF_DISASM_4_ARGS) */
+
+    /*
+     * At some point in time the function init_disassemble_info() started taking 4 arguments instead
+     * of 3. Add the 4th argument in all cases. Hopefully it'll work will all ABIs, and the 4th
+     * argument will be discarded if needed.
+     */
+    void (*idi_4_args)(void*, void*, void*, void*) =
+        (void (*)(void*, void*, void*, void*))init_disassemble_info;
+    idi_4_args(&info, instr, arch_bfdFPrintF, arch_bfdFPrintFStyled);
     info.arch          = bfd_get_arch(bfdh);
     info.mach          = bfd_get_mach(bfdh);
     info.buffer        = mem;
