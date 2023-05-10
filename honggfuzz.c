@@ -264,6 +264,11 @@ static uint8_t mainThreadLoop(honggfuzz_t* hfuzz) {
     setupMainThreadTimer();
 
     for (;;) {
+        if (hfuzz->io.dynamicInputDir) {
+            LOG_D("Loading files from the dynamic input queue...");
+            input_enqueueDynamicInputs(hfuzz);
+        }
+
         if (hfuzz->display.useScreen) {
             if (ATOMIC_XCHG(clearWin, false)) {
                 display_clear();
