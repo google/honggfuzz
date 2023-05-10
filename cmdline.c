@@ -528,6 +528,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "const_feedback", required_argument, NULL, 0x112 }, "Use constant integer/string values from fuzzed programs to mangle input files via a dynamic dictionary (default: true)" },
         { { "pin_thread_cpu", required_argument, NULL, 0x114 }, "Pin a single execution thread to this many consecutive CPUs (default: 0 = no CPU pinning)" },
         { { "dynamic_input", required_argument, NULL, 0x115 }, "Path to a directory containing the dynamic file corpus" },
+        { { "statsfile", required_argument, NULL, 0x116 }, "Stats file" },
 
 #if defined(_HF_ARCH_LINUX)
         { { "linux_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blocklist filter file (one entry per line)" },
@@ -812,6 +813,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 #endif
             case 0x115:
                 hfuzz->io.dynamicInputDir = optarg;
+                break;
+            case 0x116:
+                hfuzz->io.statsFileName = optarg;
                 break;
             default:
                 cmdlineHelp(argv[0], custom_opts);
