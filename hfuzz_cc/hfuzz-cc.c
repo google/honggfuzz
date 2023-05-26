@@ -56,35 +56,35 @@ static const char* _basename(const char* path) {
     return basename(fname);
 }
 
-static bool useASAN() {
+static bool useASAN(void) {
     if (getenv("HFUZZ_CC_ASAN")) {
         return true;
     }
     return false;
 }
 
-static bool useMSAN() {
+static bool useMSAN(void) {
     if (getenv("HFUZZ_CC_MSAN")) {
         return true;
     }
     return false;
 }
 
-static bool useUBSAN() {
+static bool useUBSAN(void) {
     if (getenv("HFUZZ_CC_UBSAN")) {
         return true;
     }
     return false;
 }
 
-static bool useM32() {
+static bool useM32(void) {
     if (getenv("HFUZZ_FORCE_M32")) {
         return true;
     }
     return false;
 }
 
-static bool useBelowGCC8() {
+static bool useBelowGCC8(void) {
     if (getenv("HFUZZ_CC_USE_GCC_BELOW_8")) {
         return true;
     }
@@ -300,7 +300,7 @@ static bool getLibPath(
     return true;
 }
 
-static char* getLibHFuzzPath() {
+static char* getLibHFuzzPath(void) {
     extern uint8_t lhfuzz_start __asm__("lhfuzz_start");
     extern uint8_t lhfuzz_end __asm__("lhfuzz_end");
 
@@ -314,7 +314,7 @@ static char* getLibHFuzzPath() {
     return path;
 }
 
-static char* getLibHFNetDriverPath() {
+static char* getLibHFNetDriverPath(void) {
     extern uint8_t lhfnetdriver_start __asm__("lhfnetdriver_start");
     extern uint8_t lhfnetdriver_end __asm__("lhfnetdriver_end");
 
@@ -329,7 +329,7 @@ static char* getLibHFNetDriverPath() {
     return path;
 }
 
-static char* getLibHFCommonPath() {
+static char* getLibHFCommonPath(void) {
     extern uint8_t lhfcommon_start __asm__("lhfcommon_start");
     extern uint8_t lhfcommon_end __asm__("lhfcommon_end");
 

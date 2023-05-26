@@ -312,7 +312,7 @@ static const char* strYesNo(bool yes) {
     return (yes ? "true" : "false");
 }
 
-static const char* getGitVersion() {
+static const char* getGitVersion(void) {
     static char version[] = "$Id$";
     if (strlen(version) == 47) {
         version[45] = '\0';

@@ -9,4 +9,4 @@ bool fuzz_notifySocketFuzzerNewCov(honggfuzz_t* hfuzz);
 bool fuzz_notifySocketFuzzerCrash(run_t* run);
 
 bool setupSocketFuzzer(honggfuzz_t* hfuzz);
-void cleanupSocketFuzzer();
+void cleanupSocketFuzzer(void);

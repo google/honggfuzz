@@ -801,7 +801,7 @@ bool instrumentUpdateCmpMap(uintptr_t addr, uint32_t v) {
 }
 
 /* Reset the counters of newly discovered edges/pcs/features */
-void instrumentClearNewCov() {
+void instrumentClearNewCov(void) {
     ATOMIC_CLEAR(globalCovFeedback->pidNewPC[my_thread_no]);
     ATOMIC_CLEAR(globalCovFeedback->pidNewEdge[my_thread_no]);
     ATOMIC_CLEAR(globalCovFeedback->pidNewCmp[my_thread_no]);

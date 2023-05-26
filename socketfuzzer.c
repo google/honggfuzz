@@ -152,7 +152,7 @@ bool setupSocketFuzzer(honggfuzz_t* run) {
     return true;
 }
 
-void cleanupSocketFuzzer() {
+void cleanupSocketFuzzer(void) {
     char socketPath[512];
     snprintf(socketPath, sizeof(socketPath), "/tmp/honggfuzz_socket.%i", (int)getpid());
     unlink(socketPath);

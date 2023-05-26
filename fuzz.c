@@ -66,7 +66,7 @@ void fuzz_setTerminating(void) {
     ATOMIC_SET(termTimeStamp, time(NULL));
 }
 
-bool fuzz_shouldTerminate() {
+bool fuzz_shouldTerminate(void) {
     if (ATOMIC_GET(termTimeStamp) == 0) {
         return false;
     }

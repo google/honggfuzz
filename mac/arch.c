@@ -403,7 +403,7 @@ void arch_reapChild(run_t* run) {
 void arch_reapKill(void) {
 }
 
-void* wait_for_exception() {
+void* wait_for_exception(void) {
     while (1) {
         mach_msg_server_once(mach_exc_server, 4096, g_exception_port, MACH_MSG_OPTION_NONE);
     }
@@ -461,7 +461,7 @@ bool arch_archInit(honggfuzz_t* hfuzz) {
      */
     pthread_t exception_thread;
 
-    if (pthread_create(&exception_thread, NULL, wait_for_exception, 0)) {
+    if (pthread_create(&exception_thread, NULL, (void * _Nullable (* _Nonnull)(void * _Nullable))wait_for_exception, 0)) {
         LOG_F("Parent: could not create thread to wait for child's exception");
         return false;
     }
