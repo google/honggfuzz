@@ -59,6 +59,10 @@ __attribute__((constructor)) static void log_init(void) {
         hf_log_fd = STDERR_FILENO;
     }
     hf_log_fd_isatty = isatty(hf_log_fd);
+
+    if (getenv("NO_COLOR")) {
+        hf_log_fd_isatty = false;
+    }
 }
 
 /*
@@ -80,6 +84,10 @@ void logInitLogFile(const char* logfile, int fd, enum llevel_t ll) {
     }
 
     hf_log_fd_isatty = (isatty(hf_log_fd) == 1 ? true : false);
+
+    if (getenv("NO_COLOR")) {
+        hf_log_fd_isatty = false;
+    }
 }
 
 void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt, ...) {
