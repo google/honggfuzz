@@ -705,6 +705,7 @@ static void mangle_Shrink(run_t* run, bool printable HF_ATTR_UNUSED) {
     mangle_Move(run, off_end, off_start, len_to_move);
     input_setSize(run, run->dynfile->size - len);
 }
+
 static void mangle_ASCIINum(run_t* run, bool printable) {
     size_t len = util_rndGet(2, 8);
 
