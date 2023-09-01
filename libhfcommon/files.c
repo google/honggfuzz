@@ -223,11 +223,11 @@ bool files_resetFile(int fd, size_t sz) {
 #endif /* defined(_HF_ARCH_LINUX) */
 
     /* Fallback mode */
-    if (ftruncate(fd, (off_t)0) == -1) {
+    if (TEMP_FAILURE_RETRY(ftruncate(fd, (off_t)0)) == -1) {
         PLOG_W("ftruncate(fd=%d, sz=0)", fd);
         return false;
     }
-    if (ftruncate(fd, (off_t)sz) == -1) {
+    if (TEMP_FAILURE_RETRY(ftruncate(fd, (off_t)sz)) == -1) {
         PLOG_W("ftruncate(fd=%d, sz=%zu)", fd, sz);
         return false;
     }
