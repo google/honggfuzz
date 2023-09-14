@@ -217,6 +217,9 @@ typedef struct {
         dynfile_t*  dynfileq2Current;
         TAILQ_HEAD(dyns_t, _dynfile_t) dynfileq;
         bool exportFeedback;
+        const char* statsFileName;
+        int statsFileFd;
+        const char* dynamicInputDir;
     } io;
     struct {
         int                argc;

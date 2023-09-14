@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/queue.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -572,6 +573,128 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     }
 
     return true;
+}
+
+/**
+ * NOTE: This function is based on `input_getNext`.
+ */
+bool input_dynamicQueueGetNext(char fname[PATH_MAX], DIR* dynamicDirPtr, char *dynamicWorkDir) {
+    static pthread_mutex_t input_mutex = PTHREAD_MUTEX_INITIALIZER;
+    MX_SCOPED_LOCK(&input_mutex);
+
+    for (;;) {
+        errno = 0;
+        struct dirent* entry = readdir(dynamicDirPtr);
+        if (entry == NULL && errno == EINTR) {
+            continue;
+        }
+        if (entry == NULL && errno != 0) {
+            PLOG_W("readdir_r('%s')", dynamicWorkDir);
+            return false;
+        }
+        if (entry == NULL) {
+            return false;
+        }
+        char path[PATH_MAX];
+        snprintf(path, PATH_MAX, "%s/%s", dynamicWorkDir, entry->d_name);
+        struct stat st;
+        if (stat(path, &st) == -1) {
+            LOG_W("Couldn't stat() the '%s' file", path);
+            continue;
+        }
+        if (!S_ISREG(st.st_mode)) {
+            LOG_D("'%s' is not a regular file, skipping", path);
+            continue;
+        }
+
+        snprintf(fname, PATH_MAX, "%s/%s", dynamicWorkDir, entry->d_name);
+        return true;
+    }
+}
+
+void input_enqueueDynamicInputs(honggfuzz_t* hfuzz) {
+    char dynamicWorkDir[PATH_MAX];
+
+    snprintf(dynamicWorkDir, sizeof(dynamicWorkDir), "%s", hfuzz->io.dynamicInputDir);
+
+    int dynamicDirFd = TEMP_FAILURE_RETRY(open(dynamicWorkDir, O_DIRECTORY | O_RDONLY | O_CLOEXEC));
+    if (dynamicDirFd == -1) {
+        PLOG_W("open('%s', O_DIRECTORY|O_RDONLY|O_CLOEXEC)", dynamicWorkDir);
+        return;
+    }
+
+    DIR* dynamicDirPtr;
+    if ((dynamicDirPtr = fdopendir(dynamicDirFd)) == NULL) {
+        PLOG_W("fdopendir(dir='%s', fd=%d)", dynamicWorkDir, dynamicDirFd);
+        close(dynamicDirFd);
+        return;
+    }
+
+    char dynamicInputFileName[PATH_MAX];
+    for (;;) {
+        if (!input_dynamicQueueGetNext(dynamicInputFileName, dynamicDirPtr, dynamicWorkDir)) {
+            break;
+        }
+
+        int dynamicFileFd;
+        if ((dynamicFileFd = open(dynamicInputFileName, O_RDWR)) == -1) {
+            PLOG_E("Error opening dynamic input file: %s", dynamicInputFileName);
+            continue;
+        }
+
+        /* Get file status. */
+        struct stat dynamicFileStat;
+        size_t dynamicFileSz;
+
+        if (fstat(dynamicFileFd, &dynamicFileStat) == -1) {
+            PLOG_E("Error getting file status: %s", dynamicInputFileName);
+            close(dynamicFileFd);
+            continue;
+        }
+
+        dynamicFileSz = dynamicFileStat.st_size;
+
+        uint8_t* dynamicFile = (uint8_t *) mmap(NULL, dynamicFileSz, PROT_READ | PROT_WRITE, MAP_SHARED, dynamicFileFd, 0);
+
+        if (dynamicFile == MAP_FAILED) {
+            PLOG_E("Error mapping dynamic input file: %s", dynamicInputFileName);
+            close(dynamicFileFd);
+            continue;
+        }
+
+        LOG_I("Loading dynamic input file: %s (%lu)", dynamicInputFileName, dynamicFileSz);
+
+        run_t tmp_run;
+        tmp_run.global = hfuzz;
+        dynfile_t tmp_dynfile = {
+            .size          = dynamicFileSz,
+            .cov           = {0xff, 0xff, 0xff, 0xff},
+            .idx           = 0,
+            .fd            = -1,
+            .timeExecUSecs = 1,
+            .path          = "",
+            .data          = dynamicFile,
+        };
+        tmp_run.timeStartedUSecs = util_timeNowUSecs() -1;
+        memcpy(tmp_dynfile.path, dynamicInputFileName, PATH_MAX);
+        tmp_run.dynfile = &tmp_dynfile;
+        input_addDynamicInput(&tmp_run);
+        //input_addDynamicInput(hfuzz, dynamicFile, dynamicFileSz, (uint64_t[4]){0xff, 0xff, 0xff, 0xff}, dynamicInputFileName);
+
+        /* Unmap input file. */
+        if (munmap((void *) dynamicFile, dynamicFileSz) == -1) {
+            PLOG_E("Error unmapping input file!");
+        }
+
+        /* Close input file. */
+        if (close(dynamicFileFd) == -1) {
+            PLOG_E("Error closing input file!");
+        }
+
+        /* Remove enqueued file from the directory. */
+        unlink(dynamicInputFileName);
+    }
+    closedir(dynamicDirPtr);
 }
 
 const uint8_t* input_getRandomInputAsBuf(run_t* run, size_t* len) {
