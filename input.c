@@ -575,12 +575,12 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     return true;
 }
 
-bool input_dynamicQueueGetNext(char fname[PATH_MAX], DIR* dynamicDirPtr, char *dynamicWorkDir) {
+bool input_dynamicQueueGetNext(char fname[PATH_MAX], DIR* dynamicDirPtr, char* dynamicWorkDir) {
     static pthread_mutex_t input_mutex = PTHREAD_MUTEX_INITIALIZER;
     MX_SCOPED_LOCK(&input_mutex);
 
     for (;;) {
-        errno = 0;
+        errno                = 0;
         struct dirent* entry = readdir(dynamicDirPtr);
         if (entry == NULL && errno == EINTR) {
             continue;
@@ -641,7 +641,7 @@ void input_enqueueDynamicInputs(honggfuzz_t* hfuzz) {
 
         /* Get file status. */
         struct stat dynamicFileStat;
-        size_t dynamicFileSz;
+        size_t      dynamicFileSz;
 
         if (fstat(dynamicFileFd, &dynamicFileStat) == -1) {
             PLOG_E("Error getting file status: %s", dynamicInputFileName);
@@ -651,7 +651,8 @@ void input_enqueueDynamicInputs(honggfuzz_t* hfuzz) {
 
         dynamicFileSz = dynamicFileStat.st_size;
 
-        uint8_t* dynamicFile = (uint8_t *) mmap(NULL, dynamicFileSz, PROT_READ | PROT_WRITE, MAP_SHARED, dynamicFileFd, 0);
+        uint8_t* dynamicFile = (uint8_t*)mmap(
+            NULL, dynamicFileSz, PROT_READ | PROT_WRITE, MAP_SHARED, dynamicFileFd, 0);
 
         if (dynamicFile == MAP_FAILED) {
             PLOG_E("Error mapping dynamic input file: %s", dynamicInputFileName);
@@ -662,7 +663,7 @@ void input_enqueueDynamicInputs(honggfuzz_t* hfuzz) {
         LOG_I("Loading dynamic input file: %s (%lu)", dynamicInputFileName, dynamicFileSz);
 
         run_t tmp_run;
-        tmp_run.global = hfuzz;
+        tmp_run.global        = hfuzz;
         dynfile_t tmp_dynfile = {
             .size          = dynamicFileSz,
             .cov           = {0xff, 0xff, 0xff, 0xff},
@@ -672,14 +673,15 @@ void input_enqueueDynamicInputs(honggfuzz_t* hfuzz) {
             .path          = "",
             .data          = dynamicFile,
         };
-        tmp_run.timeStartedUSecs = util_timeNowUSecs() -1;
+        tmp_run.timeStartedUSecs = util_timeNowUSecs() - 1;
         memcpy(tmp_dynfile.path, dynamicInputFileName, PATH_MAX);
         tmp_run.dynfile = &tmp_dynfile;
         input_addDynamicInput(&tmp_run);
-        //input_addDynamicInput(hfuzz, dynamicFile, dynamicFileSz, (uint64_t[4]){0xff, 0xff, 0xff, 0xff}, dynamicInputFileName);
+        // input_addDynamicInput(hfuzz, dynamicFile, dynamicFileSz, (uint64_t[4]){0xff, 0xff, 0xff,
+        // 0xff}, dynamicInputFileName);
 
         /* Unmap input file. */
-        if (munmap((void *) dynamicFile, dynamicFileSz) == -1) {
+        if (munmap((void*)dynamicFile, dynamicFileSz) == -1) {
             PLOG_E("Error unmapping input file!");
         }
 

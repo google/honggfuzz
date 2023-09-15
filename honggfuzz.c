@@ -418,12 +418,14 @@ int main(int argc, char** argv) {
     }
     /* Stats file. */
     if (hfuzz.io.statsFileName) {
-        hfuzz.io.statsFileFd = TEMP_FAILURE_RETRY(open(hfuzz.io.statsFileName, O_CREAT | O_RDWR | O_TRUNC, 0640));
+        hfuzz.io.statsFileFd =
+            TEMP_FAILURE_RETRY(open(hfuzz.io.statsFileName, O_CREAT | O_RDWR | O_TRUNC, 0640));
 
         if (hfuzz.io.statsFileFd == -1) {
             PLOG_F("Couldn't open statsfile open('%s')", hfuzz.io.statsFileName);
         } else {
-            dprintf(hfuzz.io.statsFileFd, "# unix_time, last_cov_update, total_exec, exec_per_sec, crashes, unique_crashes, hangs, edge_cov, block_cov\n");
+            dprintf(hfuzz.io.statsFileFd, "# unix_time, last_cov_update, total_exec, exec_per_sec, "
+                                          "crashes, unique_crashes, hangs, edge_cov, block_cov\n");
         }
     }
 

@@ -239,16 +239,17 @@ static void fuzz_perfFeedback(run_t* run) {
             run->hwCnts.bbCnt, softCurEdge, softCurPC, softCurCmp);
 
         if (run->global->io.statsFileName) {
-            const time_t curr_sec = time(NULL);
-            const time_t elapsed_sec = curr_sec - run->global->timing.timeStart;
-            size_t curr_exec_cnt = ATOMIC_GET(run->global->cnts.mutationsCnt);
+            const time_t curr_sec      = time(NULL);
+            const time_t elapsed_sec   = curr_sec - run->global->timing.timeStart;
+            size_t       curr_exec_cnt = ATOMIC_GET(run->global->cnts.mutationsCnt);
             /*
              * We increase the mutation counter unconditionally in threads, but if it's
              * above hfuzz->mutationsMax we don't really execute the fuzzing loop.
              * Therefore at the end of fuzzing, the mutation counter might be higher
              * than hfuzz->mutationsMax
              */
-            if (run->global->mutate.mutationsMax > 0 && curr_exec_cnt > run->global->mutate.mutationsMax) {
+            if (run->global->mutate.mutationsMax > 0 &&
+                curr_exec_cnt > run->global->mutate.mutationsMax) {
                 curr_exec_cnt = run->global->mutate.mutationsMax;
             }
             size_t tot_exec_per_sec = elapsed_sec ? (curr_exec_cnt / elapsed_sec) : 0;
@@ -256,15 +257,15 @@ static void fuzz_perfFeedback(run_t* run) {
             dprintf(run->global->io.statsFileFd,
                 "%lu, %lu, %lu, %lu, "
                 "%" PRIu64 ", %" PRIu64 ", %" PRIu64 ", %" PRIu64 ", %" PRIu64 "\n",
-                curr_sec,                                       /* unix_time */
-                run->global->timing.lastCovUpdate,              /* last_cov_update */
-                curr_exec_cnt,                                  /* total_exec */
-                tot_exec_per_sec,                               /* exec_per_sec */
-                run->global->cnts.crashesCnt,                   /* crashes */
-                run->global->cnts.uniqueCrashesCnt,             /* unique_crashes */
-                run->global->cnts.timeoutedCnt,                 /* hangs */
-                run->global->feedback.hwCnts.softCntEdge,       /* edge_cov */
-                run->global->feedback.hwCnts.softCntPc          /* block_cov */
+                curr_sec,                                 /* unix_time */
+                run->global->timing.lastCovUpdate,        /* last_cov_update */
+                curr_exec_cnt,                            /* total_exec */
+                tot_exec_per_sec,                         /* exec_per_sec */
+                run->global->cnts.crashesCnt,             /* crashes */
+                run->global->cnts.uniqueCrashesCnt,       /* unique_crashes */
+                run->global->cnts.timeoutedCnt,           /* hangs */
+                run->global->feedback.hwCnts.softCntEdge, /* edge_cov */
+                run->global->feedback.hwCnts.softCntPc    /* block_cov */
             );
         }
 
