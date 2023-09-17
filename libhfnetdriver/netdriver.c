@@ -282,7 +282,7 @@ static const char *netDriver_getSockPath(int argc HF_ATTR_UNUSED, char **argv HF
     }
 
     static __thread char path[PATH_MAX] = {};
-    const char *         sock_path      = getenv(HFND_SOCK_PATH_ENV);
+    const char          *sock_path      = getenv(HFND_SOCK_PATH_ENV);
     /* If it starts with '/' it's an absolute path */
     if (sock_path && sock_path[0] == '/') {
         snprintf(path, sizeof(path), "%s", sock_path);
@@ -349,9 +349,9 @@ static bool netDriver_checkIfServerReady(int argc, char **argv) {
     /* Next, try TCP4 and TCP6 connections to the localhost */
     const uint16_t           tcp_port = netDriver_getTCPPort(argc, argv);
     const struct sockaddr_in addr4    = {
-        .sin_family      = PF_INET,
-        .sin_port        = htons(tcp_port),
-        .sin_addr.s_addr = htonl(INADDR_LOOPBACK),
+           .sin_family      = PF_INET,
+           .sin_port        = htons(tcp_port),
+           .sin_addr.s_addr = htonl(INADDR_LOOPBACK),
     };
     if (netDriver_connAndAssign((const struct sockaddr *)&addr4, sizeof(addr4), SOCK_STREAM, 0)) {
         return true;

@@ -223,8 +223,8 @@ static void arch_getInstrStr(pid_t pid, lwpid_t lwp, register_t* pc, char* instr
     arch = CS_ARCH_X86;
     mode = CS_MODE_32;
 #elif defined(__x86_64__)
-    arch        = CS_ARCH_X86;
-    mode        = CS_MODE_64;
+    arch = CS_ARCH_X86;
+    mode = CS_MODE_64;
 #else
 #error Unsupported CPU architecture
 #endif

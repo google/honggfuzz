@@ -712,7 +712,7 @@ kern_return_t catch_mach_exception_raise_state_identity(
         run->pc = platform_in_state->uts.ts64.__rip;
     }
 #elif defined(__aarch64__)
-    run->pc                               = platform_in_state->__pc;
+    run->pc = platform_in_state->__pc;
 #endif /* defined(__x86_64__) */
 
     /*
