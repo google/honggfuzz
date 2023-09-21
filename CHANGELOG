@@ -1,3 +1,14 @@
+2023-09-21 - Version 2.6
+       - Pastis patch
+       - env NO_COLOR support
+       - fix problems with linux/bfd ```init_disassemble_info```
+       - Support ```--exit_on_time```
+       - ```strlcat``` supported in libhfuzz/memorycmp
+       - Some patches for MacOSX, sadly no support for ARM yet
+       - added missing ```add missing disassemble_free_target()```
+       - using ```rfork()``` under FreeBSD
+       - support for enabling/disabling ASLR under FreeBSD
+
 2022-01-01 - Version 2.5
         - fixed build for Android NDK >= 23
         - fixed build for CygWin
