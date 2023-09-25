@@ -477,47 +477,47 @@ size_t util_decodeCString(char* s) {
     size_t o = 0;
     for (size_t i = 0; s[i] != '\0' && s[i] != '"'; i++, o++) {
         switch (s[i]) {
-            case '\\': {
-                i++;
-                if (!s[i]) {
-                    continue;
-                }
-                switch (s[i]) {
-                    case 'a':
-                        s[o] = '\a';
-                        break;
-                    case 'r':
-                        s[o] = '\r';
-                        break;
-                    case 'n':
-                        s[o] = '\n';
-                        break;
-                    case 't':
-                        s[o] = '\t';
-                        break;
-                    case '0':
-                        s[o] = '\0';
-                        break;
-                    case 'x': {
-                        if (s[i + 1] && s[i + 2]) {
-                            char hex[] = {s[i + 1], s[i + 2], 0};
-                            s[o]       = strtoul(hex, NULL, 16);
-                            i += 2;
-                        } else {
-                            s[o] = s[i];
-                        }
-                        break;
-                    }
-                    default:
-                        s[o] = s[i];
-                        break;
+        case '\\': {
+            i++;
+            if (!s[i]) {
+                continue;
+            }
+            switch (s[i]) {
+            case 'a':
+                s[o] = '\a';
+                break;
+            case 'r':
+                s[o] = '\r';
+                break;
+            case 'n':
+                s[o] = '\n';
+                break;
+            case 't':
+                s[o] = '\t';
+                break;
+            case '0':
+                s[o] = '\0';
+                break;
+            case 'x': {
+                if (s[i + 1] && s[i + 2]) {
+                    char hex[] = {s[i + 1], s[i + 2], 0};
+                    s[o]       = strtoul(hex, NULL, 16);
+                    i += 2;
+                } else {
+                    s[o] = s[i];
                 }
                 break;
             }
-            default: {
+            default:
                 s[o] = s[i];
                 break;
             }
+            break;
+        }
+        default: {
+            s[o] = s[i];
+            break;
+        }
         }
     }
     s[o] = '\0';

@@ -563,55 +563,55 @@ static inline void mangle_AddSubWithRange(
     int64_t delta = (int64_t)util_rndGet(0, range * 2) - (int64_t)range;
 
     switch (varLen) {
-        case 1: {
-            run->dynfile->data[off] += delta;
-            break;
+    case 1: {
+        run->dynfile->data[off] += delta;
+        break;
+    }
+    case 2: {
+        int16_t val;
+        util_memcpyInline(&val, &run->dynfile->data[off], sizeof(val));
+        if (util_rnd64() & 0x1) {
+            val += delta;
+        } else {
+            /* Foreign endianess */
+            val = __builtin_bswap16(val);
+            val += delta;
+            val = __builtin_bswap16(val);
         }
-        case 2: {
-            int16_t val;
-            util_memcpyInline(&val, &run->dynfile->data[off], sizeof(val));
-            if (util_rnd64() & 0x1) {
-                val += delta;
-            } else {
-                /* Foreign endianess */
-                val = __builtin_bswap16(val);
-                val += delta;
-                val = __builtin_bswap16(val);
-            }
-            mangle_Overwrite(run, off, (uint8_t*)&val, varLen, printable);
-            break;
+        mangle_Overwrite(run, off, (uint8_t*)&val, varLen, printable);
+        break;
+    }
+    case 4: {
+        int32_t val;
+        util_memcpyInline(&val, &run->dynfile->data[off], sizeof(val));
+        if (util_rnd64() & 0x1) {
+            val += delta;
+        } else {
+            /* Foreign endianess */
+            val = __builtin_bswap32(val);
+            val += delta;
+            val = __builtin_bswap32(val);
         }
-        case 4: {
-            int32_t val;
-            util_memcpyInline(&val, &run->dynfile->data[off], sizeof(val));
-            if (util_rnd64() & 0x1) {
-                val += delta;
-            } else {
-                /* Foreign endianess */
-                val = __builtin_bswap32(val);
-                val += delta;
-                val = __builtin_bswap32(val);
-            }
-            mangle_Overwrite(run, off, (uint8_t*)&val, varLen, printable);
-            break;
+        mangle_Overwrite(run, off, (uint8_t*)&val, varLen, printable);
+        break;
+    }
+    case 8: {
+        int64_t val;
+        util_memcpyInline(&val, &run->dynfile->data[off], sizeof(val));
+        if (util_rnd64() & 0x1) {
+            val += delta;
+        } else {
+            /* Foreign endianess */
+            val = __builtin_bswap64(val);
+            val += delta;
+            val = __builtin_bswap64(val);
         }
-        case 8: {
-            int64_t val;
-            util_memcpyInline(&val, &run->dynfile->data[off], sizeof(val));
-            if (util_rnd64() & 0x1) {
-                val += delta;
-            } else {
-                /* Foreign endianess */
-                val = __builtin_bswap64(val);
-                val += delta;
-                val = __builtin_bswap64(val);
-            }
-            mangle_Overwrite(run, off, (uint8_t*)&val, varLen, printable);
-            break;
-        }
-        default: {
-            LOG_F("Unknown variable length size: %zu", varLen);
-        }
+        mangle_Overwrite(run, off, (uint8_t*)&val, varLen, printable);
+        break;
+    }
+    default: {
+        LOG_F("Unknown variable length size: %zu", varLen);
+    }
     }
 }
 
@@ -626,20 +626,20 @@ static void mangle_AddSub(run_t* run, bool printable) {
 
     uint64_t range;
     switch (varLen) {
-        case 1:
-            range = 16;
-            break;
-        case 2:
-            range = 4096;
-            break;
-        case 4:
-            range = 1048576;
-            break;
-        case 8:
-            range = 268435456;
-            break;
-        default:
-            LOG_F("Invalid operand size: %zu", varLen);
+    case 1:
+        range = 16;
+        break;
+    case 2:
+        range = 4096;
+        break;
+    case 4:
+        range = 1048576;
+        break;
+    case 8:
+        range = 268435456;
+        break;
+    default:
+        LOG_F("Invalid operand size: %zu", varLen);
     }
 
     mangle_AddSubWithRange(run, off, varLen, range, printable);
@@ -742,32 +742,32 @@ static void mangle_ASCIINumChange(run_t* run, bool printable) {
     }
 
     switch (util_rndGet(0, 7)) {
-        case 0:
-            val++;
-            break;
-        case 1:
-            val--;
-            break;
-        case 2:
-            val *= 2;
-            break;
-        case 3:
-            val /= 2;
-            break;
-        case 4:
-            val = util_rnd64();
-            break;
-        case 5:
-            val += util_rndGet(1, 256);
-            break;
-        case 6:
-            val -= util_rndGet(1, 256);
-            break;
-        case 7:
-            val = ~(val);
-            break;
-        default:
-            LOG_F("Invalid choice");
+    case 0:
+        val++;
+        break;
+    case 1:
+        val--;
+        break;
+    case 2:
+        val *= 2;
+        break;
+    case 3:
+        val /= 2;
+        break;
+    case 4:
+        val = util_rnd64();
+        break;
+    case 5:
+        val += util_rndGet(1, 256);
+        break;
+    case 6:
+        val -= util_rndGet(1, 256);
+        break;
+    case 7:
+        val = ~(val);
+        break;
+    default:
+        LOG_F("Invalid choice");
     };
 
     char buf[20];
@@ -805,27 +805,27 @@ static void mangle_Resize(run_t* run, bool printable) {
 
     uint64_t choice = util_rndGet(0, 32);
     switch (choice) {
-        case 0: /* Set new size arbitrarily */
-            newsz = (ssize_t)util_rndGet(1, run->global->mutate.maxInputSz);
-            break;
-        case 1 ... 4: /* Increase size by a small value */
-            newsz = oldsz + (ssize_t)util_rndGet(0, 8);
-            break;
-        case 5: /* Increase size by a larger value */
-            newsz = oldsz + (ssize_t)util_rndGet(9, 128);
-            break;
-        case 6 ... 9: /* Decrease size by a small value */
-            newsz = oldsz - (ssize_t)util_rndGet(0, 8);
-            break;
-        case 10: /* Decrease size by a larger value */
-            newsz = oldsz - (ssize_t)util_rndGet(9, 128);
-            break;
-        case 11 ... 32: /* Do nothing */
-            newsz = oldsz;
-            break;
-        default:
-            LOG_F("Illegal value from util_rndGet: %" PRIu64, choice);
-            break;
+    case 0: /* Set new size arbitrarily */
+        newsz = (ssize_t)util_rndGet(1, run->global->mutate.maxInputSz);
+        break;
+    case 1 ... 4: /* Increase size by a small value */
+        newsz = oldsz + (ssize_t)util_rndGet(0, 8);
+        break;
+    case 5: /* Increase size by a larger value */
+        newsz = oldsz + (ssize_t)util_rndGet(9, 128);
+        break;
+    case 6 ... 9: /* Decrease size by a small value */
+        newsz = oldsz - (ssize_t)util_rndGet(0, 8);
+        break;
+    case 10: /* Decrease size by a larger value */
+        newsz = oldsz - (ssize_t)util_rndGet(9, 128);
+        break;
+    case 11 ... 32: /* Do nothing */
+        newsz = oldsz;
+        break;
+    default:
+        LOG_F("Illegal value from util_rndGet: %" PRIu64, choice);
+        break;
     }
     if (newsz < 1) {
         newsz = 1;

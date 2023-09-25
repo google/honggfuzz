@@ -143,29 +143,29 @@ static bool arch_perfCreate(run_t* run, pid_t pid, dynFileMethod_t method, int* 
     pe.type       = PERF_TYPE_HARDWARE;
 
     switch (method) {
-        case _HF_DYNFILE_INSTR_COUNT:
-            LOG_D("Using: PERF_COUNT_HW_INSTRUCTIONS for pid=%d", (int)pid);
-            pe.config  = PERF_COUNT_HW_INSTRUCTIONS;
-            pe.inherit = 1;
-            break;
-        case _HF_DYNFILE_BRANCH_COUNT:
-            LOG_D("Using: PERF_COUNT_HW_BRANCH_INSTRUCTIONS for pid=%d", (int)pid);
-            pe.config  = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
-            pe.inherit = 1;
-            break;
-        case _HF_DYNFILE_BTS_EDGE:
-            LOG_D("Using: (Intel BTS) type=%" PRIu32 " for pid=%d", perfIntelBtsPerfType, (int)pid);
-            pe.type = perfIntelBtsPerfType;
-            break;
-        case _HF_DYNFILE_IPT_BLOCK:
-            LOG_D("Using: (Intel PT) type=%" PRIu32 " for pid=%d", perfIntelPtPerfType, (int)pid);
-            pe.type   = perfIntelPtPerfType;
-            pe.config = RTIT_CTL_DISRETC;
-            break;
-        default:
-            LOG_E("Unknown perf mode: '%d' for pid=%d", method, (int)pid);
-            return false;
-            break;
+    case _HF_DYNFILE_INSTR_COUNT:
+        LOG_D("Using: PERF_COUNT_HW_INSTRUCTIONS for pid=%d", (int)pid);
+        pe.config  = PERF_COUNT_HW_INSTRUCTIONS;
+        pe.inherit = 1;
+        break;
+    case _HF_DYNFILE_BRANCH_COUNT:
+        LOG_D("Using: PERF_COUNT_HW_BRANCH_INSTRUCTIONS for pid=%d", (int)pid);
+        pe.config  = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+        pe.inherit = 1;
+        break;
+    case _HF_DYNFILE_BTS_EDGE:
+        LOG_D("Using: (Intel BTS) type=%" PRIu32 " for pid=%d", perfIntelBtsPerfType, (int)pid);
+        pe.type = perfIntelBtsPerfType;
+        break;
+    case _HF_DYNFILE_IPT_BLOCK:
+        LOG_D("Using: (Intel PT) type=%" PRIu32 " for pid=%d", perfIntelPtPerfType, (int)pid);
+        pe.type   = perfIntelPtPerfType;
+        pe.config = RTIT_CTL_DISRETC;
+        break;
+    default:
+        LOG_E("Unknown perf mode: '%d' for pid=%d", method, (int)pid);
+        return false;
+        break;
     }
 
 #if !defined(PERF_FLAG_FD_CLOEXEC)

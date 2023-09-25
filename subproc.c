@@ -80,42 +80,42 @@ const char* subproc_StatusToStr(int status) {
 #define __LINUX_WPTRACEEVENT(x) ((x & 0xff0000) >> 16)
     if (WSTOPSIG(status) == SIGTRAP && __LINUX_WPTRACEEVENT(status) != 0) {
         switch (__LINUX_WPTRACEEVENT(status)) {
-            case PTRACE_EVENT_FORK:
-                snprintf(str, sizeof(str), "EVENT (Linux) - fork - with signal: %d (%s)",
-                    WSTOPSIG(status), strsignal(WSTOPSIG(status)));
-                return str;
-            case PTRACE_EVENT_VFORK:
-                snprintf(str, sizeof(str), "EVENT (Linux) - vfork - with signal: %d (%s)",
-                    WSTOPSIG(status), strsignal(WSTOPSIG(status)));
-                return str;
-            case PTRACE_EVENT_CLONE:
-                snprintf(str, sizeof(str), "EVENT (Linux) - clone - with signal: %d (%s)",
-                    WSTOPSIG(status), strsignal(WSTOPSIG(status)));
-                return str;
-            case PTRACE_EVENT_EXEC:
-                snprintf(str, sizeof(str), "EVENT (Linux) - exec - with signal: %d (%s)",
-                    WSTOPSIG(status), strsignal(WSTOPSIG(status)));
-                return str;
-            case PTRACE_EVENT_VFORK_DONE:
-                snprintf(str, sizeof(str), "EVENT (Linux) - vfork_done - with signal: %d (%s)",
-                    WSTOPSIG(status), strsignal(WSTOPSIG(status)));
-                return str;
-            case PTRACE_EVENT_EXIT:
-                snprintf(str, sizeof(str), "EVENT (Linux) - exit - with signal: %d (%s)",
-                    WSTOPSIG(status), strsignal(WSTOPSIG(status)));
-                return str;
-            case PTRACE_EVENT_SECCOMP:
-                snprintf(str, sizeof(str), "EVENT (Linux) - seccomp - with signal: %d (%s)",
-                    WSTOPSIG(status), strsignal(WSTOPSIG(status)));
-                return str;
-            case PTRACE_EVENT_STOP:
-                snprintf(str, sizeof(str), "EVENT (Linux) - stop - with signal: %d (%s)",
-                    WSTOPSIG(status), strsignal(WSTOPSIG(status)));
-                return str;
-            default:
-                snprintf(str, sizeof(str), "EVENT (Linux) UNKNOWN (%d): with signal: %d (%s)",
-                    __LINUX_WPTRACEEVENT(status), WSTOPSIG(status), strsignal(WSTOPSIG(status)));
-                return str;
+        case PTRACE_EVENT_FORK:
+            snprintf(str, sizeof(str), "EVENT (Linux) - fork - with signal: %d (%s)",
+                WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+            return str;
+        case PTRACE_EVENT_VFORK:
+            snprintf(str, sizeof(str), "EVENT (Linux) - vfork - with signal: %d (%s)",
+                WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+            return str;
+        case PTRACE_EVENT_CLONE:
+            snprintf(str, sizeof(str), "EVENT (Linux) - clone - with signal: %d (%s)",
+                WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+            return str;
+        case PTRACE_EVENT_EXEC:
+            snprintf(str, sizeof(str), "EVENT (Linux) - exec - with signal: %d (%s)",
+                WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+            return str;
+        case PTRACE_EVENT_VFORK_DONE:
+            snprintf(str, sizeof(str), "EVENT (Linux) - vfork_done - with signal: %d (%s)",
+                WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+            return str;
+        case PTRACE_EVENT_EXIT:
+            snprintf(str, sizeof(str), "EVENT (Linux) - exit - with signal: %d (%s)",
+                WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+            return str;
+        case PTRACE_EVENT_SECCOMP:
+            snprintf(str, sizeof(str), "EVENT (Linux) - seccomp - with signal: %d (%s)",
+                WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+            return str;
+        case PTRACE_EVENT_STOP:
+            snprintf(str, sizeof(str), "EVENT (Linux) - stop - with signal: %d (%s)",
+                WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+            return str;
+        default:
+            snprintf(str, sizeof(str), "EVENT (Linux) UNKNOWN (%d): with signal: %d (%s)",
+                __LINUX_WPTRACEEVENT(status), WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+            return str;
         }
     }
 #endif /*  defined(PTRACE_EVENT_STOP)  */
@@ -155,32 +155,32 @@ bool subproc_persistentModeStateMachine(run_t* run) {
 
     for (;;) {
         switch (run->runState) {
-            case _HF_RS_WAITING_FOR_INITIAL_READY: {
-                if (!subproc_persistentGetReady(run)) {
-                    return false;
-                }
-                run->runState = _HF_RS_SEND_DATA;
-            }; break;
-            case _HF_RS_SEND_DATA: {
-                if (!subproc_persistentSendFileIndicator(run)) {
-                    LOG_E("Could not send the file size indicator to the persistent process. "
-                          "Killing the process pid=%d",
-                        (int)run->pid);
-                    kill(run->pid, SIGKILL);
-                    return false;
-                }
-                run->runState = _HF_RS_WAITING_FOR_READY;
-            }; break;
-            case _HF_RS_WAITING_FOR_READY: {
-                if (!subproc_persistentGetReady(run)) {
-                    return false;
-                }
-                run->runState = _HF_RS_SEND_DATA;
-                /* The current persistent round is done */
-                return true;
-            }; break;
-            default:
-                LOG_F("Unknown runState: %d", run->runState);
+        case _HF_RS_WAITING_FOR_INITIAL_READY: {
+            if (!subproc_persistentGetReady(run)) {
+                return false;
+            }
+            run->runState = _HF_RS_SEND_DATA;
+        }; break;
+        case _HF_RS_SEND_DATA: {
+            if (!subproc_persistentSendFileIndicator(run)) {
+                LOG_E("Could not send the file size indicator to the persistent process. "
+                      "Killing the process pid=%d",
+                    (int)run->pid);
+                kill(run->pid, SIGKILL);
+                return false;
+            }
+            run->runState = _HF_RS_WAITING_FOR_READY;
+        }; break;
+        case _HF_RS_WAITING_FOR_READY: {
+            if (!subproc_persistentGetReady(run)) {
+                return false;
+            }
+            run->runState = _HF_RS_SEND_DATA;
+            /* The current persistent round is done */
+            return true;
+        }; break;
+        default:
+            LOG_F("Unknown runState: %d", run->runState);
         }
     }
 }

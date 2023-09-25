@@ -330,29 +330,29 @@ void display_display(honggfuzz_t* hfuzz) {
             hfuzz->mutate.mutationsMax, exeProgress);
     }
     switch (ATOMIC_GET(hfuzz->feedback.state)) {
-        case _HF_STATE_STATIC:
-            display_put("\n        Mode : " ESC_BOLD "Static" ESC_RESET "\n");
-            break;
-        case _HF_STATE_DYNAMIC_DRY_RUN: {
-            if (ATOMIC_GET(hfuzz->cfg.switchingToFDM)) {
-                display_put("\n  Mode [2/3] : " ESC_BOLD
-                            "Switching to the Feedback Driven Mode" ESC_RESET " [%zu/%zu]\n",
-                    hfuzz->io.testedFileCnt, hfuzz->io.fileCnt);
-            } else {
-                display_put("\n  Mode [1/3] : " ESC_BOLD "Feedback Driven Dry Run" ESC_RESET
-                            " [%zu/%zu]\n",
-                    hfuzz->io.testedFileCnt, hfuzz->io.fileCnt);
-            }
-        } break;
-        case _HF_STATE_DYNAMIC_MAIN:
-            display_put("\n  Mode [3/3] : " ESC_BOLD "Feedback Driven Mode" ESC_RESET "\n");
-            break;
-        case _HF_STATE_DYNAMIC_MINIMIZE:
-            display_put("\n  Mode [3/3] : " ESC_BOLD "Corpus Minimization" ESC_RESET "\n");
-            break;
-        default:
-            display_put("\n        Mode : " ESC_BOLD "Unknown" ESC_RESET "\n");
-            break;
+    case _HF_STATE_STATIC:
+        display_put("\n        Mode : " ESC_BOLD "Static" ESC_RESET "\n");
+        break;
+    case _HF_STATE_DYNAMIC_DRY_RUN: {
+        if (ATOMIC_GET(hfuzz->cfg.switchingToFDM)) {
+            display_put("\n  Mode [2/3] : " ESC_BOLD
+                        "Switching to the Feedback Driven Mode" ESC_RESET " [%zu/%zu]\n",
+                hfuzz->io.testedFileCnt, hfuzz->io.fileCnt);
+        } else {
+            display_put("\n  Mode [1/3] : " ESC_BOLD "Feedback Driven Dry Run" ESC_RESET
+                        " [%zu/%zu]\n",
+                hfuzz->io.testedFileCnt, hfuzz->io.fileCnt);
+        }
+    } break;
+    case _HF_STATE_DYNAMIC_MAIN:
+        display_put("\n  Mode [3/3] : " ESC_BOLD "Feedback Driven Mode" ESC_RESET "\n");
+        break;
+    case _HF_STATE_DYNAMIC_MINIMIZE:
+        display_put("\n  Mode [3/3] : " ESC_BOLD "Corpus Minimization" ESC_RESET "\n");
+        break;
+    default:
+        display_put("\n        Mode : " ESC_BOLD "Unknown" ESC_RESET "\n");
+        break;
     }
     display_put("      Target : " ESC_BOLD "%s" ESC_RESET "\n", hfuzz->display.cmdline_txt);
 

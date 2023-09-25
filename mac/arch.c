@@ -127,26 +127,26 @@ __attribute__((constructor)) void arch_initSigs(void) {
 
 const char* exception_to_string(int exception) {
     switch (exception) {
-        case EXC_BAD_ACCESS:
-            return "EXC_BAD_ACCESS";
-        case EXC_BAD_INSTRUCTION:
-            return "EXC_BAD_INSTRUCTION";
-        case EXC_ARITHMETIC:
-            return "EXC_ARITHMETIC";
-        case EXC_EMULATION:
-            return "EXC_EMULATION";
-        case EXC_SOFTWARE:
-            return "EXC_SOFTWARE";
-        case EXC_BREAKPOINT:
-            return "EXC_BREAKPOINT";
-        case EXC_SYSCALL:
-            return "EXC_SYSCALL";
-        case EXC_MACH_SYSCALL:
-            return "EXC_MACH_SYSCALL";
-        case EXC_RPC_ALERT:
-            return "EXC_RPC_ALERT";
-        case EXC_CRASH:
-            return "EXC_CRASH";
+    case EXC_BAD_ACCESS:
+        return "EXC_BAD_ACCESS";
+    case EXC_BAD_INSTRUCTION:
+        return "EXC_BAD_INSTRUCTION";
+    case EXC_ARITHMETIC:
+        return "EXC_ARITHMETIC";
+    case EXC_EMULATION:
+        return "EXC_EMULATION";
+    case EXC_SOFTWARE:
+        return "EXC_SOFTWARE";
+    case EXC_BREAKPOINT:
+        return "EXC_BREAKPOINT";
+    case EXC_SYSCALL:
+        return "EXC_SYSCALL";
+    case EXC_MACH_SYSCALL:
+        return "EXC_MACH_SYSCALL";
+    case EXC_RPC_ALERT:
+        return "EXC_RPC_ALERT";
+    case EXC_CRASH:
+        return "EXC_CRASH";
     }
     return "UNKNOWN";
 }

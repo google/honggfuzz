@@ -60,34 +60,34 @@ void doprocessing(int sock, int serversock) {
 
         printf("# vulnserver_cov: Received data with len: %i on state: %i\n", len, n);
         switch (data[0]) {
-            case 'A':
-                handleData0(data, len);
-                write(sock, "ok", 2);
-                break;
-            case 'B':
-                handleData1(data, len);
-                write(sock, "ok", 2);
-                break;
-            case 'C':
-                handleData2(data, len);
-                write(sock, "ok", 2);
-                break;
-            case 'D':
-                handleData3(data, len);
-                write(sock, "ok", 2);
-                break;
-            case 'E':
-                handleData4(data, len);
-                write(sock, "ok", 2);
-                break;
-            case 'F':
-                handleData5(data, len);
-                write(sock, "ok", 2);
-                // close the main server socket whoooops
-                close(serversock);
-                break;
-            default:
-                return;
+        case 'A':
+            handleData0(data, len);
+            write(sock, "ok", 2);
+            break;
+        case 'B':
+            handleData1(data, len);
+            write(sock, "ok", 2);
+            break;
+        case 'C':
+            handleData2(data, len);
+            write(sock, "ok", 2);
+            break;
+        case 'D':
+            handleData3(data, len);
+            write(sock, "ok", 2);
+            break;
+        case 'E':
+            handleData4(data, len);
+            write(sock, "ok", 2);
+            break;
+        case 'F':
+            handleData5(data, len);
+            write(sock, "ok", 2);
+            // close the main server socket whoooops
+            close(serversock);
+            break;
+        default:
+            return;
         }
 
         n++;

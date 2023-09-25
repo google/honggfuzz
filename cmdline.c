@@ -577,253 +577,253 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         }
 
         switch (c) {
-            case '!':
-                LOG_HELP(PROG_NAME " " PROG_VERSION);
-                exit(0);
-            case 'h':
-                cmdlineUsage(argv[0], custom_opts);
-                break;
-            case '?':
-                cmdlineHelp(argv[0], custom_opts);
-                return false;
-            case 'i':
-            case 'f': /* Synonym for -i, stands for -f(iles) */
-                hfuzz->io.inputDir = optarg;
-                break;
-            case 'x':
-                hfuzz->feedback.dynFileMethod = _HF_DYNFILE_NONE;
-                break;
-            case 'Q':
-                hfuzz->exe.nullifyStdio = false;
-                break;
-            case 'v':
-                hfuzz->display.useScreen = false;
-                break;
-            case 'V':
-                hfuzz->cfg.useVerifier = true;
-                break;
-            case 's':
-                hfuzz->exe.fuzzStdin = true;
-                break;
-            case 'u':
-                hfuzz->io.saveUnique = false;
-                break;
-            case 'U':
-                hfuzz->io.saveSmaller = true;
-                break;
-            case 'l':
-                logfile = optarg;
-                break;
-            case 'd':
-                ll = DEBUG;
-                break;
-            case 'q':
-                ll = WARNING;
-                break;
-            case 'e':
-                hfuzz->io.fileExtn = optarg;
-                break;
-            case 'W':
-                snprintf(hfuzz->io.workDir, sizeof(hfuzz->io.workDir), "%s", optarg);
-                break;
-            case 0x600:
-                hfuzz->io.crashDir = optarg;
-                break;
-            case 'o':
-                hfuzz->io.outputDir = optarg;
-                break;
-            case 0x602:
-                hfuzz->io.covDirNew = optarg;
-                break;
-            case 'r':
-                hfuzz->mutate.mutationsPerRun = strtoul(optarg, NULL, 10);
-                break;
-            case 'c':
-                hfuzz->exe.externalCommand = optarg;
-                break;
-            case 'S':
-                hfuzz->sanitizer.enable = true;
-                break;
-            case 0x10F:
-                hfuzz->sanitizer.del_report = cmdlineParseTrueFalse(opts[opt_index].name, optarg);
-                break;
-            case 0x10B:
-                hfuzz->socketFuzzer.enabled = true;
-                hfuzz->timing.tmOut         = 0; /* Disable process timeout checks */
-                break;
-            case 0x10C:
-                hfuzz->exe.netDriver = true;
-                break;
-            case 0x10D:
-                hfuzz->cfg.only_printable = true;
-                break;
-            case 0x10E:
-                hfuzz->io.exportFeedback = true;
-                break;
-            case 0x112:
-                hfuzz->feedback.cmpFeedback = cmdlineParseTrueFalse(opts[opt_index].name, optarg);
-                break;
-            case 'z':
-                hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_SOFT;
-                break;
-            case 'M':
-                hfuzz->cfg.minimize = true;
-                break;
-            case 'F':
-                hfuzz->io.maxFileSz = strtoul(optarg, NULL, 0);
-                break;
-            case 't':
-                hfuzz->timing.tmOut = atol(optarg);
-                break;
-            case 'R':
-                hfuzz->cfg.reportFile = optarg;
-                break;
-            case 'n':
-                if (optarg[0] == 'a') {
-                    long ncpus                = sysconf(_SC_NPROCESSORS_ONLN);
-                    hfuzz->threads.threadsMax = (ncpus < 1 ? 1 : ncpus);
-                } else {
-                    if (!util_isANumber(optarg)) {
-                        LOG_E("'-n %s' is not a number", optarg);
-                        return false;
-                    }
-                    hfuzz->threads.threadsMax = strtoul(optarg, NULL, 0);
-                }
-                break;
-            case 0x109: {
-                time_t p = atol(optarg);
-                if (p > 0) {
-                    hfuzz->timing.runEndTime = time(NULL) + p;
-                }
-            } break;
-            case 0x10A:
-                hfuzz->timing.exitOnTime = atol(optarg);
-                break;
-            case 'N':
-                hfuzz->mutate.mutationsMax = atol(optarg);
-                break;
-            case 0x100:
-                hfuzz->exe.asLimit = strtoull(optarg, NULL, 0);
-                break;
-            case 0x101:
-                hfuzz->exe.rssLimit = strtoull(optarg, NULL, 0);
-                break;
-            case 0x102:
-                hfuzz->exe.dataLimit = strtoull(optarg, NULL, 0);
-                break;
-            case 0x103:
-                hfuzz->exe.coreLimit = strtoull(optarg, NULL, 0);
-                break;
-            case 0x104:
-                hfuzz->exe.stackLimit = strtoull(optarg, NULL, 0);
-                break;
-            case 0x111:
-                hfuzz->exe.postExternalCommand = optarg;
-                break;
-            case 0x110:
-                hfuzz->exe.feedbackMutateCommand = optarg;
-                break;
-            case 0x106:
-                hfuzz->feedback.skipFeedbackOnTimeout = true;
-                break;
-            case 0x107:
-                hfuzz->cfg.exitUponCrash = true;
-                break;
-            case 0x113:
-                hfuzz->cfg.exitCodeUponCrash = strtoul(optarg, NULL, 0);
-                break;
-            case 0x114:
-                hfuzz->threads.pinThreadToCPUs = strtoul(optarg, NULL, 0);
-                break;
-            case 0x108:
-                hfuzz->exe.clearEnv = true;
-                break;
-            case 'P':
-                hfuzz->exe.persistent = true;
-                break;
-            case 'T':
-                hfuzz->timing.tmoutVTALRM = true;
-                break;
-            case 'E':
-                if (!cmdlineAddEnv(hfuzz, optarg)) {
+        case '!':
+            LOG_HELP(PROG_NAME " " PROG_VERSION);
+            exit(0);
+        case 'h':
+            cmdlineUsage(argv[0], custom_opts);
+            break;
+        case '?':
+            cmdlineHelp(argv[0], custom_opts);
+            return false;
+        case 'i':
+        case 'f': /* Synonym for -i, stands for -f(iles) */
+            hfuzz->io.inputDir = optarg;
+            break;
+        case 'x':
+            hfuzz->feedback.dynFileMethod = _HF_DYNFILE_NONE;
+            break;
+        case 'Q':
+            hfuzz->exe.nullifyStdio = false;
+            break;
+        case 'v':
+            hfuzz->display.useScreen = false;
+            break;
+        case 'V':
+            hfuzz->cfg.useVerifier = true;
+            break;
+        case 's':
+            hfuzz->exe.fuzzStdin = true;
+            break;
+        case 'u':
+            hfuzz->io.saveUnique = false;
+            break;
+        case 'U':
+            hfuzz->io.saveSmaller = true;
+            break;
+        case 'l':
+            logfile = optarg;
+            break;
+        case 'd':
+            ll = DEBUG;
+            break;
+        case 'q':
+            ll = WARNING;
+            break;
+        case 'e':
+            hfuzz->io.fileExtn = optarg;
+            break;
+        case 'W':
+            snprintf(hfuzz->io.workDir, sizeof(hfuzz->io.workDir), "%s", optarg);
+            break;
+        case 0x600:
+            hfuzz->io.crashDir = optarg;
+            break;
+        case 'o':
+            hfuzz->io.outputDir = optarg;
+            break;
+        case 0x602:
+            hfuzz->io.covDirNew = optarg;
+            break;
+        case 'r':
+            hfuzz->mutate.mutationsPerRun = strtoul(optarg, NULL, 10);
+            break;
+        case 'c':
+            hfuzz->exe.externalCommand = optarg;
+            break;
+        case 'S':
+            hfuzz->sanitizer.enable = true;
+            break;
+        case 0x10F:
+            hfuzz->sanitizer.del_report = cmdlineParseTrueFalse(opts[opt_index].name, optarg);
+            break;
+        case 0x10B:
+            hfuzz->socketFuzzer.enabled = true;
+            hfuzz->timing.tmOut         = 0; /* Disable process timeout checks */
+            break;
+        case 0x10C:
+            hfuzz->exe.netDriver = true;
+            break;
+        case 0x10D:
+            hfuzz->cfg.only_printable = true;
+            break;
+        case 0x10E:
+            hfuzz->io.exportFeedback = true;
+            break;
+        case 0x112:
+            hfuzz->feedback.cmpFeedback = cmdlineParseTrueFalse(opts[opt_index].name, optarg);
+            break;
+        case 'z':
+            hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_SOFT;
+            break;
+        case 'M':
+            hfuzz->cfg.minimize = true;
+            break;
+        case 'F':
+            hfuzz->io.maxFileSz = strtoul(optarg, NULL, 0);
+            break;
+        case 't':
+            hfuzz->timing.tmOut = atol(optarg);
+            break;
+        case 'R':
+            hfuzz->cfg.reportFile = optarg;
+            break;
+        case 'n':
+            if (optarg[0] == 'a') {
+                long ncpus                = sysconf(_SC_NPROCESSORS_ONLN);
+                hfuzz->threads.threadsMax = (ncpus < 1 ? 1 : ncpus);
+            } else {
+                if (!util_isANumber(optarg)) {
+                    LOG_E("'-n %s' is not a number", optarg);
                     return false;
                 }
-                break;
-            case 'w':
-                hfuzz->mutate.dictionaryFile = optarg;
-                break;
-            case 'B':
-                hfuzz->feedback.blocklistFile = optarg;
-                break;
+                hfuzz->threads.threadsMax = strtoul(optarg, NULL, 0);
+            }
+            break;
+        case 0x109: {
+            time_t p = atol(optarg);
+            if (p > 0) {
+                hfuzz->timing.runEndTime = time(NULL) + p;
+            }
+        } break;
+        case 0x10A:
+            hfuzz->timing.exitOnTime = atol(optarg);
+            break;
+        case 'N':
+            hfuzz->mutate.mutationsMax = atol(optarg);
+            break;
+        case 0x100:
+            hfuzz->exe.asLimit = strtoull(optarg, NULL, 0);
+            break;
+        case 0x101:
+            hfuzz->exe.rssLimit = strtoull(optarg, NULL, 0);
+            break;
+        case 0x102:
+            hfuzz->exe.dataLimit = strtoull(optarg, NULL, 0);
+            break;
+        case 0x103:
+            hfuzz->exe.coreLimit = strtoull(optarg, NULL, 0);
+            break;
+        case 0x104:
+            hfuzz->exe.stackLimit = strtoull(optarg, NULL, 0);
+            break;
+        case 0x111:
+            hfuzz->exe.postExternalCommand = optarg;
+            break;
+        case 0x110:
+            hfuzz->exe.feedbackMutateCommand = optarg;
+            break;
+        case 0x106:
+            hfuzz->feedback.skipFeedbackOnTimeout = true;
+            break;
+        case 0x107:
+            hfuzz->cfg.exitUponCrash = true;
+            break;
+        case 0x113:
+            hfuzz->cfg.exitCodeUponCrash = strtoul(optarg, NULL, 0);
+            break;
+        case 0x114:
+            hfuzz->threads.pinThreadToCPUs = strtoul(optarg, NULL, 0);
+            break;
+        case 0x108:
+            hfuzz->exe.clearEnv = true;
+            break;
+        case 'P':
+            hfuzz->exe.persistent = true;
+            break;
+        case 'T':
+            hfuzz->timing.tmoutVTALRM = true;
+            break;
+        case 'E':
+            if (!cmdlineAddEnv(hfuzz, optarg)) {
+                return false;
+            }
+            break;
+        case 'w':
+            hfuzz->mutate.dictionaryFile = optarg;
+            break;
+        case 'B':
+            hfuzz->feedback.blocklistFile = optarg;
+            break;
 #if defined(_HF_ARCH_LINUX)
-            case 0x500:
-                hfuzz->arch_linux.ignoreAddr = (void*)strtoul(optarg, NULL, 0);
-                break;
-            case 0x501:
-                hfuzz->arch_linux.disableRandomization = false;
-                break;
-            case 0x503:
-                hfuzz->arch_linux.dynamicCutOffAddr = strtoull(optarg, NULL, 0);
-                break;
-            case 0x504:
-                hfuzz->arch_linux.symsBlFile = optarg;
-                break;
-            case 0x505:
-                hfuzz->arch_linux.symsWlFile = optarg;
-                break;
-            case 0x510:
-                hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_INSTR_COUNT;
-                break;
-            case 0x511:
-                hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_BRANCH_COUNT;
-                break;
-            case 0x513:
-                hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_BTS_EDGE;
-                break;
-            case 0x514:
-                hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_IPT_BLOCK;
-                break;
-            case 0x515:
-                hfuzz->arch_linux.kernelOnly = true;
-                break;
-            case 0x530:
-                hfuzz->arch_linux.useNetNs = cmdlineParseTriState(opts[opt_index].name, optarg);
-                if (hfuzz->arch_linux.useNetNs == HF_YES) {
-                    hfuzz->arch_linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWNET);
-                }
-                break;
-            case 0x531:
-                hfuzz->arch_linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWPID);
-                break;
-            case 0x532:
-                hfuzz->arch_linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWIPC);
-                break;
+        case 0x500:
+            hfuzz->arch_linux.ignoreAddr = (void*)strtoul(optarg, NULL, 0);
+            break;
+        case 0x501:
+            hfuzz->arch_linux.disableRandomization = false;
+            break;
+        case 0x503:
+            hfuzz->arch_linux.dynamicCutOffAddr = strtoull(optarg, NULL, 0);
+            break;
+        case 0x504:
+            hfuzz->arch_linux.symsBlFile = optarg;
+            break;
+        case 0x505:
+            hfuzz->arch_linux.symsWlFile = optarg;
+            break;
+        case 0x510:
+            hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_INSTR_COUNT;
+            break;
+        case 0x511:
+            hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_BRANCH_COUNT;
+            break;
+        case 0x513:
+            hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_BTS_EDGE;
+            break;
+        case 0x514:
+            hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_IPT_BLOCK;
+            break;
+        case 0x515:
+            hfuzz->arch_linux.kernelOnly = true;
+            break;
+        case 0x530:
+            hfuzz->arch_linux.useNetNs = cmdlineParseTriState(opts[opt_index].name, optarg);
+            if (hfuzz->arch_linux.useNetNs == HF_YES) {
+                hfuzz->arch_linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWNET);
+            }
+            break;
+        case 0x531:
+            hfuzz->arch_linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWPID);
+            break;
+        case 0x532:
+            hfuzz->arch_linux.cloneFlags |= (CLONE_NEWUSER | CLONE_NEWIPC);
+            break;
 #endif /* defined(_HF_ARCH_LINUX) */
 #if defined(_HF_ARCH_NETBSD)
-            case 0x500:
-                hfuzz->arch_netbsd.ignoreAddr = (void*)strtoul(optarg, NULL, 0);
-                break;
-            case 0x504:
-                hfuzz->arch_netbsd.symsBlFile = optarg;
-                break;
-            case 0x505:
-                hfuzz->arch_netbsd.symsWlFile = optarg;
-                break;
+        case 0x500:
+            hfuzz->arch_netbsd.ignoreAddr = (void*)strtoul(optarg, NULL, 0);
+            break;
+        case 0x504:
+            hfuzz->arch_netbsd.symsBlFile = optarg;
+            break;
+        case 0x505:
+            hfuzz->arch_netbsd.symsWlFile = optarg;
+            break;
 #endif /* defined(_HF_ARCH_NETBSD) */
 #if defined(__FreeBSD__)
-            case 0x501:
-                hfuzz->arch_linux.disableRandomization = false;
-                break;
+        case 0x501:
+            hfuzz->arch_linux.disableRandomization = false;
+            break;
 #endif
-            case 0x115:
-                hfuzz->io.dynamicInputDir = optarg;
-                break;
-            case 0x116:
-                hfuzz->io.statsFileName = optarg;
-                break;
-            default:
-                cmdlineHelp(argv[0], custom_opts);
-                return false;
+        case 0x115:
+            hfuzz->io.dynamicInputDir = optarg;
+            break;
+        case 0x116:
+            hfuzz->io.statsFileName = optarg;
+            break;
+        default:
+            cmdlineHelp(argv[0], custom_opts);
+            return false;
         }
     }
 

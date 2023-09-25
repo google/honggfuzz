@@ -505,18 +505,18 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_cmp(
     uint64_t SizeAndType, uint64_t Arg1, uint64_t Arg2) {
     uint64_t CmpSize = (SizeAndType >> 32) / 8;
     switch (CmpSize) {
-        case (sizeof(uint8_t)):
-            hfuzz_trace_cmp1_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
-            return;
-        case (sizeof(uint16_t)):
-            hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
-            return;
-        case (sizeof(uint32_t)):
-            hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
-            return;
-        case (sizeof(uint64_t)):
-            hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
-            return;
+    case (sizeof(uint8_t)):
+        hfuzz_trace_cmp1_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+        return;
+    case (sizeof(uint16_t)):
+        hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+        return;
+    case (sizeof(uint32_t)):
+        hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+        return;
+    case (sizeof(uint64_t)):
+        hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
+        return;
     }
 }
 

@@ -101,23 +101,23 @@ __attribute__((hot)) inline static void perf_ptAnalyzePkt(
 
     uint64_t ip;
     switch (packet->payload.ip.ipc) {
-        case pt_ipc_update_16:
-            ip = (*last_tip_ip & ~0xFFFFull) | (packet->payload.ip.ip & 0xFFFFull);
-            break;
-        case pt_ipc_update_32:
-            ip = (*last_tip_ip & ~0xFFFFFFFFull) | (packet->payload.ip.ip & 0xFFFFFFFFull);
-            break;
-        case pt_ipc_update_48:
-            ip = (*last_tip_ip & ~0xFFFFFFFFFFFFull) | (packet->payload.ip.ip & 0xFFFFFFFFFFFFull);
-            break;
-        case pt_ipc_sext_48:
-            ip = sext(packet->payload.ip.ip, 48);
-            break;
-        case pt_ipc_full:
-            ip = packet->payload.ip.ip;
-            break;
-        default:
-            return;
+    case pt_ipc_update_16:
+        ip = (*last_tip_ip & ~0xFFFFull) | (packet->payload.ip.ip & 0xFFFFull);
+        break;
+    case pt_ipc_update_32:
+        ip = (*last_tip_ip & ~0xFFFFFFFFull) | (packet->payload.ip.ip & 0xFFFFFFFFull);
+        break;
+    case pt_ipc_update_48:
+        ip = (*last_tip_ip & ~0xFFFFFFFFFFFFull) | (packet->payload.ip.ip & 0xFFFFFFFFFFFFull);
+        break;
+    case pt_ipc_sext_48:
+        ip = sext(packet->payload.ip.ip, 48);
+        break;
+    case pt_ipc_full:
+        ip = packet->payload.ip.ip;
+        break;
+    default:
+        return;
     }
 
     *last_tip_ip = ip;

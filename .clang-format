@@ -3,12 +3,13 @@ AlignAfterOpenBracket: DontAlign
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: true
 AlignConsecutiveMacros: true
-AlignEscapedNewlines: false
+AlignEscapedNewlines: Right
 AlignOperands: true
 AllowShortFunctionsOnASingleLine: false
 AlwaysBreakBeforeMultilineStrings: false
 ColumnLimit: 100
 ForEachMacros:
   - TAILQ_FOREACH_HF
+IndentCaseLabels: false
 IndentWidth: 4
 SpacesBeforeTrailingComments: 4
