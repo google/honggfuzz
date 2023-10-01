@@ -21,7 +21,7 @@
  *
  */
 
-#include "libhfcommon/util.h"
+#include "util.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -69,9 +69,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "libhfcommon/common.h"
-#include "libhfcommon/files.h"
-#include "libhfcommon/log.h"
+#include "common.h"
+#include "files.h"
+#include "log.h"
 
 void util_ParentDeathSigIfAvail(int signo HF_ATTR_UNUSED) {
 #if defined(__FreeBSD__)

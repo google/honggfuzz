@@ -19,7 +19,7 @@
 
 */
 
-#include "libhfcommon/log.h"
+#include "log.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -35,8 +35,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "libhfcommon/common.h"
-#include "libhfcommon/util.h"
+#include "common.h"
+#include "util.h"
 
 #if defined(_HF_ARCH_LINUX)
 #include <sys/syscall.h>

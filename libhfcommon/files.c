@@ -21,7 +21,7 @@
  *
  */
 
-#include "libhfcommon/files.h"
+#include "files.h"
 
 #include <arpa/inet.h>
 #include <dirent.h>
@@ -50,9 +50,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "libhfcommon/common.h"
-#include "libhfcommon/log.h"
-#include "libhfcommon/util.h"
+#include "common.h"
+#include "log.h"
+#include "util.h"
 
 ssize_t files_readFileToBufMax(const char* fname, uint8_t* buf, size_t fileMaxSz) {
     int fd = TEMP_FAILURE_RETRY(open(fname, O_RDONLY | O_CLOEXEC));
