@@ -581,6 +581,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             LOG_HELP(PROG_NAME " " PROG_VERSION);
             exit(0);
         case 'h':
+            logRedirectLogFD(STDOUT_FILENO);
             cmdlineUsage(argv[0], custom_opts);
             break;
         case '?':
