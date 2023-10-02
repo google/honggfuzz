@@ -198,8 +198,15 @@ static int arch_bfdFPrintF(void* buf, const char* fmt, ...) {
     return ret;
 }
 
+/*
+ * The 'disassembler_style' is defined with newert dis-asm.h versions only. Use a fake identifier,
+ * just to be able to define a function pointer.
+ */
+enum fake_disassembler_style {
+    hf_fake_dis_asm_style_unused,
+};
 static int arch_bfdFPrintFStyled(
-    void* buf, enum disassembler_style style HF_ATTR_UNUSED, const char* fmt, ...) {
+    void* buf, enum fake_disassembler_style style HF_ATTR_UNUSED, const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     int ret = util_vssnprintf(buf, _HF_INSTR_SZ, fmt, args);
