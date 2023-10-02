@@ -1,2 +1,2 @@
 CompileFlags:
-  Add: [-std=c11, -fblocks, -I., -D_GNU_SOURCE, -Wall, -Wextra, -Werror, -Wno-format-truncation, -Wno-override-init]
+  Add: [-std=c11, -xc, -I., -fblocks, -D_GNU_SOURCE, -Wall, -Wextra, -Werror, -Wno-format-truncation, -Wno-override-init]
