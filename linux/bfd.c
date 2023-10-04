@@ -253,8 +253,7 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
      * argument will be discarded if needed.
      */
 
-    void (*idi_4_args)(void*, void*, void*, void*) =
-        (void (*)(void*, void*, void*, void*))init_disassemble_info;
+    void (*idi_4_args)(void*, void*, void*, void*) = (void*)init_disassemble_info;
     idi_4_args(&info, instr, arch_bfdFPrintF, arch_bfdFPrintFStyled);
     info.arch          = bfd_get_arch(bfdh);
     info.mach          = bfd_get_mach(bfdh);

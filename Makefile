@@ -179,7 +179,7 @@ COMPILER = $(shell $(CC) -v 2>&1 | \
 ifeq ($(COMPILER),clang)
   ARCH_CFLAGS += -Wno-initializer-overrides -Wno-unknown-warning-option
   ARCH_CFLAGS += -Wno-gnu-empty-initializer -Wno-format-pedantic
-  ARCH_CFLAGS += -Wno-gnu-statement-expression -Wno-cast-function-type-strict
+  ARCH_CFLAGS += -Wno-gnu-statement-expression
   ARCH_CFLAGS += -mllvm -inline-threshold=2000
   CFLAGS_BLOCKS = -fblocks
 
