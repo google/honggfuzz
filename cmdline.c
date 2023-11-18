@@ -329,6 +329,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .dynfileqCurrent  = NULL,
                 .dynfileq2Current = NULL,
                 .exportFeedback   = false,
+                .dynamicInputDir  = NULL,
+                .statsFileName    = NULL,
+                .statsFileFd      = -1,
             },
         .exe =
             {
