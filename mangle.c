@@ -891,17 +891,17 @@ void mangle_mangleContent(run_t* run, int speed_factor) {
         }
     }
 
-    /*
-     * mangle_ConstFeedbackDict() is quite powerful if the dynamic feedback dictionary
-     * exists. If so, give it a 50% chance of being used.
-     */
-    if (run->global->feedback.cmpFeedback && (util_rnd64() & 0x1)) {
-        mangle_ConstFeedbackDict(run, /* printable= */ run->global->cfg.only_printable);
-    }
-
     for (uint64_t x = 0; x < changesCnt; x++) {
-        uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);
-        mangleFuncs[choice](run, /* printable= */ run->global->cfg.only_printable);
+        if (run->global->feedback.cmpFeedback && (util_rnd64() & 0x1)) {
+            /*
+             * mangle_ConstFeedbackDict() is quite powerful if the dynamic feedback dictionary
+             * exists. If so, give it 50% chance of being used among all mangling functions.
+             */
+            mangle_ConstFeedbackDict(run, /* printable= */ run->global->cfg.only_printable);
+        } else {
+            uint64_t choice = util_rndGet(0, ARRAYSIZE(mangleFuncs) - 1);
+            mangleFuncs[choice](run, /* printable= */ run->global->cfg.only_printable);
+        }
     }
 
     wmb();
