@@ -221,7 +221,7 @@ static inline size_t HF_strlcpy(char* dest, const char* src, size_t sz, uintptr_
     }
 
     dest[len] = '\0';
-    return len;
+    return slen;
 }
 
 static inline size_t HF_strlcat(char* dest, const char* src, size_t sz, uintptr_t addr) {
