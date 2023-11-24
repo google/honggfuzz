@@ -225,8 +225,15 @@ static inline size_t HF_strlcpy(char* dest, const char* src, size_t sz, uintptr_
 }
 
 static inline size_t HF_strlcat(char* dest, const char* src, size_t sz, uintptr_t addr) {
-    size_t len = __builtin_strlen(dest);
-    return HF_strlcpy(dest + len, src, sz, addr);
+    size_t dstlen = __builtin_strlen(dest);
+
+    if (dstlen >= sz) {
+        return dstlen + __builtin_strlen(src);
+    }
+
+    size_t left = sz - dstlen;
+
+    return dstlen + HF_strlcpy(dest + dstlen, src, left, addr);
 }
 
 /* Define a weak function x, as well as __wrap_x pointing to x */
