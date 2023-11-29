@@ -236,7 +236,8 @@ static void fuzz_perfFeedback(run_t* run) {
             run->dynfile->size, util_timeNowUSecs() - run->timeStartedUSecs,
             run->hwCnts.cpuInstrCnt, run->hwCnts.cpuBranchCnt, run->hwCnts.newBBCnt, softNewEdge,
             softNewPC, softNewCmp, run->hwCnts.cpuInstrCnt, run->hwCnts.cpuBranchCnt,
-            run->hwCnts.bbCnt, softCurEdge, softCurPC, softCurCmp);
+            run->global->feedback.hwCnts.bbCnt, run->global->feedback.hwCnts.softCntEdge,
+            run->global->feedback.hwCnts.softCntPc, run->global->feedback.hwCnts.softCntCmp);
 
         if (run->global->io.statsFileName) {
             const time_t curr_sec      = time(NULL);
