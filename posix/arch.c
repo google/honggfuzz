@@ -34,6 +34,9 @@
 #include <string.h>
 #if !defined(__sun)
 #include <sys/cdefs.h>
+#else
+#include <kvm.h>
+#include <sys/proc.h>
 #endif
 #if defined(__FreeBSD__)
 #include <sys/procctl.h>
@@ -202,6 +205,28 @@ bool arch_launchChild(run_t* run) {
         procctl(P_PID, 0, PROC_ASLR_CTL, &disableRandomization) == -1) {
         PLOG_D("procctl(PROC_ASLR_CTL, PROC_ASLR_FORCE_DISABLE) failed");
     }
+#elif defined(__sun)
+    if (run->global->arch_linux.disableRandomization) {
+        kvm_t*  hd          = NULL;
+        proc_t* cur         = NULL;
+        int     enableTrace = PROC_SEC_ASLR;
+        if ((hd = kvm_open(NULL, NULL, NULL, O_RDWR, NULL)) == NULL) {
+            PLOG_E("kvm_open() failed");
+            return false;
+        }
+
+        // unlikely but who knows
+        if ((cur = kvm_getproc(hd, getpid())) == NULL) {
+            PLOG_E("kvm_getproc() failed");
+            kvm_close(hd);
+            return false;
+        }
+        if (secflag_isset(cur->p_secflags.psf_effective, enableTrace)) {
+            secflag_clear(&cur->p_secflags.psf_effective, enableTrace);
+        }
+        kvm_close(hd);
+    }
+
 #endif
     /* alarm persists across forks, so disable it here */
     alarm(0);
