@@ -181,6 +181,10 @@ static int execCC(int argc, char** argv) {
         if (isCXX) {
             /* Try the default one, then the newest ones (hopefully) in order */
             hf_execvp("clang++", argv);
+            hf_execvp("clang++-18.0", argv);
+            hf_execvp("clang++-18", argv);
+            hf_execvp("clang++-17.0", argv);
+            hf_execvp("clang++-17", argv);
             hf_execvp("clang++-16.0", argv);
             hf_execvp("clang++-16", argv);
             hf_execvp("clang++-15.0", argv);
@@ -208,9 +212,14 @@ static int execCC(int argc, char** argv) {
             hf_execvp("clang++-7", argv);
             hf_execvp("clang++7", argv);
             hf_execvp("clang", argv);
+            hf_execvp("clang++", argv);
         } else {
             /* Try the default one, then the newest ones (hopefully) in order */
             hf_execvp("clang", argv);
+            hf_execvp("clang-18.0", argv);
+            hf_execvp("clang-18", argv);
+            hf_execvp("clang-17.0", argv);
+            hf_execvp("clang-17", argv);
             hf_execvp("clang-16.0", argv);
             hf_execvp("clang-16", argv);
             hf_execvp("clang-15.0", argv);
@@ -237,6 +246,7 @@ static int execCC(int argc, char** argv) {
             hf_execvp("clang-7.0", argv);
             hf_execvp("clang-7", argv);
             hf_execvp("clang7", argv);
+            hf_execvp("clang", argv);
         }
     }
 
