@@ -161,8 +161,8 @@ else
                    -Wno-unknown-warning-option -Wno-unknown-pragmas
     ARCH_LDFLAGS := -L/usr/local/lib -lm
     ifeq ($(OS),SunOS)
-        ARCH_CFLAGS += -D_POSIX_C_SOURCE=200809L -D__EXTENSIONS__=1
-	ARCH_LDFLAGS += -lkstat -lsocket -lnsl
+        ARCH_CFLAGS += -m64 -D_POSIX_C_SOURCE=200809L -D__EXTENSIONS__=1
+	ARCH_LDFLAGS += -m64 -lkstat -lsocket -lnsl -lkvm
     endif
     ifneq ($(REALOS),OpenBSD)
     ifneq ($(REALOS),Darwin)
