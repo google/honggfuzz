@@ -155,6 +155,8 @@ struct _dynfile_t {
     uint32_t           refs;
     fuzzState_t        phase;
     uint8_t*           data;
+    bool	       keepOriginal;
+    uint8_t*           originalData;
                        TAILQ_ENTRY(_dynfile_t) pointers;
 };
 
@@ -275,6 +277,8 @@ typedef struct {
         bool        only_printable;
         bool        minimize;
         bool        switchingToFDM;
+	bool        pp_keepOriginal;
+	bool	    pp_dry;
     } cfg;
     struct {
         bool enable;
