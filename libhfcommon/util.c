@@ -35,11 +35,12 @@
 #include <pthread.h>
 #if defined(_HF_ARCH_LINUX)
 #include <sched.h>
+#include <sys/syscall.h>
 #endif /* defined(_HF_ARCH_LINUX) */
 #if defined(__FreeBSD__)
 #include <pthread_np.h>
 #include <sys/cpuset.h>
-#endif /* defined(__FreebSD__) */
+#endif /* defined(__FreeBSD__) */
 #if defined(_HF_ARCH_NETBSD)
 #include <sched.h>
 #endif /* defined(_HF_ARCH_NETBSD) */
@@ -228,6 +229,22 @@ static __thread uint64_t       rndState[2];
 
 static void util_rndInitThread(void) {
 #if !defined(BSD)
+#if defined(_HF_ARCH_LINUX)
+    size_t rrnd = 0;
+    size_t trnd = sizeof(rndState);
+
+    while (rrnd < trnd) {
+        // we are taking the harder road to cope with older linux versions without the getrandom's
+        // wrapper
+        ssize_t len = TEMP_FAILURE_RETRY((ssize_t)syscall(
+            SYS_getrandom, (uintptr_t)((uint8_t*)rndState + rrnd), (uintptr_t)(trnd - rrnd), 0L));
+        if (UNLIKELY(len < 0)) {
+            PLOG_F("Couldn't read '%zu' bytes from getrandom", (trnd - rrnd));
+        }
+
+        rrnd += (size_t)len;
+    }
+#else
     int fd = TEMP_FAILURE_RETRY(open("/dev/urandom", O_RDONLY | O_CLOEXEC));
     if (fd == -1) {
         PLOG_F("Couldn't open /dev/urandom for reading");
@@ -236,6 +253,7 @@ static void util_rndInitThread(void) {
         PLOG_F("Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndState));
     }
     close(fd);
+#endif
 #else
     arc4random_buf((void*)rndState, sizeof(rndState));
 #endif
