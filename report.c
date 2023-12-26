@@ -98,6 +98,7 @@ void report_saveReport(run_t* run) {
         "FUZZER ARGS:\n"
         " mutationsPerRun : %u\n"
         " externalCmd     : %s\n"
+        " postProcessor   : %s\n"
         " fuzzStdin       : %s\n"
         " timeout         : %ld (sec)\n"
 #if defined(_HF_ARCH_LINUX) || defined(_HF_ARCH_NETBSD)
@@ -109,6 +110,7 @@ void report_saveReport(run_t* run) {
         " wordlistFile    : %s\n",
         localtmstr, run->global->mutate.mutationsPerRun,
         run->global->exe.externalCommand == NULL ? "NULL" : run->global->exe.externalCommand,
+        run->global->exe.postExternalCommand == NULL ? "NULL" : run->global->exe.postExternalCommand,
         run->global->exe.fuzzStdin ? "TRUE" : "FALSE", (long)run->global->timing.tmOut,
 #if defined(_HF_ARCH_LINUX)
         run->global->arch_linux.ignoreAddr,

@@ -358,7 +358,7 @@ static bool fuzz_fetchInput(run_t* run) {
         fuzzState_t st = fuzz_getState(run->global);
         if (st == _HF_STATE_DYNAMIC_DRY_RUN) {
             run->mutationsPerRun = 0U;
-            if (input_prepareStaticFile(run, /* rewind= */ false, true)) {
+            if (input_prepareStaticFile(run, /* rewind= */ false, true, run->global->cfg.pp_dry)) {
                 return true;
             }
             fuzz_setDynamicMainState(run);
@@ -395,24 +395,24 @@ static bool fuzz_fetchInput(run_t* run) {
                 return false;
             }
         } else if (run->global->exe.feedbackMutateCommand) {
-            if (!input_prepareStaticFile(run, true, false)) {
+            if (!input_prepareStaticFile(run, true, false, false /*CHECK?*/)) {
                 LOG_E("input_prepareStaticFile() failed");
                 return false;
             }
-        } else if (!input_prepareStaticFile(run, true /* rewind */, true)) {
+        } else if (!input_prepareStaticFile(run, true /* rewind */, true, false)) {
             LOG_E("input_prepareStaticFile() failed");
             return false;
         }
     }
 
     if (run->global->exe.postExternalCommand &&
-        !input_postProcessFile(run, run->global->exe.postExternalCommand)) {
+        !input_postProcessFile(run, run->global->exe.postExternalCommand, run->global->cfg.pp_keepOriginal)) {
         LOG_E("input_postProcessFile('%s') failed", run->global->exe.postExternalCommand);
         return false;
     }
 
     if (run->global->exe.feedbackMutateCommand &&
-        !input_postProcessFile(run, run->global->exe.feedbackMutateCommand)) {
+        !input_postProcessFile(run, run->global->exe.feedbackMutateCommand, false)) {
         LOG_E("input_postProcessFile('%s') failed", run->global->exe.feedbackMutateCommand);
         return false;
     }

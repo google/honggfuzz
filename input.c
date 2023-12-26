@@ -374,7 +374,11 @@ void input_addDynamicInput(run_t* run) {
     dynfile_t* dynfile     = (dynfile_t*)util_Calloc(sizeof(dynfile_t));
     dynfile->size          = run->dynfile->size;
     dynfile->timeExecUSecs = util_timeNowUSecs() - run->timeStartedUSecs;
-    dynfile->data          = (uint8_t*)util_AllocCopy(run->dynfile->data, run->dynfile->size);
+    if (run->global->exe.postExternalCommand && run->global->cfg.pp_keepOriginal && run->dynfile->originalData) {
+    	dynfile->data          = (uint8_t*)util_AllocCopy(run->dynfile->originalData, run->dynfile->size);
+    } else { 
+        dynfile->data          = (uint8_t*)util_AllocCopy(run->dynfile->data, run->dynfile->size);
+    }
     dynfile->src           = run->dynfile->src;
     memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
     if (run->dynfile->src) {
@@ -750,7 +754,7 @@ static bool input_shouldReadNewFile(run_t* run) {
     return false;
 }
 
-bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
+bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle, bool needs_postprocess) {
     if (input_shouldReadNewFile(run)) {
         for (;;) {
             if (!input_getNext(run, run->dynfile->path, /* rewind= */ rewind)) {
@@ -789,6 +793,13 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
         mangle_mangleContent(run, /* slow_factor= */ 0);
     }
 
+    if (needs_postprocess) {
+	    if (run->global->exe.postExternalCommand &&
+			    !input_postProcessFile(run, run->global->exe.postExternalCommand, run->global->cfg.pp_keepOriginal)) {
+		    LOG_E("input_postProcessFile('%s') failed", run->global->exe.postExternalCommand);
+		    return false;
+	    }
+    }
     return true;
 }
 
@@ -822,7 +833,7 @@ bool input_prepareExternalFile(run_t* run) {
         LOG_E("Subprocess '%s' returned abnormally", run->global->exe.externalCommand);
         return false;
     }
-    LOG_D("Subporcess '%s' finished with success", run->global->exe.externalCommand);
+    LOG_D("Subprocess '%s' finished with success", run->global->exe.externalCommand);
 
     input_setSize(run, run->global->mutate.maxInputSz);
     ssize_t sz = files_readFromFdSeek(fd, run->dynfile->data, run->global->mutate.maxInputSz, 0);
@@ -835,7 +846,7 @@ bool input_prepareExternalFile(run_t* run) {
     return true;
 }
 
-bool input_postProcessFile(run_t* run, const char* cmd) {
+bool input_postProcessFile(run_t* run, const char* cmd, bool keepOriginal) {
     int fd =
         files_writeBufToTmpFile(run->global->io.workDir, run->dynfile->data, run->dynfile->size, 0);
     if (fd == -1) {
@@ -854,10 +865,20 @@ bool input_postProcessFile(run_t* run, const char* cmd) {
         LOG_E("Subprocess '%s' returned abnormally", cmd);
         return false;
     }
-    LOG_D("Subporcess '%s' finished with success", cmd);
+    LOG_D("Subprocess '%s' finished with success", cmd);
 
     input_setSize(run, run->global->mutate.maxInputSz);
-    ssize_t sz = files_readFromFdSeek(fd, run->dynfile->data, run->global->mutate.maxInputSz, 0);
+
+    ssize_t sz;
+    if(keepOriginal) {
+	run->dynfile->keepOriginal = true;
+	if ((run->dynfile->originalData = (uint8_t*)util_Realloc(run->dynfile->originalData, run->dynfile->size)) == NULL) {
+            PLOG_W("realloc originalData failed (sz=%zu)", run->dynfile->size);
+	    return false;
+	}
+	memcpy(run->dynfile->originalData, run->dynfile->data, run->dynfile->size);
+    }
+    sz = files_readFromFdSeek(fd, run->dynfile->data, run->global->mutate.maxInputSz, 0);
     if (sz == -1) {
         LOG_E("Couldn't read file from fd=%d", fd);
         return false;

@@ -44,10 +44,10 @@ extern bool           input_inDynamicCorpus(run_t* run, const char* fname);
 extern void           input_renumerateInputs(honggfuzz_t* hfuzz);
 extern bool           input_prepareDynamicInput(run_t* run, bool needs_mangle);
 extern const uint8_t* input_getRandomInputAsBuf(run_t* run, size_t* len);
-extern bool           input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle);
+extern bool           input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle, bool needs_postprocess);
 extern bool           input_removeStaticFile(const char* dir, const char* name);
 extern bool           input_prepareExternalFile(run_t* run);
-extern bool           input_postProcessFile(run_t* run, const char* cmd);
+extern bool           input_postProcessFile(run_t* run, const char* cmd, bool keepOriginal);
 extern bool           input_prepareDynamicFileForMinimization(run_t* run);
 extern bool           input_dynamicQueueGetNext(
               char fname[PATH_MAX], DIR* dynamicDirPtr, char* dynamicWorkDir);

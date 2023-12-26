@@ -387,6 +387,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .only_printable    = false,
                 .minimize          = false,
                 .switchingToFDM    = false,
+		.pp_keepOriginal   = false,
+		.pp_dry		   = false,
             },
         .sanitizer =
             {
@@ -503,6 +505,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "stackhash_bl", required_argument, NULL, 'B' }, "Stackhashes blocklist file (one entry per line)" },
         { { "mutate_cmd", required_argument, NULL, 'c' }, "External command producing fuzz files (instead of internal mutators)" },
         { { "pprocess_cmd", required_argument, NULL, 0x111 }, "External command postprocessing files produced by internal mutators" },
+        { { "pp_keep", required_argument, NULL, 0x117 }, "Keep original file after running postprocessor" },
+        { { "pp_dry", required_argument, NULL, 0x118 }, "Run postprocessor in dry mode, too" },
         { { "ffmutate_cmd", required_argument, NULL, 0x110 }, "External command mutating files which have effective coverage feedback" },
         { { "run_time", required_argument, NULL, 0x109 }, "Number of seconds this fuzzing session will last (default: 0 [no limit])" },
         { { "exit_on_time", required_argument, NULL, 0x10A }, "Stop fuzzing session if no new coverage was found for this number of seconds (default: 0 [no limit])" },
@@ -666,6 +670,12 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             break;
         case 0x112:
             hfuzz->feedback.cmpFeedback = cmdlineParseTrueFalse(opts[opt_index].name, optarg);
+            break;
+        case 0x117:
+            hfuzz->cfg.pp_keepOriginal = cmdlineParseTrueFalse(opts[opt_index].name, optarg);
+            break;
+        case 0x118:
+            hfuzz->cfg.pp_dry = cmdlineParseTrueFalse(opts[opt_index].name, optarg);
             break;
         case 'z':
             hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_SOFT;
