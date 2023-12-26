@@ -228,7 +228,7 @@ static __thread pthread_once_t rndThreadOnce = PTHREAD_ONCE_INIT;
 static __thread uint64_t       rndState[2];
 
 static void util_rndInitThread(void) {
-#if defined(BSD)
+#if defined(BSD) || defined(__sun)
     arc4random_buf((void*)rndState, sizeof(rndState));
     return;
 #elif defined(_HF_ARCH_LINUX) && defined(__NR_getrandom)
