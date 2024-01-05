@@ -358,7 +358,7 @@ static bool fuzz_fetchInput(run_t* run) {
         fuzzState_t st = fuzz_getState(run->global);
         if (st == _HF_STATE_DYNAMIC_DRY_RUN) {
             run->mutationsPerRun = 0U;
-            if (input_prepareStaticFile(run, /* rewind= */ false, true)) {
+            if (input_prepareStaticFile(run, /* rewind= */ false, /* mangle= */ false)) {
                 return true;
             }
             fuzz_setDynamicMainState(run);
