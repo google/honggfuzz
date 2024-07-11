@@ -126,6 +126,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
             .fd            = -1,
             .timeExecUSecs = 1,
             .path          = "[DYNAMIC-0-SIZE]",
+            .timedout      = false,
             .data          = (uint8_t*)"",
         };
         dynfile_t* tmp_dynfile = run->dynfile;

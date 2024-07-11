@@ -842,7 +842,7 @@ static void mangle_Resize(run_t* run, bool printable) {
     }
 }
 
-void mangle_mangleContent(run_t* run, int speed_factor) {
+void mangle_mangleContent(run_t* run) {
     static void (*const mangleFuncs[])(run_t* run, bool printable) = {
         mangle_Shrink,
         mangle_Expand,
@@ -873,16 +873,7 @@ void mangle_mangleContent(run_t* run, int speed_factor) {
         mangle_Resize(run, /* printable= */ run->global->cfg.only_printable);
     }
 
-    uint64_t changesCnt = run->global->mutate.mutationsPerRun;
-
-    if (speed_factor < 5) {
-        changesCnt = util_rndGet(1, run->global->mutate.mutationsPerRun);
-    } else if (speed_factor < 10) {
-        changesCnt = run->global->mutate.mutationsPerRun;
-    } else {
-        changesCnt = HF_MIN(speed_factor, 10);
-        changesCnt = HF_MAX(changesCnt, (run->global->mutate.mutationsPerRun * 5));
-    }
+    const uint64_t changesCnt = util_rndGet(1, run->global->mutate.mutationsPerRun);
 
     /* If last coverage acquisition was more than 5 secs ago, use splicing more frequently */
     if ((time(NULL) - ATOMIC_GET(run->global->timing.lastCovUpdate)) > 5) {

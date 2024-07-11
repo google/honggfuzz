@@ -154,6 +154,7 @@ struct _dynfile_t {
     struct _dynfile_t* src;
     uint32_t           refs;
     fuzzState_t        phase;
+    bool               timedout;
     uint8_t*           data;
     TAILQ_ENTRY(_dynfile_t) pointers;
 };
