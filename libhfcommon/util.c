@@ -225,27 +225,15 @@ char* util_StrDup(const char* s) {
 }
 
 static __thread pthread_once_t rndThreadOnce = PTHREAD_ONCE_INIT;
-static __thread uint64_t       rndState[2];
+static __thread uint64_t       rndState[4];
 
 static void util_rndInitThread(void) {
-#if defined(BSD) || defined(__sun)
-    arc4random_buf((void*)rndState, sizeof(rndState));
-    return;
-#elif defined(_HF_ARCH_LINUX) && defined(__NR_getrandom)
-    size_t rrnd = 0;
-    size_t trnd = sizeof(rndState);
-
-    while (rrnd < trnd) {
-        ssize_t len = TEMP_FAILURE_RETRY((ssize_t)syscall(__NR_getrandom,
-            (uintptr_t)((uint8_t*)rndState + rrnd), (uintptr_t)(trnd - rrnd), (uintptr_t)0));
-        if (UNLIKELY(len <= 0)) {
-            PLOG_F("Couldn't read '%zu' bytes from getrandom", (trnd - rrnd));
-        }
-
-        rrnd += (size_t)len;
+    __attribute__((weak)) void arc4random_buf(void* buf, size_t nbytes);
+    if (arc4random_buf) {
+        arc4random_buf((void*)rndState, sizeof(rndState));
+        return;
     }
-    return;
-#else /* defined(_HF_ARCH_LINUX) && defined(__NR_getrandom) */
+
     int fd = TEMP_FAILURE_RETRY(open("/dev/urandom", O_RDONLY | O_CLOEXEC));
     if (fd == -1) {
         PLOG_F("Couldn't open /dev/urandom for reading");
@@ -254,23 +242,25 @@ static void util_rndInitThread(void) {
         PLOG_F("Couldn't read '%zu' bytes from /dev/urandom", sizeof(rndState));
     }
     close(fd);
-#endif
 }
 
-/*
- * xoroshiro128plus by David Blackman and Sebastiano Vigna
- */
 static inline uint64_t __attribute__((const)) util_RotL(const uint64_t x, int k) {
     return (x << k) | (x >> (64 - k));
 }
 
+/*
+ * xoroshiro256++ by David Blackman and Sebastiano Vigna
+ */
 static inline uint64_t util_InternalRnd64(void) {
-    const uint64_t s0     = rndState[0];
-    uint64_t       s1     = rndState[1];
-    const uint64_t result = s0 + s1;
-    s1 ^= s0;
-    rndState[0] = util_RotL(s0, 55) ^ s1 ^ (s1 << 14);
-    rndState[1] = util_RotL(s1, 36);
+    const uint64_t result = util_RotL(rndState[0] + rndState[3], 23) + rndState[0];
+
+    const uint64_t t = rndState[1] << 17;
+    rndState[2] ^= rndState[0];
+    rndState[3] ^= rndState[1];
+    rndState[1] ^= rndState[2];
+    rndState[0] ^= rndState[3];
+    rndState[2] ^= t;
+    rndState[3] = util_RotL(rndState[3], 45);
 
     return result;
 }

@@ -155,15 +155,15 @@ struct _dynfile_t {
     uint32_t           refs;
     fuzzState_t        phase;
     uint8_t*           data;
-                       TAILQ_ENTRY(_dynfile_t) pointers;
+    TAILQ_ENTRY(_dynfile_t) pointers;
 };
 
 typedef struct _dynfile_t dynfile_t;
 
 struct strings_t {
     size_t len;
-           TAILQ_ENTRY(strings_t) pointers;
-    char   s[];
+    TAILQ_ENTRY(strings_t) pointers;
+    char s[];
 };
 
 typedef struct {
@@ -215,7 +215,7 @@ typedef struct {
         size_t      dynfileqCnt;
         dynfile_t*  dynfileqCurrent;
         dynfile_t*  dynfileq2Current;
-                    TAILQ_HEAD(dyns_t, _dynfile_t) dynfileq;
+        TAILQ_HEAD(dyns_t, _dynfile_t) dynfileq;
         bool        exportFeedback;
         const char* dynamicInputDir;
         const char* statsFileName;
