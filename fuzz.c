@@ -397,11 +397,11 @@ static bool fuzz_fetchInput(run_t* run) {
                 return false;
             }
         } else if (run->global->exe.feedbackMutateCommand) {
-            if (!input_prepareStaticFile(run, true, false)) {
+            if (!input_prepareStaticFile(run, /* rewind= */ true, /* mangle= */ false)) {
                 LOG_E("input_prepareStaticFile() failed");
                 return false;
             }
-        } else if (!input_prepareStaticFile(run, true /* rewind */, true)) {
+        } else if (!input_prepareStaticFile(run, /* rewind= */ true, /* mangle= */ true)) {
             LOG_E("input_prepareStaticFile() failed");
             return false;
         }

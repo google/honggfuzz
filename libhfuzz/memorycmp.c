@@ -665,6 +665,18 @@ HF_WEAK_WRAP(int, curl_strnequal, const char* first, const char* second, size_t 
     return 0;
 }
 
+/* SQLite3 wrappers */
+HF_WEAK_WRAP(int, sqlite3_stricmp, const char* s1, const char* s2) {
+    return HF_strcasecmp(s1, s2, tolower, (uintptr_t)__builtin_return_address(0));
+}
+HF_WEAK_WRAP(int, sqlite3StrICmp, const char* s1, const char* s2) {
+    return HF_strcasecmp(s1, s2, tolower, (uintptr_t)__builtin_return_address(0));
+}
+HF_WEAK_WRAP(int, sqlite3_strnicmp, const char* s1, const char* s2, size_t len) {
+    return HF_strncasecmp(
+        s1, s2, len, tolower, /* constfb= */ true, (uintptr_t)__builtin_return_address(0));
+}
+
 /* C++ wrappers */
 int _ZNSt11char_traitsIcE7compareEPKcS2_m(const char* s1, const char* s2, size_t count) {
     return HF_memcmp(s1, s2, count, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));

@@ -371,6 +371,7 @@ static void commonPreOpts(int* j, char** args) {
         args[(*j)++] = "-mllvm";
         args[(*j)++] = "-inline-threshold=1000";
     }
+
     args[(*j)++] = "-fno-builtin";
     args[(*j)++] = "-fno-omit-frame-pointer";
     args[(*j)++] = "-D__NO_STRING_INLINES";
@@ -506,6 +507,10 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=Curl_safe_strcasecompare";
     args[j++] = "-Wl,--wrap=Curl_strncasecompare";
     args[j++] = "-Wl,--wrap=curl_strnequal";
+    /* SQLite3 */
+    args[j++] = "-Wl,--wrap=sqlite3_stricmp";
+    args[j++] = "-Wl,--wrap=sqlite3_strnicmp";
+    args[j++] = "-Wl,--wrap=sqlite3StrICmp";
 #endif /* _HF_ARCH_DARWIN */
 
     /* Pull modules defining the following symbols (if they exist) */
