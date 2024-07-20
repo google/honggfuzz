@@ -63,7 +63,7 @@ ssize_t files_readFileToBufMax(const char* fname, uint8_t* buf, size_t fileMaxSz
 
     ssize_t readSz = files_readFromFd(fd, buf, fileMaxSz);
     if (readSz < 0) {
-        LOG_W("Couldn't read '%s' to a buf", fname);
+        PLOG_W("Couldn't read '%s' to a buf (size=%zu)", fname, fileMaxSz);
     }
     close(fd);
 

@@ -123,7 +123,7 @@ bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
     return true;
 }
 
-bool input_getNext(run_t* run, char fname[PATH_MAX], bool rewind) {
+bool input_getNext(run_t* run, char fname[PATH_MAX], size_t* len, bool rewind) {
     MX_SCOPED_LOCK(&run->global->mutex.input);
 
     if (run->global->io.fileCnt == 0U) {
@@ -161,6 +161,7 @@ bool input_getNext(run_t* run, char fname[PATH_MAX], bool rewind) {
         }
 
         snprintf(fname, PATH_MAX, "%s", entry->d_name);
+        *len = st.st_size;
         return true;
     }
 }
@@ -430,12 +431,12 @@ void input_addDynamicInput(run_t* run) {
     }
 }
 
-bool input_inDynamicCorpus(run_t* run, const char* fname) {
+bool input_inDynamicCorpus(run_t* run, const char* fname, size_t len) {
     MX_SCOPED_RWLOCK_WRITE(&run->global->mutex.dynfileq);
 
     dynfile_t* iter = NULL;
     TAILQ_FOREACH_HF (iter, &run->global->io.dynfileq, pointers) {
-        if (strncmp(iter->path, fname, PATH_MAX) == 0) {
+        if (strncmp(iter->path, fname, PATH_MAX) == 0 && iter->size == len) {
             return true;
         }
     }
@@ -732,7 +733,7 @@ const uint8_t* input_getRandomInputAsBuf(run_t* run, size_t* len) {
 }
 
 static bool input_shouldReadNewFile(run_t* run) {
-    if (fuzz_getState(run->global) == _HF_STATE_DYNAMIC_DRY_RUN) {
+    if (fuzz_getState(run->global) != _HF_STATE_DYNAMIC_DRY_RUN) {
         input_setSize(run, run->global->mutate.maxInputSz);
         return true;
     }
@@ -759,16 +760,24 @@ static bool input_shouldReadNewFile(run_t* run) {
 bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
     if (input_shouldReadNewFile(run)) {
         for (;;) {
-            if (!input_getNext(run, run->dynfile->path, /* rewind= */ rewind)) {
+            size_t flen;
+            if (!input_getNext(run, run->dynfile->path, &flen, /* rewind= */ rewind)) {
                 return false;
             }
-            if (!needs_mangle || !input_inDynamicCorpus(run, run->dynfile->path)) {
-                LOG_D("Skipping '%s' as it's already in the dynamic corpus", run->dynfile->path);
+            if (needs_mangle) {
                 break;
             }
+            if (!input_inDynamicCorpus(run, run->dynfile->path, HF_MIN(flen, run->dynfile->size))) {
+                break;
+            }
+            LOG_D("Skipping '%s' (dynamic corpus size=%zu, file size=%zu) as it's already in the "
+                  "dynamic corpus",
+                run->dynfile->path, run->dynfile->size, flen);
         }
         run->global->io.testedFileCnt++;
     }
+
+    LOG_D("Reading '%s' (max size=%zu)", run->dynfile->path, run->dynfile->size);
 
     char path[PATH_MAX];
     snprintf(path, sizeof(path), "%s/%s", run->global->io.inputDir, run->dynfile->path);

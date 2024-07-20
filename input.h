@@ -33,14 +33,14 @@
 
 extern void           input_setSize(run_t* run, size_t sz);
 extern bool           input_getDirStatsAndRewind(honggfuzz_t* hfuzz);
-extern bool           input_getNext(run_t* run, char fname[PATH_MAX], bool rewind);
+extern bool           input_getNext(run_t* run, char fname[PATH_MAX], size_t* len, bool rewind);
 extern bool           input_init(honggfuzz_t* hfuzz);
 extern bool           input_parseDictionary(honggfuzz_t* hfuzz);
 extern void           input_freeDictionary(honggfuzz_t* hfuzz);
 extern bool           input_parseBlacklist(honggfuzz_t* hfuzz);
 extern bool           input_writeCovFile(const char* dir, dynfile_t* dynfile);
 extern void           input_addDynamicInput(run_t* run);
-extern bool           input_inDynamicCorpus(run_t* run, const char* fname);
+extern bool           input_inDynamicCorpus(run_t* run, const char* fname, size_t len);
 extern void           input_renumerateInputs(honggfuzz_t* hfuzz);
 extern bool           input_prepareDynamicInput(run_t* run, bool needs_mangle);
 extern const uint8_t* input_getRandomInputAsBuf(run_t* run, size_t* len);

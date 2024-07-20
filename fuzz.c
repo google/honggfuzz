@@ -162,11 +162,12 @@ static void fuzz_minimizeRemoveFiles(run_t* run) {
         return;
     }
     for (;;) {
-        char fname[PATH_MAX];
-        if (!input_getNext(run, fname, /* rewind= */ false)) {
+        char   fname[PATH_MAX];
+        size_t len;
+        if (!input_getNext(run, fname, &len, /* rewind= */ false)) {
             break;
         }
-        if (!input_inDynamicCorpus(run, fname)) {
+        if (!input_inDynamicCorpus(run, fname, len)) {
             if (input_removeStaticFile(run->global->io.inputDir, fname)) {
                 LOG_I("Removed unnecessary '%s'", fname);
             }
