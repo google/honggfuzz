@@ -106,7 +106,7 @@ void logLog(enum llevel_t ll, const char* fn, int ln, bool perr, const char* fmt
         {"F", "\033[7;35m", true, true},
         {"E", "\033[1;31m", true, true},
         {"W", "\033[0;33m", true, true},
-        {"I", "\033[1m", false, false},
+        {"I", "\033[1m", false, true},
         {"D", "\033[0;4m", true, true},
         {"HR", "\033[0m", false, false},
         {"HB", "\033[1m", false, false},
