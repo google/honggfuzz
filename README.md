@@ -115,7 +115,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
   * [Uninitialized value in __MD4C__](https://github.com/mity/md4c/issues/130) • [CVE-2020-26148](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-26148)
   * [17 new bugs in __fwupd__](https://github.com/google/oss-fuzz/pull/4823#issue-537143670)
   * [Assertion in __libvips__](https://github.com/libvips/libvips/issues/1890)
-  * [Crash in __libocispec__)(https://github.com/containers/libocispec/commit/6079cd9490096cfb46752bd7491c71253418a02c)
+  * [Crash in __libocispec__](https://github.com/containers/libocispec/commit/6079cd9490096cfb46752bd7491c71253418a02c)
   * __Rust__:
     * panic() in regex [#1](https://github.com/rust-lang/regex/issues/464), [#2](https://github.com/rust-lang/regex/issues/465), [#3](https://github.com/rust-lang/regex/issues/465#issuecomment-381412816)
     * panic() in h2 [#1](https://github.com/carllerche/h2/pull/260), [#2](https://github.com/carllerche/h2/pull/261), [#3](https://github.com/carllerche/h2/pull/262)
