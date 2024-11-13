@@ -224,7 +224,7 @@ char* util_StrDup(const char* s) {
     return ret;
 }
 
-static __thread pthread_once_t rndThreadOnce = PTHREAD_ONCE_INIT;
+static __thread bool rndThreadOnce = false;
 static __thread uint64_t       rndState[4];
 
 static void util_rndInitThread(void) {
@@ -252,6 +252,10 @@ static inline uint64_t __attribute__((const)) util_RotL(const uint64_t x, int k)
  * xoroshiro256++ by David Blackman and Sebastiano Vigna
  */
 static inline uint64_t util_InternalRnd64(void) {
+    if (!rndThreadOnce) {
+        rndThreadOnce = true;
+        util_rndInitThread();
+    }
     const uint64_t result = util_RotL(rndState[0] + rndState[3], 23) + rndState[0];
 
     const uint64_t t = rndState[1] << 17;
@@ -266,7 +270,6 @@ static inline uint64_t util_InternalRnd64(void) {
 }
 
 uint64_t util_rnd64(void) {
-    pthread_once(&rndThreadOnce, util_rndInitThread);
     return util_InternalRnd64();
 }
 
@@ -301,7 +304,6 @@ void util_rndBufPrintable(uint8_t* buf, size_t sz) {
 }
 
 void util_rndBuf(uint8_t* buf, size_t sz) {
-    pthread_once(&rndThreadOnce, util_rndInitThread);
     if (sz == 0) {
         return;
     }
