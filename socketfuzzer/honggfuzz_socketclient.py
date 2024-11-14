@@ -1,11 +1,8 @@
-#!/usr/bin/python
-# Python3
+#!/usr/bin/python3
 
 import socket
 import sys
 import time
-import random
-
 
 class HonggfuzzSocket:
     def __init__(self, pid):
@@ -19,17 +16,17 @@ class HonggfuzzSocket:
         server_address = "/tmp/honggfuzz_socket"
         if self.pid is not None:
             server_address += "." + str(self.pid)
-        print( 'connecting to %s' % server_address)
+        print('connecting to %s' % server_address)
 
         try:
             self.sock.connect(server_address)
         except socket.error as msg:
-            print ("Error connecting to honggfuzz socket: " + str(msg))
+            print("Error connecting to honggfuzz socket: " + str(msg))
             sys.exit(1)
 
 
     def send(self, data):
-        self.sock.sendall( str.encode(data) )
+        self.sock.sendall(str.encode(data))
 
 
     def recv(self):
@@ -44,52 +41,43 @@ class TargetSocket:
     def __init__(self):
         self.sock = None
 
-    def testServerConnectionTcp(self):
+
+    def test_svr_tcp_connection(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_address = ('localhost', self.targetPort)
+        sever_addr = ('localhost', 5001)
 
         try:
-            sock.connect(server_address)
+            sock.connect(sever_addr)
         except socket.error as exc:
             return False
 
         sock.close()
-
         return True
 
 
-    def sendToSocket(self, data):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1)
+    def send_to_socket(self, data):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
 
-        host = 'localhost'
-        port = 5001
-
-        isOpen = False
-
-        n = 0
-        while isOpen is False:
+        server_addr = ('localhost', 5001)
+        max_retries = 10
+        for _ in range(max_retries):
             try:
-                s.connect((host, port))
-                isOpen = True
+                sock.connect(server_addr)
+                break
             except Exception as e:
                 time.sleep(0.1)
-                n += 1
-                isOpen = False
-
-            if n == 10:
-                return False
 
         try:
-            s.send( str.encode(data) )
+            sock.send(str.encode(data))
         except Exception as e:
-            print( "B: " + str(e))
+            print("B: " + str(e))
 
-        s.close()
+        sock.close()
         return True
 
 
-    def sendFuzz(self, n):
+    def sendfuzz(self, n):
         data = ""
         if n == 1:
             data = "AAAAAA"
@@ -111,228 +99,225 @@ class TargetSocket:
             # heap buffer overflow
             data = "FFFFFF"
 
-        #print "  Send: " + str(data)
-        return self.sendToSocket(data)
+        return self.send_to_socket(data)
 
 
-def sendResp(targetSocketRes, hfSocket):
-    if not targetSocketRes:
-        print "  ! Server down. Send: bad!"
-        hfSocket.send("bad!")
+def sendresp(target_socket_res, hfuzz_socket):
+    if not target_socket_res:
+        print("  ! Server down. Send: bad!")
+        hfuzz_socket.send("bad!")
     else:
-        hfSocket.send("okay")
+        hfuzz_socket.send("okay")
 
 
 def auto(pid):
-    print "Auto Test"
-    hfSocket = HonggfuzzSocket(pid)
-    targetSocket = TargetSocket()
-    hfSocket.connect()
+    print("Auto Test")
+    hfuzz_socket = HonggfuzzSocket(pid)
+    target_socket = TargetSocket()
+    hfuzz_socket.connect()
 
-    print ""
-    print "Test: 0 - initial"
-    ret = hfSocket.recv()
+    print()
+    print("Test: 0 - initial")
+    ret = hfuzz_socket.recv()
     if ret == "Fuzz":
-        print "  ok: " + ret
+        print("  ok:", ret)
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
 
-    print ""
-    print "Test: 1 - expecting first new BB"
-    ret = targetSocket.sendFuzz(1)
-    sendResp(ret, hfSocket)
-    ret = hfSocket.recv()
+    print()
+    print("Test: 1 - expecting first new BB")
+    ret = target_socket.sendfuzz(1)
+    sendresp(ret, hfuzz_socket)
+    ret = hfuzz_socket.recv()
     if ret == "New!" or ret == "Fuzz":
-        print "  ok: " + ret
+        print("  ok:", ret)
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
-    ret = hfSocket.recv()
+    ret = hfuzz_socket.recv()
     if ret == "Fuzz":
-        print "  ok: " + ret
+        print("  ok:", ret)
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
 
-    print ""
-    print "Test: 2 - expecting second new BB"
-    targetSocket.sendFuzz(2)
-    sendResp(ret, hfSocket)
-    ret = hfSocket.recv()
+    print()
+    print("Test: 2 - expecting second new BB")
+    target_socket.sendfuzz(2)
+    sendresp(ret, hfuzz_socket)
+    ret = hfuzz_socket.recv()
     if ret == "New!":
-        print "  ok: " + ret
+        print("  ok:", ret)
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
-    ret = hfSocket.recv()
+    ret = hfuzz_socket.recv()
     if ret == "Fuzz":
-        print "  ok: " + ret
+        print("  ok:", ret)
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
 
-    print ""
-    print "Test: 3 - repeat second msg, expecting no new BB"
-    targetSocket.sendFuzz(2)
-    sendResp(ret, hfSocket)
-    ret = hfSocket.recv()
+    print()
+    print("Test: 3 - repeat second msg, expecting no new BB")
+    target_socket.sendfuzz(2)
+    sendresp(ret, hfuzz_socket)
+    ret = hfuzz_socket.recv()
     if ret == "Fuzz":
-        print "  ok: " + ret
+        print("  ok:", ret)
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
 
-    print ""
-    print "Test: 4 - crash stack, expect new BB, then crash notification"
-    targetSocket.sendFuzz(6)
-    sendResp(ret, hfSocket)
+    print()
+    print("Test: 4 - crash stack, expect new BB, then crash notification")
+    target_socket.sendfuzz(6)
+    sendresp(ret, hfuzz_socket)
     # first, a new BB is detected
-    ret = hfSocket.recv()
+    ret = hfuzz_socket.recv()
     if ret == "New!":
-        print "  ok: " + ret
+        print("  ok:", ret)
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
     # this leads to a crash
-    ret = hfSocket.recv()
+    ret = hfuzz_socket.recv()
     if ret == "Cras":
-        print "  ok: " + ret
+        print("  ok:", ret)
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
     # after the crash, the target should have been restarted, and
     # we are ready to fuzz again
-    ret = hfSocket.recv()
+    ret = hfuzz_socket.recv()
     if ret == "Fuzz":
-        print "  ok: " + ret
+        print("  ok:", ret)
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
 
-    print ""
-    print "Test: 5 - resend second, expecting no new BB"
-    targetSocket.sendFuzz(2)
-    sendResp(ret, hfSocket)
-    ret = hfSocket.recv()
+    print()
+    print("Test: 5 - resend second, expecting no new BB")
+    target_socket.sendfuzz(2)
+    sendresp(ret, hfuzz_socket)
+    ret = hfuzz_socket.recv()
     if ret == "Fuzz":
-        print "  ok: " + ret
+        print("  ok:", ret)
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
 
-    print ""
-    print "Test: 6 - send three, expecting new BB"
-    targetSocket.sendFuzz(3)
-    sendResp(ret, hfSocket)
-    ret = hfSocket.recv()
+    print()
+    print("Test: 6 - send three, expecting new BB")
+    target_socket.sendfuzz(3)
+    sendresp(ret, hfuzz_socket)
+    ret = hfuzz_socket.recv()
     if ret == "New!":
-        print "  ok: " + ret
+        print("  ok:", ret)
     elif ret == "Fuzz":
-        print "  okish: Should have been New!, but lets continue anyway"
+        print("  okish: Should have been New!, but lets continue anyway")
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
 
     if ret == "New!":
-        ret = hfSocket.recv()
+        ret = hfuzz_socket.recv()
         if ret == "Fuzz":
-            print "  ok: " + ret
+            print("  ok:", ret)
         else:
-            print "  nok: " + ret
+            print("  nok:", ret)
             return
 
-    print ""
-    print "Test: 7 - send four, new BB"
-    targetSocket.sendFuzz(4)
-    sendResp(ret, hfSocket)
-    ret = hfSocket.recv()
+    print()
+    print("Test: 7 - send four, new BB")
+    target_socket.sendfuzz(4)
+    sendresp(ret, hfuzz_socket)
+    ret = hfuzz_socket.recv()
     if ret == "New!":
-        print "  ok: " + ret
+        print("  ok:", ret)
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
-    ret = hfSocket.recv()
+    ret = hfuzz_socket.recv()
     if ret == "Fuzz":
-        print "  ok: " + ret
+        print("  ok:", ret)
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
 
     # lets simulate that the server has become unresponsive for some reason.
     # as described in #253
-    print ""
-    print "Test: 8 - fake unresponsive server"
-    hfSocket.send("bad!")
-    ret = hfSocket.recv()
+    print()
+    print("Test: 8 - fake unresponsive server")
+    hfuzz_socket.send("bad!")
+    ret = hfuzz_socket.recv()
     if ret == "Fuzz":
-        print "  ok: " + ret
+        print("  ok:", ret)
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
 
-    print ""
-    print "Test: 9 - send four again, no new BB"
-    targetSocket.sendFuzz(4)
-    sendResp(ret, hfSocket)
-    ret = hfSocket.recv()
+    print()
+    print("Test: 9 - send four again, no new BB")
+    target_socket.sendfuzz(4)
+    sendresp(ret, hfuzz_socket)
+    ret = hfuzz_socket.recv()
     if ret == "Fuzz":
-        print "  ok: " + ret
+        print("  ok:", ret)
     else:
-        print "  nok: " + ret
+        print("  nok:", ret)
         return
 
     # shut honggfuzz down
-    hfSocket.send("halt")
+    hfuzz_socket.send("halt")
 
     # this does not really work yet in honggfuzz.
     if (False):
         # lets make the server unresponsive
-        print ""
-        print "Test: 10 - real unresponsive server"
-        targetSocket.sendFuzz(8)
-        sendResp(ret, hfSocket)
+        print()
+        print("Test: 10 - real unresponsive server")
+        target_socket.sendFuzz(8)
+        sendresp(ret, hfuzz_socket)
         # we first have a new BB
-        ret = hfSocket.recv()
+        ret = hfuzz_socket.recv()
         if ret == "New!":
-            print "  ok: " + ret
+            print("  ok:", ret)
         else:
-            print "  nok: " + ret
+            print("  nok:", ret)
             return
         
-        print ""
-        print "Test: 11 - send four again, no new BB"
-        targetSocket.sendFuzz(4)
-        sendResp(ret, hfSocket)
-        ret = hfSocket.recv()
+        print()
+        print("Test: 11 - send four again, no new BB")
+        target_socket.sendFuzz(4)
+        sendresp(ret, hfuzz_socket)
+        ret = hfuzz_socket.recv()
         if ret == "Fuzz":
-            print "  ok: " + ret
+            print("  ok:", ret)
         else:
-            print "  nok: " + ret
+            print("  nok:", ret)
             return
 
 
 def interactive(pid):
-    hfSocket = HonggfuzzSocket(pid)
-    targetSocket = TargetSocket()
+    hfuzz_socket = HonggfuzzSocket(pid)
+    target_socket = TargetSocket()
 
-    hfSocket.connect()
+    hfuzz_socket.connect()
 
     while(True):
         try:
-            recv = hfSocket.recv()
+            recv = hfuzz_socket.recv()
 
             if recv == "Fuzz":
                 # Send the bad data to the target
                 i = input("--[ Send Msg #: ")
-                #i = random.randint(0, 3)
-                #sendFuzz(int(i))
-                print "Send to target: " + str(i)
-                if not targetSocket.sendFuzz(i):
-                    print "Server down. Send: bad!"
-                    hfSocket.send("bad!")
+                print("Send to target: " + str(i))
+                if not target_socket.sendfuzz(i):
+                    print("Server down. Send: bad!")
+                    hfuzz_socket.send("bad!")
                 else:
-                    hfSocket.send("okay")
+                    hfuzz_socket.send("okay")
 
             elif recv == "New!":
                 print ("--[ R Adding file to corpus...")
@@ -367,12 +352,12 @@ def main():
     if len(sys.argv) >= 3:
         pid = int(sys.argv[2])
     else:
-        print "honggfuzz_socketclient.py [auto/interactive] <pid>"
+        print("honggfuzz_socketclient.py [auto/interactive] <pid>")
 
-    if mode is "auto":
+    if mode == "auto":
         auto(pid)
-    elif mode is "interactive":
+    elif mode == "interactive":
         interactive(pid)
 
-
-main()
+if __name__ == '__main__':
+    main()
