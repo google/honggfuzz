@@ -128,7 +128,7 @@ Honggfuzz has been used to find a few interesting security problems in major sof
 
 ## Projects utilizing or inspired-by Honggfuzz
 
-  * [__QuickFuzz__ by CIFASIS](http://quickfuzz.org)
+  * [__QuickFuzz__ by CIFASIS](https://github.com/CIFASIS/QuickFuzz)
   * [__OSS-Fuzz__](https://github.com/google/oss-fuzz)
   * [__Frog And Fuzz__](https://github.com/warsang/FrogAndFuzz/tree/develop)
   * [__interpreters fuzzing__: by dyjakan](https://github.com/dyjakan/interpreter-bugs)
