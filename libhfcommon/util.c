@@ -224,8 +224,8 @@ char* util_StrDup(const char* s) {
     return ret;
 }
 
-static __thread bool rndThreadOnce = false;
-static __thread uint64_t       rndState[4];
+static __thread bool     rndThreadOnce = false;
+static __thread uint64_t rndState[4];
 
 static void util_rndInitThread(void) {
     __attribute__((weak)) void arc4random_buf(void* buf, size_t nbytes);

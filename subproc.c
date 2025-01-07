@@ -268,7 +268,7 @@ static bool subproc_PrepareExecv(run_t* run) {
         environ = NULL;
     }
     for (size_t i = 0; i < ARRAYSIZE(run->global->exe.env_ptrs) && run->global->exe.env_ptrs[i];
-         i++) {
+        i++) {
         putenv(run->global->exe.env_ptrs[i]);
     }
     char fuzzNo[128];
