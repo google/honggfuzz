@@ -377,6 +377,7 @@ void input_addDynamicInput(run_t* run) {
     dynfile->timeExecUSecs = util_timeNowUSecs() - run->timeStartedUSecs;
     dynfile->data          = (uint8_t*)util_AllocCopy(run->dynfile->data, run->dynfile->size);
     dynfile->src           = run->dynfile->src;
+    dynfile->imported      = run->dynfile->imported,
     memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
     if (run->dynfile->src) {
         ATOMIC_POST_INC(run->dynfile->src->refs);
@@ -551,7 +552,13 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
         run->current                    = run->global->io.dynfileqCurrent;
         run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
 
+        /* Do not count skip_factor on unmeasured (imported) inputs */
+        if (run->current->imported) {
+            break;
+        }
+
         int skip_factor = input_skipFactor(run, run->current);
+
         if (skip_factor <= 0) {
             run->triesLeft = -(skip_factor);
             break;
@@ -569,9 +576,20 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     run->dynfile->refs          = 0;
     run->dynfile->phase         = fuzz_getState(run->global);
     run->dynfile->timedout      = run->current->timedout;
+    run->dynfile->imported      = run->current->imported;
     memcpy(run->dynfile->cov, run->current->cov, sizeof(run->dynfile->cov));
     snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s", run->current->path);
     memcpy(run->dynfile->data, run->current->data, run->current->size);
+
+    /* Run unmangled imported input to measure coverage. It would be added
+       to dynamic queue again in case of profit.
+    */
+    if (run->current->imported) {
+        TAILQ_REMOVE(&run->global->io.dynfileq, run->current, pointers);
+        ATOMIC_POST_DEC(run->global->io.newUnitsAdded);
+        run->triesLeft = 0;
+        return true;
+    }
 
     if (needs_mangle) {
         mangle_mangleContent(run);
@@ -677,6 +695,7 @@ void input_enqueueDynamicInputs(honggfuzz_t* hfuzz) {
             .timeExecUSecs = 1,
             .path          = "",
             .timedout      = false,
+            .imported      = true,
             .data          = dynamicFile,
         };
         tmp_run.timeStartedUSecs = util_timeNowUSecs() - 1;
