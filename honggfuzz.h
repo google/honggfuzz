@@ -77,6 +77,9 @@
 /* Default maximum size of produced inputs */
 #define _HF_INPUT_DEFAULT_SIZE (1024ULL * 8)
 
+/* Time (seconds) between checking dynamic input directory to import files */
+#define _HF_SYNC_TIME 10
+
 /* Per-thread bitmap */
 #define _HF_PERTHREAD_BITMAP_FD 1018
 /* FD used to report back used int/str constants from the fuzzed process */
@@ -156,6 +159,7 @@ struct _dynfile_t {
     fuzzState_t        phase;
     bool               timedout;
     uint8_t*           data;
+    bool               imported;
     TAILQ_ENTRY(_dynfile_t) pointers;
 };
 

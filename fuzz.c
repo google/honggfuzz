@@ -127,6 +127,7 @@ static void fuzz_setDynamicMainState(run_t* run) {
             .timeExecUSecs = 1,
             .path          = "[DYNAMIC-0-SIZE]",
             .timedout      = false,
+            .imported      = false,
             .data          = (uint8_t*)"",
         };
         dynfile_t* tmp_dynfile = run->dynfile;
@@ -277,12 +278,26 @@ static void fuzz_perfFeedback(run_t* run) {
         run->dynfile->cov[1] = softCurCmp;
         run->dynfile->cov[2] = run->hwCnts.cpuInstrCnt + run->hwCnts.cpuBranchCnt;
         run->dynfile->cov[3] = run->dynfile->size ? (64 - util_Log2(run->dynfile->size)) : 64;
+
+        /* Push useful imported input to dynamic queue again for the further mutations */
+        if (run->dynfile->imported) {
+            LOG_I("File imported: %s", run->dynfile->path);
+            run->dynfile->imported = false;
+        }
         input_addDynamicInput(run);
 
         if (run->global->socketFuzzer.enabled) {
             LOG_D("SocketFuzzer: fuzz: new BB (perf)");
             fuzz_notifySocketFuzzerNewCov(run->global);
         }
+    } else if (run->dynfile->imported) {
+        /* Remove useless imported inputs from corpus */
+        LOG_D("Removing useless imported file: %s", run->dynfile->path);
+        char fname[PATH_MAX];
+        snprintf(fname, PATH_MAX, "%s/%s",
+                run->global->io.outputDir ? run->global->io.outputDir : run->global->io.inputDir,
+                run->dynfile->path);
+        unlink(fname);
     }
 }
 
