@@ -41,6 +41,13 @@
 #if defined(__FreeBSD__)
 #include <sys/procctl.h>
 #endif
+#if defined(__APPLE__)
+#include <spawn.h>
+extern char **environ;
+#ifndef _POSIX_SPAWN_DISABLE_ASLR
+#      define _POSIX_SPAWN_DISABLE_ASLR 0x0100
+#endif
+#endif
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -194,7 +201,29 @@ pid_t arch_fork(run_t* fuzzer HF_ATTR_UNUSED) {
 }
 
 bool arch_launchChild(run_t* run) {
-#if defined(__FreeBSD__)
+#if defined(__APPLE__)
+    posix_spawnattr_t attrs;
+    posix_spawnattr_init(&attrs);
+
+    short ps_flags = POSIX_SPAWN_SETEXEC;
+    if (run->global->arch_linux.disableRandomization) {
+        ps_flags |= _POSIX_SPAWN_DISABLE_ASLR;
+    }
+
+    int ret = posix_spawnattr_setflags(&attrs, ps_flags);
+    if (ret != 0) {
+        LOG_W("cannot set posix_spawn flags");
+    }
+
+    int status = posix_spawn(NULL, run->args[0], NULL, &attrs, (char* const*)run->args, environ);
+
+    posix_spawnattr_destroy(&attrs);
+
+    if (status != 0) {
+        PLOG_E("posix_spawnp failed for '%s'", run->args[0]);
+        return false;
+    }
+#elif defined(__FreeBSD__)
     int enableTrace          = PROC_TRACE_CTL_ENABLE;
     int disableRandomization = PROC_ASLR_FORCE_DISABLE;
     if (procctl(P_PID, 0, PROC_TRACE_CTL, &enableTrace) == -1) {
