@@ -260,7 +260,7 @@ static void fuzz_perfFeedback(run_t* run) {
 
             dprintf(run->global->io.statsFileFd,
                 "%lu, %lu, %lu, %lu, "
-                "%" PRIu64 ", %" PRIu64 ", %" PRIu64 ", %" PRIu64 ", %" PRIu64 "\n",
+                "%zu, %zu, %zu, %" PRIu64 ", %" PRIu64 "\n",
                 curr_sec,                                 /* unix_time */
                 run->global->timing.lastCovUpdate,        /* last_cov_update */
                 curr_exec_cnt,                            /* total_exec */
