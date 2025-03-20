@@ -161,6 +161,8 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
             localtmstr, (int)pid, run->global->io.fileExtn);
     }
 
+    ATOMIC_POST_INC(run->global->cnts.crashesCnt);
+
     if (files_exists(run->crashFileName)) {
         LOG_I("Crash (dup): '%s' already exists, skipping", run->crashFileName);
         /* Clear filename so that verifier can understand we hit a duplicate */
@@ -170,7 +172,6 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
 
     LOG_I("Ok, that's interesting, saving input '%s'", run->crashFileName);
 
-    ATOMIC_POST_INC(run->global->cnts.crashesCnt);
     ATOMIC_POST_INC(run->global->cnts.uniqueCrashesCnt);
     /* If unique crash found, reset dynFile counter */
     ATOMIC_CLEAR(run->global->cfg.dynFileIterExpire);
