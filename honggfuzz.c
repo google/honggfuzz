@@ -428,7 +428,7 @@ int main(int argc, char** argv) {
             PLOG_F("Couldn't open statsfile open('%s')", hfuzz.io.statsFileName);
         } else {
             dprintf(hfuzz.io.statsFileFd, "# unix_time, last_cov_update, total_exec, exec_per_sec, "
-                                          "crashes, unique_crashes, hangs, edge_cov, block_cov\n");
+                                          "crashes, unique_crashes, hangs, edge_cov, block_cov, corpus_count\n");
         }
     }
 
