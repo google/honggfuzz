@@ -209,7 +209,8 @@ LNETDRIVER_OBJS := $(LNETDRIVER_SRCS:.c=.o)
 LNETDRIVER_ARCH := libhfnetdriver/libhfnetdriver.a
 
 # Respect external user defines
-CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH}
+REALOS_UPPER = $(shell echo $(REALOS) | tr '[:lower:]' '[:upper:]')
+CFLAGS += $(COMMON_CFLAGS) $(ARCH_CFLAGS) -D_HF_ARCH_${ARCH} -D_HF_ARCH_${REALOS_UPPER}
 LDFLAGS += $(COMMON_LDFLAGS) $(ARCH_LDFLAGS)
 
 ifdef DEBUG
