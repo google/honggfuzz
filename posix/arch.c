@@ -43,9 +43,9 @@
 #endif
 #if defined(__APPLE__)
 #include <spawn.h>
-extern char **environ;
+extern char** environ;
 #ifndef _POSIX_SPAWN_DISABLE_ASLR
-#      define _POSIX_SPAWN_DISABLE_ASLR 0x0100
+#define _POSIX_SPAWN_DISABLE_ASLR 0x0100
 #endif
 #endif
 #include <sys/resource.h>

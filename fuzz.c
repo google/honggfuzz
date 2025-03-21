@@ -295,8 +295,8 @@ static void fuzz_perfFeedback(run_t* run) {
         LOG_D("Removing useless imported file: %s", run->dynfile->path);
         char fname[PATH_MAX];
         snprintf(fname, PATH_MAX, "%s/%s",
-                run->global->io.outputDir ? run->global->io.outputDir : run->global->io.inputDir,
-                run->dynfile->path);
+            run->global->io.outputDir ? run->global->io.outputDir : run->global->io.inputDir,
+            run->dynfile->path);
         unlink(fname);
     }
 }

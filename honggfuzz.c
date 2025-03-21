@@ -267,8 +267,7 @@ static uint8_t mainThreadLoop(honggfuzz_t* hfuzz) {
 
     uint64_t dynamicQueuePollTime = time(NULL);
     for (;;) {
-         if (hfuzz->io.dynamicInputDir &&
-                time(NULL) - dynamicQueuePollTime > _HF_SYNC_TIME) {
+        if (hfuzz->io.dynamicInputDir && time(NULL) - dynamicQueuePollTime > _HF_SYNC_TIME) {
             LOG_D("Loading files from the dynamic input queue...");
             input_enqueueDynamicInputs(hfuzz);
             dynamicQueuePollTime = time(NULL);
@@ -427,8 +426,9 @@ int main(int argc, char** argv) {
         if (hfuzz.io.statsFileFd == -1) {
             PLOG_F("Couldn't open statsfile open('%s')", hfuzz.io.statsFileName);
         } else {
-            dprintf(hfuzz.io.statsFileFd, "# unix_time, last_cov_update, total_exec, exec_per_sec, "
-                                          "crashes, unique_crashes, hangs, edge_cov, block_cov, corpus_count\n");
+            dprintf(hfuzz.io.statsFileFd,
+                "# unix_time, last_cov_update, total_exec, exec_per_sec, "
+                "crashes, unique_crashes, hangs, edge_cov, block_cov, corpus_count\n");
         }
     }
 
