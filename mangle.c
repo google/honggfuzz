@@ -238,8 +238,12 @@ static void mangle_Bit(run_t* run, bool printable) {
 }
 
 static const struct {
+#if __has_attribute(nonstring)
+    const uint8_t val[8] __attribute__((nonstring));
+#else
     const uint8_t val[8];
-    const size_t  size;
+#endif /* __has_attribute(nonstring) */
+    const size_t size;
 } mangleMagicVals[] = {
     /* 1B - No endianness */
     {"\x00\x00\x00\x00\x00\x00\x00\x00", 1},
