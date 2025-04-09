@@ -128,13 +128,12 @@ static bool isLDMode(int argc, char** argv) {
 }
 
 static bool isExecutableBuild(int argc, char** argv) {
-    bool shared_flag = false;
-    char *output_filename = NULL;
+    bool  shared_flag     = false;
+    char* output_filename = NULL;
 
     for (int i = 0; i < argc; i++) {
         // Check for Linux shared or macOS dynamic library flags.
-        if (strcmp(argv[i], "-shared") == 0 ||
-            strcmp(argv[i], "--shared") == 0 ||
+        if (strcmp(argv[i], "-shared") == 0 || strcmp(argv[i], "--shared") == 0 ||
             strcmp(argv[i], "-dynamiclib") == 0) {
             shared_flag = true;
         } else if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
@@ -147,12 +146,12 @@ static bool isExecutableBuild(int argc, char** argv) {
     }
 
     if (output_filename != NULL) {
-        const char *ext = strrchr(output_filename, '.');
+        const char* ext = strrchr(output_filename, '.');
         if (ext != NULL && (strcmp(ext, ".so") == 0 || strcmp(ext, ".dylib") == 0)) {
             return false;
         }
-    } 
-    
+    }
+
     return true;
 }
 
@@ -576,20 +575,20 @@ static int ldMode(int argc, char** argv) {
 
     /* Ensure to link libhfuzz to the fuzz test executable*/
     if (isExecutableBuild(argc, argv)) {
-    #if defined(_HF_ARCH_DARWIN)
+#if defined(_HF_ARCH_DARWIN)
         args[j++] = "-Wl,-all_load";
-    #else
+#else
         args[j++] = "-Wl,--whole-archive";
-    #endif
+#endif
     }
-    
+
     args[j++] = getLibHFuzzPath();
-    
-    #if !defined(_HF_ARCH_DARWIN)
+
+#if !defined(_HF_ARCH_DARWIN)
     if (isExecutableBuild(argc, argv)) {
         args[j++] = "-Wl,--no-whole-archive";
     }
-    #endif /* !defined(_HF_ARCH_DARWIN) */
+#endif /* !defined(_HF_ARCH_DARWIN) */
 
     args[j++] = getLibHFCommonPath();
 
