@@ -127,6 +127,35 @@ static bool isLDMode(int argc, char** argv) {
     return true;
 }
 
+static bool isExecutableBuild(int argc, char** argv) {
+    bool shared_flag = false;
+    char *output_filename = NULL;
+
+    for (int i = 0; i < argc; i++) {
+        // Check for Linux shared or macOS dynamic library flags.
+        if (strcmp(argv[i], "-shared") == 0 ||
+            strcmp(argv[i], "--shared") == 0 ||
+            strcmp(argv[i], "-dynamiclib") == 0) {
+            shared_flag = true;
+        } else if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
+            output_filename = argv[i + 1];
+        }
+    }
+
+    if (shared_flag) {
+        return false;
+    }
+
+    if (output_filename != NULL) {
+        const char *ext = strrchr(output_filename, '.');
+        if (ext != NULL && (strcmp(ext, ".so") == 0 || strcmp(ext, ".dylib") == 0)) {
+            return false;
+        }
+    } 
+    
+    return true;
+}
+
 static bool hasFSanitizeFuzzer(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         if (util_strStartsWith(argv[i], "-fsanitize=") && strstr(argv[i], "fuzzer")) {
@@ -544,7 +573,24 @@ static int ldMode(int argc, char** argv) {
 
     /* Reference standard honggfuzz libraries first (libhfuzz, libhfcommon and libhfnetdriver) */
     args[j++] = getLibHFNetDriverPath();
+
+    /* Ensure to link libhfuzz to the fuzz test executable*/
+    if (isExecutableBuild(argc, argv)) {
+    #if defined(_HF_ARCH_DARWIN)
+        args[j++] = "-Wl,-all_load";
+    #else
+        args[j++] = "-Wl,--whole-archive";
+    #endif
+    }
+    
     args[j++] = getLibHFuzzPath();
+    
+    #if !defined(_HF_ARCH_DARWIN)
+    if (isExecutableBuild(argc, argv)) {
+        args[j++] = "-Wl,--no-whole-archive";
+    }
+    #endif /* !defined(_HF_ARCH_DARWIN) */
+
     args[j++] = getLibHFCommonPath();
 
     /* Needed by libhfcommon */
