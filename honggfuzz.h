@@ -251,6 +251,8 @@ typedef struct {
         time_t  runEndTime;
         time_t  tmOut;
         time_t  lastCovUpdate;
+        time_t  lastStatsUpdate;
+        time_t  statsUpdateInterval;
         time_t  exitOnTime;
         int64_t timeOfLongestUnitUSecs;
         bool    tmoutVTALRM;
