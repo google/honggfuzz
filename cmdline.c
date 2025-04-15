@@ -358,6 +358,8 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .runEndTime             = 0,
                 .tmOut                  = 1,
                 .lastCovUpdate          = time(NULL),
+                .lastStatsUpdate        = 0,
+                .statsUpdateInterval    = 0,
                 .exitOnTime             = 0,
                 .timeOfLongestUnitUSecs = 0,
                 .tmoutVTALRM            = false,
@@ -533,6 +535,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "pin_thread_cpu", required_argument, NULL, 0x114 }, "Pin a single execution thread to this many consecutive CPUs (default: 0 = no CPU pinning)" },
         { { "dynamic_input", required_argument, NULL, 0x115 }, "Path to a directory containing the dynamic file corpus" },
         { { "statsfile", required_argument, NULL, 0x116 }, "Stats file" },
+        { { "statsfile_update_interval", required_argument, NULL, 0x117 }, "Maximum time interval (in seconds) for stats file updates (default: 0 = only update stats file on coverage increase)" },
 
 #if defined(_HF_ARCH_LINUX)
         { { "linux_symbols_bl", required_argument, NULL, 0x504 }, "Symbols blocklist filter file (one entry per line)" },
@@ -824,6 +827,13 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             break;
         case 0x116:
             hfuzz->io.statsFileName = optarg;
+            break;
+        case 0x117:
+            if (!util_isANumber(optarg)) {
+                LOG_E("'-s %s' is not a number", optarg);
+                return false;
+            }
+            hfuzz->timing.statsUpdateInterval = strtoul(optarg, NULL, 0);
             break;
         default:
             cmdlineHelp(argv[0], custom_opts);
