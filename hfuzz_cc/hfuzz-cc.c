@@ -576,7 +576,7 @@ static int ldMode(int argc, char** argv) {
     /* Ensure to link libhfuzz to the fuzz test executable*/
     if (isExecutableBuild(argc, argv)) {
 #if defined(_HF_ARCH_DARWIN)
-        args[j++] = "-Wl,-all_load";
+        args[j++] = "-Wl,-force_load";
 #else
         args[j++] = "-Wl,--whole-archive";
 #endif
