@@ -209,6 +209,10 @@ static int execCC(int argc, char** argv) {
         if (isCXX) {
             /* Try the default one, then the newest ones (hopefully) in order */
             hf_execvp("clang++", argv);
+            hf_execvp("clang++-22.0", argv);
+            hf_execvp("clang++-22", argv);
+            hf_execvp("clang++-21.0", argv);
+            hf_execvp("clang++-21", argv);
             hf_execvp("clang++-20.0", argv);
             hf_execvp("clang++-20", argv);
             hf_execvp("clang++-19.0", argv);
@@ -248,6 +252,10 @@ static int execCC(int argc, char** argv) {
         } else {
             /* Try the default one, then the newest ones (hopefully) in order */
             hf_execvp("clang", argv);
+            hf_execvp("clang-22.0", argv);
+            hf_execvp("clang-22", argv);
+            hf_execvp("clang-21.0", argv);
+            hf_execvp("clang-21", argv);
             hf_execvp("clang-20.0", argv);
             hf_execvp("clang-20", argv);
             hf_execvp("clang-19.0", argv);
