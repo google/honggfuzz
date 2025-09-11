@@ -259,17 +259,17 @@ static void fuzz_perfFeedback(run_t* run) {
             size_t tot_exec_per_sec = elapsed_sec ? (curr_exec_cnt / elapsed_sec) : 0;
 
             dprintf(run->global->io.statsFileFd,
-                "%lu, %lu, %lu, %lu, %zu, %zu, %zu, %" PRIu64 ", %" PRIu64 ", %zu\n",
-                curr_sec,                                 /* unix_time */
-                run->global->timing.lastCovUpdate,        /* last_cov_update */
-                curr_exec_cnt,                            /* total_exec */
-                tot_exec_per_sec,                         /* exec_per_sec */
-                run->global->cnts.crashesCnt,             /* crashes */
-                run->global->cnts.uniqueCrashesCnt,       /* unique_crashes */
-                run->global->cnts.timeoutedCnt,           /* hangs */
-                run->global->feedback.hwCnts.softCntEdge, /* edge_cov */
-                run->global->feedback.hwCnts.softCntPc,   /* block_cov */
-                run->global->io.dynfileqCnt               /* corpus_count */
+                "%lu, %lu, %zu, %zu, %zu, %zu, %zu, %" PRIu64 ", %" PRIu64 ", %zu\n",
+                (unsigned long)curr_sec,                          /* unix_time */
+                (unsigned long)run->global->timing.lastCovUpdate, /* last_cov_update */
+                curr_exec_cnt,                                    /* total_exec */
+                tot_exec_per_sec,                                 /* exec_per_sec */
+                run->global->cnts.crashesCnt,                     /* crashes */
+                run->global->cnts.uniqueCrashesCnt,               /* unique_crashes */
+                run->global->cnts.timeoutedCnt,                   /* hangs */
+                run->global->feedback.hwCnts.softCntEdge,         /* edge_cov */
+                run->global->feedback.hwCnts.softCntPc,           /* block_cov */
+                run->global->io.dynfileqCnt                       /* corpus_count */
             );
         }
 
