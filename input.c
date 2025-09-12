@@ -683,7 +683,7 @@ void input_enqueueDynamicInputs(honggfuzz_t* hfuzz) {
             continue;
         }
 
-        LOG_I("Loading dynamic input file: %s (%lu)", dynamicInputFileName, dynamicFileSz);
+        LOG_I("Loading dynamic input file: %s (%zu)", dynamicInputFileName, dynamicFileSz);
 
         run_t tmp_run;
         tmp_run.global        = hfuzz;

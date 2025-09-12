@@ -75,6 +75,8 @@
 #define MAX_INSTR_SZ 8
 #elif defined(__riscv)
 #define MAX_INSTR_SZ 4
+#elif defined(__m68k__)
+#define MAX_INSTR_SZ 22
 #endif
 
 #if defined(__i386__) || defined(__x86_64__)
@@ -349,6 +351,37 @@ union user_regs_t {
 };
 #endif /* defined(__riscv) */
 
+#if defined(__m68k__)
+struct user_regs_32 {
+    long  d1;
+    long  d2;
+    long  d3;
+    long  d4;
+    long  d5;
+    long  d6;
+    long  d7;
+    long  a0;
+    long  a1;
+    long  a2;
+    long  a3;
+    long  a4;
+    long  a5;
+    long  a6;
+    long  d0;
+    long  usp;
+    long  orig_d0;
+    short stkadj;
+    short sr;
+    long  pc;
+    short fmtvec;
+    short __fill;
+};
+
+union user_regs_t {
+    struct user_regs_32 regs32;
+};
+#endif /* defined(__m68k__) */
+
 #if defined(__clang__)
 _Pragma("clang diagnostic push");
 _Pragma("clang diagnostic ignored \"-Woverride-init\"");
@@ -527,6 +560,16 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
     LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
     return 0;
 #endif /* defined(__riscv) */
+
+#if defined(__m68k__)
+    if (pt_iov.iov_len == sizeof(struct user_regs_32)) {
+        *pc = regs.regs32.pc;
+        return pt_iov.iov_len;
+    }
+
+    LOG_W("Unknown registers structure size: '%zd'", pt_iov.iov_len);
+    return 0;
+#endif /* defined(__m68k__) */
 
     LOG_D("Unknown/unsupported CPU architecture");
     return 0;

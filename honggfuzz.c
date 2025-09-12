@@ -293,8 +293,8 @@ static uint8_t mainThreadLoop(honggfuzz_t* hfuzz) {
         }
         if (hfuzz->timing.exitOnTime > 0 &&
             time(NULL) - ATOMIC_GET(hfuzz->timing.lastCovUpdate) > hfuzz->timing.exitOnTime) {
-            LOG_I("No new coverage was found for the last %ld seconds, terminating",
-                hfuzz->timing.exitOnTime);
+            LOG_I("No new coverage was found for the last %" PRIu64 " seconds, terminating",
+                (uint64_t)hfuzz->timing.exitOnTime);
             break;
         }
         pingThreads(hfuzz);
