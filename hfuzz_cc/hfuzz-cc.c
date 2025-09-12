@@ -608,7 +608,7 @@ static int ldMode(int argc, char** argv) {
 #if !defined(_HF_ARCH_DARWIN) && !defined(__OpenBSD__)
     args[j++] = "-lrt";
 #endif /* !defined(_HF_ARCH_DARWIN) && !defined(__OpenBSD__) */
-#if defined(__ANDROID__)
+#if defined(__ANDROID__) || defined(__m68k__)
     args[j++] = "-latomic";
 #endif
 
