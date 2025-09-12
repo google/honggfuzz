@@ -164,6 +164,9 @@ else
         ARCH_CFLAGS += -m64 -D_POSIX_C_SOURCE=200809L -D__EXTENSIONS__=1
 	ARCH_LDFLAGS += -m64 -lkstat -lsocket -lnsl -lkvm
     endif
+    ifneq ($(OS),Linux)
+        ARCH_LDFLAGS += -latomic
+    endif
     ifneq ($(REALOS),OpenBSD)
     ifneq ($(REALOS),Darwin)
         ARCH_LDFLAGS += -lrt
