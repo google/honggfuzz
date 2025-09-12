@@ -59,7 +59,7 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
     ifeq ($(BUILD_LINUX_NO_BFD),true)
             ARCH_CFLAGS += -D_HF_LINUX_NO_BFD
     endif
-    ARCH_LDFLAGS += -lrt -ldl -lm
+    ARCH_LDFLAGS += -lrt -ldl -lm -latomic
 
     ifeq ("$(wildcard /usr/local/include/intel-pt.h)","/usr/local/include/intel-pt.h")
         ARCH_CFLAGS += -D_HF_LINUX_INTEL_PT_LIB
