@@ -353,28 +353,25 @@ union user_regs_t {
 
 #if defined(__m68k__)
 struct user_regs_32 {
-    long  d1;
-    long  d2;
-    long  d3;
-    long  d4;
-    long  d5;
-    long  d6;
-    long  d7;
-    long  a0;
-    long  a1;
-    long  a2;
-    long  a3;
-    long  a4;
-    long  a5;
-    long  a6;
-    long  d0;
-    long  usp;
-    long  orig_d0;
-    short stkadj;
-    short sr;
-    long  pc;
-    short fmtvec;
-    short __fill;
+    uint32_t d1;
+    uint32_t d2;
+    uint32_t d3;
+    uint32_t d4;
+    uint32_t d5;
+    uint32_t d6;
+    uint32_t d7;
+    uint32_t a0;
+    uint32_t a1;
+    uint32_t a2;
+    uint32_t a3;
+    uint32_t a4;
+    uint32_t a5;
+    uint32_t a6;
+    uint32_t d0;
+    uint32_t usp;
+    uint32_t orig_d0;
+    uint32_t sr;
+    uint32_t pc;
 };
 
 union user_regs_t {
@@ -477,8 +474,16 @@ static size_t arch_getPC(pid_t pid, uint64_t* pc, uint64_t* status_reg HF_ATTR_U
     };
 
     if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &pt_iov) == -1L) {
+#if !defined(__m68k__)
         PLOG_D("ptrace(PTRACE_GETREGSET) failed");
         return 0;
+#else  /* !defined(__m68k__) */
+        /* m68k doesn't support GETREGSET - EIO */
+        if (ptrace(PTRACE_GETREGS, pid, NULL, &regs) == -1L) {
+            PLOG_W("ptrace(PTRACE_GETREGS) failed");
+            return 0;
+        }
+#endif /* !defined(__m68k__) */
     }
 
 #if defined(__i386__) || defined(__x86_64__)
