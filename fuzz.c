@@ -219,9 +219,21 @@ static void fuzz_perfFeedback(run_t* run) {
     int64_t diff0 = (int64_t)run->global->feedback.hwCnts.cpuInstrCnt - run->hwCnts.cpuInstrCnt;
     int64_t diff1 = (int64_t)run->global->feedback.hwCnts.cpuBranchCnt - run->hwCnts.cpuBranchCnt;
 
-    /* Any increase in coverage (edge, pc, cmp, hw) counters forces adding input to the corpus */
-    if (run->hwCnts.newBBCnt > 0 || softNewPC > 0 || softNewEdge > 0 || softNewCmp > 0 ||
-        diff0 < 0 || diff1 < 0) {
+    /* Is there any increase in coverage (edge, pc, cmp, hw) counters? */
+    const bool isNewCoverage = run->hwCnts.newBBCnt > 0 || softNewPC > 0 || softNewEdge > 0 ||
+                               softNewCmp > 0 || diff0 < 0 || diff1 < 0;
+
+    if (!isNewCoverage && run->dynfile->imported) {
+        /* Remove useless imported inputs from corpus */
+        LOG_D("Removing useless imported file: %s", run->dynfile->path);
+        char fname[PATH_MAX];
+        snprintf(fname, PATH_MAX, "%s/%s",
+            run->global->io.outputDir ? run->global->io.outputDir : run->global->io.inputDir,
+            run->dynfile->path);
+        unlink(fname);
+    }
+
+    if (isNewCoverage) {
         if (diff0 < 0) {
             run->global->feedback.hwCnts.cpuInstrCnt = run->hwCnts.cpuInstrCnt;
         }
@@ -241,9 +253,16 @@ static void fuzz_perfFeedback(run_t* run) {
             softNewPC, softNewCmp, run->hwCnts.cpuInstrCnt, run->hwCnts.cpuBranchCnt,
             run->global->feedback.hwCnts.bbCnt, run->global->feedback.hwCnts.softCntEdge,
             run->global->feedback.hwCnts.softCntPc, run->global->feedback.hwCnts.softCntCmp);
+    }
 
+    const time_t curr_sec            = time(NULL);
+    const time_t lastStatsUpdate     = ATOMIC_GET(run->global->timing.lastStatsUpdate);
+    const time_t statsUpdateInterval = ATOMIC_GET(run->global->timing.statsUpdateInterval);
+    const bool   isStatsIntervalElapsed =
+        statsUpdateInterval > 0 && (curr_sec - lastStatsUpdate) >= statsUpdateInterval;
+
+    if (isNewCoverage || isStatsIntervalElapsed) {
         if (run->global->io.statsFileName) {
-            const time_t curr_sec      = time(NULL);
             const time_t elapsed_sec   = curr_sec - run->global->timing.timeStart;
             size_t       curr_exec_cnt = ATOMIC_GET(run->global->cnts.mutationsCnt);
             /*
@@ -271,8 +290,12 @@ static void fuzz_perfFeedback(run_t* run) {
                 run->global->feedback.hwCnts.softCntPc,           /* block_cov */
                 run->global->io.dynfileqCnt                       /* corpus_count */
             );
+            ATOMIC_SET(run->global->timing.lastStatsUpdate, curr_sec);
         }
+    }
 
+    /* Add input to the corpus in case of any increase in coverage */
+    if (isNewCoverage) {
         /* Update per-input coverage metrics */
         run->dynfile->cov[0] = softCurEdge + softCurPC + run->hwCnts.bbCnt;
         run->dynfile->cov[1] = softCurCmp;
@@ -290,14 +313,6 @@ static void fuzz_perfFeedback(run_t* run) {
             LOG_D("SocketFuzzer: fuzz: new BB (perf)");
             fuzz_notifySocketFuzzerNewCov(run->global);
         }
-    } else if (run->dynfile->imported) {
-        /* Remove useless imported inputs from corpus */
-        LOG_D("Removing useless imported file: %s", run->dynfile->path);
-        char fname[PATH_MAX];
-        snprintf(fname, PATH_MAX, "%s/%s",
-            run->global->io.outputDir ? run->global->io.outputDir : run->global->io.inputDir,
-            run->dynfile->path);
-        unlink(fname);
     }
 }
 
