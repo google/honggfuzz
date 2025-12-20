@@ -215,6 +215,26 @@ static int arch_bfdFPrintFStyled(
     return ret;
 }
 
+typedef disassembler_ftype (*hf_disasm_one_arg_t)(bfd*);
+typedef disassembler_ftype (*hf_disasm_four_args_t)(
+    enum bfd_architecture, int, unsigned long, bfd*);
+typedef disassembler_ftype (*hf_disasm_four_args_bool_t)(
+    enum bfd_architecture, bool, unsigned long, bfd*);
+
+static disassembler_ftype hf_call_disasm_one(void* fn, bfd* bfdh) {
+    return ((hf_disasm_one_arg_t)fn)(bfdh);
+}
+
+static disassembler_ftype hf_call_disasm_four(void* fn, bfd* bfdh) {
+    return ((hf_disasm_four_args_t)fn)(
+        bfd_get_arch(bfdh), bfd_little_endian(bfdh) ? 0 : 1, 0, NULL);
+}
+
+static disassembler_ftype hf_call_disasm_four_bool(void* fn, bfd* bfdh) {
+    return ((hf_disasm_four_args_bool_t)fn)(
+        bfd_get_arch(bfdh), bfd_little_endian(bfdh) ? false : true, 0, NULL);
+}
+
 void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
     MX_SCOPED_LOCK(&arch_bfd_mutex);
 
@@ -233,12 +253,12 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
         bfd_close(bfdh);
         return;
     }
-#if defined(_HF_BFD_GE_2_29)
-    disassembler_ftype disassemble =
-        disassembler(bfd_get_arch(bfdh), bfd_little_endian(bfdh) ? FALSE : TRUE, 0, NULL);
-#else
-    disassembler_ftype disassemble = disassembler(bfdh);
-#endif    // defined(_HD_BFD_GE_2_29)
+
+    disassembler_ftype disassemble = _Generic(&disassembler,
+        hf_disasm_one_arg_t: hf_call_disasm_one,
+        hf_disasm_four_args_bool_t: hf_call_disasm_four_bool,
+        default: hf_call_disasm_four)((void*)&disassembler, bfdh);
+
     if (disassemble == NULL) {
         LOG_W("disassembler() failed");
         bfd_close(bfdh);

@@ -9,12 +9,12 @@
 #include <unistd.h>
 
 /* Do nothing with first message */
-void handleData0(char *data, int len) {
+void handleData0(char* data, int len) {
     printf("# vulnserver_cov: Auth success\n");
 }
 
 /* Second message is stack based buffer overflow */
-void handleData1(char *data, int len) {
+void handleData1(char* data, int len) {
     char buff[8];
     bzero(buff, 8);
     memcpy(buff, data, len);
@@ -22,8 +22,8 @@ void handleData1(char *data, int len) {
 }
 
 /* Third message is heap overflow */
-void handleData2(char *data, int len) {
-    char *buff = malloc(8);
+void handleData2(char* data, int len) {
+    char* buff = malloc(8);
     if (!buff) {
         abort();
     }
@@ -33,15 +33,15 @@ void handleData2(char *data, int len) {
     free(buff);
 }
 
-void handleData3(char *data, int len) {
+void handleData3(char* data, int len) {
     printf("# vulnserver_cov: Handledata3: %i\n", len);
 }
 
-void handleData4(char *data, int len) {
+void handleData4(char* data, int len) {
     printf("# vulnserver_cov: Handledata4: %i\n", len);
 }
 
-void handleData5(char *data, int len) {
+void handleData5(char* data, int len) {
     printf("# vulnserver_cov: Handledata5: %i\n", len);
 }
 
@@ -94,7 +94,7 @@ void doprocessing(int sock, int serversock) {
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     int                sockfd, newsockfd, portno, clilen;
     char               buffer[256];
     struct sockaddr_in serv_addr, cli_addr;
@@ -113,10 +113,10 @@ int main(int argc, char *argv[]) {
     }
 
     int reuse = 1;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, (const char *)&reuse, sizeof(reuse)) < 0)
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, (const char*)&reuse, sizeof(reuse)) < 0)
         perror("# vulnserver_cov: setsockopt(SO_REUSEPORT) failed");
 
-    bzero((char *)&serv_addr, sizeof(serv_addr));
+    bzero((char*)&serv_addr, sizeof(serv_addr));
     serv_addr.sin_family      = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port        = htons(portno);
@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
     printf("# vulnserver_cov: Listening on port: %i\n", portno);
 
     /* Now bind the host address using bind() call.*/
-    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+    if (bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
         perror("# vulnserver_cov: ERROR on binding");
         exit(1);
     }
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
     clilen = sizeof(cli_addr);
 
     while (1) {
-        newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
+        newsockfd = accept(sockfd, (struct sockaddr*)&cli_addr, &clilen);
         if (newsockfd < 0) {
             perror("# vulnserver_cov: ERROR on accept");
             exit(1);

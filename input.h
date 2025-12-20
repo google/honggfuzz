@@ -50,7 +50,7 @@ extern bool           input_prepareExternalFile(run_t* run);
 extern bool           input_postProcessFile(run_t* run, const char* cmd);
 extern bool           input_prepareDynamicFileForMinimization(run_t* run);
 extern bool           input_dynamicQueueGetNext(
-              char fname[PATH_MAX], DIR* dynamicDirPtr, char* dynamicWorkDir);
+    char fname[PATH_MAX], DIR* dynamicDirPtr, char* dynamicWorkDir);
 extern void input_enqueueDynamicInputs(honggfuzz_t* hfuzz);
 
 #endif /* ifndef _HF_INPUT_H_ */

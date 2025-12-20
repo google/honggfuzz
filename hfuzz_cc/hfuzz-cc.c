@@ -330,7 +330,7 @@ static bool getLibPath(
 
     /* If not, create it with atomic rename() */
     char template[] = "/tmp/lib.honggfuzz.a.XXXXXX";
-    int fd          = TEMP_FAILURE_RETRY(mkostemp(template, O_CLOEXEC));
+    int  fd         = TEMP_FAILURE_RETRY(mkostemp(template, O_CLOEXEC));
     if (fd == -1) {
         PLOG_E("mkostemp('%s')", template);
         return false;

@@ -28,6 +28,6 @@
 
 extern size_t arch_unwindStack(pid_t pid, funcs_t* funcs);
 extern char*  arch_btContainsSymbol(
-     size_t symbolsListSz, char** symbolsList, size_t num_frames, funcs_t* funcs);
+    size_t symbolsListSz, char** symbolsList, size_t num_frames, funcs_t* funcs);
 
 #endif
