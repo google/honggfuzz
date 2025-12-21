@@ -42,6 +42,7 @@
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
 #include "mangle.h"
+#include "power.h"
 #include "subproc.h"
 
 void input_setSize(run_t* run, size_t sz) {
@@ -102,7 +103,7 @@ bool input_getDirStatsAndRewind(honggfuzz_t* hfuzz) {
         fileCnt++;
     }
 
-    ATOMIC_SET(hfuzz->io.fileCnt, fileCnt);
+    hfuzz->io.fileCnt = fileCnt;
     if (hfuzz->io.maxFileSz) {
         hfuzz->mutate.maxInputSz = hfuzz->io.maxFileSz;
     } else if (hfuzz->mutate.maxInputSz < _HF_INPUT_DEFAULT_SIZE) {
@@ -370,14 +371,18 @@ static bool input_cmpCov(dynfile_t* item1, dynfile_t* item2) {
     for ((var) = TAILQ_FIRST((head)); (var); (var) = TAILQ_NEXT((var), field))
 
 void input_addDynamicInput(run_t* run) {
-    ATOMIC_SET(run->global->timing.lastCovUpdate, time(NULL));
+    time_t now = time(NULL);
+    ATOMIC_SET(run->global->timing.lastCovUpdate, now);
 
     dynfile_t* dynfile     = (dynfile_t*)util_Calloc(sizeof(dynfile_t));
     dynfile->size          = run->dynfile->size;
     dynfile->timeExecUSecs = util_timeNowUSecs() - run->timeStartedUSecs;
+    dynfile->timeAdded     = now;
     dynfile->data          = (uint8_t*)util_AllocCopy(run->dynfile->data, run->dynfile->size);
     dynfile->src           = run->dynfile->src;
-    dynfile->imported      = run->dynfile->imported,
+    dynfile->imported      = run->dynfile->imported;
+    dynfile->newEdges      = run->dynfile->newEdges;
+    dynfile->depth         = run->dynfile->depth;
     memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
     if (run->dynfile->src) {
         ATOMIC_POST_INC(run->dynfile->src->refs);
@@ -388,7 +393,7 @@ void input_addDynamicInput(run_t* run) {
 
     MX_SCOPED_RWLOCK_WRITE(&run->global->mutex.dynfileq);
 
-    dynfile->idx = ATOMIC_PRE_INC(run->global->io.dynfileqCnt);
+    dynfile->idx = ATOMIC_POST_INC(run->global->io.dynfileqId);
 
     run->global->feedback.maxCov[0] = HF_MAX(run->global->feedback.maxCov[0], dynfile->cov[0]);
     run->global->feedback.maxCov[1] = HF_MAX(run->global->feedback.maxCov[1], dynfile->cov[1]);
@@ -408,6 +413,8 @@ void input_addDynamicInput(run_t* run) {
     if (iter == NULL) {
         TAILQ_INSERT_TAIL(&run->global->io.dynfileq, dynfile, pointers);
     }
+
+    ATOMIC_POST_INC(run->global->io.dynfileqCnt);
 
     if (run->global->socketFuzzer.enabled) {
         /* Don't add coverage data to files in socketFuzzer mode */
@@ -433,7 +440,7 @@ void input_addDynamicInput(run_t* run) {
 }
 
 bool input_inDynamicCorpus(run_t* run, const char* fname, size_t len) {
-    MX_SCOPED_RWLOCK_WRITE(&run->global->mutex.dynfileq);
+    MX_SCOPED_RWLOCK_READ(&run->global->mutex.dynfileq);
 
     dynfile_t* iter = NULL;
     TAILQ_FOREACH_HF (iter, &run->global->io.dynfileq, pointers) {
@@ -444,155 +451,119 @@ bool input_inDynamicCorpus(run_t* run, const char* fname, size_t len) {
     return false;
 }
 
-static inline int input_speedFactor(run_t* run, dynfile_t* dynfile) {
-    /* Slower the input, lower the chance of it being tested */
-    uint64_t avg_usecs_per_input =
-        ((uint64_t)(time(NULL) - run->global->timing.timeStart) * 1000000);
-    avg_usecs_per_input /= ATOMIC_GET(run->global->cnts.mutationsCnt);
-    avg_usecs_per_input /= run->global->threads.threadsMax;
-
-    /* Cap both vals to 1us-1s */
-    avg_usecs_per_input   = HF_CAP(avg_usecs_per_input, 1U, 1000000U);
-    uint64_t sample_usecs = HF_CAP(dynfile->timeExecUSecs, 1U, 1000000U);
-
-    if (sample_usecs >= avg_usecs_per_input) {
-        return (int)(sample_usecs / avg_usecs_per_input);
-    } else {
-        return -(int)(avg_usecs_per_input / sample_usecs);
-    }
-}
-
-static inline int input_skipFactor(run_t* run, dynfile_t* dynfile) {
-    int penalty = 0;
-
-#if 1
-    if (dynfile->timedout) {
-        penalty += 50;
-    }
-#endif
-
-#if 1
-    penalty -= HF_CAP(input_speedFactor(run, dynfile), -10, 10);
-#endif
-
-#if 1
-    {
-        /* Inputs with lower total coverage -> lower chance of being tested */
-        static const int scaleMap[200] = {
-            [95 ... 199] = -10,
-            [80 ... 94]  = -2,
-            [50 ... 79]  = 0,
-            [11 ... 49]  = 1,
-            [0 ... 10]   = 2,
-        };
-
-        uint64_t maxCov0 = ATOMIC_GET(run->global->feedback.maxCov[0]);
-        if (maxCov0) {
-            const unsigned percentile = (dynfile->cov[0] * 100) / maxCov0;
-            penalty += scaleMap[percentile];
-        }
-    }
-#endif
-
-#if 1
-    {
-        /* Older inputs -> lower chance of being tested */
-        static const int scaleMap[200] = {
-            [98 ... 199] = -20,
-            [91 ... 97]  = -2,
-            [81 ... 90]  = -1,
-            [71 ... 80]  = 0,
-            [41 ... 70]  = 1,
-            [0 ... 40]   = 2,
-        };
-
-        if (dynfile->phase == _HF_STATE_DYNAMIC_MAIN) {
-            const unsigned percentile = (dynfile->idx * 100) / run->global->io.dynfileqCnt;
-            penalty += scaleMap[percentile];
-        }
-    }
-#endif
-
-#if 1
-    {
-        /* If the input wasn't source of other inputs so far, make it less likely to be tested */
-        penalty += HF_CAP((2 - (int)dynfile->refs), -10, 2);
-    }
-#endif
-
-#if 1
-    {
-        /* Add penalty for the input being too big - 0 is for 1kB inputs */
-        if (dynfile->size > 0) {
-            penalty += HF_CAP(((int)util_Log2(dynfile->size) - 10), -5, 5);
-        }
-    }
-#endif
-
-    return penalty;
-}
-
 bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     if (ATOMIC_GET(run->global->io.dynfileqCnt) == 0) {
         LOG_F("The dynamic file corpus is empty. This shouldn't happen");
     }
 
-    for (;;) {
+    dynfile_t* current_input = NULL;
+    bool       is_imported   = false;
+
+    {
         MX_SCOPED_RWLOCK_WRITE(&run->global->mutex.dynfileq);
 
-        if (run->global->io.dynfileqCurrent == NULL) {
-            run->global->io.dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
+        for (;;) {
+            if (run->global->io.dynfileqCurrent == NULL) {
+                run->global->io.dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
+            }
+
+            if (run->triesLeft) {
+                run->triesLeft--;
+                break;
+            }
+
+            run->current                    = run->global->io.dynfileqCurrent;
+            run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
+
+            /* Do not count skip_factor on unmeasured (imported) inputs */
+            if (run->current->imported) {
+                break;
+            }
+
+            uint64_t energy = power_calculateEnergy(run, run->current);
+
+            /* High energy - repeat this input */
+            if (energy >= POWER_BASE_ENERGY) {
+                run->triesLeft = energy / POWER_BASE_ENERGY;
+                /* Cap the number of repeats to 256 */
+                if (run->triesLeft > 256) {
+                    run->triesLeft = 256;
+                }
+                break;
+            }
+
+            /* Low energy - probabilistic skipping */
+            uint64_t skip_factor = POWER_BASE_ENERGY / energy;
+            /* Cap the skip factor to 64 (1 in 64 chance) */
+            if (skip_factor > 64) {
+                skip_factor = 64;
+            }
+
+            if ((util_rnd64() % skip_factor) == 0) {
+                break;
+            }
         }
 
-        if (run->triesLeft) {
-            run->triesLeft--;
-            break;
-        }
+        current_input = run->current;
+        is_imported   = current_input->imported;
 
-        run->current                    = run->global->io.dynfileqCurrent;
-        run->global->io.dynfileqCurrent = TAILQ_NEXT(run->global->io.dynfileqCurrent, pointers);
+        if (is_imported) {
+            dynfile_t* next = TAILQ_NEXT(current_input, pointers);
+            if (run->global->io.dynfileqCurrent == current_input) {
+                run->global->io.dynfileqCurrent = next;
+            }
+            if (run->global->io.dynfileq2Current == current_input) {
+                run->global->io.dynfileq2Current = next;
+            }
+            if (run->global->io.dynfileqDiverseCurrent == current_input) {
+                run->global->io.dynfileqDiverseCurrent = next;
+            }
 
-        /* Do not count skip_factor on unmeasured (imported) inputs */
-        if (run->current->imported) {
-            break;
-        }
+            TAILQ_REMOVE(&run->global->io.dynfileq, current_input, pointers);
+            if (ATOMIC_GET(run->global->io.dynfileqCnt) > 0) {
+                ATOMIC_POST_DEC(run->global->io.dynfileqCnt);
+            }
+            if (run->global->io.dynfileqCurrent == NULL) {
+                run->global->io.dynfileqCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
+            }
+            if (run->global->io.dynfileq2Current == NULL) {
+                run->global->io.dynfileq2Current = TAILQ_FIRST(&run->global->io.dynfileq);
+            }
+            if (run->global->io.dynfileqDiverseCurrent == NULL) {
+                run->global->io.dynfileqDiverseCurrent = TAILQ_FIRST(&run->global->io.dynfileq);
+            }
 
-        int skip_factor = input_skipFactor(run, run->current);
-
-        if (skip_factor <= 0) {
-            run->triesLeft = -(skip_factor);
-            break;
-        }
-
-        if ((util_rnd64() % skip_factor) == 0) {
-            break;
+            run->triesLeft = 0;
         }
     }
 
-    input_setSize(run, run->current->size);
-    run->dynfile->idx           = run->current->idx;
-    run->dynfile->timeExecUSecs = run->current->timeExecUSecs;
-    run->dynfile->src           = run->current;
+    /* Copy data outside of the lock - inputs are immutable once in the queue */
+    input_setSize(run, current_input->size);
+    run->dynfile->idx           = current_input->idx;
+    run->dynfile->timeExecUSecs = current_input->timeExecUSecs;
+    run->dynfile->timeAdded     = is_imported ? 0 : current_input->timeAdded;
+    run->dynfile->src           = is_imported ? NULL : current_input;
     run->dynfile->refs          = 0;
     run->dynfile->phase         = fuzz_getState(run->global);
-    run->dynfile->timedout      = run->current->timedout;
-    run->dynfile->imported      = run->current->imported;
-    memcpy(run->dynfile->cov, run->current->cov, sizeof(run->dynfile->cov));
-    snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s", run->current->path);
-    memcpy(run->dynfile->data, run->current->data, run->current->size);
+    run->dynfile->timedout      = current_input->timedout;
+    run->dynfile->imported      = is_imported;
+    memcpy(run->dynfile->cov, current_input->cov, sizeof(run->dynfile->cov));
+    snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s", current_input->path);
+    memcpy(run->dynfile->data, current_input->data, current_input->size);
 
-    /* Run unmangled imported input to measure coverage. It would be added
-       to dynamic queue again in case of profit.
-    */
-    if (run->current->imported) {
-        TAILQ_REMOVE(&run->global->io.dynfileq, run->current, pointers);
-        ATOMIC_POST_DEC(run->global->io.newUnitsAdded);
-        run->triesLeft = 0;
+    if (is_imported) {
+        /* Imported input was removed from list, free it after copying */
+        run->current       = NULL;
+        run->mutationTiers = 0; /* No mutations applied to imported input */
+        free(current_input->data);
+        free(current_input);
         return true;
     }
 
     if (needs_mangle) {
         mangle_mangleContent(run);
+    } else {
+        run->mutationTiers = 0;
     }
 
     return true;
@@ -703,8 +674,6 @@ void input_enqueueDynamicInputs(honggfuzz_t* hfuzz) {
         memcpy(tmp_dynfile.path, dynamicInputFileName, PATH_MAX);
         tmp_run.dynfile = &tmp_dynfile;
         input_addDynamicInput(&tmp_run);
-        // input_addDynamicInput(hfuzz, dynamicFile, dynamicFileSz, (uint64_t[4]){0xff, 0xff, 0xff,
-        // 0xff}, dynamicInputFileName);
 
         /* Unmap input file. */
         if (munmap((void*)dynamicFile, dynamicFileSz) == -1) {
@@ -749,6 +718,74 @@ const uint8_t* input_getRandomInputAsBuf(run_t* run, size_t* len) {
 
     *len = current->size;
     return current->data;
+}
+
+/*
+ * Select an input diverse from the current one for crossover.
+ * Diversity = different lineage + different coverage profile.
+ */
+const uint8_t* input_getDiverseInputAsBuf(run_t* run, size_t* len) {
+    if (run->global->feedback.dynFileMethod == _HF_DYNFILE_NONE) {
+        *len = 0;
+        return NULL;
+    }
+
+    if (ATOMIC_GET(run->global->io.dynfileqCnt) == 0) {
+        *len = 0;
+        return NULL;
+    }
+
+    dynfile_t* current_src = run->dynfile->src;
+    uint64_t   current_cov = run->dynfile->cov[0];
+    dynfile_t* best        = NULL;
+    uint64_t   best_diff   = 0;
+
+    MX_SCOPED_RWLOCK_WRITE(&run->global->mutex.dynfileq);
+
+    dynfile_t* iter = run->global->io.dynfileqDiverseCurrent;
+    if (iter == NULL) {
+        iter = TAILQ_FIRST(&run->global->io.dynfileq);
+    }
+    if (iter == NULL) {
+        *len = 0;
+        return NULL;
+    }
+
+    const size_t windowSize = 16;
+    for (size_t i = 0; i < windowSize; i++) {
+        if (iter == NULL) {
+            iter = TAILQ_FIRST(&run->global->io.dynfileq);
+            if (iter == NULL) break;
+        }
+
+        uint64_t cov_diff = (iter->cov[0] > current_cov) ? (iter->cov[0] - current_cov)
+                                                         : (current_cov - iter->cov[0]);
+
+        if (iter->src != current_src && iter->src != run->current) {
+            cov_diff += (current_cov / 4);
+        }
+
+        if (cov_diff > best_diff) {
+            best_diff = cov_diff;
+            best      = iter;
+        }
+
+        iter = TAILQ_NEXT(iter, pointers);
+    }
+
+    run->global->io.dynfileqDiverseCurrent = iter;
+
+    if (best == NULL) {
+        best = TAILQ_FIRST(&run->global->io.dynfileq);
+    }
+
+    if (best == NULL) {
+        *len = 0;
+        return NULL;
+    }
+
+    *len = best->size;
+    return best->data;
 }
 
 static bool input_shouldReadNewFile(run_t* run) {
@@ -814,14 +851,19 @@ bool input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle) {
 
     input_setSize(run, fileSz);
     util_memsetInline(run->dynfile->cov, '\0', sizeof(run->dynfile->cov));
-    run->dynfile->idx      = 0;
-    run->dynfile->src      = NULL;
-    run->dynfile->refs     = 0;
-    run->dynfile->phase    = fuzz_getState(run->global);
-    run->dynfile->timedout = false;
+    run->dynfile->idx       = 0;
+    run->dynfile->src       = NULL;
+    run->dynfile->refs      = 0;
+    run->dynfile->phase     = fuzz_getState(run->global);
+    run->dynfile->timedout  = false;
+    run->dynfile->timeAdded = time(NULL);
+    run->dynfile->newEdges  = 0;
+    run->dynfile->depth     = 0;
 
     if (needs_mangle) {
         mangle_mangleContent(run);
+    } else {
+        run->mutationTiers = 0;
     }
 
     return true;

@@ -406,7 +406,7 @@ cmdline.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 cmdline.o: libhfcommon/log.h
 display.o: display.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 display.o: libhfcommon/log.h
-fuzz.o: fuzz.h honggfuzz.h libhfcommon/util.h arch.h input.h
+fuzz.o: fuzz.h arch.h honggfuzz.h libhfcommon/util.h input.h
 fuzz.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 fuzz.o: libhfcommon/log.h report.h sanitizers.h socketfuzzer.h subproc.h
 honggfuzz.o: cmdline.h honggfuzz.h libhfcommon/util.h display.h fuzz.h
@@ -414,9 +414,10 @@ honggfuzz.o: input.h libhfcommon/common.h libhfcommon/files.h
 honggfuzz.o: libhfcommon/common.h libhfcommon/log.h socketfuzzer.h subproc.h
 input.o: input.h honggfuzz.h libhfcommon/util.h fuzz.h libhfcommon/common.h
 input.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h mangle.h
-input.o: subproc.h
+input.o: power.h subproc.h
 mangle.o: mangle.h honggfuzz.h libhfcommon/util.h input.h
 mangle.o: libhfcommon/common.h libhfcommon/log.h
+power.o: power.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 report.o: report.h honggfuzz.h libhfcommon/util.h sanitizers.h
 report.o: libhfcommon/common.h libhfcommon/log.h
 sanitizers.o: sanitizers.h honggfuzz.h libhfcommon/util.h cmdline.h

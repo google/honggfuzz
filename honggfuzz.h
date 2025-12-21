@@ -71,14 +71,14 @@
 /* Maximum number of PC guards (=trace-pc-guard) we support */
 #define _HF_PC_GUARD_MAX (1024ULL * 1024ULL * 64ULL)
 
-/* Maximum size of the input file in bytes (1 MiB) */
-#define _HF_INPUT_MAX_SIZE (1024ULL * 1024ULL)
+/* Maximum size of the input file in bytes (8 MiB) */
+#define _HF_INPUT_MAX_SIZE (1024ULL * 1024ULL * 8ULL)
 
 /* Default maximum size of produced inputs */
 #define _HF_INPUT_DEFAULT_SIZE (1024ULL * 8)
 
 /* Time (seconds) between checking dynamic input directory to import files */
-#define _HF_SYNC_TIME 10
+#define _HF_SYNC_TIME 1
 
 /* Per-thread bitmap */
 #define _HF_PERTHREAD_BITMAP_FD 1018
@@ -153,9 +153,12 @@ struct _dynfile_t {
     size_t             idx;
     int                fd;
     uint64_t           timeExecUSecs;
+    time_t             timeAdded; /* When this input was added to corpus */
     char               path[PATH_MAX];
     struct _dynfile_t* src;
     uint32_t           refs;
+    uint32_t           newEdges; /* New edges discovered when added */
+    uint32_t           depth;    /* Mutation depth from seed */
     fuzzState_t        phase;
     bool               timedout;
     uint8_t*           data;
@@ -218,8 +221,10 @@ typedef struct {
         bool        saveSmaller;
         size_t      dynfileqMaxSz;
         size_t      dynfileqCnt;
+        size_t      dynfileqId;
         dynfile_t*  dynfileqCurrent;
         dynfile_t*  dynfileq2Current;
+        dynfile_t*  dynfileqDiverseCurrent;
         TAILQ_HEAD(dyns_t, _dynfile_t) dynfileq;
         bool        exportFeedback;
         const char* dynamicInputDir;
@@ -265,6 +270,11 @@ typedef struct {
         size_t      mutationsMax;
         unsigned    mutationsPerRun;
         size_t      maxInputSz;
+        /* Mutation effectiveness tracking */
+        struct {
+            uint64_t tries;     /* Number of times this tier was used */
+            uint64_t successes; /* Number of times it led to new coverage */
+        } stats[4];             /* 0=data, 1=arith, 2=splice, 3=other */
     } mutate;
     struct {
         bool    useScreen;
@@ -381,6 +391,7 @@ typedef struct {
     unsigned     triesLeft;
     dynfile_t*   current;
     hwcnt_t      hwCnts;
+    uint8_t      mutationTiers; /* Bitmap of mutation tiers used this run */
 
     struct {
         /* For Linux code */

@@ -279,6 +279,19 @@ static void fuzz_perfFeedback(run_t* run) {
         run->dynfile->cov[2] = run->hwCnts.cpuInstrCnt + run->hwCnts.cpuBranchCnt;
         run->dynfile->cov[3] = run->dynfile->size ? (64 - util_Log2(run->dynfile->size)) : 64;
 
+        /* Track novelty - how many new edges this input discovered */
+        run->dynfile->newEdges = (uint32_t)(softNewEdge + softNewPC + run->hwCnts.newBBCnt);
+
+        /* Track mutation depth */
+        run->dynfile->depth = run->dynfile->src ? run->dynfile->src->depth + 1 : 0;
+
+        /* Credit mutation tiers that led to this coverage gain */
+        for (int tier = 0; tier < 4; tier++) {
+            if (run->mutationTiers & (1 << tier)) {
+                ATOMIC_POST_INC(run->global->mutate.stats[tier].successes);
+            }
+        }
+
         /* Push useful imported input to dynamic queue again for the further mutations */
         if (run->dynfile->imported) {
             LOG_I("File imported: %s", run->dynfile->path);
@@ -493,8 +506,8 @@ static void fuzz_fuzzLoopSocket(run_t* run) {
 
     LOG_I("------------------------------------------------------");
 
-    /* First iteration: Start target
-       Other iterations: re-start target, if necessary
+    /* First iteration - start target
+       Other iterations - re-start target, if necessary
        subproc_Run() will decide by itself if a restart is necessary, via
        subproc_New()
     */

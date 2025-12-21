@@ -44,6 +44,7 @@ extern bool           input_inDynamicCorpus(run_t* run, const char* fname, size_
 extern void           input_renumerateInputs(honggfuzz_t* hfuzz);
 extern bool           input_prepareDynamicInput(run_t* run, bool needs_mangle);
 extern const uint8_t* input_getRandomInputAsBuf(run_t* run, size_t* len);
+extern const uint8_t* input_getDiverseInputAsBuf(run_t* run, size_t* len);
 extern bool           input_prepareStaticFile(run_t* run, bool rewind, bool needs_mangle);
 extern bool           input_removeStaticFile(const char* dir, const char* name);
 extern bool           input_prepareExternalFile(run_t* run);
