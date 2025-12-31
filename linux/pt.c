@@ -143,6 +143,12 @@ void arch_ptAnalyze(run_t* run) {
     uint64_t aux_tail = ATOMIC_GET(pem->aux_tail);
     uint64_t aux_head = ATOMIC_GET(pem->aux_head);
 
+    if (aux_head > _HF_PERF_AUX_SZ) {
+        LOG_W("The PERF AUX data (%lu) is larger than the buffer size (%u). Skipping PT analysis.",
+            (unsigned long)aux_head, _HF_PERF_AUX_SZ);
+        return;
+    }
+
     /* smp_rmb() required as per /usr/include/linux/perf_event.h */
     rmb();
 

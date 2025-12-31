@@ -523,6 +523,7 @@ void subproc_checkTimeLimit(run_t* run) {
         /* Has this instance been already signaled due to timeout? Just, SIGKILL it */
         LOG_W("pid=%d has already been signaled due to timeout. Killing it with SIGKILL",
             (int)run->pid);
+        kill(-(run->pid), SIGKILL);
         kill(run->pid, SIGKILL);
         return;
     }
@@ -533,8 +534,10 @@ void subproc_checkTimeLimit(run_t* run) {
             (long)run->global->timing.tmOut,
             run->global->timing.tmoutVTALRM ? "SIGVTALRM" : "SIGKILL");
         if (run->global->timing.tmoutVTALRM) {
+            kill(-(run->pid), SIGVTALRM);
             kill(run->pid, SIGVTALRM);
         } else {
+            kill(-(run->pid), SIGKILL);
             kill(run->pid, SIGKILL);
         }
         ATOMIC_POST_INC(run->global->cnts.timeoutedCnt);
@@ -544,6 +547,7 @@ void subproc_checkTimeLimit(run_t* run) {
 void subproc_checkTermination(run_t* run) {
     if (fuzz_isTerminating()) {
         LOG_D("Killing pid=%d", (int)run->pid);
+        kill(-(run->pid), SIGKILL);
         kill(run->pid, SIGKILL);
     }
 }

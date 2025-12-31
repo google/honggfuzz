@@ -32,4 +32,6 @@ extern void arch_perfClose(run_t* run);
 extern bool arch_perfEnable(run_t* run);
 extern void arch_perfAnalyze(run_t* run);
 
+#define _HF_PERF_AUX_SZ (1024 * 1024)
+
 #endif

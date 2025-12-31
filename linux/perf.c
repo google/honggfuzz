@@ -47,7 +47,6 @@
 #include "pt.h"
 
 #define _HF_PERF_MAP_SZ (1024 * 512)
-#define _HF_PERF_AUX_SZ (1024 * 1024)
 /* PERF_TYPE for Intel_PT/BTS -1 if none */
 static int32_t perfIntelPtPerfType  = -1;
 static int32_t perfIntelBtsPerfType = -1;
@@ -98,6 +97,11 @@ static inline void arch_perfMmapParse(run_t* run HF_ATTR_UNUSED) {
     }
     if (pem->aux_head < pem->aux_tail) {
         LOG_F("The PERF AUX data has been overwritten. The AUX buffer is too small");
+    }
+    if (pem->aux_head > _HF_PERF_AUX_SZ) {
+        LOG_W("The PERF AUX data (%lu) is larger than the buffer size (%u). Skipping analysis.",
+            (unsigned long)pem->aux_head, _HF_PERF_AUX_SZ);
+        return;
     }
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_BTS_EDGE) {
         arch_perfBtsCount(run);
