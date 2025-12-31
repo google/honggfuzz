@@ -91,11 +91,17 @@ static int HonggfuzzRunFromFile(int argc, char** argv) {
     if (len < 0) {
         LOG_E("Couldn't read data from stdin: %s", strerror(errno));
         free(buf);
+        if (in_fd != STDIN_FILENO) {
+            close(in_fd);
+        }
         return -1;
     }
 
     HonggfuzzRunOneInput(buf, len);
     free(buf);
+    if (in_fd != STDIN_FILENO) {
+        close(in_fd);
+    }
     return 0;
 }
 

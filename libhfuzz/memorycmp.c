@@ -279,8 +279,10 @@ static inline char* HF_strncat(char* dest, const char* src, size_t n, uintptr_t 
     size_t slen = __builtin_strlen(src);
     size_t len  = slen < n ? slen : n;
 
-    instrumentUpdateCmpMap(addr, util_Log2(len));
-    instrumentAddConstMem(src, len, /* check_if_ro= */ true);
+    if (len > 0) {
+        instrumentUpdateCmpMap(addr, util_Log2(len));
+        instrumentAddConstMem(src, len, /* check_if_ro= */ true);
+    }
 
     __builtin_memcpy(dest + dlen, src, len);
     dest[dlen + len] = '\0';
