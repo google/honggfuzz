@@ -40,6 +40,7 @@
 #endif
 
 #include "cmdline.h"
+#include "dict.h"
 #include "display.h"
 #include "fuzz.h"
 #include "input.h"
@@ -396,9 +397,16 @@ int main(int argc, char** argv) {
 
 #if defined(_HF_ARCH_LINUX) && !defined(_HF_LINUX_NO_BFD)
     /* Extract tokens from parser generator string arrays (Lemon/Bison/Yacc) */
-    arch_bfdExtractStrArray(&hfuzz, "yyTokenName");  /* Lemon */
-    arch_bfdExtractStrArray(&hfuzz, "yytname");      /* Bison/Yacc */
+    arch_bfdExtractStrArray(&hfuzz, "yyTokenName"); /* Lemon */
+    arch_bfdExtractStrArray(&hfuzz, "yytname");     /* Bison/Yacc */
+    /* Scan .rodata for other string pointer arrays */
+    arch_bfdExtractRodataStrArrays(&hfuzz);
 #endif
+
+    /* Log dictionary stats after all sources have been processed */
+    if (hfuzz.mutate.dictionaryCnt > 0) {
+        dict_logStats(&hfuzz);
+    }
 
     if (hfuzz.feedback.blocklistFile && !input_parseBlacklist(&hfuzz)) {
         LOG_F("Couldn't parse stackhash blocklist file ('%s')", hfuzz.feedback.blocklistFile);

@@ -404,17 +404,19 @@ install: all
 cmdline.o: cmdline.h honggfuzz.h libhfcommon/util.h display.h
 cmdline.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 cmdline.o: libhfcommon/log.h
+dict.o: dict.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
+dict.o: libhfcommon/log.h
 display.o: display.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
 display.o: libhfcommon/log.h
 fuzz.o: fuzz.h arch.h honggfuzz.h libhfcommon/util.h input.h
 fuzz.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 fuzz.o: libhfcommon/log.h report.h sanitizers.h socketfuzzer.h subproc.h
-honggfuzz.o: cmdline.h honggfuzz.h libhfcommon/util.h display.h fuzz.h
+honggfuzz.o: cmdline.h honggfuzz.h libhfcommon/util.h dict.h display.h fuzz.h
 honggfuzz.o: input.h libhfcommon/common.h libhfcommon/files.h
 honggfuzz.o: libhfcommon/common.h libhfcommon/log.h socketfuzzer.h subproc.h
-input.o: input.h honggfuzz.h libhfcommon/util.h fuzz.h libhfcommon/common.h
-input.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h mangle.h
-input.o: power.h subproc.h
+input.o: input.h honggfuzz.h libhfcommon/util.h dict.h fuzz.h
+input.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+input.o: libhfcommon/log.h mangle.h power.h subproc.h
 mangle.o: mangle.h honggfuzz.h libhfcommon/util.h input.h
 mangle.o: libhfcommon/common.h libhfcommon/log.h
 power.o: power.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
@@ -464,8 +466,8 @@ linux/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 linux/arch.o: libhfcommon/log.h libhfcommon/ns.h linux/perf.h linux/trace.h
 linux/arch.o: sanitizers.h subproc.h
 linux/bfd.o: linux/bfd.h linux/unwind.h sanitizers.h honggfuzz.h
-linux/bfd.o: libhfcommon/util.h libhfcommon/common.h libhfcommon/files.h
-linux/bfd.o: libhfcommon/common.h libhfcommon/log.h
+linux/bfd.o: libhfcommon/util.h dict.h libhfcommon/common.h
+linux/bfd.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
 linux/perf.o: linux/perf.h honggfuzz.h libhfcommon/util.h
 linux/perf.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
 linux/perf.o: libhfcommon/log.h linux/pt.h

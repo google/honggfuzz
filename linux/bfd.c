@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "dict.h"
 #include "honggfuzz.h"
 #include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
@@ -318,8 +319,8 @@ static asymbol* arch_bfdFindSymbol(asymbol** syms, const char* name) {
  */
 static long arch_bfdVmaToFileOffset(bfd* bfdh, bfd_vma vma) {
     for (struct bfd_section* sec = bfdh->sections; sec; sec = sec->next) {
-        bfd_vma sec_vma  = bfd_section_vma(sec);
-        bfd_size_type sz = bfd_section_size(sec);
+        bfd_vma       sec_vma = bfd_section_vma(sec);
+        bfd_size_type sz      = bfd_section_size(sec);
         if (vma >= sec_vma && vma < sec_vma + sz) {
             /* filepos is the offset in file where section data starts */
             return (long)(sec->filepos + (vma - sec_vma));
@@ -409,7 +410,7 @@ size_t arch_bfdExtractStrArray(honggfuzz_t* hfuzz, const char* symName) {
 
     size_t cnt = 0;
     for (size_t i = 0; i < nptrs && ptrs[i] != 0; i++) {
-        if (hfuzz->mutate.dictionaryCnt >= ARRAYSIZE(hfuzz->mutate.dictionary)) {
+        if (dict_isFull(hfuzz)) {
             LOG_W("Dictionary full, stopping extraction from %s", symName);
             break;
         }
@@ -437,28 +438,312 @@ size_t arch_bfdExtractStrArray(honggfuzz_t* hfuzz, const char* symName) {
             continue;
         }
 
-        /* Add to dictionary */
-        size_t idx = ATOMIC_POST_INC(hfuzz->mutate.dictionaryCnt);
-        if (idx >= ARRAYSIZE(hfuzz->mutate.dictionary)) {
-            ATOMIC_PRE_DEC(hfuzz->mutate.dictionaryCnt);
-            break;
+        /* Add to dictionary (skips duplicates) */
+        if (dict_add(hfuzz, (const uint8_t*)buf, len)) {
+            LOG_D("%s[%zu]: '%s'", symName, i, buf);
+            cnt++;
         }
-
-        memcpy(hfuzz->mutate.dictionary[idx].val, buf, len);
-        hfuzz->mutate.dictionary[idx].len = len;
-        LOG_D("%s[%zu]: '%s'", symName, i, buf);
-        cnt++;
     }
 
     if (cnt > 0) {
         LOG_I("Extracted %zu strings from '%s' (dictionary now has %zu entries)", cnt, symName,
-            hfuzz->mutate.dictionaryCnt);
+            dict_count(hfuzz));
     }
 
     close(fd);
     free(syms);
     bfd_close(bfdh);
     return cnt;
+}
+
+/*
+ * Check if a buffer contains a printable string (ASCII 0x20-0x7E, plus common control chars)
+ */
+static bool arch_bfdIsPrintableString(const char* buf, size_t len) {
+    if (len == 0) {
+        return false;
+    }
+    for (size_t i = 0; i < len; i++) {
+        unsigned char c = (unsigned char)buf[i];
+        /* Allow printable ASCII, tab, newline */
+        if (!((c >= 0x20 && c <= 0x7E) || c == '\t' || c == '\n' || c == '\r')) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/*
+ * Try to extract strings from a symbol that might be an array of char* pointers.
+ * Returns number of strings extracted.
+ */
+static size_t arch_bfdTryExtractPtrArray(honggfuzz_t* hfuzz, bfd* bfdh, int fd, bfd_vma sym_vma,
+    bfd_size_type sym_size, bfd_vma rodata_vma, bfd_size_type rodata_size, const char* symName) {
+    if (sym_size == 0) {
+        return 0;
+    }
+
+    size_t ptr_size = sizeof(void*);
+
+    /* Must be aligned and have space for at least 2 pointers */
+    if (sym_size % ptr_size != 0 || sym_size < 2 * ptr_size) {
+        return 0;
+    }
+
+    size_t max_ptrs = sym_size / ptr_size;
+    if (max_ptrs > 4096) {
+        max_ptrs = 4096;
+    }
+
+    long offset = arch_bfdVmaToFileOffset(bfdh, sym_vma);
+    if (offset < 0) {
+        return 0;
+    }
+
+    /* Read the potential pointer array */
+    uint64_t* ptrs  = (uint64_t*)util_Calloc(max_ptrs * ptr_size);
+    ssize_t   nread = files_readFromFdSeek(fd, (uint8_t*)ptrs, max_ptrs * ptr_size, offset);
+    if (nread <= 0) {
+        free(ptrs);
+        return 0;
+    }
+    size_t nptrs = (size_t)nread / ptr_size;
+
+    /* First pass: validate this looks like a pointer array to strings */
+    size_t valid_ptrs   = 0;
+    size_t invalid_ptrs = 0;
+    size_t rodata_ptrs  = 0;
+
+    for (size_t i = 0; i < nptrs; i++) {
+        if (ptrs[i] == 0) {
+            break;
+        }
+        /* Check if pointer is within .rodata (where strings typically live) */
+        if (ptrs[i] >= rodata_vma && ptrs[i] < rodata_vma + rodata_size) {
+            rodata_ptrs++;
+            valid_ptrs++;
+        } else if (ptrs[i] > 0x10000 && ptrs[i] < 0x7FFFFFFFFFFF) {
+            /* Looks like a valid userspace pointer (but not in .rodata) */
+            valid_ptrs++;
+        } else {
+            invalid_ptrs++;
+        }
+    }
+
+    /* Heuristic: need mostly valid pointers, prefer those pointing to .rodata */
+    if (valid_ptrs < 2 || invalid_ptrs > valid_ptrs / 4) {
+        free(ptrs);
+        return 0;
+    }
+    /* Prefer arrays where most pointers target .rodata */
+    if (rodata_ptrs < valid_ptrs / 2) {
+        free(ptrs);
+        return 0;
+    }
+
+    /* Second pass: extract actual strings */
+    size_t cnt = 0;
+    for (size_t i = 0; i < nptrs && ptrs[i] != 0; i++) {
+        if (dict_isFull(hfuzz)) {
+            break;
+        }
+
+        long str_offset = arch_bfdVmaToFileOffset(bfdh, (bfd_vma)ptrs[i]);
+        if (str_offset < 0) {
+            continue;
+        }
+
+        char buf[256] = {0};
+        if (files_readFromFdSeek(fd, (uint8_t*)buf, sizeof(buf) - 1, str_offset) <= 0) {
+            continue;
+        }
+        buf[sizeof(buf) - 1] = '\0';
+
+        size_t len = strlen(buf);
+        if (len < 2 || len > sizeof(hfuzz->mutate.dictionary[0].val)) {
+            continue;
+        }
+
+        /* Must be printable */
+        if (!arch_bfdIsPrintableString(buf, len)) {
+            continue;
+        }
+
+        /* Skip obvious internal symbols */
+        if (buf[0] == '$' || buf[0] == '@') {
+            continue;
+        }
+
+        /* Add to dictionary (skips duplicates) */
+        if (dict_add(hfuzz, (const uint8_t*)buf, len)) {
+            cnt++;
+        }
+    }
+
+    if (cnt > 0) {
+        LOG_D("Extracted %zu strings from '%s'", cnt, symName);
+    }
+
+    free(ptrs);
+    return cnt;
+}
+
+/*
+ * Check if a section name is one we want to scan for pointer arrays.
+ * Pointer arrays are typically in .data, .data.rel.ro, or sometimes .rodata
+ */
+static bool arch_bfdIsDataSection(const char* name) {
+    if (strcmp(name, ".data") == 0) {
+        return true;
+    }
+    if (strcmp(name, ".data.rel.ro") == 0) {
+        return true;
+    }
+    if (strcmp(name, ".rodata") == 0) {
+        return true;
+    }
+    return false;
+}
+
+/*
+ * Scan data sections for symbols that look like string pointer arrays.
+ * Automatically discovers and extracts string literals.
+ * Returns total number of strings extracted.
+ */
+size_t arch_bfdExtractRodataStrArrays(honggfuzz_t* hfuzz) {
+    MX_SCOPED_LOCK(&arch_bfd_mutex);
+
+    const char* fname = hfuzz->exe.cmdline[0];
+    if (!fname) {
+        return 0;
+    }
+
+    bfd_init();
+
+    bfd* bfdh = bfd_openr(fname, NULL);
+    if (!bfdh) {
+        LOG_D("bfd_openr(%s) failed", fname);
+        return 0;
+    }
+    if (!bfd_check_format(bfdh, bfd_object)) {
+        bfd_close(bfdh);
+        return 0;
+    }
+
+    /* Find .rodata section - this is where strings typically live */
+    struct bfd_section* rodata      = NULL;
+    bfd_vma             rodata_vma  = 0;
+    bfd_size_type       rodata_size = 0;
+    for (struct bfd_section* sec = bfdh->sections; sec; sec = sec->next) {
+        if (strcmp(bfd_section_name(sec), ".rodata") == 0) {
+            rodata      = sec;
+            rodata_vma  = bfd_section_vma(sec);
+            rodata_size = bfd_section_size(sec);
+            LOG_D(".rodata: VMA=0x%lx, size=0x%lx", (unsigned long)rodata_vma,
+                (unsigned long)rodata_size);
+            break;
+        }
+    }
+    if (!rodata) {
+        LOG_D("No .rodata section found in %s", fname);
+        bfd_close(bfdh);
+        return 0;
+    }
+
+    /* Read symbol table */
+    int storage_needed = bfd_get_symtab_upper_bound(bfdh);
+    if (storage_needed <= 0) {
+        bfd_close(bfdh);
+        return 0;
+    }
+    asymbol** syms     = (asymbol**)util_Calloc(storage_needed);
+    int       symcount = bfd_canonicalize_symtab(bfdh, syms);
+    if (symcount <= 0) {
+        free(syms);
+        bfd_close(bfdh);
+        return 0;
+    }
+
+    /* Open file for reading */
+    int fd = TEMP_FAILURE_RETRY(open(fname, O_RDONLY | O_CLOEXEC));
+    if (fd == -1) {
+        free(syms);
+        bfd_close(bfdh);
+        return 0;
+    }
+
+    size_t total_cnt     = 0;
+    size_t symbols_tried = 0;
+
+    for (int i = 0; i < symcount; i++) {
+        asymbol* sym = syms[i];
+        if (!sym || !sym->section) {
+            continue;
+        }
+
+        /* Only look at symbols in data sections */
+        const char* secname = bfd_section_name(sym->section);
+        if (!arch_bfdIsDataSection(secname)) {
+            continue;
+        }
+
+        /* Get symbol info */
+        bfd_vma sym_vma = bfd_asymbol_value(sym);
+
+        /* Estimate symbol size from next symbol in same section */
+        bfd_vma       sec_vma  = bfd_section_vma(sym->section);
+        bfd_size_type sec_size = bfd_section_size(sym->section);
+        bfd_vma       next_vma = sec_vma + sec_size;
+
+        for (int j = 0; j < symcount; j++) {
+            if (i == j || !syms[j] || syms[j]->section != sym->section) {
+                continue;
+            }
+            bfd_vma other_vma = bfd_asymbol_value(syms[j]);
+            if (other_vma > sym_vma && other_vma < next_vma) {
+                next_vma = other_vma;
+            }
+        }
+        bfd_size_type sym_size = next_vma - sym_vma;
+
+        /* Skip if too small or too large */
+        if (sym_size < 16 || sym_size > 65536) {
+            continue;
+        }
+
+        const char* symName = bfd_asymbol_name(sym);
+        if (!symName || symName[0] == '\0') {
+            continue;
+        }
+
+        /* Skip compiler-generated symbols */
+        if (symName[0] == '.' || strncmp(symName, "__", 2) == 0) {
+            continue;
+        }
+        if (strncmp(symName, ".LC", 3) == 0 || strncmp(symName, ".L.", 3) == 0) {
+            continue;
+        }
+
+        symbols_tried++;
+        size_t cnt = arch_bfdTryExtractPtrArray(
+            hfuzz, bfdh, fd, sym_vma, sym_size, rodata_vma, rodata_size, symName);
+        total_cnt += cnt;
+
+        if (dict_isFull(hfuzz)) {
+            LOG_W("Dictionary full, stopping data section scan");
+            break;
+        }
+    }
+
+    if (total_cnt > 0) {
+        LOG_I("Extracted %zu strings from %zu data symbols (dictionary now has %zu entries)",
+            total_cnt, symbols_tried, dict_count(hfuzz));
+    }
+
+    close(fd);
+    free(syms);
+    bfd_close(bfdh);
+    return total_cnt;
 }
 
 #endif /*  !defined(_HF_LINUX_NO_BFD)  */

@@ -110,8 +110,8 @@ uint64_t power_calculateEnergy(run_t* run, dynfile_t* dynfile) {
     if (dynfile->stackDepth > (1024 * 16)) { /* > 16KB */
         uint32_t stack_log = util_Log2(dynfile->stackDepth / 1024);
         if (stack_log > 4) {
-             /* Boost factor - 16KB->1x, 32KB->1.5x, 64KB->2x, 1MB->4x */
-             energy = (energy * HF_MIN(stack_log - 2, 8)) / 2;
+            /* Boost factor - 16KB->1x, 32KB->1.5x, 64KB->2x, 1MB->4x */
+            energy = (energy * HF_MIN(stack_log - 2, 8)) / 2;
         }
     }
 
@@ -135,7 +135,7 @@ uint64_t power_calculateEnergy(run_t* run, dynfile_t* dynfile) {
     /* Rare edge bonus - inputs hitting edges seen by few corpus entries */
     if (dynfile->rareEdgeCnt > 0) {
         uint32_t rare_boost = HF_MIN(dynfile->rareEdgeCnt, 8);
-        energy = (energy * (8 + rare_boost)) / 8;
+        energy              = (energy * (8 + rare_boost)) / 8;
     }
 
     /* Diminishing returns - inputs selected many times yield less */

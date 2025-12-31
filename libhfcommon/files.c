@@ -152,7 +152,8 @@ ssize_t files_readFromFd(int fd, uint8_t* buf, size_t fileSz) {
 ssize_t files_readFromFdSeek(int fd, uint8_t* buf, size_t fileSz, off_t off) {
     size_t readSz = 0;
     while (readSz < fileSz) {
-        ssize_t sz = TEMP_FAILURE_RETRY(pread(fd, &buf[readSz], fileSz - readSz, off + (off_t)readSz));
+        ssize_t sz =
+            TEMP_FAILURE_RETRY(pread(fd, &buf[readSz], fileSz - readSz, off + (off_t)readSz));
         if (sz == 0) {
             break;
         }

@@ -36,6 +36,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "dict.h"
 #include "fuzz.h"
 #include "libhfcommon/common.h"
 #include "libhfcommon/files.h"
@@ -216,8 +217,8 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
         if (len == -1) {
             break;
         }
-        if (hfuzz->mutate.dictionaryCnt == ARRAYSIZE(hfuzz->mutate.dictionary)) {
-            LOG_W("Maximum number of dictionary entries '%zu' alread loaded. Skipping the rest",
+        if (dict_isFull(hfuzz)) {
+            LOG_W("Maximum number of dictionary entries '%zu' already loaded. Skipping the rest",
                 ARRAYSIZE(hfuzz->mutate.dictionary));
             break;
         }
@@ -255,15 +256,14 @@ bool input_parseDictionary(honggfuzz_t* hfuzz) {
 
         LOG_D("Parsing dictionary word: '%s'", bufv);
 
-        len              = util_decodeCString(bufv);
-        size_t dictEntry = ATOMIC_POST_INC(hfuzz->mutate.dictionaryCnt);
-        len              = HF_MIN((size_t)len, sizeof(hfuzz->mutate.dictionary[dictEntry].val));
-        memcpy(hfuzz->mutate.dictionary[dictEntry].val, bufv, len);
-        hfuzz->mutate.dictionary[dictEntry].len = len;
+        len = util_decodeCString(bufv);
+        len = HF_MIN((size_t)len, sizeof(hfuzz->mutate.dictionary[0].val));
 
-        LOG_D("Dictionary: loaded word: '%s' (len=%zd)", bufv, len);
+        if (dict_add(hfuzz, (const uint8_t*)bufv, len)) {
+            LOG_D("Dictionary: loaded word: '%s' (len=%zd)", bufv, len);
+        }
     }
-    LOG_I("Loaded %zu words from the dictionary '%s'", hfuzz->mutate.dictionaryCnt,
+    LOG_I("Loaded %zu words from the dictionary '%s'", dict_count(hfuzz),
         hfuzz->mutate.dictionaryFile);
     return true;
 }
