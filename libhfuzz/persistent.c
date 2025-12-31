@@ -40,19 +40,6 @@ __attribute__((weak)) int LLVMFuzzerTestOneInput(
     return 0;
 }
 
-static const uint8_t*                    inputFile = NULL;
-__attribute__((constructor)) static void initializePersistent(void) {
-    if (fcntl(_HF_INPUT_FD, F_GETFD) == -1 && errno == EBADF) {
-        return;
-    }
-    int mflags = files_getTmpMapFlags(MAP_SHARED, /* nocore= */ false);
-    if ((inputFile = mmap(NULL, _HF_INPUT_MAX_SIZE, PROT_READ, mflags, _HF_INPUT_FD, 0)) ==
-        MAP_FAILED) {
-        PLOG_F("mmap(fd=%d, size=%zu) of the input file failed", _HF_INPUT_FD,
-            (size_t)_HF_INPUT_MAX_SIZE);
-    }
-}
-
 void HF_ITER(const uint8_t** buf_ptr, size_t* len_ptr) {
     HonggfuzzFetchData(buf_ptr, len_ptr);
 }
@@ -61,12 +48,14 @@ extern const char* const LIBHFUZZ_module_memorycmp;
 extern const char* const LIBHFUZZ_module_instrument;
 static void              HonggfuzzRunOneInput(const uint8_t* buf, size_t len) {
     instrumentResetLocalCovFeedback();
+    instrumentResetStackDepth();
     int ret = LLVMFuzzerTestOneInput(buf, len);
     if (ret != 0) {
         LOG_D("Dereferenced: %s, %s", LIBHFUZZ_module_memorycmp, LIBHFUZZ_module_instrument);
         LOG_F("LLVMFuzzerTestOneInput() returned '%d' instead of '0'", ret);
     }
     instrument8BitCountersCount();
+    instrumentCheckStackDepth();
 }
 
 static void HonggfuzzPersistentLoop(void) {
