@@ -17,7 +17,7 @@
 #define HF_RESET_RATIO 5 /* Reset ourselves, if currently n times slower than in the beginning */
 
 static uint64_t iterCnt         = 0;
-static time_t   firstInputUSecs = 0;
+static int64_t  firstInputUSecs = 0;
 
 static uint64_t initialUSecsPerExec = 0;
 
@@ -25,7 +25,7 @@ static uint64_t lastCheckUSecs = 0;
 static uint64_t lastCheckIters = 0;
 
 static bool performanceInit(void) {
-    if (iterCnt == 1) {
+    if (firstInputUSecs == 0) {
         firstInputUSecs = util_timeNowUSecs();
     }
 
@@ -62,6 +62,10 @@ bool performanceTooSlow(void) {
 
 void performanceCheck(void) {
     iterCnt += 1;
+
+    if ((iterCnt & 0xFFF) != 0) {
+        return;
+    }
 
     static bool initialized = false;
     if (!initialized) {
