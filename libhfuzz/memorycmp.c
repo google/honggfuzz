@@ -237,6 +237,56 @@ static inline size_t HF_strlcat(char* dest, const char* src, size_t sz, uintptr_
     return dstlen + HF_strlcpy(dest + dstlen, src, left, addr);
 }
 
+static inline size_t HF_strspn(const char* s, const char* accept, uintptr_t addr) {
+    size_t ret = 0;
+    while (s[ret] != '\0' && __builtin_strchr(accept, s[ret])) {
+        ret++;
+    }
+    instrumentUpdateCmpMap(addr, ret);
+    instrumentAddConstStr(accept);
+    return ret;
+}
+
+static inline size_t HF_strcspn(const char* s, const char* reject, uintptr_t addr) {
+    size_t ret = 0;
+    while (s[ret] != '\0' && !__builtin_strchr(reject, s[ret])) {
+        ret++;
+    }
+    instrumentUpdateCmpMap(addr, ret);
+    instrumentAddConstStr(reject);
+    return ret;
+}
+
+static inline char* HF_strpbrk(const char* s, const char* accept, uintptr_t addr) {
+    char* ret = NULL;
+    for (const char* p = s; *p != '\0'; p++) {
+        if (__builtin_strchr(accept, *p)) {
+            ret = (char*)p;
+            break;
+        }
+    }
+
+    if (ret) {
+        size_t off = (size_t)(ret - s);
+        instrumentUpdateCmpMap(addr, off);
+    }
+    instrumentAddConstStr(accept);
+    return ret;
+}
+
+static inline char* HF_strncat(char* dest, const char* src, size_t n, uintptr_t addr) {
+    size_t dlen = __builtin_strlen(dest);
+    size_t slen = __builtin_strlen(src);
+    size_t len  = slen < n ? slen : n;
+
+    instrumentUpdateCmpMap(addr, util_Log2(len));
+    instrumentAddConstMem(src, len, /* check_if_ro= */ true);
+
+    __builtin_memcpy(dest + dlen, src, len);
+    dest[dlen + len] = '\0';
+    return dest;
+}
+
 /* Define a weak function x, as well as __wrap_x pointing to x */
 #define XVAL(x) x
 #define HF_WEAK_WRAP(ret, func, ...)                                                               \
@@ -351,6 +401,34 @@ HF_WEAK_WRAP(size_t, strlcat, char* dest, const char* src, size_t len) {
 void __sanitizer_weak_hook_strlcat(
     uintptr_t pc, char* dest, const char* src, size_t sz, size_t result HF_ATTR_UNUSED) {
     HF_strlcat(dest, src, sz, pc);
+}
+HF_WEAK_WRAP(size_t, strspn, const char* s, const char* accept) {
+    return HF_strspn(s, accept, (uintptr_t)__builtin_return_address(0));
+}
+void __sanitizer_weak_hook_strspn(
+    uintptr_t pc, const char* s, const char* accept, size_t result HF_ATTR_UNUSED) {
+    HF_strspn(s, accept, pc);
+}
+HF_WEAK_WRAP(size_t, strcspn, const char* s, const char* reject) {
+    return HF_strcspn(s, reject, (uintptr_t)__builtin_return_address(0));
+}
+void __sanitizer_weak_hook_strcspn(
+    uintptr_t pc, const char* s, const char* reject, size_t result HF_ATTR_UNUSED) {
+    HF_strcspn(s, reject, pc);
+}
+HF_WEAK_WRAP(char*, strpbrk, const char* s, const char* accept) {
+    return HF_strpbrk(s, accept, (uintptr_t)__builtin_return_address(0));
+}
+void __sanitizer_weak_hook_strpbrk(
+    uintptr_t pc, const char* s, const char* accept, char* result HF_ATTR_UNUSED) {
+    HF_strpbrk(s, accept, pc);
+}
+HF_WEAK_WRAP(char*, strncat, char* dest, const char* src, size_t n) {
+    return HF_strncat(dest, src, n, (uintptr_t)__builtin_return_address(0));
+}
+void __sanitizer_weak_hook_strncat(
+    uintptr_t pc, char* dest, const char* src, size_t n, char* result HF_ATTR_UNUSED) {
+    HF_strncat(dest, src, n, pc);
 }
 
 /*
