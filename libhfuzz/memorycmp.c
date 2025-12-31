@@ -198,7 +198,8 @@ static inline char* HF_strcpy(char* dest, const char* src, uintptr_t addr) {
 
 static inline char* HF_strcat(char* dest, const char* src, uintptr_t addr) {
     size_t len = __builtin_strlen(dest);
-    return HF_strcpy(dest + len, src, addr);
+    HF_strcpy(dest + len, src, addr);
+    return dest;
 }
 
 static inline size_t HF_strlcpy(char* dest, const char* src, size_t sz, uintptr_t addr) {
@@ -206,7 +207,7 @@ static inline size_t HF_strlcpy(char* dest, const char* src, size_t sz, uintptr_
     size_t len  = sz < slen ? sz : slen;
 
     if (sz == 0) {
-        return 0;
+        return slen;
     }
     /* Make space for NUL at the end of the string.
      * sz != 0 here
@@ -527,7 +528,7 @@ HF_WEAK_WRAP(bool, strcsequal, const void* s1, const void* s2) {
 /*
  * LittleCMS wrappers
  */
-HF_WEAK_WRAP(int, cmsstrcasecmp, const void* s1, const void* s2) {
+HF_WEAK_WRAP(int, cmsstrcasecmp, const char* s1, const char* s2) {
     return HF_strcasecmp(s1, s2, toupper, (uintptr_t)__builtin_return_address(0));
 }
 
