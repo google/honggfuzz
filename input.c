@@ -383,6 +383,11 @@ void input_addDynamicInput(run_t* run) {
     dynfile->imported      = run->dynfile->imported;
     dynfile->newEdges      = run->dynfile->newEdges;
     dynfile->depth         = run->dynfile->depth;
+    dynfile->stackDepth    = run->dynfile->stackDepth;
+    dynfile->pathHash      = run->dynfile->pathHash;
+    dynfile->cmpProgress   = run->dynfile->cmpProgress;
+    dynfile->rareEdgeCnt   = run->dynfile->rareEdgeCnt;
+    dynfile->selectCnt     = 0;
     memcpy(dynfile->cov, run->dynfile->cov, sizeof(dynfile->cov));
     if (run->dynfile->src) {
         ATOMIC_POST_INC(run->dynfile->src->refs);
@@ -399,6 +404,11 @@ void input_addDynamicInput(run_t* run) {
     run->global->feedback.maxCov[1] = HF_MAX(run->global->feedback.maxCov[1], dynfile->cov[1]);
     run->global->feedback.maxCov[2] = HF_MAX(run->global->feedback.maxCov[2], dynfile->cov[2]);
     run->global->feedback.maxCov[3] = HF_MAX(run->global->feedback.maxCov[3], dynfile->cov[3]);
+
+    /* Track unique execution paths */
+    if (dynfile->pathHash != 0) {
+        ATOMIC_POST_INC(run->global->feedback.uniquePaths);
+    }
 
     run->global->io.dynfileqMaxSz = HF_MAX(run->global->io.dynfileqMaxSz, dynfile->size);
 
@@ -482,6 +492,11 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
 
             uint64_t energy = power_calculateEnergy(run, run->current);
 
+            /* Lineage bonus: if parent was fertile (produced children), boost siblings */
+            if (run->current->src && ATOMIC_GET(run->current->src->refs) > 2) {
+                energy = (energy * 5) / 4; /* 25% bonus for fertile lineage */
+            }
+
             /* High energy - repeat this input */
             if (energy >= POWER_BASE_ENERGY) {
                 run->triesLeft = energy / POWER_BASE_ENERGY;
@@ -506,6 +521,11 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
 
         current_input = run->current;
         is_imported   = current_input->imported;
+
+        /* Track selection count for diminishing returns */
+        if (!is_imported) {
+            ATOMIC_POST_INC(current_input->selectCnt);
+        }
 
         if (is_imported) {
             dynfile_t* next = TAILQ_NEXT(current_input, pointers);
@@ -547,6 +567,10 @@ bool input_prepareDynamicInput(run_t* run, bool needs_mangle) {
     run->dynfile->phase         = fuzz_getState(run->global);
     run->dynfile->timedout      = current_input->timedout;
     run->dynfile->imported      = is_imported;
+    run->dynfile->stackDepth    = current_input->stackDepth;
+    run->dynfile->pathHash      = current_input->pathHash;
+    run->dynfile->cmpProgress   = current_input->cmpProgress;
+    run->dynfile->rareEdgeCnt   = current_input->rareEdgeCnt;
     memcpy(run->dynfile->cov, current_input->cov, sizeof(run->dynfile->cov));
     snprintf(run->dynfile->path, sizeof(run->dynfile->path), "%s", current_input->path);
     memcpy(run->dynfile->data, current_input->data, current_input->size);

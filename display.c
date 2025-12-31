@@ -421,6 +421,24 @@ void display_display(honggfuzz_t* hfuzz) {
             softCntEdge, guardNb, guardNb ? ((softCntEdge * 100) / guardNb) : 0);
         display_put(" pc: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET, softCntPc);
         display_put(" cmp: " ESC_BOLD "%" _HF_NONMON_SEP PRIu64 ESC_RESET, softCntCmp);
+        /* Find max stack depth across all threads */
+        size_t maxDepth = 0;
+        for (size_t i = 0; i < hfuzz->threads.threadsMax; i++) {
+            size_t depth = ATOMIC_GET(hfuzz->feedback.covFeedbackMap->maxStackDepth[i].val);
+            if (depth > maxDepth) {
+                maxDepth = depth;
+            }
+        }
+        if (maxDepth > 0) {
+            if (maxDepth >= 1024 * 1024) {
+                display_put(
+                    " stk: " ESC_BOLD "%.2lf " ESC_RESET " MB", (double)maxDepth / (1024 * 1024));
+            } else if (maxDepth >= 1024) {
+                display_put(" stk: " ESC_BOLD "%.2lf" ESC_RESET " kB", (double)maxDepth / 1024);
+            } else {
+                display_put(" stk: " ESC_BOLD "%zu" ESC_RESET " B", maxDepth);
+            }
+        }
     }
 
     display_put("\n---------------------------------- [ " ESC_BOLD "LOGS" ESC_RESET

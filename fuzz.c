@@ -190,28 +190,34 @@ static void fuzz_perfFeedback(run_t* run) {
         wmb();
     };
 
-    uint64_t softNewPC   = 0;
-    uint64_t softCurPC   = 0;
-    uint64_t softNewEdge = 0;
-    uint64_t softCurEdge = 0;
-    uint64_t softNewCmp  = 0;
-    uint64_t softCurCmp  = 0;
+    uint64_t softNewPC         = 0;
+    uint64_t softCurPC         = 0;
+    uint64_t softNewEdge       = 0;
+    uint64_t softCurEdge       = 0;
+    uint64_t softNewCmp        = 0;
+    uint64_t softCurCmp        = 0;
+    bool     softNewStackDepth = false;
 
     if (run->global->feedback.dynFileMethod & _HF_DYNFILE_SOFT) {
-        softNewPC = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewPC[run->fuzzNo]);
-        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewPC[run->fuzzNo]);
-        softCurPC = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalPC[run->fuzzNo]);
-        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalPC[run->fuzzNo]);
+        softNewPC = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewPC[run->fuzzNo].val);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewPC[run->fuzzNo].val);
+        softCurPC = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalPC[run->fuzzNo].val);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalPC[run->fuzzNo].val);
 
-        softNewEdge = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewEdge[run->fuzzNo]);
-        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewEdge[run->fuzzNo]);
-        softCurEdge = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalEdge[run->fuzzNo]);
-        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalEdge[run->fuzzNo]);
+        softNewEdge = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewEdge[run->fuzzNo].val);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewEdge[run->fuzzNo].val);
+        softCurEdge =
+            ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalEdge[run->fuzzNo].val);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalEdge[run->fuzzNo].val);
 
-        softNewCmp = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewCmp[run->fuzzNo]);
-        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewCmp[run->fuzzNo]);
-        softCurCmp = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalCmp[run->fuzzNo]);
-        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalCmp[run->fuzzNo]);
+        softNewCmp = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidNewCmp[run->fuzzNo].val);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidNewCmp[run->fuzzNo].val);
+        softCurCmp = ATOMIC_GET(run->global->feedback.covFeedbackMap->pidTotalCmp[run->fuzzNo].val);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidTotalCmp[run->fuzzNo].val);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidLastStackDepth[run->fuzzNo].val);
+
+        softNewStackDepth = ATOMIC_XCHG(
+            run->global->feedback.covFeedbackMap->pidNewStackDepth[run->fuzzNo].val, false);
     }
 
     rmb();
@@ -219,9 +225,10 @@ static void fuzz_perfFeedback(run_t* run) {
     int64_t diff0 = (int64_t)run->global->feedback.hwCnts.cpuInstrCnt - run->hwCnts.cpuInstrCnt;
     int64_t diff1 = (int64_t)run->global->feedback.hwCnts.cpuBranchCnt - run->hwCnts.cpuBranchCnt;
 
-    /* Any increase in coverage (edge, pc, cmp, hw) counters forces adding input to the corpus */
+    /* Any increase in coverage (edge, pc, cmp, hw, stack) counters forces adding input to the
+     * corpus */
     if (run->hwCnts.newBBCnt > 0 || softNewPC > 0 || softNewEdge > 0 || softNewCmp > 0 ||
-        diff0 < 0 || diff1 < 0) {
+        softNewStackDepth || diff0 < 0 || diff1 < 0) {
         if (diff0 < 0) {
             run->global->feedback.hwCnts.cpuInstrCnt = run->hwCnts.cpuInstrCnt;
         }
@@ -284,6 +291,24 @@ static void fuzz_perfFeedback(run_t* run) {
 
         /* Track mutation depth */
         run->dynfile->depth = run->dynfile->src ? run->dynfile->src->depth + 1 : 0;
+        run->dynfile->stackDepth =
+            ATOMIC_GET(run->global->feedback.covFeedbackMap->pidLastStackDepth[run->fuzzNo].val);
+
+        /* Track execution path hash for diversity */
+        run->dynfile->pathHash =
+            ATOMIC_GET(run->global->feedback.covFeedbackMap->pidPathHash[run->fuzzNo].val);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidPathHash[run->fuzzNo].val);
+
+        /* Track CMP progress for inputs making headway on comparisons */
+        run->dynfile->cmpProgress = (uint32_t)ATOMIC_GET(
+            run->global->feedback.covFeedbackMap->pidCmpProgress[run->fuzzNo].val);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidCmpProgress[run->fuzzNo].val);
+
+        /* Track rare edges - edges hit by few corpus entries */
+        run->dynfile->rareEdgeCnt = (uint16_t)HF_MIN(
+            ATOMIC_GET(run->global->feedback.covFeedbackMap->pidRareEdgeCnt[run->fuzzNo].val),
+            UINT16_MAX);
+        ATOMIC_CLEAR(run->global->feedback.covFeedbackMap->pidRareEdgeCnt[run->fuzzNo].val);
 
         /* Credit mutation tiers that led to this coverage gain */
         for (int tier = 0; tier < 4; tier++) {

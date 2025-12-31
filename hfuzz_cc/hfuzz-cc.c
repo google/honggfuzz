@@ -452,13 +452,14 @@ static void commonPostOpts(int* j, char** args) {
                 args[(*j)++] = "-fno-sanitize=fuzzer";
                 args[(*j)++] = "-fno-sanitize=fuzzer-no-link";
             }
-            args[(*j)++] =
-                "-fsanitize-coverage=trace-pc-guard,trace-cmp,trace-div,indirect-calls,trace-gep";
+            args[(*j)++] = "-fsanitize-coverage=trace-pc-guard,trace-cmp,trace-div,indirect-calls,"
+                           "trace-gep,stack-depth";
         } else {
             args[(*j)++] = "-fno-sanitize-coverage=trace-pc-guard";
             args[(*j)++] = "-fno-sanitize=fuzzer";
             args[(*j)++] = "-fsanitize=fuzzer-no-link";
-            args[(*j)++] = "-fsanitize-coverage=trace-cmp,trace-div,indirect-calls,trace-gep";
+            args[(*j)++] =
+                "-fsanitize-coverage=trace-cmp,trace-div,indirect-calls,trace-gep,stack-depth";
         }
     }
 }

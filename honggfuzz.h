@@ -157,8 +157,13 @@ struct _dynfile_t {
     char               path[PATH_MAX];
     struct _dynfile_t* src;
     uint32_t           refs;
-    uint32_t           newEdges; /* New edges discovered when added */
-    uint32_t           depth;    /* Mutation depth from seed */
+    uint32_t           newEdges;    /* New edges discovered when added */
+    uint32_t           depth;       /* Mutation depth from seed */
+    uint64_t           stackDepth;  /* Max stack depth observed */
+    uint64_t           pathHash;    /* Hash of execution path for diversity */
+    uint32_t           selectCnt;   /* Times this input was selected */
+    uint32_t           cmpProgress; /* Comparison progress score */
+    uint16_t           rareEdgeCnt; /* Count of rare edges this input hits */
     fuzzState_t        phase;
     bool               timedout;
     uint8_t*           data;
@@ -174,17 +179,43 @@ struct strings_t {
     char s[];
 };
 
+/* Cache-line padded counters to avoid false sharing between threads */
+#define _HF_CACHE_LINE_SZ 64
+typedef struct {
+    uint64_t val;
+    uint8_t  _pad[_HF_CACHE_LINE_SZ - sizeof(uint64_t)];
+} __attribute__((aligned(_HF_CACHE_LINE_SZ))) cntCacheLine_t;
+
+typedef struct {
+    size_t  val;
+    uint8_t _pad[_HF_CACHE_LINE_SZ - sizeof(size_t)];
+} __attribute__((aligned(_HF_CACHE_LINE_SZ))) sizeCacheLine_t;
+
+typedef struct {
+    bool    val;
+    uint8_t _pad[_HF_CACHE_LINE_SZ - sizeof(bool)];
+} __attribute__((aligned(_HF_CACHE_LINE_SZ))) boolCacheLine_t;
+
 typedef struct {
     uint8_t  pcGuardMap[_HF_PC_GUARD_MAX];
     uint8_t  bbMapPc[_HF_PERF_BITMAP_SIZE_16M];
     uint32_t bbMapCmp[_HF_PERF_BITMAP_SIZE_16M];
-    uint64_t pidNewPC[_HF_THREAD_MAX];
-    uint64_t pidNewEdge[_HF_THREAD_MAX];
-    uint64_t pidNewCmp[_HF_THREAD_MAX];
     uint64_t guardNb;
-    uint64_t pidTotalPC[_HF_THREAD_MAX];
-    uint64_t pidTotalEdge[_HF_THREAD_MAX];
-    uint64_t pidTotalCmp[_HF_THREAD_MAX];
+    /* Per-thread counters - cache-line padded to avoid false sharing */
+    cntCacheLine_t  pidNewPC[_HF_THREAD_MAX];
+    cntCacheLine_t  pidNewEdge[_HF_THREAD_MAX];
+    cntCacheLine_t  pidNewCmp[_HF_THREAD_MAX];
+    cntCacheLine_t  pidTotalPC[_HF_THREAD_MAX];
+    cntCacheLine_t  pidTotalEdge[_HF_THREAD_MAX];
+    cntCacheLine_t  pidTotalCmp[_HF_THREAD_MAX];
+    sizeCacheLine_t maxStackDepth[_HF_THREAD_MAX];
+    sizeCacheLine_t pidLastStackDepth[_HF_THREAD_MAX];
+    boolCacheLine_t pidNewStackDepth[_HF_THREAD_MAX];
+    cntCacheLine_t  pidPathHash[_HF_THREAD_MAX];    /* Execution path hash */
+    cntCacheLine_t  pidCmpProgress[_HF_THREAD_MAX]; /* CMP solving progress */
+    cntCacheLine_t  pidRareEdgeCnt[_HF_THREAD_MAX]; /* Rare edges hit this run */
+    /* Global edge frequency tracking - indexed by (guard % size) */
+    uint8_t edgeHitCnt[65536];
 } feedback_t;
 
 typedef struct {
@@ -309,6 +340,7 @@ typedef struct {
         uint64_t        maxCov[4];
         dynFileMethod_t dynFileMethod;
         hwcnt_t         hwCnts;
+        uint64_t        uniquePaths; /* Count of unique execution paths seen */
     } feedback;
     struct {
         size_t mutationsCnt;

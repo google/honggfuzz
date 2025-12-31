@@ -30,6 +30,8 @@
 
 extern void     instrument8BitCountersCount(void);
 extern void     instrumentResetLocalCovFeedback(void);
+extern void     instrumentResetStackDepth(void);
+extern void     instrumentCheckStackDepth(void);
 extern unsigned instrumentThreadNo(void);
 extern bool     instrumentUpdateCmpMap(uintptr_t addr, uint32_t v);
 extern void     instrumentClearNewCov();
