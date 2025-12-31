@@ -69,6 +69,11 @@ typedef enum {
     MANGLE_SPLICE,
     MANGLE_CROSS_OVER,
     MANGLE_SPECIAL_STRINGS,
+    MANGLE_TLV_MUTATE,
+    MANGLE_TOKEN_SHUFFLE,
+    MANGLE_GRADIENT_CMP,
+    MANGLE_ARITH_CONST,
+    MANGLE_HAVOC,
     MANGLE_COUNT
 } mangle_t;
 
@@ -911,10 +916,16 @@ static void mangle_BlockRepeat(run_t* run, bool printable) {
     };
     memcpy(tmp, run->dynfile->data + off, len);
 
-    size_t repeats   = util_rndGet(1, 16);
-    size_t total_add = len * repeats;
+    size_t repeats = 0;
+    /* 1/16 chance to repeat a LOT - useful for buffer overflows */
+    if (util_rnd64() % 16 == 0) {
+        repeats = util_rndGet(16, 256);
+    } else {
+        repeats = util_rndGet(1, 16);
+    }
 
-    size_t added = mangle_Inflate(run, off + len, total_add, printable);
+    size_t total_add = len * repeats;
+    size_t added     = mangle_Inflate(run, off + len, total_add, printable);
 
     for (size_t i = 0; i < added; i += len) {
         size_t copy_len = HF_MIN(len, added - i);
@@ -1049,6 +1060,8 @@ static void mangle_SpecialStrings(run_t* run, bool printable) {
         "%n",
         "%x",
         "%p",
+        "%9999999s",
+        "%08x",
         /* SQL Injection / Quote imbalance */
         "'",
         "\"",
@@ -1057,17 +1070,23 @@ static void mangle_SpecialStrings(run_t* run, bool printable) {
         "--",
         "/*",
         "*/",
+        " OR ",
+        " AND ",
+        "UNION SELECT",
         /* Path */
         "../",
         "..\\",
-        "/etc/passwd",
+        "../../../../../../../../etc/passwd",
         "boot.ini",
+        "/bin/sh",
         /* XML/HTML */
         "<",
         ">",
         "<script>",
         "javascript:",
         "CDATA",
+        "<!--",
+        "-->",
         /* JSON/Misc */
         "null",
         "true",
@@ -1082,6 +1101,13 @@ static void mangle_SpecialStrings(run_t* run, bool printable) {
         ";",
         "`",
         "$(",
+        "&&",
+        "||",
+        /* Terminator/Separators */
+        "\n",
+        "\r\n",
+        "\x00",
+        "\xff",
     };
 
     const char* val = strings[util_rndGet(0, ARRAYSIZE(strings) - 1)];
@@ -1117,6 +1143,362 @@ static void mangle_Arith8(run_t* run, bool printable) {
     run->dynfile->data[off] = (uint8_t)((int8_t)run->dynfile->data[off] + delta);
     if (printable) {
         util_turnToPrintable(&run->dynfile->data[off], 1);
+    }
+}
+
+/*
+ * TLV (Tag-Length-Value) mutation - detects length fields and mutates them
+ * Common in binary protocols, ASN.1, network packets, file formats
+ */
+static void mangle_TlvMutate(run_t* run, bool printable) {
+    if (run->dynfile->size < 4) {
+        mangle_Bytes(run, printable);
+        return;
+    }
+
+    /* Scan for potential length fields: byte that matches distance to some boundary */
+    /* Limit scan to first 4KB or 10% of file to avoid O(N) penalty on large inputs */
+    size_t scan_limit = HF_MIN(run->dynfile->size - 2, 4096);
+    if (run->dynfile->size > 40960) {
+        scan_limit = HF_MAX(scan_limit, run->dynfile->size / 10);
+    }
+
+    for (size_t off = 0; off < scan_limit; off++) {
+        uint8_t  b1       = run->dynfile->data[off];
+        uint16_t b2       = 0;
+        size_t   len_size = 1;
+
+        if (off + 1 < run->dynfile->size) {
+            b2       = (uint16_t)run->dynfile->data[off] << 8 | run->dynfile->data[off + 1];
+            len_size = 2;
+        }
+
+        /* Check if b1 or b2 could be a length field pointing within remaining data */
+        size_t remaining = run->dynfile->size - off - 1;
+        bool   found     = false;
+
+        if (b1 > 0 && b1 <= remaining) {
+            /* 1-byte length field candidate */
+            found    = true;
+            len_size = 1;
+        } else if (len_size == 2 && b2 > 0 && b2 <= remaining && b2 < run->dynfile->size) {
+            /* 2-byte length field candidate (big-endian) */
+            found = true;
+        }
+
+        /* Found a candidate - mutate it with 1/8 probability */
+        if (found && util_rnd64() % 8 == 0) {
+            /* Mutate the length field */
+            uint8_t mutations[] = {
+                0x00,                              /* Zero length */
+                0x01,                              /* Minimal */
+                0x7f,                              /* Max signed byte */
+                0x80,                              /* Min negative as signed */
+                0xff,                              /* Max byte */
+                (uint8_t)(remaining & 0xff),       /* Exact remaining */
+                (uint8_t)((remaining + 1) & 0xff), /* Off by one */
+                (uint8_t)((remaining * 2) & 0xff), /* Double */
+            };
+            uint8_t new_len         = mutations[util_rndGet(0, ARRAYSIZE(mutations) - 1)];
+            run->dynfile->data[off] = new_len;
+            if (printable) {
+                util_turnToPrintable(&run->dynfile->data[off], 1);
+            }
+            return;
+        }
+    }
+
+    /* Fallback: insert a TLV-like structure */
+    uint8_t tlv[4] = {
+        (uint8_t)util_rndGet(0, 255), /* Tag */
+        (uint8_t)util_rndGet(1, 16),  /* Length */
+        (uint8_t)util_rndGet(0, 255), /* Value byte 1 */
+        (uint8_t)util_rndGet(0, 255), /* Value byte 2 */
+    };
+    mangle_UseValue(run, tlv, sizeof(tlv), printable);
+}
+
+/*
+ * Token-based mutation - split on common delimiters and shuffle/modify tokens
+ * Effective for text protocols, config files, command lines
+ */
+static void mangle_TokenShuffle(run_t* run, bool printable HF_ATTR_UNUSED) {
+    if (run->dynfile->size < 4) return;
+
+    /* Find delimiter positions */
+    static const char delims[] = " \t\n\r,;:|/\\=&?";
+    size_t            token_starts[64];
+    size_t            token_cnt = 0;
+
+    token_starts[token_cnt++] = 0;
+    for (size_t i = 0; i < run->dynfile->size && token_cnt < ARRAYSIZE(token_starts) - 1; i++) {
+        for (size_t d = 0; d < sizeof(delims) - 1; d++) {
+            if (run->dynfile->data[i] == (uint8_t)delims[d]) {
+                if (i + 1 < run->dynfile->size) {
+                    token_starts[token_cnt++] = i + 1;
+                }
+                break;
+            }
+        }
+    }
+
+    if (token_cnt < 2) return;
+
+    /* Swap two random tokens */
+    size_t idx1 = util_rndGet(0, token_cnt - 2);
+    size_t idx2 = util_rndGet(idx1 + 1, token_cnt - 1);
+
+    size_t start1 = token_starts[idx1];
+    size_t end1   = token_starts[idx1 + 1];
+    size_t start2 = token_starts[idx2];
+    size_t end2   = (idx2 + 1 < token_cnt) ? token_starts[idx2 + 1] : run->dynfile->size;
+
+    size_t len1 = end1 - start1;
+    size_t len2 = end2 - start2;
+
+    if (len1 == 0 || len2 == 0 || len1 > 256 || len2 > 256) return;
+
+    /* Simple swap: copy both tokens, then write back swapped */
+    uint8_t* tmp1 = util_Malloc(len1);
+    uint8_t* tmp2 = util_Malloc(len2);
+
+    memcpy(tmp1, &run->dynfile->data[start1], len1);
+    memcpy(tmp2, &run->dynfile->data[start2], len2);
+
+    /* If same length, simple swap */
+    if (len1 == len2) {
+        memcpy(&run->dynfile->data[start1], tmp2, len2);
+        memcpy(&run->dynfile->data[start2], tmp1, len1);
+    }
+    /* Different lengths - just overwrite token2 into token1's position */
+    else {
+        size_t copy_len = HF_MIN(len1, len2);
+        memcpy(&run->dynfile->data[start1], tmp2, copy_len);
+    }
+
+    free(tmp1);
+    free(tmp2);
+}
+
+/*
+ * Gradient-guided CMP mutation - focus mutations on bytes that differ in comparisons
+ */
+static void mangle_GradientCmp(run_t* run, bool printable) {
+    if (!run->global->feedback.cmpFeedback) {
+        mangle_Bytes(run, printable);
+        return;
+    }
+
+    cmpfeedback_t* cmpf = run->global->feedback.cmpFeedbackMap;
+    uint32_t       cnt  = ATOMIC_GET(cmpf->cnt);
+    if (cnt == 0) {
+        mangle_Magic(run, printable);
+        return;
+    }
+
+    if (cnt > ARRAYSIZE(cmpf->valArr)) {
+        cnt = ARRAYSIZE(cmpf->valArr);
+    }
+
+    uint32_t choice  = util_rndGet(0, cnt - 1);
+    size_t   cmp_len = (size_t)ATOMIC_GET(cmpf->valArr[choice].len);
+    if (cmp_len == 0 || cmp_len > 32) {
+        mangle_Magic(run, printable);
+        return;
+    }
+
+    uint8_t cmp_val[32];
+    memcpy(cmp_val, cmpf->valArr[choice].val, cmp_len);
+
+    /* Find partial match and identify differing bytes */
+    for (size_t off = 0; off + cmp_len <= run->dynfile->size; off++) {
+        size_t  matches    = 0;
+        size_t  first_diff = cmp_len;
+        uint8_t diff_mask  = 0;
+
+        for (size_t i = 0; i < cmp_len; i++) {
+            if (run->dynfile->data[off + i] == cmp_val[i]) {
+                matches++;
+            } else if (first_diff == cmp_len) {
+                first_diff = i;
+                diff_mask  = run->dynfile->data[off + i] ^ cmp_val[i];
+            }
+        }
+
+        /* If we have partial progress, focus on the differing byte */
+        if (matches > 0 && matches < cmp_len && first_diff < cmp_len) {
+            size_t target_off = off + first_diff;
+
+            /* Gradient strategies */
+            uint64_t strategy = util_rndGet(0, 5);
+            switch (strategy) {
+            case 0: /* Set to expected value */
+                run->dynfile->data[target_off] = cmp_val[first_diff];
+                break;
+            case 1: /* Flip differing bits */
+                run->dynfile->data[target_off] ^= diff_mask;
+                break;
+            case 2: /* Increment toward target */
+                if (run->dynfile->data[target_off] < cmp_val[first_diff]) {
+                    run->dynfile->data[target_off]++;
+                } else {
+                    run->dynfile->data[target_off]--;
+                }
+                break;
+            case 3: /* Binary search toward target */
+                run->dynfile->data[target_off] =
+                    (run->dynfile->data[target_off] + cmp_val[first_diff]) / 2;
+                break;
+            case 4: /* Set entire comparison value */
+                mangle_Overwrite(run, off, cmp_val, cmp_len, printable);
+                return;
+            case 5: /* Flip single bit in differing byte */
+                run->dynfile->data[target_off] ^= (1U << util_rndGet(0, 7));
+                break;
+            }
+
+            if (printable) {
+                util_turnToPrintable(&run->dynfile->data[target_off], 1);
+            }
+            return;
+        }
+    }
+
+    /* No partial match found - insert the value */
+    mangle_UseValue(run, cmp_val, cmp_len, printable);
+}
+
+/*
+ * Arithmetic mutations on discovered constants from CMP feedback
+ */
+static void mangle_ArithConst(run_t* run, bool printable) {
+    if (!run->global->feedback.cmpFeedback) {
+        mangle_AddSub(run, printable);
+        return;
+    }
+
+    cmpfeedback_t* cmpf = run->global->feedback.cmpFeedbackMap;
+    uint32_t       cnt  = ATOMIC_GET(cmpf->cnt);
+    if (cnt == 0) {
+        mangle_AddSub(run, printable);
+        return;
+    }
+
+    if (cnt > ARRAYSIZE(cmpf->valArr)) {
+        cnt = ARRAYSIZE(cmpf->valArr);
+    }
+
+    uint32_t choice  = util_rndGet(0, cnt - 1);
+    size_t   val_len = (size_t)ATOMIC_GET(cmpf->valArr[choice].len);
+    if (val_len == 0 || val_len > 8) {
+        mangle_AddSub(run, printable);
+        return;
+    }
+
+    /* Extract value as integer */
+    uint64_t val = 0;
+    for (size_t i = 0; i < val_len; i++) {
+        val |= ((uint64_t)cmpf->valArr[choice].val[i]) << (i * 8);
+    }
+
+    /* Apply arithmetic mutation */
+    uint64_t op = util_rndGet(0, 7);
+    switch (op) {
+    case 0:
+        val += 1;
+        break;
+    case 1:
+        val -= 1;
+        break;
+    case 2:
+        val *= 2;
+        break;
+    case 3:
+        val /= 2;
+        break;
+    case 4:
+        val ^= 0xff;
+        break; /* Flip low byte */
+    case 5:
+        val = ~val;
+        break; /* Bitwise NOT */
+    case 6:
+        val = __builtin_bswap64(val) >> ((8 - val_len) * 8);
+        break; /* Byte swap */
+    case 7:
+        val += util_rndGet(1, 256);
+        break;
+    }
+
+    /* Convert back to bytes */
+    uint8_t result[8];
+    for (size_t i = 0; i < val_len; i++) {
+        result[i] = (uint8_t)(val >> (i * 8));
+    }
+
+    mangle_UseValue(run, result, val_len, printable);
+}
+
+/*
+ * Havoc mode - used when fuzzing is stagnating to escape local minima
+ */
+static void mangle_Havoc(run_t* run, bool printable) {
+    /* Number of mutations: 16-128 */
+    size_t num_mutations = util_rndGet(16, 128);
+
+    for (size_t i = 0; i < num_mutations; i++) {
+        /* Pick a random simple mutation */
+        uint64_t choice = util_rndGet(0, 15);
+        switch (choice) {
+        case 0:
+            mangle_Bit(run, printable);
+            break;
+        case 1:
+            mangle_IncByte(run, printable);
+            break;
+        case 2:
+            mangle_DecByte(run, printable);
+            break;
+        case 3:
+            mangle_NegByte(run, printable);
+            break;
+        case 4:
+            mangle_Bytes(run, printable);
+            break;
+        case 5:
+            mangle_Magic(run, printable);
+            break;
+        case 6:
+            mangle_AddSub(run, printable);
+            break;
+        case 7:
+            mangle_MemSet(run, printable);
+            break;
+        case 8:
+            mangle_MemSwap(run, printable);
+            break;
+        case 9:
+            mangle_MemCopy(run, printable);
+            break;
+        case 10:
+            mangle_Expand(run, printable);
+            break;
+        case 11:
+            mangle_Shrink(run, printable);
+            break;
+        case 12:
+            mangle_Arith8(run, printable);
+            break;
+        case 13:
+            mangle_BlockMove(run, printable);
+            break;
+        case 14:
+            mangle_ByteRepeat(run, printable);
+            break;
+        case 15:
+            mangle_RandomBuf(run, printable);
+            break;
+        }
     }
 }
 
@@ -1162,7 +1544,10 @@ static const mangle_t tierData[] = {
     MANGLE_CONST_FEEDBACK_DICT,
     MANGLE_CMP_SOLVE,
     MANGLE_SPECIAL_STRINGS,
+    MANGLE_GRADIENT_CMP,
+    MANGLE_ARITH_CONST,
 };
+
 static const mangle_t tierArith[] = {
     MANGLE_BIT,
     MANGLE_INC_BYTE,
@@ -1171,12 +1556,16 @@ static const mangle_t tierArith[] = {
     MANGLE_ADD_SUB,
     MANGLE_ARITH8,
 };
-static const mangle_t tierSplice[]    = {MANGLE_SPLICE, MANGLE_CROSS_OVER};
+
+static const mangle_t tierSplice[] = {MANGLE_SPLICE, MANGLE_CROSS_OVER};
+
 static const mangle_t tierStructure[] = {
     MANGLE_CHUNK_SHUFFLE,
     MANGLE_BLOCK_REPEAT,
     MANGLE_BLOCK_SWAP,
     MANGLE_BLOCK_MOVE,
+    MANGLE_TLV_MUTATE,
+    MANGLE_TOKEN_SHUFFLE,
 };
 
 static inline mangle_t mangle_pickFromList(const mangle_t* list, size_t cnt) {
@@ -1197,6 +1586,8 @@ static inline mangle_t mangle_sanitize(run_t* run, mangle_t m) {
         [MANGLE_CMP_SOLVE]           = {2, MANGLE_MAGIC},
         [MANGLE_SPLICE]              = {4, MANGLE_RANDOM_BUF},
         [MANGLE_CROSS_OVER]          = {4, MANGLE_BYTES},
+        [MANGLE_GRADIENT_CMP]        = {2, MANGLE_MAGIC},
+        [MANGLE_ARITH_CONST]         = {2, MANGLE_ADD_SUB},
     };
 
     uint8_t need = reqs[m].needs;
@@ -1230,10 +1621,10 @@ static mangle_t mangle_pickWeighted(run_t* run, uint8_t* tier_out) {
          * Baseline success rate is low (fuzzing is hard), so even small rates are good.
          * Adjust weights proportionally to performance relative to others.
          */
-        if (rate > 50) { /* > 0.5% success rate is very good */
-            w[i] = HF_MIN(w[i] + 10, 80);
-        } else if (rate > 10) { /* > 0.1% */
-            w[i] = HF_MIN(w[i] + 2, 60);
+        if (rate > 50) {                  /* > 0.5% success rate is very good. */
+            w[i] = HF_MIN(w[i] + 15, 90); /* Increased boost. */
+        } else if (rate > 10) {           /* > 0.1% */
+            w[i] = HF_MIN(w[i] + 5, 70);
         } else if (rate < 1) { /* < 0.01% */
             w[i] = HF_MAX(w[i] / 2, 5);
         }
@@ -1295,6 +1686,11 @@ static void (*const mangleFuncs[MANGLE_COUNT])(run_t*, bool) = {
     [MANGLE_SPLICE]              = mangle_Splice,
     [MANGLE_CROSS_OVER]          = mangle_CrossOver,
     [MANGLE_SPECIAL_STRINGS]     = mangle_SpecialStrings,
+    [MANGLE_TLV_MUTATE]          = mangle_TlvMutate,
+    [MANGLE_TOKEN_SHUFFLE]       = mangle_TokenShuffle,
+    [MANGLE_GRADIENT_CMP]        = mangle_GradientCmp,
+    [MANGLE_ARITH_CONST]         = mangle_ArithConst,
+    [MANGLE_HAVOC]               = mangle_Havoc,
 };
 
 static inline void mangle_dispatch(run_t* run, mangle_t m, bool printable) {
@@ -1348,6 +1744,11 @@ void mangle_mangleContent(run_t* run) {
             run->mutationTiers |= (1 << TIER_SPLICE);
             mangle_dispatch(run, MANGLE_SPLICE, printable);
         }
+        /* Try gradient-guided CMP mutations */
+        if (haveCmp && util_rnd64() % 4 == 0) {
+            run->mutationTiers |= (1 << TIER_DATA);
+            mangle_dispatch(run, MANGLE_GRADIENT_CMP, printable);
+        }
     }
     if (stagnation > timeStuck && util_rnd64() % 3 == 0) {
         run->mutationTiers |= (1 << TIER_SPLICE);
@@ -1357,6 +1758,12 @@ void mangle_mangleContent(run_t* run) {
         run->mutationTiers |= (1 << TIER_OTHER);
         mangle_dispatch(
             run, mangle_pickFromList(tierStructure, ARRAYSIZE(tierStructure)), printable);
+    }
+    /* Havoc mode - when extremely stuck, go wild */
+    if (stagnation > timeGivenUp * 2 && util_rnd64() % 16 == 0) {
+        run->mutationTiers |= (1 << TIER_OTHER);
+        mangle_dispatch(run, MANGLE_HAVOC, printable);
+        return; /* Havoc does many mutations internally */
     }
 
     /* Main mutation loop */
