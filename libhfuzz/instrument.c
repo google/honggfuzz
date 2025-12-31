@@ -485,33 +485,71 @@ void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
 
 /* Standard __sanitizer_cov_trace_const_cmp wrappers */
 void __sanitizer_cov_trace_const_cmp1(uint8_t Arg1, uint8_t Arg2) {
-    instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
     hfuzz_trace_cmp1_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
 void __sanitizer_cov_trace_const_cmp2(uint16_t Arg1, uint16_t Arg2) {
-    if (Arg1) {
-        uint16_t bswp = __builtin_bswap16(Arg1);
-        instrumentAddConstMem(&bswp, sizeof(bswp), /* check_if_ro= */ false);
-        instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
+    if (globalCmpFeedback && instrumentLimitEvery(4095)) {
+        if (util_16bitValInBinary(Arg1)) {
+            instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
+        } else {
+            uint16_t bswp = __builtin_bswap16(Arg1);
+            if (util_16bitValInBinary(bswp)) {
+                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
+            }
+        }
+        if (util_16bitValInBinary(Arg2)) {
+            instrumentAddConstMemInternal(&Arg2, sizeof(Arg2));
+        } else {
+            uint16_t bswp = __builtin_bswap16(Arg2);
+            if (util_16bitValInBinary(bswp)) {
+                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
+            }
+        }
     }
     hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
 void __sanitizer_cov_trace_const_cmp4(uint32_t Arg1, uint32_t Arg2) {
-    if (Arg1) {
-        uint32_t bswp = __builtin_bswap32(Arg1);
-        instrumentAddConstMem(&bswp, sizeof(bswp), /* check_if_ro= */ false);
-        instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
+    if (globalCmpFeedback && instrumentLimitEvery(4095)) {
+        if (util_32bitValInBinary(Arg1)) {
+            instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
+        } else {
+            uint32_t bswp = __builtin_bswap32(Arg1);
+            if (util_32bitValInBinary(bswp)) {
+                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
+            }
+        }
+        if (util_32bitValInBinary(Arg2)) {
+            instrumentAddConstMemInternal(&Arg2, sizeof(Arg2));
+        } else {
+            uint32_t bswp = __builtin_bswap32(Arg2);
+            if (util_32bitValInBinary(bswp)) {
+                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
+            }
+        }
     }
     hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
 void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2) {
-    if (Arg1) {
-        uint64_t bswp = __builtin_bswap64(Arg1);
-        instrumentAddConstMem(&bswp, sizeof(bswp), /* check_if_ro= */ false);
-        instrumentAddConstMem(&Arg1, sizeof(Arg1), /* check_if_ro= */ false);
+    if (globalCmpFeedback && instrumentLimitEvery(4095)) {
+        if (util_64bitValInBinary(Arg1)) {
+            instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
+        } else {
+            uint64_t bswp = __builtin_bswap64(Arg1);
+            if (util_64bitValInBinary(bswp)) {
+                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
+            }
+        }
+        if (util_64bitValInBinary(Arg2)) {
+            instrumentAddConstMemInternal(&Arg2, sizeof(Arg2));
+        } else {
+            uint64_t bswp = __builtin_bswap64(Arg2);
+            if (util_64bitValInBinary(bswp)) {
+                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
+            }
+        }
     }
     hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }

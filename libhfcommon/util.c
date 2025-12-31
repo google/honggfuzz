@@ -990,17 +990,35 @@ static uint32_t* values32InBinary      = NULL;
 static size_t    values32InBinary_size = 0;
 static size_t    values32InBinary_cap  = 0;
 
+static uint16_t* values16InBinary      = NULL;
+static size_t    values16InBinary_size = 0;
+static size_t    values16InBinary_cap  = 0;
+
 static int cmp_u64(const void* pa, const void* pb) {
-    uint64_t a = *(uint64_t*)pa;
-    uint64_t b = *(uint64_t*)pb;
+    uint64_t a;
+    util_memcpyInline(&a, pa, sizeof(a));
+    uint64_t b;
+    util_memcpyInline(&b, pb, sizeof(b));
     if (a < b) return -1;
     if (a > b) return 1;
     return 0;
 }
 
 static int cmp_u32(const void* pa, const void* pb) {
-    uint32_t a = *(uint32_t*)pa;
-    uint32_t b = *(uint32_t*)pb;
+    uint32_t a;
+    util_memcpyInline(&a, pa, sizeof(a));
+    uint32_t b;
+    util_memcpyInline(&b, pb, sizeof(b));
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+}
+
+static int cmp_u16(const void* pa, const void* pb) {
+    uint16_t a;
+    util_memcpyInline(&a, pa, sizeof(a));
+    uint16_t b;
+    util_memcpyInline(&b, pb, sizeof(b));
     if (a < b) return -1;
     if (a > b) return 1;
     return 0;
@@ -1025,6 +1043,34 @@ static int check32_cb(struct dl_phdr_info* info, void* data, unsigned elf_flags)
             (uint32_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr +
                         HF_MIN(info->dlpi_phdr[i].p_memsz, info->dlpi_phdr[i].p_filesz));
         /* Assume that the 32bit value looked for is also 32bit aligned */
+        for (; start < end; start++) {
+            if (*start == v) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static int check16_cb(struct dl_phdr_info* info, void* data, unsigned elf_flags) {
+    const uint16_t v = *(const uint16_t*)data;
+
+    for (size_t i = 0; i < info->dlpi_phnum; i++) {
+        /* Look only in the actual binary, and not in libraries */
+        if (info->dlpi_name[0] != '\0') {
+            continue;
+        }
+        if (info->dlpi_phdr[i].p_type != PT_LOAD) {
+            continue;
+        }
+        if ((info->dlpi_phdr[i].p_flags & elf_flags) != elf_flags) {
+            continue;
+        }
+        uint16_t* start = (uint16_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+        uint16_t* end =
+            (uint16_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr +
+                        HF_MIN(info->dlpi_phdr[i].p_memsz, info->dlpi_phdr[i].p_filesz));
+        /* Assume that the 16bit value looked for is also 16bit aligned */
         for (; start < end; start++) {
             if (*start == v) {
                 return 1;
@@ -1066,12 +1112,20 @@ static int check32_cb_r(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, v
     return check32_cb(info, data, PF_R);
 }
 
+static int check16_cb_r(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
+    return check16_cb(info, data, PF_R);
+}
+
 static int check64_cb_r(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
     return check64_cb(info, data, PF_R);
 }
 
 static int check32_cb_w(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
     return check32_cb(info, data, PF_W);
+}
+
+static int check16_cb_w(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
+    return check16_cb(info, data, PF_W);
 }
 
 static int check64_cb_w(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
@@ -1114,6 +1168,28 @@ static int collectValuesInBinary_cb(
             values32InBinary[values32InBinary_size++] = *start_32;
         }
 
+        uint16_t* start_16 = (uint16_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+        uint16_t* end_16 =
+            (uint16_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr +
+                        HF_MIN(info->dlpi_phdr[i].p_memsz, info->dlpi_phdr[i].p_filesz));
+
+        for (; start_16 < end_16; start_16++) {
+            if (*start_16 == 0 || *start_16 == (uint16_t)-1) continue;
+            // make enough capcity
+            if (values16InBinary_size > values16InBinary_cap) {
+                LOG_F("16values size(%zu) > cap(%zu)", values16InBinary_size, values16InBinary_cap);
+            }
+            if (values16InBinary_size == values16InBinary_cap) {
+                if (values16InBinary_cap == 0) {
+                    values16InBinary_cap = 1024;
+                }
+                values16InBinary_cap *= 2;
+                values16InBinary =
+                    util_Realloc(values16InBinary, values16InBinary_cap * sizeof(uint16_t));
+            }
+            values16InBinary[values16InBinary_size++] = *start_16;
+        }
+
         uint64_t* start_64 = (uint64_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
         uint64_t* end_64 =
             (uint64_t*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr +
@@ -1145,10 +1221,24 @@ static void collectValuesInBinary() {
     dl_iterate_phdr(collectValuesInBinary_cb, NULL);
 
     // sort values
+    qsort(values16InBinary, values16InBinary_size, sizeof(uint16_t), cmp_u16);
     qsort(values32InBinary, values32InBinary_size, sizeof(uint32_t), cmp_u32);
     qsort(values64InBinary, values64InBinary_size, sizeof(uint64_t), cmp_u64);
 
     // remove duplicated values
+    if (values16InBinary_size) {
+        uint16_t previous_value = values16InBinary[0];
+        size_t   new_size       = 1;
+        for (size_t i = 1; i < values16InBinary_size; i++) {
+            uint16_t current_value = values16InBinary[i];
+            if (current_value != previous_value) {
+                // a new non-duplicated value
+                values16InBinary[new_size++] = current_value;
+            }
+            previous_value = current_value;
+        }
+        values16InBinary_size = new_size;
+    }
     if (values32InBinary_size) {
         uint32_t previous_value = values32InBinary[0];
         size_t   new_size       = 1;
@@ -1177,6 +1267,8 @@ static void collectValuesInBinary() {
     }
 
     // reduce memory
+    values16InBinary_cap = values16InBinary_size;
+    values16InBinary     = util_Realloc(values16InBinary, values16InBinary_cap * sizeof(uint16_t));
     values32InBinary_cap = values32InBinary_size;
     values32InBinary     = util_Realloc(values32InBinary, values32InBinary_cap * sizeof(uint32_t));
     values64InBinary_cap = values64InBinary_size;
@@ -1184,6 +1276,30 @@ static void collectValuesInBinary() {
 }
 
 static pthread_once_t collectValuesInBinary_InitOnce = PTHREAD_ONCE_INIT;
+
+bool util_16bitValInBinary(uint16_t v) {
+    if (!(_HF_COMMON_BIN_COLLECT_VALS)) {
+        return (dl_iterate_phdr(check16_cb_r, &v) == 1);
+    }
+
+    pthread_once(&collectValuesInBinary_InitOnce, collectValuesInBinary);
+    // check if it in read-only values
+    if (values16InBinary_size != 0) {
+        size_t l = 0, r = values16InBinary_size - 1;
+        // binary search
+        while (l != r) {
+            size_t mid = (l + r) / 2;
+            if (values16InBinary[mid] < v) {
+                l = mid + 1;
+            } else {
+                r = mid;
+            }
+        }
+        if (values16InBinary[l] == v) return true;
+    }
+    // check if it's in writable values
+    return (dl_iterate_phdr(check16_cb_w, &v) == 1);
+}
 
 bool util_32bitValInBinary(uint32_t v) {
     if (!(_HF_COMMON_BIN_COLLECT_VALS)) {
@@ -1236,6 +1352,9 @@ bool util_64bitValInBinary(uint64_t v) {
 /* Darwin doesn't use ELF file format for binaries, so dl_iterate_phdr() cannot be used there */
 lhfc_addr_t util_getProgAddr(const void* addr HF_ATTR_UNUSED) {
     return LHFC_ADDR_NOTFOUND;
+}
+bool util_16bitValInBinary(uint16_t v HF_ATTR_UNUSED) {
+    return false;
 }
 bool util_32bitValInBinary(uint32_t v HF_ATTR_UNUSED) {
     return false;

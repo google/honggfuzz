@@ -50,6 +50,10 @@
 #include "socketfuzzer.h"
 #include "subproc.h"
 
+#if defined(_HF_ARCH_LINUX) && !defined(_HF_LINUX_NO_BFD)
+#include "linux/bfd.h"
+#endif
+
 static int  sigReceived = 0;
 static bool clearWin    = false;
 
@@ -389,6 +393,12 @@ int main(int argc, char** argv) {
     if (hfuzz.mutate.dictionaryFile && !input_parseDictionary(&hfuzz)) {
         LOG_F("Couldn't parse dictionary file ('%s')", hfuzz.mutate.dictionaryFile);
     }
+
+#if defined(_HF_ARCH_LINUX) && !defined(_HF_LINUX_NO_BFD)
+    /* Extract tokens from parser generator string arrays (Lemon/Bison/Yacc) */
+    arch_bfdExtractStrArray(&hfuzz, "yyTokenName");  /* Lemon */
+    arch_bfdExtractStrArray(&hfuzz, "yytname");      /* Bison/Yacc */
+#endif
 
     if (hfuzz.feedback.blocklistFile && !input_parseBlacklist(&hfuzz)) {
         LOG_F("Couldn't parse stackhash blocklist file ('%s')", hfuzz.feedback.blocklistFile);

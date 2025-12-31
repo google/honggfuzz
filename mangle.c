@@ -827,10 +827,24 @@ static void mangle_ASCIINumChange(run_t* run, bool printable) {
         LOG_F("Invalid choice");
     };
 
-    char buf[20];
-    snprintf(buf, sizeof(buf), "%-19" PRIu64, val);
+    char buf[64];
+    snprintf(buf, sizeof(buf), "%" PRIu64, val);
+    size_t new_len = strlen(buf);
 
-    mangle_UseValueAt(run, off, (const uint8_t*)buf, len, printable);
+    if (util_rnd64() & 1) {
+        mangle_Insert(run, off, (const uint8_t*)buf, new_len, printable);
+    } else {
+        if (new_len == len) {
+            mangle_Overwrite(run, off, (const uint8_t*)buf, new_len, printable);
+        } else if (new_len > len) {
+            mangle_Inflate(run, off + len, new_len - len, printable);
+            mangle_Overwrite(run, off, (const uint8_t*)buf, new_len, printable);
+        } else {
+            mangle_Overwrite(run, off, (const uint8_t*)buf, new_len, printable);
+            mangle_Move(run, off + len, off + new_len, run->dynfile->size - (off + len));
+            input_setSize(run, run->dynfile->size - (len - new_len));
+        }
+    }
 }
 
 static void mangle_Splice(run_t* run, bool printable) {
@@ -1260,7 +1274,13 @@ static void mangle_TokenShuffle(run_t* run, bool printable HF_ATTR_UNUSED) {
 
     /* Simple swap: copy both tokens, then write back swapped */
     uint8_t* tmp1 = util_Malloc(len1);
+    defer {
+        free(tmp1);
+    };
     uint8_t* tmp2 = util_Malloc(len2);
+    defer {
+        free(tmp2);
+    };
 
     memcpy(tmp1, &run->dynfile->data[start1], len1);
     memcpy(tmp2, &run->dynfile->data[start2], len2);
@@ -1270,14 +1290,30 @@ static void mangle_TokenShuffle(run_t* run, bool printable HF_ATTR_UNUSED) {
         memcpy(&run->dynfile->data[start1], tmp2, len2);
         memcpy(&run->dynfile->data[start2], tmp1, len1);
     }
-    /* Different lengths - just overwrite token2 into token1's position */
+    /* Different lengths - move middle block then insert tokens */
     else {
-        size_t copy_len = HF_MIN(len1, len2);
-        memcpy(&run->dynfile->data[start1], tmp2, copy_len);
-    }
+        /*
+         * Layout: [Prefix][Token1][Middle][Token2][Suffix]
+         * Want:   [Prefix][Token2][Middle][Token1][Suffix]
+         *
+         * 1. Copy Token2 to Start1
+         * 2. Move Middle from End1 to Start1+Len2
+         * 3. Copy Token1 to Start1+Len2+MiddleLen
+         */
 
-    free(tmp1);
-    free(tmp2);
+        size_t mid_len = start2 - end1;
+
+        /* Step 2: Move Middle first (using memmove for safety) */
+        /* Dest: start1 + len2. Src: end1 (which is start1+len1). Len: mid_len */
+        memmove(&run->dynfile->data[start1 + len2], &run->dynfile->data[end1], mid_len);
+
+        /* Step 1: Copy Token2 */
+        memcpy(&run->dynfile->data[start1], tmp2, len2);
+
+        /* Step 3: Copy Token1 */
+        /* Dest: start1 + len2 + mid_len */
+        memcpy(&run->dynfile->data[start1 + len2 + mid_len], tmp1, len1);
+    }
 }
 
 /*

@@ -27,6 +27,8 @@
 
 #include <bfd.h>
 #include <dis-asm.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <inttypes.h>
 #include <pthread.h>
 #include <stdarg.h>
@@ -294,6 +296,169 @@ void arch_bfdDisasm(pid_t pid, uint8_t* mem, size_t size, char* instr) {
         disassemble_free_target(&info);
     }
     bfd_close(bfdh);
+}
+
+/*
+ * Find a symbol by name in the symbol table and return its address
+ */
+static asymbol* arch_bfdFindSymbol(asymbol** syms, const char* name) {
+    if (!syms) {
+        return NULL;
+    }
+    for (int i = 0; syms[i] != NULL; i++) {
+        if (strcmp(bfd_asymbol_name(syms[i]), name) == 0) {
+            return syms[i];
+        }
+    }
+    return NULL;
+}
+
+/*
+ * Convert a VMA (virtual memory address) to file offset
+ */
+static long arch_bfdVmaToFileOffset(bfd* bfdh, bfd_vma vma) {
+    for (struct bfd_section* sec = bfdh->sections; sec; sec = sec->next) {
+        bfd_vma sec_vma  = bfd_section_vma(sec);
+        bfd_size_type sz = bfd_section_size(sec);
+        if (vma >= sec_vma && vma < sec_vma + sz) {
+            /* filepos is the offset in file where section data starts */
+            return (long)(sec->filepos + (vma - sec_vma));
+        }
+    }
+    return -1;
+}
+
+/*
+ * Extract strings from a symbol that is an array of char* pointers, add to dictionary.
+ * Returns number of strings extracted.
+ */
+size_t arch_bfdExtractStrArray(honggfuzz_t* hfuzz, const char* symName) {
+    MX_SCOPED_LOCK(&arch_bfd_mutex);
+
+    const char* fname = hfuzz->exe.cmdline[0];
+    if (!fname || !symName) {
+        return 0;
+    }
+
+    bfd_init();
+
+    bfd* bfdh = bfd_openr(fname, NULL);
+    if (!bfdh) {
+        LOG_D("bfd_openr(%s) failed", fname);
+        return 0;
+    }
+    if (!bfd_check_format(bfdh, bfd_object)) {
+        bfd_close(bfdh);
+        return 0;
+    }
+
+    /* Read symbol table */
+    int storage_needed = bfd_get_symtab_upper_bound(bfdh);
+    if (storage_needed <= 0) {
+        bfd_close(bfdh);
+        return 0;
+    }
+    asymbol** syms     = (asymbol**)util_Calloc(storage_needed);
+    int       symcount = bfd_canonicalize_symtab(bfdh, syms);
+    if (symcount <= 0) {
+        free(syms);
+        bfd_close(bfdh);
+        return 0;
+    }
+
+    /* Find the symbol */
+    asymbol* sym = arch_bfdFindSymbol(syms, symName);
+    if (!sym) {
+        free(syms);
+        bfd_close(bfdh);
+        return 0;
+    }
+
+    bfd_vma sym_vma = bfd_asymbol_value(sym);
+    long    offset  = arch_bfdVmaToFileOffset(bfdh, sym_vma);
+    if (offset < 0) {
+        LOG_D("Could not convert VMA 0x%lx to file offset for %s", (unsigned long)sym_vma, symName);
+        free(syms);
+        bfd_close(bfdh);
+        return 0;
+    }
+
+    LOG_D("Found %s at VMA 0x%lx, file offset 0x%lx", symName, (unsigned long)sym_vma, offset);
+
+    /* Open file for reading data */
+    int fd = TEMP_FAILURE_RETRY(open(fname, O_RDONLY | O_CLOEXEC));
+    if (fd == -1) {
+        free(syms);
+        bfd_close(bfdh);
+        return 0;
+    }
+
+    /* Read pointer array - assume max 2048 entries */
+    size_t   ptr_size   = sizeof(void*);
+    size_t   max_ptrs   = 2048;
+    uint64_t ptrs[2048] = {0};
+
+    ssize_t nread = files_readFromFdSeek(fd, (uint8_t*)ptrs, max_ptrs * ptr_size, offset);
+    if (nread <= 0) {
+        close(fd);
+        free(syms);
+        bfd_close(bfdh);
+        return 0;
+    }
+    size_t nptrs = (size_t)nread / ptr_size;
+
+    size_t cnt = 0;
+    for (size_t i = 0; i < nptrs && ptrs[i] != 0; i++) {
+        if (hfuzz->mutate.dictionaryCnt >= ARRAYSIZE(hfuzz->mutate.dictionary)) {
+            LOG_W("Dictionary full, stopping extraction from %s", symName);
+            break;
+        }
+
+        /* Convert string pointer VMA to file offset */
+        long str_offset = arch_bfdVmaToFileOffset(bfdh, (bfd_vma)ptrs[i]);
+        if (str_offset < 0) {
+            continue;
+        }
+
+        /* Read string from file */
+        char buf[512] = {0};
+        if (files_readFromFdSeek(fd, (uint8_t*)buf, sizeof(buf) - 1, str_offset) <= 0) {
+            continue;
+        }
+        buf[sizeof(buf) - 1] = '\0';
+
+        size_t len = strlen(buf);
+        if (len < 2 || len > sizeof(hfuzz->mutate.dictionary[0].val)) {
+            continue;
+        }
+
+        /* Skip Bison/Yacc internal symbols */
+        if (buf[0] == '$' || buf[0] == '@') {
+            continue;
+        }
+
+        /* Add to dictionary */
+        size_t idx = ATOMIC_POST_INC(hfuzz->mutate.dictionaryCnt);
+        if (idx >= ARRAYSIZE(hfuzz->mutate.dictionary)) {
+            ATOMIC_PRE_DEC(hfuzz->mutate.dictionaryCnt);
+            break;
+        }
+
+        memcpy(hfuzz->mutate.dictionary[idx].val, buf, len);
+        hfuzz->mutate.dictionary[idx].len = len;
+        LOG_D("%s[%zu]: '%s'", symName, i, buf);
+        cnt++;
+    }
+
+    if (cnt > 0) {
+        LOG_I("Extracted %zu strings from '%s' (dictionary now has %zu entries)", cnt, symName,
+            hfuzz->mutate.dictionaryCnt);
+    }
+
+    close(fd);
+    free(syms);
+    bfd_close(bfdh);
+    return cnt;
 }
 
 #endif /*  !defined(_HF_LINUX_NO_BFD)  */

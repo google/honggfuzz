@@ -220,6 +220,7 @@ extern void        util_turnToPrintable(uint8_t* buf, size_t sz);
 extern void util_closeStdio(bool close_stdin, bool close_stdout, bool close_stderr);
 
 extern lhfc_addr_t util_getProgAddr(const void* addr);
+extern bool        util_16bitValInBinary(uint16_t v);
 extern bool        util_32bitValInBinary(uint32_t v);
 extern bool        util_64bitValInBinary(uint64_t v);
 
