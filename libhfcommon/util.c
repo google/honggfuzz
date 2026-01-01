@@ -124,9 +124,6 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
 #endif /* defined(__FreeBSD__) || defined(_HF_ARCH_NETBSD) */
 #if defined(_HF_ARCH_NETBSD)
     cpuset_t* set = cpuset_create();
-    defer {
-        cpuset_destroy(set);
-    };
 #endif /* defined(_HF_ARCH_NETBSD) */
 
     for (uint32_t i = 0; i < cpucnt; i++) {
@@ -140,6 +137,12 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
     if (sched_setaffinity(getpid(), sizeof(set), &set) != 0) {
 #elif defined(_HF_ARCH_NETBSD)
     if (pthread_setaffinity_np(pthread_self(), cpuset_size(set), set) != 0) {
+        PLOG_W("pthread_setaffinity_np(thread=#%" PRIu32 "), failed", threadno);
+        cpuset_destroy(set);
+        return false;
+    }
+    cpuset_destroy(set);
+    return true;
 #else  /* defined((_HF_ARCH_NETBSD) */
     if (pthread_setaffinity_np(pthread_self(), sizeof(set), &set) != 0) {
 #endif /* defined((_HF_ARCH_NETBSD) */
@@ -1091,22 +1094,22 @@ static void collectRoValues(void) {
         LOG_W("open('%s', O_RDONLY|O_CLOEXEC)", fname);
         return;
     }
-    defer {
-        close(fd);
-    }
     LOG_D("Opening file for RO value collection: %s", fname);
 
     struct stat st;
     if (fstat(fd, &st) == -1) {
         LOG_W("fstat('%s', fd=%d)", fname, fd);
+        close(fd);
         return;
     }
     if ((size_t)st.st_size < sizeof(Elf32_Ehdr)) {
+        close(fd);
         return;
     }
 
     const uint8_t* map = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
     if (map == MAP_FAILED) {
+        close(fd);
         return;
     }
 
@@ -1117,6 +1120,7 @@ static void collectRoValues(void) {
     }
 
     munmap((void*)map, st.st_size);
+    close(fd);
 
     /* Sort arrays */
     if (roVals32_cnt > 1) {
