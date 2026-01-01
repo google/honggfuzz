@@ -563,6 +563,17 @@ static int ldMode(int argc, char** argv) {
     args[j++] = "-Wl,--wrap=sqlite3_stricmp";
     args[j++] = "-Wl,--wrap=sqlite3_strnicmp";
     args[j++] = "-Wl,--wrap=sqlite3StrICmp";
+    /* FFmpeg */
+    args[j++] = "-Wl,--wrap=av_strcasecmp";
+    args[j++] = "-Wl,--wrap=av_strncasecmp";
+    /* MbedTLS */
+    args[j++] = "-Wl,--wrap=mbedtls_ct_memcmp";
+    /* PostgreSQL */
+    args[j++] = "-Wl,--wrap=pg_strcasecmp";
+    args[j++] = "-Wl,--wrap=pg_strncasecmp";
+    /* BSD/openssh */
+    args[j++] = "-Wl,--wrap=timingsafe_bcmp";
+    args[j++] = "-Wl,--wrap=timingsafe_memcmp";
 #endif /* _HF_ARCH_DARWIN */
 
     /* Pull modules defining the following symbols (if they exist) */

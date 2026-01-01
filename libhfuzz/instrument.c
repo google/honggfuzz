@@ -296,7 +296,7 @@ void instrumentResetLocalCovFeedback(void) {
 /* Used to limit certain expensive actions, like adding values to dictionaries */
 static inline bool instrumentLimitEvery(uint64_t step) {
     static uint64_t counter = 0;
-    uint64_t val = __atomic_add_fetch(&counter, 1, __ATOMIC_RELAXED);
+    uint64_t        val     = __atomic_add_fetch(&counter, 1, __ATOMIC_RELAXED);
     if (((step + 1) & step) == 0) {
         return ((val & step) == 0);
     }
@@ -441,7 +441,7 @@ void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2) {
     hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
-#if 0  /* Unused for now */
+#if 0 /* Unused for now */
 /*
  * Check if only 1 byte in a multi-byte value is non-zero.
  * Skip adding such values to dynamic dict (e.g. 0x00000005, 0xAA000000).
@@ -459,7 +459,7 @@ __attribute__((always_inline)) static inline bool instrumentOnlyOneByteSet(
 #endif
 
 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
-#if 0  /* Pollutes the dynamic dictionary */
+#if 0 /* Pollutes the dynamic dictionary */
     /* Add 4byte values to the const_dictionary if they exist within the binary */
     if (globalCmpFeedback && instrumentLimitEvery(16383)) {
         if (!instrumentOnlyOneByteSet(Arg1, sizeof(Arg1))) {
@@ -483,7 +483,7 @@ void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
 }
 
 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
-#if 0  /* Pollutes the dynamic dictionary */
+#if 0 /* Pollutes the dynamic dictionary */
     /* Add 8byte values to the const_dictionary if they exist within the binary */
     if (globalCmpFeedback && instrumentLimitEvery(16383)) {
         if (!instrumentOnlyOneByteSet(Arg1, sizeof(Arg1))) {

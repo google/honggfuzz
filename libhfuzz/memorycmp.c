@@ -651,7 +651,7 @@ HF_WEAK_WRAP(char*, g_strstr_len, const char* haystack, ssize_t haystack_len, co
         (uintptr_t)__builtin_return_address(0));
 }
 
-static inline int hf_glib_ascii_tolower(int c) {
+static inline int hf_ascii_tolower(int c) {
     if (c >= 'A' && c <= 'Z') {
         return c - 'A' + 'a';
     }
@@ -662,14 +662,14 @@ HF_WEAK_WRAP(int, g_ascii_strcasecmp, const char* s1, const char* s2) {
     if (!s1 || !s2) {
         return 0;
     }
-    return HF_strcasecmp(s1, s2, hf_glib_ascii_tolower, (uintptr_t)__builtin_return_address(0));
+    return HF_strcasecmp(s1, s2, hf_ascii_tolower, (uintptr_t)__builtin_return_address(0));
 }
 
 HF_WEAK_WRAP(int, g_ascii_strncasecmp, const char* s1, const char* s2, size_t n) {
     if (!s1 || !s2) {
         return 0;
     }
-    return HF_strncasecmp(s1, s2, n, hf_glib_ascii_tolower, instrumentConstAvail(),
+    return HF_strncasecmp(s1, s2, n, hf_ascii_tolower, instrumentConstAvail(),
         (uintptr_t)__builtin_return_address(0));
 }
 
@@ -761,4 +761,46 @@ HF_WEAK_WRAP(int, sqlite3_strnicmp, const char* s1, const char* s2, size_t len) 
 /* C++ wrappers */
 int _ZNSt11char_traitsIcE7compareEPKcS2_m(const char* s1, const char* s2, size_t count) {
     return HF_memcmp(s1, s2, count, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
+}
+
+/*
+ * FFmpeg wrappers
+ */
+HF_WEAK_WRAP(int, av_strcasecmp, const char* s1, const char* s2) {
+    return HF_strcasecmp(s1, s2, hf_ascii_tolower, (uintptr_t)__builtin_return_address(0));
+}
+
+HF_WEAK_WRAP(int, av_strncasecmp, const char* s1, const char* s2, size_t n) {
+    return HF_strncasecmp(s1, s2, n, hf_ascii_tolower, instrumentConstAvail(),
+        (uintptr_t)__builtin_return_address(0));
+}
+
+/*
+ * MbedTLS wrappers
+ */
+HF_WEAK_WRAP(int, mbedtls_ct_memcmp, const void* m1, const void* m2, size_t n) {
+    return HF_memcmp(m1, m2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
+}
+
+/*
+ * PostgreSQL wrappers
+ */
+HF_WEAK_WRAP(int, pg_strcasecmp, const char* s1, const char* s2) {
+    return HF_strcasecmp(s1, s2, hf_ascii_tolower, (uintptr_t)__builtin_return_address(0));
+}
+
+HF_WEAK_WRAP(int, pg_strncasecmp, const char* s1, const char* s2, size_t n) {
+    return HF_strncasecmp(s1, s2, n, hf_ascii_tolower, instrumentConstAvail(),
+        (uintptr_t)__builtin_return_address(0));
+}
+
+/*
+ * BSD/openssh wrappers
+ */
+HF_WEAK_WRAP(int, timingsafe_bcmp, const void* b1, const void* b2, size_t n) {
+    return HF_memcmp(b1, b2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
+}
+
+HF_WEAK_WRAP(int, timingsafe_memcmp, const void* b1, const void* b2, size_t n) {
+    return HF_memcmp(b1, b2, n, instrumentConstAvail(), (uintptr_t)__builtin_return_address(0));
 }
