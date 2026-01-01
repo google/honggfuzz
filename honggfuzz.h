@@ -219,11 +219,11 @@ typedef struct {
 } feedback_t;
 
 typedef struct {
-    uint32_t cnt;
     struct {
-        uint8_t  val[32];
+        uint8_t  val[64];
         uint32_t len;
     } valArr[1024 * 16];
+    uint32_t cnt;
 } cmpfeedback_t;
 
 typedef struct {
