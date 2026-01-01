@@ -188,6 +188,7 @@ static inline void mangle_UseValue(run_t* run, const uint8_t* val, size_t len, b
     }
 }
 
+#if 0
 static inline void mangle_UseValueAt(
     run_t* run, size_t off, const uint8_t* val, size_t len, bool printable) {
     if (util_rnd64() & 1) {
@@ -196,6 +197,7 @@ static inline void mangle_UseValueAt(
         mangle_Insert(run, off, val, len, printable);
     }
 }
+#endif
 
 static void mangle_MemSwap(run_t* run, bool printable HF_ATTR_UNUSED) {
     /* No big deal if those two are overlapping */
