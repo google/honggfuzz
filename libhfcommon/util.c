@@ -24,6 +24,7 @@
 #include "util.h"
 
 #include <ctype.h>
+#include <elf.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -976,8 +977,10 @@ lhfc_addr_t util_getProgAddr(const void* addr) {
 /* Collected values from read-only sections */
 static uint32_t* roVals32     = NULL;
 static size_t    roVals32_cnt = 0;
+static size_t    roVals32_cap = 0;
 static uint64_t* roVals64     = NULL;
 static size_t    roVals64_cnt = 0;
+static size_t    roVals64_cap = 0;
 
 static int cmp_u32(const void* a, const void* b) {
     uint32_t va = *(const uint32_t*)a;
@@ -995,70 +998,125 @@ static int cmp_u64(const void* a, const void* b) {
     return 0;
 }
 
-static int collectRoValues_cb(struct dl_phdr_info* info, size_t size HF_ATTR_UNUSED, void* data) {
-    size_t* total_cnt = (size_t*)data;
+static bool util_isInterestingSection(const char* name) {
+    if (strcmp(name, ".rodata") == 0) return true;
+    if (strcmp(name, ".text") == 0) return true;
+    if (strcmp(name, ".data") == 0) return true;
+    if (strcmp(name, ".data.rel.ro") == 0) return true;
+    if (strncmp(name, ".rodata.", 8) == 0) return true;
+    if (strncmp(name, ".data.rel.ro.", 13) == 0) return true;
+    return false;
+}
 
-    for (size_t i = 0; i < info->dlpi_phnum; i++) {
-        /* Only the main binary, skip libraries */
-        if (info->dlpi_name[0] != '\0') {
-            continue;
-        }
-        if (info->dlpi_phdr[i].p_type != PT_LOAD) {
-            continue;
-        }
-        /* PF_R only: readable, not writable, not executable */
-        if (info->dlpi_phdr[i].p_flags != PF_R) {
-            continue;
-        }
+static void util_add32(uint32_t v) {
+    if (roVals32_cnt >= roVals32_cap) {
+        roVals32_cap = roVals32_cap ? roVals32_cap * 2 : 1024;
+        roVals32     = util_Realloc(roVals32, roVals32_cap * sizeof(uint32_t));
+    }
+    roVals32[roVals32_cnt++] = v;
+}
 
-        uintptr_t seg_start = info->dlpi_addr + info->dlpi_phdr[i].p_vaddr;
-        size_t    seg_len   = HF_MIN(info->dlpi_phdr[i].p_memsz, info->dlpi_phdr[i].p_filesz);
+static void util_add64(uint64_t v) {
+    if (roVals64_cnt >= roVals64_cap) {
+        roVals64_cap = roVals64_cap ? roVals64_cap * 2 : 1024;
+        roVals64     = util_Realloc(roVals64, roVals64_cap * sizeof(uint64_t));
+    }
+    roVals64[roVals64_cnt++] = v;
+}
 
-        /* Align start up to 8 bytes for 64-bit collection */
-        uintptr_t aligned_start = (seg_start + 7) & ~(uintptr_t)7;
-        if (aligned_start >= seg_start + seg_len) {
-            continue;
-        }
-        size_t aligned_len = seg_len - (aligned_start - seg_start);
+static void util_analyzeSection(const char* name, const uint8_t* p, size_t sz) {
+    LOG_D("Analyzing section: '%s' (size: %zu) for integer values", name, sz);
+    for (size_t off = 0; off + sizeof(uint32_t) <= sz; off += sizeof(uint32_t)) {
+        uint32_t v;
+        memcpy(&v, p + off, sizeof(v));
+        util_add32(v);
+    }
+    for (size_t off = 0; off + sizeof(uint64_t) <= sz; off += sizeof(uint64_t)) {
+        uint64_t v;
+        memcpy(&v, p + off, sizeof(v));
+        util_add64(v);
+    }
+}
 
-        /* Count pass - just count how many values we'll collect */
-        if (roVals32 == NULL) {
-            *total_cnt += (aligned_len / sizeof(uint32_t));
-            continue;
-        }
+static void util_collectELF64(const uint8_t* map, size_t sz) {
+    const Elf64_Ehdr* ehdr = (const Elf64_Ehdr*)map;
+    if ((uint64_t)sz < ehdr->e_shoff + (ehdr->e_shentsize * ehdr->e_shnum)) return;
 
-        /* Collection pass - collect 32-bit aligned values */
-        uint32_t* p32     = (uint32_t*)aligned_start;
-        uint32_t* p32_end = (uint32_t*)(aligned_start + (aligned_len & ~(size_t)3));
-        while (p32 < p32_end) {
-            roVals32[roVals32_cnt++] = *p32++;
-        }
+    const Elf64_Shdr* shdr = (const Elf64_Shdr*)(map + ehdr->e_shoff);
+    if (ehdr->e_shstrndx >= ehdr->e_shnum) return;
 
-        /* Collection pass - collect 64-bit aligned values */
-        uint64_t* p64     = (uint64_t*)aligned_start;
-        uint64_t* p64_end = (uint64_t*)(aligned_start + (aligned_len & ~(size_t)7));
-        while (p64 < p64_end) {
-            roVals64[roVals64_cnt++] = *p64++;
+    const char* strtab = (const char*)(map + shdr[ehdr->e_shstrndx].sh_offset);
+    if ((const uint8_t*)strtab >= map + sz) return;
+
+    for (int i = 0; i < ehdr->e_shnum; i++) {
+        if (shdr[i].sh_offset + shdr[i].sh_size > (uint64_t)sz) continue;
+        const char* name = strtab + shdr[i].sh_name;
+        if (util_isInterestingSection(name)) {
+            util_analyzeSection(name, map + shdr[i].sh_offset, shdr[i].sh_size);
         }
     }
-    return 0;
+}
+
+static void util_collectELF32(const uint8_t* map, size_t sz) {
+    const Elf32_Ehdr* ehdr = (const Elf32_Ehdr*)map;
+    if ((uint64_t)sz < ehdr->e_shoff + (ehdr->e_shentsize * ehdr->e_shnum)) return;
+
+    const Elf32_Shdr* shdr = (const Elf32_Shdr*)(map + ehdr->e_shoff);
+    if (ehdr->e_shstrndx >= ehdr->e_shnum) return;
+
+    const char* strtab = (const char*)(map + shdr[ehdr->e_shstrndx].sh_offset);
+    if ((const uint8_t*)strtab >= map + sz) return;
+
+    for (int i = 0; i < ehdr->e_shnum; i++) {
+        if (shdr[i].sh_offset + shdr[i].sh_size > (uint64_t)sz) continue;
+        const char* name = strtab + shdr[i].sh_name;
+        if (util_isInterestingSection(name)) {
+            util_analyzeSection(name, map + shdr[i].sh_offset, shdr[i].sh_size);
+        }
+    }
 }
 
 static void collectRoValues(void) {
-    /* First pass - count values to allocate */
-    size_t total_cnt = 0;
-    dl_iterate_phdr(collectRoValues_cb, &total_cnt);
+    const char* fname = "/proc/self/exe";
+#if defined(__FreeBSD__) || defined(__DragonFly__)
+    fname = "/proc/curproc/file";
+#elif defined(_HF_ARCH_NETBSD)
+    fname = "/proc/curproc/exe";
+#elif defined(__sun)
+    fname = "/proc/self/path/a.out";
+#endif
 
-    if (total_cnt == 0) {
+    int fd = TEMP_FAILURE_RETRY(open(fname, O_RDONLY | O_CLOEXEC));
+    if (fd == -1) {
+        LOG_W("open('%s', O_RDONLY|O_CLOEXEC)", fname);
+        return;
+    }
+    defer {
+        close(fd);
+    }
+    LOG_D("Opening file for RO value collection: %s", fname);
+
+    struct stat st;
+    if (fstat(fd, &st) == -1) {
+        LOG_W("fstat('%s', fd=%d)", fname, fd);
+        return;
+    }
+    if ((size_t)st.st_size < sizeof(Elf32_Ehdr)) {
         return;
     }
 
-    /* Allocate arrays (upper bound, will shrink after dedup) */
-    roVals32 = util_Malloc(total_cnt * sizeof(uint32_t));
-    roVals64 = util_Malloc(total_cnt * sizeof(uint64_t));
+    const uint8_t* map = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (map == MAP_FAILED) {
+        return;
+    }
 
-    /* Second pass - collect values */
-    dl_iterate_phdr(collectRoValues_cb, NULL);
+    if (map[EI_CLASS] == ELFCLASS64) {
+        util_collectELF64(map, st.st_size);
+    } else if (map[EI_CLASS] == ELFCLASS32) {
+        util_collectELF32(map, st.st_size);
+    }
+
+    munmap((void*)map, st.st_size);
 
     /* Sort arrays */
     if (roVals32_cnt > 1) {
@@ -1089,6 +1147,9 @@ static void collectRoValues(void) {
         }
         roVals64_cnt = w;
     }
+
+    LOG_I("Parsed %s: found %zu 32-bit and %zu 64-bit interesting values", fname, roVals32_cnt,
+        roVals64_cnt);
 
     /* Shrink to actual size */
     if (roVals32_cnt > 0) {

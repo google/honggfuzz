@@ -41,6 +41,9 @@
 #define rmb() __asm__ __volatile__("" ::: "memory")
 #define wmb() __sync_synchronize()
 
+#define likely(x)   __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
+
 /* TEMP_FAILURE_RETRY, but for all OSes */
 #ifndef TEMP_FAILURE_RETRY
 #define TEMP_FAILURE_RETRY(exp)                                                                    \
