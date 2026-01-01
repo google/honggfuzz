@@ -28,6 +28,60 @@
 #include "libhfcommon/common.h"
 #include "libhfcommon/util.h"
 
+/*
+ * 0 = no entropy (single byte value), 100 = maximum entropy (uniform distribution).
+ * Approximation of Shannon entropy.
+ */
+static unsigned power_ComputeEntropy(const uint8_t* data, size_t len) {
+    if (len == 0) {
+        return 0;
+    }
+
+    uint32_t counts[256] = {0};
+    for (size_t i = 0; i < len; i++) {
+        counts[data[i]]++;
+    }
+
+    /* Count unique bytes and find max count */
+    unsigned unique = 0;
+    uint32_t maxCnt = 0;
+    for (unsigned i = 0; i < 256; i++) {
+        if (counts[i] > 0) {
+            unique++;
+            if (counts[i] > maxCnt) {
+                maxCnt = counts[i];
+            }
+        }
+    }
+
+    if (unique <= 1) {
+        return 0;
+    }
+
+    /*
+     * * log2(unique) gives theoretical max entropy for this alphabet (0-8)
+     * * Uniformity factor penalizes skewed distributions
+     * Scaled to 0-100 range.
+     */
+    unsigned log2_unique = util_Log2(unique); /* 1-8 for unique 2-256 */
+    unsigned log2_len    = len > 1 ? util_Log2(len) : 1;
+
+    /* Uniformity: ratio of average count to max count (scaled by 100) */
+    uint32_t avgCnt     = (uint32_t)(len / unique);
+    unsigned uniformity = (avgCnt * 100) / maxCnt; /* 0-100, higher = more uniform */
+
+    /* Combine: entropy_score = log2(unique) * uniformity / 8 */
+    /* log2_unique is 0-8, uniformity is 0-100, result scaled to 0-100 */
+    unsigned entropy = (log2_unique * uniformity) / 8;
+
+    /* Boost if we're using a good portion of the alphabet relative to length */
+    if (log2_unique >= log2_len && log2_len > 0) {
+        entropy = HF_MIN(entropy + 10, 100);
+    }
+
+    return HF_MIN(entropy, 100);
+}
+
 uint64_t power_calculateEnergy(run_t* run, dynfile_t* dynfile) {
     const uint64_t energyMax     = 32768;
     const time_t   freshTimeSec  = 60;
@@ -164,6 +218,18 @@ uint64_t power_calculateEnergy(run_t* run, dynfile_t* dynfile) {
                 energy <<= 2; /* Boost high coverage */
             else if (pct < 10)
                 energy >>= 2; /* Penalize very low coverage */
+        }
+    }
+
+    /* Entropy - penalize random blobs, boost structured data */
+    if (dynfile->size > 0) {
+        unsigned entropy = power_ComputeEntropy(dynfile->data, dynfile->size);
+        if (entropy > 93) {
+            energy /= 2; /* High entropy (compressed/encrypted/random) - likely harder to fuzz */
+        } else if (entropy < 25) {
+            energy /= 2; /* Very low entropy (sparse/zeros) - likely uninteresting */
+        } else if (entropy < 62) {
+            energy = (energy * 3) / 2; /* Text/Structured data - boost */
         }
     }
 
