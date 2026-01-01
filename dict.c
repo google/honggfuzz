@@ -52,9 +52,9 @@ static inline uint32_t dict_hash(const uint8_t* data, size_t len) {
 /*
  * Hash table for fast duplicate lookups.
  * Uses open addressing with linear probing.
- * Size is 16K to keep load factor low for 8K max entries.
+ * Size is 64K to keep load factor low for large dictionaries.
  */
-#define DICT_HASH_SIZE 16384
+#define DICT_HASH_SIZE 65536
 #define DICT_HASH_MASK (DICT_HASH_SIZE - 1)
 
 /* Hash table entries: index into dictionary array, 0 means empty, index+1 stored */
