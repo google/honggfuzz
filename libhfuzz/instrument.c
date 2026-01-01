@@ -295,10 +295,12 @@ void instrumentResetLocalCovFeedback(void) {
 
 /* Used to limit certain expensive actions, like adding values to dictionaries */
 static inline bool instrumentLimitEvery(uint64_t step) {
+    static uint64_t counter = 0;
+    uint64_t val = __atomic_add_fetch(&counter, 1, __ATOMIC_RELAXED);
     if (((step + 1) & step) == 0) {
-        return ((util_rnd64() & step) == 0);
+        return ((val & step) == 0);
     }
-    return (util_rndGet(0, step) == 0);
+    return ((val % (step + 1)) == 0);
 }
 
 static inline void instrumentAddConstMemInternal(const void* mem, size_t len) {
@@ -439,17 +441,35 @@ void __sanitizer_cov_trace_cmp2(uint16_t Arg1, uint16_t Arg2) {
     hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
+#if 0  /* Unused for now */
+/*
+ * Check if only 1 byte in a multi-byte value is non-zero.
+ * Skip adding such values to dynamic dict (e.g. 0x00000005, 0xAA000000).
+ */
+__attribute__((always_inline)) static inline bool instrumentOnlyOneByteSet(
+    uint64_t val, size_t size) {
+    unsigned count = 0;
+    for (size_t i = 0; i < size; i++) {
+        if ((val >> (i * 8)) & 0xFF) {
+            count++;
+        }
+    }
+    return count <= 1;
+}
+#endif
+
 void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
+#if 0  /* Pollutes the dynamic dictionary */
     /* Add 4byte values to the const_dictionary if they exist within the binary */
-    if (globalCmpFeedback && instrumentLimitEvery(4095)) {
-        if (Arg1 > 0xffff) {
+    if (globalCmpFeedback && instrumentLimitEvery(16383)) {
+        if (!instrumentOnlyOneByteSet(Arg1, sizeof(Arg1))) {
             uint32_t bswp = __builtin_bswap32(Arg1);
             if (util_32bitValInBinary(Arg1) || util_32bitValInBinary(bswp)) {
                 instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
                 instrumentAddConstMemInternal(&bswp, sizeof(bswp));
             }
         }
-        if (Arg2 > 0xffff) {
+        if (!instrumentOnlyOneByteSet(Arg2, sizeof(Arg2))) {
             uint32_t bswp = __builtin_bswap32(Arg2);
             if (util_32bitValInBinary(Arg2) || util_32bitValInBinary(bswp)) {
                 instrumentAddConstMemInternal(&Arg2, sizeof(Arg2));
@@ -457,21 +477,23 @@ void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
             }
         }
     }
+#endif
 
     hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
 void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
+#if 0  /* Pollutes the dynamic dictionary */
     /* Add 8byte values to the const_dictionary if they exist within the binary */
-    if (globalCmpFeedback && instrumentLimitEvery(4095)) {
-        if (Arg1 > 0xffffff) {
+    if (globalCmpFeedback && instrumentLimitEvery(16383)) {
+        if (!instrumentOnlyOneByteSet(Arg1, sizeof(Arg1))) {
             uint64_t bswp = __builtin_bswap64(Arg1);
             if (util_64bitValInBinary(Arg1) || util_64bitValInBinary(bswp)) {
                 instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
                 instrumentAddConstMemInternal(&bswp, sizeof(bswp));
             }
         }
-        if (Arg2 > 0xffffff) {
+        if (!instrumentOnlyOneByteSet(Arg2, sizeof(Arg2))) {
             uint64_t bswp = __builtin_bswap64(Arg2);
             if (util_64bitValInBinary(Arg2) || util_64bitValInBinary(bswp)) {
                 instrumentAddConstMemInternal(&Arg2, sizeof(Arg2));
@@ -479,6 +501,7 @@ void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
             }
         }
     }
+#endif
 
     hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
@@ -489,67 +512,22 @@ void __sanitizer_cov_trace_const_cmp1(uint8_t Arg1, uint8_t Arg2) {
 }
 
 void __sanitizer_cov_trace_const_cmp2(uint16_t Arg1, uint16_t Arg2) {
-    if (globalCmpFeedback && instrumentLimitEvery(4095)) {
-        if (util_16bitValInBinary(Arg1)) {
-            instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
-        } else {
-            uint16_t bswp = __builtin_bswap16(Arg1);
-            if (util_16bitValInBinary(bswp)) {
-                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
-            }
-        }
-        if (util_16bitValInBinary(Arg2)) {
-            instrumentAddConstMemInternal(&Arg2, sizeof(Arg2));
-        } else {
-            uint16_t bswp = __builtin_bswap16(Arg2);
-            if (util_16bitValInBinary(bswp)) {
-                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
-            }
-        }
+    if (globalCmpFeedback && instrumentLimitEvery(16383)) {
+        instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
     }
     hfuzz_trace_cmp2_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
 void __sanitizer_cov_trace_const_cmp4(uint32_t Arg1, uint32_t Arg2) {
-    if (globalCmpFeedback && instrumentLimitEvery(4095)) {
-        if (util_32bitValInBinary(Arg1)) {
-            instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
-        } else {
-            uint32_t bswp = __builtin_bswap32(Arg1);
-            if (util_32bitValInBinary(bswp)) {
-                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
-            }
-        }
-        if (util_32bitValInBinary(Arg2)) {
-            instrumentAddConstMemInternal(&Arg2, sizeof(Arg2));
-        } else {
-            uint32_t bswp = __builtin_bswap32(Arg2);
-            if (util_32bitValInBinary(bswp)) {
-                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
-            }
-        }
+    if (globalCmpFeedback && instrumentLimitEvery(16383)) {
+        instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
     }
     hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
 void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2) {
-    if (globalCmpFeedback && instrumentLimitEvery(4095)) {
-        if (util_64bitValInBinary(Arg1)) {
-            instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
-        } else {
-            uint64_t bswp = __builtin_bswap64(Arg1);
-            if (util_64bitValInBinary(bswp)) {
-                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
-            }
-        }
-        if (util_64bitValInBinary(Arg2)) {
-            instrumentAddConstMemInternal(&Arg2, sizeof(Arg2));
-        } else {
-            uint64_t bswp = __builtin_bswap64(Arg2);
-            if (util_64bitValInBinary(bswp)) {
-                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
-            }
-        }
+    if (globalCmpFeedback && instrumentLimitEvery(16383)) {
+        instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
     }
     hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
@@ -610,7 +588,7 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t
 
     size_t len = (size_t)(bits / 8);
 
-    if (globalCmpFeedback && len > 1 && instrumentLimitEvery(4095)) {
+    if (globalCmpFeedback && len > 1 && instrumentLimitEvery(16383)) {
         uint64_t limit = (cnt < 16) ? cnt : 16;
         for (uint64_t i = 0; i < limit; i++) {
             uint64_t cval = Cases[i + 2];
