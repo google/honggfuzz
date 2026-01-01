@@ -575,16 +575,6 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t
         for (uint64_t i = 0; i < limit; i++) {
             uint64_t cval = Cases[i + 2];
             instrumentAddConstMemInternal(&cval, len);
-            if (len == 2) {
-                uint16_t bswp16 = __builtin_bswap16((uint16_t)cval);
-                instrumentAddConstMemInternal(&bswp16, len);
-            } else if (len == 4) {
-                uint32_t bswp32 = __builtin_bswap32((uint32_t)cval);
-                instrumentAddConstMemInternal(&bswp32, len);
-            } else if (len == 8) {
-                uint64_t bswp64 = __builtin_bswap64(cval);
-                instrumentAddConstMemInternal(&bswp64, len);
-            }
         }
     }
 
