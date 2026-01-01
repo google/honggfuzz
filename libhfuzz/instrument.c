@@ -456,17 +456,13 @@ void __sanitizer_cov_trace_cmp4(uint32_t Arg1, uint32_t Arg2) {
     /* Add 4byte values to the const_dictionary if they exist within the binary */
     if (globalCmpFeedback && instrumentLimitEvery(16383)) {
         if (instrumentValueInteresting(Arg1)) {
-            uint32_t bswp = __builtin_bswap32(Arg1);
-            if (util_32bitValInBinary(Arg1) || util_32bitValInBinary(bswp)) {
+            if (util_32bitValInBinary(Arg1)) {
                 instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
-                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
             }
         }
         if (instrumentValueInteresting(Arg2)) {
-            uint32_t bswp = __builtin_bswap32(Arg2);
-            if (util_32bitValInBinary(Arg2) || util_32bitValInBinary(bswp)) {
+            if (util_32bitValInBinary(Arg2)) {
                 instrumentAddConstMemInternal(&Arg2, sizeof(Arg2));
-                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
             }
         }
     }
@@ -478,17 +474,13 @@ void __sanitizer_cov_trace_cmp8(uint64_t Arg1, uint64_t Arg2) {
     /* Add 8byte values to the const_dictionary if they exist within the binary */
     if (globalCmpFeedback && instrumentLimitEvery(16383)) {
         if (instrumentValueInteresting(Arg1)) {
-            uint64_t bswp = __builtin_bswap64(Arg1);
-            if (util_64bitValInBinary(Arg1) || util_64bitValInBinary(bswp)) {
+            if (util_64bitValInBinary(Arg1)) {
                 instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
-                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
             }
         }
         if (instrumentValueInteresting(Arg2)) {
-            uint64_t bswp = __builtin_bswap64(Arg2);
-            if (util_64bitValInBinary(Arg2) || util_64bitValInBinary(bswp)) {
+            if (util_64bitValInBinary(Arg2)) {
                 instrumentAddConstMemInternal(&Arg2, sizeof(Arg2));
-                instrumentAddConstMemInternal(&bswp, sizeof(bswp));
             }
         }
     }

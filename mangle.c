@@ -567,6 +567,30 @@ static void mangle_ConstFeedbackDict(run_t* run, bool printable) {
         mangle_Bytes(run, printable);
         return;
     }
+
+    /* 10% of time, for sizes 2/4/8, use bswap'd value */
+    uint8_t buf[8];
+    if ((len == 2 || len == 4 || len == 8) && util_rndGet(0, 9) == 0) {
+        memcpy(buf, val, len);
+        if (len == 2) {
+            uint16_t v;
+            memcpy(&v, buf, sizeof(v));
+            v = __builtin_bswap16(v);
+            memcpy(buf, &v, sizeof(v));
+        } else if (len == 4) {
+            uint32_t v;
+            memcpy(&v, buf, sizeof(v));
+            v = __builtin_bswap32(v);
+            memcpy(buf, &v, sizeof(v));
+        } else {
+            uint64_t v;
+            memcpy(&v, buf, sizeof(v));
+            v = __builtin_bswap64(v);
+            memcpy(buf, &v, sizeof(v));
+        }
+        val = buf;
+    }
+
     mangle_UseValue(run, val, len, printable);
 }
 
