@@ -502,14 +502,18 @@ void __sanitizer_cov_trace_const_cmp2(uint16_t Arg1, uint16_t Arg2) {
 
 void __sanitizer_cov_trace_const_cmp4(uint32_t Arg1, uint32_t Arg2) {
     if (globalCmpFeedback && instrumentLimitEvery(16383)) {
-        instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
+        if (instrumentValueInteresting(Arg1)) {
+            instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
+        }
     }
     hfuzz_trace_cmp4_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
 
 void __sanitizer_cov_trace_const_cmp8(uint64_t Arg1, uint64_t Arg2) {
     if (globalCmpFeedback && instrumentLimitEvery(16383)) {
-        instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
+        if (instrumentValueInteresting(Arg1)) {
+            instrumentAddConstMemInternal(&Arg1, sizeof(Arg1));
+        }
     }
     hfuzz_trace_cmp8_internal((uintptr_t)__builtin_return_address(0), Arg1, Arg2);
 }
@@ -574,7 +578,9 @@ HF_REQUIRE_SSE42_POPCNT void __sanitizer_cov_trace_switch(uint64_t Val, uint64_t
         uint64_t limit = (cnt < 16) ? cnt : 16;
         for (uint64_t i = 0; i < limit; i++) {
             uint64_t cval = Cases[i + 2];
-            instrumentAddConstMemInternal(&cval, len);
+            if (instrumentValueInteresting(cval)) {
+                instrumentAddConstMemInternal(&cval, len);
+            }
         }
     }
 
