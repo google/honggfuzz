@@ -73,6 +73,8 @@ typedef enum {
     MANGLE_TOKEN_SHUFFLE,
     MANGLE_GRADIENT_CMP,
     MANGLE_ARITH_CONST,
+    MANGLE_DICT_INSERT,
+    MANGLE_PUNCTUATION,
     MANGLE_HAVOC,
     MANGLE_COUNT
 } mangle_t;
@@ -1475,6 +1477,49 @@ static void mangle_ArithConst(run_t* run, bool printable) {
     mangle_UseValue(run, result, val_len, printable);
 }
 
+static void mangle_DictionaryInsert(run_t* run, bool printable) {
+    if (run->global->mutate.dictionaryCnt == 0) {
+        mangle_Bytes(run, printable);
+        return;
+    }
+
+    size_t   cnt = run->global->mutate.dictionaryCnt;
+    uint64_t c1  = util_rndGet(0, cnt - 1);
+    uint64_t c2  = util_rndGet(0, cnt - 1);
+
+    const char* separators[] = {"", " ", "\t", "\n", "\r\n", ",", ";", ":", "=", "&", "|"};
+    size_t      sep_idx      = util_rndGet(0, ARRAYSIZE(separators) - 1);
+    const char* sep          = separators[sep_idx];
+    size_t      sep_len      = strlen(sep);
+
+    size_t len1      = run->global->mutate.dictionary[c1].len;
+    size_t len2      = run->global->mutate.dictionary[c2].len;
+    size_t total_len = len1 + sep_len + len2;
+
+    uint8_t* buf = util_Malloc(total_len);
+    defer {
+        free(buf);
+    };
+
+    memcpy(buf, run->global->mutate.dictionary[c1].val, len1);
+    memcpy(buf + len1, sep, sep_len);
+    memcpy(buf + len1 + sep_len, run->global->mutate.dictionary[c2].val, len2);
+
+    mangle_UseValue(run, buf, total_len, printable);
+}
+
+static void mangle_Punctuation(run_t* run, bool printable) {
+    static const char punct[] = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+    size_t            len     = util_rndGet(1, 4);
+    uint8_t           buf[4];
+
+    for (size_t i = 0; i < len && i < sizeof(buf); i++) {
+        buf[i] = (uint8_t)punct[util_rndGet(0, sizeof(punct) - 2)];
+    }
+
+    mangle_UseValue(run, buf, len, printable);
+}
+
 /*
  * Havoc mode - used when fuzzing is stagnating to escape local minima
  */
@@ -1582,6 +1627,8 @@ static const mangle_t tierData[] = {
     MANGLE_SPECIAL_STRINGS,
     MANGLE_GRADIENT_CMP,
     MANGLE_ARITH_CONST,
+    MANGLE_DICT_INSERT,
+    MANGLE_PUNCTUATION,
 };
 
 static const mangle_t tierArith[] = {
@@ -1624,6 +1671,7 @@ static inline mangle_t mangle_sanitize(run_t* run, mangle_t m) {
         [MANGLE_CROSS_OVER]          = {4, MANGLE_BYTES},
         [MANGLE_GRADIENT_CMP]        = {2, MANGLE_MAGIC},
         [MANGLE_ARITH_CONST]         = {2, MANGLE_ADD_SUB},
+        [MANGLE_DICT_INSERT]         = {1, MANGLE_PUNCTUATION},
     };
 
     uint8_t need = reqs[m].needs;
@@ -1726,6 +1774,8 @@ static void (*const mangleFuncs[MANGLE_COUNT])(run_t*, bool) = {
     [MANGLE_TOKEN_SHUFFLE]       = mangle_TokenShuffle,
     [MANGLE_GRADIENT_CMP]        = mangle_GradientCmp,
     [MANGLE_ARITH_CONST]         = mangle_ArithConst,
+    [MANGLE_DICT_INSERT]         = mangle_DictionaryInsert,
+    [MANGLE_PUNCTUATION]         = mangle_Punctuation,
     [MANGLE_HAVOC]               = mangle_Havoc,
 };
 
