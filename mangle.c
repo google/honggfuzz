@@ -1513,10 +1513,11 @@ static void mangle_DictionaryInsert(run_t* run, bool printable) {
     uint64_t c1  = util_rndGet(0, cnt - 1);
     uint64_t c2  = util_rndGet(0, cnt - 1);
 
-    const char* separators[] = {"", " ", "\t", "\n", "\r\n", ",", ";", ":", "=", "&", "|"};
-    size_t      sep_idx      = util_rndGet(0, ARRAYSIZE(separators) - 1);
-    const char* sep          = separators[sep_idx];
-    size_t      sep_len      = strlen(sep);
+    const char* separators[] = {
+        "", " ", "\t", "\n", "\r\n", ",", ";", ":", "=", "&", "|", "(", ")", ".", "\"", "'"};
+    size_t      sep_idx = util_rndGet(0, ARRAYSIZE(separators) - 1);
+    const char* sep     = separators[sep_idx];
+    size_t      sep_len = strlen(sep);
 
     size_t len1      = run->global->mutate.dictionary[c1].len;
     size_t len2      = run->global->mutate.dictionary[c2].len;
@@ -1546,6 +1547,34 @@ static void mangle_Punctuation(run_t* run, bool printable) {
     mangle_UseValue(run, buf, len, printable);
 }
 
+static void mangle_CrossOver(run_t* run, bool printable) {
+    if (run->global->feedback.dynFileMethod == _HF_DYNFILE_NONE) {
+        mangle_Bytes(run, printable);
+        return;
+    }
+
+    if (run->dynfile->size < 2) {
+        mangle_Bytes(run, printable);
+        return;
+    }
+
+    /* Use diverse input selection for better coverage combination */
+    size_t         other_sz = 0;
+    const uint8_t* other    = input_getDiverseInputAsBuf(run, &other_sz);
+    if (!other || other_sz == 0) {
+        mangle_Bytes(run, printable);
+        return;
+    }
+
+    size_t crossover_point = util_rndGet(1, run->dynfile->size - 1);
+    size_t other_point     = util_rndGet(0, other_sz - 1);
+    size_t copy_len        = HF_MIN(run->dynfile->size - crossover_point, other_sz - other_point);
+
+    if (copy_len > 0) {
+        mangle_Overwrite(run, crossover_point, &other[other_point], copy_len, printable);
+    }
+}
+
 /*
  * Havoc mode - used when fuzzing is stagnating to escape local minima
  */
@@ -1555,7 +1584,7 @@ static void mangle_Havoc(run_t* run, bool printable) {
 
     for (size_t i = 0; i < num_mutations; i++) {
         /* Pick a random simple mutation */
-        uint64_t choice = util_rndGet(0, 15);
+        uint64_t choice = util_rndGet(0, 21);
         switch (choice) {
         case 0:
             mangle_Bit(run, printable);
@@ -1605,35 +1634,25 @@ static void mangle_Havoc(run_t* run, bool printable) {
         case 15:
             mangle_RandomBuf(run, printable);
             break;
+        case 16:
+            mangle_StaticDict(run, printable);
+            break;
+        case 17:
+            mangle_ConstFeedbackDict(run, printable);
+            break;
+        case 18:
+            mangle_DictionaryInsert(run, printable);
+            break;
+        case 19:
+            mangle_CmpSolve(run, printable);
+            break;
+        case 20:
+            mangle_Splice(run, printable);
+            break;
+        case 21:
+            mangle_CrossOver(run, printable);
+            break;
         }
-    }
-}
-
-static void mangle_CrossOver(run_t* run, bool printable) {
-    if (run->global->feedback.dynFileMethod == _HF_DYNFILE_NONE) {
-        mangle_Bytes(run, printable);
-        return;
-    }
-
-    if (run->dynfile->size < 2) {
-        mangle_Bytes(run, printable);
-        return;
-    }
-
-    /* Use diverse input selection for better coverage combination */
-    size_t         other_sz = 0;
-    const uint8_t* other    = input_getDiverseInputAsBuf(run, &other_sz);
-    if (!other || other_sz == 0) {
-        mangle_Bytes(run, printable);
-        return;
-    }
-
-    size_t crossover_point = util_rndGet(1, run->dynfile->size - 1);
-    size_t other_point     = util_rndGet(0, other_sz - 1);
-    size_t copy_len        = HF_MIN(run->dynfile->size - crossover_point, other_sz - other_point);
-
-    if (copy_len > 0) {
-        mangle_Overwrite(run, crossover_point, &other[other_point], copy_len, printable);
     }
 }
 
