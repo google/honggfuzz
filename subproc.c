@@ -292,8 +292,7 @@ static bool subproc_PrepareExecv(run_t* run) {
         return false;
     }
     /* The const comparison bitmap/feedback structure */
-    if (run->global->feedback.cmpFeedback &&
-        TEMP_FAILURE_RETRY(dup2(run->global->feedback.cmpFeedbackFd, _HF_CMP_BITMAP_FD)) == -1) {
+    if (TEMP_FAILURE_RETRY(dup2(run->global->feedback.cmpFeedbackFd, _HF_CMP_BITMAP_FD)) == -1) {
         PLOG_E("dup2(%d, _HF_CMP_BITMAP_FD=%d)", run->global->feedback.cmpFeedbackFd,
             _HF_CMP_BITMAP_FD);
         return false;

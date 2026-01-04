@@ -428,13 +428,32 @@ int main(int argc, char** argv) {
         LOG_F("files_mapSharedMem(name='hf-covfeddback', sz=%zu, dir='%s') failed",
             sizeof(feedback_t), hfuzz.io.workDir);
     }
-    if (hfuzz.feedback.cmpFeedback) {
-        if (!(hfuzz.feedback.cmpFeedbackMap = files_mapSharedMem(sizeof(cmpfeedback_t),
-                  &hfuzz.feedback.cmpFeedbackFd, "hf-cmpfeedback", /* nocore= */ true,
-                  /* export= */ hfuzz.io.exportFeedback))) {
-            LOG_F("files_mapSharedMem(name='hf-cmpfeedback', sz=%zu, dir='%s') failed",
-                sizeof(cmpfeedback_t), hfuzz.io.workDir);
+#if defined(_HF_ARCH_LINUX) && !defined(_HF_LINUX_NO_BFD)
+    arch_bfdExtractRodataStrArrays(&hfuzz);
+#endif
+    if (!(hfuzz.feedback.cmpFeedbackMap = files_mapSharedMem(sizeof(fuzz_data_t),
+              &hfuzz.feedback.cmpFeedbackFd, "hf-cmpfeedback", /* nocore= */ true,
+              /* export= */ hfuzz.io.exportFeedback))) {
+        LOG_F("files_mapSharedMem(name='hf-cmpfeedback', sz=%zu, dir='%s') failed",
+            sizeof(fuzz_data_t), hfuzz.io.workDir);
+    }
+    if (hfuzz.feedback.cmpFeedbackMap) {
+#if defined(_HF_ARCH_LINUX) && !defined(_HF_LINUX_NO_BFD)
+        arch_elfCollectRoValues(&hfuzz);
+#endif
+        for (size_t i = 0;
+            i < hfuzz.mutate.dictionaryCnt && i < ARRAYSIZE(hfuzz.feedback.cmpFeedbackMap->dict);
+            i++) {
+            size_t len = hfuzz.mutate.dictionary[i].len;
+            if (len > sizeof(hfuzz.feedback.cmpFeedbackMap->dict[i].val)) {
+                len = sizeof(hfuzz.feedback.cmpFeedbackMap->dict[i].val);
+            }
+            memcpy(hfuzz.feedback.cmpFeedbackMap->dict[i].val, hfuzz.mutate.dictionary[i].val, len);
+            hfuzz.feedback.cmpFeedbackMap->dict[i].len = len;
         }
+        hfuzz.feedback.cmpFeedbackMap->dictCnt =
+            HF_MIN(hfuzz.mutate.dictionaryCnt, ARRAYSIZE(hfuzz.feedback.cmpFeedbackMap->dict));
+        hfuzz.feedback.cmpFeedbackMap->dictStaticCnt = hfuzz.feedback.cmpFeedbackMap->dictCnt;
     }
     /* Stats file. */
     if (hfuzz.io.statsFileName) {

@@ -746,4 +746,141 @@ size_t arch_bfdExtractRodataStrArrays(honggfuzz_t* hfuzz) {
     return total_cnt;
 }
 
+static int arch_cmp_u32(const void* a, const void* b) {
+    uint32_t va = *(const uint32_t*)a;
+    uint32_t vb = *(const uint32_t*)b;
+    if (va < vb) return -1;
+    if (va > vb) return 1;
+    return 0;
+}
+
+static int arch_cmp_u64(const void* a, const void* b) {
+    uint64_t va = *(const uint64_t*)a;
+    uint64_t vb = *(const uint64_t*)b;
+    if (va < vb) return -1;
+    if (va > vb) return 1;
+    return 0;
+}
+
+static bool arch_isInterestingSection(const char* name) {
+    if (strcmp(name, ".rodata") == 0) return true;
+    if (strcmp(name, ".data") == 0) return true;
+    if (strcmp(name, ".data.rel.ro") == 0) return true;
+    if (strncmp(name, ".rodata.", 8) == 0) return true;
+    if (strncmp(name, ".data.rel.ro.", 13) == 0) return true;
+    /*
+     * .text is too random and unaligned
+     * if (strcmp(name, ".text") == 0) return true;
+     */
+    return false;
+}
+
+static void arch_analyzeSection(honggfuzz_t* hfuzz, const char* name, const uint8_t* p, size_t sz) {
+    LOG_D("Analyzing section: '%s' (size: %zu) for integer values", name, sz);
+
+    fuzz_data_t* fb = hfuzz->feedback.cmpFeedbackMap;
+
+    for (size_t off = 0; off + sizeof(uint32_t) <= sz; off += sizeof(uint32_t)) {
+        uint32_t v;
+        memcpy(&v, p + off, sizeof(v));
+        if (fb->ro32Cnt < ARRAYSIZE(fb->ro32)) {
+            fb->ro32[fb->ro32Cnt++] = v;
+        }
+    }
+    for (size_t off = 0; off + sizeof(uint64_t) <= sz; off += sizeof(uint64_t)) {
+        uint64_t v;
+        memcpy(&v, p + off, sizeof(v));
+        if (fb->ro64Cnt < ARRAYSIZE(fb->ro64)) {
+            fb->ro64[fb->ro64Cnt++] = v;
+        }
+    }
+}
+
+void arch_elfCollectRoValues(honggfuzz_t* hfuzz) {
+    if (!hfuzz->feedback.cmpFeedbackMap) {
+        return;
+    }
+
+    MX_SCOPED_LOCK(&arch_bfd_mutex);
+
+    const char* fname = hfuzz->exe.cmdline[0];
+    bfd_init();
+    bfd* bfdh = bfd_openr(fname, NULL);
+    if (!bfdh) {
+        LOG_W("bfd_openr('%s') failed", fname);
+        return;
+    }
+
+    if (!bfd_check_format(bfdh, bfd_object)) {
+        LOG_W("bfd_check_format('%s') failed", fname);
+        bfd_close(bfdh);
+        return;
+    }
+
+    for (struct bfd_section* sec = bfdh->sections; sec; sec = sec->next) {
+        const char* name = bfd_section_name(sec);
+        if (!arch_isInterestingSection(name)) {
+            continue;
+        }
+
+        bfd_size_type sz = bfd_section_size(sec);
+        if (sz == 0) {
+            continue;
+        }
+
+        if (sz > 1024 * 1024 * 1024) { /* 1GiB */
+            LOG_W("Section '%s' size (%" PRIu64 ") is too large, skipping", name, (uint64_t)sz);
+            continue;
+        }
+
+        uint8_t* buf = util_Malloc(sz);
+	defer {
+		free(buf);
+	};
+        if (!bfd_get_section_contents(bfdh, sec, buf, 0, sz)) {
+            LOG_W("bfd_get_section_contents('%s') failed", name);
+            continue;
+        }
+
+        arch_analyzeSection(hfuzz, name, buf, sz);
+    }
+
+    bfd_close(bfdh);
+
+    fuzz_data_t* fb = hfuzz->feedback.cmpFeedbackMap;
+
+    /* Sort arrays */
+    if (fb->ro32Cnt > 1) {
+        qsort(fb->ro32, fb->ro32Cnt, sizeof(uint32_t), arch_cmp_u32);
+    }
+    if (fb->ro64Cnt > 1) {
+        qsort(fb->ro64, fb->ro64Cnt, sizeof(uint64_t), arch_cmp_u64);
+    }
+
+    /* Deduplicate 32-bit values in-place */
+    if (fb->ro32Cnt > 1) {
+        size_t w = 1;
+        for (size_t r = 1; r < fb->ro32Cnt; r++) {
+            if (fb->ro32[r] != fb->ro32[w - 1]) {
+                fb->ro32[w++] = fb->ro32[r];
+            }
+        }
+        fb->ro32Cnt = w;
+    }
+
+    /* Deduplicate 64-bit values in-place */
+    if (fb->ro64Cnt > 1) {
+        size_t w = 1;
+        for (size_t r = 1; r < fb->ro64Cnt; r++) {
+            if (fb->ro64[r] != fb->ro64[w - 1]) {
+                fb->ro64[w++] = fb->ro64[r];
+            }
+        }
+        fb->ro64Cnt = w;
+    }
+
+    LOG_I("Parsed %s: found %u 32-bit and %u 64-bit interesting values", fname, fb->ro32Cnt,
+        fb->ro64Cnt);
+}
+
 #endif /*  !defined(_HF_LINUX_NO_BFD)  */

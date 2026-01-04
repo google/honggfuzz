@@ -219,12 +219,19 @@ typedef struct {
 } feedback_t;
 
 typedef struct {
-    struct {
-        uint8_t  val[64];
-        uint32_t len;
-    } valArr[1024 * 16];
-    uint32_t cnt;
-} cmpfeedback_t;
+    uint8_t  val[64];
+    uint32_t len;
+} dict_entry_t;
+
+typedef struct {
+    dict_entry_t dict[1024 * 32];
+    uint32_t     dictCnt;
+    uint32_t     dictStaticCnt;
+    uint32_t     ro32[1024 * 128];
+    uint32_t     ro32Cnt;
+    uint64_t     ro64[1024 * 128];
+    uint32_t     ro64Cnt;
+} fuzz_data_t;
 
 typedef struct {
     struct {
@@ -330,9 +337,8 @@ typedef struct {
         fuzzState_t     state;
         feedback_t*     covFeedbackMap;
         int             covFeedbackFd;
-        cmpfeedback_t*  cmpFeedbackMap;
+        fuzz_data_t*    cmpFeedbackMap;
         int             cmpFeedbackFd;
-        bool            cmpFeedback;
         const char*     blocklistFile;
         uint64_t*       blocklist;
         size_t          blocklistCnt;

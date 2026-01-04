@@ -401,7 +401,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
                 .covFeedbackFd         = -1,
                 .cmpFeedbackMap        = NULL,
                 .cmpFeedbackFd         = -1,
-                .cmpFeedback           = true,
                 .blocklistFile         = NULL,
                 .blocklist             = NULL,
                 .blocklistCnt          = 0,
@@ -531,7 +530,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
         { { "netdriver", no_argument, NULL, 0x10C }, "Use netdriver (libhfnetdriver/). In most cases it will be autodetected through a binary signature" },
         { { "only_printable", no_argument, NULL, 0x10D }, "Only generate printable inputs" },
         { { "export_feedback", no_argument, NULL, 0x10E }, "Export the coverage feedback structure as ./hfuzz-feedback" },
-        { { "const_feedback", required_argument, NULL, 0x112 }, "Use constant integer/string values from fuzzed programs to mangle input files via a dynamic dictionary (default: true)" },
         { { "pin_thread_cpu", required_argument, NULL, 0x114 }, "Pin a single execution thread to this many consecutive CPUs (default: 0 = no CPU pinning)" },
         { { "dynamic_input", required_argument, NULL, 0x115 }, "Path to a directory containing the dynamic file corpus" },
         { { "statsfile", required_argument, NULL, 0x116 }, "Stats file" },
@@ -665,9 +663,6 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             break;
         case 0x10E:
             hfuzz->io.exportFeedback = true;
-            break;
-        case 0x112:
-            hfuzz->feedback.cmpFeedback = cmdlineParseTrueFalse(opts[opt_index].name, optarg);
             break;
         case 'z':
             hfuzz->feedback.dynFileMethod |= _HF_DYNFILE_SOFT;

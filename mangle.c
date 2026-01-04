@@ -532,37 +532,22 @@ static void mangle_Magic(run_t* run, bool printable) {
     mangle_UseValue(run, mangleMagicVals[choice].val, mangleMagicVals[choice].size, printable);
 }
 
-static void mangle_StaticDict(run_t* run, bool printable) {
-    if (run->global->mutate.dictionaryCnt == 0) {
-        mangle_Bytes(run, printable);
-        return;
-    }
-    uint64_t choice = util_rndGet(0, run->global->mutate.dictionaryCnt - 1);
-    mangle_UseValue(run, run->global->mutate.dictionary[choice].val,
-        run->global->mutate.dictionary[choice].len, printable);
-}
-
 static inline const uint8_t* mangle_FeedbackDict(run_t* run, size_t* len) {
-    if (!run->global->feedback.cmpFeedback) {
-        return NULL;
+    fuzz_data_t* cmpf = run->global->feedback.cmpFeedbackMap;
+    uint32_t     cnt  = ATOMIC_GET(cmpf->dictCnt);
+    if (cnt > 0) {
+        uint32_t max_idx = HF_MIN(cnt, ARRAYSIZE(cmpf->dict));
+        uint32_t choice  = util_rndGet(0, max_idx - 1);
+        *len             = (size_t)ATOMIC_GET(cmpf->dict[choice].len);
+        if (*len > 0) {
+            return cmpf->dict[choice].val;
+        }
     }
-    cmpfeedback_t* cmpf = run->global->feedback.cmpFeedbackMap;
-    uint32_t       cnt  = ATOMIC_GET(cmpf->cnt);
-    if (cnt == 0) {
-        return NULL;
-    }
-    if (cnt > ARRAYSIZE(cmpf->valArr)) {
-        cnt = ARRAYSIZE(cmpf->valArr);
-    }
-    uint32_t choice = util_rndGet(0, cnt - 1);
-    *len            = (size_t)ATOMIC_GET(cmpf->valArr[choice].len);
-    if (*len == 0) {
-        return NULL;
-    }
-    return cmpf->valArr[choice].val;
+
+    return NULL;
 }
 
-static void mangle_ConstFeedbackDict(run_t* run, bool printable) {
+static void mangle_StaticDict(run_t* run, bool printable) {
     size_t         len;
     const uint8_t* val = mangle_FeedbackDict(run, &len);
     if (val == NULL) {
@@ -594,6 +579,10 @@ static void mangle_ConstFeedbackDict(run_t* run, bool printable) {
     }
 
     mangle_UseValue(run, val, len, printable);
+}
+
+static void mangle_ConstFeedbackDict(run_t* run, bool printable) {
+    mangle_StaticDict(run, printable);
 }
 
 static void mangle_MemSet(run_t* run, bool printable) {
@@ -1002,31 +991,20 @@ static void mangle_BlockSwap(run_t* run, bool printable HF_ATTR_UNUSED) {
 }
 
 static void mangle_CmpSolve(run_t* run, bool printable) {
-    if (!run->global->feedback.cmpFeedback) {
-        mangle_ConstFeedbackDict(run, printable);
-        return;
-    }
-
-    cmpfeedback_t* cmpf = run->global->feedback.cmpFeedbackMap;
-    uint32_t       cnt  = ATOMIC_GET(cmpf->cnt);
-    if (cnt == 0) {
+    size_t         cmp_len;
+    const uint8_t* cmp_val_ptr = mangle_FeedbackDict(run, &cmp_len);
+    if (cmp_val_ptr == NULL) {
         mangle_Magic(run, printable);
         return;
     }
 
-    if (cnt > ARRAYSIZE(cmpf->valArr)) {
-        cnt = ARRAYSIZE(cmpf->valArr);
-    }
-
-    uint32_t choice  = util_rndGet(0, cnt - 1);
-    size_t   cmp_len = (size_t)ATOMIC_GET(cmpf->valArr[choice].len);
     if (cmp_len == 0 || cmp_len > 32) {
         mangle_Magic(run, printable);
         return;
     }
 
     uint8_t cmp_val[32];
-    memcpy(cmp_val, cmpf->valArr[choice].val, cmp_len);
+    memcpy(cmp_val, cmp_val_ptr, cmp_len);
 
     /* Find partial match in input */
     for (size_t off = 0; off + cmp_len <= run->dynfile->size; off++) {
@@ -1348,31 +1326,20 @@ static void mangle_TokenShuffle(run_t* run, bool printable HF_ATTR_UNUSED) {
  * Gradient-guided CMP mutation - focus mutations on bytes that differ in comparisons
  */
 static void mangle_GradientCmp(run_t* run, bool printable) {
-    if (!run->global->feedback.cmpFeedback) {
+    size_t         cmp_len;
+    const uint8_t* cmp_val_ptr = mangle_FeedbackDict(run, &cmp_len);
+    if (cmp_val_ptr == NULL) {
         mangle_Bytes(run, printable);
         return;
     }
 
-    cmpfeedback_t* cmpf = run->global->feedback.cmpFeedbackMap;
-    uint32_t       cnt  = ATOMIC_GET(cmpf->cnt);
-    if (cnt == 0) {
-        mangle_Magic(run, printable);
-        return;
-    }
-
-    if (cnt > ARRAYSIZE(cmpf->valArr)) {
-        cnt = ARRAYSIZE(cmpf->valArr);
-    }
-
-    uint32_t choice  = util_rndGet(0, cnt - 1);
-    size_t   cmp_len = (size_t)ATOMIC_GET(cmpf->valArr[choice].len);
     if (cmp_len == 0 || cmp_len > 32) {
         mangle_Magic(run, printable);
         return;
     }
 
     uint8_t cmp_val[32];
-    memcpy(cmp_val, cmpf->valArr[choice].val, cmp_len);
+    memcpy(cmp_val, cmp_val_ptr, cmp_len);
 
     /* Find partial match and identify differing bytes */
     for (size_t off = 0; off + cmp_len <= run->dynfile->size; off++) {
@@ -1436,24 +1403,13 @@ static void mangle_GradientCmp(run_t* run, bool printable) {
  * Arithmetic mutations on discovered constants from CMP feedback
  */
 static void mangle_ArithConst(run_t* run, bool printable) {
-    if (!run->global->feedback.cmpFeedback) {
+    size_t         val_len;
+    const uint8_t* val_ptr = mangle_FeedbackDict(run, &val_len);
+    if (val_ptr == NULL) {
         mangle_AddSub(run, printable);
         return;
     }
 
-    cmpfeedback_t* cmpf = run->global->feedback.cmpFeedbackMap;
-    uint32_t       cnt  = ATOMIC_GET(cmpf->cnt);
-    if (cnt == 0) {
-        mangle_AddSub(run, printable);
-        return;
-    }
-
-    if (cnt > ARRAYSIZE(cmpf->valArr)) {
-        cnt = ARRAYSIZE(cmpf->valArr);
-    }
-
-    uint32_t choice  = util_rndGet(0, cnt - 1);
-    size_t   val_len = (size_t)ATOMIC_GET(cmpf->valArr[choice].len);
     if (val_len == 0 || val_len > 8) {
         mangle_AddSub(run, printable);
         return;
@@ -1462,7 +1418,7 @@ static void mangle_ArithConst(run_t* run, bool printable) {
     /* Extract value as integer */
     uint64_t val = 0;
     for (size_t i = 0; i < val_len; i++) {
-        val |= ((uint64_t)cmpf->valArr[choice].val[i]) << (i * 8);
+        val |= ((uint64_t)val_ptr[i]) << (i * 8);
     }
 
     /* Apply arithmetic mutation */
@@ -1504,14 +1460,19 @@ static void mangle_ArithConst(run_t* run, bool printable) {
 }
 
 static void mangle_DictionaryInsert(run_t* run, bool printable) {
-    if (run->global->mutate.dictionaryCnt == 0) {
+    size_t         len1;
+    const uint8_t* val1 = mangle_FeedbackDict(run, &len1);
+    if (val1 == NULL) {
         mangle_Bytes(run, printable);
         return;
     }
 
-    size_t   cnt = run->global->mutate.dictionaryCnt;
-    uint64_t c1  = util_rndGet(0, cnt - 1);
-    uint64_t c2  = util_rndGet(0, cnt - 1);
+    size_t         len2;
+    const uint8_t* val2 = mangle_FeedbackDict(run, &len2);
+    if (val2 == NULL) {
+        mangle_Bytes(run, printable);
+        return;
+    }
 
     const char* separators[] = {
         "", " ", "\t", "\n", "\r\n", ",", ";", ":", "=", "&", "|", "(", ")", ".", "\"", "'"};
@@ -1519,8 +1480,6 @@ static void mangle_DictionaryInsert(run_t* run, bool printable) {
     const char* sep     = separators[sep_idx];
     size_t      sep_len = strlen(sep);
 
-    size_t len1      = run->global->mutate.dictionary[c1].len;
-    size_t len2      = run->global->mutate.dictionary[c2].len;
     size_t total_len = len1 + sep_len + len2;
 
     uint8_t* buf = util_Malloc(total_len);
@@ -1528,9 +1487,9 @@ static void mangle_DictionaryInsert(run_t* run, bool printable) {
         free(buf);
     };
 
-    memcpy(buf, run->global->mutate.dictionary[c1].val, len1);
+    memcpy(buf, val1, len1);
     memcpy(buf + len1, sep, sep_len);
-    memcpy(buf + len1 + sep_len, run->global->mutate.dictionary[c2].val, len2);
+    memcpy(buf + len1 + sep_len, val2, len2);
 
     mangle_UseValue(run, buf, total_len, printable);
 }
@@ -1723,7 +1682,6 @@ static inline mangle_t mangle_sanitize(run_t* run, mangle_t m) {
     if (!need) return m;
 
     if ((need & 1) && run->global->mutate.dictionaryCnt == 0) return reqs[m].fallback;
-    if ((need & 2) && !run->global->feedback.cmpFeedback) return reqs[m].fallback;
     if ((need & 4) && run->global->feedback.dynFileMethod == _HF_DYNFILE_NONE)
         return reqs[m].fallback;
 
@@ -1841,7 +1799,6 @@ void mangle_mangleContent(run_t* run) {
 
     time_t   stagnation = time(NULL) - ATOMIC_GET(run->global->timing.lastCovUpdate);
     uint64_t base       = run->mutationsPerRun;
-    bool     haveCmp    = run->global->feedback.cmpFeedback;
 
     run->mutationTiers = 0;
 
@@ -1867,7 +1824,7 @@ void mangle_mangleContent(run_t* run) {
      * If we are stuck, we want to try more specific strategies (dictionaries, splices)
      */
     if (stagnation > timeStagnated) {
-        if (haveCmp && util_rnd64() % 3 == 0) {
+        if (util_rnd64() % 3 == 0) {
             run->mutationTiers |= (1 << TIER_DATA);
             mangle_dispatch(run, MANGLE_CMP_SOLVE, printable);
         }
@@ -1876,7 +1833,7 @@ void mangle_mangleContent(run_t* run) {
             mangle_dispatch(run, MANGLE_SPLICE, printable);
         }
         /* Try gradient-guided CMP mutations */
-        if (haveCmp && util_rnd64() % 4 == 0) {
+        if (util_rnd64() % 4 == 0) {
             run->mutationTiers |= (1 << TIER_DATA);
             mangle_dispatch(run, MANGLE_GRADIENT_CMP, printable);
         }
