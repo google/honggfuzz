@@ -834,9 +834,9 @@ void arch_elfCollectRoValues(honggfuzz_t* hfuzz) {
         }
 
         uint8_t* buf = util_Malloc(sz);
-	defer {
-		free(buf);
-	};
+        defer {
+            free(buf);
+        };
         if (!bfd_get_section_contents(bfdh, sec, buf, 0, sz)) {
             LOG_W("bfd_get_section_contents('%s') failed", name);
             continue;

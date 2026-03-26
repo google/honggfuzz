@@ -30,6 +30,7 @@
 #include "libhfcommon/common.h"
 #include "libhfcommon/log.h"
 #include "libhfcommon/util.h"
+#include "linux/perf.h"
 
 #ifdef _HF_LINUX_INTEL_PT_LIB
 
