@@ -58,15 +58,6 @@ typedef struct {
     asymbol** dsyms;
 } bfd_t;
 
-/* INFO: binutils (libbfd, libopcode) has an unstable public interface. */
-/*
- * This is probably the only define which was added with binutils 2.29, so we use
- * it, do decide which disassembler() prototype from dis-asm.h to use.
- */
-#if defined(FOR_EACH_DISASSEMBLER_OPTION)
-#define _HF_BFD_GE_2_29
-#endif /* defined(FOR_EACH_DISASSEMBLER_OPTION) */
-
 static pthread_mutex_t arch_bfd_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool arch_bfdInit(pid_t pid, bfd_t* bfdParams) {
