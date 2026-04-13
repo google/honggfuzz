@@ -20,15 +20,38 @@
 #   NOTE: xcrun is within xcode...xcode is required on OSX.
 #
 
+# --- Out-of-tree build support ---
+# Set BUILD_DIR to build in a separate directory. When unset, builds in-tree
+# as before. Example: make -f /path/to/honggfuzz/Makefile BUILD_DIR=/tmp/build
+#
+# SRCDIR: absolute path to the source tree (where this Makefile lives)
+SRCDIR := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+
+# BUILD_DIR: where build artifacts go. Defaults to SRCDIR (in-tree build).
+BUILD_DIR ?=
+
+# When BUILD_DIR is set, use it; otherwise everything is relative to SRCDIR
+# (preserving original behaviour).
+ifdef BUILD_DIR
+  # Resolve to absolute path and strip trailing slash
+  override BUILD_DIR := $(patsubst %/,%,$(abspath $(BUILD_DIR)))
+  _OBJDIR = $(BUILD_DIR)
+else
+  _OBJDIR = $(SRCDIR)
+endif
+
+# Let make find sources in the source tree
+VPATH := $(SRCDIR)
+
 # Common for all architectures
 CC ?= gcc
 LD = $(CC)
-BIN := honggfuzz
-HFUZZ_CC_BIN := hfuzz_cc/hfuzz-cc
+BIN := $(_OBJDIR)/honggfuzz
+HFUZZ_CC_BIN := $(_OBJDIR)/hfuzz_cc/hfuzz-cc
 HFUZZ_CC_SRCS := hfuzz_cc/hfuzz-cc.c
-COMMON_CFLAGS := -std=c11 -I/usr/local/include -D_GNU_SOURCE -Wall -Wextra -Werror -Wno-format-truncation -Wno-override-init -I.
+COMMON_CFLAGS := -std=c11 -I/usr/local/include -D_GNU_SOURCE -Wall -Wextra -Werror -Wno-format-truncation -Wno-override-init -I$(SRCDIR)
 COMMON_LDFLAGS := -pthread -L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -lm
-COMMON_SRCS := $(sort $(wildcard *.c))
+COMMON_SRCS := $(sort $(notdir $(wildcard $(SRCDIR)/*.c)))
 CFLAGS ?= -O3 -mtune=native -funroll-loops
 LDFLAGS ?=
 LIBS_CFLAGS ?= -fPIC -fno-stack-protector -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0  # fortify-source intercepts some functions, so we disable it for libraries
@@ -45,7 +68,7 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
     ARCH := LINUX
 
     ARCH_CFLAGS := -D_FILE_OFFSET_BITS=64
-    ARCH_SRCS := $(sort $(wildcard linux/*.c))
+    ARCH_SRCS := $(sort $(patsubst $(SRCDIR)/%,%,$(wildcard $(SRCDIR)/linux/*.c)))
     ARCH_LDFLAGS := -L/usr/local/include
     ifeq ($(BUILD_OSSFUZZ_STATIC),true)
             ARCH_LDFLAGS += -Wl,-Bstatic \
@@ -75,7 +98,7 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
 
-    ARCH_SRCS := $(sort $(wildcard mac/*.c) mac/mach_excServer.c mac/mach_excUser.c)
+    ARCH_SRCS := $(sort $(patsubst $(SRCDIR)/%,%,$(wildcard $(SRCDIR)/mac/*.c)) mac/mach_excServer.c mac/mach_excUser.c)
 
     # MacOS-X grep seem to use colors unconditionally
     GREP_COLOR = --color=never
@@ -145,7 +168,7 @@ else ifeq ($(OS),Darwin)
 else ifeq ($(OS),NetBSD)
     ARCH := NETBSD
 
-    ARCH_SRCS := $(sort $(wildcard netbsd/*.c))
+    ARCH_SRCS := $(sort $(patsubst $(SRCDIR)/%,%,$(wildcard $(SRCDIR)/netbsd/*.c)))
     ARCH_CFLAGS := -I/usr/pkg/include \
                    -D_KERNTYPES
     ARCH_LDFLAGS := -L/usr/local/lib -L/usr/pkg/lib \
@@ -156,7 +179,7 @@ else ifeq ($(OS),NetBSD)
 else
     ARCH := POSIX
 
-    ARCH_SRCS := $(sort $(wildcard posix/*.c))
+    ARCH_SRCS := $(sort $(patsubst $(SRCDIR)/%,%,$(wildcard $(SRCDIR)/posix/*.c)))
     ARCH_CFLAGS := -Wno-initializer-overrides \
                    -Wno-unknown-warning-option -Wno-unknown-pragmas
     ARCH_LDFLAGS := -L/usr/local/lib -lm
@@ -195,21 +218,21 @@ ifeq ($(COMPILER),gcc)
 endif
 
 SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
-OBJS := $(SRCS:.c=.o)
+OBJS := $(addprefix $(_OBJDIR)/,$(SRCS:.c=.o))
 
-LHFUZZ_SRCS := $(sort $(wildcard libhfuzz/*.c))
-LHFUZZ_OBJS := $(LHFUZZ_SRCS:.c=.o)
-LHFUZZ_ARCH := libhfuzz/libhfuzz.a
-LHFUZZ_SHARED := libhfuzz/libhfuzz.so
-HFUZZ_INC ?= $(shell pwd)
+LHFUZZ_SRCS := $(sort $(patsubst $(SRCDIR)/%,%,$(wildcard $(SRCDIR)/libhfuzz/*.c)))
+LHFUZZ_OBJS := $(addprefix $(_OBJDIR)/,$(LHFUZZ_SRCS:.c=.o))
+LHFUZZ_ARCH := $(_OBJDIR)/libhfuzz/libhfuzz.a
+LHFUZZ_SHARED := $(_OBJDIR)/libhfuzz/libhfuzz.so
+HFUZZ_INC ?= $(SRCDIR)
 
-LCOMMON_SRCS := $(sort $(wildcard libhfcommon/*.c))
-LCOMMON_OBJS := $(LCOMMON_SRCS:.c=.o)
-LCOMMON_ARCH := libhfcommon/libhfcommon.a
+LCOMMON_SRCS := $(sort $(patsubst $(SRCDIR)/%,%,$(wildcard $(SRCDIR)/libhfcommon/*.c)))
+LCOMMON_OBJS := $(addprefix $(_OBJDIR)/,$(LCOMMON_SRCS:.c=.o))
+LCOMMON_ARCH := $(_OBJDIR)/libhfcommon/libhfcommon.a
 
-LNETDRIVER_SRCS := $(sort $(wildcard libhfnetdriver/*.c))
-LNETDRIVER_OBJS := $(LNETDRIVER_SRCS:.c=.o)
-LNETDRIVER_ARCH := libhfnetdriver/libhfnetdriver.a
+LNETDRIVER_SRCS := $(sort $(patsubst $(SRCDIR)/%,%,$(wildcard $(SRCDIR)/libhfnetdriver/*.c)))
+LNETDRIVER_OBJS := $(addprefix $(_OBJDIR)/,$(LNETDRIVER_SRCS:.c=.o))
+LNETDRIVER_ARCH := $(_OBJDIR)/libhfnetdriver/libhfnetdriver.a
 
 # Respect external user defines
 REALOS_UPPER = $(shell echo $(REALOS) | tr '[:lower:]' '[:upper:]')
@@ -264,7 +287,7 @@ endif
 
 
 SUBDIR_ROOTS := linux mac netbsd posix libhfuzz libhfcommon libhfnetdriver
-DIRS := . $(shell find $(SUBDIR_ROOTS) -type d)
+DIRS := . $(shell find $(SUBDIR_ROOTS) -type d 2>/dev/null)
 CLEAN_PATTERNS := *.o *~ core *.a *.dSYM *.la *.so *.dylib
 SUBDIR_GARBAGE := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
 MAC_GARGBAGE := $(wildcard mac/mach_exc*)
@@ -277,49 +300,67 @@ CLEAN_TARGETS := core Makefile.bak \
   $(LNETDRIVER_ARCH) $(LNETDRIVER_OBJS) \
   $(MAC_GARGBAGE) $(ANDROID_GARBAGE) $(SUBDIR_GARBAGE)
 
+# Collect all output directories that need to exist in BUILD_DIR
+_BUILD_SUBDIRS := $(sort $(dir $(OBJS) $(LHFUZZ_OBJS) $(LCOMMON_OBJS) $(LNETDRIVER_OBJS) $(BIN) $(HFUZZ_CC_BIN)))
+
 all: $(BIN) $(HFUZZ_CC_BIN) $(LHFUZZ_ARCH) $(LHFUZZ_SHARED) $(LCOMMON_ARCH) $(LNETDRIVER_ARCH)
 
-%.o: %.c
+# Enable second expansion for order-only prerequisite directory creation
+.SECONDEXPANSION:
+
+# Create build output directories on demand
+$(_BUILD_SUBDIRS):
+	mkdir -p $@
+
+# Generic rule: compile .c -> .o in _OBJDIR
+$(_OBJDIR)/%.o: %.c | $$(dir $$@)
 	$(CC) -c $(CFLAGS) $(CFLAGS_BLOCKS) -o $@ $<
 
 mac/mach_exc.h mac/mach_excServer.c mac/mach_excServer.h mac/mach_excUser.c &:
 	mig -header mac/mach_exc.h -user mac/mach_excUser.c -sheader mac/mach_excServer.h \
 		-server mac/mach_excServer.c $(SDK)/usr/include/mach/mach_exc.defs
 
-mac/arch.o: mac/arch.c mac/mach_exc.h mac/mach_excServer.h
+$(_OBJDIR)/mac/arch.o: mac/arch.c mac/mach_exc.h mac/mach_excServer.h | $$(dir $$@)
 	$(CC) -c $(CFLAGS) $(CFLAGS_BLOCKS) -o $@ $<
 
-%.so: %.c
+$(_OBJDIR)/%.so: %.c | $$(dir $$@)
 	$(CC) -fPIC -shared $(CFLAGS) -o $@ $<
 
-%.dylib: %.c
+$(_OBJDIR)/%.dylib: %.c | $$(dir $$@)
 	$(CC) -fPIC -shared $(CFLAGS) -o $@ $<
 
-$(BIN): $(OBJS) $(LCOMMON_ARCH)
+$(BIN): $(OBJS) $(LCOMMON_ARCH) | $$(dir $$@)
 	$(LD) -o $(BIN) $(OBJS) $(LCOMMON_ARCH) $(LDFLAGS)
 
-$(HFUZZ_CC_BIN): $(LCOMMON_ARCH) $(LHFUZZ_ARCH) $(LNETDRIVER_ARCH) $(HFUZZ_CC_SRCS)
-	$(LD) -o $@ $(HFUZZ_CC_SRCS) $(LCOMMON_ARCH) $(LDFLAGS) $(CFLAGS) $(CFLAGS_BLOCKS) -D_HFUZZ_INC_PATH=$(HFUZZ_INC)
+$(HFUZZ_CC_BIN): $(LCOMMON_ARCH) $(LHFUZZ_ARCH) $(LNETDRIVER_ARCH) $(HFUZZ_CC_SRCS) | $$(dir $$@)
+	$(LD) -o $@ $(SRCDIR)/$(HFUZZ_CC_SRCS) $(LCOMMON_ARCH) $(LDFLAGS) $(CFLAGS) $(CFLAGS_BLOCKS) -D_HFUZZ_INC_PATH=$(HFUZZ_INC)
 
 $(LCOMMON_OBJS): $(LCOMMON_SRCS)
-	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) -o $@ $(@:.o=.c)
 
-$(LCOMMON_ARCH): $(LCOMMON_OBJS)
+$(LCOMMON_ARCH): $(LCOMMON_OBJS) | $$(dir $$@)
 	$(AR) rcs $(LCOMMON_ARCH) $(LCOMMON_OBJS)
 
 $(LHFUZZ_OBJS): $(LHFUZZ_SRCS)
-	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) -o $@ $(@:.o=.c)
 
-$(LHFUZZ_ARCH): $(LHFUZZ_OBJS)
+# Specific pattern rules for library objects (need LIBS_CFLAGS)
+$(_OBJDIR)/libhfcommon/%.o: libhfcommon/%.c | $$(dir $$@)
+	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) -o $@ $<
+
+$(_OBJDIR)/libhfuzz/%.o: libhfuzz/%.c | $$(dir $$@)
+	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) -o $@ $<
+
+$(_OBJDIR)/libhfnetdriver/%.o: libhfnetdriver/%.c | $$(dir $$@)
+	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) -o $@ $<
+
+$(LHFUZZ_ARCH): $(LHFUZZ_OBJS) | $$(dir $$@)
 	$(AR) rcs $(LHFUZZ_ARCH) $(LHFUZZ_OBJS)
 
-$(LHFUZZ_SHARED): $(LHFUZZ_OBJS) $(LCOMMON_OBJS)
+$(LHFUZZ_SHARED): $(LHFUZZ_OBJS) $(LCOMMON_OBJS) | $$(dir $$@)
 	$(LD) -shared $(LHFUZZ_OBJS) $(LCOMMON_OBJS) $(LDFLAGS) -o $@
 
 $(LNETDRIVER_OBJS): $(LNETDRIVER_SRCS)
-	$(CC) -c $(CFLAGS) $(LIBS_CFLAGS) -o $@ $(@:.o=.c)
 
-$(LNETDRIVER_ARCH): $(LNETDRIVER_OBJS)
+$(LNETDRIVER_ARCH): $(LNETDRIVER_OBJS) | $$(dir $$@)
 	$(AR) rcs $(LNETDRIVER_ARCH) $(LNETDRIVER_OBJS)
 
 .PHONY: clean
@@ -328,27 +369,27 @@ clean:
 
 .PHONY: indent
 indent:
-	clang-format -i -sort-includes  *.c *.h */*.c */*.h
+	cd $(SRCDIR) && clang-format -i -sort-includes  *.c *.h */*.c */*.h
 
 .PHONY: depend
 depend: all
-	makedepend -Y. -Y* -- *.c */*.c
+	cd $(SRCDIR) && makedepend -Y. -Y* -- *.c */*.c
 
 .PHONY: android
 android:
 	$(info ***************************************************************)
 	$(info *                 Use Android NDK 22 or newer                 *)
 	$(info ***************************************************************)
-	@ANDROID_API=$(ANDROID_API) ANDROID_NDK_COMPILER_PREFIX=$(ANDROID_NDK_COMPILER_PREFIX) third_party/android/scripts/compile-libunwind.sh \
-	third_party/android/libunwind $(ANDROID_ARCH_CPU)
+	@ANDROID_API=$(ANDROID_API) ANDROID_NDK_COMPILER_PREFIX=$(ANDROID_NDK_COMPILER_PREFIX) $(SRCDIR)/third_party/android/scripts/compile-libunwind.sh \
+	$(SRCDIR)/third_party/android/libunwind $(ANDROID_ARCH_CPU)
 
-	@ANDROID_API=$(ANDROID_API) ANDROID_NDK_COMPILER_PREFIX=$(ANDROID_NDK_COMPILER_PREFIX) third_party/android/scripts/compile-capstone.sh \
-	third_party/android/capstone $(ANDROID_ARCH_CPU)
+	@ANDROID_API=$(ANDROID_API) ANDROID_NDK_COMPILER_PREFIX=$(ANDROID_NDK_COMPILER_PREFIX) $(SRCDIR)/third_party/android/scripts/compile-capstone.sh \
+	$(SRCDIR)/third_party/android/capstone $(ANDROID_ARCH_CPU)
 
-	@ANDROID_API=$(ANDROID_API) ANDROID_NDK_COMPILER_PREFIX=$(ANDROID_NDK_COMPILER_PREFIX) third_party/android/scripts/compile-libBlocksRuntime.sh \
-	third_party/android/libBlocksRuntime $(ANDROID_ARCH_CPU)
+	@ANDROID_API=$(ANDROID_API) ANDROID_NDK_COMPILER_PREFIX=$(ANDROID_NDK_COMPILER_PREFIX) $(SRCDIR)/third_party/android/scripts/compile-libBlocksRuntime.sh \
+	$(SRCDIR)/third_party/android/libBlocksRuntime $(ANDROID_ARCH_CPU)
 
-	ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./android/Android.mk \
+	ndk-build NDK_PROJECT_PATH=$(SRCDIR) APP_BUILD_SCRIPT=$(SRCDIR)/android/Android.mk \
     APP_PLATFORM=$(ANDROID_API) APP_ABI=$(ANDROID_APP_ABI) \
     NDK_TOOLCHAIN=$(ANDROID_NDK_TOOLCHAIN) NDK_TOOLCHAIN_VERSION=$(ANDROID_NDK_TOOLCHAIN_VER) \
     $(NDK_BUILD_ARGS) APP_MODULES='honggfuzz hfuzz hfnetdriver'
@@ -371,13 +412,13 @@ android-all:
 .PHONY: android-clean-deps
 android-clean-deps:
 	@for cpu in arm arm64 x86 x86_64; do \
-	  make -C "third_party/android/capstone" clean; \
-	  rm -rf "third_party/android/capstone/$$cpu"; \
-	  make -C "third_party/android/libunwind" clean; \
-	  rm -rf "third_party/android/libunwind/$$cpu"; \
-	  ndk-build -C "third_party/android/libBlocksRuntime" \
+	  make -C "$(SRCDIR)/third_party/android/capstone" clean; \
+	  rm -rf "$(SRCDIR)/third_party/android/capstone/$$cpu"; \
+	  make -C "$(SRCDIR)/third_party/android/libunwind" clean; \
+	  rm -rf "$(SRCDIR)/third_party/android/libunwind/$$cpu"; \
+	  ndk-build -C "$(SRCDIR)/third_party/android/libBlocksRuntime" \
 	    NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=Android.mk clean; \
-	  rm -rf "third_party/android/libBlocksRuntime/$$cpu"; \
+	  rm -rf "$(SRCDIR)/third_party/android/libBlocksRuntime/$$cpu"; \
 	done
 
 PREFIX		?= /usr/local
@@ -386,111 +427,111 @@ INC_PATH	= $(PREFIX)/include
 
 install: all
 	mkdir -p -m 755 $${DESTDIR}$(BIN_PATH)
-	install -m 755 honggfuzz $${DESTDIR}$(BIN_PATH)
-	install -m 755 hfuzz_cc/hfuzz-cc $${DESTDIR}$(BIN_PATH)
-	install -m 755 hfuzz_cc/hfuzz-clang $${DESTDIR}$(BIN_PATH)
-	install -m 755 hfuzz_cc/hfuzz-clang++ $${DESTDIR}$(BIN_PATH)
-	install -m 755 hfuzz_cc/hfuzz-gcc $${DESTDIR}$(BIN_PATH)
-	install -m 755 hfuzz_cc/hfuzz-g++ $${DESTDIR}$(BIN_PATH)
+	install -m 755 $(BIN) $${DESTDIR}$(BIN_PATH)
+	install -m 755 $(HFUZZ_CC_BIN) $${DESTDIR}$(BIN_PATH)
+	install -m 755 $(SRCDIR)/hfuzz_cc/hfuzz-clang $${DESTDIR}$(BIN_PATH)
+	install -m 755 $(SRCDIR)/hfuzz_cc/hfuzz-clang++ $${DESTDIR}$(BIN_PATH)
+	install -m 755 $(SRCDIR)/hfuzz_cc/hfuzz-gcc $${DESTDIR}$(BIN_PATH)
+	install -m 755 $(SRCDIR)/hfuzz_cc/hfuzz-g++ $${DESTDIR}$(BIN_PATH)
 	install -d $${DESTDIR}$(INC_PATH)/libhfcommon
 	install -d $${DESTDIR}$(INC_PATH)/libhfuzz
 	install -d $${DESTDIR}$(INC_PATH)/libhnetdriver
-	install -m 755 includes/libhfcommon/*.h $${DESTDIR}$(INC_PATH)/libhfcommon
-	install -m 755 includes/libhfuzz/*.h $${DESTDIR}$(INC_PATH)/libhfuzz
-	install -m 755 includes/libhfnetdriver/*.h $${DESTDIR}$(INC_PATH)/libhnetdriver
+	install -m 755 $(SRCDIR)/includes/libhfcommon/*.h $${DESTDIR}$(INC_PATH)/libhfcommon
+	install -m 755 $(SRCDIR)/includes/libhfuzz/*.h $${DESTDIR}$(INC_PATH)/libhfuzz
+	install -m 755 $(SRCDIR)/includes/libhfnetdriver/*.h $${DESTDIR}$(INC_PATH)/libhnetdriver
 
 # DO NOT DELETE
 
-cmdline.o: cmdline.h honggfuzz.h libhfcommon/util.h display.h
-cmdline.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-cmdline.o: libhfcommon/log.h
-dict.o: dict.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
-dict.o: libhfcommon/log.h
-display.o: display.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
-display.o: libhfcommon/log.h
-fuzz.o: fuzz.h arch.h honggfuzz.h libhfcommon/util.h input.h
-fuzz.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-fuzz.o: libhfcommon/log.h report.h sanitizers.h socketfuzzer.h subproc.h
-honggfuzz.o: cmdline.h honggfuzz.h libhfcommon/util.h dict.h display.h fuzz.h
-honggfuzz.o: input.h libhfcommon/common.h libhfcommon/files.h
-honggfuzz.o: libhfcommon/common.h libhfcommon/log.h socketfuzzer.h subproc.h
-input.o: input.h honggfuzz.h libhfcommon/util.h dict.h fuzz.h
-input.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-input.o: libhfcommon/log.h mangle.h power.h subproc.h
-mangle.o: mangle.h honggfuzz.h libhfcommon/util.h input.h
-mangle.o: libhfcommon/common.h libhfcommon/log.h
-power.o: power.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
-report.o: report.h honggfuzz.h libhfcommon/util.h sanitizers.h
-report.o: libhfcommon/common.h libhfcommon/log.h
-sanitizers.o: sanitizers.h honggfuzz.h libhfcommon/util.h cmdline.h
-sanitizers.o: libhfcommon/common.h libhfcommon/log.h
-socketfuzzer.o: socketfuzzer.h honggfuzz.h libhfcommon/util.h
-socketfuzzer.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-socketfuzzer.o: libhfcommon/log.h libhfcommon/ns.h
-subproc.o: subproc.h honggfuzz.h libhfcommon/util.h arch.h fuzz.h
-subproc.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-subproc.o: libhfcommon/log.h
-hfuzz_cc/hfuzz-cc.o: honggfuzz.h libhfcommon/util.h libhfcommon/common.h
-hfuzz_cc/hfuzz-cc.o: libhfcommon/files.h libhfcommon/common.h
-hfuzz_cc/hfuzz-cc.o: libhfcommon/log.h
-libhfcommon/files.o: libhfcommon/files.h libhfcommon/common.h
-libhfcommon/files.o: libhfcommon/log.h libhfcommon/util.h
-libhfcommon/log.o: libhfcommon/log.h libhfcommon/common.h libhfcommon/util.h
-libhfcommon/ns.o: libhfcommon/ns.h libhfcommon/common.h libhfcommon/files.h
-libhfcommon/ns.o: libhfcommon/log.h libhfcommon/util.h
-libhfcommon/util.o: libhfcommon/util.h libhfcommon/common.h
-libhfcommon/util.o: libhfcommon/files.h libhfcommon/log.h
-libhfnetdriver/netdriver.o: libhfnetdriver/netdriver.h honggfuzz.h
-libhfnetdriver/netdriver.o: libhfcommon/util.h libhfcommon/common.h
-libhfnetdriver/netdriver.o: libhfcommon/files.h libhfcommon/common.h
-libhfnetdriver/netdriver.o: libhfcommon/log.h libhfcommon/ns.h
-libhfuzz/fetch.o: libhfuzz/fetch.h honggfuzz.h libhfcommon/util.h
-libhfuzz/fetch.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
-libhfuzz/instrument.o: libhfuzz/instrument.h honggfuzz.h libhfcommon/util.h
-libhfuzz/instrument.o: libhfcommon/common.h libhfcommon/files.h
-libhfuzz/instrument.o: libhfcommon/common.h libhfcommon/log.h
-libhfuzz/linux.o: libhfcommon/common.h libhfcommon/files.h
-libhfuzz/linux.o: libhfcommon/common.h libhfcommon/log.h libhfcommon/ns.h
-libhfuzz/linux.o: libhfuzz/libhfuzz.h
-libhfuzz/memorycmp.o: libhfcommon/common.h libhfcommon/util.h
-libhfuzz/memorycmp.o: libhfuzz/instrument.h
-libhfuzz/performance.o: libhfuzz/performance.h honggfuzz.h libhfcommon/util.h
-libhfuzz/performance.o: libhfcommon/log.h libhfuzz/instrument.h
-libhfuzz/persistent.o: honggfuzz.h libhfcommon/util.h libhfcommon/common.h
-libhfuzz/persistent.o: libhfcommon/files.h libhfcommon/common.h
-libhfuzz/persistent.o: libhfcommon/log.h libhfuzz/fetch.h
-libhfuzz/persistent.o: libhfuzz/instrument.h libhfuzz/libhfuzz.h
-libhfuzz/persistent.o: libhfuzz/performance.h
-linux/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h
-linux/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-linux/arch.o: libhfcommon/log.h libhfcommon/ns.h linux/perf.h linux/trace.h
-linux/arch.o: sanitizers.h subproc.h
-linux/bfd.o: linux/bfd.h linux/unwind.h sanitizers.h honggfuzz.h
-linux/bfd.o: libhfcommon/util.h dict.h libhfcommon/common.h
-linux/bfd.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
-linux/perf.o: linux/perf.h honggfuzz.h libhfcommon/util.h
-linux/perf.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-linux/perf.o: libhfcommon/log.h linux/pt.h
-linux/pt.o: linux/pt.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
-linux/pt.o: libhfcommon/log.h
-linux/trace.o: linux/trace.h honggfuzz.h libhfcommon/util.h
-linux/trace.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-linux/trace.o: libhfcommon/log.h linux/bfd.h linux/unwind.h sanitizers.h
-linux/trace.o: report.h socketfuzzer.h subproc.h
-linux/unwind.o: linux/unwind.h sanitizers.h honggfuzz.h libhfcommon/util.h
-linux/unwind.o: libhfcommon/common.h libhfcommon/log.h
-mac/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h libhfcommon/common.h
-mac/arch.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
-mac/arch.o: subproc.h
-netbsd/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h
-netbsd/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-netbsd/arch.o: libhfcommon/log.h libhfcommon/ns.h netbsd/trace.h subproc.h
-netbsd/trace.o: netbsd/trace.h honggfuzz.h libhfcommon/util.h
-netbsd/trace.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-netbsd/trace.o: libhfcommon/log.h netbsd/unwind.h sanitizers.h report.h
-netbsd/trace.o: subproc.h
-netbsd/unwind.o: netbsd/unwind.h sanitizers.h honggfuzz.h libhfcommon/util.h
-netbsd/unwind.o: libhfcommon/common.h libhfcommon/log.h
-posix/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h
-posix/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
-posix/arch.o: libhfcommon/log.h report.h sanitizers.h subproc.h
+$(_OBJDIR)/cmdline.o: cmdline.h honggfuzz.h libhfcommon/util.h display.h
+$(_OBJDIR)/cmdline.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/cmdline.o: libhfcommon/log.h
+$(_OBJDIR)/dict.o: dict.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
+$(_OBJDIR)/dict.o: libhfcommon/log.h
+$(_OBJDIR)/display.o: display.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
+$(_OBJDIR)/display.o: libhfcommon/log.h
+$(_OBJDIR)/fuzz.o: fuzz.h arch.h honggfuzz.h libhfcommon/util.h input.h
+$(_OBJDIR)/fuzz.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/fuzz.o: libhfcommon/log.h report.h sanitizers.h socketfuzzer.h subproc.h
+$(_OBJDIR)/honggfuzz.o: cmdline.h honggfuzz.h libhfcommon/util.h dict.h display.h fuzz.h
+$(_OBJDIR)/honggfuzz.o: input.h libhfcommon/common.h libhfcommon/files.h
+$(_OBJDIR)/honggfuzz.o: libhfcommon/common.h libhfcommon/log.h socketfuzzer.h subproc.h
+$(_OBJDIR)/input.o: input.h honggfuzz.h libhfcommon/util.h dict.h fuzz.h
+$(_OBJDIR)/input.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/input.o: libhfcommon/log.h mangle.h power.h subproc.h
+$(_OBJDIR)/mangle.o: mangle.h honggfuzz.h libhfcommon/util.h input.h
+$(_OBJDIR)/mangle.o: libhfcommon/common.h libhfcommon/log.h
+$(_OBJDIR)/power.o: power.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
+$(_OBJDIR)/report.o: report.h honggfuzz.h libhfcommon/util.h sanitizers.h
+$(_OBJDIR)/report.o: libhfcommon/common.h libhfcommon/log.h
+$(_OBJDIR)/sanitizers.o: sanitizers.h honggfuzz.h libhfcommon/util.h cmdline.h
+$(_OBJDIR)/sanitizers.o: libhfcommon/common.h libhfcommon/log.h
+$(_OBJDIR)/socketfuzzer.o: socketfuzzer.h honggfuzz.h libhfcommon/util.h
+$(_OBJDIR)/socketfuzzer.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/socketfuzzer.o: libhfcommon/log.h libhfcommon/ns.h
+$(_OBJDIR)/subproc.o: subproc.h honggfuzz.h libhfcommon/util.h arch.h fuzz.h
+$(_OBJDIR)/subproc.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/subproc.o: libhfcommon/log.h
+$(_OBJDIR)/hfuzz_cc/hfuzz-cc.o: honggfuzz.h libhfcommon/util.h libhfcommon/common.h
+$(_OBJDIR)/hfuzz_cc/hfuzz-cc.o: libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/hfuzz_cc/hfuzz-cc.o: libhfcommon/log.h
+$(_OBJDIR)/libhfcommon/files.o: libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/libhfcommon/files.o: libhfcommon/log.h libhfcommon/util.h
+$(_OBJDIR)/libhfcommon/log.o: libhfcommon/log.h libhfcommon/common.h libhfcommon/util.h
+$(_OBJDIR)/libhfcommon/ns.o: libhfcommon/ns.h libhfcommon/common.h libhfcommon/files.h
+$(_OBJDIR)/libhfcommon/ns.o: libhfcommon/log.h libhfcommon/util.h
+$(_OBJDIR)/libhfcommon/util.o: libhfcommon/util.h libhfcommon/common.h
+$(_OBJDIR)/libhfcommon/util.o: libhfcommon/files.h libhfcommon/log.h
+$(_OBJDIR)/libhfnetdriver/netdriver.o: libhfnetdriver/netdriver.h honggfuzz.h
+$(_OBJDIR)/libhfnetdriver/netdriver.o: libhfcommon/util.h libhfcommon/common.h
+$(_OBJDIR)/libhfnetdriver/netdriver.o: libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/libhfnetdriver/netdriver.o: libhfcommon/log.h libhfcommon/ns.h
+$(_OBJDIR)/libhfuzz/fetch.o: libhfuzz/fetch.h honggfuzz.h libhfcommon/util.h
+$(_OBJDIR)/libhfuzz/fetch.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
+$(_OBJDIR)/libhfuzz/instrument.o: libhfuzz/instrument.h honggfuzz.h libhfcommon/util.h
+$(_OBJDIR)/libhfuzz/instrument.o: libhfcommon/common.h libhfcommon/files.h
+$(_OBJDIR)/libhfuzz/instrument.o: libhfcommon/common.h libhfcommon/log.h
+$(_OBJDIR)/libhfuzz/linux.o: libhfcommon/common.h libhfcommon/files.h
+$(_OBJDIR)/libhfuzz/linux.o: libhfcommon/common.h libhfcommon/log.h libhfcommon/ns.h
+$(_OBJDIR)/libhfuzz/linux.o: libhfuzz/libhfuzz.h
+$(_OBJDIR)/libhfuzz/memorycmp.o: libhfcommon/common.h libhfcommon/util.h
+$(_OBJDIR)/libhfuzz/memorycmp.o: libhfuzz/instrument.h
+$(_OBJDIR)/libhfuzz/performance.o: libhfuzz/performance.h honggfuzz.h libhfcommon/util.h
+$(_OBJDIR)/libhfuzz/performance.o: libhfcommon/log.h libhfuzz/instrument.h
+$(_OBJDIR)/libhfuzz/persistent.o: honggfuzz.h libhfcommon/util.h libhfcommon/common.h
+$(_OBJDIR)/libhfuzz/persistent.o: libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/libhfuzz/persistent.o: libhfcommon/log.h libhfuzz/fetch.h
+$(_OBJDIR)/libhfuzz/persistent.o: libhfuzz/instrument.h libhfuzz/libhfuzz.h
+$(_OBJDIR)/libhfuzz/persistent.o: libhfuzz/performance.h
+$(_OBJDIR)/linux/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h
+$(_OBJDIR)/linux/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/linux/arch.o: libhfcommon/log.h libhfcommon/ns.h linux/perf.h linux/trace.h
+$(_OBJDIR)/linux/arch.o: sanitizers.h subproc.h
+$(_OBJDIR)/linux/bfd.o: linux/bfd.h linux/unwind.h sanitizers.h honggfuzz.h
+$(_OBJDIR)/linux/bfd.o: libhfcommon/util.h dict.h libhfcommon/common.h
+$(_OBJDIR)/linux/bfd.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
+$(_OBJDIR)/linux/perf.o: linux/perf.h honggfuzz.h libhfcommon/util.h
+$(_OBJDIR)/linux/perf.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/linux/perf.o: libhfcommon/log.h linux/pt.h
+$(_OBJDIR)/linux/pt.o: linux/pt.h honggfuzz.h libhfcommon/util.h libhfcommon/common.h
+$(_OBJDIR)/linux/pt.o: libhfcommon/log.h
+$(_OBJDIR)/linux/trace.o: linux/trace.h honggfuzz.h libhfcommon/util.h
+$(_OBJDIR)/linux/trace.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/linux/trace.o: libhfcommon/log.h linux/bfd.h linux/unwind.h sanitizers.h
+$(_OBJDIR)/linux/trace.o: report.h socketfuzzer.h subproc.h
+$(_OBJDIR)/linux/unwind.o: linux/unwind.h sanitizers.h honggfuzz.h libhfcommon/util.h
+$(_OBJDIR)/linux/unwind.o: libhfcommon/common.h libhfcommon/log.h
+$(_OBJDIR)/mac/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h libhfcommon/common.h
+$(_OBJDIR)/mac/arch.o: libhfcommon/files.h libhfcommon/common.h libhfcommon/log.h
+$(_OBJDIR)/mac/arch.o: subproc.h
+$(_OBJDIR)/netbsd/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h
+$(_OBJDIR)/netbsd/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/netbsd/arch.o: libhfcommon/log.h libhfcommon/ns.h netbsd/trace.h subproc.h
+$(_OBJDIR)/netbsd/trace.o: netbsd/trace.h honggfuzz.h libhfcommon/util.h
+$(_OBJDIR)/netbsd/trace.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/netbsd/trace.o: libhfcommon/log.h netbsd/unwind.h sanitizers.h report.h
+$(_OBJDIR)/netbsd/trace.o: subproc.h
+$(_OBJDIR)/netbsd/unwind.o: netbsd/unwind.h sanitizers.h honggfuzz.h libhfcommon/util.h
+$(_OBJDIR)/netbsd/unwind.o: libhfcommon/common.h libhfcommon/log.h
+$(_OBJDIR)/posix/arch.o: arch.h honggfuzz.h libhfcommon/util.h fuzz.h
+$(_OBJDIR)/posix/arch.o: libhfcommon/common.h libhfcommon/files.h libhfcommon/common.h
+$(_OBJDIR)/posix/arch.o: libhfcommon/log.h report.h sanitizers.h subproc.h
