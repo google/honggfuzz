@@ -92,12 +92,43 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
         return true;
     }
 
+#if defined(_HF_ARCH_LINUX)
+    /*
+     * Query the CPUs this process can actually be scheduled on (respects
+     * cgroup cpuset restrictions), rather than assuming CPU IDs 0..num_cpus-1
+     * are free based on sysconf(_SC_NPROCESSORS_ONLN). Under a container/cgroup
+     * that limits CPU via quota/shares but not cpuset (a common configuration),
+     * sysconf() still reports the full host CPU count, so pinning by raw index
+     * causes every concurrent instance on that host to independently pick the
+     * same physical CPUs -- turning "N CPUs per instance" into cross-instance
+     * contention instead of parallelism, while the rest of the host's CPUs sit
+     * idle. Enumerating the real affinity mask and indexing into it is a no-op
+     * wherever the process is unconstrained (the common case, where the mask
+     * already lists CPUs 0..num_cpus-1), and correct wherever it's
+     * cpuset-restricted.
+     */
+    cpu_set_t avail_set;
+    CPU_ZERO(&avail_set);
+    if (sched_getaffinity(0, sizeof(avail_set), &avail_set) != 0) {
+        PLOG_W("sched_getaffinity() failed");
+        return false;
+    }
+
+    uint32_t avail_cpus[CPU_SETSIZE];
+    uint32_t num_cpus = 0;
+    for (int i = 0; i < CPU_SETSIZE; i++) {
+        if (CPU_ISSET(i, &avail_set)) {
+            avail_cpus[num_cpus++] = (uint32_t)i;
+        }
+    }
+#else  /* defined(_HF_ARCH_LINUX) */
     long r = sysconf(_SC_NPROCESSORS_ONLN);
     if (r == -1) {
         PLOG_W("sysconf(_SC_NPROCESSORS_ONLN) failed");
         return false;
     }
     uint32_t num_cpus = (uint32_t)r;
+#endif /* defined(_HF_ARCH_LINUX) */
 
     if (cpucnt > num_cpus) {
         LOG_W("Requested CPUs (%" PRIu32 ") > available CPUs (%" PRIu32 ") for thread #%" PRIu32,
@@ -107,9 +138,16 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
 
     uint32_t start_cpu = (threadno * cpucnt) % num_cpus;
     uint32_t end_cpu   = (start_cpu + cpucnt - 1U) % num_cpus;
+#if defined(_HF_ARCH_LINUX)
+    LOG_D("Setting CPU affinity for the current thread #%" PRIu32 " to %" PRIu32
+          " consecutive CPUs out of %" PRIu32 " actually schedulable, (cpu:%" PRIu32 "-cpu:%" PRIu32
+          ")",
+        threadno, cpucnt, num_cpus, avail_cpus[start_cpu], avail_cpus[end_cpu]);
+#else  /* defined(_HF_ARCH_LINUX) */
     LOG_D("Setting CPU affinity for the current thread #%" PRIu32 " to %" PRIu32
           " consecutive CPUs, (start:%" PRIu32 "-end:%" PRIu32 ") total_cpus:%" PRIu32,
         threadno, cpucnt, start_cpu, end_cpu, num_cpus);
+#endif /* defined(_HF_ARCH_LINUX) */
 
 #if defined(_HF_ARCH_LINUX) || defined(__FreeBSD__) || defined(_HF_ARCH_NETBSD) ||                 \
     defined(__DragonFly__)
@@ -126,7 +164,9 @@ bool util_PinThreadToCPUs(uint32_t threadno, uint32_t cpucnt) {
 #endif /* defined(_HF_ARCH_NETBSD) */
 
     for (uint32_t i = 0; i < cpucnt; i++) {
-#if defined(_HF_ARCH_NETBSD)
+#if defined(_HF_ARCH_LINUX)
+        CPU_SET(avail_cpus[(start_cpu + i) % num_cpus], &set);
+#elif defined(_HF_ARCH_NETBSD)
         cpuset_set((start_cpu + i) % num_cpus, set);
 #else  /* defined((_HF_ARCH_NETBSD) */
         CPU_SET((start_cpu + i) % num_cpus, &set);
