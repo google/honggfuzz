@@ -860,7 +860,13 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
         LOG_D("SocketFuzzer: trace: Crash Identified");
     }
 
-    if (files_exists(run->crashFileName)) {
+    /*
+     * A crash with this stack hash was saved before. With --save_smaller it can
+     * be replaced several times by smaller test cases - that is still the same
+     * crash, so it shouldn't be counted as a new unique one.
+     */
+    bool crashFileExisted = files_exists(run->crashFileName);
+    if (crashFileExisted) {
         if (run->global->io.saveSmaller) {
             /*
              * If the new run produces a smaller file than exists already, we
@@ -917,7 +923,9 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
     }
     LOG_I("Crash: saved as '%s'", run->crashFileName);
 
-    ATOMIC_POST_INC(run->global->cnts.uniqueCrashesCnt);
+    if (!crashFileExisted) {
+        ATOMIC_POST_INC(run->global->cnts.uniqueCrashesCnt);
+    }
     /* If unique crash found, reset dynFile counter */
     ATOMIC_CLEAR(run->global->cfg.dynFileIterExpire);
 
