@@ -888,8 +888,13 @@ static void arch_traceSaveData(run_t* run, pid_t pid) {
             if (!files_exists(origFile)) {
                 rename(run->crashFileName, origFile);
             } else {
-                /* allow overwrite */
-                open_flags = O_CREAT | O_WRONLY | O_CLOEXEC;
+                /*
+                 * The .orig slot is already taken, so the crash file is
+                 * replaced in place. O_TRUNC is needed here: without it the new
+                 * test case is written over the old one and whatever the old
+                 * one had beyond the new size stays behind as garbage.
+                 */
+                open_flags = O_CREAT | O_TRUNC | O_WRONLY | O_CLOEXEC;
             }
         } else {
             LOG_I("Crash (dup): '%s' already exists, skipping", run->crashFileName);
