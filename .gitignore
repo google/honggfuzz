@@ -14,3 +14,6 @@ libs
 obj
 examples/badcode/targets/badcode1
 examples/badcode/targets/badcode2
+.DS_Store
+mac/arm64_mach_excServer.c
+mac/arm64_mach_excServer.h
