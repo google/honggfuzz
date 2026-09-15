@@ -1,7 +1,6 @@
 /*
  * Native Apple Silicon crash reporting using Apple's public Mach/Mach-O SDK
  * interfaces, dladdr, and the system atos symbolicator.
- * SPDX-License-Identifier: Apache-2.0
  */
 #include "mac/arm64.h"
 

@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: Apache-2.0 */
 #include "mac/exception.h"
 
 #include <mach/exception_types.h>

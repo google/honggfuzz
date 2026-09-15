@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: Apache-2.0 */
 #ifndef HF_MAC_EXCEPTION_H
 #define HF_MAC_EXCEPTION_H
 

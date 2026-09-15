@@ -1,4 +1,4 @@
-/* Native Apple Silicon crash reporting. SPDX-License-Identifier: Apache-2.0 */
+/* Native Apple Silicon crash reporting. */
 #ifndef HF_MAC_ARM64_H
 #define HF_MAC_ARM64_H
 

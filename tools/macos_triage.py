@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 """Replay saved inputs with honggfuzz's native ARM64 reporter; summarize evidence.
-
-SPDX-License-Identifier: Apache-2.0
 This tool does not use CrashWrangler or claim to determine exploitability.
 """
 import argparse

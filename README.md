@@ -25,7 +25,7 @@ sudo apt-get install binutils-dev libunwind-dev libblocksruntime-dev clang
 **macOS**
 Requires [Xcode](https://developer.apple.com/xcode/) or its Command Line Tools.
 
-Arm64 macOS builds use the active Xcode SDK and include native ARM64 crash
+macOS builds use the active Xcode SDK and include native ARM64 crash
 stacks and registers. See [Apple Silicon reporting and saved-crash triage](docs/MacOS.md) for more details.
 
 ### Build
