@@ -167,13 +167,13 @@ void arch_bfdResolveSyms(pid_t pid, funcs_t* funcs, size_t num) {
         long sec_offset = (long)funcs[i].pc - bfd_get_section_vma(bfdParams.bfdh, section);
 
         if (bfd_find_nearest_line(
-                bfdParams.bfdh, section, bfdParams.syms, sec_offset, &file, &func, &line) == TRUE) {
+                bfdParams.bfdh, section, bfdParams.syms, sec_offset, &file, &func, &line)) {
             snprintf(funcs[i].func, sizeof(funcs->func), "%s", func ? func : "");
             snprintf(funcs[i].file, sizeof(funcs->file), "%s", file ? file : "");
             funcs[i].line = line;
         }
         if (bfd_find_nearest_line(
-                bfdParams.bfdh, section, bfdParams.syms, sec_offset, &file, &func, &line) == TRUE) {
+                bfdParams.bfdh, section, bfdParams.syms, sec_offset, &file, &func, &line)) {
             snprintf(funcs[i].func, sizeof(funcs->func), "%s", func ? func : "");
             snprintf(funcs[i].file, sizeof(funcs->file), "%s", file ? file : "");
             funcs[i].line = line;
