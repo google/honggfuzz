@@ -64,6 +64,9 @@ extern char** environ;
 #include "report.h"
 #include "sanitizers.h"
 #include "subproc.h"
+#if defined(_HF_ARCH_DARWIN_ARM64)
+#include "mac/arm64.h"
+#endif
 
 struct {
     bool        important;
@@ -86,6 +89,12 @@ struct {
 
     [SIGABRT].important = true,
     [SIGABRT].descr     = "SIGABRT",
+
+#if defined(__APPLE__) && defined(__aarch64__)
+    /* ARM64 BRK (__builtin_trap and runtime checks) is delivered as SIGTRAP. */
+    [SIGTRAP].important = true,
+    [SIGTRAP].descr     = "SIGTRAP",
+#endif
 
     /* Is affected from tmout_vtalrm flag */
     [SIGVTALRM].important = false,
@@ -122,6 +131,11 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
     }
 
     int termsig = WTERMSIG(status);
+#if defined(_HF_ARCH_DARWIN_ARM64)
+    mac_crash_t* crash = mac_arm64TakeCrash(pid);
+    defer { free(crash); };
+    if (crash) termsig = crash->signo;
+#endif
     LOG_D("Process (pid %d) killed by signal %d '%s'", (int)pid, termsig, strsignal(termsig));
     if (!arch_sigs[termsig].important) {
         LOG_D("It's not that important signal, skipping");
@@ -141,6 +155,18 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
      * Calculate backtrace callstack hash signature
      */
     run->backtrace = sanitizers_hashCallstack(run, funcs, funcCnt, false);
+    uint64_t filenamePc = pc;
+#if defined(_HF_ARCH_DARWIN_ARM64)
+    if (crash && !funcCnt) {
+        funcCnt = crash->frameCount;
+        memcpy(funcs, crash->frames, funcCnt * sizeof(*funcs));
+        pc = crash->pc;
+        crashAddr = crash->address;
+        filenamePc = crash->pcOffset;
+        run->backtrace = crash->hash;
+        snprintf(description, sizeof(description), "%s", crash->description);
+    }
+#endif
 
     /*
      * If unique flag is set and single frame crash, disable uniqueness for this crash
@@ -158,7 +184,7 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
     } else if (saveUnique) {
         snprintf(run->crashFileName, sizeof(run->crashFileName),
             "%s/%s.PC.%" PRIx64 ".STACK.%" PRIx64 ".ADDR.%" PRIx64 ".%s", run->global->io.crashDir,
-            util_sigName(termsig), pc, run->backtrace, crashAddr, run->global->io.fileExtn);
+            util_sigName(termsig), filenamePc, run->backtrace, crashAddr, run->global->io.fileExtn);
     } else {
         char localtmstr[HF_STR_LEN];
         util_getLocalTime("%F.%H:%M:%S", localtmstr, sizeof(localtmstr), time(NULL));
@@ -189,10 +215,15 @@ static void arch_analyzeSignal(run_t* run, pid_t pid, int status) {
     }
 
     report_appendReport(pid, run, funcs, funcCnt, pc, crashAddr, termsig, "", description);
+#if defined(_HF_ARCH_DARWIN_ARM64)
+    if (crash) util_ssnprintf(run->report, sizeof(run->report), "%s", crash->registers);
+#endif
 }
 
 pid_t arch_fork(run_t* fuzzer HF_ATTR_UNUSED) {
-#if defined(__FreeBSD__)
+#if defined(_HF_ARCH_DARWIN_ARM64)
+    return mac_arm64Fork();
+#elif defined(__FreeBSD__)
     const int flags = RFPROC | RFCFDG;
     return rfork(flags);
 #else
@@ -203,7 +234,17 @@ pid_t arch_fork(run_t* fuzzer HF_ATTR_UNUSED) {
 bool arch_launchChild(run_t* run) {
 #if defined(__APPLE__)
     posix_spawnattr_t attrs;
-    posix_spawnattr_init(&attrs);
+    int initError = posix_spawnattr_init(&attrs);
+    if (initError) {
+        LOG_E("posix_spawnattr_init: %s", strerror(initError));
+        return false;
+    }
+#if defined(_HF_ARCH_DARWIN_ARM64)
+    if (!mac_arm64Spawn(&attrs)) {
+        posix_spawnattr_destroy(&attrs);
+        return false;
+    }
+#endif
 
     short ps_flags = POSIX_SPAWN_SETEXEC;
     if (run->global->arch_linux.disableRandomization) {
@@ -215,7 +256,10 @@ bool arch_launchChild(run_t* run) {
         LOG_W("cannot set posix_spawn flags");
     }
 
+    /* POSIX_SPAWN_SETEXEC never returns on success, so cancel the launch alarm first. */
+    alarm(0);
     int status = posix_spawn(NULL, run->args[0], NULL, &attrs, (char* const*)run->args, environ);
+    alarm(1);
 
     posix_spawnattr_destroy(&attrs);
 
@@ -310,6 +354,14 @@ void arch_reapChild(run_t* run) {
             break;
         }
 
+#if defined(_HF_ARCH_DARWIN_ARM64)
+        /* Account for a captured exit before testing the execution deadline. */
+        if (arch_checkWait(run)) {
+            run->pid = 0;
+            break;
+        }
+#endif
+
         subproc_checkTimeLimit(run);
         subproc_checkTermination(run);
 
@@ -353,6 +405,10 @@ void arch_reapKill(void) {
 bool arch_archInit(honggfuzz_t* hfuzz HF_ATTR_UNUSED) {
     /* Make %'d work */
     setlocale(LC_NUMERIC, "en_US.UTF-8");
+
+#if defined(_HF_ARCH_DARWIN_ARM64)
+    return mac_arm64Init(hfuzz->threads.threadsMax);
+#endif
 
     return true;
 }

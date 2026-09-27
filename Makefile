@@ -49,8 +49,8 @@ LD = $(CC)
 BIN := $(_OBJDIR)/honggfuzz
 HFUZZ_CC_BIN := $(_OBJDIR)/hfuzz_cc/hfuzz-cc
 HFUZZ_CC_SRCS := hfuzz_cc/hfuzz-cc.c
-COMMON_CFLAGS := -std=c11 -I/usr/local/include -D_GNU_SOURCE -Wall -Wextra -Werror -Wno-format-truncation -Wno-override-init -I$(SRCDIR)
-COMMON_LDFLAGS := -pthread -L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -lm
+COMMON_CFLAGS := -std=c11 -I$(SRCDIR) -I/usr/local/include -D_GNU_SOURCE -Wall -Wextra -Werror -Wno-format-truncation -Wno-override-init
+COMMON_LDFLAGS := -pthread -lm
 COMMON_SRCS := $(sort $(notdir $(wildcard $(SRCDIR)/*.c)))
 CFLAGS ?= -O3 -mtune=native -funroll-loops
 LDFLAGS ?=
@@ -95,10 +95,22 @@ ifeq ($(OS)$(findstring Microsoft,$(KERNEL)),Linux) # matches Linux but excludes
     endif
 
 # OS Linux
+else ifeq ($(OS)-$(MARCH),Darwin-arm64)
+    # Modern Apple Silicon reporting uses Mach exceptions and system symbolication.
+    # Keep the portable process/coverage backend; no prebuilt CrashWrangler object.
+    ARCH := POSIX
+    SDK := $(shell xcrun --sdk macosx --show-sdk-path)
+    CC := $(shell xcrun --sdk macosx --find clang)
+    LD := $(CC)
+    ARCH_SRCS := posix/arch.c mac/arm64.c mac/exception.c
+    ARCH_CFLAGS := -isysroot $(SDK) -D_HF_ARCH_DARWIN_ARM64
+    ARCH_LDFLAGS := -isysroot $(SDK)
+    EXTRA_OBJS := $(_OBJDIR)/mac/arm64_mach_excServer.o
+
 else ifeq ($(OS),Darwin)
     ARCH := DARWIN
 
-    ARCH_SRCS := $(sort $(patsubst $(SRCDIR)/%,%,$(wildcard $(SRCDIR)/mac/*.c)) mac/mach_excServer.c mac/mach_excUser.c)
+    ARCH_SRCS := $(filter-out mac/arm64.c mac/arm64_mach_excServer.c mac/exception.c,$(sort $(patsubst $(SRCDIR)/%,%,$(wildcard $(SRCDIR)/mac/*.c)) mac/mach_excServer.c mac/mach_excUser.c))
 
     # MacOS-X grep seem to use colors unconditionally
     GREP_COLOR = --color=never
@@ -188,7 +200,9 @@ else
 	ARCH_LDFLAGS += -m64 -lkstat -lsocket -lnsl -lkvm
     endif
     ifneq ($(OS),Linux)
+    ifneq ($(REALOS),Darwin)
         ARCH_LDFLAGS += -latomic
+    endif
     endif
     ifneq ($(REALOS),OpenBSD)
     ifneq ($(REALOS),Darwin)
@@ -218,7 +232,7 @@ ifeq ($(COMPILER),gcc)
 endif
 
 SRCS := $(COMMON_SRCS) $(ARCH_SRCS)
-OBJS := $(addprefix $(_OBJDIR)/,$(SRCS:.c=.o))
+OBJS := $(addprefix $(_OBJDIR)/,$(SRCS:.c=.o)) $(EXTRA_OBJS)
 
 LHFUZZ_SRCS := $(sort $(patsubst $(SRCDIR)/%,%,$(wildcard $(SRCDIR)/libhfuzz/*.c)))
 LHFUZZ_OBJS := $(addprefix $(_OBJDIR)/,$(LHFUZZ_SRCS:.c=.o))
@@ -294,6 +308,7 @@ MAC_GARGBAGE := $(wildcard mac/mach_exc*)
 ANDROID_GARBAGE := obj libs
 
 CLEAN_TARGETS := core Makefile.bak \
+  $(_OBJDIR)/mac/arm64_mach_excServer.c $(_OBJDIR)/mac/arm64_mach_excServer.h \
   $(OBJS) $(BIN) $(HFUZZ_CC_BIN) \
   $(LHFUZZ_ARCH) $(LHFUZZ_SHARED) $(LHFUZZ_OBJS) \
   $(LCOMMON_ARCH) $(LCOMMON_OBJS) \
@@ -304,6 +319,12 @@ CLEAN_TARGETS := core Makefile.bak \
 _BUILD_SUBDIRS := $(sort $(dir $(OBJS) $(LHFUZZ_OBJS) $(LCOMMON_OBJS) $(LNETDRIVER_OBJS) $(BIN) $(HFUZZ_CC_BIN)))
 
 all: $(BIN) $(HFUZZ_CC_BIN) $(LHFUZZ_ARCH) $(LHFUZZ_SHARED) $(LCOMMON_ARCH) $(LNETDRIVER_ARCH)
+
+# Recompile existing artifacts when platform selection or compiler flags change here.
+$(OBJS) $(LHFUZZ_OBJS) $(LCOMMON_OBJS) $(LNETDRIVER_OBJS): $(SRCDIR)/Makefile
+$(_OBJDIR)/mac/arm64.o: $(SRCDIR)/mac/arm64.h $(SRCDIR)/mac/exception.h
+$(_OBJDIR)/mac/exception.o: $(SRCDIR)/mac/exception.h
+$(_OBJDIR)/posix/arch.o: $(SRCDIR)/mac/arm64.h
 
 # Enable second expansion for order-only prerequisite directory creation
 .SECONDEXPANSION:
@@ -322,6 +343,12 @@ mac/mach_exc.h mac/mach_excServer.c mac/mach_excServer.h mac/mach_excUser.c &:
 
 $(_OBJDIR)/mac/arch.o: mac/arch.c mac/mach_exc.h mac/mach_excServer.h | $$(dir $$@)
 	$(CC) -c $(CFLAGS) $(CFLAGS_BLOCKS) -o $@ $<
+
+$(_OBJDIR)/mac/arm64_mach_excServer.c: $(SDK)/usr/include/mach/mach_exc.defs | $$(dir $$@)
+	xcrun --sdk macosx mig -header /dev/null -user /dev/null -sheader $(dir $@)arm64_mach_excServer.h -server $@ $<
+
+$(_OBJDIR)/mac/arm64_mach_excServer.o: $(_OBJDIR)/mac/arm64_mach_excServer.c
+	$(CC) -c $(CFLAGS) -o $@ $<
 
 $(_OBJDIR)/%.so: %.c | $$(dir $$@)
 	$(CC) -fPIC -shared $(CFLAGS) -o $@ $<

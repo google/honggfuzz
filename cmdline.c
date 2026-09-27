@@ -560,6 +560,9 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
 #if defined(__FreeBSD__)
         { { "fbsd_keep_aslr", no_argument, NULL, 0x501 }, "Don't disable ASLR randomization, might be useful with MSAN" },
 #endif
+#if defined(__APPLE__)
+        { { "mac_keep_aslr", no_argument, NULL, 0x501 }, "Keep macOS address randomization enabled" },
+#endif
         { { 0, 0, 0, 0 }, NULL },
     };
     // clang-format on
@@ -811,7 +814,7 @@ bool cmdlineParse(int argc, char* argv[], honggfuzz_t* hfuzz) {
             hfuzz->arch_netbsd.symsWlFile = optarg;
             break;
 #endif /* defined(_HF_ARCH_NETBSD) */
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__APPLE__)
         case 0x501:
             hfuzz->arch_linux.disableRandomization = false;
             break;
